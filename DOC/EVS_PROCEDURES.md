@@ -113,13 +113,13 @@ int*)` (`SLES_541.51 0x260768`):
 |---|---|---|
 | | `+0x00` | the scout (`PlSinfo*`) |
 | `+0x04` (s16) | `+0x04` | country: when non-zero, only clubs whose `plMisc_Club2Nati` equals it |
-| `+0x06` (s16) | `+0x08` | region (`PlDRegion`), used when no country is set (`plMisc_Nati2DRegion`) |
+| `+0x06` (s16) | `+0x08` | region (`PlDRegion`, see [Regions](#regions)), used when no country is set (`plMisc_Nati2DRegion`) |
 | `+0x0a` (s8) | `+0x0c` | age bracket, if non-zero (`0x25f8a0`): 1 under 23, 2 23–29, 3 30 and over, 4 under 19, tested on the candidate's byte `+0x08` (the thresholds make it the age) |
-| `+0x08` (s16) | `+0x10` | position, if non-zero (`0x25fa08`, 12 cases, `plMisc_Apos2Pos` / `Apos2Epos`) |
+| `+0x08` (s16) | `+0x10` | position, if non-zero (`0x25fa08`, 12 cases, `plMisc_Apos2Pos` / `Apos2Epos`): 1 GK, 2 FB or CB, 3 FB, 4 CB, 5 WB/DM/SM/AM, 6 WB, 7 DM, 8 SM, 9 AM, 10 W or FW, 11 W, 12 FW (590:601–612) |
 | `+0x0b` (s8) | `+0x14` | 1: EU clubs only (`plMisc_Club2EU`) |
-| `+0x0c` (s8) | `+0x18` | 0 anyone, 1 or 2: keep only candidates for which `0x260590` is true / false |
+| `+0x0c` (s8) | `+0x18` | loan option: 1 lists only players `0x260590` finds available for loan (590:701 "List players available for loan"); 2 (not offered on the screen) lists only those it doesn't |
 | `+0x14` (s32) | `+0x20` | budget, if positive: drop candidates whose `pwkMoney_GetMoveResearchMoney` is higher |
-| `+0x12` (s16) | `+0x28` | player type: index into 40-byte entries at `0x553e58` (a play style matched against the candidate's 5 style bytes at `+0x1f6`, and a skill tested with `plPinfo_IsSkill`). 36 means any |
+| `+0x12` (s16) | `+0x28` | scout special condition 0–35 (590:500–535, e.g. 515 "goalkeepers with a safe pair of hands"); 36 is 590:536 "Do not set any special conditions". Index into 40-byte entries at `0x553e58`: a play style matched against the candidate's 5 style bytes at `+0x1f6`, and a skill tested with `plPinfo_IsSkill` |
 
 Every search also drops players under an exclusive or semi-exclusive deal
 (`plSinfo_CheckExclusive` / `CheckSemiExclusive`), players who need a
@@ -147,12 +147,67 @@ indexes two byte tables with that value (`0x238318` = 0, 1, 1, …;
 | 1 | 314 "Player List now available" |
 | 2 | 315 "Player List now available" with "There are some great players…" |
 
-The youth, coach and manager lists use `PlYlistTerm`, `PlClistTerm` and
-`PlMlistTerm` and the mail
-rows 349–351, 334–336 and 331–333. Each copies its own fields of the
-block: youth `+0x04`, `+0x06`, `+0x08`, `+0x12`; coaches `+0x04`, `+0x06`,
-`+0x0a`, `+0x0f`, `+0x14`; managers `+0x04`, `+0x06`, `+0x0a`, `+0x0d`,
-`+0x0e`, `+0x10`, `+0x14`. Their criteria aren't traced.
+The option texts are in message category 590, the request screen ("Make
+Player List", "Youth Player List", "Manager List", "Coach List"). The age
+options there are 550 none, 551 16–22, 552 23–29 and 553 over 30, matching
+values 0–3; value 4 (under 19) isn't offered for players.
+
+**Youth lists (confirmed).** `pwkTeam_UpdateYouthCandidates(PlYlistTerm*,
+int*)` (`0x262c40`) tests the player's own nationality (`getPbase` field
+`+0x14`), not his club's:
+
+| Block | Term | Search criterion |
+|---|---|---|
+| `+0x04` | `+0x04` | country |
+| `+0x06` | `+0x08` | region |
+| `+0x08` | `+0x0c` | position, if non-zero (`0x2623e8`, the same 12 positions) |
+| `+0x12` | `+0x10` | scout special condition, 36 = any (as for players) |
+
+**Coach lists (confirmed).** `pwkTeam_UpdateCoachCandidates(PlClistTerm*,
+int*)` (`0x261d10`) walks 3,000 staff records (`getMbase`, ids from
+`0x6d2e`) and tests the coach's nationality (field `+0x14`):
+
+| Block | Term | Search criterion |
+|---|---|---|
+| `+0x04` | `+0x04` | country |
+| `+0x06` | `+0x08` | region (scout byte `+0x50` + region) |
+| `+0x0f` | `+0x0c` | coach type (590:900–903): allowed if the byte table at `0x553860` has a 1 at `type × 7 + kind`, where kind is the coach's byte `+0x1c`. 0 none (kinds 0–4), 1 assistant coaches (kinds 0–2), 2 fitness coaches (kind 3), 3 goalkeeping coaches (kind 4) |
+| `+0x0a` | `+0x10` | instruction age (590:950–954), if non-zero: the coach's byte `0x66` + (7, 8, 9, 6)[value − 1], from the table at `0x399600`, must be at least 70 |
+| `+0x14` | `+0x18` | salary limit (590:164), if positive: compared with `0x260fc0(coach +0x18, 7)` |
+
+**Manager lists (confirmed).** `pwkTeam_UpdateManagerCandidates(PlMlistTerm*,
+int*)` (`0x261500`), over the same 3,000 staff records:
+
+| Block | Term | Search criterion |
+|---|---|---|
+| `+0x04` | `+0x04` | country |
+| `+0x06` | `+0x08` | region |
+| `+0x0d` | `+0x0c` | tactical approach (590:152): `0x260f08` looks up `value × 25 + style` in the byte table at `0x5536b0`, where style is the manager's byte `+0x34` (0–24), then rolls against the scout's byte `+0x46` |
+| `+0x0e` | `+0x10` | favoured tactics 1–6 (590:751–756: quick break, possession, wing attack, centre, offside trap, pressurise): the manager's byte `+0x8c` + value must be at least 70 |
+| `+0x10` | `+0x14` | formation 1–8 (590:801–808: 3-4-3, 3-5-2, 3-6-1, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1): byte `+0x84` + value must be at least 70 |
+| `+0x0a` | `+0x18` | instruction age (590:850–854), as for coaches (table `0x3995f0`, the same 7, 8, 9, 6) |
+| `+0x14` | `+0x20` | salary limit (590:156) |
+
+Which of block `+0x0e` and `+0x10` is tactics and which is formation is
+taken from the screen order (Team Policy, Preferred Tactics, Preferred
+System, then age and salary, 590:6–10), not from the code. Both readings
+give byte ranges that don't overlap.
+
+So a manager's record holds a style at `+0x34`, formation ratings at
+`+0x85`–`+0x8c`, tactic ratings at `+0x8d`–`+0x92` and age ratings at
+`+0x6c`–`+0x6f`, and 70 is the "good at it" threshold. Which age byte
+belongs to which option isn't settled. If the values follow the player
+search (1 16–22, 2 23–29, 3 over 30, 4 youth), youth is `+0x6c` and the
+three age groups are `+0x6d`–`+0x6f` in order.
+
+The tactical-approach table's first rows are masks over the 25 styles laid
+out as a 5 × 5 grid (style = 5 × row + column): 0 accepts all, 1 the top
+two rows and the centre, 2 the bottom two rows and the centre, 3 the left
+two columns and the centre, 4 the right two columns and the centre. The
+approaches on the team-style screen (category 420) are 200 Counter-Attack,
+201 Possession, 202 Individual Play and 203 Teamwork. 103–106 pair them
+as quick/slow build-up and playmaker/whole team, which fits two axes.
+That 1–4 follow that order is an assumption.
 
 **The search repeats.** The procedure copies its own request (`0x12bff0`)
 and submits it again after `0x12efb0(region)`. That clamps the region to
@@ -199,6 +254,31 @@ Procedures 10–17 (by the position of the call sites of the helper
 `jmTalk_SetTalkType(1)`, the Move talk: the face-to-face transfer
 negotiation (see [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#scene-types)).
 
+## Regions
+
+`PlDRegion` has 13 values, named by message `1:(310 + region)`. The report
+layout (`WP::CReport`, `SIMPRG.REL 0x99130`) and the region list
+(`0xbee14`) both add `0x136` to the region. The scout-search repeat delay
+from the table at `0x238ee0` is shown with each:
+
+| Region | Name | Delay |
+|---|---|---|
+| 0 | Western Europe | 4 |
+| 1 | Central Europe | 4 |
+| 2 | Eastern Europe | 4 |
+| 3 | Northern Europe | 4 |
+| 4 | South America A | 6 |
+| 5 | South America B | 6 |
+| 6 | North Africa | 5 |
+| 7 | West Africa | 5 |
+| 8 | East and South Africa | 5 |
+| 9 | North Central America, Caribbean | 6 |
+| 10 | East Asia | 6 |
+| 11 | South Asia and Middle East | 5 |
+| 12 | Oceania | 6 |
+
+Messages 1:300–305 name the six continents.
+
 ## For editing
 
 The procedures' logic and triggers are code, so a data mod can change only
@@ -211,9 +291,10 @@ happen. The offers they react to come from `Param` code.
   is.
 - What `+0x0C` (always 4 for procedure steps) and the `0x12c058` argument
   (1, 6, 7, 8, 21) mean.
-- What `0x260590` decides (the player search's term `+0x18`), the
-  criteria of the youth, coach and manager searches, and the names of the
-  13 regions.
+- How `0x260590` decides that a player is available for loan.
+- Which instruction-age byte is which, which tactical approach is which
+  grid half, and what the manager styles (`+0x34`) and coach kinds 5 and 6
+  are.
 - Which screens own the start functions for 9 (`0x9e7d0`), 14/16/18
   (`0x6b5f8`), 22 and 28. They're `WS::CPlateWindow` dialogs created through
   tables, so the usual symbol and caller searches don't name them.
