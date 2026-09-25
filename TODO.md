@@ -19,7 +19,11 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
       7 season-result speeches (36000–36008) are chosen by the handler
       types 18/19 code; the other 32 aren't referenced anywhere (mostly
       English placeholders over real Japanese text)
-- [ ] Work out `ESC 0xC3` (values 0–12, maybe a pose/animation)
+- [x] Work out `ESC 0xC3`: the speaker's body reaction in talk scenes, an
+      entry index into `HUMAN_MOTION_REACTION_SIT/STAND.MRG` depending on the
+      scene's posture (`DOC/MBB_FORMAT.md`)
+- [ ] Rename `mbb.py`'s `{c3:N}` tag to something readable (e.g.
+      `{react:N}`); changes the CSV output, so re-bless `regress.py`
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)
 - [ ] Check whether raw `0x0A`/`0x0D` bytes affect display
 
@@ -62,6 +66,9 @@ hold (player models, faces, edit/uniform data) is undocumented.
       keep scanning, like the other tools
 - [x] `regress.py` checks `evsdatabin.py --text MES.PAC` for all three tables
       (2,879 message references, all resolved)
+- [ ] `sles_disasm.py`: label the 169 `jal 0` calls (and the HI16/LO16/32
+      sites) with their import names from the relocation table at
+      `0x4a1420` (`DOC/SNR2_FORMAT.md`), like `snr2.py dis` does for overlays
 - [ ] `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105: 143-byte tables whose record size
       is unknown (`TBB_FORMAT.md` has "?"). The only `!!` on the disc with
       no documented cause

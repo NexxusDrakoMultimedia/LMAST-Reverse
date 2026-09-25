@@ -25,7 +25,7 @@ which comes from the executable.
 | `0x30d1c8` | `Msg::CMsgSubCategory::Initialize(void*)` | reads count `+0x0C` and data size `+0x10`, walks records from `+0x20`, copies each string with a NUL, then `qsort`s `{u16 id, char*}` by id |
 | `0x30d2f0` | `Msg::CMsgSubCategory::GetMessage(ushort)` | `bsearch` by id |
 | `0x11de80` | `Msg::CMsgNotifyFontMisc::Evaluate` | escapes `0x20` (colour index → `clr::GetRGBA` via the table at `0x51b828`), `0x21` (restore colour), `0x2F` (new line) |
-| `0x11e0b8` | `Msg::CMsgNotifyNameTag::Evaluate` | escapes `0xC1` (name → `WP::CMessageWindow::SetName`), `0xC2` (two words, only if `fcEuroDummy_IsFaceChangeEnable`), `0xC3` (one word) |
+| `0x11e0b8` | `Msg::CMsgNotifyNameTag::Evaluate` | escapes `0xC1` (name via `Msg::GetGlobalVariable` → `WP::CMessageWindow::SetName`), `0xC2` (`EVS::FaceChangeReqOnEvent(slot, expression)`, only if `fcEuroDummy_IsFaceChangeEnable`), `0xC3` (`Talk_MesssageCallback_SetMotion(N)`, see [Reactions](#reactions-esc-0xc3)) |
 | `0x30c0e0` | `Msg::CMsgNotifyVariableGet::Evaluate` | escapes `0x10`/`0x11`/`0x12`: category as u8/u16/u32, then a u16 variable id, looked up with `CMsgDecoder::GetVariable` |
 | `0x531c28` | table used by `Param::plMisc_HanZenKana` | 32 Shift-JIS codes for bytes `0x00`–`0x1F` (voiced katakana, see below) |
 
@@ -93,7 +93,7 @@ Every escape in the archive follows this shape.
 | `0x21` | 0 | | restore the default colour | `{/color}` | 2,827 |
 | `0xC1` | 2 | u16 name | speaker name shown on the message window | `{name:N}` | 4,167 |
 | `0xC2` | 4 | u16 slot, u16 expression | portrait expression | `{face:S:N}` | 30,086 |
-| `0xC3` | 2 | u16 | unknown (calls a function the tools don't resolve) | `{c3:N}` | 15,297 |
+| `0xC3` | 2 | u16 reaction | the speaker's body reaction (motion), see below | `{c3:N}` | 15,297 |
 
 A variable's category is a message category (`1` is the global one, set up by
 `fcEuroRootTask_SetupGlobalMessageCategory`), and the game fills in its
@@ -105,6 +105,67 @@ Speaker names 100–106 match the symbolic names in category 2 (`100`
 RIVAL_OWNER_NAME, `101` SECRETARY, `103` REPORTER, ...). The other ids used
 (2034–3167 and 4001–4099, e.g. `4091` for a travelling salesman) aren't
 named in any message file, so they probably index a table in the code.
+
+### Reactions (`ESC 0xC3`)
+
+`{c3:N}` makes the speaking character play body reaction N in the 3D
+"talk" scenes: one-to-one meetings with a player or staff member. The
+chain is **confirmed**:
+
+| Address | Symbol | What it does |
+|---|---|---|
+| `0x11e198` | in `Msg::CMsgNotifyNameTag::Evaluate` | reads the u16 with `GetEscapeWord` and calls `Talk_MesssageCallback_SetMotion(N)`. The call is a `jal 0` that the loader patches (see [`SNR2_FORMAT.md`](SNR2_FORMAT.md#calls-from-sles_54151-into-the-overlays)) |
+| `SIMPRG.REL 0xc120` | `Talk_MesssageCallback_SetMotion(int)` | does nothing if no talk scene is active (`0x1cd1c8`) or N is the current reaction (`0x1cd1cc`). Otherwise calls `CTalkImplement::setReaction(who, N, …)` and stores N |
+| `SIMPRG.REL 0xbd20` | `CTalkImplement::setReaction(char*, int, bool×4)` | `CLoader::getMotion(loader, 0, 0, N, 0)`: entry N of the merge file in the scene loader's slot 0 |
+| `SIMPRG.REL 0xbff8` | `CTalkImplement::loadReactionData(int posture)` | loads that slot: posture 0 → `BG/HUMAN_MOTION_REACTION_STAND.MRG`, 1 → `..._SIT.MRG` |
+
+So N is an **entry index into a motion pack, and which pack depends on the
+scene's posture**. The two packs don't line up:
+
+| N | Sitting (`_SIT.MRG`) | Standing (`_STAND.MRG`) |
+|---|---|---|
+| 0–3 | `mendan_Asit_ang_001`–`004` (angry) | `mendan_Atati_ang_001`–`004` |
+| 4–7 | `hap_001`–`004` (happy) | `hap_001`–`004` |
+| 8 | `nod_001` | `in_001` |
+| 9 | `sad_001` | `nod_001` |
+| 10–12 | `sad_002`–`004` | `sad_001`–`003` |
+| 13 | `mendan_sit_001` | `sad_004` |
+
+(`mendan` is 面談, "interview/meeting"; `tati` is 立ち, "standing".) The
+packs end with entries without the `A` prefix (`mendan_sit_001`,
+`mendan_sit_ang_001`, `mendan_sit_sad_001`; `mendan_tati_001`,
+`mendan_tati_ang_001`, `mendan_tati_sad_001`). No text uses them as reactions, and what they're for isn't
+traced.
+
+The talk managers in `SIMPRG.REL` pass the posture. Contract, dismiss,
+move, promise, promise-result, staff-retire and withdraw talks sit
+(posture 1). `CTalkNormalManager` and one path of `CTalkPlayerRetire`
+stand (posture 0). The text is written for the right pack: in normal talk
+(categories 500–505, standing) `{c3:9}` goes with neutral lines ("This new
+formation – I'm well up for it", a nod), and in contract talk (sitting)
+it goes with refusals ("I can't renew my contract for that sort of
+figure", `sad_001`). The `{face}` expression beside each reaction agrees:
+41 with angry, 51 with happy, 1 with nod, 31 and 21 with sad.
+
+The escape appears only in the talk categories (500–599, 800–899,
+1100–1199), 2,185 times in every language slot, with values 0–12. 3 is
+never used. `setReaction` also does something extra for reaction 4 when
+standing, and for 2 or 4 when sitting (it sends a message to a second
+scene object named at `+0x588`); what that looks like in game isn't
+known.
+
+For editing: the same N means a different motion in the two packs, so what
+N shows depends on the scene's posture. The text only uses 0–12.
+Standing entry 13 (`sad_004`) is a reaction nothing uses. Whether
+`CLoader::l_get` (`0x119540`) bounds-checks N hasn't been checked.
+The same text can't be moved between a sitting and a standing scene
+without re-choosing its reactions.
+
+The two other name-tag escapes resolve the same way: `0xC1` calls
+`Msg::GetGlobalVariable(char* buf, ushort id)` to fetch the speaker name
+before `SetName`, and `0xC2` calls `EVS::FaceChangeReqOnEvent(slot,
+expression)` (`SIMPRG.REL 0x13ac60`) when
+`fcEuroDummy_IsFaceChangeEnable()` allows it.
 
 ### Other control bytes
 
@@ -170,8 +231,8 @@ fill variables (`MakeVarList`).
 
 ## Open questions
 
-- What `ESC 0xC3` does. Its handler calls an address the static tools don't
-  resolve. Its values (0–12) look like a pose or animation index.
+- What the extra step in `setReaction` does for reactions 2 and 4 (a
+  message to the second scene object at `+0x588`).
 - Which variable ids each category defines, and how they're filled (the
   `Msg::VarBuf_*` functions at `0x11e7f0`… cover the global ones).
 - Which screens use the `1000xx` variant categories instead of the originals.

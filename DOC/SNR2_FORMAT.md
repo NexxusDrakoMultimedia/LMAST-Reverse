@@ -81,6 +81,35 @@ The types are the ELF MIPS numbers: 2 = `R_MIPS_32`, 4 = `R_MIPS_26`
 (`jal 0`), 5 = `R_MIPS_HI16`, 6 = `R_MIPS_LO16`. External calls therefore
 show up in a raw disassembly as `jal 0` and `lui $x, 0`.
 
+## Calls from `SLES_541.51` into the overlays
+
+The main executable also calls overlay functions, and it links to them the
+same way. Its `.sndata` table (the export table above) is a complete
+symbol table, and a relocation table sits just before it:
+
+```
+0x4a1420-0x4a2344  323 relocations {u32 site, u32 sym << 8 | type, u32 addend}
+0x4a2344-0x4cef6c  15,278 symbols  {u32 name, u32 value, u32 hash | kind << 16}
+```
+
+Note the relocation field order: the site comes **first**, unlike the
+overlays' `{offset, info, addend}`. Symbol 0 is null, as in the overlays.
+The symbol kinds are 2 (export, 13,127), 3 (weak, 1,922), 1 (import,
+value 0, 222) and 4 (6 linker constants: `_gp`, `_end`, `end`, `_stack`,
+`_stack_size`, `_heap_size`).
+
+The relocation types are 2 ×130, 4 ×169, 5 ×10 and 6 ×14. All 169 type-4
+sites are `jal 0`, and they're all of the `jal 0` instructions in
+`.text`, so every unresolved call in a raw disassembly of the executable
+is an import listed here. For example, the message escapes `0xC1`–`0xC3`
+at `0x11e138`, `0x11e180` and `0x11e198` call symbols `0x3b12`
+`Msg::GetGlobalVariable`, `0x3ae2` `EVS::FaceChangeReqOnEvent` and
+`0x3b13` `Talk_MesssageCallback_SetMotion`, which `SIMPRG.REL` exports
+(see [`MBB_FORMAT.md`](MBB_FORMAT.md#reactions-esc-0xc3)).
+
+The layout is **empirical**. The type-4 check and those three call sites,
+each matching its argument setup, are the evidence.
+
 ## Local relocations (packed)
 
 These are sites that only need the load base added. The list is a byte
