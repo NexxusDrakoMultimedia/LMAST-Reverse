@@ -6,8 +6,9 @@ it is loaded by `DLL/GAMEPRG.REL` (`sounddat.pac`, `playbook.bpb`,
 largest part is the **commentary system**: `SOUNDDAT.PAC` plus about 55 loose
 files that are byte-for-byte copies of its pieces.
 
-Nothing in this document comes from disassembly yet. The SOUNDDAT and
-commentary layouts are **empirical**, checked against every file on the disc.
+The `SOUNDDAT.PAC` piece offsets are **confirmed** against the table the
+game itself uses in `GAMEPRG.REL`. The formats inside the pieces (TBL, BCR2,
+BCB3, DTPK) are **empirical**, checked against every file on the disc.
 `python SRC/sounddat.py` implements them.
 
 ## Directory overview
@@ -35,15 +36,75 @@ commentary layouts are **empirical**, checked against every file on the disc.
 
 ## `SOUNDDAT.PAC`
 
-There is no directory. The `TBB1` header at offset 0 belongs to the first
-piece (`ROUTEBOX_EU.BCR`), not to the pack, so `tbb.py` can't read it. The
-game probably has the offsets hardcoded (not yet found in `GAMEPRG.REL`).
+There is no directory in the file. The `TBB1` header at offset 0 belongs to the first
+piece (`ROUTEBOX_EU.BCR`), not to the pack. The offsets are hardcoded in
+`GAMEPRG.REL` (see [How the game indexes it](#how-the-game-indexes-it)).
 
 | Range | Contents |
 |---|---|
 | `0x000000`–`0x162000` | 12 commentary slots of `0x1D800` bytes |
 | `0x162000`–`0x1A26BB` | 36 `.TBL` clip tables, 16-aligned; groups restart on `0x800` boundaries |
 | `0x1A2800`–`0xC6E800` | 40 `ps2_DTPK` sound banks, back to back, ending exactly at EOF |
+
+### How the game indexes it
+
+`DLL/GAMEPRG.REL` is an `SNR2` overlay linked at base 0, so its code
+addresses equal file offsets and every absolute address is patched by
+relocations at load time (external calls appear as `jal 0`). The offsets live in
+a table of 143 records `{u32 offset, u32 size, u32 0, u32 0}` at
+**`0x248540`–`0x248E30`**. It ends right before the `"sounddat.pac"` string at
+`0x248E30`, which begins the file-request struct that the loader fills.
+The records match the layout `SRC/sounddat.py` derives exactly.
+
+| Address | Records | Offsets relative to | Contents |
+|---|---|---|---|
+| `0x248540` | 42 | file | **level 0**: 0–11 slots (size = used bytes, 16-aligned), 12 = TBL group A `0x162000`, 13 = TBL group B `0x163000`, 14–16 = the three `L`+4×`J` bank groups, 17–41 = banks 15–39 |
+| `0x2487E0` | 3 × 5 | bank group | banks of level-0 entry 14, 16, 15, in that order |
+| `0x2488D0` | 10 × 5 | slot | the 5 pieces of slots 2–11. There is none for the JPN_TEST slots |
+| `0x248BF0` | 11 | `0x162000` | TBL group A: the `*LOSSTIME*`, `*NOWTIME*`, `*SCORE*`, `KAI_*` tables |
+| `0x248CA0` | 25 | `0x163000` | TBL group B: names, teams, `TAIKAI`, fixtures, rivals, `OUENKA_*`, `BN` |
+
+Functions that use it (addresses = `GAMEPRG.REL` file offsets):
+
+| Address | What it does |
+|---|---|
+| `0x9C88` | `size(i)`: `align_up(level0[i].size, 0x800)` |
+| `0x9BD0` | `load(buf, i)`: stores `buf`, `level0[i].offset >> 11` (sector) and `size(i) >> 11` (sector count) at `+0x34/+0x38/+0x3C` of the `sounddat.pac` struct, then issues request 0xC through a virtual call |
+| `0xA5A8` | loads a commentary slot. It gets `{b0, b1}` and picks level-0 `pair[b1][b0 != 0]` from the byte pairs at `0x265E98`: `(3,2) (5,4) (7,6) (9,8) (11,10) (1,0)`. So `b1` 0–4 = ENG, FRA, GER, ITA, SPA and 5 = JPN_TEST, and `b0 == 0` picks the `KANHA` slot |
+| `0x9DA0` | `piece_offset(i, flag)`: gets the commentary language from `0xAB40`, uses it in a jump table (`0x265E00` / `0x265E20`, chosen by `flag`) to select that language's `0x2488D0`-block piece table, and returns `table[i].offset`. For language ≥ 5 it falls back to the ENG table. Because JPN_TEST's BCB is a different size, its later pieces would then be read at the wrong offsets |
+| `0xA658`, `0xA6C8` | return pointers to slot pieces: `align_up(buf, 0x800) + piece_offset(...)` |
+| `0xA7D0` / `0xA848` | load TBL group A (level 0 entry 12); `tbl_a(i)` = `align_up(buf, 0x800) + table[i].offset` |
+| `0xA888` / `0xA8C0` | the same for group B. `0xA8C0` is called from 23 sites around `0x1B89E4`–`0x1B8FBC` (the commentary code) |
+| `0x9FE0` | sets up the sound banks (called from `0x370C`), see below |
+
+The bank setup at `0x9FE0` reads two bytes, `t = sel[0]` and `v = sel[1]`:
+
+- **`t`** (0–3) chooses the common bank group:
+  - through the bytes at `0x265E38 + t*20`: level-0 entry 15, 16, 14 or 15
+  - through its matching `0x2487E0`-block sub-table (5 bank offsets per group)
+  - so `t` = 3 is the same as `t` = 0
+- **`v`** (0–6) chooses one per-`v` bank of each type:
+  - a 13-sample looped bank, from the pairs at `0x265E3E + t*20 + v*2`
+  - a 32-sample bank, from the pairs at `0x265E88 + v*2`
+
+The level-0 indices these tables give are:
+
+| `v` | 13-sample bank for `t` = 0 / 1 / 2 | 32-sample bank |
+|---|---|---|
+| 0 | 17 / 19 / 18 | 20 |
+| 1 | 21 / 23 / 22 | 24 |
+| 2 | 25 / 27 / 26 | 28 |
+| 3 | 29 / 31 / 30 | 32 |
+| 4 | 37 / 39 / 38 | 40 |
+| 5 | same as 0 | same as 0 |
+| 6 | 33 / 35 / 34 | 36 |
+
+So banks 15–38 are six groups of three crowd variants plus one 32-sample
+bank, one group per `v`. `v` has seven values with 5 aliasing 0, which
+matches the seven country codes elsewhere in the overlays (`du`, `fr`, `ge`,
+`it`, `jp`, `sp`, `uk`). **What `t` and `v` mean is a guess.** Level-0
+entry 41 (bank 39) isn't selected by these tables. The second byte of each
+pair isn't a level-0 index and is still unknown.
 
 ### Commentary slots
 
@@ -204,8 +265,10 @@ slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
 
 ## Open questions
 
-- Where `GAMEPRG.REL` gets the `SOUNDDAT.PAC` offsets. This needs an `SNR2`
-  (SN Systems relocatable) loader first.
+- The `SNR2` header, relocation and symbol tables. Parsing them would give
+  names for the `jal 0` imports and for the functions listed above.
+- The meaning of the bank selectors `t`/`v`, the second byte of each
+  selector pair, and what loads bank 39.
 - The BCR2 record layout and trailer, the BCB3 item fields and script
   opcodes, and the BCV records.
 - The DTPK kinds `L`/`J`/`H`, the other TBLD pointers, and what each bank
