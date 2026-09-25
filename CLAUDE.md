@@ -22,8 +22,14 @@ the tool list, and the doc index. See `TODO.md` for what to work on next.
    About 12,600 symbol names are recovered, so search by name first.
 2. Write `DOC/<NAME>_FORMAT.md`.
 3. Write `SRC/<name>.py`.
-4. Run its `info` over all of `DAT/` until it reports no problems.
+4. Run its `info` over all of `DAT/` until it reports no problems, then add
+   a check to `checks()` in `SRC/regress.py` and `bless` it.
 5. Update the README's tool table and doc index, and tick off `TODO.md`.
+
+After changing any tool, run `python SRC/regress.py run`. A diff is a
+regression unless the change was intended. Only then run `bless <name>`, and
+say in the commit what changed in the output. Never bless to make a failure
+go away.
 
 Commits usually add a doc and its tool together, with messages like
 "Document X format; add x.py reader".

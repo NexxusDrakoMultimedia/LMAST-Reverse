@@ -1,3 +1,4 @@
 /ISO
 /DAT
 __pycache__/
+.regress/

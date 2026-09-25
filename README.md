@@ -155,6 +155,17 @@ workflow is:
 2. Record the layout it implies, with addresses, in `DOC/`.
 3. Implement it in `SRC/`.
 4. Run `info` over all of `DAT/` to check it.
+5. Add it to [`regress.py`](SRC/regress.py), which runs every tool's check
+   and compares the output with a saved baseline:
+
+   ```bash
+   python SRC/regress.py bless        # once, from a known-good state
+   python SRC/regress.py run          # after every change; exit 1 on any difference
+   ```
+
+   Baselines are kept in `.regress/`, which is git-ignored because they list
+   file names and counts from your disc. When an output change is intended,
+   `bless <name>` accepts it.
 
 ## Documentation index
 

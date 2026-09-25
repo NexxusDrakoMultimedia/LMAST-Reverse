@@ -45,5 +45,5 @@ hold (player models, faces, edit/uniform data) is undocumented.
 
 ## 5. Housekeeping
 
-- [ ] Regression check: a script that runs every tool's `info` over `DAT/`
-      and fails on any new warning
+- [x] Regression check: `SRC/regress.py` runs every tool's `info` over `DAT/`
+      and fails on any difference from a saved baseline
