@@ -265,8 +265,9 @@ slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
 
 ## Open questions
 
-- The `SNR2` header, relocation and symbol tables. Parsing them would give
-  names for the `jal 0` imports and for the functions listed above.
+- Names for the loader functions listed above. `SNR2` is now parsed
+  (`SNR2_FORMAT.md`, `SRC/snr2.py`), so their imports are labelled, but
+  local functions carry no names of their own.
 - The meaning of the bank selectors `t`/`v`, the second byte of each
   selector pair, and what loads bank 39.
 - The BCR2 record layout and trailer, the BCB3 item fields and script
