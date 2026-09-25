@@ -186,7 +186,7 @@ started with
 | Module ids | Table | Entries |
 |---|---|---|
 | 0–69 | `0x34d7e8 + 8 × id` | 70 |
-| 70 | "wild card": `fcEuroModule_GetWildCardModule` returns the real id, which indexes the first table | |
+| 70 | the wild card (below) | |
 | 71–129 (`0x47`–`0x81`) | `0x34d5f8 + 8 × (id − 0x47)` | 59 |
 | 171–173 (`0xab`–`0xad`) | `0x34d7d0 + 8 × (id − 0xab)` | 3 |
 
@@ -213,6 +213,28 @@ a module in 0–68 (for example 75 BGControl and 92 Talk). Four (83
 PersonalAffairs, 124 Goods, 125 Hdd, 126 HddUtil) are used only in this
 range. The priority is 1 for 128 entries, 2
 for the Dummy modules and 0 for both BGControl entries.
+
+**Module 70, the wild card (confirmed).** Module 70 is a slot for "the
+module queued by the last event", not a module of its own.
+`fcEuroModule_SetupWildCardModule(eMODULE id, int* args)` (`0x10f028`)
+stores an id at `0x34df08` and 16 argument words at `0x34df10`.
+`fcEuroModule_GetWildCardModule(int* args)` (`0x10f060`) copies the
+arguments out and returns the id, which is then looked up in the 0–69
+table. At start-up the id is 0 (Dummy) and the arguments are 0.
+
+Only `SIMPRG` sets it, always from the event system, and then sets
+`+0x54 = 1` on the object `0x128f70` returns (probably "switch to the wild
+card"):
+
+| Site | Module queued | From |
+|---|---|---|
+| `0x12a470` (zeroed args) | 31 Talk, 51 SelectCaptain, 63 PlayerEdit, 54 SelectUniformNumber, 66 ForcedDismissPlayer, 28 SelectSecretary, 61 TicketSet | end-of-event code at `0x12a500`–`0x12aa14` (function bounds not traced), which checks the event's data (e.g. the message reference at `+0x18`) and calls `jmTalk_SetTalkType(7)` before a Talk |
+| `0x12a9f8` | 41 News (argument word 7 set to 1 on one path) | the same code |
+| `0x134054` (zeroed args) | 66 ForcedDismissPlayer | the constructor of EVENT handler type 65 (`0x134020`) |
+
+So an event can end by opening a management screen, for example a forced
+player dismissal or the captain selection. The wild card never queues an id
+above 69, so it's not a route to the test modules.
 
 ## Local relocations (packed)
 
@@ -269,6 +291,10 @@ site's resolved target.
 
 - What `0x38` is for, and what `0x20`/`0x24` tell the caller. All three
   are offsets equal to `0x34` in every file.
+- Which case of the end-of-event code (`0x12a500`…) queues which module,
+  and so which events open which screens.
+- Whether anything starts module 69 (the `TESTPRG` launcher) or the test
+  modules at 71–129. The wild card doesn't.
 - Where the overlay index passed to the loading code at `0x10babc` comes
   from, and so which modules load which overlay at runtime. The module
   table gives the static answer.
