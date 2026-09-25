@@ -60,7 +60,7 @@ the value distribution only.
 | `0x1c` | u32 | ? | data | 0–18 |
 | `0x24`–`0x5c` | 5 × {u32, u32, u32} | ? | data | five groups at `0x24`/`0x30`/`0x3c`/`0x48`/`0x54`: (0–322, {0,2,46,47}, 0 or ~2000/3000/4000) |
 | `0x64` | u32 | dialogue (message ref) | confirmed: `0x1393d0` fetches the record with the EVENT getter, copies it to the stack and stores `+0x64` in the scene object at `+0x44` (unless the object's `+0x48` overrides it) | id is always 0; category 35000–36030 in 373 records, 0 in 8 (256, 311–315, 359, 361). The whole category is the scene's script |
-| `0xe0` | u32 | scene type | confirmed: `0x12a578` returns it; `0x12a690` switches on it (29 cases) to set `jmTalk_SetTalkType` | 0–28 |
+| `0xe0` | u32 | scene type | confirmed: `0x12a578` returns it; `0x12a690` switches on it (29 cases). What happens after the scene: see [Scene types](#scene-types) | 0–28 |
 | `0xe8`, `0xec` | u32 | scene type override A/B | confirmed: used instead of `0xe0` when the actor flag has bit `0x02`, picked by `EvsWork+0x1f8 == 1` | |
 | `0xf0`–`0x104` | 6 × u32 | scene type by variant | confirmed: used when the actor flag has bits `0x1c`, indexed by `EvsWork+0x1fc` (0–5) | |
 
@@ -154,6 +154,49 @@ Which handler types own these functions isn't traced yet.
   and `+0x9c` for fixed lists of event IDs (tables at `0x238d58`…).
   Some events are retargeted at runtime, so the file isn't the
   whole story.
+
+### Scene types
+
+The scene type says what happens once the event's dialogue ends. `0x12a578`
+picks it from the record: `+0xe8` or `+0xec` when the actor's flag has bit
+`0x02` (by the Yes/No answer in `EvsWork+0x1f8`), `+0xf0`–`+0x104` when it
+has bits `0x1c` (by `EvsWork+0x1fc`, 0–5), otherwise `+0xe0`. The function
+at `SIMPRG.REL 0x12a670` then switches on it (jump table `0x2387a0`). There
+are three kinds of case (**confirmed**; the "used by" column and the
+meanings are from the records' dialogue):
+
+- **Open a screen** through the wild-card module (see
+  [`SNR2_FORMAT.md`](SNR2_FORMAT.md)).
+- **Set up a talk scene**: `jmTalk_SetTalkType(N)` plus a set-up call, then
+  open Talk (module 31).
+- **Chain another event**: `0x12a518(0x01000000 | record)` builds
+  `{event id, 0x12e5a8(), -1000}` and passes it to `0x12ba38`. The same
+  `0x01000000 | index` form is what the event object holds at `+0x18`.
+
+| Type | Action | Used by (record: dialogue) |
+|---|---|---|
+| 0 | nothing | 341 records |
+| 1 | open SelectCaptain (51) | 66, 67, 367, 368: "The club doesn't have a captain…" |
+| 2, 3, 7 | talk type 8, then Talk. 2 and 7 require byte `+0x27` = `0x12` / `0x11` | 50, 49, 51: "{visitor} is here…" |
+| 4, 6 | talk type 4, then Talk. 6 requires `+0x27` = `0x0d` | 57, 56 |
+| 5 | talk type 9, then Talk. Requires `+0x27` = `0x0d` | 48 |
+| 8, 10, 13, 28 | open Talk (31) | 53, 55, 58, 61, 372 |
+| 9 | reset `EvsWork+0x1ec`–`+0x200`, then open Talk | 54 |
+| 11 | open PlayerEdit (63) | 52 (`+0xe8`, after Yes): "We currently don't have any edited players…" |
+| 12, 14 | talk type 7, then Talk. Requires `+0x27` = `0x27`. Unless the event is record 63 / 62, `0x12eef8(+0x2a)` must succeed first | 60, 63 / 59, 62: "{visitor} is here… He doesn't look happy." |
+| 15 | open SelectUniformNumber (54) | 65: "Not all the players' team numbers have been decided"; 294, 360: youth players join the first team |
+| 16 | open SelectSecretary (28) | 64 (`+0xe8`): the secretary is unhappy in the job |
+| 17 | open TicketSet (61) | no record |
+| 18 | chain EVENT 214 (a rival-manager follow-up) | 208–211, 264–270 |
+| 19–24 | chain EVENT 109–114 | 108 (`+0xf0`–`+0x104`): the six training-camp choices; 109–114 are the matching follow-ups |
+| 25 | open News (41) | 349–351: "The results of today's matches are in the paper" |
+| 26 | open News with argument word 7 = 1 | 348: "This season's awards are in the paper" |
+| 27 | open ForcedDismissPlayer (66) | 316, 369, 370: "There's no space left in the squad. Select players to release…" (handler type 65, whose constructor also queues this module) |
+
+For editing: changing a record's scene type changes what the game does
+after the scene. Values 1, 11, 15–17 and 25–27 open a screen that has to
+make sense at that point (a captain or number to choose, players to
+release).
 
 ### Dialogue categories
 
