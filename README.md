@@ -200,6 +200,7 @@ workflow is:
 | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) | Ninja (NN) models, skeletons, motions, VU/PX Plus vertex streams |
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
 | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
+| [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |
 | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) | message text, encodings and escape codes |
 | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md) | club-management event tables |
 | [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events) |

@@ -35,7 +35,11 @@ The first thing [`GOALS.md`](GOALS.md) wants a mod to change. Every table
 parses with `tbb.py`, but no folder doc says what the tables and packs hold
 or which code loads them.
 
-- [ ] Write `DOC/PARAM_DIR.md`: each file's loader, row count and record size
+- [x] Write `DOC/PARAM_DIR.md`: each file's loader, row count and record size.
+      Loaders found for all but `SPONSOR_BOARD.TBB` and `UNIFORM_NAME*.BIN`
+      (nothing names them). Record layouts confirmed for `OTEAMMEMBER`,
+      `PLRRSRC_INITTEAMDATA`, `INITNATIDATA`, `SCHEDULE_LIST`, `REGULATION`,
+      `CLUBRESULT` and `STADIUM_DATA`, plus the `plResource` pack readers
 - [ ] Schedules and competitions: `0SYSTEM/SCHEDULE.TBB`,
       `SCHEDULE_LIST.TBB`, `SCHEDULE_{COMPETITION,SYSTEM,TEAM_ENTRY}.PAC/.HED`,
       `GROUP2COMPE.TBB`, `REGULATION.TBB`, `CLUB_RANK_SYSTEM.TBB`
@@ -44,7 +48,9 @@ or which code loads them.
       `STADIUM_DATA.TBB`
 - [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC`, `PBDATA_{EU,JP}.PAC`,
       `PSC{COMMON,GAME,PRACTICE}.PAC`
-- [ ] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN` (no doc mentions them)
+- [x] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`: 27,950 × `char[19]`
+      placeholders (`"a"`, or `"0"` in 142 records of `UNIFORM_NAME2`), not
+      referenced by name (`DOC/PARAM_DIR.md`)
 - [ ] Write `DOC/0SYSTEM_DIR.md`: `COLORDATATABLE`, `DETAILFLAG` and
       `MSGCOMMON` tables, the texture packs and fonts, `SAVE_VERSION.DAT`,
       `STATIC*.ICO`
