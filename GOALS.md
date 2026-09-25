@@ -2,17 +2,18 @@
 
 The aim of this project is to make the data in *Let's Make a Soccer Team!*
 (`SLES_541.51`) easy to edit, so that people can build a modded version of the
-game: adjusted data, later seasons, or tweaked parameters. The end product is
-a set of GUI tools that let someone change the game's data without knowing the
-file formats.
+game: adjusted data, a different starting season, or tweaked parameters. The
+end product is a set of GUI tools that let someone change the game's data
+without knowing the file formats.
 
 [`TODO.md`](TODO.md) lists the next concrete tasks. This file says what they
 are for.
 
 ## What a mod should be able to change
 
-- **Seasons.** Schedules, competitions, clubs and players for seasons after
-  the one on the disc.
+- **The starting season.** The state a new game begins in: schedules,
+  competitions, league membership, clubs, squads and players. The game then
+  plays on from there as normal.
 - **Data.** Club, player, stadium and staff records, and the text that goes
   with them.
 - **Parameters.** The tuning values in the `TBB1`/`TBL1` tables: prices,
