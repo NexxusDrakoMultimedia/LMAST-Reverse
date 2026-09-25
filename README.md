@@ -87,11 +87,13 @@ disassemble as unrelated MIPS instructions.
 |---|---|---|
 | [`pac.py`](SRC/pac.py) | BINPAC `.PAC`/`.MRG`/`.HED`, KC@P headers, PRSH (Sega PRS) | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) |
 | [`tbb.py`](SRC/tbb.py) | `TBB1`/`TBL1` parameter tables | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) |
+| [`packdata.py`](SRC/packdata.py) | `etc::PackData` inside KC@P entries (face packs, licensed kits, edit face, cut-ins) | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) |
 
 ```bash
 python SRC/pac.py info DAT
 python SRC/pac.py extract DAT/BG/BG_OF_01.MRG out/ --prs
 python SRC/tbb.py dump DAT/0SYSTEM/SCHEDULE.TBB 0 --rows 10
+python SRC/packdata.py list DAT/PLAYER/PLPACK_HOME.HED 0
 ```
 
 ### Graphics
@@ -157,6 +159,7 @@ body, mail sender/subject/body) gets a column with its text from `MES.PAC`.
 - `zbf.py` uses `pac.py` to read depth buffers directly from `BG_*.MRG`
   archives.
 - `eventdata_turn.py` uses `tbb.py` for the table container.
+- `packdata.py` uses `pac.py` to find KC@P entries and expand PRSH.
 
 The disassemblers connect to the format tools through the docs. The usual
 workflow is:
@@ -190,6 +193,7 @@ workflow is:
 | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) | `DAT/CSE` 2D layouts |
 | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) | pre-rendered Z buffers |
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
+| [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
 | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) | message text, encodings and escape codes |
 | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md) | club-management event tables |
 | [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md) | the unused turn-event prototype |

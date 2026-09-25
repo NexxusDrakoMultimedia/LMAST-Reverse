@@ -43,8 +43,17 @@ The largest directory (1.2 GB). `pac.py` covers the containers (KC@P face
 packs, uniform CLUT packs, `CUTINHUMANPACK.MRG`, ...), but what the entries
 hold (player models, faces, edit/uniform data) is undocumented.
 
-- [ ] Survey the entry types
-- [ ] Write `DOC/PLAYER_DIR.md`
+- [x] Survey the entry types: the KC@P packs (faces, `PLPACK_*` kits,
+      `EDITFACEPACK`) wrap each entry in `etc::PackData`; everything else is
+      Ninja models or textures
+- [x] Write `DOC/PLAYER_DIR.md`
+- [x] `SRC/packdata.py` parses `etc::PackData` in all 5 KC@P packs; `info`
+      samples `FC_EURO_FACEPACK_00` (`--all` for every entry). In `regress.py`
+- [ ] `GAME/CUTINPACK.BIN` entries are `PackData` too (block types 19–24);
+      reconcile with `PAC_FORMAT.md`'s "109 are empty" and document the blocks
+- [ ] Decode the face block-4 header and the `PLPACK` block-0 kit descriptor
+- [ ] `COLOR_TBL`, `UNIFORM_LIST`, `UNIFORM_GK` table layouts
+      (`UniformList_*` at `0x2d3078`)
 
 ## 4. Music and sound effects
 
