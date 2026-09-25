@@ -113,6 +113,21 @@ python SRC/sounddat.py info DAT/GAME/SOUNDDAT.PAC
 python SRC/sounddat.py extract DAT/GAME/SOUNDDAT.PAC out/sound --wav
 ```
 
+### Text
+
+| Tool | Formats | Doc |
+|---|---|---|
+| [`mbb.py`](SRC/mbb.py) | `MESSAGE/MES.PAC` and its `MBB1` message files, all 7 language slots | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) |
+
+```bash
+python SRC/mbb.py info DAT/MESSAGE/MES.PAC
+python SRC/mbb.py dump DAT/MESSAGE/MES.PAC --cat 35002 --lang 1
+python SRC/mbb.py csv DAT/MESSAGE/MES.PAC messages.csv
+```
+
+The CSV has one row per message and one column per language. Control codes
+appear as tags such as `{var:1:7}` and `{color:4}`.
+
 ### Event data
 
 | Tool | Formats | Doc |
@@ -154,6 +169,7 @@ workflow is:
 | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) | `DAT/CSE` 2D layouts |
 | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) | pre-rendered Z buffers |
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
+| [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) | message text, encodings and escape codes |
 | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md) | club-management event tables |
 | [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md) | the unused turn-event prototype |
 
