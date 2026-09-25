@@ -58,7 +58,11 @@ problems, and exports static meshes to OBJ.
 - [x] Document the chunk layouts (`DOC/NINJA_FORMAT.md`)
 - [x] Add a parser (`ninja.py info`/`dump`) and add it to `regress.py`
 - [x] Triangle strips and winding (`strip_triangles()`); `obj` export works
-- [ ] Decode the material structs and link textures from `NSTL` (MTL output)
+- [x] Material texture references (`0x400`/`0x800` inline layers,
+      `0x1000` PX Plus layers); `obj` writes `.mtl` and PNG textures
+- [ ] Material colours, GS register words and layer flag bits (reflection
+      maps on the trophies), and where textures for models without `NSTL`
+      come from (stadiums, balls)
 - [ ] Common-vertex lists (`nnCompileCommonVerticesObject*`, 35 lists plus
       the `PLAYER/` face models)
 - [ ] PX Plus skin words, VU `0x21` weight remainder, VU type bit `0x100`

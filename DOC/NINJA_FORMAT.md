@@ -186,10 +186,44 @@ list.
 
 ### Materials
 
-The material pointer types are `0x400`, `0x800` and `0x1000`. The material
-structs (colours as 0–255 floats, GS register values, texture layers) are
-**not decoded yet**, so the exporter doesn't link textures. `NSTL` gives
-the texture names.
+The material pointer type picks one of two layouts. Only the texture
+references are decoded so far. The colours (0–255 floats in `0x400`/`0x800`,
+0–1 floats in `0x1000`) and the GS register words are not.
+
+| Type | Where | Texture layer | Texture index |
+|------|-------|---------------|---------------|
+| `0x400` | plain objects | inline at `+0x50` (0x70 bytes) | u16 at layer `+6` |
+| `0x800` | plain objects, 2 textures | `+0x50`, second layer at `+0xC0` | u16 at layer `+6` |
+| `0x1000` | PX Plus (players) | `+0x10` → layers of 0x40 bytes | u32 at layer `+4` |
+
+Confirmed from the game code:
+
+| Address | Symbol | What it shows |
+|---------|--------|---------------|
+| `0x18855c` | `nnPutMaterialCoreExt` | passes material `+0x50` as the texture layer |
+| `0x1885a8`–`0x1886e0` | `nnPutMaterialCoreExt` | the second layer's fields are read 0x70 further on (`+0xb0`, `+0xb4`, `+0xc0`) |
+| `0x187b24` | `nnSetMaterialSingleTextureExtPS2` | texture index = u16 at layer `+6`, used to pick the entry in the loaded texture list |
+| `0x143418` | helper of `opt_nnPutMaterialCorePXPlusLtd` | PX Plus: texture index = u32 at `+4` of each 0x40-byte layer at material `+0x10` |
+
+The index selects an entry of the object's `NSTL`. **Empirical**, across all
+5,392 blobs:
+
+- Every index is below the `NSTL` count. `ninja.py info` checks this.
+- In `0x400`/`0x800` materials, a layer whose first word (flags) is 0 has no
+  texture (1,780 materials).
+- Layer flags `& 0x7f00` are the mapping mode (0x18850c: `0x400` and
+  `0x800` switch on texture matrices). The trophies' metal uses one of
+  these, a reflection map that doesn't use the vertex UVs.
+
+Models without `NSTL` (4,734 of the `0x400`/`0x800` materials, e.g. the
+stadiums and the balls) get their textures from outside the model file.
+The player models name their kit, skin and number textures (`skn_00.svr`,
+`org_000_sht.svr`, ...), but those files aren't on the disc as-is: the
+game builds them from the `PLAYER/` packs.
+
+UVs use the GS convention (V runs downwards). `ninja.py obj` writes
+`1 - v`, and textured test renders (`CAMERON.SNO`, the trophies) map
+correctly.
 
 ## Vertex lists
 
@@ -332,7 +366,8 @@ hide submotions occur, although `nnCalcNodeMotionCore` supports them.
 
 ## Still unknown
 
-- Material structs and how they select textures from `NSTL`.
+- Material colours, GS register words and the layer flag bits.
+- Where the textures of models without `NSTL` come from.
 - The node sphere/box fields (`+0x70` plain, `+0x80` extended) and
   extended node `+0xC0`.
 - Object type bits at `+0x44`, VU type bit `0x100`, the PX Plus skin
@@ -348,5 +383,5 @@ hide submotions occur, although `nnCalcNodeMotionCore` supports them.
 ```
 python SRC/ninja.py info DAT                    # all 5,392 blobs, no problems
 python SRC/ninja.py dump DAT/PLAYER/M_PLAYER.SNO
-python SRC/ninja.py obj  DAT/GAME/BALL.SNJ out/ball.obj
+python SRC/ninja.py obj  DAT/TEST3D/CAMERON.SNO out/cameron.obj   # + .mtl and PNG textures
 ```

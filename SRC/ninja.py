@@ -23,11 +23,15 @@ Usage:
                                               # also NSIF entries in .PAC/.MRG/.HED
                                               # (--prs: expand PRSH entries too, slow)
     python ninja.py dump <file>               # nodes, meshes, motions, names
-    python ninja.py obj  <file> <out.obj>     # static mesh in bind pose
+    python ninja.py obj  <file> <out.obj>     # static mesh in bind pose, plus
+                                              # .mtl and PNGs of the NSTL textures
+                                              # found next to the model
 
 Only VU (types 0x5-0x1ff) and PX Plus (0x60000 bits set) vertex lists are
 decoded. "Common vertices" lists (vertex-list pointer type 0x10000) are
 counted but not exported.
+
+Requires: pip install pillow  (only for the PNG textures `obj` writes)
 """
 import os
 import struct
@@ -237,9 +241,10 @@ def strip_triangles(batch):
 # --- objects --------------------------------------------------------------------
 
 class Mesh:
-    def __init__(self, node, matrix, material, vtx_index, vtype, flags, batches):
+    def __init__(self, node, matrix, material, vtx_index, vtype, flags, batches, texture):
         self.node, self.matrix, self.material = node, matrix, material
         self.vtx_index, self.vtype, self.flags, self.batches = vtx_index, vtype, flags, batches
+        self.texture = texture    # index into the object's NSTL list, or None
 
 
 class Node:
@@ -271,6 +276,22 @@ class NinjaObject:
 
     def _problem(self, msg):
         self.problems.append(msg)
+
+    def _texture(self, ptr_entry):
+        """Texture index of the first layer of the material at a {type, ptr}
+        NNS_MATERIALPTR, or None for an untextured material."""
+        mtype, mat = self.nf.words(ptr_entry, 2)
+        if mtype == 0x1000:
+            # PX Plus: +0x10 -> 0x40-byte layers, u32 index at +4 (0x143418)
+            layers = self.nf.u32(mat + 0x10)
+            return self.nf.u32(layers + 4) if layers else None
+        if mtype in (0x400, 0x800):
+            # Inline layer at +0x50 (0x18855c), u16 index at +6 (0x187b24).
+            # Layer flags 0 = no texture (empirical).
+            flags, word = self.nf.words(mat + 0x50, 2)
+            return word >> 16 if flags else None
+        self._problem("material type %#x" % mtype)
+        return None
 
     def _vertex_list(self, ptr_entry):
         """ptr_entry: data offset of a {type, ptr} NNS_VTXLISTPTR."""
@@ -320,7 +341,8 @@ class NinjaObject:
                     self._problem("meshset %d/%d index out of range" % (s, m))
                     continue
                 vtype, batches = self._vertex_list(self.pvtx + 8 * vtx)
-                self.meshes.append(Mesh(node, mtx, mat, vtx, vtype, stype, batches))
+                self.meshes.append(Mesh(node, mtx, mat, vtx, vtype, stype, batches,
+                                        self._texture(self.pmat + 8 * mat)))
 
     def _parse_ex(self):
         nf = self.nf
@@ -349,7 +371,8 @@ class NinjaObject:
                         self._problem("node %d meshset %d/%d index out of range" % (i, s, m))
                         continue
                     vtype, batches = self._vertex_list(pvtx + 8 * vtx)
-                    self.meshes.append(Mesh(i, mmtx, mat, vtx, vtype, mflags | stype, batches))
+                    self.meshes.append(Mesh(i, mmtx, mat, vtx, vtype, mflags | stype, batches,
+                                            self._texture(pmat + 8 * mat)))
 
 
 # --- motions and small chunks ----------------------------------------------------
@@ -498,11 +521,17 @@ def cmd_info(paths, prs=False):
             nf = NinjaFile(blob)
             problems = _check_container(nf)
             parts = [b"/".join(c[0] for c in nf.chunks).decode()]
+            ntex = None     # NSTL, when present, comes before the object
             for c in nf.chunks:
                 rel = nf.main_struct(c) if c[2] >= 4 and c[0] not in (b"NOF0", b"NEND", b"NFN0") else None
                 if c[0] in OBJECT_CHUNKS:
                     o = NinjaObject(nf, rel)
                     problems += o.problems
+                    bad = sorted({m.texture for m in o.meshes
+                                  if ntex is not None and m.texture is not None and m.texture >= ntex})
+                    if bad:
+                        problems.append("texture index %s >= %d NSTL entries"
+                                        % (",".join(map(str, bad)), ntex))
                     verts = sum(b.n for m in o.meshes if m.batches for b in m.batches)
                     types = sorted({m.vtype for m in o.meshes})
                     parts.append("nodes=%d%s meshes=%d verts=%d vtx=%s" % (
@@ -516,7 +545,8 @@ def cmd_info(paths, prs=False):
                     parts.append("motion %#x frames %g-%g @%gfps sub=%d" % (
                         m.type, m.start, m.end, m.fps, len(m.subs)))
                 elif c[0] == b"NSTL":
-                    parts.append("tex=%d" % len(texture_names(nf, rel)))
+                    ntex = len(texture_names(nf, rel))
+                    parts.append("tex=%d" % ntex)
                 elif c[0] == b"NSNN":
                     parts.append("names=%d" % len(node_names(nf, rel)[1]))
             line = "%-44s %s" % (label, "  ".join(parts))
@@ -550,8 +580,9 @@ def cmd_dump(path):
                           i, n.flags, n.matrix, n.parent, n.child, n.sibling, *n.t, *n.r, *n.s))
             for m in o.meshes:
                 nv = sum(b.n for b in m.batches) if m.batches else 0
-                print("  mesh node=%d mtx=%d mat=%d vtxlist=%d type=%#x flags=%#x batches=%s verts=%d" % (
-                    m.node, m.matrix, m.material, m.vtx_index, m.vtype, m.flags,
+                print("  mesh node=%d mtx=%d mat=%d tex=%s vtxlist=%d type=%#x flags=%#x batches=%s verts=%d" % (
+                    m.node, m.matrix, m.material, "-" if m.texture is None else m.texture,
+                    m.vtx_index, m.vtype, m.flags,
                     len(m.batches) if m.batches is not None else "-", nv))
             for p in o.problems:
                 print("  !! " + p)
@@ -570,10 +601,39 @@ def cmd_dump(path):
                 print("  %3d %s" % (i, n))
 
 
+def _find_file(folder, name):
+    """Case-insensitive lookup: NSTL names are lower case, the disc's upper."""
+    for f in os.listdir(folder):
+        if f.upper() == name.upper():
+            return os.path.join(folder, f)
+    return None
+
+
+def _write_texture(svr_path, png_path):
+    """Convert one .SVR to PNG. Returns False when pillow isn't installed."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return False
+    import svr
+    t = svr.load(svr_path)[0]
+    img = Image.new("RGBA", (t.width, t.height))
+    img.putdata(t.pixels())
+    img.save(png_path)
+    return True
+
+
 def cmd_obj(path, out):
     with open(path, "rb") as f:
         nf = NinjaFile(f.read())
-    lines, nv = ["# %s" % os.path.basename(path)], 0
+    names = []
+    for c in nf.chunks:
+        if c[0] == b"NSTL":
+            names = texture_names(nf, nf.main_struct(c))
+    stem = os.path.splitext(out)[0]
+    lines = ["# %s" % os.path.basename(path), "mtllib %s.mtl" % os.path.basename(stem)]
+    nv = nvt = nvn = 0
+    used = set()
     for c in nf.chunks:
         if c[0] not in OBJECT_CHUNKS:
             continue
@@ -582,21 +642,57 @@ def cmd_obj(path, out):
             if not m.batches:
                 continue
             world = bind_space(o, m.node)
-            lines.append("o mesh%d_node%d_mat%d" % (k, m.node, m.material))
+            mtl = "untextured" if m.texture is None else "tex%d" % m.texture
+            used.add(m.texture)
+            lines += ["o mesh%d_node%d_mat%d" % (k, m.node, m.material), "usemtl " + mtl]
             for b in m.batches:
                 pos = [transform(p, world) for p in b.pos] if world else b.pos
+                nrm = b.nrm
+                if world and nrm:   # rotate only: drop the translation
+                    nrm = [transform(n, (world[0], (0.0, 0.0, 0.0))) for n in nrm]
                 lines += ["v %.6f %.6f %.6f" % p for p in pos]
-                lines += ["vt %.6f %.6f" % (u, 1 - v) for u, v in b.uv] if b.uv else []
-                for a, bb, cc in strip_triangles(b):
-                    if b.uv:
-                        lines.append("f %d/%d %d/%d %d/%d" % tuple(
-                            x for i in (a, bb, cc) for x in (nv + i + 1, nv + i + 1)))
-                    else:
-                        lines.append("f %d %d %d" % (nv + a + 1, nv + bb + 1, nv + cc + 1))
+                # GS texture coordinates run top-down; OBJ's run bottom-up.
+                lines += ["vt %.6f %.6f" % (u, 1 - v) for u, v in b.uv]
+                lines += ["vn %.6f %.6f %.6f" % n for n in nrm]
+                for tri in strip_triangles(b):
+                    corners = []
+                    for i in tri:
+                        vt = str(nvt + i + 1) if b.uv else ""
+                        vn = "/%d" % (nvn + i + 1) if nrm else ""
+                        corners.append("%d/%s%s" % (nv + i + 1, vt, vn) if vt or vn else str(nv + i + 1))
+                    lines.append("f " + " ".join(corners))
                 nv += len(pos)
+                nvt += len(b.uv)
+                nvn += len(nrm)
     with open(out, "w") as f:
         f.write("\n".join(lines) + "\n")
-    print("%s: %d vertices" % (out, nv))
+
+    # Materials: one per texture index. Textures named in NSTL that sit next
+    # to the model are converted to PNG beside the .obj; the player models'
+    # kit and skin textures come from the PLAYER/ packs at run time instead.
+    mtl, folder, wrote, missing = [], os.path.dirname(os.path.abspath(path)), 0, []
+    for t in sorted(used, key=lambda v: -1 if v is None else v):
+        if t is None:
+            mtl += ["newmtl untextured", "Kd 0.8 0.8 0.8", ""]
+            continue
+        mtl += ["newmtl tex%d" % t, "Kd 1 1 1"]
+        name = names[t] if t < len(names) else None
+        src = _find_file(folder, name) if name else None
+        if src:
+            png = "%s_%s.png" % (os.path.basename(stem), os.path.splitext(name)[0])
+            if _write_texture(src, os.path.join(os.path.dirname(os.path.abspath(out)), png)):
+                mtl.append("map_Kd " + png)
+                wrote += 1
+            else:
+                mtl.append("# %s: install pillow to convert it" % name)
+        else:
+            mtl.append("# texture %s not found next to the model" % (name or "#%d (no NSTL)" % t))
+            missing.append(name or "#%d" % t)
+        mtl.append("")
+    with open(stem + ".mtl", "w") as f:
+        f.write("\n".join(mtl) + "\n")
+    print("%s: %d vertices, %d textures written%s" % (
+        out, nv, wrote, ", not found: " + " ".join(missing) if missing else ""))
 
 
 def main(argv):
