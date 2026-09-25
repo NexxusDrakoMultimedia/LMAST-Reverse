@@ -9,8 +9,14 @@ The container carries no column types; each table is just
 `size` bytes cut into `line_size`-byte rows. Row schemas live in the
 game code that consumes each table.
 
+The commentary files (GAME/*.BCR, *.BCB, and the start of SOUNDDAT.PAC)
+reuse the TBB1 container for other table types: BCR2 and BCB3 share the
+{magic, data_offset, size, u32} header but the last field is not a line
+size (see DOC/GAME_DIR.md). Those are listed with their magic and dumped
+as raw hex.
+
 Usage:
-    python tbb.py info    <file.TBB | dir> ...
+    python tbb.py info    <file.TBB|.BCR|.BCB | dir> ...
     python tbb.py dump    <file.TBB> [table_index] [--rows N]
     python tbb.py extract <file.TBB> <out_dir>
 """
@@ -23,8 +29,9 @@ TBL_MAGIC = b"TBL1"
 
 
 class Table:
-    def __init__(self, index, offset, data_offset, size, line_size, data):
+    def __init__(self, index, offset, data_offset, size, line_size, data, magic=TBL_MAGIC):
         self.index = index
+        self.magic = magic              # TBL1, or BCR2/BCB3 in the commentary files
         self.offset = offset            # of the TBL1 header, from file start
         self.data_offset = data_offset  # relative to the TBL1 header
         self.size = size
@@ -34,7 +41,9 @@ class Table:
     @property
     def row_count(self):
         # Matches GetDataTableCount: integer size / line_size.
-        return self.size // self.line_size if self.line_size else 0
+        if self.magic != TBL_MAGIC or not self.line_size:
+            return 0
+        return self.size // self.line_size
 
     def rows(self):
         n = self.line_size
@@ -50,10 +59,10 @@ def parse(buf):
     tables = []
     for i, ofs in enumerate(offsets):
         tmagic, data_ofs, size, line_size = struct.unpack_from("<4sIII", buf, ofs)
-        if tmagic != TBL_MAGIC:
+        if not (tmagic.isalnum() and tmagic.isascii()):
             raise ValueError("table %d at %#x: bad magic %r" % (i, ofs, tmagic))
         start = ofs + data_ofs
-        tables.append(Table(i, ofs, data_ofs, size, line_size, buf[start:start + size]))
+        tables.append(Table(i, ofs, data_ofs, size, line_size, buf[start:start + size], tmagic))
     return total, tables
 
 
@@ -67,7 +76,7 @@ def _iter_paths(args):
         if os.path.isdir(a):
             for root, _, files in os.walk(a):
                 for name in sorted(files):
-                    if name.upper().endswith(".TBB"):
+                    if name.upper().endswith((".TBB", ".BCR", ".BCB")):
                         yield os.path.join(root, name)
         else:
             yield a
@@ -78,6 +87,10 @@ def cmd_info(paths):
         total, tables = load(path)
         print("%s  tables=%d  total=%#x" % (path, len(tables), total))
         for t in tables:
+            if t.magic != TBL_MAGIC:
+                print("  [%3d] @%#07x  size=%6d  %s  field@0xC=%d" % (
+                    t.index, t.offset, t.size, t.magic.decode(), t.line_size))
+                continue
             rem = t.size % t.line_size if t.line_size else 0
             print("  [%3d] @%#07x  size=%6d  line=%4d  rows=%5d%s" % (
                 t.index, t.offset, t.size, t.line_size, t.row_count,
@@ -93,8 +106,13 @@ def cmd_dump(path, index=None, max_rows=None):
     for t in tables:
         if index is not None and t.index != index:
             continue
-        print("== table %d: %d rows x %d bytes" % (t.index, t.row_count, t.line_size))
-        for r, row in enumerate(t.rows()):
+        if t.magic != TBL_MAGIC:
+            print("== table %d: %s, %d bytes (raw)" % (t.index, t.magic.decode(), t.size))
+            rows = (t.data[i:i + 16] for i in range(0, t.size, 16))
+        else:
+            print("== table %d: %d rows x %d bytes" % (t.index, t.row_count, t.line_size))
+            rows = t.rows()
+        for r, row in enumerate(rows):
             if max_rows is not None and r >= max_rows:
                 print("  ...")
                 break
@@ -107,7 +125,10 @@ def cmd_extract(path, out_dir):
     base = os.path.splitext(os.path.basename(path))[0]
     os.makedirs(out_dir, exist_ok=True)
     for t in tables:
-        out = os.path.join(out_dir, "%s_%03d_L%d.bin" % (base, t.index, t.line_size))
+        if t.magic == TBL_MAGIC:
+            out = os.path.join(out_dir, "%s_%03d_L%d.bin" % (base, t.index, t.line_size))
+        else:
+            out = os.path.join(out_dir, "%s_%03d_%s.bin" % (base, t.index, t.magic.decode()))
         with open(out, "wb") as f:
             f.write(t.data)
         print(out)
