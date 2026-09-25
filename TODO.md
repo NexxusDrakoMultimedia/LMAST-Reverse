@@ -66,9 +66,8 @@ hold (player models, faces, edit/uniform data) is undocumented.
       keep scanning, like the other tools
 - [x] `regress.py` checks `evsdatabin.py --text MES.PAC` for all three tables
       (2,879 message references, all resolved)
-- [ ] `sles_disasm.py`: label the 169 `jal 0` calls (and the HI16/LO16/32
-      sites) with their import names from the relocation table at
-      `0x4a1420` (`DOC/SNR2_FORMAT.md`), like `snr2.py dis` does for overlays
+- [x] `sles_disasm.py` labels the 323 relocated sites (169 `jal 0`,
+      HI16/LO16, data words) with their import names; `relocs` lists them
 - [ ] `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105: 143-byte tables whose record size
       is unknown (`TBB_FORMAT.md` has "?"). The only `!!` on the disc with
       no documented cause

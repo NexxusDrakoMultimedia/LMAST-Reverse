@@ -108,7 +108,14 @@ at `0x11e138`, `0x11e180` and `0x11e198` call symbols `0x3b12`
 (see [`MBB_FORMAT.md`](MBB_FORMAT.md#reactions-esc-0xc3)).
 
 The layout is **empirical**. The type-4 check and those three call sites,
-each matching its argument setup, are the evidence.
+each matching its argument setup, are the evidence. Every relocation
+targets an import (222 imports, 323 sites). The 130 `R_MIPS_32` sites
+start with a table of overlay module entry points in `.data` (`0x34d5f8`…:
+`pSetupTest3DModule`, `pSetupModelViewerModule`, ...).
+
+`python SRC/sles_disasm.py ISO/SLES_541.51 relocs [name ...]` lists them,
+and `dis`/`addr` label each site: `jal 0 <name>`, and `; %hi(name)` /
+`; %lo(name)` on the halves of an address.
 
 ## Local relocations (packed)
 

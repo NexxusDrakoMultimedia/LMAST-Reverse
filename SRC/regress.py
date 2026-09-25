@@ -55,6 +55,7 @@ def checks():
          ["DAT/EVENT/EVENTDATA_TURN.TBB"]),
         ("sles_syms", ["sles_disasm.py", "ISO/SLES_541.51", "syms", "CMsgSubCategory"],
          ["ISO/SLES_541.51"]),
+        ("sles_relocs", ["sles_disasm.py", "ISO/SLES_541.51", "relocs"], ["ISO/SLES_541.51"]),
     ]
     mes = "DAT/MESSAGE/MES.PAC"
     for kind in ("EVENT", "NEWS", "MAIL"):

@@ -7,19 +7,31 @@ script scans for those entries (name pointer into .sndata at the start
 of a string, address inside .text) and uses them to label a capstone
 disassembly.
 
+Calls into the overlays are `jal 0` in the file. The same table is a full
+symbol table (imports included), and a relocation table just before it
+lists every site the loader patches: {u32 site, u32 sym << 8 | type,
+u32 addend}. The disassembly labels those sites with the import's name
+(see DOC/SNR2_FORMAT.md).
+
 Note: capstone has no R5900 mode, so a few EE-specific opcodes (lq/sq,
 MMI) are shown as unrelated MSA/DSP instructions (e.g. `addu.qb`,
 `aver_u.h`). Treat those as 128-bit stack saves/loads.
 
-Requires: pip install capstone
+Requires: pip install capstone (only for `dis` and `addr`)
 
 Usage:
-    python sles_disasm.py <SLES_541.51> syms <substring> ...   # list matching symbols
-    python sles_disasm.py <SLES_541.51> dis  <substring> ...   # disassemble matching functions
-    python sles_disasm.py <SLES_541.51> addr <hex_addr> [n]    # disassemble n instructions at address
+    python sles_disasm.py <SLES_541.51> syms   <substring> ...   # list matching symbols
+    python sles_disasm.py <SLES_541.51> dis    <substring> ...   # disassemble matching functions
+    python sles_disasm.py <SLES_541.51> addr   <hex_addr> [n]    # disassemble n instructions at address
+    python sles_disasm.py <SLES_541.51> relocs [substring ...]   # sites patched to overlay imports
 """
+import bisect
+import os
 import struct
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from snr2 import name_hash  # noqa: E402
 
 
 class Elf:
@@ -83,6 +95,78 @@ def recover_symbols(elf):
     return syms
 
 
+SYM_KINDS = {1: "import", 2: "export", 3: "weak", 4: "abs"}
+R_32, R_26, R_HI16, R_LO16 = 2, 4, 5, 6
+REL_TYPES = {R_32: "WORD", R_26: "J26", R_HI16: "HI16", R_LO16: "LO16"}
+
+
+class Links:
+    """The .sndata symbol table and the relocation table before it.
+
+    symbols[i] = (name, value, kind); symbol 0 is null. relocs maps each
+    patched site to (type, symbol index, addend)."""
+
+    def __init__(self, elf):
+        self.symbols, self.relocs = [], {}
+        self.symtab_addr = self.reloc_addr = None
+        start = self._find_symtab(elf)
+        if start is None:
+            return
+        d = elf.data
+        o = elf.v2f(start)
+        while True:
+            name_ptr, value, hk = struct.unpack_from("<3I", d, o + 12 * len(self.symbols))
+            if self.symbols and not self._valid(elf, name_ptr, hk):
+                break
+            name = elf.cstr(name_ptr) if self.symbols else ""
+            self.symbols.append((name, value, hk >> 16))
+        # Walk back over {site, sym << 8 | type, addend} while they make sense.
+        o -= 12
+        while o >= 0:
+            site, info, addend = struct.unpack_from("<3I", d, o)
+            t, s = info & 0xFF, info >> 8
+            if t not in REL_TYPES or not 0 < s < len(self.symbols) or elf.v2f(site) is None:
+                break
+            self.relocs[site] = (t, s, addend)
+            o -= 12
+        self.symtab_addr = start
+        self.reloc_addr = elf.f2v(o + 12)
+
+    @staticmethod
+    def _valid(elf, name_ptr, hk):
+        s = elf.cstr(name_ptr, 1024)
+        return bool(s) and name_hash(s) == (hk & 0xFFFF)
+
+    def _find_symtab(self, elf):
+        """Start of the longest run of hash-valid 12-byte entries in
+        .sndata, minus one entry for the null symbol 0."""
+        lo, size = elf.sections[".sndata"]
+        d, base = elf.data, elf.v2f(lo)
+        words = struct.unpack_from("<%dI" % (size // 4), d, base)
+        best, i = (0, None), 0
+        while i + 2 < len(words):
+            if lo <= words[i] < lo + size and self._valid(elf, words[i], words[i + 2]):
+                j = i
+                while j + 2 < len(words) and lo <= words[j] < lo + size \
+                        and self._valid(elf, words[j], words[j + 2]):
+                    j += 3
+                if (j - i) // 3 > best[0]:
+                    best = ((j - i) // 3, lo + 4 * i - 12)
+                i = j
+            else:
+                i += 1
+        return best[1]
+
+    def label(self, site):
+        """'name' / 'name+0x10' for a relocated site, else None."""
+        r = self.relocs.get(site)
+        if r is None:
+            return None
+        t, s, addend = r
+        name = self.symbols[s][0]
+        return name + ("+%#x" % addend if addend else "")
+
+
 _GPR = ["zero", "at", "v0", "v1", "a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3",
         "t4", "t5", "t6", "t7", "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
         "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"]
@@ -104,9 +188,10 @@ class _RawInsn:
 
 
 class Disassembler:
-    def __init__(self, elf, syms):
+    def __init__(self, elf, syms, links=None):
         from capstone import Cs, CS_ARCH_MIPS, CS_MODE_MIPS64, CS_MODE_LITTLE_ENDIAN
         self.elf = elf
+        self.links = links
         self.md = Cs(CS_ARCH_MIPS, CS_MODE_MIPS64 | CS_MODE_LITTLE_ENDIAN)
         self.by_addr = {}
         for name, addr in syms.items():
@@ -125,9 +210,18 @@ class Disassembler:
 
     def _fmt(self, i):
         ops = i.op_str
+        # A relocated site is patched at load time; its name beats the
+        # placeholder operand (`jal 0`, `lui $x, 0`).
+        label = self.links.label(i.address) if self.links else None
         if i.mnemonic in ("jal", "j"):
-            ops += " <%s>" % self.by_addr.get(int(ops, 16), "?")
-        return "  %08x: %-8s %s" % (i.address, i.mnemonic, ops)
+            ops += " <%s>" % (label or self.by_addr.get(int(ops, 16), "?"))
+            label = None
+        line = "  %08x: %-8s %s" % (i.address, i.mnemonic, ops)
+        if label:
+            t = self.links.relocs[i.address][0]
+            note = {R_HI16: "%%hi(%s)", R_LO16: "%%lo(%s)"}.get(t, "%s") % label
+            line = "%-50s ; %s" % (line, note)
+        return line
 
     def function(self, addr, max_insns=400):
         """Disassemble until `jr $ra` plus its delay slot."""
@@ -144,7 +238,7 @@ class Disassembler:
 
 
 def main(argv):
-    if len(argv) < 4:
+    if len(argv) < 3 or (argv[2] != "relocs" and len(argv) < 4):
         print(__doc__)
         return 1
     elf = Elf(argv[1])
@@ -155,7 +249,7 @@ def main(argv):
             if any(p in name for p in args):
                 print("%#x %s" % (addr, name))
     elif cmd == "dis":
-        dis = Disassembler(elf, syms)
+        dis = Disassembler(elf, syms, Links(elf))
         for pat in args:
             for name, addr in sorted(syms.items()):
                 if pat in name:
@@ -163,7 +257,23 @@ def main(argv):
                     dis.function(addr)
     elif cmd == "addr":
         count = int(args[1]) if len(args) > 1 else 64
-        Disassembler(elf, syms).range(int(args[0], 16), count)
+        Disassembler(elf, syms, Links(elf)).range(int(args[0], 16), count)
+    elif cmd == "relocs":
+        links = Links(elf)
+        if not links.symbols:
+            raise SystemExit("%s: no .sndata symbol table found" % argv[1])
+        by_addr = sorted((a, n) for n, a in syms.items())
+        starts = [a for a, _ in by_addr]
+        print("symbols @%#x: %d, relocations @%#x: %d" % (
+            links.symtab_addr, len(links.symbols), links.reloc_addr, len(links.relocs)))
+        for site, (t, s, addend) in sorted(links.relocs.items()):
+            name, _, kind = links.symbols[s]
+            if args and not any(p in name for p in args):
+                continue
+            j = bisect.bisect_right(starts, site) - 1
+            where = "%s+%#x" % (by_addr[j][1], site - by_addr[j][0]) if j >= 0 and t != R_32 else ""
+            print("%#08x %-4s %-6s %s  %s" % (
+                site, REL_TYPES[t], SYM_KINDS.get(kind, kind), links.label(site), where))
     else:
         print(__doc__)
         return 1

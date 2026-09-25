@@ -66,11 +66,12 @@ with, for example, `python SRC/tbb.py info DAT | grep '!!'`.
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`sles_disasm.py`](SRC/sles_disasm.py) | `ISO/SLES_541.51` | recovers about 12,600 symbol names from the `.sndata` export table and disassembles with labels |
+| [`sles_disasm.py`](SRC/sles_disasm.py) | `ISO/SLES_541.51` | recovers about 12,600 symbol names from the `.sndata` export table and disassembles with labels, naming the 323 sites that call or reference overlay code (`relocs`) |
 | [`snr2.py`](SRC/snr2.py) | `ISO/DLL/*.REL` | parses the SN Systems overlays: header, symbols, relocations, xrefs, annotated disassembly |
 
 ```bash
 python SRC/sles_disasm.py ISO/SLES_541.51 dis TblData
+python SRC/sles_disasm.py ISO/SLES_541.51 relocs Talk_
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 12e000 40 --sles ISO/SLES_541.51
 ```
 
