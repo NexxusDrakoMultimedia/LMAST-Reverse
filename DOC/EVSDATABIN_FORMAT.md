@@ -26,6 +26,20 @@ shows them with imports resolved.
 - **IDs.** An event ID is `type << 24 | index`. `0x12e8f8`/`0x12e908`/`0x12e918`
   test `id >> 24 == 1/2/3`. `0x12dff0` builds `index | 0x01000000`.
   `EVS::GetEventName` just formats the full ID with `"%08x"`.
+  The function at `0x12b580` (unnamed, after `EVS::CEvsManager::Req`)
+  switches on the type byte (jump
+  table `0x238860`): 1 EVENT (factory `0x12d758`), 2 MAIL (`0x128c48`),
+  3 NEWS (`0x12c4a0`), and 4 for "procedures" that have no table record
+  (`0x12caf0`, below). Type 0 does nothing.
+- **Procedures (type 4).** `0x12caf0` builds one class per index 9–29
+  (`index − 9` into the jump table `0x238970`). They're the transfer,
+  scouting and loan procedures. Each constructor registers related MAIL
+  records through `0x124f50` (e.g. 10, 11, 13 → MAIL 420–423 "Player
+  acquisition to cancel", 12 → MAIL 400 "Negotiating players", 14–17 →
+  "Player acquisition report", 27 → MAIL 362 "Loaning player
+  negotiation", 29 → MAIL 356 "Contacting other club players").
+  Procedure 27, and by the position of the call sites 10–17, start a Move
+  talk: talk type 1, the face-to-face transfer negotiation.
 - **Getters.** Each getter masks the ID to 24 bits and clamps it with
   `0x12e1e0`: negative or `>= count` becomes 0. Then it returns
   `EvsWork[slot] + index * size`. The clamp limits (`0x17e`, `0x170`,
@@ -180,7 +194,7 @@ meanings are from the records' dialogue):
 | 2, 3, 7 | StaffRetire talk (type 8). 2 and 7 require byte `+0x27` = `0x12` / `0x11` | 50, 49, 51: "{visitor} is here…" |
 | 4, 6 | Withdraw talk (type 4). 6 requires `+0x27` = `0x0d` | 57, 56 |
 | 5 | PlayerRetire talk (type 9). Requires `+0x27` = `0x0d` | 48 |
-| 8, 10, 13, 28 | open Talk (31) with whatever talk type is already set. For 58 and 61 (handler types 10 and 13) the handler's constructor (`0x134198`) sets 6, PromiseLv2. For the others, nothing traced sets one, so it's probably 0, Normal | 53, 55, 58, 61, 372 |
+| 8, 10, 13, 28 | open Talk (31) with whatever talk type is already set. For 58 and 61 (handler types 10 and 13) the handler's constructor (`0x134198`) sets 6, PromiseLv2. For the others it's 0, Normal: none of the 11 `jmTalk_SetTalkType` calls is on their path | 53, 55, 58, 61, 372 |
 | 9 | reset `EvsWork+0x1ec`–`+0x200`, then open Talk | 54 |
 | 11 | open PlayerEdit (63) | 52 (`+0xe8`, after Yes): "We currently don't have any edited players…" |
 | 12, 14 | PromiseResult talk (type 7). Requires `+0x27` = `0x27`. Unless the event is record 63 / 62, `0x12eef8(+0x2a)` must succeed first | 60, 63 / 59, 62: "{visitor} is here… He doesn't look happy." |
@@ -211,8 +225,11 @@ and builds a manager through the jump table at `0x2150e0`:
 | 9 | `CTalkPlayerRetire` | sitting, standing on one path |
 | 10 and up | none | |
 
-Besides the scene types above, two places in the event code (`0x125974`,
-`0x128790`) set type 1, and handler types 10 and 13 set 6. The talk text
+All 11 calls of `jmTalk_SetTalkType` are accounted for: 8 in the
+scene-type switch, 1 in handler types 10 and 13 (type 6), and 2 in the
+type-4 transfer procedures (type 1: `0x128790`, a method in procedure
+27's vtable `0x20a878`, and the helper `0x1258e8`, whose 8 call sites lie
+among the methods of procedures 10–17). The talk text
 comes from the matching `PRELOAD/TALK_*.PAC` packs (for example
 `TALK_PROMISE_RESULT*.PAC`, categories 1150–1154).
 
