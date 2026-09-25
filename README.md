@@ -156,6 +156,12 @@ python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN mail.csv --text DAT/MESSA
 With `--text`, each message reference (event dialogue, news headline and
 body, mail sender/subject/body) gets a column with its text from `MES.PAC`.
 
+The tables aren't the whole event system. Scouting, transfers and loans run
+as code-only "procedures" that send MAIL records; see
+[`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md). What an EVENT does after its
+dialogue (open a screen, start a talk, chain another event) is its scene
+type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
+
 ## How the tools fit together
 
 - `csp.py` uses `svr.py` to decode the textures inside CSP packs.
@@ -191,7 +197,7 @@ workflow is:
 |---|---|
 | [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | repo layout, regenerating `DATA.ISO` |
 | [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | ROFS key recovery in PCSX2 |
-| [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format |
+| [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format, the SN DLL loader, `SLES_541.51`'s imports, which overlay each sequencer module lives in, the wild-card module |
 | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH |
 | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) | TBB1/TBL1 tables, symbol recovery from `SLES_541.51` |
 | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) | textures and GS swizzling |
@@ -201,9 +207,9 @@ workflow is:
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
 | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |
-| [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) | message text, encodings and escape codes |
-| [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md) | club-management event tables |
-| [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events) |
+| [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) | message text, encodings and escape codes, talk-scene body reactions (`{c3:N}`) |
+| [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md) | club-management event tables, event ID types, scene types (what happens after a scene), talk types |
+| [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events), scout-list search criteria, squad and loan limits, the 13 regions |
 | [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md) | the unused turn-event prototype |
 
 ## Special thanks

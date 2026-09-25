@@ -128,7 +128,42 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
 - [ ] Folder docs for `EMBLEM/`, `NEWS/`, `PRELOAD/`, `SOUND/`, `STADIUM/`,
       `SEQ/`, `ACROBATA/` and `TEST3D/`, plus a note on the `CVS/` metadata
 
-## 7. Housekeeping
+## 7. Event system and game code
+
+The event tables, the procedures and the overlay loader are documented in
+[`DOC/EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md),
+[`DOC/EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) and
+[`DOC/SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md).
+
+- [x] The SN DLL loader (`snDllLoaded`) and `SLES_541.51`'s own SNR2
+      header, import symbols and relocations
+- [x] Which overlay each of the 132 sequencer modules lives in, and the
+      overlay file table; `netprg`/`debugprg` are never loaded
+- [x] The wild-card module (70): events opening a management screen
+- [x] EVENT scene types: open a screen, start a talk, or chain an event
+- [x] Talk types → talk managers, and which events and procedures set them
+- [x] Event ID types (1 EVENT, 2 MAIL, 3 NEWS, 4 procedure) and the request
+      API
+- [x] Procedures 9–29: mails, what starts them, what follows
+- [x] Procedure 28's squad and loan limits (8 minimum, 24 maximum, 5 loans)
+- [x] Scout-list search criteria for players, youth, coaches and managers,
+      with the option texts (category 590) and the 13 region names
+- [ ] The unit of the event clock (`0x12e5a8`), so how long a procedure step
+      or a scout search takes
+- [ ] Request fields `+0x0C` (always 4 for procedure steps) and the
+      `0x12c058` argument (1, 6, 7, 8, 21)
+- [ ] How `0x260590` decides a player is available for loan
+- [ ] Which instruction-age byte is which, which tactical approach is which
+      half of the manager-style grid, and what the 25 manager styles
+      (`+0x34`) and coach kinds 5 and 6 are
+- [ ] Which screens start procedures 9, 14/16/18, 22 and 28, and how
+      procedure 9 chooses between 10 and 12
+- [ ] Where the overlay index passed to `0x10babc` comes from, and what SNR2
+      header fields `0x20`/`0x24`/`0x38` tell the caller
+- [ ] Whether anything starts module 69 (the `TESTPRG` launcher) or the test
+      modules at 71–129; their viewers could be useful for modding
+
+## 8. Housekeeping
 
 - [x] Regression check: `SRC/regress.py` runs every tool's `info` over `DAT/`
       and fails on any difference from a saved baseline
