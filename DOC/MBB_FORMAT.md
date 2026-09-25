@@ -148,12 +148,25 @@ The category number says roughly what a file contains (English samples):
 | 35000–35999 | 296 | scripted event dialogue (secretary, salesmen, players), likely what the `EvsDataBin` event tables trigger |
 | 36000–36030 | 31 | season-result speeches |
 | 40000 | 1 | tournament information pages |
-| 50563, 50832, 50833 | 3 | template strings built only from variables (`W{var:...}`) |
+| 50563, 50832, 50833 | 3 | variable lists for the mail/news text in 563/832/833 (see below) |
 | 80000, 90000 | 2 | scout/transfer report text, mail prompts |
 | 100001–120000 | 9 | variants of categories 1, 3, 6, 9, 11, 960, 961, 10000, 20000 with the same ids: mostly identical, but e.g. `100009` has upper-case league names and `120000` longer item names |
 
 Category 100's English file actually holds French text ("Voulez-vous
 personnaliser votre club ?").
+
+## Message references
+
+Game data refers to a message with a u32 `category << 16 | id`. The
+`EvsDataBin` tables use it for event dialogue (EVENT `+0x64`, whole
+category), newspaper articles (NEWS `+0x64`/`+0x6c`, categories 832/833)
+and mail (MAIL `+0x10`…`+0x24`, category 563). See
+[`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md).
+
+Categories `50563`, `50832` and `50833` mirror `563`, `832` and `833` id for
+id, but each message there is just `W` followed by the variables the real
+message uses (`W{var:1:3}{var:1:3}`). They're the lists the game uses to
+fill variables (`MakeVarList`).
 
 ## Open questions
 
@@ -161,6 +174,4 @@ personnaliser votre club ?").
   resolve. Its values (0–12) look like a pose or animation index.
 - Which variable ids each category defines, and how they're filled (the
   `Msg::VarBuf_*` functions at `0x11e7f0`… cover the global ones).
-- How `EvsDataBin` NEWS/MAIL/EVENT records name their message category and id
-  (see [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)).
 - Which screens use the `1000xx` variant categories instead of the originals.

@@ -34,6 +34,10 @@ shows them with imports resolved.
   out-of-range IDs fall back to.
 - **`+0x00`** of every record is its own index (true for all records in
   all three files).
+- **Message references.** Text is referenced by a u32
+  `category << 16 | id` into `MESSAGE/MES.PAC` (see
+  [`MBB_FORMAT.md`](MBB_FORMAT.md)). Every non-zero reference in all three
+  files resolves to an existing message.
 - **Weight.** `0x12b0b8` returns the "weight" of any event by type:
   EVENT `+0x6c`, MAIL `+0x5c`, NEWS `+0x78`, default 100.
 
@@ -55,7 +59,7 @@ the value distribution only.
 | `0x18` | u32 | second actor? | confirmed: indexes the flag table at `0x23a428` (same call) | 0–123 |
 | `0x1c` | u32 | ? | data | 0–18 |
 | `0x24`–`0x5c` | 5 × {u32, u32, u32} | ? | data | five groups at `0x24`/`0x30`/`0x3c`/`0x48`/`0x54`: (0–322, {0,2,46,47}, 0 or ~2000/3000/4000) |
-| `0x64` | u32 | ? | data | high halfword looks like a hash (`0x8b62`…) |
+| `0x64` | u32 | dialogue (message ref) | confirmed: `0x1393d0` fetches the record with the EVENT getter, copies it to the stack and stores `+0x64` in the scene object at `+0x44` (unless the object's `+0x48` overrides it) | id is always 0; category 35000–36030 in 373 records, 0 in 8 (256, 311–315, 359, 361). The whole category is the scene's script |
 | `0xe0` | u32 | scene type | confirmed: `0x12a578` returns it; `0x12a690` switches on it (29 cases) to set `jmTalk_SetTalkType` | 0–28 |
 | `0xe8`, `0xec` | u32 | scene type override A/B | confirmed: used instead of `0xe0` when the actor flag has bit `0x02`, picked by `EvsWork+0x1f8 == 1` | |
 | `0xf0`–`0x104` | 6 × u32 | scene type by variant | confirmed: used when the actor flag has bits `0x1c`, indexed by `EvsWork+0x1fc` (0–5) | |
@@ -151,10 +155,46 @@ Which handler types own these functions isn't traced yet.
   Some events are retargeted at runtime, so the file isn't the
   whole story.
 
-## NEWS and MAIL records
+### Dialogue categories
 
-These are only partly worked out so far. Like EVENT, each record starts
-with its own index, and the weight sits at NEWS `+0x78` / MAIL `+0x5c`.
+The EVENT message reference names a whole category, and the scene plays it
+from message 0. Categories are shared: records 1–47 and 366 all use
+`35682` (the tournament-start speech, with a different `actor2` each), and
+13 records use `35511`. 39 of the 327 categories in 35000–36999 aren't
+referenced by any record (e.g. `35400`–`35402`, `35901`–`35920`,
+`36000`–`36003`). Other code may trigger them, or they may be unused.
+
+## NEWS record (192 bytes)
+
+| Offset | Type | Field | Evidence | Values |
+|---|---|---|---|---|
+| `0x00` | u32 | index | data | = record index |
+| `0x64` | u32 | article body (message ref) | confirmed: `0x14c0b0` gets the record with the NEWS getter (`0x12c458`) and reads `lhu +0x64` as a message id | category always 832 |
+| `0x6c` | u32 | headline (message ref) | confirmed: same function, `lhu +0x6c` | category always 833 |
+| `0x78` | u32 | weight | confirmed (`0x12b0b8`) | |
+
+`0x14c0b0` takes the categories from a table at `0x1d9b10` (`50833`,
+`50832`, ...) rather than from the record. `50832`/`50833` have the same
+ids as `832`/`833`, but their text only lists each message's variables
+(`W{var:1:3}{var:1:3}`), which the game uses to build variable lists. The
+readable text is in `832`/`833`. 42 records (1–15, …, 340) are placeholders
+with a label as the body (`TEXT_NP_MONTH_00`, `TEXT_NP_OFF_00`, …) and the
+headline `Dummy`. The game probably fills those in from code.
+
+## MAIL record (112 bytes)
+
+| Offset | Type | Field | Evidence | Values |
+|---|---|---|---|---|
+| `0x00` | u32 | index | data | = record index |
+| `0x10` | u32 | sender (message ref) | confirmed: `0x156da0` returns `lhu +0x10` of the current mail (MAIL getter `0x128e78`) | category 563, ids 20001–20019 (e.g. `Youth team Manager`, or `{var:1:101}`) |
+| `0x14` | u32 | recipient (message ref) | confirmed: `0x156dd0`, `lhu +0x14` | category 563, ids 20001–20008, 3 distinct (mostly 20001 = `{var:1:7}`, the player) |
+| `0x20` | u32 | subject (message ref) | confirmed: `0x156d70`, `lhu +0x20` | category 563, ids 11000–11309 |
+| `0x24` | u32 | body (message ref) | confirmed: `0x156d40`, `lhu +0x24` | category 563, ids 1000–1442 |
+| `0x5c` | u32 | weight | confirmed (`0x12b0b8`) | 100 in every record |
+
+As with NEWS, `50563` is the variable-list companion of `563`.
+
+The other NEWS and MAIL columns aren't named yet.
 
 ## Open questions
 
@@ -172,11 +212,15 @@ with its own index, and the weight sits at NEWS `+0x78` / MAIL `+0x5c`.
   (e.g. at `0x13578c`) are a lead.
 - The meaning of `date[2]` and `date[3]` in the date struct.
 - How the 48×21 pattern table is laid out.
-- The NEWS and MAIL field layouts.
+- The remaining NEWS and MAIL columns, most likely conditions like EVENT's.
+- Whether the 39 unreferenced dialogue categories are triggered elsewhere.
+- Whether the five EVENT triplets at `+0x24`–`+0x5c` hold speakers. The
+  third value matches speaker-name ids used in `ESC 0xC1` (e.g. 3110).
 
 ## Tool
 
 ```bash
 python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_EVENT.BIN events.csv   # named EVENT columns
-python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_NEWS.BIN  news.csv     # raw u32 columns
+python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_NEWS.BIN  news.csv --text DAT/MESSAGE/MES.PAC
+python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN  mail.csv --text DAT/MESSAGE/MES.PAC --lang 2
 ```

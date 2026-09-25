@@ -10,10 +10,11 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 - [x] Find the `.mbb` loader (`Msg::CMsgSubCategory::Initialize`, `0x30d1c8`)
 - [x] Write `DOC/MBB_FORMAT.md`
 - [x] Add `SRC/mbb.py` with `info`, `dump` and `csv`
-- [ ] Link message categories/ids into `evsdatabin.py` output. The event
-      dialogue is in categories 35000–35999; find how EVENT/NEWS/MAIL records
-      point at them
-- [ ] Name the NEWS and MAIL columns in `DOC/EVSDATABIN_FORMAT.md`
+- [x] Link messages into `evsdatabin.py` output (`--text`). Message refs are
+      `category << 16 | id`: EVENT `+0x64`, NEWS `+0x64`/`+0x6c`, MAIL
+      `+0x10`/`+0x14`/`+0x20`/`+0x24`
+- [ ] Name the remaining NEWS and MAIL columns in `DOC/EVSDATABIN_FORMAT.md`
+- [ ] Find what triggers the 39 dialogue categories no EVENT record uses
 - [ ] Work out `ESC 0xC3` (values 0–12, maybe a pose/animation)
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)
 - [ ] Check whether raw `0x0A`/`0x0D` bytes affect display

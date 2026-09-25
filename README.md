@@ -140,7 +140,11 @@ Both write CSV to a file, or to stdout if no output path is given:
 
 ```bash
 python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_EVENT.BIN event.csv
+python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN mail.csv --text DAT/MESSAGE/MES.PAC
 ```
+
+With `--text`, each message reference (event dialogue, news headline and
+body, mail sender/subject/body) gets a column with its text from `MES.PAC`.
 
 ## How the tools fit together
 
