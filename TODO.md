@@ -40,11 +40,25 @@ hold (player models, faces, edit/uniform data) is undocumented.
 
 ## 4. Music and sound effects
 
-- [ ] `SOUND/MAP*.DAT`, `EVENT_SE.DAT`, `SYS_SE.DAT`, `PACK0.DAT`: check
-      whether they are `ps2_DTPK` banks `sounddat.py` can already decode
+- [x] `SOUND/*.DAT` (all 28 files) are each one `ps2_DTPK` bank covering the
+      whole file; `sounddat.py dtpk` parses them all
+- [ ] Listen to the decoded WAVs to confirm the audio is right, and document
+      `SOUND/` (which scene each `MAP01`–`MAP23` belongs to; `MAP11`–`MAP23`
+      hold only 2 samples each)
+- [ ] Add `sounddat.py dtpk` over `SOUND/*.DAT` to `regress.py`
 - [ ] `.SQB` sequences (19 files in `SEQ/`)
 
 ## 5. Housekeeping
 
 - [x] Regression check: `SRC/regress.py` runs every tool's `info` over `DAT/`
       and fails on any difference from a saved baseline
+- [x] One problem marker (`!!`) in every `info`; `regress.py` lists appeared
+      and vanished `!!` lines, and both need review
+- [ ] `mbb.py info` and `pac.py info` still abort on a truncated file
+      (`struct.error`). Report it as `!!` and keep scanning, like `tbb`,
+      `csp`, `svr` and `zbf`
+- [ ] Add a `regress.py` check for `evsdatabin.py --text MES.PAC`, so the
+      message link is covered (currently only the raw CSVs are)
+- [ ] `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105: 143-byte tables whose record size
+      is unknown (`TBB_FORMAT.md` has "?"). The only `!!` on the disc with
+      no documented cause

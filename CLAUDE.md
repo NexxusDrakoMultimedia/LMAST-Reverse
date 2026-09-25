@@ -76,8 +76,9 @@ Commits usually add a doc and its tool together, with messages like
   (`dump`, `extract`, `png`, ...) let errors propagate.
 - The CSV exporters (`evsdatabin.py`, `eventdata_turn.py`) write data to
   stdout and have no `info`, so they don't use `!!`. `evsdatabin.py` raises
-  if a file isn't a whole number of records. `eventdata_turn.py` ignores the
-  table's 10 trailing bytes, which `tbb.py info` reports.
+  if a file isn't a whole number of records. `eventdata_turn.py` reads
+  281-byte records (61,258 = 281 × 218). The 10 trailing bytes that
+  `tbb.py info` reports are only left over at the table's line size of 32.
 - Tools reuse each other through sibling imports (`from pac import BinPac`,
   `import svr`, `import tbb`). These work because the script's directory is
   on `sys.path`. Reuse `pac.py` for BINPAC/KC@P/PRS, `tbb.py` for TBB1/TBL1
