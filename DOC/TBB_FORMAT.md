@@ -76,18 +76,19 @@ the size of the record the consumer actually walks:
 
 | File | Line size | Observed record | Notes |
 |------|-----------|-----------------|-------|
-| `EVENT/EVENTDATA_TURN.TBB` | 32 | **281** bytes (61258 = 281 × 218) | packed struct of char[16]/char[32] names + flags; 32 = widest field |
+| `EVENT/EVENTDATA_TURN.TBB` | 32 | **281** bytes (61258 = 281 × 218) | packed struct of strings up to char[64] + a u8; unused by the game. See [EVENTDATA_TURN.md](EVENTDATA_TURN.md) |
 | `0SYSTEM/MSGCOMMON.TBB` t1/t2 | 32 / 24 | 64 / 48 | rows alternate name / 3-letter abbreviation (`ENGLAND`, `ENG`, ...) |
 | `PARAM/TEAM_INIT_DATA.TBB` | 4 | 24, 144, 72, 16 ... | tables of u32 fields |
 | `PARAM/REGULATION.TBB` | 2 | 120 | u16 fields |
 | `STADIUM/AUD_JAM_HI.TBB` | 8 | 10 (110 = 11 × 10) | u16 values, 1024 = 1.0 fixed point; 6 bytes left over at line size 8 |
 | `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105 | 12 | ? | 143 bytes, not a multiple of 12 |
 
-So in practice the line size looks like "the widest field / element
-the source-sheet column was declared with": for single-type tables it's
-the element size, for string tables it's the string width, and for
-mixed structs it's the widest member. The `PXPlusPutXlsFuncTbl` symbol
-hints these were exported from Excel sheets by an in-house tool.
+For single-type tables the line size is usually the element size, and
+for string tables the string width. It is *not* reliably the widest
+member of a mixed struct: EVENTDATA_TURN has a char[64] field under a
+line size of 32. Treat it as an exporter hint, not a schema. The
+`PXPlusPutXlsFuncTbl` symbol hints these were exported from Excel sheets
+by an in-house tool.
 
 ## Files that load them
 
