@@ -145,10 +145,74 @@ symbol names:
 | `0x15b590` | `snDllUnload` | calls the destructors at `0x1C`, then `0x15b370` and `0x15acd8` (not traced) and `snDllCacheFlush` |
 | `0x15b6b0`, `0x15b828` | `snDllMove`, `snDllGetFunctionAddress` | not traced |
 
-The game's side is `FC_EURO_FILE_RESOURCE::CFcEuro_FileResource::SetupDll`
-(`0x10dd08`). Local relocation types 0–3 are the four cases of the
+Local relocation types 0–3 are the four cases of the
 loader's switch on `code & 3` (type 0 is passed on as ELF type 6,
 `R_MIPS_LO16`), which matches the table below.
+
+## Which overlay the game loads
+
+**Overlay files (confirmed).** The code at `0x10babc` (in the sequencer,
+after `FC_EURO_EVCOM::CFcEuro_SeqSub::GetBranch`) takes an overlay index
+0–7 (it rejects 8 and above) and reads row `index × 24` of a table at
+`0x34da18`:
+
+| Index | File | `+0x08` | `+0x10` | `+0x14` |
+|---|---|---|---|---|
+| 0 | `simprg.rel` | 1 | 2 | 5 |
+| 1 | `gameprg.rel` | 1 | 2 | 5 |
+| 2 | `movieprg.rel` | 1 | 3 | 0 |
+| 3 | `saveprg.rel` | 1 | 3 | 0 |
+| 4 | `ceditprg.rel` | 1 | `0x40000003` | 0 |
+| 5 | `vsprg.rel` | 1 | 3 | 0 |
+| 6 | `yrstprg.rel` | 1 | `0x40000003` | 0 |
+| 7 | `testprg.rel` | 1 | 3 | 0 |
+
+Each row is `{u32 5, char* file, u32, u32 0, u32, u32}`, ending with a
+`{0, -1}` row. `+0x00`, `+0x04`, `+0x08` and `+0x10` go to the
+`CFcEuro_FileResource` constructor (`0x10cdb0`). When `+0x14` is positive,
+`fcEuro_ReflashHeapBlock(+0x14)` runs first. The meanings of those three
+fields aren't traced. Once the file is read,
+`CFcEuro_FileResource::SetupDll` (`0x10dd08`) calls
+`snDllLoaded(buffer, NULL)` and sets the resource's state byte `+0x124`
+to 7 if it fails. `netprg.rel` and `debugprg.rel` aren't in the table,
+and no module uses them, so the retail game never loads them.
+
+**Modules (confirmed).** Every screen or mode is a sequencer module
+started with
+`FC_EURO_MODULE::fcEuroModule_Entry(eMODULE id, setup function, priority, …)`
+(`0x10eea0`). The code at `0x10b198` looks the id up in three tables of
+`{u32 setup function, u32 priority}`:
+
+| Module ids | Table | Entries |
+|---|---|---|
+| 0–69 | `0x34d7e8 + 8 × id` | 70 |
+| 70 | "wild card": `fcEuroModule_GetWildCardModule` returns the real id, which indexes the first table | |
+| 71–129 (`0x47`–`0x81`) | `0x34d5f8 + 8 × (id − 0x47)` | 59 |
+| 171–173 (`0xab`–`0xad`) | `0x34d7d0 + 8 × (id − 0xab)` | 3 |
+
+The setup functions are imports, filled in by the executable's `R_MIPS_32`
+relocations, so each id's overlay is the one that exports its setup
+function. Every one resolves (`python SRC/sles_disasm.py
+ISO/SLES_541.51 relocs pSetup`):
+
+| Overlay | Module ids |
+|---|---|
+| `SLES_541.51` | 0, 1 Dummy |
+| `SIMPRG` (58) | 3 MatchResult, 8 Office, 9 ClubHouse, 10 OwnerRoom, 11 Information, 12 BGControl, 13 SideMenu, 14 Event, 15 PersonnelAffairsMenu, 20 UniformEdit, 22 MeetingPlayer, 23 MeetingStaff, 24 SimRoot, 25 Practice, 26 Tactics, 28 SelectSecretary, 31 Talk, 33 SeasonEnd, 34 MonthEnd, 35 MatchMenu, 36 PlayAcrobata, 37–38 ScoutingMenu, 39 Schedule, 40 PublicRelations, 41 News, 42 Institution, 43 Mail, 50 Youth, 51 SelectCaptain, 52 GameIncome, 53 PracticeExecute, 54 SelectUniformNumber, 55 Sponsor, 56 Account, 57 Business, 59 Option, 61 TicketSet, 62 Broadcast, 64 ManaPlan, 66 ForcedDismissPlayer; also 83 PersonalAffairs, 124 Goods, and repeats 75, 79, 86, 92, 98–100, 102, 109–112, 118, 120, 121 |
+| `GAMEPRG` (4) | 6 Game, 171 StadiumViewer, 172 Game, 173 ShimizuTest |
+| `MOVIEPRG` (4) | 29 SelectLanguage, 30 SelectVideoMode, 44 Logo, 45 Title |
+| `SAVEPRG` (8) | 47 Load, 48 Save, 65 BootCheck, 67 NewGameInstall, 68 CheckActionPlayerData, 125 Hdd, 126 HddUtil, 127 BootCheck |
+| `CEDITPRG` (15) | 2 HomeSelect, 4 SelectTeamColor, 5 SelectTeamStyle, 7 CheckClubEdit, 16 OwnerNameEntry, 17 ClubEditMenu, 18 EmblemEdit, 19 FlagEdit, 21 TeamNameEntry, 27 InitialPersonnelAffairs, 49 ClubEditBG, 85, 87, 88, 91 |
+| `VSPRG` (2) | 58 VSModeRegulation, 60 VSModeScheduleTop |
+| `YRSTPRG` (5) | 32 StaffContract, 46 PlayerContract, 63 PlayerEdit, 105, 115 |
+| `TESTPRG` (34) | 69 Launcher, 71 BpinfoCheck, 72 Test3D, 73 ModelViewer, 74 TestCse, and developer tests such as 76 InoueTest, 77 SakaueTest, 89 SugioTest, 93 SeasonEndTest, 104 CharacterViewer, 107 AcrobataViewer, 113 CseViewer, 128 UniformViewer, 129 TalkCheck |
+
+Ids 0–68 are the game's own screens, and 69 is the `TESTPRG` launcher. Of
+71–129, 33 are test and viewer modules and 22 repeat the setup function of
+a module in 0–68 (for example 75 BGControl and 92 Talk). Four (83
+PersonalAffairs, 124 Goods, 125 Hdd, 126 HddUtil) are used only in this
+range. The priority is 1 for 128 entries, 2
+for the Dummy modules and 0 for both BGControl entries.
 
 ## Local relocations (packed)
 
@@ -205,7 +269,10 @@ site's resolved target.
 
 - What `0x38` is for, and what `0x20`/`0x24` tell the caller. All three
   are offsets equal to `0x34` in every file.
-- How `SetupDll` (`0x10dd08`) picks which overlay to load, and whether it
-  uses the module entry-point table at `0x34d5f8`.
+- Where the overlay index passed to the loading code at `0x10babc` comes
+  from, and so which modules load which overlay at runtime. The module
+  table gives the static answer.
+- What the overlay table's `+0x08`, `+0x10` (bit 30 set for `ceditprg` and
+  `yrstprg`) and `+0x14` fields mean.
 - Local functions have no names; only exports and the call sites of imports
   do.
