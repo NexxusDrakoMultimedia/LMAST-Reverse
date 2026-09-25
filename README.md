@@ -1,4 +1,4 @@
-# LMAST-Reverse
+# Let's Make A Soccer Team Reverse Engineering Project
 
 Reverse-engineering notes and tools for the PAL PS2 release of
 **Let's Make a Soccer Team!** (`SLES_541.51`).
