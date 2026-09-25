@@ -177,13 +177,13 @@ meanings are from the records' dialogue):
 |---|---|---|
 | 0 | nothing | 341 records |
 | 1 | open SelectCaptain (51) | 66, 67, 367, 368: "The club doesn't have a captain…" |
-| 2, 3, 7 | talk type 8, then Talk. 2 and 7 require byte `+0x27` = `0x12` / `0x11` | 50, 49, 51: "{visitor} is here…" |
-| 4, 6 | talk type 4, then Talk. 6 requires `+0x27` = `0x0d` | 57, 56 |
-| 5 | talk type 9, then Talk. Requires `+0x27` = `0x0d` | 48 |
-| 8, 10, 13, 28 | open Talk (31) | 53, 55, 58, 61, 372 |
+| 2, 3, 7 | StaffRetire talk (type 8). 2 and 7 require byte `+0x27` = `0x12` / `0x11` | 50, 49, 51: "{visitor} is here…" |
+| 4, 6 | Withdraw talk (type 4). 6 requires `+0x27` = `0x0d` | 57, 56 |
+| 5 | PlayerRetire talk (type 9). Requires `+0x27` = `0x0d` | 48 |
+| 8, 10, 13, 28 | open Talk (31) with whatever talk type is already set. For 58 and 61 (handler types 10 and 13) the handler's constructor (`0x134198`) sets 6, PromiseLv2. For the others, nothing traced sets one, so it's probably 0, Normal | 53, 55, 58, 61, 372 |
 | 9 | reset `EvsWork+0x1ec`–`+0x200`, then open Talk | 54 |
 | 11 | open PlayerEdit (63) | 52 (`+0xe8`, after Yes): "We currently don't have any edited players…" |
-| 12, 14 | talk type 7, then Talk. Requires `+0x27` = `0x27`. Unless the event is record 63 / 62, `0x12eef8(+0x2a)` must succeed first | 60, 63 / 59, 62: "{visitor} is here… He doesn't look happy." |
+| 12, 14 | PromiseResult talk (type 7). Requires `+0x27` = `0x27`. Unless the event is record 63 / 62, `0x12eef8(+0x2a)` must succeed first | 60, 63 / 59, 62: "{visitor} is here… He doesn't look happy." |
 | 15 | open SelectUniformNumber (54) | 65: "Not all the players' team numbers have been decided"; 294, 360: youth players join the first team |
 | 16 | open SelectSecretary (28) | 64 (`+0xe8`): the secretary is unhappy in the job |
 | 17 | open TicketSet (61) | no record |
@@ -192,6 +192,29 @@ meanings are from the records' dialogue):
 | 25 | open News (41) | 349–351: "The results of today's matches are in the paper" |
 | 26 | open News with argument word 7 = 1 | 348: "This season's awards are in the paper" |
 | 27 | open ForcedDismissPlayer (66) | 316, 369, 370: "There's no space left in the squad. Select players to release…" (handler type 65, whose constructor also queues this module) |
+
+**Talk types (confirmed).** `jmTalk_SetTalkType` (`SIMPRG.REL 0x15cc28`)
+stores an `eTALKTYPE` in a global (`0x249408`). When the Talk module (31)
+starts, it reads it with `jmTalk_GetTalkType` (which clears it back to 0)
+and builds a manager through the jump table at `0x2150e0`:
+
+| Type | Manager | Posture (see [`MBB_FORMAT.md`](MBB_FORMAT.md#reactions-esc-0xc3)) |
+|---|---|---|
+| 0 | `CTalkNormalManager` | standing |
+| 1 | `CTalkMoveManager` | sitting |
+| 2, 3 | `CTalkContractManager` | sitting |
+| 4 | `CTalkWithdrawManager` | sitting |
+| 5 | `CTalkDismissManager` | sitting |
+| 6 | `CTalkPromiseLv2Manager` | sitting |
+| 7 | `CTalkPromiseResult` | sitting |
+| 8 | `CTalkStaffRetire` | sitting |
+| 9 | `CTalkPlayerRetire` | sitting, standing on one path |
+| 10 and up | none | |
+
+Besides the scene types above, two places in the event code (`0x125974`,
+`0x128790`) set type 1, and handler types 10 and 13 set 6. The talk text
+comes from the matching `PRELOAD/TALK_*.PAC` packs (for example
+`TALK_PROMISE_RESULT*.PAC`, categories 1150–1154).
 
 For editing: changing a record's scene type changes what the game does
 after the scene. Values 1, 11, 15–17 and 25–27 open a screen that has to
