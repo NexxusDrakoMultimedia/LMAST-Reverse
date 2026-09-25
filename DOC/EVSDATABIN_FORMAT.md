@@ -39,7 +39,8 @@ shows them with imports resolved.
   "Player acquisition report", 27 → MAIL 362 "Loaning player
   negotiation", 29 → MAIL 356 "Contacting other club players").
   Procedure 27, and by the position of the call sites 10–17, start a Move
-  talk: talk type 1, the face-to-face transfer negotiation.
+  talk: talk type 1, the face-to-face transfer negotiation. See
+  [`EVS_PROCEDURES.md`](EVS_PROCEDURES.md) for all of them.
 - **Getters.** Each getter masks the ID to 24 bits and clamps it with
   `0x12e1e0`: negative or `>= count` becomes 0. Then it returns
   `EvsWork[slot] + index * size`. The clamp limits (`0x17e`, `0x170`,
