@@ -93,26 +93,88 @@ So the processes are:
   negotiation.
 - **Contract approaches (29).** Another club approaches one of your players
   whose contract is ending.
-- **Scout lists (22).** A scout compiles a candidate list you asked for.
-  The request comes from `0x74418`, which checks
-  `Param::pwkTeam_CheckScoutAcceptRequest`, sets
-  `pwkTeam_SetScoutModeNot` and passes the search terms. The procedure reads them as halfwords at
-  `+0x04`, `+0x06`, `+0x08` and `+0x12` of its block at `+0x1c`. The procedure finds the
-  scout (`pwkTeam_GetScouts`, 3 slots of 0x94 bytes, matched on `+0x60`),
-  then calls `pwkTeam_UpdatePlayerCandidates`, `…YouthCandidates`,
-  `…CoachCandidates` or `…ManagerCandidates` for the list type at
-  `+0x158`. It sends a mail from the table at `0x238690` (three halfwords
-  per list type: players 314–316, youth 349–351, coaches 334–336, managers
-  331–333): "…List now available" (two versions, one adding "There are
-  some great players…") or "About … list" when nobody met the
-  requirements. The choice goes through two byte tables (`0x238318`,
-  `0x238320`). Then it copies its own request (`0x12bff0`), takes a delay
-  from `0x12efb0(+0x06)` and submits it again, so the search repeats.
-- **Loaning out (28).** You offer one of your players on loan. Two checks
-  (`0x15e870`, `0x15e890`) pick the result: 441 (the squad would drop
-  below the minimum), 330 (no more than five players can be out on loan
-  at once), or 329 "the release… on loan transfer… has been approved"
-  with `Param::pwkTeam_AddReleaseList`.
+- **Scout lists (22)** and **loaning out (28)**: see the next two
+  sections.
+
+### Scout lists (procedure 22)
+
+A scout compiles a candidate list you asked for. The request comes from
+`0x74418`, which checks `Param::pwkTeam_CheckScoutAcceptRequest`, sets
+`pwkTeam_SetScoutModeNot` and passes the search terms. The procedure finds
+the scout (`pwkTeam_GetScouts`, 3 slots of 0x94 bytes, matched on `+0x60`)
+and switches on the list type at `+0x158`: 0 players, 1 youth, 2 coaches,
+3 managers. For each type it copies fields of its block at `+0x1c` into a
+"term" struct and calls the matching `Param` function.
+
+**Player lists (confirmed).** `pwkTeam_UpdatePlayerCandidates(PlPlistTerm*,
+int*)` (`SLES_541.51 0x260768`):
+
+| Block | Term | Search criterion |
+|---|---|---|
+| | `+0x00` | the scout (`PlSinfo*`) |
+| `+0x04` (s16) | `+0x04` | country: when non-zero, only clubs whose `plMisc_Club2Nati` equals it |
+| `+0x06` (s16) | `+0x08` | region (`PlDRegion`), used when no country is set (`plMisc_Nati2DRegion`) |
+| `+0x0a` (s8) | `+0x0c` | age bracket, if non-zero (`0x25f8a0`): 1 under 23, 2 23–29, 3 30 and over, 4 under 19, tested on the candidate's byte `+0x08` (the thresholds make it the age) |
+| `+0x08` (s16) | `+0x10` | position, if non-zero (`0x25fa08`, 12 cases, `plMisc_Apos2Pos` / `Apos2Epos`) |
+| `+0x0b` (s8) | `+0x14` | 1: EU clubs only (`plMisc_Club2EU`) |
+| `+0x0c` (s8) | `+0x18` | 0 anyone, 1 or 2: keep only candidates for which `0x260590` is true / false |
+| `+0x14` (s32) | `+0x20` | budget, if positive: drop candidates whose `pwkMoney_GetMoveResearchMoney` is higher |
+| `+0x12` (s16) | `+0x28` | player type: index into 40-byte entries at `0x553e58` (a play style matched against the candidate's 5 style bytes at `+0x1f6`, and a skill tested with `plPinfo_IsSkill`). 36 means any |
+
+Every search also drops players under an exclusive or semi-exclusive deal
+(`plSinfo_CheckExclusive` / `CheckSemiExclusive`), players who need a
+higher club status than yours (candidate `+0x1cc` against
+`pwkTeam_Status`), players already in the discovered list
+(`pwkDis_IsPlayer`; new candidates go in with `pwkDis_AddPlayer`) and
+players with bit `0x40` set at `+0x20c`. The age and position checks end
+in a random roll against one of the scout's skill bytes (`+0x35`–`+0x38`
+for the four age brackets; `+0x39`, `+0x3c`, … by position), and the scout
+also has a byte per country (`+0x4a` + country) and per region (`+0x51` +
+region) that the search reads. So a better scout finds more. `0x260590` combines the month, a byte of the
+candidate's club (`+0x9a`), the candidate's value at `+0x1b0`, float tables
+at `0x553648`–`0x553688` and `plTeam_GetPositionEnhancementLevel` for that
+club. What it decides isn't traced.
+
+The function returns 0 when it adds no candidate, 1 when it adds some, and
+2 when the best added candidate's `+0x1b0` is 11 or more. The procedure
+indexes two byte tables with that value (`0x238318` = 0, 1, 1, …;
+`0x238320` = 0, 0, 1, …) to pick a mail from its row of the table at
+`0x238690`:
+
+| Result | Mail (player list) |
+|---|---|
+| 0 | 316 "About Player list": nobody met the requirements |
+| 1 | 314 "Player List now available" |
+| 2 | 315 "Player List now available" with "There are some great players…" |
+
+The youth, coach and manager lists use `PlYlistTerm`, `PlClistTerm` and
+`PlMlistTerm` and the mail
+rows 349–351, 334–336 and 331–333. Each copies its own fields of the
+block: youth `+0x04`, `+0x06`, `+0x08`, `+0x12`; coaches `+0x04`, `+0x06`,
+`+0x0a`, `+0x0f`, `+0x14`; managers `+0x04`, `+0x06`, `+0x0a`, `+0x0d`,
+`+0x0e`, `+0x10`, `+0x14`. Their criteria aren't traced.
+
+**The search repeats.** The procedure copies its own request (`0x12bff0`)
+and submits it again after `0x12efb0(region)`. That clamps the region to
+0–12 and reads a delay from the byte table at `0x238ee0`: 4, 4, 4, 4, 6, 6,
+5, 5, 5, 6, 6, 5, 6. If the club has an overseas branch in the region
+(`pwkTown_GetPlOverseasBranchPointer`, byte `+1` set), the delay is 4.
+
+### Loaning out (procedure 28)
+
+You offer one of your players on loan. Two checks decide the result, both
+`Param::pwkTeam_GetEmptyNumber(kind) > 0` (`SLES_541.51 0x266b38`), which
+returns how many more players fit before a limit, floored at 0:
+
+| Check | Kind | `GetEmptyNumber` returns | If 0 |
+|---|---|---|---|
+| `0x15e870` | 0 | squad members − 8 (which members count depends on the transfer-market phase, `plMisc_TransferMarketSchedule`) | mail 441: the squad would drop below 8 |
+| `0x15e890` | 2 | 5 − a count of members by kind, depending on the phase (jump table `0x5546c0`) | mail 330: at most five players can be out on loan |
+
+Otherwise it calls `pwkTeam_AddReleaseList(player, 5, …)` and sends 329
+"the release… on loan transfer… has been approved". The other kinds are
+1 (24 − `pwkTeam_GetMemberNumber(8)`, a squad of at most 24) and 3 (5 −
+another loan count, table `0x5546e0`).
 
 ### Where the automatic ones start
 
@@ -149,10 +211,9 @@ happen. The offers they react to come from `Param` code.
   is.
 - What `+0x0C` (always 4 for procedure steps) and the `0x12c058` argument
   (1, 6, 7, 8, 21) mean.
-- Which of 28's two checks (`0x15e870`, `0x15e890`) is the squad minimum and
-  which the five-loan limit.
-- What the search terms in procedure 22's arguments are, and how the byte
-  tables at `0x238318`/`0x238320` pick between its three mails.
+- What `0x260590` decides (the player search's term `+0x18`), the
+  criteria of the youth, coach and manager searches, and the names of the
+  13 regions.
 - Which screens own the start functions for 9 (`0x9e7d0`), 14/16/18
   (`0x6b5f8`), 22 and 28. They're `WS::CPlateWindow` dialogs created through
   tables, so the usual symbol and caller searches don't name them.
