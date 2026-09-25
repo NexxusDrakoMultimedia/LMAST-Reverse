@@ -56,9 +56,14 @@ def checks():
         ("sles_syms", ["sles_disasm.py", "ISO/SLES_541.51", "syms", "CMsgSubCategory"],
          ["ISO/SLES_541.51"]),
     ]
+    mes = "DAT/MESSAGE/MES.PAC"
     for kind in ("EVENT", "NEWS", "MAIL"):
         p = "DAT/EVENT/EVSDATABIN_%s.BIN" % kind
         out.append(("evsdatabin_" + kind.lower(), ["evsdatabin.py", p], [p]))
+        # The message references each table resolves differ (EVENT dialogue,
+        # NEWS body/headline, MAIL sender/recipient/subject/body).
+        out.append(("evsdatabin_text_" + kind.lower(),
+                    ["evsdatabin.py", p, "--text", mes], [p, mes]))
     rels = sorted(glob.glob(os.path.join(ROOT, "ISO", "DLL", "*.REL")))
     if not rels:
         out.append(("snr2", ["snr2.py", "info", "ISO/DLL/*.REL"], ["ISO/DLL"]))

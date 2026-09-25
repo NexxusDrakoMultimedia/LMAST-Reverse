@@ -167,7 +167,11 @@ def _walk(paths):
 
 def cmd_info(paths):
     for p in _walk(paths):
-        h = load_header(p)
+        try:
+            h = load_header(p)
+        except (ValueError, struct.error) as e:
+            print("%-50s !! %s" % (p, e))
+            continue
         if h is None:
             continue
         dp = data_path(p, h)

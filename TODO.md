@@ -54,11 +54,10 @@ hold (player models, faces, edit/uniform data) is undocumented.
       and fails on any difference from a saved baseline
 - [x] One problem marker (`!!`) in every `info`; `regress.py` lists appeared
       and vanished `!!` lines, and both need review
-- [ ] `mbb.py info` and `pac.py info` still abort on a truncated file
-      (`struct.error`). Report it as `!!` and keep scanning, like `tbb`,
-      `csp`, `svr` and `zbf`
-- [ ] Add a `regress.py` check for `evsdatabin.py --text MES.PAC`, so the
-      message link is covered (currently only the raw CSVs are)
+- [x] `mbb.py info` and `pac.py info` report a truncated file as `!!` and
+      keep scanning, like the other tools
+- [x] `regress.py` checks `evsdatabin.py --text MES.PAC` for all three tables
+      (2,879 message references, all resolved)
 - [ ] `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105: 143-byte tables whose record size
       is unknown (`TBB_FORMAT.md` has "?"). The only `!!` on the disc with
       no documented cause

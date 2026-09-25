@@ -168,31 +168,55 @@ def decode(s, lang):
     return "".join(out)
 
 
-def iter_files(paths):
-    """Yield (label, Mbb) from MES.PAC-style BINPACs, .mbb files and dirs."""
+def iter_files(paths, on_error=None):
+    """Yield (label, Mbb) from MES.PAC-style BINPACs, .mbb files and dirs.
+
+    With on_error, a file or entry that fails to parse is passed to
+    on_error(label, exception) and skipped; without it the error propagates."""
+    def parse(label, make):
+        try:
+            return make()
+        except (ValueError, struct.error) as e:
+            if on_error is None:
+                raise
+            on_error(label, e)
+            return None
+
     for p in paths:
         if os.path.isdir(p):
             for root, _, files in os.walk(p):
                 for f in sorted(files):
                     if f.upper().endswith((".MBB", ".PAC")):
-                        yield from iter_files([os.path.join(root, f)])
+                        yield from iter_files([os.path.join(root, f)], on_error)
             continue
         with open(p, "rb") as f:
             buf = f.read()
         if buf[10:16] == b"BINPAC":
-            for off, size, name, _ in BinPac(buf).entries:
+            pac = parse(os.path.basename(p), lambda: BinPac(buf))
+            for off, size, name, _ in pac.entries if pac else ():
                 if buf[off:off + 4] == MAGIC:
-                    yield name, Mbb(buf[off:off + size], name)
+                    m = parse(name, lambda: Mbb(buf[off:off + size], name))
+                    if m:
+                        yield name, m
         elif buf[:4] == MAGIC:
             name = os.path.basename(p)
-            yield name, Mbb(buf, name)
+            m = parse(name, lambda: Mbb(buf, name))
+            if m:
+                yield name, m
 
 
 def cmd_info(paths):
     files = bad = 0
     dup_files = []
     cats, recs, ops = set(), [0] * len(LANGS), {}
-    for label, m in iter_files(paths):
+
+    def unparsed(label, e):
+        nonlocal files, bad
+        files += 1
+        bad += 1
+        print("%-20s  !! %s" % (label, e))
+
+    for label, m in iter_files(paths, unparsed):
         files += 1
         cats.add(m.category)
         if 0 <= m.lang < len(LANGS):
@@ -202,9 +226,12 @@ def cmd_info(paths):
         if label.lower() != expect and not label.lower().endswith("_" + expect):
             probs.append("name doesn't match header (%s)" % expect)
         for _, s in m.records:
-            for kind, b, _a in tokens(s):
-                if kind == "esc":
-                    ops[b] = ops.get(b, 0) + 1
+            try:
+                for kind, b, _a in tokens(s):
+                    if kind == "esc":
+                        ops[b] = ops.get(b, 0) + 1
+            except ValueError:
+                pass  # already reported by m.problems()
         dups = m.duplicate_ids()
         if dups:
             dup_files.append("%s (%d)" % (label, len(dups)))
