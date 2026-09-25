@@ -24,10 +24,32 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
       scene's posture (`DOC/MBB_FORMAT.md`)
 - [ ] Rename `mbb.py`'s `{c3:N}` tag to something readable (e.g.
       `{react:N}`); changes the CSV output, so re-bless `regress.py`
+- [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`,
+      and the EVENT `+0x68` timing enum (values 0–21, scan at `0x12df08`)
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)
 - [ ] Check whether raw `0x0A`/`0x0D` bytes affect display
 
-## 2. Ninja 3D models and motions
+## 2. Starting season and parameter tables (`PARAM/`, `0SYSTEM/`)
+
+The first thing [`GOALS.md`](GOALS.md) wants a mod to change. Every table
+parses with `tbb.py`, but no folder doc says what the tables and packs hold
+or which code loads them.
+
+- [ ] Write `DOC/PARAM_DIR.md`: each file's loader, row count and record size
+- [ ] Schedules and competitions: `0SYSTEM/SCHEDULE.TBB`,
+      `SCHEDULE_LIST.TBB`, `SCHEDULE_{COMPETITION,SYSTEM,TEAM_ENTRY}.PAC/.HED`,
+      `GROUP2COMPE.TBB`, `REGULATION.TBB`, `CLUB_RANK_SYSTEM.TBB`
+- [ ] Initial clubs, squads and stadiums: `PLRRSRC_INITTEAMDATA.TBB`,
+      `INITNATIDATA.TBB`, `OTEAMMEMBER.TBB`, `MAPTEAM_LIST.TBB`,
+      `STADIUM_DATA.TBB`
+- [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC`, `PBDATA_{EU,JP}.PAC`,
+      `PSC{COMMON,GAME,PRACTICE}.PAC`
+- [ ] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN` (no doc mentions them)
+- [ ] Write `DOC/0SYSTEM_DIR.md`: `COLORDATATABLE`, `DETAILFLAG` and
+      `MSGCOMMON` tables, the texture packs and fonts, `SAVE_VERSION.DAT`,
+      `STATIC*.ICO`
+
+## 3. Ninja 3D models and motions
 
 Documented in [`DOC/NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md). `SRC/ninja.py`
 checks all 5,392 blobs (138 loose files, 5,254 archive entries) with no
@@ -46,7 +68,7 @@ problems, and exports static meshes to OBJ.
       (8,762 blobs, no problems)
 - [ ] Skinned export (glTF with skeleton and motions)
 
-## 3. `DAT/PLAYER/`
+## 4. `DAT/PLAYER/`
 
 The largest directory (1.2 GB). `pac.py` covers the containers (KC@P face
 packs, uniform CLUT packs, `CUTINHUMANPACK.MRG`, ...), but what the entries
@@ -64,7 +86,7 @@ hold (player models, faces, edit/uniform data) is undocumented.
 - [ ] `COLOR_TBL`, `UNIFORM_LIST`, `UNIFORM_GK` table layouts
       (`UniformList_*` at `0x2d3078`)
 
-## 4. Music and sound effects
+## 5. Music and sound effects
 
 - [x] `SOUND/*.DAT` (all 28 files) are each one `ps2_DTPK` bank covering the
       whole file; `sounddat.py dtpk` parses them all
@@ -72,9 +94,26 @@ hold (player models, faces, edit/uniform data) is undocumented.
       `SOUND/` (which scene each `MAP01`–`MAP23` belongs to; `MAP11`–`MAP23`
       hold only 2 samples each)
 - [ ] Add `sounddat.py dtpk` over `SOUND/*.DAT` to `regress.py`
-- [ ] `.SQB` sequences (19 files in `SEQ/`)
+- [ ] `.SQB` sequences (19 files in `SEQ/`), with `SQBFILENAME.TBB`,
+      `GLOBALMEMORY.TBB` and `INFORMATION.WPX`
 
-## 5. Housekeeping
+## 6. Files and folders nobody has looked at
+
+Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
+"unknown binary".
+
+- [ ] `ACROBATA/ACROBATAPACKFILE.PAC` (the folder is marked "not studied")
+- [ ] `STADIUM/*.PRI` (10 files, one per stadium variant) and the 24
+      `STADIUM/` tables (`AUD_SET_*`, `BUILD_*`, `ADVERTISE_MODELPACK`, ...)
+- [ ] `GAME/` tactics AI: `PLAYBOOK.BPB`, `COMBINATION.BPB`,
+      `COMBINATION2.CBB/.CSB` (`fb::PlayBookData`, `fb::Combination`)
+- [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
+      (467 f32, not referenced by name)
+- [ ] `TEST3D/SHADOWCOLLI.LBI` and `BG/HUMANID.BIN` (no doc mentions them)
+- [ ] Folder docs for `EMBLEM/`, `NEWS/`, `PRELOAD/`, `SOUND/`, `STADIUM/`,
+      `SEQ/`, `ACROBATA/` and `TEST3D/`, plus a note on the `CVS/` metadata
+
+## 7. Housekeeping
 
 - [x] Regression check: `SRC/regress.py` runs every tool's `info` over `DAT/`
       and fails on any difference from a saved baseline
@@ -89,3 +128,7 @@ hold (player models, faces, edit/uniform data) is undocumented.
 - [ ] `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105: 143-byte tables whose record size
       is unknown (`TBB_FORMAT.md` has "?"). The only `!!` on the disc with
       no documented cause
+- [ ] Start the write stage with `tbb.py`: a writer that round-trips every
+      `TBB1`/`TBL1` file byte for byte, checked in `regress.py`
+- [ ] Update the `PLAYER/` row in `GOALS.md`'s coverage table:
+      `etc::PackData` is now parsed by `packdata.py`
