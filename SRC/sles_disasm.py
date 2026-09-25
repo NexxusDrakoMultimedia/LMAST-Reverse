@@ -83,6 +83,26 @@ def recover_symbols(elf):
     return syms
 
 
+_GPR = ["zero", "at", "v0", "v1", "a0", "a1", "a2", "a3", "t0", "t1", "t2", "t3",
+        "t4", "t5", "t6", "t7", "s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
+        "t8", "t9", "k0", "k1", "gp", "sp", "fp", "ra"]
+
+
+class _RawInsn:
+    """Stand-in for a capstone insn capstone couldn't decode."""
+
+    def __init__(self, address, word):
+        self.address = address
+        op, rs, rt = word >> 26, (word >> 21) & 31, (word >> 16) & 31
+        if op in (0x1E, 0x1F):  # R5900 lq / sq
+            imm = word & 0xFFFF
+            imm -= 0x10000 if imm & 0x8000 else 0
+            self.mnemonic = "lq" if op == 0x1E else "sq"
+            self.op_str = "$%s, %s($%s)" % (_GPR[rt], hex(imm), _GPR[rs])
+        else:
+            self.mnemonic, self.op_str = ".word", "%#010x" % word
+
+
 class Disassembler:
     def __init__(self, elf, syms):
         from capstone import Cs, CS_ARCH_MIPS, CS_MODE_MIPS64, CS_MODE_LITTLE_ENDIAN
@@ -93,8 +113,15 @@ class Disassembler:
             self.by_addr.setdefault(addr, name)
 
     def _insns(self, addr, count):
+        """Decode one word at a time so an opcode capstone rejects doesn't
+        end the listing; EE lq/sq are decoded by hand, the rest shown as .word."""
         o = self.elf.v2f(addr)
-        return self.md.disasm(self.elf.data[o:o + count * 4], addr)
+        for k in range(count):
+            a, w = addr + k * 4, self.elf.data[o + k * 4:o + k * 4 + 4]
+            if len(w) < 4:
+                return
+            got = list(self.md.disasm(w, a, 1))
+            yield got[0] if got else _RawInsn(a, struct.unpack("<I", w)[0])
 
     def _fmt(self, i):
         ops = i.op_str
