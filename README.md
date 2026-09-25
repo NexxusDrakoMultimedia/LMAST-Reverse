@@ -24,22 +24,23 @@ No game data is included. You need your own copy of the disc.
 
 ## Setup
 
-The tools expect this layout. The first three directories are git-ignored.
+The tools expect this layout. `ISO/` and `DAT/` are git-ignored.
 
 ```
-CVM/    DATA.CVM copied straight off the disc (never modified)
-ISO/    the disc filesystem (SLES_541.51, DLL/, AUDIO/, ...) + decrypted DATA.ISO
+ISO/    the disc filesystem (SLES_541.51, DLL/, AUDIO/, DATA.CVM, ...)
+        + the decrypted DATA.ISO
 DAT/    the contents of DATA.ISO, which is what most tools read
 SRC/    tools
 DOC/    format documentation
 ```
 
-1. Copy the disc's files into `ISO/`, and put `DATA.CVM` in `CVM/`.
+1. Copy the disc's files, including `DATA.CVM`, into `ISO/`. Leave
+   `DATA.CVM` unmodified.
 2. Decrypt the archive. Only its ISO9660 table of contents is encrypted, and
    the key recovered from the running game is the default:
 
    ```bash
-   python SRC/rofs_decrypt.py CVM/DATA.CVM ISO/DATA.ISO
+   python SRC/rofs_decrypt.py ISO/DATA.CVM ISO/DATA.ISO
    ```
 
 3. Mount `ISO/DATA.ISO` (for example with PowerShell's `Mount-DiskImage`) and

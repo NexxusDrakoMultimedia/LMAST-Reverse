@@ -3,11 +3,10 @@
 ## Repo layout
 
 ```
-CVM/    Original encrypted ROFS archive(s) straight off the disc (DATA.CVM).
-        Never modified. Ignored by git — too large to version.
 ISO/    Preservation of the original PS2 disc filesystem (SYSTEM.CNF, DLL,
-        DRIVERS, AUDIO, SLES_541.51, ...) plus the decrypted DATA.ISO
-        produced from CVM/DATA.CVM.
+        DRIVERS, AUDIO, SLES_541.51, ...), including the encrypted ROFS
+        archive DATA.CVM (never modified), plus the decrypted DATA.ISO
+        produced from it. Ignored by git — too large to version.
 DAT/    Plain game data unpacked from DATA.ISO (PLAYER, GAME, EVENT, PARAM,
         etc.) — this is what modding/reverse-engineering work reads from.
 SRC/    Reverse-engineering tooling (this project's own scripts).
@@ -36,7 +35,7 @@ numbers, decrypts just the TOC sectors, and bulk-copies the rest.
 ## Regenerating DATA.ISO and DAT/
 
 ```bash
-python SRC/rofs_decrypt.py CVM/DATA.CVM ISO/DATA.ISO
+python SRC/rofs_decrypt.py ISO/DATA.CVM ISO/DATA.ISO
 ```
 
 Then mount `ISO/DATA.ISO` (e.g. PowerShell `Mount-DiskImage`) and copy
