@@ -46,8 +46,8 @@ def _sext16(v):
 
 class Snr2:
     HEADER = ("magic", "ext_rel_off", "ext_rel_count", "sym_off", "sym_count",
-              "name_off", "ctors", "dtors", "loc_rel_off", "h24", "h28",
-              "loc_rel_end", "h30", "h34", "h38", "h3c")
+              "name_off", "ctors", "dtors", "loc_rel_off", "h24", "align",
+              "loc_rel_end", "h30", "loc_rel_ptr", "h38", "h3c")
 
     def __init__(self, path):
         with open(path, "rb") as f:
@@ -74,7 +74,8 @@ class Snr2:
         # pos = next u32. Either way the low 2 bits are the type. The list
         # ends with the escape 00 00000000.
         self.local = []
-        i, end, pos = self.h["loc_rel_off"], self.h["loc_rel_end"], 0
+        # snDllLoaded walks the list from +0x34 (equal to +0x20 in every file).
+        i, end, pos = self.h["loc_rel_ptr"], self.h["loc_rel_end"], 0
         while i < end:
             b = d[i]
             i += 1
@@ -149,7 +150,7 @@ def sles_exports(path):
 def cmd_info(m):
     h = m.h
     print("%s  module %s  (%d bytes)" % (m.path, m.module, len(m.data)))
-    print("  image          0x0-%#x (code from %#x)" % (h["name_off"], h["h28"]))
+    print("  image          0x0-%#x (load alignment %#x)" % (h["name_off"], h["align"]))
     print("  ctors / dtors  %#x / %#x" % (h["ctors"], h["dtors"]))
     imps = sum(1 for s in m.syms if s[3] == SYM_IMPORT)
     exps = [s for s in m.syms if s[3] == SYM_EXPORT]

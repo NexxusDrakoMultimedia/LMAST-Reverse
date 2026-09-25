@@ -6,9 +6,11 @@ overlays (`GAMEPRG`, `SIMPRG`, `SAVEPRG`, ...). Each one is a MIPS image
 come a symbol table and two relocation lists. The loader adds the load base to
 every local reference and patches imports by name.
 
-Everything here is empirical. It holds with no exceptions for all ten
-overlays (`python SRC/snr2.py info <REL>` runs the checks). The module-path
+The layout was worked out from the files. It holds with no exceptions for
+all ten overlays (`python SRC/snr2.py info <REL>` runs the checks). The module-path
 strings (`../PS2_EE_Release/gameprg.elf`) show they were converted from ELF.
+The header fields the loader reads are **confirmed** from SN Systems' DLL
+runtime in `SLES_541.51` (see [Loader](#loader-confirmed)).
 
 ## Layout
 
@@ -26,19 +28,27 @@ loc_rel   packed local relocations, up to loc_rel_end (= EOF)
 
 | Offset | Value (GAMEPRG) | Meaning |
 |---|---|---|
-| `0x00` | `SNR2` | magic |
+| `0x00` | `SNR2` | magic. The loader checks the low three bytes (`SNR`) and accepts version byte `1` or `2` |
 | `0x04` | `0x2AE56C` | external relocation table offset |
 | `0x08` | `0x253D` | external relocation count |
 | `0x0C` | `0x2CA448` | symbol table offset (= `0x04 + 12 × count`) |
 | `0x10` | `0x474` | symbol count |
 | `0x14` | `0x2AE54C` | module path string, which is also the end of the image |
-| `0x18` | `0x20FA68` | function: global constructors (it has GCC `__do_global_ctors`' `-1` count check) |
-| `0x1C` | `0x20FA10` | function: global destructors (probable) |
-| `0x20` | `0x2CD9B8` | local relocation list offset (= `0x0C + 12 × count`) |
-| `0x28` | `0x80` | always `0x80`: start of code |
+| `0x18` | `0x20FA68` | global constructors: `snDllLoaded` calls it after linking |
+| `0x1C` | `0x20FA10` | global destructors: `snDllUnload` calls it |
+| `0x20` | `0x2CD9B8` | = `0x0C + 12 × count`. `snDllLoaded` returns it to the caller when `0x24` is non-zero, so it may be the end of what must stay loaded |
+| `0x24` | 0 | flag for the above; 0 in every file |
+| `0x28` | `0x80` | load alignment: the load address must be a multiple of it (else error 4). `0x80` in every file |
 | `0x2C` | `0x2E518E` | end of local relocations = file size |
-| `0x34`, `0x38` | `0x2CD9B8` | always equal to `0x20`. Meaning unknown |
-| `0x24`, `0x30`, `0x3C` | 0 | |
+| `0x30` | 0 | zeroed by the loader (runtime use) |
+| `0x34` | `0x2CD9B8` | local relocation list: the loader walks it from here |
+| `0x38` | `0x2CD9B8` | an offset (the loader rebases it); use unknown |
+| `0x3C` | 0 | |
+
+`0x20`, `0x34` and `0x38` are equal in every file, so the files alone
+can't tell them apart. The loader adds the load base to `0x04`, `0x0C`,
+`0x14`, `0x18`, `0x1C`, `0x20`, `0x34` and `0x38` (each if non-zero), which
+marks them as offsets.
 
 There's no BSS beyond the file: every relocated address lands inside the
 image.
@@ -92,8 +102,12 @@ symbol table, and a relocation table sits just before it:
 0x4a2344-0x4cef6c  15,278 symbols  {u32 name, u32 value, u32 hash | kind << 16}
 ```
 
-Note the relocation field order: the site comes **first**, unlike the
-overlays' `{offset, info, addend}`. Symbol 0 is null, as in the overlays.
+The entries have the same layout as the overlays' external relocations
+(site first). Symbol 0 is null, as in the overlays. The tables are
+declared by an SNR2 header of the executable's own at the start of
+`.sndata` (`0x418500`): `0x04` = `0x4a1420`, `0x08` = 323, `0x0C` =
+`0x4a2344`, `0x10` = 15,278. `snInitDllSystem` reaches it through the
+pointer at `0x361da4`, and the import lookup walks its symbols.
 The symbol kinds are 2 (export, 13,127), 3 (weak, 1,922), 1 (import,
 value 0, 222) and 4 (6 linker constants: `_gp`, `_end`, `end`, `_stack`,
 `_stack_size`, `_heap_size`).
@@ -116,6 +130,25 @@ start with a table of overlay module entry points in `.data` (`0x34d5f8`…:
 `python SRC/sles_disasm.py ISO/SLES_541.51 relocs [name ...]` lists them,
 and `dis`/`addr` label each site: `jal 0 <name>`, and `; %hi(name)` /
 `; %lo(name)` on the halves of an address.
+
+## Loader (confirmed)
+
+The loader is SN Systems' DLL runtime, linked into `SLES_541.51` with its
+symbol names:
+
+| Address | Symbol | What it does |
+|---|---|---|
+| `0x15b3c8` | `snInitDllSystem` | set-up: walks the executable's own symbol table (header at `0x418500`, via `0x361da4`). For each symbol it sets byte `+0x0B` (the high byte of the kind half-word) to 0 for kinds 0–1 and 1 for kinds 2–4. Any other kind fails with error 7 |
+| `0x15a5f0` | (header check) | magic `SNR` + version `1`/`2`, then the alignment check on `0x28`. Returns 0, or 1 (bad magic), 2 (bad version), 4 (misaligned) |
+| `0x15ae98` | (link) | rebases the header offsets, resolves each symbol by kind (a jump table on `+0x0A`; imports go through `0x15a648(name, hash)`), then applies the packed local relocations from `0x34` |
+| `0x15b448` | `snDllLoaded(header, out)` | header check → link → `0x15b288(name, header)`, which probably registers the module (its result indexes 12-byte slots at `0x35ed98`) → call the constructors at `0x18` |
+| `0x15b590` | `snDllUnload` | calls the destructors at `0x1C`, then `0x15b370` and `0x15acd8` (not traced) and `snDllCacheFlush` |
+| `0x15b6b0`, `0x15b828` | `snDllMove`, `snDllGetFunctionAddress` | not traced |
+
+The game's side is `FC_EURO_FILE_RESOURCE::CFcEuro_FileResource::SetupDll`
+(`0x10dd08`). Local relocation types 0–3 are the four cases of the
+loader's switch on `code & 3` (type 0 is passed on as ELF type 6,
+`R_MIPS_LO16`), which matches the table below.
 
 ## Local relocations (packed)
 
@@ -170,9 +203,9 @@ site's resolved target.
 
 ## Open questions
 
-- Header fields `0x34`/`0x38` (always equal to `0x20`). They could be an
-  empty BSS range.
-- Where the loader in `SLES_541.51` lives. Finding it would confirm the
-  `0x18`/`0x1C` constructor/destructor reading.
+- What `0x38` is for, and what `0x20`/`0x24` tell the caller. All three
+  are offsets equal to `0x34` in every file.
+- How `SetupDll` (`0x10dd08`) picks which overlay to load, and whether it
+  uses the module entry-point table at `0x34d5f8`.
 - Local functions have no names; only exports and the call sites of imports
   do.
