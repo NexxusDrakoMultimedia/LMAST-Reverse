@@ -161,8 +161,61 @@ The EVENT message reference names a whole category, and the scene plays it
 from message 0. Categories are shared: records 1–47 and 366 all use
 `35682` (the tournament-start speech, with a different `actor2` each), and
 13 records use `35511`. 39 of the 327 categories in 35000–36999 aren't
-referenced by any record (e.g. `35400`–`35402`, `35901`–`35920`,
-`36000`–`36003`). Other code may trigger them, or they may be unused.
+referenced by any record. 7 of them are chosen by handler code, and the
+other 32 aren't referenced anywhere.
+
+**Season results: chosen in code (confirmed).** The handler-type jump table
+at `SIMPRG.REL 0x238a40` sends type 18 to `0x133770` and type 19 to
+`0x133950`. Records 72 (`35508`, "…brings in prize money of…") and 73
+(`35509`, "Hats off to the players…") are the only ones with those types.
+Each handler loads its record's category as a default (`lui $s1, 0x8ab4` /
+`0x8ab5`). If the handler object's byte `+0x1b` is 20, the handler calls
+`0x167f38(+0x1c)`, reads `+0x24` and `+0x28`, and replaces the default
+with a speech from 36000–36008. It then plays the result with
+`0x12d350(object, 0x1c6150, message ref)`.
+
+| Handler | `0x167f38` result | `+0x28` | `+0x24` | Category |
+|---|---|---|---|---|
+| type 18 | 0 | – | 2 | `36000` finished {2001}, "our share of the prize money" |
+| | 0 | – | other | `35508` (default) |
+| | 1 | ≠ 1 | 1 / 2 | `36001` / `36002` finished {4077}, "in prize money" / "our share" |
+| | 1 | 1 | 1 / 2 | `36006` / `36007` "knocked out in the first round", same prize wording |
+| | not 0 or 1 | – | – | `35508` (default) |
+| type 19 | 1 | ≠ 1 / 1 | – | `36003` finished {4077} / `36008` knocked out in the first round (no prize) |
+| | other | – | – | `35509` (default) |
+
+The meanings are **empirical**, read from the message text: `+0x28 == 1` is
+a first-round exit, and `+0x24` picks between a whole prize (1) and a
+shared one (2). What `0x167f38` returns isn't traced. The results with 1
+use `{var:1:4077}` for the placing instead of `{var:1:2001}`, so it may
+tell a cup from a league. The type-18 handler also pays
+`+0x22 × 10000` as `pwkGen_Income(…, PlIncomeType 6)`, the prize money.
+
+For editing, the dialogue reference on records 72 and 73 is only the
+fallback. The season-result speeches can't be changed through the table.
+
+**Unreferenced: 32 categories (empirical).** These are `35400`–`35402`,
+`35405`, `35406`, `35414`–`35418`, `35529`, `35640`, `35649`, `35657`,
+`35658`, `35666`, `35674`, `35675`, `35681`, `35693`, `35901`, `35903`,
+`35908`, `35909`, `35911`, `35912` and `35915`–`35920`. Nothing references
+them: no `ori`/`lui` immediate in `SLES_541.51` or any `.REL`, no stored
+message reference or category number in data, and no match in `DAT/`
+outside `MES.PAC` except coincidences (offsets in `FNAME*.TOC`, model
+data, and a table of round numbers at `0x3992a0`). The other hits are
+in a `{u32 category, u32 language, u32 offset, u32 size}` table in
+`SLES_541.51` `.data` (rows around `0x351368`), which lists each category
+once per language slot, used or not. It's a copy of the `MES.PAC`
+directory, not a trigger.
+
+The English text is almost all placeholders (`HOGEHOGE`, `TEXT_GAME001_01`,
+`DUMMY`, `-`; at most 4 real messages per category), but each category has
+15–23 real Japanese messages: derby interviews (`35414`–`35418`), a
+transfer-list alert (`35640`), important-mail and off-season notices
+(`35657`, `35658`), a facilities tour (`35666`), and a squad-full warning
+(`35911`). They look like scenes cut before the PAL localisation.
+Code that builds a category arithmetically (base + offset) wouldn't show
+up in this search, so "unused" isn't confirmed. Editing their text has no
+known effect in game.
 
 ## Shared condition block
 
@@ -270,7 +323,12 @@ column with data now has a name.
 - NEWS `+0x20`, `+0x60` and `+0x70`; the NEWS/MAIL check types, handler
   types and article-variable kinds; and why no code reads NEWS `+0x68`
   (caption).
-- Whether the 39 unreferenced dialogue categories are triggered elsewhere.
+- What `0x167f38` returns for the season-result handlers (types 18/19),
+  and so what `+0x1c` holds. Its result chooses between the {2001} and
+  {4077} placings.
+- Whether any of the 32 unreferenced dialogue categories is reached by an
+  arithmetic category (base + offset), which the immediate/data search
+  can't see.
 - Whether the five EVENT triplets at `+0x24`–`+0x5c` are variable specs
   like NEWS's (same offsets, same arg1 values 2/46/47). Their third value
   also matches speaker-name ids used in `ESC 0xC1` (e.g. 3110).
