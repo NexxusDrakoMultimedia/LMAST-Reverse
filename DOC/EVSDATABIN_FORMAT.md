@@ -95,6 +95,46 @@ The date struct passed in starts with a u16 year (2005 = season 0).
 | `0xcc`, `0xd0` | | effect 4 | same |
 | `0x08` | u32 | handler type | then selects the handler (see above) |
 
+### Effect kinds: `0x1213d0`
+
+A jump table at `0x237d30` sends each kind (0–19) to its own handler at
+`0x1210c0`–`0x1213c8`, called as `(kind, value)`. Kinds ≥ 20 do nothing.
+Money values are in units of **10,000** (the handler multiplies by
+`0x2710`), so `600` means 6,000,000.
+
+| Kind | Handler | Effect | Used by (event: value) |
+|---|---|---|---|
+| 0 | `0x1210c0` | nothing | |
+| 1 | `0x1210c8` | income: `pwkGen_Income(value × 10000, PlIncomeType 11)`; skipped if value < 0 | 257: 900, 260: 300 |
+| 2 | `0x1210f8` | expense: `pwkGen_Pay(value × 10000, PlPaymentType 22)`; skipped if value < 0 | 166…189 (stadium, handler 33): 600/1500/3000; 255: 300 |
+| 3 | `0x121128` | popularity +value in region 0 (`pwkTeam_ChangePopByRegion(0, value)`) | 102, 103, 199, 262, 263, 308 |
+| 4 | `0x121148` | popularity +value in regions 1–13 | 102, 103, 199, 308 |
+| 5 | `0x121198` | popularity −value in region 0 | 242–254 (handler 6): 500 / 10 |
+| 6 | `0x1211b8` | popularity −value in regions 1–13 | |
+| 7 | `0x121288` | captain gains `value` exp in ability 26 (`pwkGUtl_AddExp`), unless the captain is unused/unplayable | 194: 1000 |
+| 8 | `0x121208` | for each of the 25 squad slots in use, clears `PlPinfo+0x23c` (u16). The value is ignored | 179, 190: 65535 |
+| 9 | `0x121310` | nothing in the dispatcher (see below) | 167: 500 |
+| 10 | `0x121318` | popularity +value for the squad player with ID `0x7cce` (31950) (`plPinfo_ChangePop`, kind 0) | 308: 50 |
+| 11 | `0x121358` | same, −value | 307: 50 |
+| 12 | `0x121258` | gate income: seat price × seats sold × a factor of 17–25 picked by `0x15cff8`, as `PlIncomeType 3`. The value is ignored | — |
+| 13–19 | `0x121398`–`0x1213c8` | nothing in the dispatcher | 16: 261; 18: 102, 103, 241, 257, 262, 263; 19: 287 |
+
+**Handler-read values.** Some handler modules read `effect1_value`
+themselves instead of relying on the dispatcher. That's why kinds 9, 16,
+18 and 19 carry values even though the dispatcher ignores them:
+
+- **`0x132180`** stages `effect1_value × 10000` in `EvsWork+0xc0`.
+  `0x1321d8` pays it (`PlPaymentType 22`) only if the player answered
+  Yes (`EvsWork+0x1f8 == 1`).
+- **`0x1327ec`** stages `effect1_value × 10000` in `EvsWork+0xc8`.
+- **`0x132538`** finds the first effect of kind 1 or 2 and stores its
+  `value × 10000` at `0x249a00`. This is probably the amount shown in
+  the dialogue.
+- **`0x1353dc`** adds `effect1_value` to a chosen squad player's
+  popularity.
+
+Which handler types own these functions isn't traced yet.
+
 ### Other
 
 - **Weight.** `0x6c` is the weight/priority, default 100: 100 ×234,
@@ -118,9 +158,14 @@ with its own index, and the weight sits at NEWS `+0x78` / MAIL `+0x5c`.
 
 ## Open questions
 
-- Names for the timing enum (`+0x68`), the 170 condition kinds, the 20
-  effect kinds and the 80 handler types. Each is a jump table in
-  SIMPRG, at `0x237df0`, `0x237d30` and `0x238a40`.
+- Names for the timing enum (`+0x68`), the 170 condition kinds
+  (jump table `0x237df0`) and the 80 handler types (`0x238a40`). The
+  effect kinds are decoded above.
+- Which regions `PlTeam_Region` 0 and 1–13 are (0 is presumably the
+  club's home region), who squad player `0x7cce` is, and what
+  `PlPinfo+0x23c` holds.
+- Which handler types consume `effect1_value` directly, and so what
+  kinds 9/16/18/19 mean.
 - What `+0x0c`, `+0x1c`, the five triplets at `+0x24`–`+0x5c` and
   `+0x64` are. They aren't read through the getter in the functions
   traced so far; the 32-byte unaligned copies of `+0x00`–`+0x1f`
