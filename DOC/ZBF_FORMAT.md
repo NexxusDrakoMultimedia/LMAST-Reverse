@@ -29,7 +29,7 @@ depth image.
 
 ## How it relates to the background image
 
-The colour image is `CSE/BG_xx_nn_00.CSP` (the name pattern
+The colour image is `CSE/BG_xx_nn_00.CSP` (see [`CSE_FORMAT.md`](CSE_FORMAT.md); the name pattern
 `BG_%s_%02d_00.csp` is in `DLL/SIMPRG.REL`). It holds an embedded SVR
 (at `0x190` in `BG_CH_00_00.CSP`): a **512×512** 8bpp texture. 110 of the
 151 background CSPs carry their own palette (data format `0x6C`). The
