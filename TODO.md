@@ -29,13 +29,22 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 
 ## 2. Ninja 3D models and motions
 
-`.SNJ` / `.SNO` / `.SNM` / `.SNP` (about 130 files in `GAME/`, `TEST3D/`,
-`STADIUM/`, ...). `GAME_DIR.md` names the chunk types (`NSIF`, `NSOB`,
-`NSMO`, `NSNT`, `NSTL`, `NFN0`) but nothing parses them. Textures already
-decode, so this would give complete assets. The largest job on the list.
+Documented in [`DOC/NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md). `SRC/ninja.py`
+checks all 5,392 blobs (138 loose files, 5,254 archive entries) with no
+problems, and exports static meshes to OBJ.
 
-- [ ] Document the chunk layouts (`DOC/NINJA_FORMAT.md`)
-- [ ] Add a parser, with export to a common format (e.g. OBJ/glTF)
+- [x] Document the chunk layouts (`DOC/NINJA_FORMAT.md`)
+- [x] Add a parser (`ninja.py info`/`dump`) and add it to `regress.py`
+- [x] Triangle strips and winding (`strip_triangles()`); `obj` export works
+- [ ] Decode the material structs and link textures from `NSTL` (MTL output)
+- [ ] Common-vertex lists (`nnCompileCommonVerticesObject*`, 35 lists plus
+      the `PLAYER/` face models)
+- [ ] PX Plus skin words, VU `0x21` weight remainder, VU type bit `0x100`
+- [ ] Camera (`NSCA`/`NSMC`) and light (`NSLI`) chunks; submotion
+      interpolation types
+- [x] Run `ninja.py info DAT --prs` over the PRSH-compressed entries
+      (8,762 blobs, no problems)
+- [ ] Skinned export (glTF with skeleton and motions)
 
 ## 3. `DAT/PLAYER/`
 

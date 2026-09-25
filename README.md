@@ -103,11 +103,13 @@ python SRC/packdata.py list DAT/PLAYER/PLPACK_HOME.HED 0
 | [`svr.py`](SRC/svr.py) | Ninja textures `.SVR`/`.SVM`/`.SVP`, including GS unswizzling | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) |
 | [`csp.py`](SRC/csp.py) | `.CSP`/`.CSE` 2D screen layouts (sprites, node tree, animation) | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) |
 | [`zbf.py`](SRC/zbf.py) | `.zbf` depth buffers for pre-rendered rooms | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) |
+| [`ninja.py`](SRC/ninja.py) | Ninja models and motions `.SNJ`/`.SNO`/`.SNM`/`.SNP`/`.SNA`, loose and inside archives; OBJ export | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) |
 
 ```bash
 python SRC/svr.py png DAT out/textures
 python SRC/csp.py png DAT/CSE out/cse --crops
 python SRC/zbf.py png DAT/BG out/depth
+python SRC/ninja.py obj DAT/PLAYER/M_PLAYER.SNO out/m_player.obj
 ```
 
 ### Sound
@@ -160,6 +162,8 @@ body, mail sender/subject/body) gets a column with its text from `MES.PAC`.
   archives.
 - `eventdata_turn.py` uses `tbb.py` for the table container.
 - `packdata.py` uses `pac.py` to find KC@P entries and expand PRSH.
+- `ninja.py` uses `pac.py` to check the Ninja entries inside `.PAC`/`.MRG`/
+  `.HED` archives.
 
 The disassemblers connect to the format tools through the docs. The usual
 workflow is:
@@ -192,6 +196,7 @@ workflow is:
 | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) | textures and GS swizzling |
 | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) | `DAT/CSE` 2D layouts |
 | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) | pre-rendered Z buffers |
+| [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) | Ninja (NN) models, skeletons, motions, VU/PX Plus vertex streams |
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
 | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
 | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) | message text, encodings and escape codes |

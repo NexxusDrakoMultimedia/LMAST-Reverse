@@ -50,6 +50,7 @@ def checks():
         ("svr", ["svr.py", "info", "DAT"], ["DAT"]),
         ("csp", ["csp.py", "info", "DAT"], ["DAT"]),
         ("zbf", ["zbf.py", "info", "DAT"], ["DAT"]),
+        ("ninja", ["ninja.py", "info", "DAT"], ["DAT"]),
         ("mbb", ["mbb.py", "info", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
         ("sounddat", ["sounddat.py", "info", "DAT/GAME/SOUNDDAT.PAC"], ["DAT/GAME/SOUNDDAT.PAC"]),
         ("eventdata_turn", ["eventdata_turn.py", "DAT/EVENT/EVENTDATA_TURN.TBB"],

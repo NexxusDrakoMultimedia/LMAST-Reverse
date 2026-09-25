@@ -75,20 +75,20 @@ Where each folder stands (September 2026):
 |---|---|---|
 | `0SYSTEM/` | `TBB`, `PAC`, `SVR`/`SVP`, `ICO`, `DAT` | containers and textures parse; no folder doc, table meanings unknown |
 | `ACROBATA/` | `PAC`, `DAT` | not studied |
-| `BG/` | 304 `MRG`, `HED`, `SVR`, Ninja `SNO`/`SNM`/`SNJ` | archives, textures and Z buffers done ([`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md)); models not parsed |
+| `BG/` | 304 `MRG`, `HED`, `SVR`, Ninja `SNO`/`SNM`/`SNJ` | archives, textures, Z buffers and models done ([`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
 | `CSE/` | 490 `CSP`, `CSE`, `SVR`, a few others | screen layouts done ([`CSE_FORMAT.md`](DOC/CSE_FORMAT.md)) |
 | `EMBLEM/` | `TBB`, `PAC`/`HED` | tables parse except 3 with unknown record size; no folder doc |
 | `EVENT/` | `EvsDataBin_*.bin`, `EVENTDATA_TURN.TBB` | done ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md)); some NEWS/MAIL columns unnamed |
-| `GAME/` | commentary `TBL`, sound banks, models, many small types | surveyed in [`GAME_DIR.md`](DOC/GAME_DIR.md); models and several types not parsed |
+| `GAME/` | commentary `TBL`, sound banks, models, many small types | surveyed in [`GAME_DIR.md`](DOC/GAME_DIR.md); models parse ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)); several types not parsed |
 | `MESSAGE/` | `MES.PAC` | done ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md)) |
 | `NEWS/` | `PAC`/`HED`, `TBB` | containers parse; no folder doc |
 | `PARAM/` | 18 `TBB`, `PAC`/`HED`, `BIN` | tables parse; no folder doc, table meanings unknown |
-| `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` not parsed by a tool, models and 3 tables not decoded |
+| `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` not parsed by a tool, 3 tables not decoded; models parse except the common-vertex face models |
 | `PRELOAD/` | 139 `PAC` | containers parse; no folder doc |
 | `SEQ/` | 19 `SQB`, `TBB`, `WPX` | not studied |
 | `SOUND/` | 28 `DAT` sound banks | banks parse; no folder doc |
 | `STADIUM/` | `PAC`/`HED`, 24 `TBB`, `PRI` | containers and tables parse; `PRI` not studied; no folder doc |
-| `TEST3D/` | Ninja models, `SVR`/`SVP`/`SVM`, `LBI` | textures done; models and `LBI` not parsed |
+| `TEST3D/` | Ninja models, `SVR`/`SVP`/`SVM`, `LBI` | textures and models done; `LBI` not parsed |
 | `CVS/` and `*/CVS/` | the developers' version-control metadata | not game data; worth noting in a doc, nothing to parse |
 
 "Containers parse" means `pac.py` or `tbb.py` reads the file, but what the
