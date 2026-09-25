@@ -13,7 +13,8 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 - [x] Link messages into `evsdatabin.py` output (`--text`). Message refs are
       `category << 16 | id`: EVENT `+0x64`, NEWS `+0x64`/`+0x6c`, MAIL
       `+0x10`/`+0x14`/`+0x20`/`+0x24`
-- [ ] Name the remaining NEWS and MAIL columns in `DOC/EVSDATABIN_FORMAT.md`
+- [x] Name the NEWS and MAIL columns in `DOC/EVSDATABIN_FORMAT.md` (MAIL
+      complete; NEWS `+0x20`, `+0x60`, `+0x70` still unknown)
 - [ ] Find what triggers the 39 dialogue categories no EVENT record uses
 - [ ] Work out `ESC 0xC3` (values 0–12, maybe a pose/animation)
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)

@@ -71,20 +71,70 @@ EVENT_FIELDS = {
     0x104: "scene_type_var5",
 }
 
+# NEWS and MAIL carry the same condition block as EVENT at their own
+# offsets: NEWS check 0x12c220, MAIL check 0x128a48 (EVENT 0x12d530).
 NEWS_FIELDS = {
     0x00: "index",
+    0x04: "check_type",
+    0x08: "handler_type",
+    0x0c: "content_type",
+    0x10: "layout_flag",
+    0x14: "picture_mode",
+    0x18: "picture_a",
+    0x1c: "picture_b",
     0x64: "@body",
+    0x68: "@caption",
     0x6c: "@headline",
+    0x74: "-timing",
     0x78: "weight",
+    0x7c: "once_only",
+    0x80: "forbidden_flag",
+    0x84: "cooldown_class",
+    0x88: "min_season",
+    0x8c: "season_pattern",
+    0x90: "date_pattern_a",
+    0x94: "date_pattern_b",
+    0x98: "cond1_kind",
+    0x9c: "cond1_arg",
+    0xa0: "cond2_kind",
+    0xa4: "cond2_arg",
+    0xa8: "req_flag",
+    0xac: "date_rule_arg",
+    0xb0: "-date_rule_kind",
+    0xb8: "chance_pct",
 }
+# Five article variables, {kind, arg1, arg2} each (0x14c4d8).
+for _n in range(5):
+    NEWS_FIELDS[0x24 + 12 * _n] = "var%d_kind" % (_n + 1)
+    NEWS_FIELDS[0x28 + 12 * _n] = "var%d_arg1" % (_n + 1)
+    NEWS_FIELDS[0x2c + 12 * _n] = "var%d_arg2" % (_n + 1)
 
 MAIL_FIELDS = {
     0x00: "index",
+    0x04: "check_type",
+    0x08: "handler_type",
+    0x0c: "direction",
     0x10: "@sender",
     0x14: "@recipient",
+    0x18: "open_handler",
+    0x1c: "question",
     0x20: "@subject",
     0x24: "@body",
+    0x28: "sender_group",
+    0x2c: "-timing",
+    0x30: "once_only",
+    0x34: "cooldown_class",
+    0x38: "min_season",
+    0x3c: "season_pattern",
+    0x40: "date_pattern_a",
+    0x44: "date_pattern_b",
+    0x48: "cond1_kind",
+    0x4c: "cond1_arg",
+    0x50: "cond2_kind",
+    0x54: "cond2_arg",
+    0x58: "req_flag",
     0x5c: "weight",
+    0x60: "chance_pct",
 }
 
 FIELDS = {"EVENT": EVENT_FIELDS, "NEWS": NEWS_FIELDS, "MAIL": MAIL_FIELDS}
