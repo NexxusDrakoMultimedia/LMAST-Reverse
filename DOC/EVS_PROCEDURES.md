@@ -35,35 +35,41 @@ An event request is a struct the event manager queues:
 | `0x12b580` | dispatch by type byte (jump table `0x238860`): 1 EVENT, 2 MAIL, 3 NEWS, 4 procedure |
 | `0x12caf0` | build the procedure object: `(ID & 0xffffff) − 9` into the jump table `0x238970`, so indexes 9–29 |
 
-`0x12e5a8` is the event clock; its unit isn't traced. Each procedure's
-constructor registers the MAIL records it sends through
-`0x124f50(this, 0x02000000 | record, …)`.
+`0x12e5a8` is the event clock; its unit isn't traced. A procedure sends a mail with
+`0x124f50(this, 0x02000000 | record, n)`, which fetches the MAIL record
+(getter `0x128e78`) and fills in the procedure's message fields.
 
 ## The procedures
 
-| # | Constructor | MAIL registered | Started by | Next |
+| # | Code | MAIL it sends | Started by | Next |
 |---|---|---|---|---|
-| 9 | `0x126208` | 415 "Player search report" | `0x9e7d0` (calls `Param::pwkTeam_SetScoutModeNot`) | 10 or 12 |
-| 10 | `0x126540` | 420 "Player acquisition to cancel" | 9 | 11 |
-| 11 | `0x1268a0` | 421 "Player acquisition to cancel", 308 "Player negotiation report" | 10 | |
-| 12 | `0x126a50` | 400 "Negotiating players" | 9 | 13 |
-| 13 | `0x126cd0` | 422, 423 "Player acquisition to cancel" | 12 | |
-| 14 | `0x126e30` | 319 "Player acquisition report" | `0x6b5f8`, kind 0 | 15 |
+| 9 | `0x126208` | 295–297, 370–372, 412, 415 "Player search report" | `0x9e7d0` (calls `Param::pwkTeam_SetScoutModeNot`) | 10 or 12 |
+| 10 | `0x126540` | 298–305, 373, 374, 416, 420 "Player acquisition to cancel" | 9 | 11 |
+| 11 | `0x1268a0` | 306–310 ("Player negotiation report", ...), 421 | 10 | |
+| 12 | `0x126a50` | 300, 305, 398–400 ("Negotiating players", ...), 409 | 9 | 13 |
+| 13 | `0x126cd0` | 401, 402, 422, 423 | 12 | |
+| 14 | `0x126e30` | 317–319 ("Player acquisition report", ...), 403, 404, 410 | `0x6b5f8`, kind 0 | 15 |
 | 15 | `0x1270a0` | 405 "Player acquisition report" | 14 | |
-| 16 | `0x127198` | 406 "Player acquisition report" | `0x6b5f8`, kind 1 | 17 |
+| 16 | `0x127198` | 323–325, 406, 407, 411 | `0x6b5f8`, kind 1 | 17 |
 | 17 | `0x127458` | 408 "Player acquisition report" | 16 | |
-| 18 | `0x127550` | 443 "Contract withdrawal (Youth)" | `0x6b5f8`, kind 2 | |
-| 19 | `0x127688` | 353 "Permanent Move Offer" | the Event module's check (below) | 20 |
-| 20 | `0x127948` | 340, 424 "Cancel Player Transfer" | 19 | 21 |
-| 21 | `0x127cf0` | 340, 425 "Cancel Player Transfer" | 20 | |
-| 22 | `0x127ef8` | none | `0x74418` (mail-screen code) | |
-| 23 | `0x1281d0` | 363 "About players on a loan" | the Event module's check | 24 |
+| 18 | `0x127550` | 352, 443 "Contract withdrawal (Youth)" | `0x6b5f8`, kind 2 | |
+| 19 | `0x127688` | 353 "Permanent Move Offer", 354, 386, 387 | the Event module's check (below) | 20 |
+| 20 | `0x127948` | 337–343 ("Cancel Player Transfer", ...), 388, 389, 424, 442 | 19 | 21 |
+| 21 | `0x127cf0` | 339, 340, 344–348, 425, 442 | 20 | |
+| 22 | `0x127ef8` | one of 314–316, 349–351, 334–336, 331–333, from a table (below) | `0x74418`, a scout request | itself |
+| 23 | `0x1281d0` | 363 "About players on a loan", 396, 397 | the Event module's check | 24 |
 | 24 | `0x128328` | 364 "Report to sell loaning player" | 23 | |
-| 25 | `0x128440` | 359 "About Loaning player" | the Event module's check | 26 |
-| 26 | `0x128570` | 360 "Report to buy loaning player" | 25 | 27 |
+| 25 | `0x128440` | 359 "About Loaning player", 392, 393 | the Event module's check | 26 |
+| 26 | `0x128570` | 360 "Report to buy loaning player", 361, 394, 395 | 25 | 27 |
 | 27 | `0x128710` | 362 "Loaning player negotiation" | 26 | |
-| 28 | `0x128850` | none | `0x50e88` (club-edit code), `0x12c058` argument 21 | |
+| 28 | `0x128850` | 329 "Transfer negotiation", 330, 441 "Cancel Player Transfer" | `0x50e88`, a player-list screen (`0x12c058` argument 21) | |
 | 29 | `0x1289b0` | 356 "Contacting other club players" | the Event module's check | |
+
+"Code" is the constructor. The MAIL column lists every MAIL ID built as a
+constant in the class's code, from its constructor up to the next one, so
+it covers the methods as well (only the constructor's own registration
+is certain to be that class's; the rest is by address). Each procedure
+sends one of them at a time, depending on how the step turns out.
 
 Every "Next" step is queued with `0x12c160(req, 1, 4)`: one clock unit
 later. The "Next" column lists the sites that build each ID; which
@@ -87,6 +93,26 @@ So the processes are:
   negotiation.
 - **Contract approaches (29).** Another club approaches one of your players
   whose contract is ending.
+- **Scout lists (22).** A scout compiles a candidate list you asked for.
+  The request comes from `0x74418`, which checks
+  `Param::pwkTeam_CheckScoutAcceptRequest`, sets
+  `pwkTeam_SetScoutModeNot` and passes the search terms. The procedure reads them as halfwords at
+  `+0x04`, `+0x06`, `+0x08` and `+0x12` of its block at `+0x1c`. The procedure finds the
+  scout (`pwkTeam_GetScouts`, 3 slots of 0x94 bytes, matched on `+0x60`),
+  then calls `pwkTeam_UpdatePlayerCandidates`, `…YouthCandidates`,
+  `…CoachCandidates` or `…ManagerCandidates` for the list type at
+  `+0x158`. It sends a mail from the table at `0x238690` (three halfwords
+  per list type: players 314–316, youth 349–351, coaches 334–336, managers
+  331–333): "…List now available" (two versions, one adding "There are
+  some great players…") or "About … list" when nobody met the
+  requirements. The choice goes through two byte tables (`0x238318`,
+  `0x238320`). Then it copies its own request (`0x12bff0`), takes a delay
+  from `0x12efb0(+0x06)` and submits it again, so the search repeats.
+- **Loaning out (28).** You offer one of your players on loan. Two checks
+  (`0x15e870`, `0x15e890`) pick the result: 441 (the squad would drop
+  below the minimum), 330 (no more than five players can be out on loan
+  at once), or 329 "the release… on loan transfer… has been approved"
+  with `Param::pwkTeam_AddReleaseList`.
 
 ### Where the automatic ones start
 
@@ -123,8 +149,10 @@ happen. The offers they react to come from `Param` code.
   is.
 - What `+0x0C` (always 4 for procedure steps) and the `0x12c058` argument
   (1, 6, 7, 8, 21) mean.
-- What procedures 22 and 28 do. They register no mail. 22 starts from the
-  mail screen's code (`0x74418`) and 28 from club-edit code (`0x50e88`).
+- Which of 28's two checks (`0x15e870`, `0x15e890`) is the squad minimum and
+  which the five-loan limit.
+- What the search terms in procedure 22's arguments are, and how the byte
+  tables at `0x238318`/`0x238320` pick between its three mails.
 - Which screens own the start functions for 9 (`0x9e7d0`), 14/16/18
   (`0x6b5f8`), 22 and 28. They're `WS::CPlateWindow` dialogs created through
   tables, so the usual symbol and caller searches don't name them.
