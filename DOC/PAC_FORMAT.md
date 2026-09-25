@@ -32,6 +32,7 @@ The accessors come from `SLES_541.51` (symbols recovered with
 | `0x1047f8` | `fcEuroBinPac_GetHeaderFilename(void*, int idx)` | `hdr + 0x20 + idx*stride + 8` |
 | `0x104968` | `fcEuroBinPac_SearchHeaderFilename(void*, const char*, int* off, int* size)` | linear `strcasecmp` over names. Also has a hashed path for a `CPHN` variant (see below) |
 | `0x104b80` | `fcEuroBinPac_CheckHeaderLimit` | stub: returns `hdr == NULL` |
+| `0x11b8b8` | `CLoader::l_realize_merge` | for each entry: `id = ListData(idx, 3 + idType)`, looked up in a 23-slot table (one per `CLoader::eFILETYPE`) to pick the realize handler for `hdr + ListData(idx, 0)` |
 
 ### Header (offset 0, 0x20 bytes)
 
@@ -71,14 +72,29 @@ stride = 4*(version + 2)                     (tagged: name_len is forced to 4)
 - **Extra columns**:
   - v3: two u32. Usually `0,0`. In `PRELOAD/GAMEFILE*.PAC` the first
     one varies (3, 8, 9, 12) and looks like a load type.
-  - v2 `.MRG`: one u32 that correlates with the file type (`svp`→4,
-    `svm`→1/2/3, `snm`→3, `sna`/`snt`→2, `snd`/`snq`/`snp`→0).
-    Empty slots are `dummy.bin`/`.bin` with size 0 and extra `0xFFFFFFFF`.
-    This is probably the ID that `CLoader::setMergeFileUserId(eFILETYPE,
-    int, eMERGE_USER_ID_TYPE)` uses. **Unconfirmed.**
+  - v2 `.MRG`: one u32, the **merge user ID**. Confirmed from
+    `CLoader::l_realize_merge`: it reads column `3 + idType` and matches
+    the value against a 23-slot table, one slot per `CLoader::eFILETYPE`,
+    filled by `CLoader::setMergeFileUserId(eFILETYPE, int id,
+    eMERGE_USER_ID_TYPE)`. The match picks the handler
+    (`l_realize_texture_svm`, `l_realize_objectpack_snj`, ...), and
+    unmatched entries are skipped. The meaning of each ID is therefore set
+    by the calling code, not fixed. Observed: `snd`/`snq`/`snp`/`snl`→0,
+    most `snj`/`sno`→0, `svm`→1/2/3, `sna`/`snt`→2, `snm`→3,
+    `svp`/`zbf`→4 (a few `svp`→2), some `sno`→5 (`CUTINHANDPACK`).
+    Empty slots are `dummy.bin`/`.bin` with size 0 and ID `0xFFFFFFFF`.
+    Every `.MRG` has exactly one extra column, so `idType` is always 0 here.
 - The entry table is zero-padded up to `header_size`. The first entry's
   offset always equals `header_size`, and every offset is a multiple of
   `align`.
+- In all 309 `.MRG`s the packer places data with
+  `(pos + align) & ~(align - 1)`, so there is always at least one byte of
+  gap:
+  - `header_size = (0x20 + N*stride + 4 + align - 1) & ~(align - 1)`
+    (the table is followed by one zero u32, then the padding);
+  - `offset[i+1] = (offset[i] + size[i] + align) & ~(align - 1)`, so
+    zero-size `dummy.bin` slots still take one alignment unit;
+  - the file ends exactly at `offset[N-1] + size[N-1]`.
 
 ### Variants seen
 
