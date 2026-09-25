@@ -2,7 +2,8 @@
 
 Reverse-engineering notes (`DOC/`) and Python tools (`SRC/`) for the PAL PS2
 game *Let's Make a Soccer Team!* (`SLES_541.51`). See `README.md` for setup,
-the tool list, and the doc index. See `TODO.md` for what to work on next.
+the tool list, and the doc index. See `GOALS.md` for what the project is
+working towards and `TODO.md` for what to work on next.
 
 ## Data layout
 
