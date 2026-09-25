@@ -12,15 +12,18 @@ layout below is confirmed from the code that reads it.
 | `.SNP` | `NSNT` | node tree: a skeleton object with no meshes |
 | `.SNM` | `NSMO` | node motion (`NNS_MOTION`) |
 | `.SNA` | `NSNN` | node name list |
-| (archives only) | `NSCA` + `NSMC` | camera and camera motion (not decoded) |
-| (archives only) | `NSLI` | light (not decoded) |
+| `.snd` (in archives) | `NSCA` + `NSMC` | camera and camera motion of a pre-rendered background |
+| `.snl` (in archives) | `NSLI` | light |
 
-There are 138 loose files in `DAT/` and 5,254 more uncompressed entries
+There are 138 loose files in `DAT/`, 5,254 more uncompressed entries
 inside `.PAC`/`.MRG`/`.HED` archives (stadiums, background props, player
-parts, `PLAYERMOTION.PAC`, ...). `python SRC/ninja.py info DAT` checks all
-5,392 against this document and reports no problems. `--prs` also expands
-PRSH-compressed archive entries, which is much slower. That pass finds
-3,370 more, and all 8,762 check with no problems.
+parts, `PLAYERMOTION.PAC`, ...), and 3,430 blocks inside uncompressed KC@P
+`etc::PackData` entries (`GAME/CUTINPACK`: 3,357 cut-in motions and 71
+models; `EDITFACEPACK`: 2 heads). `python SRC/ninja.py info DAT` checks all
+8,822 against this document and reports no problems. `--prs` also expands
+PRSH-compressed entries, including the player face packs, which is much
+slower. That pass checks 54,051 blobs with no problems, including 41,861
+face and hair models from the face packs (21,388 of them heads).
 
 All values are little-endian.
 
@@ -99,7 +102,7 @@ The plain object is 0x44 bytes. `+0x28`–`+0x3C` are confirmed; the others
 follow the same NN names and are **empirical**.
 
 For every VU object, all primitive-list pointers are null: the vertex
-lists hold the strips. Only the 35 common-vertex lists (below) use them.
+lists hold the strips. Only the common-vertex lists (below) use them.
 
 ### Nodes (`NNS_NODE`, 0x90 bytes)
 
@@ -128,13 +131,15 @@ Flags (confirmed at `0x16c274`–`0x16c41c`):
 | `0x1000`, `0x2000` | copy the parent's 3×3 / transform the translation (not seen used) |
 | `0x40000`, `0x80000`, `0x100000` | normalise matrix column 0 / 1 / 2 |
 
-Because the palette is world × inverse bind, **vertices are stored in
-model space in the bind pose.** The exception is meshes on flag-`0x8`
-nodes. On the disc these nodes always have flags `0xf` (no transform of
-their own), so their vertices are in the frame of the nearest ancestor
-without `0x8`. `ninja.py obj` uses this rule. It is **empirical**, and the
-exported models (players, trophies, the clubhouse test scene) assemble
-correctly with it.
+A meshset is drawn with its matrix palette entry (meshset `+0x14`, read
+at `0x1994b4`), not with its node's. Because the palette is world × inverse
+bind, **vertices are stored in model space in the bind pose.** The
+exception is a palette entry owned by a flag-`0x8` node: it is the node's
+world matrix, so the vertices are in that node's frame, which is its
+parent's bind world plus its own translation. None of these nodes rotates
+or scales on the disc; most have flags `0xf`. `ninja.py obj` uses this
+rule. It is **empirical**, and the exported models (players, faces,
+trophies, the clubhouse test scene) assemble correctly with it.
 
 ### Node-pointer objects (players)
 
@@ -216,7 +221,15 @@ The index selects an entry of the object's `NSTL`. **Empirical**, across all
   these, a reflection map that doesn't use the vertex UVs.
 
 Models without `NSTL` (4,734 of the `0x400`/`0x800` materials, e.g. the
-stadiums and the balls) get their textures from outside the model file.
+stadiums, the balls and the `BG/HUMAN_HEAD_MODEL` heads) get their textures
+from outside the model file.
+
+The face packs keep each head's and hair's texture as a sibling
+`etc::PackData` block, an SVM whose texture name is the `NSTL` name without
+`.svr` (`NIR_00_Maik_TAYLOR`, `buz004`). `ninja.py obj` finds them there.
+The hair textures are grey patterns; the game probably tints them with the
+player's hair colour (**not confirmed**; see `COLOR_TBL` in
+[`PLAYER_DIR.md`](PLAYER_DIR.md)).
 The player models name their kit, skin and number textures (`skn_00.svr`,
 `org_000_sht.svr`, ...), but those files aren't on the disc as-is: the
 game builds them from the `PLAYER/` packs.
@@ -228,10 +241,8 @@ correctly.
 ## Vertex lists
 
 The vertex-list pointer type decides the kind (confirmed at `0x19969c`).
-If `type & 0xff0000` is set, it's a **common vertices** list, compiled at
-load time by `nnCompileCommonVerticesObject*` (35 lists, e.g. `SHC3.SNO`
-and `ENG_00_MICHAEL_OWEN.SNO`). Those aren't decoded. Otherwise the list
-is `{u32 type, u32 qwords, ptr data, ...}`, and `data` is a ready-made
+If `type & 0xff0000` is set (`0x10000`), it's a **common vertices** list,
+described below. Otherwise the list is `{u32 type, u32 qwords, ptr data, ...}`, and `data` is a ready-made
 **VIF stream** that `PXPutRef` sends to VU1 unchanged. The stream uses only
 `STCYCL`, `STMASK`, `STROW`, `UNPACK`, `MSCNT` and `NOP`, and it always
 ends exactly at `qwords`.
@@ -312,6 +323,49 @@ three vertex normals don't settle the direction.
 separate strips inside one batch and draw nothing. They still count for
 the even/odd parity. `ninja.py obj` drops them.
 
+### Common-vertex lists (pointer type `0x10000`)
+
+Used by the player face models and the other heads (`BG/HUMAN_HEAD_MODEL`,
+`PLAYER/PLAYER_MODEL.PAC`, the face packs), plus two test files. The game
+converts them at load time (`nnCompileCommonVerticesObject*`); the file
+holds plain arrays and index lists. Unlike the VU lists, these meshsets use
+their primitive list (meshset `+0x20`).
+
+The vertex list is up to four 16-byte **streams**, `{u32 format, u32
+count, u32 element size, ptr data}`, ended by a zero format.
+`nnEstVtxTypeCommonVertices` (`0x191e38`) reads the format words at
+`+0x0`, `+0x10`, `+0x20`, `+0x30` and turns the bits into a PX Plus vertex
+type. The streams have **their own counts**, so a corner can reuse a
+position with a different UV, as in an OBJ `v/vt/vn` face.
+
+| Format | Size | Element (**empirical**) |
+|--------|------|-------------------------|
+| `0x1` | 12 | position x, y, z (f32) |
+| `0x401` | 24 | position, then u32 bone 0, u32 bone 1, f32 weight of bone 0 |
+| `0x1001` | 44 | position, then 4 × {u32 bone, f32 weight} |
+| `0x2` | 12 | normal (f32) |
+| `0x8` | 16 | colour, 4 × f32 (only `SHC3.SNO`) |
+| `0x20` | 8 | UV (f32) |
+
+Bones are matrix palette indices, always below the object's palette size.
+In `0x401` the second bone gets `1 - weight` (the weight is between 0 and 1
+in all 21,872 checked vertices).
+
+The primitive list pointer has type `0x20000`, and the list is:
+
+| Offset | Field |
+|--------|-------|
+| 0x00 | mask of the indexed streams: `7` (3 streams) or `3` (2) |
+| 0x04 | indices per corner, equal to the vertex list's stream count |
+| 0x08 | strip count |
+| 0x0C | → u16 strip lengths |
+| 0x10 | → u16 indices, one per stream per corner, stream order |
+
+The lengths and indices sit just before the primitive list struct, and the
+index array ends exactly at it (padded to 4). This and every index being
+below its stream's count hold for all 5,625 primitive lists found. Each
+strip is a triangle strip, wound like the VU strips.
+
 ## Texture file list (`NSTL`)
 
 `{u32 count, ptr entries}`. Each entry is 0x14 bytes: `+0` type (0), `+4` →
@@ -364,6 +418,57 @@ The key formats (**empirical**, from all 891 motions):
 Angles are 16-bit NN angles (0x10000 = 360°). No scale, user-data or
 hide submotions occur, although `nnCalcNodeMotionCore` supports them.
 
+## Cameras (`NSCA` + `NSMC`)
+
+Each pre-rendered background (`BG/BG_*.MRG`, 171 files) has one `.snd`
+entry holding the camera it was rendered with; `PRELOAD/TACTICSPITCH.PAC`
+has 3 more. That is the camera to use with its
+[`.zbf` depth buffer](ZBF_FORMAT.md) and background image.
+
+`NSCA` main struct: `{u32 type, ptr camera}` with type `0xff` (all 174).
+The camera (type 0 in all 174):
+
+| Offset | Field |
+|--------|-------|
+| 0x00 | camera type (0) |
+| 0x04 | vertical field of view, s32 NN angle (0x10000 = 360°) |
+| 0x08 | aspect ratio (f32, 1.3333) |
+| 0x0C | near clip, `+0x10` far clip (f32) |
+| 0x14 | position x, y, z (f32) |
+| 0x20 | target x, y, z (f32) |
+
+`NSMC` is an `NNS_MOTION` (type `0x10010002` or `0x10040002`) whose
+submotions animate the camera. Confirmed from `nnCalcCameraMotionCore`
+(`0x175c98`), which picks the evaluator by type mask and writes the results
+to the fields above:
+
+| Submotion type | Mask | Evaluator | Animates | Key |
+|----------------|------|-----------|----------|-----|
+| `0x101`/`0x201`/`0x401` | `0x700` | `nnCalcMotionTranslate` | position X/Y/Z | f32 frame, f32 |
+| `0x40001`/`0x80001`/`0x100001` | `0x1c0000` | `nnCalcMotionCameraXYZ` | target X/Y/Z | f32 frame, f32 |
+| `0x200012` | `0x200000` | `nnCalcMotionCameraAngle` | roll | s16 frame, s16 angle |
+| `0x10000012` | `0x10000000` | `nnCalcMotionCameraAngle` | field of view | s16 frame, s16 angle |
+
+Every camera on the disc has exactly these eight submotions. Most have one
+key each, so the camera doesn't move.
+
+## Lights (`NSLI`)
+
+Two files (`BG/BG_OF_00.MRG`, `BG/BG_OF_03.MRG`). `NSLI` main struct:
+`{u32 type, ptr light}`, passed to `nnSetLight(index, light, type)` by
+`graphics::CLight::SetPointer` (`0x3414f8`). Both lights are type `0x10`,
+whose branch in `nnSetLight` (`0x17b330`) reads:
+
+| Offset | Field | Set with |
+|--------|-------|----------|
+| 0x04 | colour R, G, B (f32) | `nnSetLightColor` |
+| 0x10 | alpha | `nnSetLightAlpha` |
+| 0x14 | intensity | `nnSetLightIntensity` |
+| 0x18 | position x, y, z | `nnSetLightPosition` |
+| 0x24 | target x, y, z | `nnSetLightTarget` |
+| 0x30 | range (2 × f32) | `nnSetLightRange` |
+| 0x38 | falloff (2 × f32) | `nnSetLightFallOff` |
+
 ## Still unknown
 
 - Material colours, GS register words and the layer flag bits.
@@ -372,16 +477,22 @@ hide submotions occur, although `nnCalcNodeMotionCore` supports them.
   extended node `+0xC0`.
 - Object type bits at `+0x44`, VU type bit `0x100`, the PX Plus skin
   words, and skinned weight remainders.
-- Common-vertex lists (`nnCompileCommonVerticesObject`), used by the 35
-  lists above and by the face models in `PLAYER/` (see
-  [`PLAYER_DIR.md`](PLAYER_DIR.md)).
-- Camera (`NSCA`/`NSMC`) and light (`NSLI`) chunks.
+- How the game fills the remaining weight of skinned VU vertices, and
+  what the common-vertex weights do beyond the bind pose.
 - Submotion interpolation types.
 
 ## Tools
 
 ```
-python SRC/ninja.py info DAT                    # all 5,392 blobs, no problems
+python SRC/ninja.py info DAT                    # 8,822 blobs, no problems
+python SRC/ninja.py info DAT --prs              # also the PRS-compressed ones
 python SRC/ninja.py dump DAT/PLAYER/M_PLAYER.SNO
 python SRC/ninja.py obj  DAT/TEST3D/CAMERON.SNO out/cameron.obj   # + .mtl and PNG textures
+python SRC/ninja.py obj  "DAT/PLAYER/FC_EURO_FACEPACK_00.HED#0.0" out/face.obj   # a player's head
 ```
+
+`obj` takes a file or any label that `info` prints for an archive entry:
+`ARCHIVE#entry:name` (BINPAC) or `ARCHIVE#entry.block` (a block inside a
+KC@P pack entry). Textures come from, in order: sibling blocks of the same
+pack entry, same-named entries of the same archive, or files next to a
+loose model.

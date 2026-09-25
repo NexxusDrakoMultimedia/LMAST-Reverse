@@ -52,8 +52,8 @@ or which code loads them.
 ## 3. Ninja 3D models and motions
 
 Documented in [`DOC/NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md). `SRC/ninja.py`
-checks all 5,392 blobs (138 loose files, 5,254 archive entries) with no
-problems, and exports static meshes to OBJ.
+checks all 8,822 blobs (loose files, archive entries and KC@P pack blocks)
+with no problems, and exports textured static meshes to OBJ.
 
 - [x] Document the chunk layouts (`DOC/NINJA_FORMAT.md`)
 - [x] Add a parser (`ninja.py info`/`dump`) and add it to `regress.py`
@@ -63,13 +63,18 @@ problems, and exports static meshes to OBJ.
 - [ ] Material colours, GS register words and layer flag bits (reflection
       maps on the trophies), and where textures for models without `NSTL`
       come from (stadiums, balls)
-- [ ] Common-vertex lists (`nnCompileCommonVerticesObject*`, 35 lists plus
-      the `PLAYER/` face models)
+- [x] Common-vertex lists (`nnCompileCommonVerticesObject*`): the face and
+      head models; `obj` exports them
+- [x] Export the face packs' own textures (sibling SVM blocks in the same
+      `etc::PackData` entry); `obj` takes `info` labels for archive entries
+- [ ] Hair tint: the hair textures are grey patterns, probably coloured
+      from `COLOR_TBL`
 - [ ] PX Plus skin words, VU `0x21` weight remainder, VU type bit `0x100`
-- [ ] Camera (`NSCA`/`NSMC`) and light (`NSLI`) chunks; submotion
-      interpolation types
-- [x] Run `ninja.py info DAT --prs` over the PRSH-compressed entries
-      (8,762 blobs, no problems)
+- [x] Camera (`NSCA`/`NSMC`, one per pre-rendered background) and light
+      (`NSLI`) chunks
+- [ ] Submotion interpolation types (`0x20002`, `0x20004`, `0x20200`)
+- [x] Run `ninja.py info DAT --prs` over the PRSH-compressed entries and
+      the face packs (54,051 blobs, no problems)
 - [ ] Skinned export (glTF with skeleton and motions)
 
 ## 4. `DAT/PLAYER/`

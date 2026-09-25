@@ -83,7 +83,7 @@ Where each folder stands (September 2026):
 | `MESSAGE/` | `MES.PAC` | done ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md)) |
 | `NEWS/` | `PAC`/`HED`, `TBB` | containers parse; no folder doc |
 | `PARAM/` | 18 `TBB`, `PAC`/`HED`, `BIN` | tables parse; no folder doc, table meanings unknown |
-| `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` not parsed by a tool, 3 tables not decoded; models parse except the common-vertex face models |
+| `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` not parsed by a tool, 3 tables not decoded; models parse, faces included ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
 | `PRELOAD/` | 139 `PAC` | containers parse; no folder doc |
 | `SEQ/` | 19 `SQB`, `TBB`, `WPX` | not studied |
 | `SOUND/` | 28 `DAT` sound banks | banks parse; no folder doc |

@@ -109,7 +109,8 @@ python SRC/packdata.py list DAT/PLAYER/PLPACK_HOME.HED 0
 python SRC/svr.py png DAT out/textures
 python SRC/csp.py png DAT/CSE out/cse --crops
 python SRC/zbf.py png DAT/BG out/depth
-python SRC/ninja.py obj DAT/PLAYER/M_PLAYER.SNO out/m_player.obj
+python SRC/ninja.py obj DAT/TEST3D/CAMERON.SNO out/cameron.obj
+python SRC/ninja.py obj "DAT/PLAYER/FC_EURO_FACEPACK_00.HED#0.0" out/face.obj
 ```
 
 ### Sound

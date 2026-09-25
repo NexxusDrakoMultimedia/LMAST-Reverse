@@ -21,15 +21,17 @@ Usage:
     python ninja.py info <file | dir> ... [--prs]
                                               # check every chunk against the layout;
                                               # also NSIF entries in .PAC/.MRG/.HED
-                                              # (--prs: expand PRSH entries too, slow)
-    python ninja.py dump <file>               # nodes, meshes, motions, names
-    python ninja.py obj  <file> <out.obj>     # static mesh in bind pose, plus
-                                              # .mtl and PNGs of the NSTL textures
-                                              # found next to the model
+                                              # and KC@P packs (--prs: expand PRSH
+                                              # entries too, e.g. the face packs; slow)
+    python ninja.py dump <model>              # nodes, meshes, motions, names, camera
+    python ninja.py obj  <model> <out.obj>    # static mesh in bind pose, plus
+                                              # .mtl and PNGs of its NSTL textures;
+                                              # <model> is a file or an info label
+                                              # (ARCHIVE#entry, ARCHIVE#entry.block)
 
-Only VU (types 0x5-0x1ff) and PX Plus (0x60000 bits set) vertex lists are
-decoded. "Common vertices" lists (vertex-list pointer type 0x10000) are
-counted but not exported.
+Vertex lists come in three kinds, all decoded: VU (types 0x5-0x1ff), PX
+Plus (0x60000 bits set) and common vertices (pointer type 0x10000, the
+face and head models; indexed streams plus a primitive list).
 
 Requires: pip install pillow  (only for the PNG textures `obj` writes)
 """
@@ -60,7 +62,11 @@ _UNPACK = {0x0: (1, 32), 0x1: (1, 16), 0x2: (1, 8), 0x4: (2, 32), 0x5: (2, 16),
 # Submotion type -> key size, from every .SNM on the disc (empirical)
 _KEY_SIZE = {0x101: 8, 0x201: 8, 0x401: 8,            # T x/y/z: f32 frame, f32 value
              0x812: 4, 0x1012: 4, 0x2012: 4,          # R x/y/z: s16 frame, s16 angle
-             0x3812: 8}                               # R xyz: s16 frame, 3 x s16 angle
+             0x3812: 8,                               # R xyz: s16 frame, 3 x s16 angle
+             # camera motions (NSMC); classes from nnCalcCameraMotionCore
+             0x40001: 8, 0x80001: 8, 0x100001: 8,     # target x/y/z: f32, f32
+             0x200012: 4,                             # roll: s16 frame, s16 angle
+             0x10000012: 4}                           # fov: s16 frame, s16 angle
 
 
 class NinjaFile:
@@ -217,6 +223,64 @@ def decode_pxplus(buf, off, qwc):
     return batches
 
 
+# Common-vertex stream formats -> element size (empirical, every list on the
+# disc). 0x401/0x1001 are positions followed by skin data.
+_COMMON_STREAMS = {0x1: 12, 0x401: 24, 0x1001: 44,   # position
+                   0x2: 12,                          # normal
+                   0x8: 16,                          # colour, 4 x f32
+                   0x20: 8}                          # uv
+
+
+def decode_common(nf, vl, prim):
+    """Common-vertex list at data offset vl drawn with the primitive list at
+    prim. The list is up to four {format, count, size, ptr} streams; each
+    strip corner has one u16 index per stream (like an OBJ face's v/vt/vn),
+    so every strip becomes its own Batch."""
+    streams = []
+    for k in range(4):
+        fmt, count, size, ptr = nf.words(vl + 16 * k, 4)
+        if not fmt:
+            break
+        if _COMMON_STREAMS.get(fmt) != size:
+            raise ValueError("common stream format %#x size %d" % (fmt, size))
+        streams.append((fmt, count, size, ptr))
+    mask, nidx, nstrip, plen, pidx = nf.words(prim, 5)
+    if nidx != len(streams) or mask != (1 << nidx) - 1:
+        raise ValueError("primitive list indexes %d streams (mask %#x), vertex list has %d"
+                         % (nidx, mask, len(streams)))
+    lens = struct.unpack_from("<%dH" % nstrip, nf.buf, nf.data_off + plen)
+    idx = struct.unpack_from("<%dH" % (sum(lens) * nidx), nf.buf, nf.data_off + pidx)
+    if (pidx + 2 * len(idx) + 3) & ~3 != prim:
+        raise ValueError("primitive indices don't end at the primitive list")
+    for k, (fmt, count, _, _) in enumerate(streams):
+        if max(idx[k::nidx], default=0) >= count:
+            raise ValueError("index past the %d elements of stream %#x" % (count, fmt))
+    batches, at = [], 0
+    for n in lens:
+        b = Batch(4)
+        b.n = n
+        for c in range(n):
+            for k, (fmt, _, size, ptr) in enumerate(streams):
+                p = nf.data_off + ptr + size * idx[(at + c) * nidx + k]
+                if fmt & 1:
+                    b.pos.append(struct.unpack_from("<3f", nf.buf, p))
+                    if fmt == 0x401:    # two bones, one weight
+                        i0, i1, w = struct.unpack_from("<2If", nf.buf, p + 12)
+                        b.bones.append(((i0, w), (i1, 1 - w)))
+                    elif fmt == 0x1001:  # four {bone, weight}
+                        v = struct.unpack_from("<IfIfIfIf", nf.buf, p + 12)
+                        b.bones.append(tuple(zip(v[0::2], v[1::2])))
+                elif fmt == 0x2:
+                    b.nrm.append(struct.unpack_from("<3f", nf.buf, p))
+                elif fmt == 0x8:
+                    b.col.append(struct.unpack_from("<4f", nf.buf, p))
+                else:
+                    b.uv.append(struct.unpack_from("<2f", nf.buf, p))
+        at += n
+        batches.append(b)
+    return batches
+
+
 def strip_triangles(batch):
     """Return (a, b, c) index triples for one batch, wound consistently.
 
@@ -259,7 +323,7 @@ class NinjaObject:
     def __init__(self, nf, rel):
         self.nf, self.problems = nf, []
         w = nf.words(rel, 17)
-        self.center, self.radius = w[0:3], struct.unpack("<f", struct.pack("<I", w[3]))[0]
+        self.center, self.radius = nf.words(rel, 3, "f"), nf.words(rel + 0xc, 1, "f")[0]
         (self.nmat, self.pmat, self.nvtx, self.pvtx, self.nprim, self.pprim,
          self.nnode, self.depth, self.pnode, self.nmtx, self.nsub, self.psub,
          self.ntex) = w[4:17]
@@ -317,6 +381,21 @@ class NinjaObject:
         self._vtx_cache[ptr_entry] = res
         return res
 
+    def _common(self, vtx_entry, prim_entry):
+        key = (vtx_entry, prim_entry)
+        if key not in self._vtx_cache:
+            nf = self.nf
+            vl = nf.u32(vtx_entry + 4)
+            ptype, prim = nf.words(prim_entry, 2)
+            try:
+                if ptype != 0x20000:
+                    raise ValueError("primitive list type %#x" % ptype)
+                self._vtx_cache[key] = decode_common(nf, vl, prim)
+            except (ValueError, struct.error) as e:
+                self._problem("common vertex list %#x: %s" % (vl, e))
+                self._vtx_cache[key] = None
+        return self._vtx_cache[key]
+
     def _parse_plain(self):
         nf = self.nf
         for i in range(self.nnode):
@@ -334,13 +413,15 @@ class NinjaObject:
             stype, nmesh, pmesh = nf.words(self.psub + SUBOBJ_SIZE * s, 3)
             for m in range(nmesh):
                 ms = pmesh + MESHSET_SIZE * m
-                node, mtx, mat, vtx, prim = nf.words(ms + 0x10, 5)
+                node, mtx, mat, vtx, prim = nf.words(ms + 0x10, 5, "i")
                 # NSME parts with no nodes of their own index an external
                 # skeleton (the .SNP node tree), so only check other objects.
                 if (node >= self.nnode and self.nnode) or mat >= self.nmat or vtx >= self.nvtx or prim >= max(self.nprim, 1):
                     self._problem("meshset %d/%d index out of range" % (s, m))
                     continue
                 vtype, batches = self._vertex_list(self.pvtx + 8 * vtx)
+                if nf.u32(self.pvtx + 8 * vtx) & COMMON_VERTICES:   # pointer type
+                    batches = self._common(self.pvtx + 8 * vtx, self.pprim + 8 * prim)
                 self.meshes.append(Mesh(node, mtx, mat, vtx, vtype, stype, batches,
                                         self._texture(self.pmat + 8 * mat)))
 
@@ -366,7 +447,7 @@ class NinjaObject:
                 stype, mat = nf.words(sb, 2)
                 nmesh, pmesh = nf.words(sb + 0xc, 2)
                 for m in range(nmesh):
-                    mflags, mmtx, vtx = nf.words(pmesh + MESHSET_EX_SIZE * m, 3)
+                    mflags, mmtx, vtx = nf.words(pmesh + MESHSET_EX_SIZE * m, 3, "i")
                     if mat >= nmat or vtx >= nvtx:
                         self._problem("node %d meshset %d/%d index out of range" % (i, s, m))
                         continue
@@ -397,6 +478,37 @@ class Motion:
             if pkey + nkey * keysize > nf.data_size:
                 self.problems.append("submotion %d: keys past end of data" % i)
             self.subs.append((stype, iptype, node, start, end, nkey, keysize))
+
+
+class Camera:
+    """NSCA: {u32 type (0xff), ptr camera}. Camera type 0 (all 174 on the
+    disc): +4 fov (NN angle), +8 aspect, +0xc near, +0x10 far, +0x14
+    position, +0x20 target; the fields nnCalcCameraMotionCore (0x175c98)
+    writes."""
+    def __init__(self, nf, rel):
+        self.problems = []
+        ptype, cam = nf.words(rel, 2)
+        self.type, fov = nf.words(cam, 2, "i")
+        self.fov = fov * 360.0 / 0x10000
+        self.aspect, self.near, self.far = nf.words(cam + 8, 3, "f")
+        self.pos, self.target = nf.words(cam + 0x14, 3, "f"), nf.words(cam + 0x20, 3, "f")
+        if ptype != 0xff or self.type != 0:
+            self.problems.append("camera pointer type %#x, camera type %#x" % (ptype, self.type))
+
+
+class Light:
+    """NSLI: {u32 type, ptr light}, passed to nnSetLight (0x17b060). Type
+    0x10 (both lights on the disc, branch at 0x17b330): +4 RGB, +0x10 alpha,
+    +0x14 intensity, +0x18 position, +0x24 target, +0x30 range (2 f32),
+    +0x38 falloff (2 f32)."""
+    def __init__(self, nf, rel):
+        self.problems = []
+        self.type, light = nf.words(rel, 2)
+        self.color = nf.words(light + 4, 3, "f")
+        self.intensity = nf.words(light + 0x14, 1, "f")[0]
+        self.pos, self.target = nf.words(light + 0x18, 3, "f"), nf.words(light + 0x24, 3, "f")
+        if self.type != 0x10:
+            self.problems.append("light type %#x" % self.type)
 
 
 def texture_names(nf, rel):
@@ -430,25 +542,42 @@ def invert(m):
     return inv, ti
 
 
-def bind_space(obj, node):
-    """Matrix taking a mesh on `node` to model space in the bind pose, or None.
+def bind_space(obj, matrix):
+    """Matrix taking a mesh drawn with palette entry `matrix` (meshset +0x14,
+    used at 0x1994b4) to model space in the bind pose, or None.
 
-    The palette entry is world x inverse-bind (+0x30), which is the identity
-    in the bind pose, so vertices are already in model space. Flag 0x8 nodes
-    skip the inverse-bind (nnCalcMatrixPaletteNode, 0x16c41c) and so draw in
-    their world frame; on the disc they all also have flags 0x7 (no T/R/S of
-    their own), so that frame is their nearest non-0x8 ancestor's bind world.
+    The palette entry is the owning node's world x inverse-bind (+0x30),
+    the identity in the bind pose, so vertices are already in model space.
+    Flag 0x8 nodes skip the inverse-bind (nnCalcMatrixPaletteNode, 0x16c41c)
+    and draw in their world frame: their parent's bind world plus their own
+    translation. None of them rotates or scales on the disc.
     """
-    n = obj.nodes[node]
+    owners = [i for i, n in enumerate(obj.nodes) if n.matrix == matrix]
+    if matrix < 0 or not owners:
+        return None     # skinned: per-vertex bones, model space
+    return _flag8_world(obj, owners[0])
+
+
+def _flag8_world(obj, index):
+    n = obj.nodes[index]
     if not n.flags & 8:
         return None
-    while n.flags & 8:
-        if n.flags & 7 != 7:
-            raise ValueError("node %d: flag 0x8 with its own transform" % node)
-        if n.parent < 0:
-            return None
-        n = obj.nodes[n.parent]
+    if (not n.flags & 2 and any(n.r)) or (not n.flags & 4 and tuple(n.s) != (1.0, 1.0, 1.0)):
+        raise ValueError("node %d: flag 0x8 with rotation or scale" % index)
+    parent = _bind_world(obj, n.parent) if n.parent >= 0 else IDENTITY
+    t = (0.0, 0.0, 0.0) if n.flags & 1 else n.t
+    return parent[0], transform(t, parent)
+
+
+def _bind_world(obj, index):
+    """Bind-pose world matrix of a node as (3x3, translation)."""
+    n = obj.nodes[index]
+    if n.flags & 8:
+        return _flag8_world(obj, index)
     return invert(n.inv)
+
+
+IDENTITY = (((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)), (0.0, 0.0, 0.0))
 
 
 def transform(p, mat):
@@ -460,7 +589,8 @@ def transform(p, mat):
 
 def _iter_blobs(args, prs=False):
     """Yield (label, bytes) for loose Ninja files and for NSIF entries inside
-    BINPAC/KC@P containers (PRSH-compressed entries only with prs=True)."""
+    BINPAC/KC@P containers. PRSH-compressed entries, which include every
+    KC@P entry (face packs), are only expanded with prs=True."""
     import pac
     for a in args:
         if os.path.isdir(a):
@@ -479,14 +609,32 @@ def _iter_blobs(args, prs=False):
         # Some .HED files repeat the inline header of their .PAC; skip them.
         if data is None or (data != a and pac.load_header(data) is not None):
             continue
-        with open(data, "rb") as f:
-            buf = f.read()
-        for i, (off, size, name, _) in enumerate(hdr.entries):
-            blob = buf[off:off + size]
-            if blob[:4] == b"PRSH" and prs:
-                blob = pac.prsh_expand(blob)
-            if blob[:4] == b"NSIF":
-                yield "%s#%d%s" % (label, i, ":" + name if name else ""), blob
+        with open(data, "rb") as f:     # entry by entry: face packs are > 1 GB
+            for i, (off, size, name, _) in enumerate(hdr.entries):
+                f.seek(off)
+                blob = f.read(4)
+                kcap = isinstance(hdr, pac.KcAtP)
+                if blob == b"PRSH" and not prs:
+                    continue
+                if blob not in (b"NSIF", b"PRSH") and not kcap:
+                    continue
+                blob += f.read(size - 4)
+                if blob[:4] == b"PRSH":
+                    blob = pac.prsh_expand(blob)
+                tag = "%s#%d%s" % (label, i, ":" + name if name else "")
+                if blob[:4] == b"NSIF":
+                    yield tag, blob
+                elif kcap:
+                    # KC@P entries are etc::PackData; faces and hair are
+                    # NSIF blocks inside (see DOC/PLAYER_DIR.md)
+                    import packdata
+                    try:
+                        blocks = packdata.PackData(blob).blocks
+                    except ValueError:
+                        continue            # packdata.py info reports these
+                    for k, (_, bsize, boff) in enumerate(blocks):
+                        if blob[boff:boff + 4] == b"NSIF":
+                            yield "%s.%d" % (tag, k), blob[boff:boff + bsize]
 
 
 def _check_container(nf):
@@ -539,11 +687,22 @@ def cmd_info(paths, prs=False):
                         ",".join("%#x" % t for t in types)))
                     if o.common:
                         parts.append("common-vertex lists=%d" % o.common)
-                elif c[0] == b"NSMO":
+                elif c[0] in (b"NSMO", b"NSMC"):
                     m = Motion(nf, rel)
                     problems += m.problems
-                    parts.append("motion %#x frames %g-%g @%gfps sub=%d" % (
-                        m.type, m.start, m.end, m.fps, len(m.subs)))
+                    parts.append("%smotion %#x frames %g-%g @%gfps sub=%d" % (
+                        "camera " if c[0] == b"NSMC" else "", m.type, m.start, m.end, m.fps,
+                        len(m.subs)))
+                elif c[0] == b"NSLI":
+                    li = Light(nf, rel)
+                    problems += li.problems
+                    parts.append("light %#x pos=(%.4g %.4g %.4g) target=(%.4g %.4g %.4g)"
+                                 % (li.type, *li.pos, *li.target))
+                elif c[0] == b"NSCA":
+                    cam = Camera(nf, rel)
+                    problems += cam.problems
+                    parts.append("camera fov=%.1f pos=(%.4g %.4g %.4g) target=(%.4g %.4g %.4g)"
+                                 % (cam.fov, *cam.pos, *cam.target))
                 elif c[0] == b"NSTL":
                     ntex = len(texture_names(nf, rel))
                     parts.append("tex=%d" % ntex)
@@ -556,8 +715,7 @@ def cmd_info(paths, prs=False):
 
 
 def cmd_dump(path):
-    with open(path, "rb") as f:
-        nf = NinjaFile(f.read())
+    nf = NinjaFile(load_model(path)[0])
     print("NSIF count=%d data=%#x+%#x NOF0=%#x (%d ptrs) version=%d" % (
         nf.count, nf.data_off, nf.data_size, nf.nof0_off, len(nf.ptrs), nf.version))
     for c in nf.chunks:
@@ -586,7 +744,15 @@ def cmd_dump(path):
                     len(m.batches) if m.batches is not None else "-", nv))
             for p in o.problems:
                 print("  !! " + p)
-        elif c[0] == b"NSMO":
+        elif c[0] == b"NSLI":
+            li = Light(nf, rel)
+            print("  type=%#x color=(%g %g %g) intensity=%g" % (li.type, *li.color, li.intensity))
+            print("  position=(%g %g %g) target=(%g %g %g)" % (*li.pos, *li.target))
+        elif c[0] == b"NSCA":
+            cam = Camera(nf, rel)
+            print("  fov=%.2f deg aspect=%g near=%g far=%g" % (cam.fov, cam.aspect, cam.near, cam.far))
+            print("  position=(%g %g %g) target=(%g %g %g)" % (*cam.pos, *cam.target))
+        elif c[0] in (b"NSMO", b"NSMC"):
             m = Motion(nf, rel)
             print("  type=%#x frames %g-%g fps=%g" % (m.type, m.start, m.end, m.fps))
             for s in m.subs:
@@ -609,29 +775,94 @@ def _find_file(folder, name):
     return None
 
 
-def _write_texture(svr_path, png_path):
-    """Convert one .SVR to PNG. Returns False when pillow isn't installed."""
+def _textures_in(buf, name=""):
+    """svr.Textures in one SVR/SVM blob, or [] if it's neither."""
+    import svr
+    if buf[:4] == b"PVMH":
+        return svr.parse_svm(buf)
+    if buf[:4] in (b"GBIX", b"PVRT"):
+        return [svr.parse_svr(buf, name)]
+    return []
+
+
+def load_model(spec):
+    """Read a model given as a file, or as an `info` label for an archive
+    entry: `ARCHIVE#entry[:name]` or `ARCHIVE#entry.block` (KC@P packs).
+    Returns (bytes, find_texture), where find_texture(name) returns an
+    svr.Texture for an NSTL name, or None."""
+    import pac
+    path, _, rest = spec.partition("#")
+    if not rest:
+        with open(path, "rb") as f:
+            buf = f.read()
+        folder = os.path.dirname(os.path.abspath(path))
+
+        def find(name):
+            src = _find_file(folder, name)
+            return _textures_in(open(src, "rb").read(), os.path.splitext(name)[0])[0] if src else None
+        return buf, find
+    hdr = pac.load_header(path)
+    if hdr is None:
+        raise ValueError("%s: not a BINPAC/KC@P archive" % path)
+    data = pac.data_path(path, hdr)
+
+    def entry(i):
+        off, size = hdr.entries[i][:2]
+        with open(data, "rb") as f:
+            f.seek(off)
+            raw = f.read(size)
+        return pac.prsh_expand(raw) if raw[:4] == b"PRSH" else raw
+    if ":" in rest:                                   # BINPAC names may contain dots
+        index, block = int(rest.split(":")[0]), None
+    else:
+        index, _, block = rest.partition(".")
+        index, block = int(index), int(block) if block else None
+    buf = entry(index)
+    if block is None:
+        # Textures are other entries of the same archive, found by name.
+        names = {n.upper(): i for i, (_, _, n, _) in enumerate(hdr.entries) if n}
+
+        def find(name):
+            i = names.get(name.upper())
+            if i is None:
+                return None
+            texs = _textures_in(entry(i), os.path.splitext(name)[0])
+            return texs[0] if texs else None
+        return buf, find
+    # KC@P: the model is one etc::PackData block; its textures are the SVR/SVM
+    # blocks beside it (face and hair, see DOC/PLAYER_DIR.md).
+    import packdata
+    blocks = packdata.PackData(buf).blocks
+    _, bsize, boff = blocks[block]
+    found = {}
+    for k, (_, size, off) in enumerate(blocks):
+        if k != block:
+            for t in _textures_in(buf[off:off + size]):
+                found.setdefault(t.name.upper(), t)
+    return buf[boff:boff + bsize], lambda name: found.get(os.path.splitext(name)[0].upper())
+
+
+def _write_texture(tex, png_path):
+    """Save one svr.Texture as PNG. Returns False when pillow isn't installed."""
     try:
         from PIL import Image
     except ImportError:
         return False
-    import svr
-    t = svr.load(svr_path)[0]
-    img = Image.new("RGBA", (t.width, t.height))
-    img.putdata(t.pixels())
+    img = Image.new("RGBA", (tex.width, tex.height))
+    img.putdata(tex.pixels())
     img.save(png_path)
     return True
 
 
 def cmd_obj(path, out):
-    with open(path, "rb") as f:
-        nf = NinjaFile(f.read())
+    buf, find_texture = load_model(path)
+    nf = NinjaFile(buf)
     names = []
     for c in nf.chunks:
         if c[0] == b"NSTL":
             names = texture_names(nf, nf.main_struct(c))
     stem = os.path.splitext(out)[0]
-    lines = ["# %s" % os.path.basename(path), "mtllib %s.mtl" % os.path.basename(stem)]
+    lines = ["# %s" % path, "mtllib %s.mtl" % os.path.basename(stem)]
     nv = nvt = nvn = 0
     used = set()
     for c in nf.chunks:
@@ -641,7 +872,7 @@ def cmd_obj(path, out):
         for k, m in enumerate(o.meshes):
             if not m.batches:
                 continue
-            world = bind_space(o, m.node)
+            world = bind_space(o, m.matrix)
             mtl = "untextured" if m.texture is None else "tex%d" % m.texture
             used.add(m.texture)
             lines += ["o mesh%d_node%d_mat%d" % (k, m.node, m.material), "usemtl " + mtl]
@@ -667,26 +898,26 @@ def cmd_obj(path, out):
     with open(out, "w") as f:
         f.write("\n".join(lines) + "\n")
 
-    # Materials: one per texture index. Textures named in NSTL that sit next
-    # to the model are converted to PNG beside the .obj; the player models'
-    # kit and skin textures come from the PLAYER/ packs at run time instead.
-    mtl, folder, wrote, missing = [], os.path.dirname(os.path.abspath(path)), 0, []
+    # Materials: one per texture index. The NSTL textures that load_model
+    # finds are converted to PNG beside the .obj; the player models' kit and
+    # skin textures are assembled by the game at run time instead.
+    mtl, wrote, missing = [], 0, []
     for t in sorted(used, key=lambda v: -1 if v is None else v):
         if t is None:
             mtl += ["newmtl untextured", "Kd 0.8 0.8 0.8", ""]
             continue
         mtl += ["newmtl tex%d" % t, "Kd 1 1 1"]
         name = names[t] if t < len(names) else None
-        src = _find_file(folder, name) if name else None
-        if src:
+        tex = find_texture(name) if name else None
+        if tex:
             png = "%s_%s.png" % (os.path.basename(stem), os.path.splitext(name)[0])
-            if _write_texture(src, os.path.join(os.path.dirname(os.path.abspath(out)), png)):
+            if _write_texture(tex, os.path.join(os.path.dirname(os.path.abspath(out)), png)):
                 mtl.append("map_Kd " + png)
                 wrote += 1
             else:
                 mtl.append("# %s: install pillow to convert it" % name)
         else:
-            mtl.append("# texture %s not found next to the model" % (name or "#%d (no NSTL)" % t))
+            mtl.append("# texture %s not found" % (name or "#%d (no NSTL)" % t))
             missing.append(name or "#%d" % t)
         mtl.append("")
     with open(stem + ".mtl", "w") as f:
