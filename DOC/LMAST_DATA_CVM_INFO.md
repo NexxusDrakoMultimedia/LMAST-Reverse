@@ -1,4 +1,6 @@
 # Let's Make a Soccer Team (PS2) — DATA.CVM Decryption to DATA.ISO
+Special thanks to **@tw09627** on the LMAST Discord, who first decrypted `DATA.CVM` with the help of
+        ChatGPT and opened up the game's data for this project.
 
 ## Purpose
 
