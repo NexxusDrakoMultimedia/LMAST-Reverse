@@ -1,13 +1,18 @@
 """Regression check: run every tool's layout check over the data and compare
 the output with a saved baseline.
 
-The tools report problems in different ways (pac.py marks lines with '!!',
-mbb.py prints a count, svr.py/tbb.py/csp.py just print what they parsed), so
-this doesn't look for warnings. It records each check's full output once
-(`bless`) and afterwards fails on any difference, which catches new warnings,
-changed counts and parse results that shift after a code change. Known quirks
-of the disc itself (e.g. the stale PLAYERMOTION.HED) stay in the baseline and
-don't fail the run.
+Every `info` marks a problem with '!!' on the line it concerns, but a clean
+'!!'-free run isn't the goal: the disc has known quirks (the stale
+PLAYERMOTION.HED, TBB tables with trailing bytes, an empty CSP) that are
+marked and expected. So this records each check's full output once (`bless`)
+and afterwards fails on any difference, which catches new '!!' lines as well
+as changed counts and parse results that shift after a code change.
+
+Nothing passes on its own. A '!!' line that disappears fails the run just
+like a new one: it may be a fix, or a check that stopped running, and only
+a person can tell which. `run` lists '!!' lines that appeared or disappeared
+before the diff, and `bless` prints each check's '!!' count (old -> new), so
+the review starts from the problems.
 
 A check also fails if it exits non-zero, writes to stderr, or its input is
 missing.
@@ -29,6 +34,7 @@ import glob
 import os
 import subprocess
 import sys
+from collections import Counter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE_DIR = os.path.join(ROOT, ".regress")
@@ -109,6 +115,23 @@ def load_baseline(name):
         return f.read()
 
 
+def problem_lines(text):
+    return Counter(l.strip() for l in text.splitlines() if "!! " in l)
+
+
+def problem_changes(base, out):
+    """Lines describing '!!' lines that appeared or disappeared. Both fail the
+    run: a new one is a regression, and a vanished one needs review too,
+    because it means either a fix or a check that silently stopped running."""
+    old, new = problem_lines(base), problem_lines(out)
+    lines = []
+    for label, gone in (("new problem", new - old),
+                        ("problem gone (fixed, or the check stopped running?)", old - new)):
+        for l in sorted(gone.elements()):
+            lines.append("%s: %s" % (label, l))
+    return lines
+
+
 def cmd_list():
     for name, argv, _ in checks():
         mark = " " if load_baseline(name) is not None else "*"
@@ -126,6 +149,7 @@ def cmd_run(names, full):
         elif errors:
             pass  # a crash or missing input already explains it; the diff is noise
         elif out != base:
+            errors.extend(problem_changes(base, out))
             diff = list(difflib.unified_diff(
                 base.splitlines(), out.splitlines(),
                 "baseline/" + name, "current/" + name, lineterm="", n=1))
@@ -158,7 +182,13 @@ def cmd_bless(names):
         with open(baseline_path(name), "w", encoding="utf-8", newline="") as f:
             f.write(out)
         what = "new" if old is None else ("unchanged" if old == out else "updated")
-        print("%-9s %s (%d lines)" % (what, name, out.count("\n")))
+        n_new = sum(problem_lines(out).values())
+        count = "!! %d" % n_new
+        if old is not None:
+            n_old = sum(problem_lines(old).values())
+            if n_old != n_new:
+                count = "!! %d -> %d" % (n_old, n_new)
+        print("%-9s %s (%d lines, %s)" % (what, name, out.count("\n"), count))
     return status
 
 

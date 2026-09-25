@@ -54,8 +54,9 @@ The decryption and key recovery are covered in
 
 All tools run from the repo root as `python SRC/<tool>.py <command> ...`.
 Running a tool with no arguments prints its full usage. Most commands accept
-either files or directories, and `info` parses every matching file and reports
-anything that doesn't fit the documented layout.
+either files or directories, and `info` parses every matching file and marks
+anything that doesn't fit the documented layout with `!!`. Search for them
+with, for example, `python SRC/tbb.py info DAT | grep '!!'`.
 
 ### Game code
 

@@ -50,10 +50,14 @@ def _iter_zbf(args):
 
 def cmd_info(paths):
     for label, blob in _iter_zbf(paths):
-        z = decode(blob)
+        try:
+            z = decode(blob)
+        except ValueError as e:
+            print("%-24s !! %s" % (label, e))
+            continue
         high = sum(1 for v in struct.unpack("<%dI" % (WIDTH * HEIGHT), blob) if v >> 24)
         print("%-24s min=%#08x max=%#08x%s" % (
-            label, min(z), max(z), "  (%d px with bits above 24)" % high if high else ""))
+            label, min(z), max(z), "  !! %d px with bits above 24" % high if high else ""))
 
 
 def cmd_png(paths, out_dir):

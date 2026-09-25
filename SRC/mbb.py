@@ -210,7 +210,7 @@ def cmd_info(paths):
             dup_files.append("%s (%d)" % (label, len(dups)))
         if probs:
             bad += 1
-            print("%-20s %s" % (label, "; ".join(probs)))
+            print("%-20s  !! %s" % (label, "; ".join(probs)))
     print("%d files, %d categories, %d with problems" % (files, len(cats), bad))
     print("records per language: " + ", ".join(
         "%d %s=%d" % (i, n, c) for i, (n, c) in enumerate(zip(LANGS, recs))))

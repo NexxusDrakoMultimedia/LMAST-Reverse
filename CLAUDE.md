@@ -29,7 +29,8 @@ the tool list, and the doc index. See `TODO.md` for what to work on next.
 After changing any tool, run `python SRC/regress.py run`. A diff is a
 regression unless the change was intended. Only then run `bless <name>`, and
 say in the commit what changed in the output. Never bless to make a failure
-go away.
+go away. A `!!` line that disappears fails too, and needs the same review: a
+fix is fine to bless, but a check that stopped running is a regression.
 
 Commits usually add a doc and its tool together, with messages like
 "Document X format; add x.py reader".
@@ -63,8 +64,20 @@ Commits usually add a doc and its tool together, with messages like
 - Structure: format classes and parse functions, then `cmd_<name>(...)`
   functions, then a hand-rolled `main(argv)` (no argparse), then
   `sys.exit(main(sys.argv))`.
-- `info` walks files or directories, checks every file against the documented
-  layout, and prints any mismatch. It is the regression check.
+- `info` walks files or directories and checks every file against the
+  documented layout. Every problem is marked with `!!` on the line it
+  concerns: `<normal line>  !! reason; reason`, or a line of its own
+  (`  !! reason`) when the item spans several lines. `!!` means the data
+  doesn't fit the documented layout, or the file couldn't be parsed. Don't
+  use it for informational notes such as "swizzled" or "repeated ids (not an
+  error)", and don't use any other marker.
+- `info` catches parse errors (`ValueError`, `struct.error`) for each file and
+  reports them as `!!`, so one bad file doesn't stop the scan. Other commands
+  (`dump`, `extract`, `png`, ...) let errors propagate.
+- The CSV exporters (`evsdatabin.py`, `eventdata_turn.py`) write data to
+  stdout and have no `info`, so they don't use `!!`. `evsdatabin.py` raises
+  if a file isn't a whole number of records. `eventdata_turn.py` ignores the
+  table's 10 trailing bytes, which `tbb.py info` reports.
 - Tools reuse each other through sibling imports (`from pac import BinPac`,
   `import svr`, `import tbb`). These work because the script's directory is
   on `sys.path`. Reuse `pac.py` for BINPAC/KC@P/PRS, `tbb.py` for TBB1/TBL1

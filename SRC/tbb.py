@@ -84,7 +84,11 @@ def _iter_paths(args):
 
 def cmd_info(paths):
     for path in _iter_paths(paths):
-        total, tables = load(path)
+        try:
+            total, tables = load(path)
+        except (ValueError, struct.error) as e:
+            print("%s  !! %s" % (path, e))
+            continue
         print("%s  tables=%d  total=%#x" % (path, len(tables), total))
         for t in tables:
             if t.magic != TBL_MAGIC:
@@ -94,7 +98,7 @@ def cmd_info(paths):
             rem = t.size % t.line_size if t.line_size else 0
             print("  [%3d] @%#07x  size=%6d  line=%4d  rows=%5d%s" % (
                 t.index, t.offset, t.size, t.line_size, t.row_count,
-                "  (+%d trailing bytes)" % rem if rem else ""))
+                "  !! %d trailing bytes" % rem if rem else ""))
 
 
 def _hexrow(b):

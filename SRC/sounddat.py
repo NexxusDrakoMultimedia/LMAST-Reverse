@@ -220,7 +220,8 @@ def cmd_info(path):
         print("  DTPK @%#08x %s size %#07x  %2d samples (%d looped) rates %s" % (
             bank.pos, bank.kind, bank.size, len(bank.samples), loops, rates))
     end = max(b for _, _, b in items)
-    print("  end of data %#x, file %#x" % (end, len(d)))
+    print("  end of data %#x, file %#x%s" % (
+        end, len(d), "  !! %#x bytes not covered" % (len(d) - end) if end != len(d) else ""))
 
 
 def cmd_extract(path, outdir, wav):

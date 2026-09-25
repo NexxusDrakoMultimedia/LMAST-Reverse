@@ -240,9 +240,16 @@ def cmd_info(paths):
     for path in _iter_files(paths, (".CSP", ".CSE")):
         name = os.path.basename(path)
         if os.path.getsize(path) == 0:
-            print("%-28s (empty)" % name)
+            print("%-28s !! empty file" % name)
             continue
-        cse, texs = load(path)
+        try:
+            cse, texs = load(path)
+        except (ValueError, struct.error) as e:
+            print("%-28s !! %s" % (name, e))
+            continue
+        if cse is None:
+            print("%-28s !! no CSE entry" % name)
+            continue
         scenes = cse.scenes()
         nodes = sum(1 for s in scenes for fam in s.families if fam.root for _ in fam.root.walk())
         banks = sum(1 for s in scenes for bk in s.banks if bk)

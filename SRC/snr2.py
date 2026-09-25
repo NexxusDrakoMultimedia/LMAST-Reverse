@@ -167,11 +167,25 @@ def cmd_info(m):
         op = m.word(off) >> 26
         ok = {L_HI16: op == 0x0F, L_J26: op in (2, 3)}.get(t, True)
         kinds[t] = kinds.get(t, 0) + (not ok)
+    contiguous = (h["ext_rel_off"] + 12 * h["ext_rel_count"] == h["sym_off"]
+                  and h["sym_off"] + 12 * h["sym_count"] == h["loc_rel_off"])
+    at_eof = m.loc_consumed == len(m.data)
+    hi16, j26 = kinds.get(L_HI16, 0), kinds.get(L_J26, 0)
     print("  checks: tables contiguous %s, local list ends at EOF %s, bad hashes %d, "
-          "HI16 not lui %d, J26 not j/jal %d" % (
-              h["ext_rel_off"] + 12 * h["ext_rel_count"] == h["sym_off"]
-              and h["sym_off"] + 12 * h["sym_count"] == h["loc_rel_off"],
-              m.loc_consumed == len(m.data), bad_hash, kinds.get(L_HI16, 0), kinds.get(L_J26, 0)))
+          "HI16 not lui %d, J26 not j/jal %d" % (contiguous, at_eof, bad_hash, hi16, j26))
+    problems = []
+    if not contiguous:
+        problems.append("ext relocs / symbols / local relocs not contiguous")
+    if not at_eof:
+        problems.append("local reloc list doesn't end at EOF")
+    if bad_hash:
+        problems.append("%d bad symbol hashes" % bad_hash)
+    if hi16:
+        problems.append("%d HI16 sites not lui" % hi16)
+    if j26:
+        problems.append("%d J26 sites not j/jal" % j26)
+    if problems:
+        print("  !! " + "; ".join(problems))
 
 
 def sibling_exports(m):

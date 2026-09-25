@@ -309,11 +309,15 @@ def cmd_info(paths):
     for path in _iter_paths(paths, (".SVR", ".SVM", ".SVP")):
         with open(path, "rb") as f:
             buf = f.read()
-        if buf[:4] == b"PVPL":
-            p = parse_svp(buf)
-            print("%s  PVPL %s x%d" % (path, PIXEL_FORMATS.get(p.pf, hex(p.pf)), p.count))
+        try:
+            if buf[:4] == b"PVPL":
+                p = parse_svp(buf)
+                print("%s  PVPL %s x%d" % (path, PIXEL_FORMATS.get(p.pf, hex(p.pf)), p.count))
+                continue
+            texs = load(path)
+        except (ValueError, struct.error) as e:
+            print("%s  !! %s" % (path, e))
             continue
-        texs = load(path)
         print("%s  %d texture(s)" % (path, len(texs)))
         for t in texs:
             print("  %-24s %4dx%-4d pf=%#04x df=%#04x %-20s levels=%d%s%s" % (
