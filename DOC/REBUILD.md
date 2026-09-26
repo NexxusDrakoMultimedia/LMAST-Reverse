@@ -104,8 +104,9 @@ Tested on a copy of `DATA.CVM`:
 
 Confirmed in PCSX2: an `mbb.py import` edit to the welcome mail
 (`563_1.mbb`), patched with `--copies` into `MES.PAC` and
-`PRELOAD/MAIL1.PAC#6`, showed in a new game
-([`MBB_FORMAT.md`](MBB_FORMAT.md#size)).
+`PRELOAD/MAIL1.PAC#6`, showed in a new game. With different text in the
+two copies, the mail showed the `MES.PAC` one, so the `MAIL1` copy isn't
+what that mail reads ([`MBB_FORMAT.md`](MBB_FORMAT.md#size)).
 
 ## Usage
 

@@ -30,8 +30,12 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 - [x] Confirm in PCSX2 that an edited message shows in game: the
       welcome mail's subject and body (`563:11000`/`563:1000`, English),
       written to `MES.PAC` and `PRELOAD/MAIL1.PAC`
-- [ ] Which copy the mail text is read from: `MES.PAC` or `PRELOAD/MAIL*.PAC`
-      (patch only one of them and look)
+- [x] Which copy the mail text is read from: `MES.PAC` (different text in
+      `MES.PAC` and `PRELOAD/MAIL1.PAC#6`; the welcome mail showed the
+      `MES.PAC` one). The rival's Big Bang lines (`487`, no copy) also
+      showed
+- [ ] What the other `PRELOAD` copies of message files are read for, if
+      anything (`SIMLOCALMEM`, `STATIONMES`, `TACTICS*`, `GAMEFILE`, `NEWS`)
 - [ ] Let a message file grow into `MES.PAC`'s `0x800` padding (median
       1,544 bytes free): rewrite the entry size in the header; files with a
       `PRELOAD` copy (`0x40` alignment) need that pack rebuilt too

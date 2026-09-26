@@ -292,7 +292,17 @@ Drako." with `import`. The shorter body left 381 bytes of zero padding
 in `563_1.mbb`, and every later record moved up. `patch --copies` wrote
 `MES.PAC` and its copy `PRELOAD/MAIL1.PAC#6`. In a new game the mail
 showed the new subject and body, with the sender (`{var:1:101}`) still
-filled in. Which of the two copies the game read wasn't checked.
+filled in.
+
+**Which copy is read (tested in PCSX2).** A second disc got different
+text in each copy of `563_1.mbb`: "Copy A: MES.PAC" in `MES.PAC` and
+"Copy B: PRELOAD" in `PRELOAD/MAIL1.PAC#6`. The welcome mail showed
+**copy A**, so this mail is read from `MES.PAC`. The same disc changed
+the rival's lines 102 and 104 in `487_1.mbb`, which has no `PRELOAD` copy
+(the Big Bang street interview, 2005–2006 week 3 of June in a new game).
+They showed, and the window wrapped the long lines on its own. What the
+other `PRELOAD` copies (`SIMLOCALMEM`, `STATIONMES`, `TACTICS*`, ...)
+are for isn't known, so `--copies` stays the safe choice.
 
 **Room to grow (not used yet).** `MES.PAC` aligns entries to `0x800`, so
 most files are followed by unused padding (median 1,544 bytes, fewer
