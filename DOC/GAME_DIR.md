@@ -318,6 +318,88 @@ Every stream ends exactly at its `0xFF`.
 midi DAT/SOUND/MAP01.DAT out/` writes each song as a MIDI file (General
 MIDI instruments, loop points as `loopStart`/`loopEnd` markers).
 
+### Instruments (tone tables)
+
+How a note becomes a sound, **confirmed** from `SNDFI.IRX`:
+
+| Address | What it shows |
+|---|---|
+| `0x8068`–`0x8110` | a setup record fills a channel's state: bank, program, volume, pan, mix bits, tune |
+| `0x81f0`–`0x8338` | program lookup: bank table, then program table |
+| `0x3878`–`0x3a54` | note on: every split whose velocity range fits; the layer by key (melodic) or by key table (drum kit) |
+| `0x3e40`–`0x4110` | voice start: left/right volume, ADSR1 = layer `+0xe`, ADSR2 = layer `+0x10` |
+| `0x4cec` | the voice level (below) |
+| `0x50e4`, `0x9edc`–`0xa034` | mix bits: layer `+8` or, with its bit 7 set, the channel's; bits 0–3 switch VMIXL, VMIXR, VMIXEL, VMIXER (dry left/right, reverb left/right) |
+| `0x9a08` | controller 7 overwrites the channel volume the setup set |
+
+Offsets are from the bank start. **ptr[0] setups:** u16 count − 1, u16
+offsets. A setup is an 8-byte header (byte 0: last record index) and one
+16-byte record per MIDI channel:
+
+| Offset | What |
+|---|---|
+| `+1` | channel |
+| `+2`, `+3` | bank, program |
+| `+6` | volume |
+| `+8` | pan |
+| `+9` | mix bits (0/1 dry left/right, 2/3 reverb left/right), bits 4–5 the SPU2 core |
+| `+0xa` | s16 tune, cents |
+
+A song's command `a019nn` selects setup *nn* + 1 for the streams after it
+(`MAP02` songs 1 and 2 change setup between intro and loop). Setup 0 is a
+default.
+
+**ptr[1] programs:** u16 bank count − 1, u16 bank offsets; a bank is u16
+program count − 1 and u16 program offsets, both from the start of the
+table they are in. A program has a type at `+0` (0 melodic, 1 drum kit)
+and up to four u16 split offsets at `+8` (0 = none). Every split whose
+velocity range fits the note sounds, so a stereo sound is two splits
+panned apart (`MAP11`–`MAP23`).
+
+A **split** has the layer count − 1 at `+0`, the velocity range at `+2`/
+`+3` and the velocity curve at `+6`. A melodic split's 32-byte layers
+start at `+0x20`; the first whose top key is at least the note plays. A
+drum kit's split has its key range at `+0x20`/`+0x21` and one u16 layer
+offset per key from `+0x22` (0 = no drum).
+
+A **layer** (32 bytes):
+
+| Offset | What |
+|---|---|
+| `+0` | top key (melodic) |
+| `+1` | bit 7: fixed pitch (drum layers) |
+| `+2` | sample number |
+| `+7` | pan; above `0x7f` the channel's |
+| `+8` | mix bits; with bit 7 set the channel's |
+| `+9` | volume |
+| `+0xa` | s16 tune, cents |
+| `+0xe`, `+0x10` | the SPU2 ADSR1 and ADSR2 words |
+
+The tune folds in the sample's rate and root key: a note plays at
+`(key − 60) × 100 + tune` cents relative to 48 kHz (`MAP11`'s −702 is
+exactly 32 kHz). **empirical**, from the zone layouts (tunes 500 cents
+apart for zones 5 keys apart) and from rendering `MAP11`, which gives back
+the stereo recording.
+
+**ptr[2] curves:** u32 count − 1, then 128-byte level curves.
+
+**Level** (`0x4cec`): `curve[velocity]` (the split's curve) × layer
+volume ÷ 256 × channel volume ÷ 128 × song volume ÷ 128 × master ÷ 128;
+then × a pan factor for each side. Controller 7 replaces the setup's
+volume rather than scaling it.
+
+The noise on `MAP01` channels 9 and 10 has mix bits `0xc`: reverb only.
+Played dry it sounds like foreground hiss; through the reverb it is the
+quiet wash heard in the game.
+
+`python SRC/sounddat.py tones <bank>` lists setups and programs, and
+`wav <bank> <dir> [song]` renders songs with them. The renderer follows
+everything above and approximates the rest of the SPU2: linear
+interpolation (the SPU2 filters), a 150 ms release instead of the ADSR
+envelopes, equal-power panning instead of the driver's pan table at
+`0x12048`, and a generic reverb for the reverb bus (the game's preset
+isn't decoded). Checked by ear against the game for nine songs.
+
 ### Banks in `SOUNDDAT.PAC`
 
 - Banks 0, 5 and 10 are identical `L` banks (34 samples).
@@ -351,7 +433,6 @@ slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
   selector pair, and what loads bank 39.
 - The BCR2 record layout and trailer, the BCB3 item fields and script
   opcodes, and the BCV records.
-- The DTPK kinds `L`/`J`/`H`, the other TBLD pointers (the tone tables
-  that map a song's channels to the bank's samples), the driver commands
-  `a00012` / `a019nn`, the sound-effect entries, and what each bank is
-  for.
+- The DTPK kinds `L`/`J`/`H`, TBLD pointers 4–7, the driver command
+  `a00012`, the sound-effect entries, the SPU2 reverb preset the game
+  sets, the pan table's exact law, and what each bank is for.

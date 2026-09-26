@@ -193,9 +193,12 @@ contents and three tables are still undecoded.
 - [x] DTPK songs: the SoundFactory sequence format, from the IOP driver
       `SNDFI.IRX` (stream, records, 1 ms ticks at 200 Hz); 41 songs in
       `MAP01`-`MAP10`, `sounddat.py songs` and `midi` (checked by ear)
-- [ ] Play the songs with the bank's own instruments: decode the tone
-      tables (TBLD pointers 0-2, 6) that map channels to samples, then
-      render to WAV
+- [x] Play the songs with the bank's own instruments: setups, programs,
+      splits, layers, drum kits, mix bits and the level rule from
+      `SNDFI.IRX`; `sounddat.py tones` and `wav` (checked by ear)
+- [ ] Closer to the SPU2: the ADSR envelopes (layer `+0xe`/`+0x10`),
+      Gaussian interpolation, the driver's pan table, and the game's reverb
+      preset
 - [x] Add `sounddat.py dtpk` over `SOUND/*.DAT` to `regress.py` (one check
       per file; each is a single bank filling the whole file)
 - [ ] `.SQB` sequences (19 files in `SEQ/`), with `SQBFILENAME.TBB`,
