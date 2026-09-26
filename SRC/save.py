@@ -768,7 +768,8 @@ PINFO_FIELDS = (
 STAFF = (("manager", TEAM_OFF + 0x4854, 1, "M"), ("youth manager", 0x8e00, 1, "M"),
          ("coach", 0x9148, 4, "M"), ("scout", 0x8f8c, 3, "S"))
 # kind: (size, id offset (-1 = empty, plMinfo/plSinfo_CloseContract 0x216ef0/0x218a10),
-# contract years (empirical), salary / 100 (empirical, last word),
+# contract years (pwkTeam_SignManager 0x269e20 stores them), salary / 100
+# (empirical, last word),
 # job (PlMinfo +0xa0), abilities offset, ability count)
 STAFF_KIND = {"M": (0xbc, 0x9c, 0x9e, 0xb8, 0xa0, 4 + 0x66, 48),
               "S": (0x94, 0x60, 0x62, 0x90, None, 4 + 0x2d, 45)}
@@ -1095,8 +1096,9 @@ def cmd_staff(game, path):
     s = Save(game, path)
     print(s.path)
     for role, i, st in s.staff():
-        print("  %-13s %d  id %5d  %-18s job %-4s %d year%s left, GBP %d a year" % (
-            role, i, st["id"], st["name"], "-" if st["job"] is None else st["job"],
+        job = "" if st["job"] is None else "%d %s" % (st["job"], pbdata.JOB_NAMES.get(st["job"], "?"))
+        print("  %-13s %d  id %5d  %-18s %-19s %d year%s left, GBP %d a year" % (
+            role, i, st["id"], st["name"], job,
             st["contract_years"], "" if st["contract_years"] == 1 else "s",
             st["salary"] * 100 // 6))
         if st["job"] is None:

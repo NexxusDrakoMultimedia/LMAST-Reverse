@@ -261,9 +261,35 @@ physical coaches, 4 goalkeeper coaches. The database holds jobs 0 (439),
 1 (786), 2 (714), 3 (678) and 4 (383), and no 5. A staff member hired as
 manager gets the job-5 bars. In a save, C. Collin (job 0 in the
 database) shows the manager bars, and they match abilities 39–44. So the
-job is changed at run time (*empirical*; the code that sets it hasn't
-been traced). The shared bars for Collin and M. Boismortier match their
-detail screens exactly.
+job is changed at run time. The shared bars for Collin and M. Boismortier
+match their detail screens exactly.
+
+**What the jobs are.** Averaging the coaching bars over each job in the
+database (**empirical**) separates 0–2:
+
+| Job | Count | Coaching bars (DRIBB SHOT PASS HEAD INTER MARK) | Is |
+|---|---|---|---|
+| 0 | 439 | 68 68 68 60 68 68 | a manager type: all even. Hired as manager it becomes 5, as youth manager 6 |
+| 1 | 786 | 80 80 80 68 55 55 | an attacking coach |
+| 2 | 714 | 68 55 61 76 80 80 | a defensive coach |
+| 3 | 678 | physical bars | physical coach |
+| 4 | 383 | saving bars | goalkeeper coach |
+
+In a save, M. Eulenburg and S. Saioni (job 0 in the database) are the
+manager (5) and youth manager (6), and the coaches keep jobs 1–4.
+`pwkTeam_SetYManager` (`0x26bd28`) writes 6 into the youth manager's
+`+0xa0` after copying him in (**confirmed**); where 5 is set for a manager
+isn't traced (`pwkTeam_SignManager`, `0x269e20`, copies the record as it
+is and sets only the contract years at `+0x9e`).
+
+The coach page's title (`SetupDetailCoachPageCommon`, jump table
+`0x5577d0`) is the same string for jobs 0, 1 and 2 (`Msg::GetString(0x18,
+3)`), with 4 for goalkeeper coaches and 5 for physical coaches. Those
+match messages 553 "Assistant Coach", 554 "GK Coach" and 555 "Physical
+Coach" of category 100001 if the index counts from 550 (**empirical**,
+from the two that line up). So the game gives jobs 0–2 one title; what
+tells them apart is only which abilities they are good at.
+`GP::ConvertStaff` (`0x27ee68`) likewise gives 0–2 one icon.
 
 **Confirmed, `WP::CDetailManager::ConvertScout` (`0x287c60`).**
 `PlSinfo` is 4 bytes followed by the `PlSbase` (`plSinfo_InitDb`
@@ -349,7 +375,7 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
   screen layout and hasn't been traced.
 - What bit 1 of the leg field means (two-footed is a guess), and the code
   that turns it into `PlPinfo +0x1c4`.
-- What separates jobs 0, 1 and 2, and what sets job 5 on hiring.
+- What sets job 5 when a manager is hired.
 - Staff abilities other than the ones the bars name (6–9, 23–27, 31–38),
   and scout abilities 2, 8–20 and 26–44 (the preferred areas and search
   types on the scout screen probably come from some of them).

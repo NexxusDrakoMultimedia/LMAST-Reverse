@@ -204,8 +204,8 @@ abilities at `+0x6a` (48) or `+0x31` (45).
 | PlMinfo | PlSinfo | Type | What | Source |
 |---|---|---|---|---|
 | `0x9c` | `0x60` | s16 | database id; −1 = empty | confirmed, `plMinfo_CloseContract` (`0x216ef0`) / `plSinfo_CloseContract` (`0x218a10`) set it to −1 |
-| `0x9e` | `0x62` | u8 | contract years remaining | empirical: the only byte matching all three screens checked (1, 2, 3) |
-| `0xa0` | | u32 | job: 0–2 coaches, 3 physical coach, 4 GK coach, 5 manager, 6 youth manager | `pbdata.py`'s `CalcManagerAbil` notes; 5 and 6 empirical |
+| `0x9e` | `0x62` | u8 | contract years remaining | confirmed for managers: `pwkTeam_SignManager` (`0x269e20`) stores the contract length there; the only byte matching all three screens checked (1, 2, 3) |
+| `0xa0` | | u32 | job: 0 manager type, 1 attacking coach, 2 defensive coach, 3 physical coach, 4 GK coach; once hired, 5 manager, 6 youth manager | see [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md); `pwkTeam_SetYManager` (`0x26bd28`) sets 6 |
 | `0xb8` | `0x90` | u32 | annual salary ÷ 100, stored money unit | empirical: £2,510,000, £950,000 and £1,060,000 match |
 
 `plMinfo_GetConyear` (`0x218dd8`) is something else: the longest contract
