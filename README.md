@@ -103,7 +103,7 @@ python SRC/packdata.py list DAT/PLAYER/PLPACK_HOME.HED 0
 | [`svr.py`](SRC/svr.py) | Ninja textures `.SVR`/`.SVM`/`.SVP`, including GS unswizzling | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) |
 | [`csp.py`](SRC/csp.py) | `.CSP`/`.CSE` 2D screen layouts (sprites, node tree, animation) | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) |
 | [`zbf.py`](SRC/zbf.py) | `.zbf` depth buffers for pre-rendered rooms | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) |
-| [`ninja.py`](SRC/ninja.py) | Ninja models and motions `.SNJ`/`.SNO`/`.SNM`/`.SNP`/`.SNA`, loose and inside archives; OBJ export | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) |
+| [`ninja.py`](SRC/ninja.py) | Ninja models and motions `.SNJ`/`.SNO`/`.SNM`/`.SNP`/`.SNA`, loose and inside archives; OBJ export, animated glTF export | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) |
 
 ```bash
 python SRC/svr.py png DAT out/textures
@@ -111,6 +111,7 @@ python SRC/csp.py png DAT/CSE out/cse --crops
 python SRC/zbf.py png DAT/BG out/depth
 python SRC/ninja.py obj DAT/TEST3D/CAMERON.SNO out/cameron.obj
 python SRC/ninja.py obj "DAT/PLAYER/FC_EURO_FACEPACK_00.HED#0.0" out/face.obj
+python SRC/ninja.py gltf out/player.gltf DAT/PLAYER/M_PLAYER.SNO "DAT/GAME/PLAYERMOTION.PAC#68:snm"
 ```
 
 ### Sound

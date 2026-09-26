@@ -81,7 +81,14 @@ with no problems, and exports textured static meshes to OBJ.
 - [ ] Submotion interpolation types (`0x20002`, `0x20004`, `0x20200`)
 - [x] Run `ninja.py info DAT --prs` over the PRSH-compressed entries and
       the face packs (54,051 blobs, no problems)
-- [ ] Skinned export (glTF with skeleton and motions)
+- [x] Skinned export: `gltf` writes glTF with skeleton, skin weights
+      (VU, PX Plus and common-vertex lists), textures and baked motions;
+      checked by posing the result (players, background humans, test models)
+- [ ] Which part files make up each in-game player (skeleton
+      `LMS_PLAYER.SNP` + body/limb `.snq` parts + face pack head), so a
+      complete player can be exported in one go
+- [ ] Bind face-pack heads to the player skeleton (they bring their own
+      19-node head skeleton; match nodes by name through `NSNN`?)
 
 ## 4. `DAT/PLAYER/`
 

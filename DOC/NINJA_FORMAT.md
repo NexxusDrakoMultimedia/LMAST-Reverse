@@ -282,8 +282,12 @@ Skinned types upload the whole batch as one `V4-32` block:
 `i` are u32 bone slots × 4 (a VU matrix is 4 qwords), always below the
 list's palette count (all 247,585 skinned vertices). `w` are floats. The
 two weights of `0x21` add up to 1.0 in 2,858 of 6,057 vertices and to less
-in the others. Where the rest of
-the weight goes (probably the meshset's own matrix) is **unknown**.
+in the others. Where the rest of the weight goes is **unknown**: the CPU
+uploads only the list's bones (`nnPutBoneMatrix`, `0x19e0a0`, an `UNPACK`
+of 4 qwords per bone to VU `0x180`), so the VU program does the blend, and
+the meshset's own matrix is -1. Treating the weights as if they were scaled
+up to 1 animates the test models cleanly; sending the rest to the bone's
+parent or to the root visibly doesn't, so `ninja.py gltf` normalises them.
 
 ### PX Plus lists (type has bits `0x60000`)
 
@@ -298,8 +302,13 @@ There is no GIF tag. The per-vertex attributes follow at stride 4 from VU 4.
 | `0x80000` | +5 | normal V3-16 (/4096) |
 | `0x800000` | +6 | UV V2-16 (/4096) |
 | `0x1000100` | +6 | UV as V4-16 instead (second pair **unknown**) |
-| `0x10` | after the vertices | 2 u32 skin words per vertex (V2-32, **not decoded**) |
-| `0x30` | after the vertices | 1 byte per vertex (S-8, **not decoded**) |
+| `0x10` | +4 + 4 × count | 2 u32 skin words per vertex (V2-32): `weight << 15 \| slot × 4`, 1.0 = `1 << 27`; unused word 0 |
+| `0x30` | +4 + 4 × count | 1 byte per vertex (S-8): `slot × 4`, weight 1 |
+
+The skin data is **empirical**, and `ninja.py info` checks it on every
+list: it sits right after the vertices, the weights of a vertex add up to
+1 (within 1/256), and every slot is below the list's bone palette count.
+Slots index the bone palette at list `+0xc`/`+0x10`, as for VU lists.
 
 The `4` in the header (all 5,646 batches) matches the GS triangle-strip
 PRIM, so the exporter treats each batch as one strip. That is **empirical**.
@@ -416,7 +425,23 @@ The key formats (**empirical**, from all 891 motions):
 | `0x3812` | 8 | rotation XYZ: s16 frame, 3 × s16 angle |
 
 Angles are 16-bit NN angles (0x10000 = 360°). No scale, user-data or
-hide submotions occur, although `nnCalcNodeMotionCore` supports them.
+hide submotions occur, although `nnCalcNodeMotionCore` supports them. Key
+frames always increase (checked by `info`). The submotion type's low
+nibble gives the key encoding: `1` f32 frame and f32 values, `2` s16 frame
+and s16 values.
+
+A submotion replaces its components of the node's rest translation or
+rotation. A node's rotation is built in the order its flags name, first
+axis first, with row vectors and local = scale × rotation × translation.
+That makes the glTF rotation `qz·qy·qx` for XYZ order (`qy·qz·qx` for
+XZY, `qy·qx·qz` for ZXY). **Empirical**: rebuilding every bone of
+`TEST3D/01.SNO` from its T/R/S chain reproduces its inverse bind matrices
+to within 0.05. Only XYZ and XZY occur on the disc.
+
+The rest T/R/S of an animated model is often a pose, not the bind pose the
+inverse matrices were built from (the Cameron test model stands with her
+hands together; players stand with their hands on their hips). A renderer
+must use both, as glTF does.
 
 ## Cameras (`NSCA` + `NSMC`)
 
@@ -475,11 +500,11 @@ whose branch in `nnSetLight` (`0x17b330`) reads:
 - Where the textures of models without `NSTL` come from.
 - The node sphere/box fields (`+0x70` plain, `+0x80` extended) and
   extended node `+0xC0`.
-- Object type bits at `+0x44`, VU type bit `0x100`, the PX Plus skin
-  words, and skinned weight remainders.
-- How the game fills the remaining weight of skinned VU vertices, and
-  what the common-vertex weights do beyond the bind pose.
-- Submotion interpolation types.
+- Object type bits at `+0x44` and VU type bit `0x100`.
+- How the VU program fills the remaining weight of skinned VU vertices.
+- Submotion interpolation types (`0x20002`, `0x20004`, `0x20200`);
+  `ninja.py gltf` bakes every track linearly, one sample per frame.
+- Node flags `0x1000`/`0x2000` (97 nodes), which glTF can't express.
 
 ## Tools
 
@@ -489,7 +514,20 @@ python SRC/ninja.py info DAT --prs              # also the PRS-compressed ones
 python SRC/ninja.py dump DAT/PLAYER/M_PLAYER.SNO
 python SRC/ninja.py obj  DAT/TEST3D/CAMERON.SNO out/cameron.obj   # + .mtl and PNG textures
 python SRC/ninja.py obj  "DAT/PLAYER/FC_EURO_FACEPACK_00.HED#0.0" out/face.obj   # a player's head
+python SRC/ninja.py gltf out/player.gltf DAT/PLAYER/M_PLAYER.SNO "DAT/GAME/PLAYERMOTION.PAC#68:snm"
+python SRC/ninja.py gltf out/human.gltf DAT/BG/HUMAN_1000.MRG       # a whole background human
 ```
+
+`gltf` writes a skinned, animated glTF 2.0 (`.gltf`, `.bin` and PNG
+textures) that Blender and other tools open. Its inputs are files, labels
+or whole archives, sorted by content: the first model with nodes is the
+skeleton; other models are parts drawn with it (node-less `NSME` parts use
+the skeleton's matrix numbers, player parts attach through their node's
+skeleton index at `+0xa`); an `NSTL`-only file names the parts' textures;
+each motion becomes an animation. Every node is a joint; rigid meshes get
+weight 1 on the node that owns their matrix. A part that brings its own
+skeleton without skeleton indices (a face-pack head) is skipped and
+reported instead of being bound to the wrong bones.
 
 `obj` takes a file or any label that `info` prints for an archive entry:
 `ARCHIVE#entry:name` (BINPAC) or `ARCHIVE#entry.block` (a block inside a

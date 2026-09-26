@@ -28,6 +28,13 @@ Usage:
                                               # .mtl and PNGs of its NSTL textures;
                                               # <model> is a file or an info label
                                               # (ARCHIVE#entry, ARCHIVE#entry.block)
+    python ninja.py gltf <out.gltf> <input> ...
+                                              # skinned, animated glTF. Inputs are
+                                              # files, labels or whole archives: the
+                                              # first model with nodes is the
+                                              # skeleton, other models are parts,
+                                              # NSTL files name textures, motions
+                                              # become animations
 
 Vertex lists come in three kinds, all decoded: VU (types 0x5-0x1ff), PX
 Plus (0x60000 bits set) and common vertices (pointer type 0x10000, the
@@ -35,6 +42,8 @@ face and head models; indexed streams plus a primitive list).
 
 Requires: pip install pillow  (only for the PNG textures `obj` writes)
 """
+import json
+import math
 import os
 import struct
 import sys
@@ -200,8 +209,12 @@ def decode_vu(buf, off, qwc, vtype):
 
 def decode_pxplus(buf, off, qwc):
     """PX Plus lists: UNPACK V4-32 {nverts, 4, qwords, 0}, then pos V3-32 /
-    normal V3-16 / uv V2-16|V4-16 at stride 4 from VU 4, plus optional per-
-    vertex skin words (V2-32 or S-8) that aren't decoded."""
+    normal V3-16 / uv V2-16|V4-16 at stride 4 from VU 4, then optional skin
+    data right after the vertices (VU 4 + 4 * nverts, empirical):
+      type 0x10: V2-32, two words `weight << 15 | slot * 4` (1.0 = 1 << 27;
+                 a vertex's weights add up to 1)
+      type 0x30: S-8, one byte `slot * 4`, weight 1
+    Slots index the vertex list's bone palette (+0xc count, +0x10 list)."""
     batches, cur = [], None
     for addr, comps, bits, n, p in vif_unpacks(buf, off, qwc):
         if addr == 0:
@@ -219,7 +232,20 @@ def decode_pxplus(buf, off, qwc):
             cur.nrm = [_vec(buf, p, i, comps, bits, FIX12) for i in range(n)]
         elif addr == 6:
             cur.uv = [_vec(buf, p, i, comps, bits, FIX12)[:2] for i in range(n)]
-        # higher addresses: skin data after the vertices
+        elif addr != 4 + 4 * n:
+            raise ValueError("PX Plus unpack to VU %#x" % addr)
+        elif (comps, bits) == (2, 32):
+            for i in range(n):
+                bones = tuple(((w & 0x7fff) // 4, (w >> 15) / 4096.0)
+                              for w in struct.unpack_from("<2I", buf, p + 8 * i) if w)
+                if abs(sum(wt for _, wt in bones) - 1) > 1 / 256:
+                    raise ValueError("PX Plus skin weights add up to %g"
+                                     % sum(wt for _, wt in bones))
+                cur.bones.append(bones)
+        elif (comps, bits) == (1, 8):
+            cur.bones = [((buf[p + i] // 4, 1.0),) for i in range(n)]
+        else:
+            raise ValueError("PX Plus skin unpack %d x %d-bit" % (comps, bits))
     return batches
 
 
@@ -309,6 +335,9 @@ class Mesh:
         self.node, self.matrix, self.material = node, matrix, material
         self.vtx_index, self.vtype, self.flags, self.batches = vtx_index, vtype, flags, batches
         self.texture = texture    # index into the object's NSTL list, or None
+        # Bone slot -> matrix palette index for skinned VU/PX Plus lists;
+        # None when batch bones are palette indices already (common lists).
+        self.palette = ()
 
 
 class Node:
@@ -378,8 +407,24 @@ class NinjaObject:
             except (ValueError, KeyError, struct.error) as e:
                 self._problem("vertex list %#x: %s" % (vl, e))
                 res = (vtype, None)
+            if res[1]:
+                nbone = nf.u32(vl + 0xc)
+                top = max((s for b in res[1] for bn in b.bones for s, _ in bn), default=-1)
+                if top >= nbone:
+                    self._problem("vertex list %#x: bone slot %d, palette of %d" % (vl, top, nbone))
         self._vtx_cache[ptr_entry] = res
         return res
+
+    def _palette(self, ptr_entry):
+        """The bone palette of the vertex list at a {type, ptr} entry: list
+        +0xc count, +0x10 -> u32 matrix palette indices (the matrices that
+        nnPutBoneMatrix uploads, 0x19dc70)."""
+        nf = self.nf
+        ptype, vl = nf.words(ptr_entry, 2)
+        if ptype & COMMON_VERTICES:
+            return None
+        n, p = nf.words(vl + 0xc, 2)
+        return nf.words(p, n) if n else ()
 
     def _common(self, vtx_entry, prim_entry):
         key = (vtx_entry, prim_entry)
@@ -424,6 +469,7 @@ class NinjaObject:
                     batches = self._common(self.pvtx + 8 * vtx, self.pprim + 8 * prim)
                 self.meshes.append(Mesh(node, mtx, mat, vtx, vtype, stype, batches,
                                         self._texture(self.pmat + 8 * mat)))
+                self.meshes[-1].palette = self._palette(self.pvtx + 8 * vtx)
 
     def _parse_ex(self):
         nf = self.nf
@@ -454,6 +500,7 @@ class NinjaObject:
                     vtype, batches = self._vertex_list(pvtx + 8 * vtx)
                     self.meshes.append(Mesh(i, mmtx, mat, vtx, vtype, mflags | stype, batches,
                                             self._texture(pmat + 8 * mat)))
+                    self.meshes[-1].palette = self._palette(pvtx + 8 * vtx)
 
 
 # --- motions and small chunks ----------------------------------------------------
@@ -464,7 +511,7 @@ class Motion:
         self.start, self.end = nf.words(rel + 4, 2, "f")
         nsub, psub = nf.words(rel + 0xc, 2)
         self.fps = nf.words(rel + 0x14, 1, "f")[0]
-        self.subs, self.problems = [], []
+        self.subs, self.keys, self.problems = [], [], []
         for i in range(nsub):
             s = psub + SUBMOTION_SIZE * i
             stype, iptype, node = nf.words(s, 3)
@@ -477,7 +524,27 @@ class Motion:
                 self.problems.append("submotion %d: key size %d, want %d" % (i, keysize, want))
             if pkey + nkey * keysize > nf.data_size:
                 self.problems.append("submotion %d: keys past end of data" % i)
+                self.keys.append([])
+            else:
+                self.keys.append(self._keys(nf, stype, pkey, nkey, keysize))
+                frames = [k[0] for k in self.keys[-1]]
+                if any(b <= a for a, b in zip(frames, frames[1:])):
+                    self.problems.append("submotion %d: key frames not increasing" % i)
             self.subs.append((stype, iptype, node, start, end, nkey, keysize))
+
+    @staticmethod
+    def _keys(nf, stype, pkey, nkey, keysize):
+        """[(frame, (values...))]. Type low nibble 1: f32 frame and f32
+        values; 2 (with bit 0x10): s16 frame and s16 angles (empirical)."""
+        if stype & 0xf == 2:
+            fmt = "<%dh" % (keysize // 2)
+        else:
+            fmt = "<%df" % (keysize // 4)
+        out = []
+        for k in range(nkey):
+            v = struct.unpack_from(fmt, nf.buf, nf.data_off + pkey + keysize * k)
+            out.append((v[0], v[1:]))
+        return out
 
 
 class Camera:
@@ -819,15 +886,23 @@ def load_model(spec):
         index, block = int(index), int(block) if block else None
     buf = entry(index)
     if block is None:
-        # Textures are other entries of the same archive, found by name.
+        # Textures are other entries of the same archive: an entry with the
+        # texture's name, or a texture inside one of its SVM entries (a
+        # background human's HUMAN_xxxx_MODEL.svm).
         names = {n.upper(): i for i, (_, _, n, _) in enumerate(hdr.entries) if n}
+        in_svm = {}
 
         def find(name):
             i = names.get(name.upper())
-            if i is None:
-                return None
-            texs = _textures_in(entry(i), os.path.splitext(name)[0])
-            return texs[0] if texs else None
+            if i is not None:
+                texs = _textures_in(entry(i), os.path.splitext(name)[0])
+                return texs[0] if texs else None
+            if not in_svm:
+                for k, (_, size, n, _) in enumerate(hdr.entries):
+                    if size and n.upper().endswith(".SVM"):
+                        for t in _textures_in(entry(k)):
+                            in_svm.setdefault(t.name.upper(), t)
+            return in_svm.get(os.path.splitext(name)[0].upper())
         return buf, find
     # KC@P: the model is one etc::PackData block; its textures are the SVR/SVM
     # blocks beside it (face and hair, see DOC/PLAYER_DIR.md).
@@ -926,6 +1001,316 @@ def cmd_obj(path, out):
         out, nv, wrote, ", not found: " + " ".join(missing) if missing else ""))
 
 
+# --- glTF export -----------------------------------------------------------------
+
+ANGLE = 2 * math.pi / 0x10000       # NN angle unit
+
+
+def _qmul(a, b):
+    ax, ay, az, aw = a
+    bx, by, bz, bw = b
+    return (aw * bx + ax * bw + ay * bz - az * by,
+            aw * by - ax * bz + ay * bw + az * bx,
+            aw * bz + ax * by - ay * bx + az * bw,
+            aw * bw - ax * bx - ay * by - az * bz)
+
+
+def euler_quat(r, flags):
+    """Quaternion (x, y, z, w) for NN angles r = (x, y, z). The node flags'
+    rotation order (0x16c354: 0 XYZ, 0x100 XZY, 0x400 ZXY) names the axis
+    applied first. The convention (row vectors, local = S * R * T) was
+    checked against the inverse bind matrices of TEST3D/01.SNO, whose rest
+    pose is its bind pose: every node matches to 0.05."""
+    q = {}
+    for axis, a in zip("xyz", r):
+        s, c = math.sin(a * ANGLE / 2), math.cos(a * ANGLE / 2)
+        q[axis] = (s if axis == "x" else 0.0, s if axis == "y" else 0.0,
+                   s if axis == "z" else 0.0, c)
+    order = {0x100: "xzy", 0x400: "zxy"}.get(flags & 0xf00, "xyz")
+    out = (0.0, 0.0, 0.0, 1.0)
+    for axis in order:              # first axis first: q = q3 * q2 * q1
+        out = _qmul(q[axis], out)
+    return out
+
+
+def _sample(keys, frame, comp, angle):
+    """Linear interpolation of one component of a submotion's keys at frame,
+    clamped at the ends. The interpolation types (0x20002, 0x20004,
+    0x20200) aren't decoded, so every track is baked linearly; s16 angles
+    take the short way round."""
+    if frame <= keys[0][0]:
+        return keys[0][1][comp]
+    if frame >= keys[-1][0]:
+        return keys[-1][1][comp]
+    for (f0, v0), (f1, v1) in zip(keys, keys[1:]):
+        if f0 <= frame <= f1:
+            a, b = v0[comp], v1[comp]
+            if angle:
+                b = a + ((b - a + 0x8000) % 0x10000 - 0x8000)
+            return a + (b - a) * (frame - f0) / (f1 - f0)
+    return keys[-1][1][comp]
+
+
+def bake_motion(motion, nodes):
+    """{node: (times, [translation], [rotation quaternion])} sampled at every
+    whole frame between the motion's start and end."""
+    first, last = int(math.ceil(motion.start)), int(math.floor(motion.end))
+    fps = motion.fps or 30.0
+    tracks = {}
+    for sub, keys in zip(motion.subs, motion.keys):
+        if keys and 0 <= sub[2] < len(nodes):
+            tracks.setdefault(sub[2], []).append((sub[0], keys))
+    out = {}
+    for node, subs in tracks.items():
+        n = nodes[node]
+        times, ts, rs = [], [], []
+        for f in range(first, last + 1):
+            t, r = list(n.t), list(n.r)
+            for stype, keys in subs:
+                if stype & 0x700:                       # translation x/y/z
+                    t[(0x100, 0x200, 0x400).index(stype & 0x700)] = _sample(keys, f, 0, False)
+                elif stype & 0x7800 == 0x3800:          # rotation xyz
+                    r = [_sample(keys, f, i, True) for i in range(3)]
+                elif stype & 0x7800:                    # rotation x/y/z
+                    r[(0x800, 0x1000, 0x2000).index(stype & 0x7800)] = _sample(keys, f, 0, True)
+            times.append((f - first) / fps)
+            ts.append(tuple(t))
+            rs.append(euler_quat(r, n.flags))
+        out[node] = (times, ts, rs)
+    return out
+
+
+class _Gltf:
+    """Collects the glTF JSON and one binary buffer."""
+    def __init__(self):
+        self.bin = bytearray()
+        self.doc = {"asset": {"version": "2.0", "generator": "LMAST-Reverse ninja.py"},
+                    "buffers": [], "bufferViews": [], "accessors": [], "nodes": [],
+                    "meshes": [], "materials": [], "scenes": [{"nodes": []}], "scene": 0}
+
+    def accessor(self, values, kind, comp=5126, target=None, minmax=False):
+        """values: list of tuples (or scalars). comp 5126 float, 5123 u16,
+        5125 u32. Returns the accessor index."""
+        width = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}[kind]
+        fmt = {5126: "f", 5123: "H", 5125: "I"}[comp]
+        flat = [x for v in values for x in (v if width > 1 else (v,))]
+        while len(self.bin) % 4:
+            self.bin.append(0)
+        data = struct.pack("<%d%s" % (len(flat), fmt), *flat)
+        view = {"buffer": 0, "byteOffset": len(self.bin), "byteLength": len(data)}
+        if target:
+            view["target"] = target
+        self.bin += data
+        self.doc["bufferViews"].append(view)
+        acc = {"bufferView": len(self.doc["bufferViews"]) - 1, "componentType": comp,
+               "count": len(values), "type": kind}
+        if minmax:
+            cols = list(zip(*values)) if width > 1 else [values]
+            acc["min"] = [min(c) for c in cols]
+            acc["max"] = [max(c) for c in cols]
+        self.doc["accessors"].append(acc)
+        return len(self.doc["accessors"]) - 1
+
+
+def _vertex_bones(mesh, batch, owners):
+    """[(joint, weight), ...] per vertex of one batch, or None if the mesh
+    can't be bound to the skeleton."""
+    if batch.bones:
+        out = []
+        for bones in batch.bones:
+            joints = []
+            for slot, w in bones:
+                pal = slot if mesh.palette is None else mesh.palette[slot]
+                if pal not in owners:
+                    return None
+                joints.append((owners[pal], w))
+            total = sum(w for _, w in joints)
+            # VU 0x10/0x20 weights can add up to less than 1, and where the
+            # rest goes isn't known (the VU program does the blend); they are
+            # scaled up to 1 here.
+            out.append([(j, w / total) for j, w in joints] if total > 0 else joints)
+        return out
+    joint = owners.get(mesh.matrix)
+    return None if joint is None else [[(joint, 1.0)]] * batch.n
+
+
+def _gltf_inputs(specs):
+    """(label, NinjaFile, find_texture) for each input. A bare archive path
+    stands for every Ninja entry in it (a background human's .MRG holds its
+    skeleton, body parts, texture list and motion)."""
+    import pac
+    out = []
+    for spec in specs:
+        path, _, rest = spec.partition("#")
+        if not rest and not path.upper().endswith(NINJA_EXTS) and pac.load_header(path):
+            for label, blob in _iter_blobs([path], prs=True):
+                out.append((label, NinjaFile(blob), load_model(label)[1]))
+        else:
+            buf, find = load_model(spec)
+            out.append((spec, NinjaFile(buf), find))
+    return out
+
+
+def cmd_gltf(out, specs):
+    # Sort the inputs: the first model with nodes is the skeleton; other
+    # models (NSME parts) are drawn with it; an NSTL-only file names the
+    # parts' textures; motions become animations.
+    skeleton, parts, motions, shared = None, [], [], ([], None)
+    for label, nf, find in _gltf_inputs(specs):
+        names = []
+        for c in nf.chunks:
+            if c[0] == b"NSTL":
+                names = texture_names(nf, nf.main_struct(c))
+        objs = [NinjaObject(nf, nf.main_struct(c)) for c in nf.chunks if c[0] in OBJECT_CHUNKS]
+        if names and not objs:
+            shared = (names, find)
+        for o in objs:
+            if skeleton is None and o.nodes:
+                skeleton = (o, names, find)
+            else:
+                parts.append((o, names, find))
+        motions += [(label, Motion(nf, nf.main_struct(c))) for c in nf.chunks if c[0] == b"NSMO"]
+    if skeleton is None:
+        raise ValueError("no input has a skeleton (a model or .SNP with nodes)")
+    skel = skeleton[0]
+    g = _Gltf()
+    doc = g.doc
+    stem = os.path.splitext(out)[0]
+    folder = os.path.dirname(os.path.abspath(out))
+
+    # Skeleton: one glTF node per Ninja node, rest pose from its T/R/S.
+    for i, n in enumerate(skel.nodes):
+        node = {"name": "node%d" % i, "translation": list(n.t),
+                "rotation": list(euler_quat(n.r, n.flags)), "scale": list(n.s)}
+        kids, c = [], n.child
+        while 0 <= c < len(skel.nodes) and c not in kids:
+            kids.append(c)
+            c = skel.nodes[c].sibling
+        if kids:
+            node["children"] = kids
+        doc["nodes"].append(node)
+    doc["scenes"][0]["nodes"] += [i for i, n in enumerate(skel.nodes) if n.parent < 0]
+
+    # Skin: every node is a joint. The stored inverse matrix (row vectors,
+    # translation last) is already glTF's column-major layout. Flag-0x8
+    # nodes skip it in the palette (0x16c41c), so they get the identity.
+    owners = {n.matrix: i for i, n in enumerate(skel.nodes) if n.matrix >= 0}
+    ident = (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+    ibm = [ident if n.flags & 8 or n.matrix < 0 else tuple(n.inv) for n in skel.nodes]
+    doc["skins"] = [{"joints": list(range(len(skel.nodes))),
+                     "inverseBindMatrices": g.accessor(ibm, "MAT4")}]
+
+    # Materials: one per texture name (or per untextured source), with PNGs
+    # beside the .gltf.
+    materials = {}
+
+    def material(texture, names, find):
+        if texture is not None and texture < len(names):
+            key = names[texture].upper()
+        elif texture is not None and shared[0] and texture < len(shared[0]):
+            names, find = shared
+            key = names[texture].upper()
+        else:
+            key = None if texture is None else "#%d" % texture
+        if key in materials:
+            return materials[key]
+        mat = {"name": key.lower() if key else "untextured",
+               "pbrMetallicRoughness": {"metallicFactor": 0.0}, "alphaMode": "MASK"}
+        tex = find(names[texture]) if key and not key.startswith("#") and find else None
+        if tex is None and key and not key.startswith("#") and shared[1]:
+            tex = shared[1](key)
+        png = "%s_%s.png" % (os.path.basename(stem), os.path.splitext(key or "")[0].lower())
+        if tex and _write_texture(tex, os.path.join(folder, png)):
+            doc.setdefault("images", []).append({"uri": png})
+            doc.setdefault("textures", []).append({"source": len(doc["images"]) - 1})
+            mat["pbrMetallicRoughness"]["baseColorTexture"] = {"index": len(doc["textures"]) - 1}
+        doc["materials"].append(mat)
+        materials[key] = len(doc["materials"]) - 1
+        return materials[key]
+
+    # Meshes: one glTF mesh per meshset, all bound to the one skin. Parts
+    # without nodes use the skeleton's matrix indices; a part node points
+    # at its skeleton node through NNS_NODEEX +0xa.
+    skipped = 0
+    for o, names, find in [skeleton] + parts:
+        own = dict(owners)
+        if o is not skel and o.nodes and not any(hasattr(n, "skeleton_index") for n in o.nodes):
+            # A part with its own skeleton (e.g. a face pack head) has matrix
+            # numbers that mean nothing in this one; don't bind it wrongly.
+            skipped += sum(1 for m in o.meshes if m.batches)
+            continue
+        if o is not skel:
+            for n in o.nodes:
+                idx = getattr(n, "skeleton_index", -1)
+                if n.matrix >= 0 and 0 <= idx < len(skel.nodes):
+                    own[n.matrix] = idx
+        for k, m in enumerate(o.meshes):
+            if not m.batches:
+                continue
+            pos, nrm, uv, joints, weights, idx = [], [], [], [], [], []
+            has_nrm = all(b.nrm for b in m.batches)
+            has_uv = all(b.uv for b in m.batches)
+            bound = True
+            for b in m.batches:
+                vb = _vertex_bones(m, b, own)
+                if vb is None:
+                    bound = False
+                    break
+                base = len(pos)
+                pos += b.pos
+                if has_nrm:
+                    nrm += b.nrm
+                if has_uv:
+                    uv += b.uv              # GS and glTF both run V downwards
+                for jw in vb:
+                    jw = sorted(jw, key=lambda x: -x[1])[:4]
+                    jw += [(0, 0.0)] * (4 - len(jw))
+                    joints.append(tuple(j for j, _ in jw))
+                    weights.append(tuple(w for _, w in jw))
+                idx += [base + i for tri in strip_triangles(b) for i in tri]
+            if not bound or not idx:
+                skipped += 1
+                continue
+            attrs = {"POSITION": g.accessor(pos, "VEC3", target=34962, minmax=True),
+                     "JOINTS_0": g.accessor(joints, "VEC4", 5123, 34962),
+                     "WEIGHTS_0": g.accessor(weights, "VEC4", target=34962)}
+            if has_nrm:
+                attrs["NORMAL"] = g.accessor(nrm, "VEC3", target=34962)
+            if has_uv:
+                attrs["TEXCOORD_0"] = g.accessor(uv, "VEC2", target=34962)
+            doc["meshes"].append({"name": "mesh%d" % len(doc["meshes"]), "primitives": [{
+                "attributes": attrs, "indices": g.accessor(idx, "SCALAR", 5125, 34963),
+                "material": material(m.texture, names, find)}]})
+            doc["nodes"].append({"name": "mesh%d" % (len(doc["meshes"]) - 1),
+                                 "mesh": len(doc["meshes"]) - 1, "skin": 0})
+            doc["scenes"][0]["nodes"].append(len(doc["nodes"]) - 1)
+
+    # Motions: one glTF animation each.
+    for label, motion in motions:
+        anim = {"name": label, "channels": [], "samplers": []}
+        for node, (times, ts, rs) in sorted(bake_motion(motion, skel.nodes).items()):
+            t_acc = g.accessor(times, "SCALAR", minmax=True)
+            for path, values, kind in (("translation", ts, "VEC3"), ("rotation", rs, "VEC4")):
+                anim["samplers"].append({"input": t_acc, "interpolation": "LINEAR",
+                                         "output": g.accessor(values, kind)})
+                anim["channels"].append({"sampler": len(anim["samplers"]) - 1,
+                                         "target": {"node": node, "path": path}})
+        if anim["channels"]:
+            doc.setdefault("animations", []).append(anim)
+
+    for key in ("materials", "meshes"):
+        if not doc[key]:
+            del doc[key]
+    doc["buffers"].append({"uri": os.path.basename(stem) + ".bin", "byteLength": len(g.bin)})
+    with open(stem + ".bin", "wb") as f:
+        f.write(g.bin)
+    with open(out, "w") as f:
+        json.dump(doc, f, indent=1)
+    print("%s: %d nodes, %d meshes, %d animations%s" % (
+        out, len(skel.nodes), len(doc.get("meshes", [])), len(doc.get("animations", [])),
+        ", %d meshes not bound to the skeleton" % skipped if skipped else ""))
+
+
 def main(argv):
     if len(argv) < 3:
         print(__doc__)
@@ -937,6 +1322,8 @@ def main(argv):
         cmd_dump(args[0])
     elif cmd == "obj" and len(args) == 2:
         cmd_obj(args[0], args[1])
+    elif cmd == "gltf" and len(args) >= 2:
+        cmd_gltf(args[0], args[1:])
     else:
         print(__doc__)
         return 1
