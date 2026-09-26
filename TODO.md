@@ -36,9 +36,14 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
       showed
 - [ ] What the other `PRELOAD` copies of message files are read for, if
       anything (`SIMLOCALMEM`, `STATIONMES`, `TACTICS*`, `GAMEFILE`, `NEWS`)
-- [ ] Let a message file grow into `MES.PAC`'s `0x800` padding (median
-      1,544 bytes free): rewrite the entry size in the header; files with a
-      `PRELOAD` copy (`0x40` alignment) need that pack rebuilt too
+- [x] Let a message file grow into `MES.PAC`'s `0x800` slot (median 1,544
+      bytes free; filler is ASCII `'0'`): only the header size changes, and
+      the loader reads `(size >> 11) + 1` sectors from it (`0x10cf1c`).
+      `patch_disc.py --copies` warns about, and leaves alone, `PRELOAD`
+      copies of grown files instead of writing them cut short
+- [ ] Confirm a grown message file in PCSX2
+- [ ] Rebuild `PRELOAD` packs so grown files' copies can follow, if any of
+      those copies turn out to be read
 - [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`,
       and the EVENT `+0x68` timing enum (values 0–21, scan at `0x12df08`)
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)

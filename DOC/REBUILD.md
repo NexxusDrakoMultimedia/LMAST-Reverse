@@ -8,7 +8,8 @@ a distributable patch are still to do.
 image (or `DATA.CVM`, or `DATA.ISO`), provided each file keeps its size.
 That covers every edit the current writers make: `pbdata.py set`/`import`
 (records are fixed-size), `tbb.py replace` when a table keeps its
-length, and `mbb.py set`/`import` (each message file keeps its size,
+length, and `mbb.py set`/`import` (`MES.PAC` keeps its size; a message
+file that grows uses the spare room in its slot,
 [`MBB_FORMAT.md`](MBB_FORMAT.md#writing)).
 
 ## Why same-size patching needs no encryption

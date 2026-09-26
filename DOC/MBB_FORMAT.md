@@ -247,7 +247,9 @@ python SRC/mbb.py roundtrip DAT/MESSAGE/MES.PAC
 Text uses the same tags as `dump` and `csv`. A literal `{` is written `{{`.
 In `set`, `\n` is a line break. `import` expects a UTF-8 CSV with the
 `category,id` columns first. Rows and language columns can be deleted, and
-a cell is applied only if it differs from the current text. A line break
+a cell is applied only if it isn't empty and differs from the current text.
+An empty cell never blanks a message, since that's far more likely to be a
+cell left empty in a row edited for another language. A line break
 inside a spreadsheet cell (CR LF) becomes `ESC 0x2F`. Any other raw control
 character is refused, since the tags (`{lf}`, `{cr}`, `{xNN}`) are how
 those bytes are written. An unknown tag, a character with no cp850/cp932
@@ -263,7 +265,7 @@ archive uses that form.
 
 ### Size
 
-Each edited file keeps its **original size**. Shorter text is followed by
+An edited file that still fits its **original size** keeps it. Shorter text is followed by
 zero bytes up to the old size, and `data_size` still counts them. That is
 safe. `Initialize` (`0x30d1c8`) allocates `data_size − 3 × count` bytes
 for the strings at `0x30d1f4` (each record loses its 4-byte `{id, len}`
@@ -273,17 +275,44 @@ the other way round too. A `data_size` smaller than the records would
 make the copy overrun the buffer, so the builder always sets
 `data_size = file size − 0x20` and never cuts records short.
 
-Text that makes a file bigger is refused, and the message says by how
-many bytes. The limit is per file (one category in one language), so a
-message can grow if others in the same file shrink. Originally each file
-ends 0–3 bytes after its last record (994, 920, 886 and 938 files), so
-there is almost no free room until something is shortened.
+Originally each file ends 0–3 bytes after its last record (994, 920, 886
+and 938 files), so a file hardly ever has room to spare inside its own size.
 
 Keeping the size means the `MES.PAC` header, every other entry, and the
 763 copies in `PRELOAD/*.PAC` all keep their offsets and sizes.
 `patch_disc.py --copies` finds and updates those copies. Tested on a copy
 of `DATA.CVM`: editing `1_1.mbb` and `1_3.mbb` also rewrote
 `STATIONMES1.PAC#0` and `STATIONMES3.PAC#0`.
+
+**Growing into the slot.** A file that no longer fits its size grows into
+the unused rest of its slot in `MES.PAC`:
+
+- Entries start on `0x800` boundaries in header order. The gap after each
+  entry up to the next one is filler, all ASCII `'0'` (`0x30`), in 3,737
+  of 3,737 gaps (empirical). The last entry ends at the end of the archive
+  and can't grow. The median slot has 1,544 spare bytes, and only 15 have
+  fewer than 64.
+- The game finds a message file with `fcEuroBinPac_SearchHeaderFilename`
+  (**confirmed**, `0x10cf1c` in the `CFcEuro_FileResource` constructor at
+  `0x10cdb0`, created for the name from `Localize_MakeMessageFileName` at
+  `0x108fd8`). It turns the header's offset and size into sectors
+  (`srl 0xb`, `0x10cf40`/`0x10cf48`) and reads `(size >> 11) + 1` sectors
+  (`0x10cf90`). The size in the header is therefore what decides how much
+  is read.
+
+So `mbb.py` writes the grown file at the same offset, fills the rest of
+the slot with `'0'` again, and changes only that entry's size field in the
+header. The archive keeps its size and every other entry stays where it
+was. A file too big for its slot is refused, and the message says how
+many bytes over it is.
+
+A grown file's `PRELOAD` copies can't follow, because those packs align
+entries to `0x40` and leave no room. `patch_disc.py --copies` notices that
+the entry changed size and warns that the copy keeps the old text, rather
+than writing the first *old-size* bytes of the new file into it. That
+would leave a copy whose header promises more records than it holds. For
+the mail this is harmless, since the game reads `MES.PAC` (below). For the
+other `PRELOAD` packs it isn't known.
 
 **Confirmed in the game (PCSX2).** The English subject (`563:11000`) and
 body (`563:1000`) of the first mail in a new game, "Welcome to Football
@@ -304,13 +333,11 @@ They showed, and the window wrapped the long lines on its own. What the
 other `PRELOAD` copies (`SIMLOCALMEM`, `STATIONMES`, `TACTICS*`, ...)
 are for isn't known, so `--copies` stays the safe choice.
 
-**Room to grow (not used yet).** `MES.PAC` aligns entries to `0x800`, so
-most files are followed by unused padding (median 1,544 bytes, fewer
-than 64 bytes after only 15 files). A file could grow into it by changing
-its size in the archive header. The `PRELOAD` packs align to `0x40`, so a
-file with a copy there would first need that pack rebuilt. Whether the
-game looks entries up by the header size (`fcEuroBinPac_SearchHeaderFilename`)
-hasn't been checked.
+**Growth tested on a copy of `DATA.CVM`.** Growing `1_3.mbb` by 4 bytes
+and `487_1.mbb` by 12 changed only those two entries. `mbb.py info` and
+`pac.py info` pass on the result. `patch --copies` wrote `MES.PAC`, warned
+about `STATIONMES3.PAC#0`, and left it byte-identical. A grown file hasn't
+been tried in PCSX2 yet.
 
 ## Open questions
 

@@ -172,9 +172,10 @@ python SRC/mbb.py import DAT/MESSAGE/MES.PAC messages.csv out/MES.PAC
 
 The CSV has one row per message and one column per language. Control codes
 appear as tags such as `{var:1:7}` and `{color:4}`. `import` writes an
-edited CSV back (and `set` a single message). Each category and language
-has to keep its size, so text can only grow if other text in the same
-file shrinks ([details](DOC/MBB_FORMAT.md#writing)).
+edited CSV back (and `set` a single message). A file that gets longer
+grows into the spare room after it in `MES.PAC` (a median of 1,544
+bytes per category and language), and the archive keeps its size
+([details](DOC/MBB_FORMAT.md#writing)).
 
 ### Event data
 

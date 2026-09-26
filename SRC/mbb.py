@@ -31,16 +31,22 @@ Usage:
 Writing: text uses the same {tags} as dump and csv (a literal '{' is '{{').
 In `set`, \\n in the text is a line break. `import` takes a CSV made by
 `csv`, saved as UTF-8; rows and language columns may be deleted, and only
-cells that differ from the current text are applied. Each edited .mbb keeps
-its original size: shorter text is zero-padded (allowed by Initialize,
-0x30d1f4), and text that makes a file bigger is refused, listing by how
-many bytes. So a message can grow if others in the same category and
-language shrink. The output has the same size and layout as MES.PAC, so
-patch_disc.py can write it to a disc (--copies for the PRELOAD copies).
+non-empty cells that differ from the current text are applied.
+
+Sizes: an edited .mbb that still fits its original size is zero-padded to
+it (allowed by Initialize, 0x30d1f4). A bigger one grows into the unused
+rest of its 0x800-aligned slot in MES.PAC, and only its size in the
+archive header changes (the loader reads (size >> 11) + 1 sectors,
+0x10cf1c). A file too big for its slot is refused. The output always has
+MES.PAC's size and every entry keeps its offset, so patch_disc.py can
+write it to a disc; --copies updates the PRELOAD copies of files that
+kept their size and warns about copies of grown files, which keep the
+old text.
 
 Languages (FC_EURO_LOCALIZE): 0 Japanese, 1 English, 2 French, 3 German,
 4 Italian, 5 Spanish, 6 unused slot (mostly English).
 """
+import bisect
 import csv
 import os
 import struct
@@ -414,26 +420,35 @@ def cmd_roundtrip(path):
 def apply_edits(pac_path, out_path, edits):
     """edits: (category, lang, id, copy, text) -> write an edited MES.PAC.
 
-    Each edited .mbb is rebuilt at its original size (zero-padded), so the
-    archive's header, every other entry and the PRELOAD copies keep their
-    offsets and sizes and patch_disc.py can write it. A file whose new text
-    doesn't fit is reported and nothing is written."""
+    An edited .mbb that still fits its original size is zero-padded to it,
+    so its entry, the header and any PRELOAD copies keep their sizes. A
+    bigger one grows into the unused part of its slot: entries start on
+    0x800 boundaries and the gap after each is '0' filler, and the game
+    reads (size >> 11) + 1 sectors from the header's size (0x10cf1c), so
+    only the entry's size field changes. The archive keeps its size and
+    every other entry stays put, but a PRELOAD copy of a grown file can't
+    be updated (patch_disc.py warns). A file that doesn't fit its slot is
+    reported and nothing is written."""
     if os.path.abspath(out_path) == os.path.abspath(pac_path):
         raise SystemExit("write to a new file, not over %s" % pac_path)
     with open(pac_path, "rb") as f:
         buf = f.read()
     pac = BinPac(buf)
-    files = {}                          # (category, lang) -> (off, size, Mbb)
-    for off, size, name, _ in pac.entries:
+    # An entry's slot runs to the next entry's data, or to the end of the
+    # archive (which can't grow).
+    starts = sorted(off for off, _, _, _ in pac.entries) + [len(buf)]
+    files = {}                          # (category, lang) -> (index, off, size, slot, Mbb)
+    for i, (off, size, name, _) in enumerate(pac.entries):
         m = Mbb(buf[off:off + size], name)
-        files[(m.category, m.lang)] = (off, size, m)
+        slot = starts[bisect.bisect_right(starts, off)] - off
+        files[(m.category, m.lang)] = (i, off, size, slot, m)
     changed, errors = {}, []
     for cat, lang, rid, copy, text in edits:
         where = "%d_%d.mbb id %d" % (cat, lang, rid)
         if (cat, lang) not in files:
             errors.append("%s: no such file" % where)
             continue
-        m = files[(cat, lang)][2]
+        m = files[(cat, lang)][4]
         hits = [k for k, (r, _) in enumerate(m.records) if r == rid]
         if copy >= len(hits):
             errors.append("%s: no such message" % where if not hits else
@@ -449,25 +464,39 @@ def apply_edits(pac_path, out_path, edits):
             m.records[k] = (rid, new)
             changed.setdefault((cat, lang), set()).add((rid, copy))
     out = bytearray(buf)
-    report = []
+    report, grown = [], 0
     for key in sorted(changed):
-        off, size, m = files[key]
+        i, off, size, slot, m = files[key]
         try:
-            out[off:off + size] = m.build(size)
+            data = m.build()
         except ValueError as e:
             errors.append(str(e))
             continue
         used = HEADER_SIZE + sum(4 + len(s) for _, s in m.records)
-        report.append("%-16s %4d changed, %6d of %6d bytes used" % (
-            m.name, len(changed[key]), used, size))
+        if len(data) <= size:
+            out[off:off + size] = m.build(size)
+            report.append("%-16s %4d changed, %6d of %6d bytes used" % (
+                m.name, len(changed[key]), used, size))
+        elif len(data) <= slot:
+            out[off:off + slot] = data + b"0" * (slot - len(data))
+            struct.pack_into("<I", out, 0x20 + i * pac.stride + 4, len(data))
+            grown += 1
+            report.append("%-16s %4d changed, grew %d -> %d bytes (slot %d)" % (
+                m.name, len(changed[key]), size, len(data), slot))
+        else:
+            errors.append("%s: %d bytes, %d more than its slot in the archive holds (%d)" % (
+                m.name, len(data), len(data) - slot, slot))
     if errors:
-        raise SystemExit("\n".join(["nothing written:"] + ["  !! " + e for e in errors]))
+        raise SystemExit("\n".join(["nothing written:"] + ["  " + e for e in errors]))
     with open(out_path, "wb") as f:
         f.write(out)
     for line in report:
         print(line)
     print("%d messages in %d files -> %s" % (
         sum(len(v) for v in changed.values()), len(changed), out_path))
+    if grown:
+        print("%d file%s grew: patch_disc.py can't update PRELOAD copies of those, "
+              "and says which it leaves alone" % (grown, "" if grown == 1 else "s"))
 
 
 def cmd_set(pac_path, out_path, cat, rid, lang, text, copy):
@@ -476,8 +505,7 @@ def cmd_set(pac_path, out_path, cat, rid, lang, text, copy):
 
 def cmd_import(pac_path, csv_path, out_path):
     """Apply a CSV in `csv` format. Rows and language columns may be left
-    out; a cell equal to the current text, or empty where the message
-    doesn't exist, changes nothing."""
+    out; an empty cell, or one equal to the current text, changes nothing."""
     with open(pac_path, "rb") as f:
         buf = f.read()
     pac = BinPac(buf)
@@ -507,8 +535,10 @@ def cmd_import(pac_path, csv_path, out_path):
             for lang, i in langs:
                 # Spreadsheets save line breaks inside a cell as CR LF.
                 text = row[i].replace("\r\n", "\n") if i < len(row) else ""
-                old = current.get((cat, lang, rid, copy))
-                if text != old and (old is not None or text):
+                # An empty cell is never an edit: blanking a message by
+                # accident (a cell left empty in a shared row) is far more
+                # likely than wanting one empty.
+                if text and text != current.get((cat, lang, rid, copy)):
                     edits.append((cat, lang, rid, copy, text))
     apply_edits(pac_path, out_path, edits)
 

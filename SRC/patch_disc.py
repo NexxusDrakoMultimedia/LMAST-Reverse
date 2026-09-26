@@ -439,11 +439,30 @@ def read_at(f, img, file, off, size):
 def plan_copies(img, index, f, file, off, old, new, write_copies):
     """Copy jobs (with write_copies) and notes for every unit of `file` that
     lies inside [off, off + len(new)) and differs between `old` (the DAT
-    original) and `new`."""
+    original) and `new`.
+
+    Units are DAT's original entries, so an entry that the new file moved
+    or resized (mbb.py grows message files into their slot) is compared
+    over its old range only. Copying that range would write a cut-off
+    entry into a same-size copy, so such entries are reported instead."""
+    import pac
+    moved = {}
+    if off == 0 and new[10:16] == b"BINPAC":
+        try:
+            moved = {i: (o, s) for i, (o, s, _, _) in enumerate(pac.BinPac(new).entries)}
+        except (ValueError, struct.error):
+            pass
     jobs, notes, seen = [], [], set()
     for u in index.units(file):
         lo, hi = u.off - off, u.off - off + u.size
         if lo < 0 or hi > len(new) or old[lo:hi] == new[lo:hi]:
+            continue
+        if u.kind == "entry" and moved.get(u.index, (u.off, u.size)) != (u.off, u.size):
+            now = moved[u.index]
+            for c in index.copies(u)[0]:
+                notes.append("warning: %s is now %d bytes (was %d); its copy %s is a "
+                             "fixed-size slot, so it keeps the old data" % (
+                                 u.label, now[1], u.size, c.label))
             continue
         named, other = index.copies(u)
         for c in named:
