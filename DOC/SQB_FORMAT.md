@@ -422,20 +422,42 @@ function's name, "BC TEST" in the menu).
 | BG CONTROL (75) | goes straight back to the launcher |
 | SIDE MENU (79) | blank screen |
 | INOUE TEST (76), SAKAUE TEST (77) | blank screen. `TESTPRG.REL` names a `SAKAUETEST_MODULE::CNewsTextureTestTask` next to `news_ad.pac` |
-| SATO TEST (78) | **a head viewer.** One head at a time over the training-ground background, with the debug text `ID = 10`, `NAME = REFREE_11`, `ADD = 1` |
+| SATO TEST (78) | **a head viewer.** One head at a time over the training-ground background, with the debug text `ID`, `NAME` and `ADD`. IDs run from 0 to 214. `ADD` is the step for each press. Screenshots: ID 10 `REFREE_11`, ID 211 `STAFF_F_08` (the last name) |
+| IWASAKI TEST (80) | goes straight back to the launcher |
+| SPANVERSE TEST (81) | blank |
 | BPINFO CHECK (71) | the training-ground background and the debug text `CBpinfoCheckModule( return X button ), m_bra` / `0 all=27949 0=18871 1mil=8063`, plus a few garbled characters |
 | STADIUM VIEWER MK2 (171) | **works.** A menu (CREATE, BUILD, VISIBLE, DRAW_PRIORITY, NODE_CHECK, CLIP_CHECK, AUDIENCE, PROJECTION, FILTER, COLLISION, SAVE, RESET, EXIT). CREATE sets the build parameters: STADIUM_LEVEL, NATION_ID, STAND_LEVEL, TIME_ID (DAY …), WEATHER_ID (FINE …), SEASON_ID, LANDSCAPE_LEVEL, MONTH_ID, TEAM_COLOR1_16/2_16, HOME/AWAY_TEAMCOLOR, HOME/AWAY_SUPPORTER, CIVILIAN_VISITOR (110000 each by default) and ADVERTISE_INDEX. BUILD then shows the stadium, with crowd and adverts, and lets you move the camera |
 | GAME (172), BC TEST (173) | blank screen |
 
-SATO TEST's names come from a list of 208 strings in `TESTPRG.REL`
-(`0x29280` is `REFREE_11`), in 18 groups: `REFREE` 20, `FLAGMAN` 16,
-`ANNOUNCER_M` 4, `ANNOUNCER_F` 2, `SUPPORTER_M` 50, `SUPPORTER_F` 30,
-`AGENT` 10, `COACH` 4, `SALESMAN_M` 2, `SALESMAN_F` 2, `COMMISSIONER` 20,
-`REPORTER` 5, `CAMERAMAN` 5, `MANAGER` 6, `VISITOR_M` 6, `VISITOR_F` 6,
-`STAFF_M` 12 and `STAFF_F` 8. These are the event characters of
-`FC_EURO_FACEPACK_01` ([`PLAYER_DIR.md`](PLAYER_DIR.md)). That pack has
-215 heads, 7 more than the list, so how IDs map to pack entries isn't
-confirmed.
+"Blank" means a black screen that doesn't respond, which is probably a
+crash.
+
+SATO TEST's names come from a table in `TESTPRG.REL` at `0x21d18`, found
+through the pointer to `REFREE_01` (`snr2.py xref ... 291e0`). Each 8-byte
+row is `{char *name, u32 female}`, one row per ID:
+
+| IDs | Names (female flag) |
+|---|---|
+| 0–19 | `REFREE_01`–`20` |
+| 20–35 | `FLAGMAN_01`–`16` |
+| 36–41 | `ANNOUNCER_M_01`–`04`, `ANNOUNCER_F_01`–`02` (1) |
+| 42–121 | `SUPPORTER_M_01`–`50`, `SUPPORTER_F_01`–`30` (1) |
+| 122–131 | `AGENT_01`–`10` |
+| 132–135 | `COACH_01`–`04` |
+| 136–139 | `SALESMAN_M_01`–`02`, `SALESMAN_F_01`–`02` (1) |
+| 140–159 | `COMMISSIONER_01`–`20` |
+| 160–169 | `REPORTER_01`–`05`, `CAMERAMAN_01`–`05` |
+| 170–175 | `MANAGER_01`–`06` |
+| 176–187 | `VISITOR_M_01`–`06`, `VISITOR_F_01`–`06` (1) |
+| 188–191 | no name (null pointer) |
+| 192–211 | `STAFF_M_01`–`12`, `STAFF_F_01`–`08` (1) |
+| 212–214 | no name |
+
+The flag is 1 on exactly the 40 `_F` names. The viewer's 215 IDs equal
+the 215 heads of `FC_EURO_FACEPACK_01`, the event-character pack
+([`PLAYER_DIR.md`](PLAYER_DIR.md)), and the screenshots fit the table (ID
+10 `REFREE_11`, ID 211 `STAFF_F_08`). So ID *n* is very likely pack entry
+*n* (**empirical**; the viewer's load code isn't traced).
 
 BPINFO CHECK's numbers match the player database (`pbdata.py csv`):
 27,949 is the last player index, 18,871 players have money 0, and 8,063

@@ -294,10 +294,13 @@ The event tables, the procedures and the overlay loader are documented in
       MENU, GAME and BC TEST are blank; CSE TEST hangs on loading; BG
       CONTROL returns. Still to try: CHARACTER VIEWER, Uniform Viewer,
       ACROBATA/NEWS/MAIL VIEWER, Talk Check, SPRITE TEST, COLOR TEST
-- [ ] SATO TEST is a head viewer with 208 names (referees, linesmen,
-      supporters, agents, staff, ...) for `FC_EURO_FACEPACK_01`'s 215
-      heads. Map ID to entry (check ID 0 and the highest ID in PCSX2),
-      then let `packdata.py` label the entries
+- [x] SATO TEST is a head viewer: IDs 0-214 (= `FC_EURO_FACEPACK_01`'s
+      215 heads), names from `TESTPRG.REL 0x21d18` {name, female}; 188-191
+      and 212-214 have none
+- [ ] Label `FC_EURO_FACEPACK_01` entries with those roles in
+      `packdata.py`/`ninja.py` output (confirm ID = entry by tracing the
+      viewer's load, or by exporting a head and comparing it with the
+      screenshot)
 - [ ] Why the blank test modules show nothing: missing data, or waiting
       for input or arguments from the launcher
 - [x] Sequencer scripts (`SEQ/*.SQB`, `PSC*.PAC`): `CSeqController`'s
