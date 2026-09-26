@@ -185,6 +185,9 @@ The event tables, the procedures and the overlay loader are documented in
 - [x] `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105: 12-byte records, but record 4
       is missing its `04 00` index, so each table is a byte short
       (`TBB_FORMAT.md`). The reader in `CEDITPRG.REL` is still unfound
-- [ ] Start the write stage with `tbb.py`: a writer that round-trips every
-      `TBB1`/`TBL1` file byte for byte, checked in `regress.py`
+- [x] Start the write stage with `tbb.py`: `build()` round-trips all 70
+      `.TBB`/`.BCR`/`.BCB` files byte for byte (`roundtrip`, in
+      `regress.py`); `replace` puts an edited table back
+- [ ] Decode the `RBD0` trailer in `GAME/ROUTEBOX_*.BCR` (copied as-is by
+      the writer)
 - [x] Update the `PLAYER/` and `PARAM/` rows in `GOALS.md`'s coverage table

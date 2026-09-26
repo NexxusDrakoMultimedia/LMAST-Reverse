@@ -86,13 +86,14 @@ disassemble as unrelated MIPS instructions.
 | Tool | Formats | Doc |
 |---|---|---|
 | [`pac.py`](SRC/pac.py) | BINPAC `.PAC`/`.MRG`/`.HED`, KC@P headers, PRSH (Sega PRS) | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) |
-| [`tbb.py`](SRC/tbb.py) | `TBB1`/`TBL1` parameter tables | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) |
+| [`tbb.py`](SRC/tbb.py) | `TBB1`/`TBL1` parameter tables; reads and writes (all 70 files round-trip) | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) |
 | [`packdata.py`](SRC/packdata.py) | `etc::PackData` inside KC@P entries (face packs, licensed kits, edit face, cut-ins) | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) |
 
 ```bash
 python SRC/pac.py info DAT
 python SRC/pac.py extract DAT/BG/BG_OF_01.MRG out/ --prs
 python SRC/tbb.py dump DAT/0SYSTEM/SCHEDULE.TBB 0 --rows 10
+python SRC/tbb.py replace DAT/PARAM/REGULATION.TBB 0 edited.bin out/REGULATION.TBB
 python SRC/packdata.py list DAT/PLAYER/PLPACK_HOME.HED 0
 ```
 

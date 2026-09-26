@@ -15,10 +15,22 @@ reuse the TBB1 container for other table types: BCR2 and BCB3 share the
 size (see DOC/GAME_DIR.md). Those are listed with their magic and dumped
 as raw hex.
 
+build() writes a container back out: the header, the offset array padded
+to 16 bytes, then each table header and its data padded to 16 bytes, as
+the documented layout says. Every file on the disc rebuilds byte for byte
+(`roundtrip`). The two ROUTEBOX_*.BCR files carry a 0x350-byte `RBD0`
+trailer after the last table, which is kept as-is.
+
 Usage:
-    python tbb.py info    <file.TBB|.BCR|.BCB | dir> ...
-    python tbb.py dump    <file.TBB> [table_index] [--rows N]
-    python tbb.py extract <file.TBB> <out_dir>
+    python tbb.py info      <file.TBB|.BCR|.BCB | dir> ...
+    python tbb.py dump      <file.TBB> [table_index] [--rows N]
+    python tbb.py extract   <file.TBB> <out_dir>
+    python tbb.py roundtrip <file.TBB|.BCR|.BCB | dir> ...      # rebuild each file, !! if not identical
+    python tbb.py replace   <file.TBB> <table_index> <table.bin> <out.TBB>
+
+`replace` swaps one table's data for the contents of <table.bin> (as written
+by `extract`) and keeps everything else, including the table's line size.
+The data may change length; later tables move along.
 """
 import os
 import struct
@@ -26,6 +38,8 @@ import sys
 
 TBB_MAGIC = b"TBB1"
 TBL_MAGIC = b"TBL1"
+HEADER_SIZE = 0x10     # TBB_FILEHEADER before the offset array, and each TBL1 header
+ALIGN = 0x10           # offset array, each table and the file end on 16 bytes
 
 
 class Table:
@@ -69,6 +83,41 @@ def parse(buf):
 def load(path):
     with open(path, "rb") as f:
         return parse(f.read())
+
+
+def _align(n):
+    return (n + ALIGN - 1) // ALIGN * ALIGN
+
+
+def build(tables, end=None, trailer=b""):
+    """Write a TBB1 container. `end` is the header's end-of-data field: None
+    computes it (the unpadded end of the last table's data); pass the parsed
+    value to keep files where it is 0. `trailer` is appended after the
+    padded last table."""
+    out = bytearray(_align(HEADER_SIZE + 4 * len(tables)))
+    offsets = []
+    data_end = len(out)
+    for t in tables:
+        offsets.append(len(out))
+        # The game only reads the line size of TBL1 tables; BCR2/BCB3 keep
+        # whatever their +0x0C field held.
+        out += struct.pack("<4sIII", t.magic, HEADER_SIZE, len(t.data), t.line_size)
+        out += t.data
+        data_end = len(out)
+        out += bytes(_align(len(out)) - len(out))
+    struct.pack_into("<4sIII", out, 0, TBB_MAGIC, HEADER_SIZE, len(tables),
+                     data_end if end is None else end)
+    struct.pack_into("<%dI" % len(tables), out, HEADER_SIZE, *offsets)
+    return bytes(out) + trailer
+
+
+def trailer(buf, tables):
+    """Bytes after the last table's padded data (the RBD0 block in the
+    ROUTEBOX_*.BCR files; empty everywhere else)."""
+    if not tables:
+        return buf[_align(HEADER_SIZE):]
+    last = tables[-1]
+    return buf[_align(last.offset + last.data_offset + last.size):]
 
 
 def _iter_paths(args):
@@ -138,6 +187,52 @@ def cmd_extract(path, out_dir):
         print(out)
 
 
+def cmd_roundtrip(paths):
+    ok = bad = 0
+    for path in _iter_paths(paths):
+        try:
+            with open(path, "rb") as f:
+                buf = f.read()
+            end, tables = parse(buf)
+        except (ValueError, struct.error) as e:
+            print("%s  !! %s" % (path, e))
+            bad += 1
+            continue
+        tail = trailer(buf, tables)
+        out = build(tables, end, tail)
+        note = "  trailer %#x" % len(tail) if tail else ""
+        if out == buf:
+            ok += 1
+            print("%s  %d bytes  identical%s" % (path, len(buf), note))
+            continue
+        bad += 1
+        diff = next((i for i in range(min(len(out), len(buf))) if out[i] != buf[i]), None)
+        where = "first difference at %#x" % diff if diff is not None             else "length %d, rebuilt %d" % (len(buf), len(out))
+        print("%s  %d bytes%s  !! rebuilt file differs: %s" % (path, len(buf), note, where))
+    print("%d identical, %d differ" % (ok, bad))
+
+
+def cmd_replace(path, index, blob_path, out_path):
+    with open(path, "rb") as f:
+        buf = f.read()
+    end, tables = parse(buf)
+    if not 0 <= index < len(tables):
+        raise ValueError("table %d out of range (file has %d)" % (index, len(tables)))
+    with open(blob_path, "rb") as f:
+        data = f.read()
+    t = tables[index]
+    old = t.size
+    t.data, t.size = data, len(data)
+    # Keep a zero end field zero; otherwise recompute it for the new layout.
+    out = build(tables, 0 if end == 0 else None, trailer(buf, tables))
+    with open(out_path, "wb") as f:
+        f.write(out)
+    print("%s: table %d %d -> %d bytes, file %d -> %d bytes" % (
+        out_path, index, old, len(data), len(buf), len(out)))
+    if t.magic == TBL_MAGIC and t.line_size and len(data) % t.line_size:
+        print("warning: %d bytes is not a whole number of %d-byte lines" % (len(data), t.line_size))
+
+
 def main(argv):
     if len(argv) < 2:
         print(__doc__)
@@ -154,6 +249,10 @@ def main(argv):
         cmd_dump(args[0], int(args[1]) if len(args) > 1 else None, max_rows)
     elif cmd == "extract":
         cmd_extract(args[0], args[1])
+    elif cmd == "roundtrip":
+        cmd_roundtrip(args)
+    elif cmd == "replace" and len(args) == 4:
+        cmd_replace(args[0], int(args[1], 0), args[2], args[3])
     else:
         print(__doc__)
         return 1

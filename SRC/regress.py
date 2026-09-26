@@ -46,6 +46,7 @@ def checks():
     out = [
         ("pac", ["pac.py", "info", "DAT"], ["DAT"]),
         ("tbb", ["tbb.py", "info", "DAT"], ["DAT"]),
+        ("tbb_roundtrip", ["tbb.py", "roundtrip", "DAT"], ["DAT"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),
         ("svr", ["svr.py", "info", "DAT"], ["DAT"]),
         ("csp", ["csp.py", "info", "DAT"], ["DAT"]),

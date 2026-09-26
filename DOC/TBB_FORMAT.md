@@ -56,6 +56,25 @@ Row count = `size / line_size` (integer division, as the game does it).
 Row data is followed by zero padding to the next 16-byte boundary, where
 the next `TBL1` starts. The file itself is padded to 16 bytes.
 
+### Writing (empirical)
+
+These rules are enough to rebuild every one of the 70 `.TBB`, `.BCR` and
+`.BCB` files in `DAT/` byte for byte:
+
+1. The header, then the offset array, zero-padded to 16 bytes.
+2. For each table in order: its 16-byte header (data offset `0x10`), its
+   data, and zero padding to 16 bytes. Tables are stored in index order,
+   with no gaps and no sharing.
+3. The header's end field is the unpadded end of the last table's data,
+   or `0` in the four files listed above.
+
+The only bytes this doesn't cover are the `0x350`-byte trailers after the
+last table in `GAME/ROUTEBOX_EU.BCR` and `ROUTEBOX_KAN.BCR`. Each starts with
+its own magic `RBD0` (see [GAME_DIR.md](GAME_DIR.md)) and is copied
+unchanged. The game code only ever reads the offset array and the table
+headers, so it doesn't depend on the padding or the order. The padding is
+reproduced anyway so that an unedited file comes out identical.
+
 ### Example — `GAME/BACK_MATCH.TBB`
 
 ```
@@ -129,4 +148,12 @@ their loaders is the way to recover per-table schemas.
 python SRC/tbb.py info DAT                          # list every table in every file
 python SRC/tbb.py dump DAT/GAME/BACK_MATCH.TBB 0     # hex + ASCII per row
 python SRC/tbb.py extract DAT/PARAM/REGULATION.TBB out/   # raw table blobs
+python SRC/tbb.py roundtrip DAT                     # rebuild every file; !! if any byte differs
+python SRC/tbb.py replace DAT/PARAM/REGULATION.TBB 0 out/REGULATION_000_L2.bin new.TBB
 ```
+
+`replace` puts an edited table blob (from `extract`) back. The blob may
+change length: later tables move along, and the end field is recomputed
+unless it was `0`. The line size is kept, and a warning is printed if the
+new length isn't a whole number of lines. The game divides the size by
+the line size, so any extra bytes would just be ignored.

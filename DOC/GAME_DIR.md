@@ -133,8 +133,9 @@ A TBB1 container whose tables are `BCR2` rather than `TBL1`:
 ```
 
 `ROUTEBOX_EU` has 106 records and `ROUTEBOX_KAN` has 11. After the
-TBB1's end-of-data field there is a **0x350-byte trailer** of u16 values ending in
-`ff 00`. It differs between the two files and its purpose is unknown.
+TBB1's end-of-data field there is a **0x350-byte trailer**. It starts with
+the magic `RBD0`, then `u32 0x10` and a size (`0x340` in EU, `0x334` in KAN),
+and continues with u16 values ending in `ff 00`. It differs between the two files and its purpose is unknown.
 
 #### `.BCB`: vbox table
 
