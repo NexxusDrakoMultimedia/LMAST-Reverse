@@ -264,4 +264,8 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
 - [x] xdelta patches: `SRC/vcdiff.py` makes and applies VCDIFF (RFC 3284)
       in plain Python; the Terry mod is a 10,642-byte patch that applies to
       a byte-identical image
-- [ ] Confirm a `vcdiff.py` patch applies with xdelta UI or DeltaPatcher
+- [x] Confirm a `vcdiff.py` patch applies with xdelta UI or DeltaPatcher:
+      Delta Patcher's output matches `vcdiff.py apply` byte for byte (it
+      needs the uncompressed ISO, not a CSO)
+- [ ] Optional: let `vcdiff.py`/`patch_disc.py` read CSO (and CHD) images,
+      which many players keep instead of ISOs

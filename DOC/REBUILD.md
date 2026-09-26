@@ -155,8 +155,17 @@ xdelta3's per-window Adler-32, which is checked. Patches made by
 - A hand-built window using RUN, a paired ADD+COPY and a HERE-mode copy
   of the window's own output.
 
-**Not tested:** decoding a patch with xdelta3 itself, and decoding a
-patch made by xdelta3. Neither was available here.
+**Confirmed with xdelta3:** Delta Patcher (an xdelta3 front end) applied
+the Terry patch to the Redump image. Its output had SHA-1
+`69a9b5fef73dc2099fe5900a2ca4a4de169d78c3`, byte-identical to
+`vcdiff.py apply`. Not yet tried: decoding a patch that xdelta3 made.
+
+**Players need the uncompressed `.iso`.** A patch describes the 3.5 GB
+ISO. Applied to a CSO (compressed ISO, which PCSX2 also runs), Delta
+Patcher fails with "The file you are trying to patch is not the right
+one" (xdelta3: `source file too short: XD3_INVALID_INPUT`). Decompress a
+CSO or CHD to ISO first, check it against the Redump hashes, then patch.
+The patched ISO can be compressed again afterwards.
 
 A patch holds only the changed bytes, so the game data it carries is
 limited to the edit itself (a few dozen bytes for a player edit). Keep
@@ -170,6 +179,5 @@ patches out of the repo anyway, like everything built from the disc.
   lengths, and then the disc's entry for `DATA.CVM`.
 - **Archive repacking** for edits inside BINPAC/KC@P entries that change
   size, and PRS recompression.
-- **Checking an xdelta3-based tool** (xdelta UI, DeltaPatcher) applies a
-  patch from `vcdiff.py`. The format is plain RFC 3284, but it hasn't been
-  run through xdelta3 yet.
+- **Compressed images.** Players who keep CSO or CHD images have to
+  decompress them before patching. `vcdiff.py` could read CSO directly.
