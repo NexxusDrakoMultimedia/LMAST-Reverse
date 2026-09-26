@@ -117,6 +117,13 @@ yourself). It refuses a file of a different size, then re-reads every
 patched range. Several `<path>=<file>` pairs can go in one run. To undo a
 patch, patch the original `DAT/` file back.
 
+Files on the disc outside `DATA.CVM` take a `disc:` prefix and need the
+whole disc image, for example `disc:SLES_541.51=out/SLES_541.51` (the
+executable with its save names moved to another serial, see
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)) or
+`disc:DLL/SAVEPRG.REL=...`. The outer disc is plain ISO9660, so the same
+same-size rule applies.
+
 ## Sharing a mod
 
 `SRC/vcdiff.py` turns a patched image into an xdelta patch (VCDIFF, RFC

@@ -81,6 +81,9 @@ def checks():
         ("patch_disc_copies", ["patch_disc.py", "copies", "DAT", "PARAM/REGULATION.TBB",
                                "PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/PBDATA_EU.PAC",
                                "BG/HUMAN_1000_PALETTE.MRG#header"], ["DAT"]),
+        # Save layout from the game code: block sizes and the layout CRC
+        # (saves themselves aren't game data we can ship or assume).
+        ("save_blocks", ["save.py", "blocks"], ["ISO/SLES_541.51", "ISO/DLL/SAVEPRG.REL"]),
         # VCDIFF encoder/decoder round trips (shrink, grow, identical).
         ("vcdiff_roundtrip", ["vcdiff.py", "roundtrip", "DAT/PARAM/PBDATA_EU.PAC",
                               "DAT/PARAM/PBDATA_JP.PAC"], ["DAT/PARAM"]),

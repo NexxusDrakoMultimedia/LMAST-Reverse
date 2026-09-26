@@ -273,3 +273,29 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       needs the uncompressed ISO, not a CSO)
 - [ ] Optional: let `vcdiff.py`/`patch_disc.py` read CSO (and CHD) images,
       which many players keep instead of ISOs
+- [x] `patch_disc.py` patches files outside `DATA.CVM` (`disc:SLES_541.51`)
+
+## 10. Save data
+
+See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
+
+- [x] Encryption (Blowfish, key `sakatsukue`), header, layout CRC; no
+      checksum over the contents
+- [x] Decode and re-encode the ten Pwork blocks by running `SAVEPRG.REL`'s
+      own serializers (`SRC/save.py`); all 5 test saves round-trip byte for
+      byte
+- [x] Money, date and the squad (id, name, position, age, 64 abilities)
+- [x] Editor start: `save.py set` for money and squad abilities
+- [x] Separate saves for a modded disc: `save.py serial` (e.g.
+      `PYRA-31396`; the VS data `-C` moves too, as anti-cheat against
+      Virtua Pro Football, while its `FASYS` import save stays) and `rename`
+- [ ] Confirm in game: an edited save loads with the new money and
+      abilities, and the serial-patched disc saves to `BEPYRA-31396-Gnnn`
+- [ ] The second value of each ability triplet; the rest of PlPinfo
+      (contract, condition, injuries, stats)
+- [ ] Map more of the blocks through their accessors (staff, youth, other
+      clubs, finances), and name the fields an editor should offer
+- [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same
+      key, layout CRC `0x8ffb`)
+- [ ] Faster decoding: record the serializers' field list once instead of
+      interpreting them on every run (about 8 seconds a save now)

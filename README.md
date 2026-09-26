@@ -199,7 +199,7 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back in place (same size only), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), finds where each file lives, and checks an image holds given bytes |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back in place (same size only), and files outside `DATA.CVM` (`disc:SLES_541.51`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), finds where each file lives, and checks an image holds given bytes |
 
 ```bash
 python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30
@@ -217,6 +217,21 @@ Size changes aren't supported yet. See [`REBUILD.md`](DOC/REBUILD.md).
 ```bash
 python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
 ```
+
+### Saves
+
+| Tool | Reads | Does |
+|---|---|---|
+| [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers, shows the date, money and squad, edits money and player abilities, and re-encodes byte for byte; moves saves to another serial (`serial`, `rename`) so a modded disc keeps its own |
+
+```bash
+python SRC/save.py show <card>/BESLES-54151-G003
+python SRC/save.py set <card>/BESLES-54151-G003 edited.bin money=2000000000 0:all=99
+python SRC/save.py serial ISO/SLES_541.51 out/SLES_541.51 PYRA-31396
+python SRC/patch_disc.py patch disc.iso modded.iso disc:SLES_541.51=out/SLES_541.51
+```
+
+See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 
 ## How the tools fit together
 
@@ -253,6 +268,7 @@ workflow is:
 |---|---|
 | [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | repo layout, regenerating `DATA.ISO` |
 | [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc (same-size in-place patching, copies), sharing mods as xdelta patches, what's still needed for size changes |
+| [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, the save-name serial |
 | [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | ROFS key recovery in PCSX2 |
 | [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format, the SN DLL loader, `SLES_541.51`'s imports, which overlay each sequencer module lives in, the wild-card module |
 | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH |

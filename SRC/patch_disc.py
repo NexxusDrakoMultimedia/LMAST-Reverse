@@ -17,7 +17,9 @@ up.
   - a decrypted DATA.ISO (plain ISO9660, as made by rofs_decrypt.py).
 
 <path> is a file's path inside DATA.CVM as it appears under DAT/, e.g.
-PARAM/PBDATA_EU.PAC (either slash, any case).
+PARAM/PBDATA_EU.PAC (either slash, any case). Files on the disc outside
+DATA.CVM take a disc: prefix, e.g. disc:SLES_541.51 or disc:DLL/SAVEPRG.REL
+(whole disc images only).
 
 <target> is <path>, or <path>#<entry> for one archive entry (its index,
 its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulation.tbb.
@@ -49,9 +51,10 @@ import shutil
 import struct
 import sys
 
-from extract_disc import walk_iso, SECTOR, PVD_SECTOR
+from extract_disc import walk_iso, IsoEntry, SECTOR, PVD_SECTOR
 import rofs_decrypt
 
+DISC = "disc:"
 CVM_MAGIC = b"CVMH"
 ISO_MAGIC = b"CD001"
 CVM_NAME = "DATA.CVM"
@@ -125,14 +128,26 @@ class Image:
             except ValueError as e:
                 raise ValueError("%s: can't read the table of contents (%s); wrong key?"
                                  % (path, e))
+            # Files outside DATA.CVM (SLES_541.51, DLL/*.REL, ...) are
+            # "disc:<path>"; their sectors count from the start of the image.
+            if self.kind == "disc image":
+                for e in outer.values():
+                    if not e.is_dir and e.path.upper() != CVM_NAME:
+                        d = IsoEntry(DISC + e.path, e.extent, e.size, False, e.mtime)
+                        self.files[d.path.upper()] = d
 
     def entry(self, path):
         e = self.files.get(path.replace("\\", "/").strip("/").upper())
         if e is None:
+            if path.lower().startswith(DISC) and self.kind != "disc image":
+                raise ValueError("%s: disc: paths need the whole disc image, not %s"
+                                 % (path, self.kind))
             raise ValueError("%s is not in %s" % (path, self.path))
         return e
 
     def offset(self, entry):
+        if entry.path.startswith(DISC):
+            return entry.extent * SECTOR
         return self.iso_base + entry.extent * SECTOR
 
 
