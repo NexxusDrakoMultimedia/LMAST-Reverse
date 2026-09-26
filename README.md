@@ -38,6 +38,22 @@ SRC/    tools
 DOC/    format documentation
 ```
 
+Put a dump of the disc that matches Redump
+([disc 12334](http://redump.org/disc/12334/), SLES-54151 v1.01) in the repo
+root, then run:
+
+```bash
+python SRC/extract_disc.py all "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso"
+```
+
+[`extract_disc.py`](SRC/extract_disc.py) checks the image's size, CRC-32, MD5
+and SHA-1 against Redump, extracts the disc filesystem into `ISO/`, decrypts
+`ISO/DATA.CVM` into `ISO/DATA.ISO`, and extracts that into `DAT/`. Nothing is
+mounted. Re-running skips files that are already there. `*.iso` files in the
+repo root are git-ignored.
+
+To do the same by hand:
+
 1. Copy the disc's files, including `DATA.CVM`, into `ISO/`. Leave
    `DATA.CVM` unmodified.
 2. Decrypt the archive. Only its ISO9660 table of contents is encrypted, and

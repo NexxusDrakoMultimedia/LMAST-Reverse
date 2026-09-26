@@ -1,4 +1,6 @@
 /ISO
 /DAT
+# Disc images kept in the repo root, e.g. the Redump dump
+/*.iso
 __pycache__/
 .regress/
