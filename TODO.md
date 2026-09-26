@@ -305,5 +305,7 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       clubs, finances), and name the fields an editor should offer
 - [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same
       key, layout CRC `0x8ffb`)
-- [ ] Faster decoding: record the serializers' field list once instead of
-      interpreting them on every run (about 8 seconds a save now)
+- [x] Faster decoding: the serializers' field list (604,078 fields) is
+      recorded once, cached in `.cache/`, and replayed (about a second a
+      save); `save.py fields` checks it against the interpreter on random
+      data

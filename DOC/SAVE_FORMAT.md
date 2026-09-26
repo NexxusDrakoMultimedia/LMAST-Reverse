@@ -137,7 +137,30 @@ The four imports are Python functions over the bit stream. `SAVEPRG.REL`
 is linked at base 0, so it runs from address 0 without relocation.
 
 The result matches the game exactly: all 5 saves decode and re-encode to
-byte-identical files. A decode takes about 8 seconds.
+byte-identical files.
+
+Interpreting takes about 8 seconds a save, so `save.py` does it once. The
+generated code stores each value into the block right after reading it,
+so one run of the read functions gives a flat field list: for each
+`_plBits_BitRead` call its bit count and signedness, and the offset and
+width of the first store into the blocks that follows (each string byte is
+a field of its own). Replaying the list reads or writes a save in about a
+second. The list is cached in `.cache/` (git-ignored), keyed by
+`SAVEPRG.REL` and the block sizes.
+
+| | Count |
+|---|---|
+| fields | 604,078 |
+| bits | 5,169,290 (the stream length of every save) |
+| signed fields | 114,509 |
+| bytes of the blocks written | 947,298 of 1,035,469 |
+| widths | 1–10, 14, 16, 18, 32 and 64 bits; 8 bits is the most common (143,512) |
+
+`python SRC/save.py fields` records the list afresh and checks it: over
+random streams, the replay must give the same blocks as the interpreter,
+and over random blocks the same stream. That covers data the real saves
+don't, so it also shows the layout doesn't depend on the contents (no
+counts or flags that change which fields follow).
 
 ## Separate saves for a modded disc
 

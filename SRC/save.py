@@ -19,7 +19,10 @@ _plBits_BitRead / _plBits_BitWrite call per field, loops for arrays). This
 tool doesn't copy that layout: it runs the game's own read and write
 functions from ISO/DLL/SAVEPRG.REL in a small R5900 interpreter, so a save
 decodes into the ten blocks exactly as the game would load them, and
-encodes back bit for bit.
+encodes back bit for bit. One run of the read functions records the field
+list (604,078 fields: bits, signedness, where each is stored), which is
+cached in .cache/ and replayed after that; `fields` checks the replay
+against the interpreter on random data both ways.
 
 Confirmed from the game code:
   SAVEPRG.REL 0x32158   Blowfish key schedule (P/S constants at 0x4bd78, 0x4bdc0)
@@ -42,12 +45,14 @@ Usage:
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
     python save.py roundtrip <save> ...                   # decode + encode, compare
     python save.py blocks                                 # block sizes and offsets in .bin
+    python save.py fields    [rounds]                     # re-record and check the field list
     python save.py serial    <ISO dir> <out dir> PYRA-31396   # new boot file + SYSTEM.CNF
     python save.py rename    <save folder> <parent> PYRA-31396  # copy a save to that serial
 
 <save> is a BESLES-54151-Gnnn folder or the main file inside it (on a
 PCSX2 folder memory card these are plain files). Each run decodes the whole
-save in the interpreter, which takes about 8 seconds. Needs
+save from the cached field list, about a second (the first run records
+the list, about 10 seconds). Needs
 ISO/DLL/SAVEPRG.REL and ISO/SLES_541.51.
 
 `serial` changes the names MC::CFcEuroIF::initialize (0x12ad38) uses for
@@ -60,7 +65,10 @@ the serial (PYRA_313.96) and writes a SYSTEM.CNF that boots it; it prints
 the patch_disc.py command that writes both and renames the file on the
 disc (--rename).
 """
+import array
+import hashlib
 import os
+import random
 import struct
 import sys
 
@@ -225,6 +233,7 @@ class Cpu:
         self.names = sorted(set(self.imports.values()))
         self.code = {}
         self.steps = 0
+        self.on_store = None        # f(addr, width) after every store
 
     # memory
     def ld(self, a, n):
@@ -232,6 +241,8 @@ class Cpu:
 
     def st(self, a, v, n):
         self.mem[a:a + n] = (v & ((1 << (8 * n)) - 1)).to_bytes(n, "little")
+        if self.on_store:
+            self.on_store(a, n)
 
     def call(self, pc, *args, sp=0x3F0000):
         r = self.r
@@ -413,6 +424,151 @@ def block_sizes(sles_path=SLES):
     return [v - 8 for v in raw]
 
 
+CACHE_DIR = ".cache"            # git-ignored
+FIELDS_MAGIC = b"LMSF"
+BYTE_MASK = {1: 0xFF, 2: 0xFFFF, 4: M32, 8: M64}
+
+
+class Fields:
+    """The serializers' field list, in stream order: bits, signed, and the
+    offset and width in the blocks it is stored to. Recorded once from a run
+    of the read functions (Game.unpack_cpu) and cached in .cache/, keyed by
+    SAVEPRG.REL and the block sizes. Replaying it reads or writes a save
+    without the interpreter. `check` compares both ways against the
+    interpreter on random data, which also shows that the list doesn't
+    depend on what the save holds."""
+
+    def __init__(self):
+        self.n, self.signed = array.array("B"), array.array("B")
+        self.off, self.width = array.array("I"), array.array("B")
+
+    def add(self, n, signed):
+        self.n.append(n)
+        self.signed.append(signed)
+        self.off.append(0)
+        self.width.append(0)
+        return len(self.n) - 1
+
+    def place(self, i, off, width):
+        self.off[i], self.width[i] = off, width
+
+    def __len__(self):
+        return len(self.n)
+
+    @property
+    def bits(self):
+        return sum(self.n)
+
+    # cache
+
+    @staticmethod
+    def path(game):
+        return os.path.join(CACHE_DIR, "save_fields_%s.bin" % game.cache_key)
+
+    def save(self, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(FIELDS_MAGIC + struct.pack("<I", len(self)))
+            for a in (self.n, self.signed, self.width, self.off):
+                f.write(a.tobytes())
+
+    @classmethod
+    def load(cls, path):
+        with open(path, "rb") as f:
+            d = f.read()
+        if d[:4] != FIELDS_MAGIC:
+            raise ValueError("%s: not a field list" % path)
+        count = struct.unpack_from("<I", d, 4)[0]
+        self, pos = cls(), 8
+        for a in (self.n, self.signed, self.width, self.off):
+            size = count * a.itemsize
+            a.frombytes(d[pos:pos + size])
+            pos += size
+        return self
+
+    @classmethod
+    def trace(cls, game):
+        """Run the read functions over random bits and record the fields."""
+        self = cls()
+        game.unpack_cpu(random_plain(game, random.Random(1)), trace=self)
+        if any(w not in BYTE_MASK for w in self.width):
+            raise ValueError("a field is stored with an unexpected width")
+        return self
+
+    @classmethod
+    def load_or_trace(cls, game):
+        path = cls.path(game)
+        if os.path.exists(path):
+            return cls.load(path)
+        print("(recording the save field list once; about 10 seconds)", file=sys.stderr)
+        self = cls.trace(game)
+        self.save(path)
+        return self
+
+    # replay
+
+    def read(self, buf, pos, total):
+        """(blocks, bits used) from the stream in buf at bit pos."""
+        out = bytearray(total)
+        end = len(buf) * 8
+        start = pos
+        for n, sg, off, w in zip(self.n, self.signed, self.off, self.width):
+            if n:
+                if pos + n > end:
+                    raise ValueError("bit stream ends at bit %d, %d more wanted" % (pos, n))
+                b0, b1 = pos >> 3, (pos + n + 7) >> 3
+                v = (int.from_bytes(buf[b0:b1], "big") >> ((b1 << 3) - pos - n)) & ((1 << n) - 1)
+                pos += n
+                if sg and v >> (n - 1):
+                    v -= 1 << n
+            else:
+                v = 0
+            out[off:off + w] = (v & BYTE_MASK[w]).to_bytes(w, "little")
+        return bytes(out), pos - start
+
+    def write(self, blocks):
+        """(stream, bits) for the blocks."""
+        out = bytearray()
+        acc = nb = total = 0
+        for n, sg, off, w in zip(self.n, self.signed, self.off, self.width):
+            if not n:
+                continue
+            v = int.from_bytes(blocks[off:off + w], "little")
+            if sg and n > 8 * w and v >> (8 * w - 1):
+                v -= 1 << (8 * w)
+            acc = (acc << n) | (v & ((1 << n) - 1))
+            nb += n
+            total += n
+            if nb >= 64:
+                keep = nb & 7
+                out += (acc >> keep).to_bytes((nb - keep) >> 3, "big")
+                acc &= (1 << keep) - 1
+                nb = keep
+        if nb:
+            pad = -nb & 7
+            out += (acc << pad).to_bytes((nb + pad) >> 3, "big")
+        return bytes(out), total
+
+    def check(self, game, rounds=1):
+        """Replay against the interpreter on random streams and blocks."""
+        rng = random.Random(2)
+        for _ in range(rounds):
+            plain = random_plain(game, rng)
+            a = game.unpack_cpu(plain)
+            b = self.read(plain, game.check_header(plain), game.offsets[-1])
+            if a != b:
+                raise ValueError("reading random data: the field list differs from the game code")
+            blocks = bytes(rng.getrandbits(8) for _ in range(game.offsets[-1]))
+            if game.pack_cpu(blocks) != self.write(blocks):
+                raise ValueError("writing random blocks: the field list differs from the game code")
+
+
+def random_plain(game, rng):
+    """A decrypted save with a valid header and random bits after it."""
+    body = rng.getrandbits(8 * (FILE_SIZE - HEADER)).to_bytes(FILE_SIZE - HEADER, "little")
+    return struct.pack("<4I", 0, 0, game.crc, VERSION) + body
+
+
 class Game:
     """The pieces of the game code a save needs."""
 
@@ -425,21 +581,40 @@ class Game:
         self.sizes = block_sizes(sles_path)
         self.crc = crc16(self.rel, struct.pack("<%dI" % NBLOCKS, *self.sizes))
         self.offsets = [sum(self.sizes[:i]) for i in range(NBLOCKS + 1)]
+        self.cache_key = hashlib.sha1(self.rel + struct.pack("<%dI" % NBLOCKS, *self.sizes)).hexdigest()[:12]
+        self._fields = None
 
     def cpu(self):
         return Cpu(self.rel_path)
 
-    def unpack(self, plain):
-        """Bit stream -> (the ten blocks as one bytes object, bits used)."""
+    def check_header(self, plain):
+        """The bit offset of the stream in a decrypted file."""
         off, _, crc, ver = struct.unpack_from("<4I", plain)
         if ver != VERSION:
             raise ValueError("version %#x; only %#x is supported" % (ver, VERSION))
         if crc != self.crc:
             raise ValueError("layout CRC %#06x, this build expects %#06x" % (crc, self.crc))
+        return 8 * (HEADER + off)
+
+    # The game's serializers, run in the interpreter.
+
+    def unpack_cpu(self, plain, trace=None):
+        """Bit stream -> (the ten blocks, bits used), by running the read
+        functions. With `trace` (a Fields), record every field: its width
+        and signedness from the _plBits_BitRead call, and where it goes
+        from the first store into the blocks that follows."""
+        start = self.check_header(plain)
         cpu = self.cpu()
-        bits = BitReader(plain, 8 * (HEADER + off))
+        bits = BitReader(plain, start)
+        base, total = self.block_base(), self.offsets[-1]
+        pending = []
 
         def bit_read(_, n, signed, __):
+            n = i32(n)
+            if trace is not None:
+                if pending:
+                    raise ValueError("field %d is never stored" % pending[0])
+                pending.append(trace.add(n, int(bool(signed))))
             if n == 0:
                 return 0
             v = bits.read(n)
@@ -452,17 +627,29 @@ class Game:
                 c = bits.read(8)
                 if p:
                     cpu.mem[p + i] = c
+                if trace is not None:
+                    if not base <= p + i < base + total:
+                        raise ValueError("string byte outside the blocks")
+                    trace.place(trace.add(8, 0), p + i - base, 1)
             return 0
+
+        def on_store(a, w):
+            if pending and base <= a < base + total:
+                trace.place(pending.pop(), a - base, w)
 
         cpu.hooks["_plBits_BitRead__5ParamPQ25Param11PlBitsClassii"] = bit_read
         cpu.hooks["_plBits_BitReadStr__5ParamPQ25Param11PlBitsClassPci"] = bit_read_str
-        base = self.block_base()
+        if trace is not None:
+            cpu.on_store = on_store
         for i in range(NBLOCKS):
             cpu.call(READ_BLOCK, 0x3F8000, base + self.offsets[i], i)
-        return bytes(cpu.mem[base:base + self.offsets[-1]]), bits.pos - 8 * HEADER
+        if pending:
+            raise ValueError("field %d is never stored" % pending[0])
+        return bytes(cpu.mem[base:base + total]), bits.pos - start
 
-    def pack(self, blocks):
-        """The ten blocks -> the bit stream (without header)."""
+    def pack_cpu(self, blocks):
+        """The ten blocks -> (the bit stream, bits), by running the write
+        functions."""
         if len(blocks) != self.offsets[-1]:
             raise ValueError("blocks are %d bytes, expected %d" % (len(blocks), self.offsets[-1]))
         cpu = self.cpu()
@@ -486,6 +673,23 @@ class Game:
         for i in range(NBLOCKS):
             cpu.call(WRITE_BLOCK, 0x3F8000, base + self.offsets[i], i)
         return out.data(), out.bits
+
+    # The same, replayed from the recorded field list.
+
+    def fields(self):
+        if self._fields is None:
+            self._fields = Fields.load_or_trace(self)
+        return self._fields
+
+    def unpack(self, plain):
+        """Bit stream -> (the ten blocks as one bytes object, bits used)."""
+        return self.fields().read(plain, self.check_header(plain), self.offsets[-1])
+
+    def pack(self, blocks):
+        """The ten blocks -> (the bit stream without header, bits)."""
+        if len(blocks) != self.offsets[-1]:
+            raise ValueError("blocks are %d bytes, expected %d" % (len(blocks), self.offsets[-1]))
+        return self.fields().write(blocks)
 
     @staticmethod
     def block_base():
@@ -820,6 +1024,23 @@ def cmd_rename(src, parent, serial):
     print("%s -> %s" % (src, dst))
 
 
+def cmd_fields(game, rounds):
+    """Record the field list afresh, check it against the game code, cache it."""
+    fields = Fields.trace(game)
+    print("recorded %d fields, %d bits" % (len(fields), fields.bits))
+    widths = {}
+    for n in fields.n:
+        widths[n] = widths.get(n, 0) + 1
+    print("  bits per field: " + ", ".join("%d x%d" % (n, c) for n, c in sorted(widths.items())))
+    print("  signed fields: %d" % sum(fields.signed))
+    covered = sum(fields.width)
+    print("  bytes stored: %d of %d in the blocks" % (covered, game.offsets[-1]))
+    fields.check(game, rounds)
+    print("matches the game code on %d random stream%s and block set%s" % (
+        rounds, "" if rounds == 1 else "s", "" if rounds == 1 else "s"))
+    fields.save(Fields.path(game))
+
+
 def cmd_blocks(game):
     print("layout CRC %#06x" % game.crc)
     for i, s in enumerate(game.sizes):
@@ -853,6 +1074,8 @@ def main(argv):
         cmd_player(game, args[0], int(args[1]))
     elif cmd == "set" and len(args) >= 3:
         cmd_set(game, args[0], args[1], args[2:])
+    elif cmd == "fields" and len(args) <= 1:
+        cmd_fields(game, int(args[0]) if args else 1)
     elif cmd == "blocks" and not args:
         cmd_blocks(game)
     else:
