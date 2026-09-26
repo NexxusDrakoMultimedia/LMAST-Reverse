@@ -412,27 +412,68 @@ function's name, "BC TEST" in the menu).
 
 `sqb.py` uses these names for modules 71–129 and 171–173.
 
-**Tested in PCSX2**, the entries tried so far:
+**Tested in PCSX2**, every entry, in module order. "Hangs" means a black
+screen that doesn't respond, which is probably a crash. "Menu test" means
+the real game screen, opened on its own with the launcher's new game.
 
-| Entry | What happened |
-|---|---|
-| MODEL VIEWER (73) | a shaded test triangle with red and green axis lines. The buttons do nothing |
-| 3D TEST (72) | blank screen |
-| CSE TEST (74) | stays on "NOW LOADING" |
-| BG CONTROL (75) | goes straight back to the launcher |
-| SIDE MENU (79) | blank screen |
-| INOUE TEST (76), SAKAUE TEST (77) | blank screen. `TESTPRG.REL` names a `SAKAUETEST_MODULE::CNewsTextureTestTask` next to `news_ad.pac` |
-| SATO TEST (78) | **a head viewer.** One head at a time over the training-ground background, with the debug text `ID`, `NAME` and `ADD`. IDs run from 0 to 214. `ADD` is the step for each press. Screenshots: ID 10 `REFREE_11`, ID 211 `STAFF_F_08` (the last name) |
-| IWASAKI TEST (80) | goes straight back to the launcher |
-| SPANVERSE TEST (81), EMBLEM EDIT TEST (82) | blank |
-| CLUB EDIT MENU (85) | **works** like the real screen: edit club name, 1st and 2nd kit, emblem and flag, with the kits shown on a player. The club is called "CITY_NONE Utd". `CITY_NONE` is message 0 of the city-name categories 961 and 962 (and 100961), in all 7 languages, so the launcher's new game leaves the club with city 0 |
-| PERSONAL AFFAIRS (83) | a squad list (Num, Pos, Name, Age, Country), with Num and Pos empty. Choosing any row returns to the launcher. The players shown (L.Borthwick, A.Bullard, A.Magunda, R.Whaley, J.Pelham, P.Keats, D.Moran, J.Parkin) are all in database IDs 25591–25615 |
-| BPINFO CHECK (71) | the training-ground background and the debug text `CBpinfoCheckModule( return X button ), m_bra` / `0 all=27949 0=18871 1mil=8063`, plus a few garbled characters |
-| STADIUM VIEWER MK2 (171) | **works.** A menu (CREATE, BUILD, VISIBLE, DRAW_PRIORITY, NODE_CHECK, CLIP_CHECK, AUDIENCE, PROJECTION, FILTER, COLLISION, SAVE, RESET, EXIT). CREATE sets the build parameters: STADIUM_LEVEL, NATION_ID, STAND_LEVEL, TIME_ID (DAY …), WEATHER_ID (FINE …), SEASON_ID, LANDSCAPE_LEVEL, MONTH_ID, TEAM_COLOR1_16/2_16, HOME/AWAY_TEAMCOLOR, HOME/AWAY_SUPPORTER, CIVILIAN_VISITOR (110000 each by default) and ADVERTISE_INDEX. BUILD then shows the stadium, with crowd and adverts, and lets you move the camera |
-| GAME (172), BC TEST (173) | blank screen |
+| Module | Entry | What happened |
+|---|---|---|
+| — | MAIN GAME START | starts the normal game |
+| 71 | BPINFO CHECK | the training-ground background and the debug text `CBpinfoCheckModule( return X button ), m_bra` / `0 all=27949 0=18871 1mil=8063`, plus a few garbled characters. The counts match the player database (below) |
+| 72 | 3D TEST | hangs |
+| 73 | MODEL VIEWER | a shaded test triangle with red and green axis lines. The buttons do nothing |
+| 74 | CSE TEST | stays on "NOW LOADING" |
+| 75 | BG CONTROL | goes straight back to the launcher |
+| 76, 77 | INOUE TEST, SAKAUE TEST | hang. `TESTPRG.REL` names a `SAKAUETEST_MODULE::CNewsTextureTestTask` next to `news_ad.pac` |
+| 78 | SATO TEST | **a head viewer** for `FC_EURO_FACEPACK_01` (below). The debug text shows `ID`, `NAME` and `ADD`. IDs run from 0 to 214, and `ADD` is the step for each press |
+| 79 | SIDE MENU | hangs |
+| 80 | IWASAKI TEST | goes straight back to the launcher |
+| 81, 82 | SPANVERSE TEST, EMBLEM EDIT TEST | hang |
+| 83 | PERSONAL AFFAIRS | a squad list (Num, Pos, Name, Age, Country), with Num and Pos empty. Choosing any row returns to the launcher. The players are from database IDs 25591–25615 (below) |
+| 84 | YAMAZAKI TEST | not recorded |
+| 85 | CLUB EDIT MENU | **works** like the real screen: club name, 1st and 2nd kit, emblem and flag. The club is called "CITY_NONE Utd". `CITY_NONE` is message 0 of the city-name categories 961 and 962 (and 100961), in all 7 languages, so the launcher's new game leaves the club with city 0 |
+| 86–88 | UNIFORM EDIT, EMBLEM EDIT, FLAG EDIT | **work**: the club edit menu's own sub-screens |
+| 89 | SUGIO TEST | a plain teal screen |
+| 90 | TOUMURA TEST | hangs |
+| 91 | INITIAL PERSONNEL AFFAIRS | resets the console |
+| 92–100 | Talk … NEWS | Talk not recorded. SEASON END, MONTH END, MAIL, MATCH RESULT, SCHEDULE, SCOUTING MENU, PERSONNEL AFFAIRS MENU and NEWS are menu tests |
+| 101 | SPRITE TEST | hangs |
+| 102, 103 | TACTICS, TRAINING | menu tests |
+| 104 | CHARACTER VIEWER | **works.** A standing player (training kit) over the training ground, with the debug menu SET / PUSH / BLEND (a motion, e.g. `mendan_Asit_ang_001.snm`), LINK TIME, DO-LINK, DO-BLEND, DO-MIRROR, DO-REVERSE and CHARACTER (Player), and `Play = NULL`, `Play List Num = 0`. Setting CHARACTER to null shows a column of garbled Japanese and `(null)` entries. The motion names are in `DAT/TEST3D/VIEWERPLAYERMOTION.PAC` |
+| 105 | PLAYER CONTRACT | hangs |
+| 106, 107 | NEWS VIEWER, ACROBATA VIEWER | newspaper menu tests. ACROBATA VIEWER is the newspaper intro at the start of a game |
+| 108 | MEMORYCARD UTILITY | hangs |
+| 109 | MAIL VIEWER | the e-mail menu test |
+| 110 | GAME INCOME | resets the console |
+| 111 | SELECT UNIFORM | the shirt-number selection screen |
+| 112 | SPONSOR | a sponsor menu test |
+| 113 | CSE TEST 2 | a separate news viewer |
+| 114 | HAYASI TEST | hangs |
+| 115 | PLAYER EDIT | hangs. The user's view: probably the Japanese version's in-game player editor, disabled here, where the European version has the Virtua Pro Football player import instead |
+| 116 | BG LIGHT TEST | not recorded |
+| 117 | TICKET SET TEST | shows a block of text |
+| 118 | TICKET SET | the mid-year competition ticket-price screen, in a loop |
+| 119 | MANA PLAN TEST | hangs |
+| 120 | MANA PLAN | the management-plan menu test |
+| 121 | TV SELECT | the TV-sponsor selection menu test |
+| 122 | ARRAY BLOCK TEST | hangs |
+| 123 | COLOR TEST | a test pattern: two grey ramps (0–255) and red, green and blue swatches |
+| 124 | GOODS | the goods screen test |
+| 125, 126 | HDD INSTALL, HDD UTIL(FORMATER) | disabled, probably the Japanese version's hard-drive features |
+| 127 | BOOT CHECK | hangs |
+| 128 | Uniform Viewer | **works.** A player in a club's kit (Birmingham in the screenshot, `NO : 3`, with the Japanese label `オリジナルチーム` "original team" printed as `âIâèâWâiâïâ`ü[âÇ`), with the kit settings: FP/GK, Home/Away, Sleeve and Pants (Short), Front/Back Number Color [FP]/[GK] (OFF, A8), Collar Type [FP]/[GK] (`l_nml_bdy_01_el`, `l_nml_bdy_08_el`), Pants Type (Right), Pants Number Color (13, A8) and CaptainMark Color (3, 0). The screenshot had a texture pack on, so the textures aren't vanilla |
+| 129 | Talk Check | a talk scene with its text garbled (Japanese shown in the European font) |
+| 171 | STADIUM VIEWER MK2 | **works.** A menu (CREATE, BUILD, VISIBLE, DRAW_PRIORITY, NODE_CHECK, CLIP_CHECK, AUDIENCE, PROJECTION, FILTER, COLLISION, SAVE, RESET, EXIT). CREATE sets the build parameters: STADIUM_LEVEL, NATION_ID, STAND_LEVEL, TIME_ID (DAY …), WEATHER_ID (FINE …), SEASON_ID, LANDSCAPE_LEVEL, MONTH_ID, TEAM_COLOR1_16/2_16, HOME/AWAY_TEAMCOLOR, HOME/AWAY_SUPPORTER, CIVILIAN_VISITOR (110000 each by default) and ADVERTISE_INDEX. BUILD then shows the stadium, with crowd and adverts, and lets you move the camera |
+| 172, 173 | GAME, BC TEST | hang |
 
-"Blank" means a black screen that doesn't respond, which is probably a
-crash.
+The four viewers that work are the useful ones for modding:
+- **STADIUM VIEWER MK2**: the stadium build request of
+  [`STADIUM_DIR.md`](STADIUM_DIR.md).
+- **Uniform Viewer**: the kit fields behind `UNIFORM_LIST`, `UNIFORM_GK`
+  and `COLOR_TBL` ([`PLAYER_DIR.md`](PLAYER_DIR.md)), with collar model
+  names like `l_nml_bdy_01_el`.
+- **CHARACTER VIEWER**: player motions by name.
+- **SATO TEST**: the event-character heads.
 
 SATO TEST's names come from a table in `TESTPRG.REL` at `0x21d18`, found
 through the pointer to `REFREE_01` (`snr2.py xref ... 291e0`). Each 8-byte

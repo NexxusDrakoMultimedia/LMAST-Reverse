@@ -288,15 +288,17 @@ The event tables, the procedures and the overlay loader are documented in
 - [x] The launcher's full list: 59 `simprg` entries = modules 71-129 in
       order, `gameprg` = 171-173 (names in `DOC/SQB_FORMAT.md` and
       `sqb.py`)
-- [ ] Try each launcher entry in PCSX2 and record which work and their
-      controls. Done: STADIUM VIEWER MK2 works; BPINFO CHECK shows player
-      money counts; MODEL VIEWER shows only a test triangle; 3D TEST, SIDE
-      MENU, GAME and BC TEST are blank; CSE TEST hangs on loading; BG
-      CONTROL returns. Still to try: CHARACTER VIEWER, Uniform Viewer,
-      ACROBATA/NEWS/MAIL VIEWER, Talk Check, SPRITE TEST, COLOR TEST
-- [x] SATO TEST is a head viewer: IDs 0-214 (= `FC_EURO_FACEPACK_01`'s
-      215 heads), names from `TESTPRG.REL 0x21d18` {name, female}; 188-191
-      and 212-214 have none
+- [x] Try each launcher entry in PCSX2 (all recorded in
+      `DOC/SQB_FORMAT.md`): STADIUM VIEWER MK2, Uniform Viewer, CHARACTER
+      VIEWER, SATO TEST (heads), CLUB EDIT and its sub-screens and many
+      menu tests work; about 20 entries hang or reset. YAMAZAKI TEST, Talk
+      and BG LIGHT TEST not recorded
+- [ ] Use the Uniform Viewer to decode `UNIFORM_LIST`/`UNIFORM_GK`/
+      `COLOR_TBL`: it shows each club's kit fields (collar type
+      `l_nml_bdy_01_el`, number and captain-mark colours, pants type)
+- [ ] `DAT/TEST3D/VIEWERPLAYERMOTION.PAC`: the CHARACTER VIEWER's motion
+      set (`mendan_Asit_ang_001.snm`, ...); list it and link it to the
+      Ninja motion docs
 - [ ] Label `FC_EURO_FACEPACK_01` entries with those roles in
       `packdata.py`/`ninja.py` output (confirm ID = entry by tracing the
       viewer's load, or by exporting a head and comparing it with the
