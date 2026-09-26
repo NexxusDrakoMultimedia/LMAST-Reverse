@@ -64,7 +64,7 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 |---|---|---|---|---|
 | 8 | 1 | `+0x14` | nation | nationality, 1–144. **confirmed** |
 | 5 | 1 | `+0x18` | rank | 0–15. **confirmed** (read directly only for ids ≥ `0x63f7`) |
-| 4 | 3 | `+0x1c` | position | main and up to two more positions, 0–12, with 13 meaning none. The first is **confirmed**. Which number is which position isn't known (goalkeepers are 0, *empirical*) |
+| 4 | 3 | `+0x1c` | position | main and up to two more positions: a cell of the detail screen's pitch grid, 0–12, with 13 meaning none. See [Positions](#positions-and-aptitude). **confirmed** |
 | 7 | 1 | `+0x28` | age | stored − 16. *Empirical* meaning: 16–40, and it matches the real players in 2005. Computer-team players don't show this age: their squad slot's age from `OTEAMMEMBER.TBB` is used instead ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)). Tested in game: a database age of 16 didn't change Terry's shown age |
 | 8 | 1 | `+0x29` | height | stored − 150, in cm (158–205). *Empirical*. The decoder stores the sum in a byte (`sb` at `0x2e8a14`), so heights above 255 wrap. Tested in game: 313 cm shows as 57 cm |
 | 7 | 1 | `+0x2a` | weight | stored − 45, in kg (48–100). *Empirical* |
@@ -163,6 +163,47 @@ Skills, clockwise from the top). Which index goes to which label is
 
 `python SRC/pbdata.py show` prints both the bars and the hexagon, and
 `csv` adds the bars as columns.
+
+## Positions and aptitude
+
+**Confirmed, `plPinfo_CalcAptPos` (`0x217f70`),
+`plPinfo_GetPositionFitValue` (`0x217e48`), and the table at `0x532610`.**
+The detail screen's pitch grid has 13 cells, and they are the 13
+position numbers. For each cell, the game computes a fit value, a
+weighted sum of up to four abilities:
+
+| Cell | Name | Fit |
+|---|---|---|
+| 0 | GK | 33 |
+| 1, 2, 3 | DF left, right, centre | 0.7 × 34 + 0.3 × 43 (left) or 44 (right); centre 0.7 × 35 + 0.2 × 42 + 0.05 × (43 + 44) |
+| 4, 5, 6 | DM left, right, centre | the same with 36 (sides) and 37 (centre) |
+| 7, 8, 9 | AM left, right, centre | 38 and 39 |
+| 10, 11, 12 | FW left, right, centre | 40 and 41 |
+
+So abilities 33–44 are position aptitudes: 33 goalkeeper, 34–41 each
+row's sides and centre, and 42/43/44 a leaning to the centre, the left
+and the right. The rows go from the goal upwards. The names DF/DM/AM/FW
+are descriptive, not the game's. Which of 43 and 44 is the left is
+**empirical**: players who play on the left (Robben, Edu) are higher in
+43, and Tevez's top-right cell lights up with 44 = 88.
+
+Each cell's fit is converted to a level from 0 to 4 against the
+player's best cell, using the table at `0x5327b0`. A cell gets level
+4, 3, 2 or 1 for the first row where fit ≥ 70/60/50/40 **and** either
+fit ≥ 1.0/0.95/0.9/0.8 × best, or fit ≥ 80/70/60/50. Then each listed
+position (`+0x1c`, up to three) gets +1, up to 4.
+
+**Tested in the game:** Terry with abilities alternating 38 and 99 has
+99 in 33, 35, 37, 39 and 41. His grid lit the goalkeeper box and the
+whole centre column, as the formula predicts. The vanilla Terry's grid
+(his centre-back cell, the centre cell in front of it and one side cell)
+also matches the computed levels. His two side cells score 66 and 68,
+just under the level-3 threshold, and the game's random start offset
+(`plPinfo_InitAbil`) can push one of them over. Which levels the screen
+draws, and in which colour, hasn't been traced.
+
+`python SRC/pbdata.py show` prints the grid (forwards at the top), and
+`list` names the positions.
 
 ### Manager, coach and scout bars
 
@@ -266,10 +307,10 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 
 ## Still unknown
 
-- The meaning of most fields, and the position numbering.
+- The meaning of most fields.
 - Names for abilities 0–10, 12, 19, 20, 24–32 beyond the bars they feed,
-  and 33–63, which feed only the hexagon's Teamwork and Skills/Attacking
-  axes.
+  and 45–63, which feed only the hexagon's Teamwork and Skills/Attacking
+  axes. (33–44 are the position aptitudes.)
 - Which of hexagons 0 and 3 is Attacking and which is Skills. The label
   order in `GP::CHexWindowBase::DrawString` (`0x27c700`) comes from a
   screen layout and hasn't been traced.

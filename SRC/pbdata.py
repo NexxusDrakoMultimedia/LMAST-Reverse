@@ -78,7 +78,7 @@ assert len(ABILITY) == 32
 PLAYER_FIELDS = (
     ("nation", 0x14, 8, 1, None),        # plPinfo_IsForeigner/IsEU read +0x14
     ("rank", 0x18, 5, 1, None),          # getPinfoRank (ids >= 0x63f7)
-    ("position", 0x1c, 4, 3, None),      # getPinfoApos0 returns the first; 13 = none
+    ("position", 0x1c, 4, 3, None),      # grid cells 0-12 (POSITION_NAMES); 13 = none
     ("age", 0x28, 7, 1, ("add", 16)),    # decoder adds 0x10
     ("height", 0x29, 8, 1, ("add", 150)),  # adds 0x96; the sum is a byte, so 255 cm at most
     ("weight", 0x2a, 7, 1, ("add", 45)),   # adds 0x2d
@@ -230,6 +230,67 @@ def average_bars(abilities, spec):
 def staff_bars(abilities, role):
     """The 12 shared bars plus the set for `role` ("manager", "coach", ...)."""
     return average_bars(abilities, STAFF_BARS + JOB_BARS[role])
+
+
+# Position aptitude, plPinfo_CalcAptPos (0x217f70). The 13 cells of the
+# detail screen's pitch grid are the 13 position numbers. A cell's fit is
+# a weighted sum of abilities (plPinfo_GetPositionFitValue 0x217e48, table
+# at 0x532610): 33 is goalkeeper, 34-41 are row aptitudes (side, centre),
+# and 42/43/44 add a centre / left / right leaning. Which of 43 and 44 is
+# the left is empirical (the screen's orientation).
+APT_CELLS = (
+    ((33, 1.0),),
+    ((34, 0.7), (43, 0.3)), ((34, 0.7), (44, 0.3)),
+    ((35, 0.7), (42, 0.2), (43, 0.05), (44, 0.05)),
+    ((36, 0.7), (43, 0.3)), ((36, 0.7), (44, 0.3)),
+    ((37, 0.7), (42, 0.2), (43, 0.05), (44, 0.05)),
+    ((38, 0.7), (43, 0.3)), ((38, 0.7), (44, 0.3)),
+    ((39, 0.7), (42, 0.2), (43, 0.05), (44, 0.05)),
+    ((40, 0.7), (43, 0.3)), ((40, 0.7), (44, 0.3)),
+    ((41, 0.7), (42, 0.2), (43, 0.05), (44, 0.05)),
+)
+# 0x5327b0: {u8 min, u8 enough, f32 share of the best cell}. The first row
+# a cell passes gives level 4, 3, 2 or 1; none gives 0.
+APT_LEVELS = ((70, 80, 1.0), (60, 70, 0.95), (50, 60, 0.9), (40, 50, 0.8))
+# Position numbers, the grid cells: rows from the goal up, each left,
+# right, centre. The row names are descriptive, not from the game.
+POSITION_NAMES = ("GK", "DF-L", "DF-R", "DF-C", "DM-L", "DM-R", "DM-C",
+                  "AM-L", "AM-R", "AM-C", "FW-L", "FW-R", "FW-C")
+
+
+def position_name(p):
+    return POSITION_NAMES[p] if p < len(POSITION_NAMES) else "-"
+
+
+def aptitude(abilities, positions):
+    """([fit value], [level 0-4]) per cell, as plPinfo_CalcAptPos computes
+    them: levels relative to the best cell, then +1 (to at most 4) for each
+    of the player's listed positions. Database values, before the game's
+    random start offset."""
+    # The game sums in floats and converts each fit to an integer byte.
+    fits = [int(sum(abilities[a] * w for a, w in cell)) for cell in APT_CELLS]
+    best = max(fits)
+    levels = []
+    for fit in fits:
+        level = 0
+        for i, (low, enough, share) in enumerate(APT_LEVELS):
+            if fit >= low and (fit >= best * share or fit >= enough):
+                level = 4 - i
+                break
+        levels.append(level)
+    for p in positions:
+        if p < len(levels) and levels[p] < 4:
+            levels[p] += 1
+    return fits, levels
+
+
+def aptitude_grid(levels):
+    """The grid as the screen draws it: forwards at the top, left to right."""
+    rows = []
+    for row in range(3, -1, -1):
+        left, right, centre = 1 + row * 3, 2 + row * 3, 3 + row * 3
+        rows.append("%d %d %d" % (levels[left], levels[centre], levels[right]))
+    return " | ".join(rows) + " | GK %d" % levels[0]
 
 
 def hex_weights(pac_path):
@@ -561,9 +622,9 @@ def summary(r, nations):
     f = r.fields
     nat = nations.get(f["nation"], str(f["nation"]))
     if r.kind == "players":
-        pos = "/".join(str(p) for p in f["position"] if p != 13) or "-"
+        pos = "/".join(position_name(p) for p in f["position"] if p != 13) or "-"
         leg = ("R" if f["leg"] & 1 else "L") + ("+" if f["leg"] & 2 else " ")
-        return "%5d  %-19s %-16s age %2d  %3dcm %3dkg  %s  pos %-8s shirt %2d  rank %2d" % (
+        return "%5d  %-19s %-16s age %2d  %3dcm %3dkg  %s  pos %-14s shirt %2d  rank %2d" % (
             r.db_id, r.name, nat, f["age"], f["height"], f["weight"], leg, pos, f["shirt"], f["rank"])
     if r.kind == "managers":
         return "%5d  %-19s %-16s %-14s money %5d" % (
@@ -605,6 +666,8 @@ def cmd_show(path, ids, nations):
         if kind == "players":
             gk = r.fields["position"][0] == 0
             print("    screen    %s" % "  ".join("%s %d" % lv for lv in bars(r.fields["ability"], gk)))
+            print("    positions %s  (levels 0-4, forwards at the top, left centre right)" % aptitude_grid(
+                aptitude(r.fields["ability"], r.fields["position"])[1]))
             if weights:
                 print("    hexagon   %s" % "  ".join(
                     "%d:%d" % hv for hv in enumerate(hexagon(r.fields["ability"], weights, gk))))

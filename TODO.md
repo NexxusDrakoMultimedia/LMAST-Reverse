@@ -63,9 +63,12 @@ or which code loads them.
       coach bars (`CalcManagerAbil`, by job) and the scout bars
       (`ConvertScout`); player `leg` and staff `job` named
       (`DOC/PBDATA_FORMAT.md`)
-- [ ] Name the rest of the player fields: position numbering (0–12), skill
-      bits (probably the style icons), money band, abilities 33–63, entry 2,
-      and whether hexagon 0 or 3 is Skills/Attacking
+- [x] Position numbering and aptitude: the 13 pitch-grid cells
+      (`plPinfo_CalcAptPos`); abilities 33–44 are position aptitudes; the
+      grid levels match two in-game screenshots of Terry
+- [ ] Name the rest of the player fields: skill bits (probably the style
+      icons), money band, abilities 45–63, entry 2, and whether hexagon 0
+      or 3 is Skills/Attacking
 - [ ] What separates staff jobs 0–2, and the code that switches a hired
       manager to job 5
 - [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC` (entries not listed in
