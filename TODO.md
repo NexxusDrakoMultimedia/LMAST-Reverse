@@ -58,14 +58,22 @@ or which code loads them.
       players, 3,000 managers and 1,000 scouts, field widths from
       `plBits_DecPl{P,M,S}baseEx` (`DOC/PBDATA_FORMAT.md`, `SRC/pbdata.py`);
       `initteam.py squads` names the players
-- [ ] Name the rest of the player fields: position numbering, the 64
-      abilities, skills bits, money band, entry 2 (player screens in the
-      overlays should label them)
-- [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC`, `PBDATA_{EU,JP}.PAC`,
-      `PSC{COMMON,GAME,PRACTICE}.PAC`
+- [x] Detail-screen bars from the abilities: the 14 player bars and the
+      hexagon (`ConvertPlayer_Bar`, `plPinfo_CalcHexagon`), the manager and
+      coach bars (`CalcManagerAbil`, by job) and the scout bars
+      (`ConvertScout`); player `leg` and staff `job` named
+      (`DOC/PBDATA_FORMAT.md`)
+- [ ] Name the rest of the player fields: position numbering (0–12), skill
+      bits (probably the style icons), money band, abilities 33–63, entry 2,
+      and whether hexagon 0 or 3 is Skills/Attacking
+- [ ] What separates staff jobs 0–2, and the code that switches a hired
+      manager to job 5
+- [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC` (entries not listed in
+      `PARAM_DIR.md`) and `PSC{COMMON,GAME,PRACTICE}.PAC`
 - [x] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`: 27,950 × `char[19]`
       placeholders (`"a"`, or `"0"` in 142 records of `UNIFORM_NAME2`), not
-      referenced by name (`DOC/PARAM_DIR.md`)
+      referenced by name (`DOC/PARAM_DIR.md`). 27,950 is the player count,
+      so they are probably one kit name per player
 - [ ] Write `DOC/0SYSTEM_DIR.md`: `COLORDATATABLE`, `DETAILFLAG` and
       `MSGCOMMON` tables, the texture packs and fonts, `SAVE_VERSION.DAT`,
       `STATIC*.ICO`
@@ -216,4 +224,7 @@ The event tables, the procedures and the overlay loader are documented in
       `regress.py`); `replace` puts an edited table back
 - [ ] Decode the `RBD0` trailer in `GAME/ROUTEBOX_*.BCR` (copied as-is by
       the writer)
+- [ ] `pbdata.py` writer: re-encode the bit-packed records and rebuild
+      `PBDATA_EU.PAC` byte for byte (round-trip check in `regress.py`), so
+      mods can edit players, managers and scouts
 - [x] Update the `PLAYER/` and `PARAM/` rows in `GOALS.md`'s coverage table
