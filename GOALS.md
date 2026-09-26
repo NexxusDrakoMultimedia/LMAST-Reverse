@@ -48,7 +48,10 @@ Each stage depends on the one before it.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
    `DATA.CVM`, and produce a disc image that boots. This includes repacking
    BINPAC/KC@P archives and PRS compression, and handling files that change
-   size.
+   size. *Started:* `SRC/patch_disc.py` patches same-size files straight into
+   the disc image, since only the table of contents is encrypted
+   ([`REBUILD.md`](DOC/REBUILD.md)). Size changes and repacking are still
+   to do.
 5. **Edit.** GUI tools on top of the writers, organised by what a player of
    the game would recognise (a club, a player, a season) rather than by file.
    The GUI checks values against the documented ranges and cross-references

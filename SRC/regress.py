@@ -73,6 +73,9 @@ def checks():
         ("sounddat", ["sounddat.py", "info", "DAT/GAME/SOUNDDAT.PAC"], ["DAT/GAME/SOUNDDAT.PAC"]),
         ("eventdata_turn", ["eventdata_turn.py", "DAT/EVENT/EVENTDATA_TURN.TBB"],
          ["DAT/EVENT/EVENTDATA_TURN.TBB"]),
+        # Decrypts DATA.CVM's table of contents to find where files live.
+        ("patch_disc_locate", ["patch_disc.py", "locate", "ISO/DATA.CVM", "PARAM/PBDATA_EU.PAC",
+                               "PARAM/OTEAMMEMBER.TBB", "MESSAGE/MES.PAC"], ["ISO/DATA.CVM"]),
         ("sles_syms", ["sles_disasm.py", "ISO/SLES_541.51", "syms", "CMsgSubCategory"],
          ["ISO/SLES_541.51"]),
         ("sles_relocs", ["sles_disasm.py", "ISO/SLES_541.51", "relocs"], ["ISO/SLES_541.51"]),

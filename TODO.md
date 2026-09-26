@@ -233,3 +233,22 @@ The event tables, the procedures and the overlay loader are documented in
       rebuilds byte for byte (`roundtrip`, in `regress.py`); `set` and CSV
       `import` edit players, managers and scouts
 - [x] Update the `PLAYER/` and `PARAM/` rows in `GOALS.md`'s coverage table
+
+## 9. Rebuild
+
+Stage 4 of [`GOALS.md`](GOALS.md): getting edits back onto a bootable disc.
+See [`DOC/REBUILD.md`](DOC/REBUILD.md).
+
+- [x] Same-size in-place patching: `SRC/patch_disc.py` writes edited files
+      into the disc image, `DATA.CVM` or `DATA.ISO` without touching the
+      encrypted table of contents; `locate` in `regress.py`. Tested byte-exact
+      (12 bytes changed for a 3-field player edit, and reverting gives the
+      Redump image back)
+- [ ] Boot a patched image in PCSX2 and confirm the edit shows in game
+- [ ] Find every file the game reads a second copy of (`.HED` headers,
+      `PRELOAD/GAMEFILE*.PAC` bundles) so edits reach all copies
+- [ ] Size changes: re-lay `DATA.ISO`, rewrite directory records,
+      re-encrypt the table of contents, fix the `CVMH`/`ZONE` lengths and the
+      disc's `DATA.CVM` entry
+- [ ] BINPAC/KC@P repacking and PRS recompression for entries that change size
+- [ ] xdelta patches against the Redump image for distribution (stage 6)

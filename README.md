@@ -188,6 +188,21 @@ as code-only "procedures" that send MAIL records; see
 dialogue (open a screen, start a talk, chain another event) is its scene
 type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
+### Patching the disc
+
+| Tool | Reads | Does |
+|---|---|---|
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files back in place (same size only), finds where each file lives, and checks an image holds given bytes |
+
+```bash
+python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30
+python SRC/patch_disc.py patch disc.iso modded.iso PARAM/PBDATA_EU.PAC=out/PBDATA_EU.PAC
+```
+
+Only the table of contents of `DATA.CVM` is encrypted, so a file that keeps
+its size can be written over the original without re-encrypting anything.
+Size changes aren't supported yet. See [`REBUILD.md`](DOC/REBUILD.md).
+
 ## How the tools fit together
 
 - `csp.py` uses `svr.py` to decode the textures inside CSP packs.
@@ -222,6 +237,7 @@ workflow is:
 | Doc | Covers |
 |---|---|
 | [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | repo layout, regenerating `DATA.ISO` |
+| [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc: same-size in-place patching, what's still needed for size changes |
 | [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | ROFS key recovery in PCSX2 |
 | [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format, the SN DLL loader, `SLES_541.51`'s imports, which overlay each sequencer module lives in, the wild-card module |
 | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH |
