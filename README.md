@@ -151,6 +151,7 @@ python SRC/ninja.py gltf out/player.gltf DAT/PLAYER/M_PLAYER.SNO "DAT/GAME/PLAYE
 | Tool | Formats | Doc |
 |---|---|---|
 | [`sounddat.py`](SRC/sounddat.py) | `SOUNDDAT.PAC`, commentary `.TBL`, `ps2_DTPK` banks, `FNAME*` clip names | [`GAME_DIR.md`](DOC/GAME_DIR.md) |
+| [`afs.py`](SRC/afs.py) | `ISO/AUDIO/*.AFS`: music, commentary, crowd chants and ambience (CRI AFS + ADX); checks every entry, decodes to WAV with loop points | [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md) |
 
 ```bash
 python SRC/sounddat.py info DAT/GAME/SOUNDDAT.PAC
@@ -283,6 +284,7 @@ workflow is:
 | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) | pre-rendered Z buffers |
 | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) | Ninja (NN) models, skeletons, motions, VU/PX Plus vertex streams |
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
+| [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md) | `ISO/AUDIO`: the AFS archives (music, commentary, chants, ambience), AFS and ADX layouts, `0FLIST.DIR` |
 | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
 | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) | `DAT/STADIUM`: the 10 stadium models, `.PRI` draw priorities, crowds, adverts, `BUILD_STADIUM` |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |

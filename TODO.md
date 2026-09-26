@@ -174,6 +174,10 @@ hold (player models, faces, edit/uniform data) is undocumented.
 
 - [x] `SOUND/*.DAT` (all 28 files) are each one `ps2_DTPK` bank covering the
       whole file; `sounddat.py dtpk` parses them all
+- [x] `ISO/AUDIO`: 18 CRI AFS archives of ADX audio (music, commentary,
+      chants, ambience); `SRC/afs.py` checks all 65,225 entries and decodes
+      them to WAV with loop points (`DOC/AUDIO_DIR.md`)
+- [ ] Which screens play which `bgm` track, and `OPMOVIE.SFD` (Sofdec)
 - [ ] Listen to the decoded WAVs to confirm the audio is right, and document
       `SOUND/` (which scene each `MAP01`–`MAP23` belongs to; `MAP11`–`MAP23`
       hold only 2 samples each)
