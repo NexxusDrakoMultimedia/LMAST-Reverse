@@ -431,7 +431,8 @@ def cmd_patch(image, out, in_place, args, dat, write_copies):
                     "files can be patched in place; a size change needs a rebuilt "
                     "table of contents, which isn't supported yet." % (src, len(data), label, size))
             jobs.append(Job(file, off, data, label, src))
-            if index is not None:
+            # Files outside DATA.CVM aren't in DAT, and nothing there copies them.
+            if index is not None and not file.startswith(DISC):
                 # Changes are judged against the unmodified data in DAT, so a
                 # second run on an already patched image still finds them.
                 with open(os.path.join(index.dat, file), "rb") as g:
