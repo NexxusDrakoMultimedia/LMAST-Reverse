@@ -240,6 +240,19 @@ Sample table at `ptr[8]`: `u32 last_index`, then `last_index + 1` entries:
 Samples are contiguous, and the last one ends within the VAGD payload in
 all 42 banks.
 
+### The `SOUND/MAP` banks
+
+`DAT/SOUND/MAP01`–`MAP23` fall into two groups (**empirical**, every
+file):
+
+| Banks | Samples | TBLD size | What |
+|---|---|---|---|
+| `MAP01`–`MAP10` | 27–166, 7–41 of them looped, 8–48 kHz | 22–97 KB | instrument sets with large tone tables: sequenced (MIDI-like) music whose note data is presumably in the TBLD. Not decoded |
+| `MAP11`–`MAP23` | exactly 2, same length, 32 kHz, not looped | 896 bytes | the left and right channels of one stereo piece, 11–26 s. The channels differ (0–6% of samples coincide) |
+
+`BGM.AFS` in `ISO/AUDIO` holds only `bgm13`–`bgm21` and the ending, so
+these banks are the likely home of the other music.
+
 ### Banks in `SOUNDDAT.PAC`
 
 - Banks 0, 5 and 10 are identical `L` banks (34 samples).

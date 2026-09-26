@@ -181,8 +181,11 @@ hold (player models, faces, edit/uniform data) is undocumented.
 - [x] Listen to the decoded WAVs: ADX (`BGM`, `OPEN`, `VIC`, `KANSEI`,
       `OUENKA`) and DTPK (`SYS_SE`, `EFFECTS`) sound right by ear
 - [ ] Commentary (`BC_ENG`), tannoy (`JYONAI_A`) and `MAP01` still unheard
-- [ ] Document `SOUND/`: which scene each `MAP01`–`MAP23` belongs to
-      (`MAP11`–`MAP23` hold only 2 samples each)
+- [ ] Document `SOUND/`: which scene each `MAP01`–`MAP23` belongs to.
+      `MAP11`–`MAP23` are stereo pieces (two channels, 11–26 s);
+      `MAP01`–`MAP10` are sequenced music (instruments + TBLD note data)
+- [ ] Decode the DTPK sequence data in `MAP01`–`MAP10` (the missing
+      `bgm01`–`bgm12`?) and render it with the bank's instruments
 - [x] Add `sounddat.py dtpk` over `SOUND/*.DAT` to `regress.py` (one check
       per file; each is a single bank filling the whole file)
 - [ ] `.SQB` sequences (19 files in `SEQ/`), with `SQBFILENAME.TBB`,
