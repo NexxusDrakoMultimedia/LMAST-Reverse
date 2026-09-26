@@ -54,8 +54,13 @@ or which code loads them.
 - [ ] The rest of the starting data: `INITNATIDATA.TBB`, `MAPTEAM_LIST.TBB`,
       `STADIUM_DATA.TBB`, the 24-byte `plOteam_GetDb` record, and what
       `PLRRSRC_INITTEAMDATA` table 2's negative values do
-- [ ] Player database `PBDATA_EU.PAC` (27,950 records?), so squads can show
-      player names, positions and ratings (`plBp_GetBpinfo`, `getPbase`)
+- [x] Player database `PBDATA_EU.PAC`: bit-packed records for 27,950
+      players, 3,000 managers and 1,000 scouts, field widths from
+      `plBits_DecPl{P,M,S}baseEx` (`DOC/PBDATA_FORMAT.md`, `SRC/pbdata.py`);
+      `initteam.py squads` names the players
+- [ ] Name the rest of the player fields: position numbering, the 64
+      abilities, skills bits, money band, entry 2 (player screens in the
+      overlays should label them)
 - [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC`, `PBDATA_{EU,JP}.PAC`,
       `PSC{COMMON,GAME,PRACTICE}.PAC`
 - [x] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`: 27,950 × `char[19]`

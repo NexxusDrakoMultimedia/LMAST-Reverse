@@ -27,8 +27,8 @@ Usage:
 
 Names are read from <DAT/PARAM>/../MESSAGE/MES.PAC unless --mes is given,
 in language slot 1 (English) unless --lang is given. Without MES.PAC the
-commands print team ids only. Player names live in PBDATA_*.PAC, which
-isn't decoded yet, so squads list player numbers.
+commands print team ids only. `squads` also names each player from
+<DAT/PARAM>/PBDATA_EU.PAC (pbdata.py) when it is there.
 """
 import os
 import struct
@@ -38,6 +38,7 @@ import tbb
 
 INIT_TBB = "PLRRSRC_INITTEAMDATA.TBB"
 OTEAM_TBB = "OTEAMMEMBER.TBB"
+PBDATA = "PBDATA_EU.PAC"
 
 # PLRRSRC_INITTEAMDATA table 0 (reader 0x253228): league i's two divisions
 # are 0x68-byte blocks at i * 0xd0 and i * 0xd0 + 0x68.
@@ -234,14 +235,25 @@ def cmd_past(root, names):
 
 def cmd_squads(root, teams, names):
     ot = OteamMembers(find(root, OTEAM_TBB))
+    # The squad's player number is a player-database id (getPlayerName,
+    # 0x201f20, looks it up through plBp_GetBpinfo).
+    db = None
+    if os.path.exists(os.path.join(root, PBDATA)):
+        import pbdata
+        db = pbdata.PbData(os.path.join(root, PBDATA))
+        if not db.data:
+            db = None
     for team in teams or sorted(ot.squads):
         if team not in ot.squads:
             raise SystemExit("team %d has no squad (computer teams are %d-%d)" % (
                 team, OTEAM_FIRST, OTEAM_END - 1))
         print("team " + label(names, team))
-        print("  slot  player  age  shirt  contract")
+        print("  slot  player  age  shirt  contract%s" % ("  name" if db else ""))
         for k, m in enumerate(ot.squads[team]):
-            print("  %4d  %6d  %3d  %5d  %8d" % (k, m.player, m.age, m.shirt, m.contract))
+            line = "  %4d  %6d  %3d  %5d  %8d" % (k, m.player, m.age, m.shirt, m.contract)
+            if db:
+                line += "  " + db.record("players", m.player).name
+            print(line)
 
 
 def _opt(args, flag, default=None):

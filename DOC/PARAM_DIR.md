@@ -88,7 +88,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `SCHEDULE_TEAM_ENTRY.PAC/.HED` | BINPAC, 164 entries | as above | where each UID's entrants come from. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
 | `PSCCOMMON.PAC` | BINPAC, 20 named `TBB1` `.sqb` scripts | `FC_EURO_PWK_CALLBACK`, table `0x35c908` | `PscCommon_PinfoInit.sqb`, `_seasonticket`, `_spectator`, ... |
 | `PSCGAME.PAC`, `PSCPRACTICE.PAC` | BINPAC, 2 entries | as above | copies of the first 2 `PSCCOMMON` entries |
-| `PBDATA_EU.PAC` / `PBDATA_JP.PAC` | BINPAC, 4 entries | `FC_EURO_PWK_CALLBACK::PwkCallbackCommand_BpDataReadFile` (`0x110d50`), names at `0x35c968` | player database. EU entry 1 is 3 MB (starts with a name, `Maik`); JP entry 1 is empty. Not decoded |
+| `PBDATA_EU.PAC` / `PBDATA_JP.PAC` | BINPAC, 4 entries | `FC_EURO_PWK_CALLBACK::PwkCallbackCommand_BpDataReadFile` (`0x110d50`), names at `0x35c968` | player database: 27,950 players, 3,000 managers, 1,000 scouts in bit-packed records. JP entry 1 is empty. See [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md). **confirmed** |
 | `UNIFORM_NAME.BIN`, `UNIFORM_NAME2.BIN` | raw | **not referenced by name** | 27,950 × char[19] placeholders, see below |
 
 The `uniform_name` string in `SLES` (`0x54ad98`) is a save-data field
@@ -203,7 +203,8 @@ unused placeholders for kit names.
   lists it.
 - Parts of the schedule packs, listed in
   [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown).
-- `PBDATA_*.PAC` and the `.sqb` scripts in `PSC*.PAC`.
+- The `.sqb` scripts in `PSC*.PAC`. (`PBDATA_*.PAC` is decoded in
+  [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md).)
 - The meaning of the other fields in the overlay load-list entries, and the
   code that walks the `SIMPRG.REL` list holding `ClubEvent` and
   `Camp_Explane` (entries at `0x225dd0`, `0x225df8`).

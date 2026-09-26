@@ -114,14 +114,17 @@ names, `CHE`, `LIV`, ...). Category 10 has `<name> Stadium`, from 11000.
 Category 961 is something else: 839 English town names (`Reading`,
 `Slough`, ...) with short forms in 962, which aren't indexed by team.
 
-Player names aren't in these files. The player number indexes the player
-database in `PBDATA_EU.PAC`, which isn't decoded yet (entry 0 is a small
-header, entry 1 holds 3 MB of records starting `Maik Taylor`).
+Player names aren't in these files. The player number is an id in the
+player database, `PBDATA_EU.PAC` ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)),
+and `initteam.py squads` adds each player's name from it. Team 7's squad
+starts with players 100–111: Petr Cech, John Terry, Ricardo Carvalho, …
+Each player's shirt number here matches their preferred number (`+0x2b`)
+in the database for these examples, but the squad's own number is the
+one used.
 
 ## Still unknown
 
 - What the game does with table 2's negative values.
-- The player database, so squads can show names, positions and ratings.
 - `INITNATIDATA.TBB`'s three fields, `STADIUM_DATA.TBB`, and the 24-byte
   computer-team record (`plOteam_GetDb`, `PLRESOURCESIM.PAC` entry 3).
 

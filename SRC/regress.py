@@ -48,6 +48,12 @@ def checks():
         ("tbb", ["tbb.py", "info", "DAT"], ["DAT"]),
         ("tbb_roundtrip", ["tbb.py", "roundtrip", "DAT"], ["DAT"]),
         ("initteam", ["initteam.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("pbdata", ["pbdata.py", "info", "DAT/PARAM/PBDATA_EU.PAC", "DAT/PARAM/PBDATA_JP.PAC"],
+         ["DAT/PARAM/PBDATA_EU.PAC", "DAT/PARAM/PBDATA_JP.PAC"]),
+        # Every field of the first and last record of each kind.
+        ("pbdata_show", ["pbdata.py", "show", "DAT/PARAM/PBDATA_EU.PAC",
+                         "0", "p:27949", "m:0", "m:2999", "s:0", "s:999"],
+         ["DAT/PARAM/PBDATA_EU.PAC", "DAT/MESSAGE/MES.PAC"]),
         # Club names from MES.PAC category 3 against the division lists.
         ("initteam_leagues", ["initteam.py", "leagues", "DAT/PARAM"],
          ["DAT/PARAM", "DAT/MESSAGE/MES.PAC"]),
