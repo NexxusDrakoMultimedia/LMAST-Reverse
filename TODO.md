@@ -103,10 +103,10 @@ or which code loads them.
 - [x] Staff jobs: 0 manager, 1 attacking coach, 2 defensive coach
       (database averages); 0-2 share the title "Assistant Coach" and one
       icon; `pwkTeam_SetYManager` sets job 6
-- [ ] What sets job 5 when a manager is hired, how coaches and former
+- [ ] What sets job 5 when a manager is hired, and how coaches and former
       players become managers (`pwkTeam_*CoachJobChangeWork`, PlPinfo
-      `+0x210`), and a screenshot of a job 1 or 2 coach's page to confirm
-      the "Assistant Coach" title
+      `+0x210`). (The "Assistant Coach" title and the forwards/defence
+      split are confirmed on screen.)
 - [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC` (entries not listed in
       `PARAM_DIR.md`) and `PSC{COMMON,GAME,PRACTICE}.PAC`
 - [x] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`: 27,950 × `char[19]`

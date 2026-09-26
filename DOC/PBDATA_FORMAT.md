@@ -292,9 +292,12 @@ The coach page's title (`SetupDetailCoachPageCommon`, jump table
 `0x5577d0`) is the same string for jobs 0, 1 and 2 (`Msg::GetString(0x18,
 3)`), with 4 for goalkeeper coaches and 5 for physical coaches. Those
 match messages 553 "Assistant Coach", 554 "GK Coach" and 555 "Physical
-Coach" of category 100001 if the index counts from 550 (**empirical**,
-from the two that line up). So the game gives jobs 0–2 one title; what
-tells them apart is only which abilities they are good at.
+Coach" of category 100001. Checked in game: S. Daerden (job 1) and
+L. Lynch (job 2) are both titled "Assistant Coach", and their comment
+lines call them an "outstanding forwards coach" and a "very good defence
+coach", which fits the averages above. So the game gives jobs 0–2 one
+title; what tells them apart is which abilities they are good at, which
+the comment line puts into words.
 `GP::ConvertStaff` (`0x27ee68`) likewise gives 0–2 one icon.
 
 **Confirmed, `WP::CDetailManager::ConvertScout` (`0x287c60`).**
