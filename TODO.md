@@ -294,8 +294,9 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - [x] PCSX2 reads the serial from `SYSTEM.CNF`'s boot file, so `serial`
       also renames the executable (`PYRA_313.96`) and `patch_disc.py
       --rename` rewrites its ISO9660 and UDF directory entries
-- [ ] Confirm in game: the renamed disc shows as PYRA-31396 and saves to
-      `BEPYRA-31396-Gnnn`
+- [x] Confirm in game: the renamed disc boots in PCSX2 as PYRA-31396.
+      PCSX2 only lists it with a GameDB entry for the new serial; left
+      alone, as the serial change is an optional feature, not the default
 - [ ] Which rate slot is which currency: pound (2) and euro (3) seen in
       game; 400 presumably the yen (the option screen's code)
 - [ ] The second value of each ability triplet; the rest of PlPinfo

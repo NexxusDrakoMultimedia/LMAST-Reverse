@@ -170,6 +170,11 @@ same length, so nothing moves. Nothing in the executable refers to its own
 file name. Changing the executable changes its CRC, so PCSX2 patches and
 cheats keyed to the original CRC won't apply to the modded disc.
 
+Tested in PCSX2: the renamed disc boots as PYRA-31396. PCSX2 doesn't show
+it in its game list without a GameDB entry for that serial, which this
+project doesn't provide. The serial change is an optional feature for
+mods that want their own saves; the default is to keep SLES-54151.
+
 The game opens `<folder>/<folder>`, so a save moved to the new serial
 needs both names changed. `save.py rename` copies a save folder with both
 renamed, and fixes the name in PCSX2's `_pcsx2_meta_directory` (`+0x40`)
