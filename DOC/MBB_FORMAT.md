@@ -7,7 +7,8 @@ extra BINPAC columns repeat the category and language.
 
 `python SRC/mbb.py info DAT/MESSAGE/MES.PAC` checks every file. `dump`
 prints the text with the control codes shown as tags, and `csv` writes one
-row per message with one column per language.
+row per message with one column per language. `set` and `import` write
+edited text back (see [Writing](#writing)).
 
 The header, record layout, file naming, language numbers and escape opcodes
 are **confirmed** from `SLES_541.51`. The text encodings are **empirical**,
@@ -22,7 +23,7 @@ which comes from the executable.
 | `0x10e1c0` | `Localize_DefaultLanguage()` | maps `sceScfGetLanguage()` to the language slots below. PS2 Dutch/Portuguese fall back to English |
 | `0x30cec0` | `Msg::CMsgCategory::AnalizeHeader(void*)` | checks magic `0x3142424d` (`MBB1`) |
 | `0x30cf28` | `Msg::CMsgCategory::AddSubCategory(void*)` | keys the file by header `+0x08` in a map of sub-categories |
-| `0x30d1c8` | `Msg::CMsgSubCategory::Initialize(void*)` | reads count `+0x0C` and data size `+0x10`, walks records from `+0x20`, copies each string with a NUL, then `qsort`s `{u16 id, char*}` by id |
+| `0x30d1c8` | `Msg::CMsgSubCategory::Initialize(void*)` | reads count `+0x0C` and data size `+0x10`, allocates `data_size − 3 × count` bytes for the strings, walks `count` records from `+0x20`, copies each string with a NUL, then `qsort`s `{u16 id, char*}` by id |
 | `0x30d2f0` | `Msg::CMsgSubCategory::GetMessage(ushort)` | `bsearch` by id |
 | `0x11de80` | `Msg::CMsgNotifyFontMisc::Evaluate` | escapes `0x20` (colour index → `clr::GetRGBA` via the table at `0x51b828`), `0x21` (restore colour), `0x2F` (new line) |
 | `0x11e0b8` | `Msg::CMsgNotifyNameTag::Evaluate` | escapes `0xC1` (name via `Msg::GetGlobalVariable` → `WP::CMessageWindow::SetName`), `0xC2` (`EVS::FaceChangeReqOnEvent(slot, expression)`, only if `fcEuroDummy_IsFaceChangeEnable`), `0xC3` (`Talk_MesssageCallback_SetMotion(N)`, see [Reactions](#reactions-esc-0xc3)) |
@@ -229,6 +230,69 @@ id, but each message there is just `W` followed by the variables the real
 message uses (`W{var:1:3}{var:1:3}`). They're the lists the game uses to
 fill variables (`MakeVarList`).
 
+## Writing
+
+`mbb.py` writes text back. `set` changes one message and `import` applies
+a CSV in the format `csv` writes. Both write a new `MES.PAC`, which
+`patch_disc.py` puts on the disc (see [`REBUILD.md`](REBUILD.md)):
+
+```bash
+python SRC/mbb.py set DAT/MESSAGE/MES.PAC out/MES.PAC 30000 0 1 "{name:101}Welcome.\nSecond line."
+python SRC/mbb.py csv DAT/MESSAGE/MES.PAC messages.csv      # edit, delete the rows you don't change
+python SRC/mbb.py import DAT/MESSAGE/MES.PAC messages.csv out/MES.PAC
+python SRC/patch_disc.py patch disc.iso modded.iso MESSAGE/MES.PAC=out/MES.PAC --copies
+python SRC/mbb.py roundtrip DAT/MESSAGE/MES.PAC
+```
+
+Text uses the same tags as `dump` and `csv`. A literal `{` is written `{{`.
+In `set`, `\n` is a line break. `import` expects a UTF-8 CSV with the
+`category,id` columns first. Rows and language columns can be deleted, and
+a cell is applied only if it differs from the current text. A line break
+inside a spreadsheet cell (CR LF) becomes `ESC 0x2F`. Any other raw control
+character is refused, since the tags (`{lf}`, `{cr}`, `{xNN}`) are how
+those bytes are written. An unknown tag, a character with no cp850/cp932
+code, or an id that isn't in the file is also refused. When anything is
+refused, nothing is written.
+
+**Round trip (empirical).** All 461,992 records decode to text and encode
+back to the same bytes, and all 3,738 files rebuild to their original
+bytes, both at their own size and from scratch. `roundtrip` checks this
+and is in `regress.py`. A variable is written in the narrowest of the
+`0x10`/`0x11`/`0x12` forms that holds its category. Every variable in the
+archive uses that form.
+
+### Size
+
+Each edited file keeps its **original size**. Shorter text is followed by
+zero bytes up to the old size, and `data_size` still counts them. That is
+safe. `Initialize` (`0x30d1c8`) allocates `data_size − 3 × count` bytes
+for the strings at `0x30d1f4` (each record loses its 4-byte `{id, len}`
+and gains a NUL). It then copies exactly `count` records
+(`0x30d248`–`0x30d29c`), so it never reads the padding. The rule holds
+the other way round too. A `data_size` smaller than the records would
+make the copy overrun the buffer, so the builder always sets
+`data_size = file size − 0x20` and never cuts records short.
+
+Text that makes a file bigger is refused, and the message says by how
+many bytes. The limit is per file (one category in one language), so a
+message can grow if others in the same file shrink. Originally each file
+ends 0–3 bytes after its last record (994, 920, 886 and 938 files), so
+there is almost no free room until something is shortened.
+
+Keeping the size means the `MES.PAC` header, every other entry, and the
+763 copies in `PRELOAD/*.PAC` all keep their offsets and sizes.
+`patch_disc.py --copies` finds and updates those copies. Tested on a copy
+of `DATA.CVM`: editing `1_1.mbb` and `1_3.mbb` also rewrote
+`STATIONMES1.PAC#0` and `STATIONMES3.PAC#0`.
+
+**Room to grow (not used yet).** `MES.PAC` aligns entries to `0x800`, so
+most files are followed by unused padding (median 1,544 bytes, fewer
+than 64 bytes after only 15 files). A file could grow into it by changing
+its size in the archive header. The `PRELOAD` packs align to `0x40`, so a
+file with a copy there would first need that pack rebuilt. Whether the
+game looks entries up by the header size (`fcEuroBinPac_SearchHeaderFilename`)
+hasn't been checked.
+
 ## Open questions
 
 - What the extra step in `setReaction` does for reactions 2 and 4 (a
@@ -236,3 +300,5 @@ fill variables (`MakeVarList`).
 - Which variable ids each category defines, and how they're filled (the
   `Msg::VarBuf_*` functions at `0x11e7f0`… cover the global ones).
 - Which screens use the `1000xx` variant categories instead of the originals.
+- Whether an edit shows in game. `set` and `import` haven't been tried in
+  PCSX2 yet.

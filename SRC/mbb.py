@@ -24,6 +24,19 @@ Usage:
     python mbb.py list <MES.PAC | file.mbb | dir> ...        # one line per file
     python mbb.py dump <MES.PAC | file.mbb | dir> ... [--lang N] [--cat N] [--raw]
     python mbb.py csv  <MES.PAC | dir> <out.csv>             # one row per (category, id), one column per language
+    python mbb.py roundtrip <MES.PAC>                        # text -> bytes -> pack must give the same bytes
+    python mbb.py set    <MES.PAC> <out.PAC> <cat> <id> <lang> "<text>" [--copy N]
+    python mbb.py import <MES.PAC> <edits.csv> <out.PAC>     # apply a CSV in `csv` format
+
+Writing: text uses the same {tags} as dump and csv (a literal '{' is '{{').
+In `set`, \\n in the text is a line break. `import` takes a CSV made by
+`csv`, saved as UTF-8; rows and language columns may be deleted, and only
+cells that differ from the current text are applied. Each edited .mbb keeps
+its original size: shorter text is zero-padded (allowed by Initialize,
+0x30d1f4), and text that makes a file bigger is refused, listing by how
+many bytes. So a message can grow if others in the same category and
+language shrink. The output has the same size and layout as MES.PAC, so
+patch_disc.py can write it to a disc (--copies for the PRELOAD copies).
 
 Languages (FC_EURO_LOCALIZE): 0 Japanese, 1 English, 2 French, 3 German,
 4 Italian, 5 Spanish, 6 unused slot (mostly English).
@@ -91,6 +104,28 @@ class Mbb:
             except ValueError as e:
                 out.append("id %d: %s" % (rid, e))
         return out
+
+    def build(self, size=None):
+        """The file's bytes from self.records. The tail is zero-padded to a
+        multiple of 4, or to `size` if given: Initialize (0x30d1f4) sizes
+        its string buffer from data_size and walks `count` records, so
+        zeros after the last record are allowed. A data_size smaller than
+        the records would overflow that buffer, which build() can't do."""
+        body = bytearray()
+        for rid, s in self.records:
+            if len(s) > 0xFFFF:
+                raise ValueError("%s id %d: %d bytes (at most 65535)" % (self.name, rid, len(s)))
+            body += struct.pack("<HH", rid, len(s)) + s
+        total = HEADER_SIZE + len(body)
+        total += -total % 4
+        if size is not None:
+            if total > size:
+                raise ValueError("%s: %d bytes, %d over its %d" % (
+                    self.name, total, total - size, size))
+            total = size
+        head = MAGIC + struct.pack("<4I3I", self.category, self.lang, len(self.records),
+                                   total - HEADER_SIZE, *self.reserved)
+        return (head + bytes(body)).ljust(total, b"\0")
 
     def duplicate_ids(self):
         """Ids stored more than once. The game qsorts and bsearches records,
@@ -166,6 +201,82 @@ def decode(s, lang):
             run.append(b)
     flush()
     return "".join(out)
+
+
+JP_KANA_BYTES = {v: k for k, v in JP_KANA.items()}
+EU_BUTTON_BYTES = {v[1:-1]: k for k, v in EU_BUTTONS.items()}
+
+
+def _esc(op, args=b""):
+    return bytes([ESC, op, len(args)]) + args
+
+
+def _tag_bytes(tag, lang):
+    """One {tag} (without braces) -> bytes; the inverse of _esc_text."""
+    name, _, rest = tag.partition(":")
+    f = rest.split(":") if rest else []
+    if name == "var" and len(f) == 2:
+        cat, var = int(f[0]), int(f[1])
+        # The narrowest form that holds the category, as the game data uses.
+        for op, n in ((0x10, 1), (0x11, 2), (0x12, 4)):
+            if cat < 1 << (8 * n):
+                return _esc(op, cat.to_bytes(n, "little") + struct.pack("<H", var))
+        raise ValueError("{%s}: category too large" % tag)
+    if name == "color" and len(f) == 1:
+        return _esc(0x20, bytes([int(f[0])]))
+    if tag == "/color":
+        return _esc(0x21)
+    if name == "name" and len(f) == 1:
+        return _esc(0xC1, struct.pack("<H", int(f[0])))
+    if name == "face" and len(f) == 2:
+        return _esc(0xC2, struct.pack("<HH", int(f[0]), int(f[1])))
+    if name == "react" and len(f) == 1:
+        return _esc(0xC3, struct.pack("<H", int(f[0])))
+    if name == "esc" and len(f) == 2:
+        return _esc(int(f[0], 16), bytes.fromhex(f[1]))
+    if tag in ("lf", "cr"):
+        return b"\n" if tag == "lf" else b"\r"
+    if lang != 0 and tag in EU_BUTTON_BYTES:
+        return bytes([EU_BUTTON_BYTES[tag]])
+    if len(tag) == 3 and tag[0] == "x":
+        return bytes([int(tag[1:], 16)])
+    raise ValueError("unknown tag {%s}" % tag)
+
+
+def encode(text, lang):
+    """Text with {tags}, as decode() writes it -> the record's bytes."""
+    codec = "cp932" if lang == 0 else "cp850"
+    out = bytearray()
+    i = 0
+    while i < len(text):
+        c = text[i]
+        if text.startswith("{{", i):
+            out += b"{"
+            i += 2
+        elif c == "{":
+            j = text.find("}", i)
+            if j < 0:
+                raise ValueError("unclosed '{' at %d (write '{{' for a literal '{')" % i)
+            out += _tag_bytes(text[i + 1:j], lang)
+            i = j + 1
+        elif c == "\n":
+            out += _esc(0x2F)
+            i += 1
+        elif c < " ":
+            # decode() never writes raw control characters, so one here is
+            # a stray (a CR from a spreadsheet, a tab); {lf}, {cr} and
+            # {xNN} write the bytes deliberately.
+            raise ValueError("control character %r at %d (use a {tag})" % (c, i))
+        elif lang == 0 and text[i:i + 2] in JP_KANA_BYTES:
+            out.append(JP_KANA_BYTES[text[i:i + 2]])
+            i += 2
+        else:
+            try:
+                out += c.encode(codec)
+            except UnicodeEncodeError:
+                raise ValueError("%r at %d has no %s code" % (c, i, codec)) from None
+            i += 1
+    return bytes(out)
 
 
 def iter_files(paths, on_error=None):
@@ -281,6 +392,127 @@ def cmd_csv(paths, out_path):
     print("%d messages -> %s" % (len(table), out_path))
 
 
+def cmd_roundtrip(path):
+    """Decode every record to text, encode it back and rebuild each file at
+    its own size; the whole pack must come out byte for byte."""
+    with open(path, "rb") as f:
+        buf = f.read()
+    pac = BinPac(buf)
+    out = bytearray(buf)
+    records = 0
+    for off, size, name, _ in pac.entries:
+        m = Mbb(buf[off:off + size], name)
+        m.records = [(rid, encode(decode(s, m.lang), m.lang)) for rid, s in m.records]
+        records += len(m.records)
+        out[off:off + size] = m.build(size)
+    same = bytes(out) == buf
+    print("%d files, %d records rebuilt from text: %s" % (
+        len(pac.entries), records, "identical" if same else "DIFFERENT"))
+    return 0 if same else 1
+
+
+def apply_edits(pac_path, out_path, edits):
+    """edits: (category, lang, id, copy, text) -> write an edited MES.PAC.
+
+    Each edited .mbb is rebuilt at its original size (zero-padded), so the
+    archive's header, every other entry and the PRELOAD copies keep their
+    offsets and sizes and patch_disc.py can write it. A file whose new text
+    doesn't fit is reported and nothing is written."""
+    if os.path.abspath(out_path) == os.path.abspath(pac_path):
+        raise SystemExit("write to a new file, not over %s" % pac_path)
+    with open(pac_path, "rb") as f:
+        buf = f.read()
+    pac = BinPac(buf)
+    files = {}                          # (category, lang) -> (off, size, Mbb)
+    for off, size, name, _ in pac.entries:
+        m = Mbb(buf[off:off + size], name)
+        files[(m.category, m.lang)] = (off, size, m)
+    changed, errors = {}, []
+    for cat, lang, rid, copy, text in edits:
+        where = "%d_%d.mbb id %d" % (cat, lang, rid)
+        if (cat, lang) not in files:
+            errors.append("%s: no such file" % where)
+            continue
+        m = files[(cat, lang)][2]
+        hits = [k for k, (r, _) in enumerate(m.records) if r == rid]
+        if copy >= len(hits):
+            errors.append("%s: no such message" % where if not hits else
+                          "%s: no copy %d" % (where, copy))
+            continue
+        try:
+            new = encode(text, lang)
+        except ValueError as e:
+            errors.append("%s: %s" % (where, e))
+            continue
+        k = hits[copy]
+        if new != m.records[k][1]:
+            m.records[k] = (rid, new)
+            changed.setdefault((cat, lang), set()).add((rid, copy))
+    out = bytearray(buf)
+    report = []
+    for key in sorted(changed):
+        off, size, m = files[key]
+        try:
+            out[off:off + size] = m.build(size)
+        except ValueError as e:
+            errors.append(str(e))
+            continue
+        used = HEADER_SIZE + sum(4 + len(s) for _, s in m.records)
+        report.append("%-16s %4d changed, %6d of %6d bytes used" % (
+            m.name, len(changed[key]), used, size))
+    if errors:
+        raise SystemExit("\n".join(["nothing written:"] + ["  !! " + e for e in errors]))
+    with open(out_path, "wb") as f:
+        f.write(out)
+    for line in report:
+        print(line)
+    print("%d messages in %d files -> %s" % (
+        sum(len(v) for v in changed.values()), len(changed), out_path))
+
+
+def cmd_set(pac_path, out_path, cat, rid, lang, text, copy):
+    apply_edits(pac_path, out_path, [(cat, lang, rid, copy or 0, text)])
+
+
+def cmd_import(pac_path, csv_path, out_path):
+    """Apply a CSV in `csv` format. Rows and language columns may be left
+    out; a cell equal to the current text, or empty where the message
+    doesn't exist, changes nothing."""
+    with open(pac_path, "rb") as f:
+        buf = f.read()
+    pac = BinPac(buf)
+    current = {}
+    for off, size, name, _ in pac.entries:
+        m = Mbb(buf[off:off + size], name)
+        seen = {}
+        for rid, s in m.records:
+            k = seen[rid] = seen.get(rid, -1) + 1
+            current[(m.category, m.lang, rid, k)] = decode(s, m.lang)
+    edits = []
+    with open(csv_path, newline="", encoding="utf-8-sig") as f:
+        rows = csv.reader(f)
+        head = next(rows)
+        if head[:2] != ["category", "id"]:
+            raise SystemExit("%s: first columns must be category,id" % csv_path)
+        cols = {c: i for i, c in enumerate(head)}
+        langs = [(LANGS.index(c), i) for c, i in cols.items() if c in LANGS]
+        for line, row in enumerate(rows, 2):
+            if not any(row):
+                continue
+            try:
+                cat, rid = int(row[0]), int(row[1])
+                copy = int(row[cols["copy"]] or 0) if "copy" in cols else 0
+            except (ValueError, IndexError):
+                raise SystemExit("%s line %d: bad category/id/copy" % (csv_path, line))
+            for lang, i in langs:
+                # Spreadsheets save line breaks inside a cell as CR LF.
+                text = row[i].replace("\r\n", "\n") if i < len(row) else ""
+                old = current.get((cat, lang, rid, copy))
+                if text != old and (old is not None or text):
+                    edits.append((cat, lang, rid, copy, text))
+    apply_edits(pac_path, out_path, edits)
+
+
 def _opt(args, flag):
     if flag in args:
         k = args.index(flag)
@@ -307,6 +539,17 @@ def main(argv):
         cmd_dump([a for a in args if a != "--raw"], lang, cat, raw)
     elif cmd == "csv" and len(args) >= 2:
         cmd_csv(args[:-1], args[-1])
+    elif cmd == "roundtrip" and len(args) == 1:
+        return cmd_roundtrip(args[0])
+    elif cmd == "set":
+        copy = _opt(args, "--copy")
+        if len(args) != 6:
+            print(__doc__)
+            return 1
+        cmd_set(args[0], args[1], int(args[2]), int(args[3]), int(args[4]),
+                args[5].replace("\\n", "\n"), copy)
+    elif cmd == "import" and len(args) == 3:
+        cmd_import(*args)
     else:
         print(__doc__)
         return 1

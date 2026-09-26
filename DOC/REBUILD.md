@@ -7,8 +7,9 @@ a distributable patch are still to do.
 `SRC/patch_disc.py` writes edited `DAT/` files into a copy of the disc
 image (or `DATA.CVM`, or `DATA.ISO`), provided each file keeps its size.
 That covers every edit the current writers make: `pbdata.py set`/`import`
-(records are fixed-size) and `tbb.py replace` when a table keeps its
-length.
+(records are fixed-size), `tbb.py replace` when a table keeps its
+length, and `mbb.py set`/`import` (each message file keeps its size,
+[`MBB_FORMAT.md`](MBB_FORMAT.md#writing)).
 
 ## Why same-size patching needs no encryption
 

@@ -72,6 +72,7 @@ def checks():
         ("zbf", ["zbf.py", "info", "DAT"], ["DAT"]),
         ("ninja", ["ninja.py", "info", "DAT"], ["DAT"]),
         ("mbb", ["mbb.py", "info", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
+        ("mbb_roundtrip", ["mbb.py", "roundtrip", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
         ("sounddat", ["sounddat.py", "info", "DAT/GAME/SOUNDDAT.PAC"], ["DAT/GAME/SOUNDDAT.PAC"]),
         ("eventdata_turn", ["eventdata_turn.py", "DAT/EVENT/EVENTDATA_TURN.TBB"],
          ["DAT/EVENT/EVENTDATA_TURN.TBB"]),

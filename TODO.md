@@ -23,6 +23,14 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
       entry index into `HUMAN_MOTION_REACTION_SIT/STAND.MRG` depending on the
       scene's posture (`DOC/MBB_FORMAT.md`)
 - [x] Rename `mbb.py`'s `{c3:N}` tag to `{react:N}` (no baseline used it)
+- [x] Text writer: `mbb.py set`/`import` (CSV) write an edited `MES.PAC`,
+      each file kept at its size (zero-padded, safe per `Initialize`
+      `0x30d1f4`); all 461,992 records round-trip (`roundtrip`, in
+      `regress.py`); `patch_disc.py --copies` updates the `PRELOAD` copies
+- [ ] Confirm in PCSX2 that an edited message shows in game
+- [ ] Let a message file grow into `MES.PAC`'s `0x800` padding (median
+      1,544 bytes free): rewrite the entry size in the header; files with a
+      `PRELOAD` copy (`0x40` alignment) need that pack rebuilt too
 - [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`,
       and the EVENT `+0x68` timing enum (values 0–21, scan at `0x12df08`)
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)
