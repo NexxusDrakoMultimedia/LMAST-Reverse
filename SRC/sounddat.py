@@ -10,10 +10,18 @@ Usage:
     python sounddat.py info    <SOUNDDAT.PAC>                 # layout summary
     python sounddat.py extract <SOUNDDAT.PAC> <outdir> [--wav]  # split the pack (--wav: decode samples)
     python sounddat.py dtpk    <file> [<outdir>]              # list / decode samples in any ps2_DTPK file
+    python sounddat.py songs   <file | dir> ...               # list the songs (sequences) in DTPK banks
+    python sounddat.py midi    <file> <outdir>                # write each song as a MIDI file
     python sounddat.py tbl     <file.TBL> [<FNAMExx>]         # dump a clip table, optionally with clip names
     python sounddat.py fname   <FNAMExx> [id ...]             # list clip names (FNAMEEN, BCFNAME, ...)
 
 <FNAMExx> is the .DAT/.TOC pair without extension, e.g. DAT/GAME/FNAMEEN.
+
+Songs are Sega SoundFactory sequences, played by ISO/DRIVERS/SNDFI.IRX:
+MIDI-like streams with running status, where the last data byte's top bit
+means "more at this moment" and otherwise a 1-3 byte delay follows (1 tick
+= 1 ms by default). `midi` writes them with General MIDI instruments, not
+the bank's own; loop points become 'loopStart'/'loopEnd' markers.
 """
 import os
 import struct
@@ -110,6 +118,7 @@ class Dtpk:
         # TBLD +0x38: ten u32 pointers (bank-relative). [8] is the sample
         # table {u32 last_index, entries[16]}; [9] is where it ends.
         ptrs = struct.unpack_from("<10I", d, pos + 0x98)
+        self.ptrs = ptrs
         st = ptrs[8]
         n = struct.unpack_from("<I", d, pos + st)[0] + 1
         self.samples = []
@@ -121,6 +130,167 @@ class Dtpk:
         off, size, _, _ = self.samples[k]
         a = self.pos + self.vag_off + off
         return self.d[a:a + size]
+
+
+# --- songs (sequences) ---------------------------------------------------------
+#
+# The sequencer is in ISO/DRIVERS/SNDFI.IRX ("SNDF Driver Ver 2.27a"), the
+# PS2 port of Sega's SoundFactory driver; addresses below are its .text.
+# TBLD pointer [3] starts the song area (0 = none): u32 sub-area count - 1,
+# then per sub-area a u32 {u16 offset, u8 id, u8 kind}. A sub-area is u32
+# entry count - 1, then u32 entry offsets; offsets are from the area start.
+# A song is a u32 header (0x00010040 in every song), then records {u24 arg,
+# u8 type} read by 0xfe9c.
+
+# Sub-area kinds: 0xa8 songs (MAP banks), 0xa9 sound effects (EFFECTS,
+# SYS_SE, ...), whose entries are short layer lists such as
+# "c0 df 00 50 80 df 01 50 80 ff" rather than songs; not decoded.
+AREA_SONGS, AREA_EFFECTS = 0xA8, 0xA9
+SONG_STREAM = 0x00      # play the stream at song + arg, then carry on with the records
+SONG_COMMAND = 0x80     # send driver command (arg << 8) | 0x80 (0xff1c)
+SONG_GOTO = 0x90        # continue reading records at song + arg (the loop)
+# Data bytes after each status (0x10064-0x10160). The last data byte's top
+# bit means "another event at the same time"; otherwise a delay follows.
+SONG_DATA_BYTES = {0x8: 1, 0x9: 2, 0xa: 2, 0xb: 2, 0xc: 1, 0xd: 1, 0xe: 1, 0xf: 2}
+SONG_END = 0xff
+# Timing (0xa838, 0xf5bc, 0xba80-0xbaf0): the driver runs 200 times a
+# second (IOP timer, sysclock / 256 / 720) and takes 0x500 / 256 = 5 ticks
+# off each song's countdown per run: 1 tick = 1 ms unless a song changes it.
+TICKS_PER_SECOND = 1000
+
+
+def song_areas(bank):
+    """[(kind, id, [entry positions])] for the bank's sub-areas; [] if the
+    bank has no song area."""
+    d, pos = bank.d, bank.pos
+    if not bank.ptrs[3]:
+        return []
+    area = pos + bank.ptrs[3]
+    out = []
+    for j in range(struct.unpack_from("<I", d, area)[0] + 1):
+        w = struct.unpack_from("<I", d, area + 4 + 4 * j)[0]
+        sub = area + (w & 0xFFFF)
+        n = struct.unpack_from("<I", d, sub)[0] + 1
+        if n > 0x1000:
+            raise ValueError("sub-area %d claims %d entries" % (j, n))
+        offs = struct.unpack_from("<%dI" % n, d, sub + 4)
+        out.append((w >> 24, (w >> 16) & 0xFF, [area + o for o in offs]))
+    return out
+
+
+def song_offsets(bank):
+    return [p for kind, _, offs in song_areas(bank) if kind == AREA_SONGS for p in offs]
+
+
+def song_records(d, song):
+    """[(offset in song, type, arg)] from +4 up to and including the goto
+    (or a play-and-stop record)."""
+    out, p = [], song + 4
+    while len(out) < 64:
+        w = struct.unpack_from("<I", d, p)[0]
+        typ, arg = w >> 24, w & 0xFFFFFF
+        out.append((p - song, typ, arg))
+        p += 4
+        if typ == SONG_GOTO or typ not in (SONG_STREAM, SONG_COMMAND):
+            return out
+    raise ValueError("song at %#x: no goto within 64 records" % song)
+
+
+def song_stream(d, pos):
+    """[(delay before, status, data)] of a note stream, as 0xfdec-0x10244
+    reads it, up to the 0xFF end byte. Returns (events, trailing delay)."""
+    ev, status, delay = [], None, 0
+    while True:
+        if pos >= len(d):
+            raise ValueError("stream runs past the end of the file")
+        b = d[pos]
+        if b == SONG_END:
+            return ev, delay
+        if b & 0x80:
+            status = b
+            pos += 1
+        if status is None:
+            raise ValueError("data byte %#x before any status at %#x" % (b, pos))
+        n = SONG_DATA_BYTES[status >> 4]
+        data = d[pos:pos + n]
+        pos += n
+        ev.append((delay, status, [x & 0x7F for x in data]))
+        delay = 0
+        if not data[-1] & 0x80:
+            # Delay: 1-3 bytes, 7 bits each, top bit = another byte (0x101c0).
+            for _ in range(3):
+                x = d[pos]
+                pos += 1
+                delay = (delay << 7) | (x & 0x7F)
+                if not x & 0x80:
+                    break
+
+
+class Song:
+    """One song: its streams in play order, and which one the loop returns to."""
+
+    def __init__(self, d, song):
+        self.pos = song
+        self.records = song_records(d, song)
+        self.streams, self.commands = [], []
+        self.loop_stream = None
+        starts = {}
+        for off, typ, arg in self.records:
+            if typ == SONG_COMMAND:
+                self.commands.append(arg)
+            elif typ == SONG_GOTO:
+                self.loop_stream = starts.get(arg)
+            else:
+                starts[off] = len(self.streams)
+                self.streams.append(song_stream(d, song + arg))
+        self.ticks = [sum(e[0] for e in ev) + tail for ev, tail in self.streams]
+
+    def channels(self):
+        return sorted({st & 15 for ev, _ in self.streams for _, st, _ in ev})
+
+
+def midi_vlq(v):
+    out = [v & 0x7F]
+    v >>= 7
+    while v:
+        out.insert(0, 0x80 | (v & 0x7F))
+        v >>= 7
+    return bytes(out)
+
+
+def song_midi(song):
+    """A type-0 MIDI file: 500 ticks per quarter at 500,000 us per quarter,
+    so one MIDI tick is one driver tick. The looped part is marked with
+    'loopStart' / 'loopEnd' marker events."""
+    def marker(text):
+        return b"\xff\x06" + midi_vlq(len(text)) + text
+
+    body = bytearray(b"\x00\xff\x51\x03" + (500000).to_bytes(3, "big"))
+    pending = 0
+    for k, (events, tail) in enumerate(song.streams):
+        if k == song.loop_stream:
+            body += midi_vlq(pending) + marker(b"loopStart")
+            pending = 0
+        for delay, status, data in events:
+            pending += delay
+            hi = status >> 4
+            if hi == 0x8:
+                msg = bytes([status, data[0], 64])      # the driver's note-off has no velocity
+            elif hi == 0xE:
+                msg = bytes([status, 0, data[0]])       # 7-bit bend: the MSB
+            elif hi == 0xF:
+                continue
+            else:
+                msg = bytes([status] + data)
+            body += midi_vlq(pending) + msg
+            pending = 0
+        pending += tail
+    if song.loop_stream is not None:
+        body += midi_vlq(pending) + marker(b"loopEnd")
+        pending = 0
+    body += midi_vlq(pending) + b"\xff\x2f\x00"
+    return (b"MThd" + struct.pack(">IHHH", 6, 0, 1, 500) +
+            b"MTrk" + struct.pack(">I", len(body)) + bytes(body))
 
 
 def find_banks(d, start=0):
@@ -254,6 +424,67 @@ def cmd_dtpk(path, outdir):
             dump_bank(bank, os.path.join(outdir, "%02d_%s" % (i, bank.kind)))
 
 
+def dat_files(paths):
+    for p in paths:
+        if os.path.isdir(p):
+            for n in sorted(os.listdir(p)):
+                if n.upper().endswith((".DAT", ".PAC")):
+                    yield os.path.join(p, n).replace("\\", "/")
+        else:
+            yield p
+
+
+def cmd_songs(paths):
+    for path in dat_files(paths):
+        with open(path, "rb") as f:
+            d = f.read()
+        for i, bank in enumerate(find_banks(d)):
+            try:
+                areas = song_areas(bank)
+            except (ValueError, struct.error) as e:
+                print("%s bank %d  !! %s" % (path, i, e))
+                continue
+            if not areas:
+                print("%s bank %d: no song area" % (path, i))
+            offs = []
+            for kind, aid, entries in areas:
+                if kind == AREA_EFFECTS:
+                    print("%s bank %d: %d sound effects (not songs)" % (path, i, len(entries)))
+                elif kind == AREA_SONGS:
+                    offs += entries
+                else:
+                    print("%s bank %d  !! sub-area kind %#x (expected 0xa8 or 0xa9)" % (path, i, kind))
+            for k, pos in enumerate(offs):
+                try:
+                    s = Song(d, pos)
+                except (ValueError, struct.error, KeyError) as e:
+                    print("%s bank %d song %d  !! %s" % (path, i, k, e))
+                    continue
+                events = sum(len(ev) for ev, _ in s.streams)
+                loop = ("loops from stream %d" % s.loop_stream if s.loop_stream is not None
+                        else "no loop")
+                print("%s bank %d song %d: %d stream%s %s ticks (%.1f s), %d events, "
+                      "channels %s, %s, commands %s" % (
+                          path, i, k, len(s.streams), "" if len(s.streams) == 1 else "s",
+                          "+".join(map(str, s.ticks)), sum(s.ticks) / TICKS_PER_SECOND, events,
+                          ",".join(map(str, s.channels())), loop,
+                          " ".join("%06x" % c for c in s.commands)))
+
+
+def cmd_midi(path, outdir):
+    with open(path, "rb") as f:
+        d = f.read()
+    os.makedirs(outdir, exist_ok=True)
+    stem = os.path.splitext(os.path.basename(path))[0]
+    for i, bank in enumerate(find_banks(d)):
+        for k, pos in enumerate(song_offsets(bank)):
+            s = Song(d, pos)
+            out = os.path.join(outdir, "%s_%d_song%d.mid" % (stem, i, k))
+            with open(out, "wb") as f:
+                f.write(song_midi(s))
+            print("%s  %.1f s" % (out, sum(s.ticks) / TICKS_PER_SECOND))
+
+
 def cmd_tbl(path, fname):
     with open(path, "rb") as f:
         b = f.read()
@@ -285,6 +516,10 @@ def main(argv):
         cmd_extract(args[0], args[1], "--wav" in args[2:])
     elif cmd == "dtpk":
         cmd_dtpk(args[0], args[1] if len(args) > 1 else None)
+    elif cmd == "songs":
+        cmd_songs(args)
+    elif cmd == "midi" and len(args) == 2:
+        cmd_midi(args[0], args[1])
     elif cmd == "tbl":
         cmd_tbl(args[0], args[1] if len(args) > 1 else None)
     elif cmd == "fname":

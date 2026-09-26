@@ -150,7 +150,7 @@ python SRC/ninja.py gltf out/player.gltf DAT/PLAYER/M_PLAYER.SNO "DAT/GAME/PLAYE
 
 | Tool | Formats | Doc |
 |---|---|---|
-| [`sounddat.py`](SRC/sounddat.py) | `SOUNDDAT.PAC`, commentary `.TBL`, `ps2_DTPK` banks, `FNAME*` clip names | [`GAME_DIR.md`](DOC/GAME_DIR.md) |
+| [`sounddat.py`](SRC/sounddat.py) | `SOUNDDAT.PAC`, commentary `.TBL`, `ps2_DTPK` banks (samples, and songs as MIDI files), `FNAME*` clip names | [`GAME_DIR.md`](DOC/GAME_DIR.md) |
 | [`afs.py`](SRC/afs.py) | `ISO/AUDIO/*.AFS`: music, commentary, crowd chants and ambience (CRI AFS + ADX); checks every entry, decodes to WAV with loop points | [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md) |
 
 ```bash

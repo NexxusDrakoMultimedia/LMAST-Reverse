@@ -247,11 +247,76 @@ file):
 
 | Banks | Samples | TBLD size | What |
 |---|---|---|---|
-| `MAP01`–`MAP10` | 27–166, 7–41 of them looped, 8–48 kHz | 22–97 KB | instrument sets with large tone tables: sequenced (MIDI-like) music whose note data is presumably in the TBLD. Not decoded |
+| `MAP01`–`MAP10` | 27–166, 7–41 of them looped, 8–48 kHz | 22–97 KB | sequenced music: 41 songs (below) played with the bank's instruments |
 | `MAP11`–`MAP23` | exactly 2, same length, 32 kHz, not looped | 896 bytes | the left and right channels of one stereo piece, 11–26 s. The channels differ (0–6% of samples coincide). In game: the jingles before a full match and the quick-match music (identified by ear) |
 
 `BGM.AFS` in `ISO/AUDIO` holds only `bgm13`–`bgm21` and the ending, so
 these banks are the likely home of the other music.
+
+### Songs (sequences)
+
+The music in `MAP01`–`MAP10` is sequenced: Sega SoundFactory songs, played
+by the IOP driver `ISO/DRIVERS/SNDFI.IRX` ("SNDF Driver Ver 2.27a", the PS2
+port of Sega's Dreamcast sound driver). Composers wrote MIDI files;
+SoundFactory packed them into this form. No public description of it
+existed. **Confirmed** from the driver (addresses in its `.text`, loaded at
+0; it has no symbols):
+
+| Address | What it shows |
+|---|---|
+| `0xfdec`–`0x10244` | the stream reader: status bytes, data bytes, delays, the end byte |
+| `0xfe9c`–`0xfff0` | the song records: stream, command, goto |
+| `0xa838`, `0xf5bc`, `0xe11c` | each driver run subtracts the song's increment (default `0x500`, 5 ticks in 8.8 fixed point) from its countdown; a command sets another |
+| `0xba80`–`0xbaf0` | the driver runs on an IOP hard timer: sysclock ÷ 256 ÷ 720 (the compare value at `0x12af0`) = 200 times a second |
+
+So by default **1 tick = 1 ms**. (Checked by ear: the MIDI files play at
+the right speed.)
+
+**Song area.** TBLD pointer [3] (0 = none): u32 sub-area count − 1, then
+per sub-area a u32 {u16 offset, u8 id, u8 kind}. Kind `0xa8` is songs,
+`0xa9` sound effects (the entries of `EFFECTS`, `SYS_SE` and the like are
+short layer lists such as `c0 df 00 50 80 df 01 50 80 ff`, not decoded). A
+sub-area is u32 entry count − 1, then u32 offsets from the area start.
+
+**Song.** A u32 header (`0x00010040` in every song), then records
+{u24 arg, u8 type}:
+
+| Type | Does |
+|---|---|
+| `0x00` | play the note stream at song + arg, then read on |
+| `0x80` | send driver command `(arg << 8) \| 0x80` (every song sends `a00012` and `a019nn`, *nn* its number in the bank) |
+| `0x90` | continue at the record at song + arg: the loop |
+| other | play the stream at song + arg and stop there (arg 0: stop now) |
+
+Songs with two streams play an intro once and loop the second (`MAP02`
+songs 1 and 2, `MAP06` songs 1, 3 and 4).
+
+**Note stream.** MIDI with running status and one change. A byte with the
+top bit set is a status (kept for later events); it is followed by one
+data byte for `0x8n` (note-off: key only), `0xCn`, `0xDn`, `0xEn` (bend:
+the 7-bit MSB), or two for `0x9n`, `0xAn`, `0xBn`, `0xFn`. The **top bit
+of the last data byte** means "another event at the same moment";
+otherwise a delay follows, 1–3 bytes of 7 bits, top bit = another byte
+(standard MIDI delta coding, at most 3 bytes). `0xFF` ends the stream.
+
+Across the 41 songs: 116,442 note-ons, 21,458 note-offs, 6,280
+controllers, 49 pitch bends, 3 `0xAn` events, and no program changes (a
+channel's instrument comes from the bank's tone tables, not decoded yet).
+Every stream ends exactly at its `0xFF`.
+
+| Banks | Songs | Length at 1 ms/tick |
+|---|---|---|
+| `MAP01` | 2 | 72, 60 s |
+| `MAP02` | 6 | 30–89 s |
+| `MAP03`, `MAP04`, `MAP05` | 5 each (they share four) | 60–127 s |
+| `MAP06` | 6 | 10–57 s |
+| `MAP07`–`MAP10` | 3 each (`07`/`08` and `09`/`10` share two) | 30–94 s |
+| `MAP11`–`MAP23` | 1 each: one long note that plays the stereo sample pair | |
+| `PACK0` | 1 | |
+
+`SOUNDDAT.PAC`'s crowd banks hold 27 more songs. `python SRC/sounddat.py
+midi DAT/SOUND/MAP01.DAT out/` writes each song as a MIDI file (General
+MIDI instruments, loop points as `loopStart`/`loopEnd` markers).
 
 ### Banks in `SOUNDDAT.PAC`
 
@@ -286,5 +351,7 @@ slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
   selector pair, and what loads bank 39.
 - The BCR2 record layout and trailer, the BCB3 item fields and script
   opcodes, and the BCV records.
-- The DTPK kinds `L`/`J`/`H`, the other TBLD pointers, and what each bank
-  is for.
+- The DTPK kinds `L`/`J`/`H`, the other TBLD pointers (the tone tables
+  that map a song's channels to the bank's samples), the driver commands
+  `a00012` / `a019nn`, the sound-effect entries, and what each bank is
+  for.

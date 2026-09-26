@@ -75,6 +75,8 @@ def checks():
         ("mbb_roundtrip", ["mbb.py", "roundtrip", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
         ("sounddat", ["sounddat.py", "info", "DAT/GAME/SOUNDDAT.PAC"], ["DAT/GAME/SOUNDDAT.PAC"]),
         ("afs", ["afs.py", "info", "ISO/AUDIO"], ["ISO/AUDIO"]),
+        ("sounddat_songs", ["sounddat.py", "songs", "DAT/SOUND", "DAT/GAME/SOUNDDAT.PAC"],
+         ["DAT/SOUND", "DAT/GAME/SOUNDDAT.PAC"]),
         ("eventdata_turn", ["eventdata_turn.py", "DAT/EVENT/EVENTDATA_TURN.TBB"],
          ["DAT/EVENT/EVENTDATA_TURN.TBB"]),
         # Decrypts DATA.CVM's table of contents to find where files live.

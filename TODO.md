@@ -185,8 +185,12 @@ hold (player models, faces, edit/uniform data) is undocumented.
       `MAP11`–`MAP23` are stereo pieces (two channels, 11–26 s): the
       pre-match jingles and the quick-match music;
       `MAP01`–`MAP10` are sequenced music (instruments + TBLD note data)
-- [ ] Decode the DTPK sequence data in `MAP01`–`MAP10` (the missing
-      `bgm01`–`bgm12`?) and render it with the bank's instruments
+- [x] DTPK songs: the SoundFactory sequence format, from the IOP driver
+      `SNDFI.IRX` (stream, records, 1 ms ticks at 200 Hz); 41 songs in
+      `MAP01`-`MAP10`, `sounddat.py songs` and `midi` (checked by ear)
+- [ ] Play the songs with the bank's own instruments: decode the tone
+      tables (TBLD pointers 0-2, 6) that map channels to samples, then
+      render to WAV
 - [x] Add `sounddat.py dtpk` over `SOUND/*.DAT` to `regress.py` (one check
       per file; each is a single bank filling the whole file)
 - [ ] `.SQB` sequences (19 files in `SEQ/`), with `SQBFILENAME.TBB`,

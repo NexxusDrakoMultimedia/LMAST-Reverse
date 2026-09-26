@@ -102,8 +102,8 @@ python SRC/afs.py wav ISO/AUDIO/BC_ENG.AFS out/commentary 1 2 3
   banks `SYS_SE` and `EFFECTS` decoded by `sounddat.py`.
 - Which screens play which `bgm` track, and where `VIC` and the chants are
   used. `BGM.AFS` starts at `bgm13`, so the rest of the music is elsewhere:
-  most likely the sequenced banks `DAT/SOUND/MAP01`–`MAP10` and the
-  stereo pieces `MAP11`–`MAP23` (see [`GAME_DIR.md`](GAME_DIR.md#the-sound-map-banks)).
+  in the 41 sequenced songs of `DAT/SOUND/MAP01`–`MAP10` and the stereo
+  pieces `MAP11`–`MAP23` (see [`GAME_DIR.md`](GAME_DIR.md#songs-sequences)).
 - The loader that maps `0FLIST.DIR` lines to archives, and the commentary
   code that picks clips.
 - `OPMOVIE.SFD` (MPEG video with ADX audio; not handled).
