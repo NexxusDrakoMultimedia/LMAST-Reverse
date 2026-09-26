@@ -93,7 +93,7 @@ Every escape in the archive follows this shape.
 | `0x21` | 0 | | restore the default colour | `{/color}` | 2,827 |
 | `0xC1` | 2 | u16 name | speaker name shown on the message window | `{name:N}` | 4,167 |
 | `0xC2` | 4 | u16 slot, u16 expression | portrait expression | `{face:S:N}` | 30,086 |
-| `0xC3` | 2 | u16 reaction | the speaker's body reaction (motion), see below | `{c3:N}` | 15,297 |
+| `0xC3` | 2 | u16 reaction | the speaker's body reaction (motion), see below | `{react:N}` | 15,297 |
 
 A variable's category is a message category (`1` is the global one, set up by
 `fcEuroRootTask_SetupGlobalMessageCategory`), and the game fills in its
@@ -108,7 +108,7 @@ named in any message file, so they probably index a table in the code.
 
 ### Reactions (`ESC 0xC3`)
 
-`{c3:N}` makes the speaking character play body reaction N in the 3D
+`{react:N}` makes the speaking character play body reaction N in the 3D
 "talk" scenes: one-to-one meetings with a player or staff member. The
 chain is **confirmed**:
 
@@ -141,7 +141,7 @@ The talk managers in `SIMPRG.REL` pass the posture. Contract, dismiss,
 move, promise, promise-result, staff-retire and withdraw talks sit
 (posture 1). `CTalkNormalManager` and one path of `CTalkPlayerRetire`
 stand (posture 0). The text is written for the right pack: in normal talk
-(categories 500–505, standing) `{c3:9}` goes with neutral lines ("This new
+(categories 500–505, standing) `{react:9}` goes with neutral lines ("This new
 formation – I'm well up for it", a nod), and in contract talk (sitting)
 it goes with refusals ("I can't renew my contract for that sort of
 figure", `sad_001`). The `{face}` expression beside each reaction agrees:

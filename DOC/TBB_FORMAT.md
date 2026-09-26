@@ -81,7 +81,31 @@ the size of the record the consumer actually walks:
 | `PARAM/TEAM_INIT_DATA.TBB` | 4 | 24, 144, 72, 16 ... | tables of u32 fields |
 | `PARAM/REGULATION.TBB` | 2 | 120 | u16 fields |
 | `STADIUM/AUD_JAM_HI.TBB` | 8 | 10 (110 = 11 × 10) | u16 values, 1024 = 1.0 fixed point; 6 bytes left over at line size 8 |
-| `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105 | 12 | ? | 143 bytes, not a multiple of 12 |
+| `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105 | 12 | 12, one record short by a byte | 143 bytes; see below |
+
+### `EDIT_EMBLEM.TBB` t93, t101 and t105 (empirical)
+
+These are the only tables on the disc whose size isn't a whole number of lines. Each
+is 143 bytes, one byte short of the 144 (12 × 12) that most of their
+neighbours hold. The neighbours' 12-byte records start with the record's
+own index as a u16 (`00 00`, `01 00`, ... `0b 00`) and end with a `00`
+byte.
+
+In all three tables, records 0–3 and 5–11 match that pattern. Record 4 is
+11 bytes and has no `04 00` index at the start. In t101 it reads
+`8d 00 00 00 2b 00 00 00 50 50 00`. Every record after it therefore sits
+one byte earlier than a 12-byte line would expect. That is why `tbb.py
+info` shows `05`, `06`, ... as the *last* byte of each line from row 4 on.
+The single byte after the data is the usual `00` alignment padding.
+
+It looks like an authoring slip repeated in three tables that follow
+the same pattern, not a different record size. The game counts rows as
+`size / line_size` (`GetDataTableCount`), so it sees 11 rows and never
+reaches record 11. Rows 4–10 would come out misaligned if it walks them
+by line size. The code that reads these tables (`edit_emblem.tbb` is
+named in `DLL/CEDITPRG.REL`) hasn't been found yet, so what the game
+actually does with them is unconfirmed. `tbb.py info` keeps reporting
+them as `!!` because the data really doesn't fit the line size.
 
 For single-type tables the line size is usually the element size, and
 for string tables the string width. It is *not* reliably the widest

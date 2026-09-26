@@ -67,6 +67,14 @@ def checks():
         # NEWS body/headline, MAIL sender/recipient/subject/body).
         out.append(("evsdatabin_text_" + kind.lower(),
                     ["evsdatabin.py", p, "--text", mes], [p, mes]))
+    # Each SOUND/*.DAT is one ps2_DTPK bank; dtpk takes a single file.
+    banks = sorted(glob.glob(os.path.join(ROOT, "DAT", "SOUND", "*.DAT")))
+    if not banks:
+        out.append(("sounddat_dtpk", ["sounddat.py", "dtpk", "DAT/SOUND/*.DAT"], ["DAT/SOUND"]))
+    for b in banks:
+        name = os.path.splitext(os.path.basename(b))[0].lower()
+        p = "DAT/SOUND/" + os.path.basename(b)
+        out.append(("sounddat_dtpk_" + name, ["sounddat.py", "dtpk", p], [p]))
     rels = sorted(glob.glob(os.path.join(ROOT, "ISO", "DLL", "*.REL")))
     if not rels:
         out.append(("snr2", ["snr2.py", "info", "ISO/DLL/*.REL"], ["ISO/DLL"]))

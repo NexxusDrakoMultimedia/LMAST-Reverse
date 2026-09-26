@@ -15,7 +15,7 @@ Text is rendered with {tags} for escapes (a literal '{' is written '{{'):
     ESC 0x20 / 0x21    colour on / off       {color:N} ... {/color}
     ESC 0xC1           speaker name          {name:N}
     ESC 0xC2           portrait expression   {face:SLOT:N}
-    ESC 0xC3           unknown, one u16      {c3:N}
+    ESC 0xC3           body reaction         {react:N}
     raw 0x0A / 0x0D    (effect unconfirmed)  {lf} / {cr}
     EU 0x10-0x13       pad button glyphs     {circle} {cross} {triangle} {square}
 
@@ -133,7 +133,7 @@ def _esc_text(op, a):
     if op == 0xC2 and len(a) == 4:
         return "{face:%d:%d}" % struct.unpack("<HH", a)
     if op == 0xC3 and len(a) == 2:
-        return "{c3:%d}" % struct.unpack("<H", a)
+        return "{react:%d}" % struct.unpack("<H", a)
     return "{esc:%02x:%s}" % (op, a.hex())
 
 

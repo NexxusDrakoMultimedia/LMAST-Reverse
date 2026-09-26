@@ -77,13 +77,13 @@ Where each folder stands (September 2026):
 | `ACROBATA/` | `PAC`, `DAT` | not studied |
 | `BG/` | 304 `MRG`, `HED`, `SVR`, Ninja `SNO`/`SNM`/`SNJ` | archives, textures, Z buffers and models done ([`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
 | `CSE/` | 490 `CSP`, `CSE`, `SVR`, a few others | screen layouts done ([`CSE_FORMAT.md`](DOC/CSE_FORMAT.md)) |
-| `EMBLEM/` | `TBB`, `PAC`/`HED` | tables parse except 3 with unknown record size; no folder doc |
+| `EMBLEM/` | `TBB`, `PAC`/`HED` | tables parse (3 are a byte short, see [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md)); no folder doc |
 | `EVENT/` | `EvsDataBin_*.bin`, `EVENTDATA_TURN.TBB` | done ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md)); some NEWS/MAIL columns unnamed |
 | `GAME/` | commentary `TBL`, sound banks, models, many small types | surveyed in [`GAME_DIR.md`](DOC/GAME_DIR.md); models parse ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)); several types not parsed |
 | `MESSAGE/` | `MES.PAC` | done ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md)) |
 | `NEWS/` | `PAC`/`HED`, `TBB` | containers parse; no folder doc |
-| `PARAM/` | 18 `TBB`, `PAC`/`HED`, `BIN` | tables parse; no folder doc, table meanings unknown |
-| `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` not parsed by a tool, 3 tables not decoded; models parse, faces included ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
+| `PARAM/` | 18 `TBB`, `PAC`/`HED`, `BIN` | tables parse; loaders and row counts in [`PARAM_DIR.md`](DOC/PARAM_DIR.md), 7 record layouts confirmed, the rest not decoded |
+| `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` parsed by `packdata.py`, block contents partly decoded, 3 tables not decoded; models parse, faces included ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
 | `PRELOAD/` | 139 `PAC` | containers parse; no folder doc |
 | `SEQ/` | 19 `SQB`, `TBB`, `WPX` | not studied |
 | `SOUND/` | 28 `DAT` sound banks | banks parse; no folder doc |

@@ -22,8 +22,7 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 - [x] Work out `ESC 0xC3`: the speaker's body reaction in talk scenes, an
       entry index into `HUMAN_MOTION_REACTION_SIT/STAND.MRG` depending on the
       scene's posture (`DOC/MBB_FORMAT.md`)
-- [ ] Rename `mbb.py`'s `{c3:N}` tag to something readable (e.g.
-      `{react:N}`); changes the CSV output, so re-bless `regress.py`
+- [x] Rename `mbb.py`'s `{c3:N}` tag to `{react:N}` (no baseline used it)
 - [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`,
       and the EVENT `+0x68` timing enum (values 0–21, scan at `0x12df08`)
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)
@@ -115,7 +114,8 @@ hold (player models, faces, edit/uniform data) is undocumented.
 - [ ] Listen to the decoded WAVs to confirm the audio is right, and document
       `SOUND/` (which scene each `MAP01`–`MAP23` belongs to; `MAP11`–`MAP23`
       hold only 2 samples each)
-- [ ] Add `sounddat.py dtpk` over `SOUND/*.DAT` to `regress.py`
+- [x] Add `sounddat.py dtpk` over `SOUND/*.DAT` to `regress.py` (one check
+      per file; each is a single bank filling the whole file)
 - [ ] `.SQB` sequences (19 files in `SEQ/`), with `SQBFILENAME.TBB`,
       `GLOBALMEMORY.TBB` and `INFORMATION.WPX`
 
@@ -182,10 +182,9 @@ The event tables, the procedures and the overlay loader are documented in
       (2,879 message references, all resolved)
 - [x] `sles_disasm.py` labels the 323 relocated sites (169 `jal 0`,
       HI16/LO16, data words) with their import names; `relocs` lists them
-- [ ] `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105: 143-byte tables whose record size
-      is unknown (`TBB_FORMAT.md` has "?"). The only `!!` on the disc with
-      no documented cause
+- [x] `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105: 12-byte records, but record 4
+      is missing its `04 00` index, so each table is a byte short
+      (`TBB_FORMAT.md`). The reader in `CEDITPRG.REL` is still unfound
 - [ ] Start the write stage with `tbb.py`: a writer that round-trips every
       `TBB1`/`TBL1` file byte for byte, checked in `regress.py`
-- [ ] Update the `PLAYER/` row in `GOALS.md`'s coverage table:
-      `etc::PackData` is now parsed by `packdata.py`
+- [x] Update the `PLAYER/` and `PARAM/` rows in `GOALS.md`'s coverage table
