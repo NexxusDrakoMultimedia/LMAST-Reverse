@@ -144,9 +144,14 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
 - [x] `STADIUM/*.PRI`: 44 × u32 part draw priorities per model, drawn in
       two passes (0–49, 50–100). `DOC/STADIUM_DIR.md`, `SRC/stadium.py`
       (in `regress.py`)
-- [ ] The 24 `STADIUM/` tables: `BUILD_STADIUM` sizes and byte 0 (model)
-      are confirmed; bytes 1–128, table 2, `CONV_INFO_BUILD`, `AUD_SET_*`,
-      `AUD_JAM_*`, `BUILD_ADVERTISE`, `ADVERTISE_MODELPACK` still open
+- [x] The 24 `STADIUM/` tables: `BUILD_STADIUM` (model, part switches,
+      crowd set, advert textures), `CONV_INFO_BUILD` (stadium id by level),
+      `BUILD_ADVERTISE` (board types and switches), `AUD_SET_*` (18 crowd
+      sets: sections, tiers, blocks), `AUD_JAM_*` (fill thresholds); all
+      checked by `stadium.py info`
+- [ ] Still open in `STADIUM/`: which part each `.PRI` slot and
+      `BUILD_STADIUM` byte 1–41/70–93/98–114 is, `BUILD_STADIUM` byte 128 and
+      table 2, `AUD_SET` tables 1–9 and 11, the lighting-variant choice
 - [ ] `GAME/` tactics AI: `PLAYBOOK.BPB`, `COMBINATION.BPB`,
       `COMBINATION2.CBB/.CSB` (`fb::PlayBookData`, `fb::Combination`)
 - [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
