@@ -136,15 +136,20 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
 "unknown binary".
 
 - [ ] `ACROBATA/ACROBATAPACKFILE.PAC` (the folder is marked "not studied")
-- [ ] `STADIUM/*.PRI` (10 files, one per stadium variant) and the 24
-      `STADIUM/` tables (`AUD_SET_*`, `BUILD_*`, `ADVERTISE_MODELPACK`, ...)
+- [x] `STADIUM/*.PRI`: 44 × u32 part draw priorities per model, drawn in
+      two passes (0–49, 50–100). `DOC/STADIUM_DIR.md`, `SRC/stadium.py`
+      (in `regress.py`)
+- [ ] The 24 `STADIUM/` tables: `BUILD_STADIUM` sizes and byte 0 (model)
+      are confirmed; bytes 1–128, table 2, `CONV_INFO_BUILD`, `AUD_SET_*`,
+      `AUD_JAM_*`, `BUILD_ADVERTISE`, `ADVERTISE_MODELPACK` still open
 - [ ] `GAME/` tactics AI: `PLAYBOOK.BPB`, `COMBINATION.BPB`,
       `COMBINATION2.CBB/.CSB` (`fb::PlayBookData`, `fb::Combination`)
 - [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
       (467 f32, not referenced by name)
 - [ ] `TEST3D/SHADOWCOLLI.LBI` and `BG/HUMANID.BIN` (no doc mentions them)
-- [ ] Folder docs for `EMBLEM/`, `NEWS/`, `PRELOAD/`, `SOUND/`, `STADIUM/`,
+- [ ] Folder docs for `EMBLEM/`, `NEWS/`, `PRELOAD/`, `SOUND/`,
       `SEQ/`, `ACROBATA/` and `TEST3D/`, plus a note on the `CVS/` metadata
+      (`STADIUM/` done: `DOC/STADIUM_DIR.md`)
 
 ## 7. Event system and game code
 

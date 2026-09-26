@@ -106,6 +106,7 @@ disassemble as unrelated MIPS instructions.
 | [`packdata.py`](SRC/packdata.py) | `etc::PackData` inside KC@P entries (face packs, licensed kits, edit face, cut-ins) | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) |
 | [`initteam.py`](SRC/initteam.py) | starting divisions, last season's order and computer-team squads (`PLRRSRC_INITTEAMDATA.TBB`, `OTEAMMEMBER.TBB`), with club names | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) |
 | [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
+| [`stadium.py`](SRC/stadium.py) | `DAT/STADIUM`: `.PRI` draw priorities, `BUILD_STADIUM.TBB` (which model each of the 119 stadiums uses), packs per model | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) |
 
 ```bash
 python SRC/pac.py info DAT
@@ -228,6 +229,7 @@ workflow is:
 | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) | Ninja (NN) models, skeletons, motions, VU/PX Plus vertex streams |
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
 | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
+| [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) | `DAT/STADIUM`: the 10 stadium models, `.PRI` draw priorities, crowds, adverts, `BUILD_STADIUM` |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |
 | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) | starting leagues and divisions, last season's order, computer-team squads, where club names come from |
 | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) | the season calendar: schedule UIDs, turns, games, pairings, where entrants come from |

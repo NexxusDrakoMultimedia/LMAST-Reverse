@@ -53,6 +53,8 @@ def checks():
          ["DAT/PARAM", "DAT/MESSAGE/MES.PAC"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),
         ("schedule", ["schedule.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("stadium", ["stadium.py", "info", "DAT/STADIUM", "DAT/PARAM"],
+         ["DAT/STADIUM", "DAT/PARAM"]),
         ("svr", ["svr.py", "info", "DAT"], ["DAT"]),
         ("csp", ["csp.py", "info", "DAT"], ["DAT"]),
         ("zbf", ["zbf.py", "info", "DAT"], ["DAT"]),
