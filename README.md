@@ -112,7 +112,7 @@ disassemble as unrelated MIPS instructions.
 | [`tbb.py`](SRC/tbb.py) | `TBB1`/`TBL1` parameter tables; reads and writes (all 70 files round-trip) | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) |
 | [`packdata.py`](SRC/packdata.py) | `etc::PackData` inside KC@P entries (face packs, licensed kits, edit face, cut-ins) | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) |
 | [`pbdata.py`](SRC/pbdata.py) | player database `PBDATA_*.PAC`: 27,950 players, 3,000 managers, 1,000 scouts (bit-packed records); list, show, CSV; writes edits (`set`, CSV `import`; every record round-trips) | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) |
-| [`initteam.py`](SRC/initteam.py) | starting divisions, last season's order and computer-team squads (`PLRRSRC_INITTEAMDATA.TBB`, `OTEAMMEMBER.TBB`), with club names | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) |
+| [`initteam.py`](SRC/initteam.py) | starting divisions, last season's order and computer-team squads (`PLRRSRC_INITTEAMDATA.TBB`, `OTEAMMEMBER.TBB`), with club names; club records, nations and stadiums; edits squad slots (`set`) and club records (`setteam`) | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) |
 | [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
 | [`stadium.py`](SRC/stadium.py) | `DAT/STADIUM`: `.PRI` draw priorities, `BUILD_STADIUM.TBB` (which model each of the 119 stadiums uses), packs per model | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) |
 
@@ -156,7 +156,14 @@ python SRC/ninja.py gltf out/player.gltf DAT/PLAYER/M_PLAYER.SNO "DAT/GAME/PLAYE
 ```bash
 python SRC/sounddat.py info DAT/GAME/SOUNDDAT.PAC
 python SRC/sounddat.py extract DAT/GAME/SOUNDDAT.PAC out/sound --wav
+python SRC/sounddat.py songs DAT/SOUND
+python SRC/sounddat.py midi DAT/SOUND/MAP01.DAT out/midi
+python SRC/afs.py list ISO/AUDIO/BGM.AFS
+python SRC/afs.py wav ISO/AUDIO/BGM.AFS out/bgm
 ```
+
+The MIDI files carry the note data only, with `loopStart`/`loopEnd`
+markers. The banks' own instruments aren't mapped to them yet.
 
 ### Text
 
@@ -228,10 +235,11 @@ python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers, shows the date, money and squad, edits money and player abilities, and re-encodes byte for byte; moves saves to another serial (`serial`, `rename`) so a modded disc keeps its own |
+| [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers, shows the date, money, squad, youth team and staff, edits money, abilities, fatigue, condition and motivation, and re-encodes byte for byte; moves saves to another serial (`serial`, `rename`) so a modded disc keeps its own |
 
 ```bash
 python SRC/save.py show <card>/BESLES-54151-G003
+python SRC/save.py player <card>/BESLES-54151-G003 3
 python SRC/save.py set <card>/BESLES-54151-G003 edited.bin money=2000000000 0:all=99
 python SRC/save.py serial ISO out PYRA-31396
 python SRC/patch_disc.py patch disc.iso modded.iso disc:SLES_541.51=out/PYRA_313.96 disc:SYSTEM.CNF=out/SYSTEM.CNF --rename disc:SLES_541.51=PYRA_313.96
@@ -248,6 +256,12 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - `packdata.py` uses `pac.py` to find KC@P entries and expand PRSH.
 - `ninja.py` uses `pac.py` to check the Ninja entries inside `.PAC`/`.MRG`/
   `.HED` archives.
+- `mbb.py` uses `pac.py` for `MES.PAC`; `pbdata.py`, `initteam.py`,
+  `schedule.py` and `stadium.py` use `pac.py` and `tbb.py`.
+- `save.py` loads the game's serializers with `sles_disasm.py` and
+  `snr2.py`.
+- `patch_disc.py` uses `extract_disc.py` and `rofs_decrypt.py` to find files
+  in the image.
 
 The disassemblers connect to the format tools through the docs. The usual
 workflow is:

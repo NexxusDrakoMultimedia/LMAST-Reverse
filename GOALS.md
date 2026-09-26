@@ -44,14 +44,19 @@ Each stage depends on the one before it.
 3. **Write.** Add a writer for each format. A writer must round-trip: reading
    a file and writing it back unchanged gives the original bytes. That check
    runs over every file on the disc before any edit is trusted, and goes into
-   `regress.py`.
+   `regress.py`. *Started:* `tbb.py` (all 70 tables), `pbdata.py` (the
+   player database) and `mbb.py` (message text) write and round-trip every
+   file. `initteam.py` edits squads and club records, and `save.py` edits
+   saved games. Edits to the player database, text and saves have been
+   tested in PCSX2.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
    `DATA.CVM`, and produce a disc image that boots. This includes repacking
    BINPAC/KC@P archives and PRS compression, and handling files that change
    size. *Started:* `SRC/patch_disc.py` patches same-size files straight into
    the disc image, since only the table of contents is encrypted
-   ([`REBUILD.md`](DOC/REBUILD.md)). Size changes and repacking are still
-   to do.
+   ([`REBUILD.md`](DOC/REBUILD.md)). A message file can also grow into
+   the spare room of its `MES.PAC` slot. Other size changes and repacking
+   are still to do.
 5. **Edit.** GUI tools on top of the writers, organised by what a player of
    the game would recognise (a club, a player, a season) rather than by file.
    The GUI checks values against the documented ranges and cross-references
@@ -63,7 +68,9 @@ Each stage depends on the one before it.
    existing tools such as xdelta UI or DeltaPatcher, without installing
    anything from this repo. *Started:* `SRC/vcdiff.py` makes and applies
    these patches in plain Python, so `xdelta3` isn't needed
-   ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod)).
+   ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod)). Delta Patcher applies
+   them with the same result. A modded disc can take its own serial
+   (`save.py serial`), so its saves stay apart from the original game's.
 
 ## Coverage of `DATA.CVM`
 
@@ -83,20 +90,26 @@ Where each folder stands (September 2026):
 | `CSE/` | 490 `CSP`, `CSE`, `SVR`, a few others | screen layouts done ([`CSE_FORMAT.md`](DOC/CSE_FORMAT.md)) |
 | `EMBLEM/` | `TBB`, `PAC`/`HED` | tables parse (3 are a byte short, see [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md)); no folder doc |
 | `EVENT/` | `EvsDataBin_*.bin`, `EVENTDATA_TURN.TBB` | done ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md)); some NEWS/MAIL columns unnamed |
-| `GAME/` | commentary `TBL`, sound banks, models, many small types | surveyed in [`GAME_DIR.md`](DOC/GAME_DIR.md); models parse ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)); several types not parsed |
-| `MESSAGE/` | `MES.PAC` | done ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md)) |
+| `GAME/` | commentary `TBL`, sound banks, models, many small types | surveyed in [`GAME_DIR.md`](DOC/GAME_DIR.md); `SOUNDDAT.PAC` and commentary tables decode (`sounddat.py`); models parse ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)); tactics AI, `GAMEDATA.BIN`, `AI_PARAM.BIN` not parsed |
+| `MESSAGE/` | `MES.PAC` | done, with a writer ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md)) |
 | `NEWS/` | `PAC`/`HED`, `TBB` | containers parse; no folder doc |
 | `PARAM/` | 18 `TBB`, `PAC`/`HED`, `BIN` | tables parse; loaders and row counts in [`PARAM_DIR.md`](DOC/PARAM_DIR.md), 7 record layouts confirmed, the rest not decoded |
 | `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` parsed by `packdata.py`, block contents partly decoded, 3 tables not decoded; models parse, faces included ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
 | `PRELOAD/` | 139 `PAC` | containers parse; no folder doc |
 | `SEQ/` | 19 `SQB`, `TBB`, `WPX` | not studied |
-| `SOUND/` | 28 `DAT` sound banks | banks parse; no folder doc |
+| `SOUND/` | 28 `DAT` sound banks | all 28 `ps2_DTPK` banks parse; samples and the 41 songs in `MAP01`–`MAP10` decode (`sounddat.py`), described in [`GAME_DIR.md`](DOC/GAME_DIR.md#the-soundmap-banks); no folder doc of its own; instrument tone tables not decoded |
 | `STADIUM/` | `PAC`/`HED`, 24 `TBB`, `PRI` | surveyed in [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md); `PRI` and all 24 tables decoded: part slots, stadium build, collision, crowd sets and tiers, adverts, stadium id by level (a few flags unknown) |
 | `TEST3D/` | Ninja models, `SVR`/`SVP`/`SVM`, `LBI` | textures and models done; `LBI` not parsed |
 | `CVS/` and `*/CVS/` | the developers' version-control metadata | not game data; worth noting in a doc, nothing to parse |
 
 "Containers parse" means `pac.py` or `tbb.py` reads the file, but what the
 entries or rows mean isn't documented yet.
+
+Outside `DATA.CVM`, the disc's `AUDIO/` folder (music, commentary, chants and
+ambience) is done in [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md), the `DLL/*.REL`
+overlays in [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md), and memory-card saves in
+[`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md). `OPMOVIE.SFD` (Sofdec video) is not
+studied.
 
 ## Principles
 

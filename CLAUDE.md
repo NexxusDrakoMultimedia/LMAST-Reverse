@@ -12,7 +12,13 @@ working towards and `TODO.md` for what to work on next.
   must never be committed. No game data goes in the repo, and that includes
   large excerpts in docs. Small hex snippets and counts are fine.
 - Most tools read from `DAT/`. The disassemblers read `ISO/SLES_541.51` and
-  `ISO/DLL/*.REL`.
+  `ISO/DLL/*.REL`. `afs.py` reads `ISO/AUDIO`, which is outside `DATA.CVM`.
+  `save.py` runs the serializers in `ISO/SLES_541.51` and
+  `ISO/DLL/SAVEPRG.REL`. `patch_disc.py` and `vcdiff.py` work on whole disc
+  images.
+- Other ignored paths: `*.iso` in the repo root (the Redump dump),
+  `.regress/` (regression baselines, which list names and counts from the
+  disc) and `.cache/` (`save.py`'s recorded field list).
 - Put scratch output such as PNGs, CSVs and extracted files outside the repo
   or in an ignored path. Don't leave it in the working tree.
 
@@ -26,6 +32,19 @@ working towards and `TODO.md` for what to work on next.
 4. Run its `info` over all of `DAT/` until it reports no problems, then add
    a check to `checks()` in `SRC/regress.py` and `bless` it.
 5. Update the README's tool table and doc index, and tick off `TODO.md`.
+   If a folder's status changes, update the coverage table in `GOALS.md`.
+
+Adding a writer (the write stage in `GOALS.md`) follows the same steps, plus
+a `roundtrip` command that re-encodes every file or record and marks any
+difference with `!!`. It goes into `regress.py` as `<name>_roundtrip`. The
+existing writers are `tbb.py`, `pbdata.py`, `mbb.py`, `initteam.py`
+(`set`, `setteam`) and `save.py`.
+
+Some things can only be checked by a person: that an edit shows in the game
+(PCSX2), what a screen shows, or how audio sounds. Ask the user to check,
+then record the result in the doc and `TODO.md` ("Tested in PCSX2: ...",
+"identified by ear"). The user doesn't write code, so don't hand code tasks
+to them.
 
 After changing any tool, run `python SRC/regress.py run`. A diff is a
 regression unless the change was intended. Only then run `bless <name>`, and
@@ -42,7 +61,9 @@ Commits usually add a doc and its tool together, with messages like
   and symbol that proves it, or **empirical**, meaning it was inferred from
   data and checked against every file on the disc. Keep the two separate. A
   "Confirmed from the game code" table (Address | Symbol | What it shows) is
-  the usual pattern.
+  the usual pattern. A result seen in the running game is stated as such
+  ("Tested in PCSX2", "checked in game", "by ear"), with what was changed
+  and what showed.
 - Give addresses as hex with `0x`. Overlay addresses name the `.REL`, for
   example `MOVIEPRG.REL 0x32ec`.
 - Include exact counts from the full data set, such as "3,738 files" or
@@ -80,10 +101,15 @@ Commits usually add a doc and its tool together, with messages like
   if a file isn't a whole number of records. `eventdata_turn.py` reads
   281-byte records (61,258 = 281 × 218). The 10 trailing bytes that
   `tbb.py info` reports are only left over at the table's line size of 32.
+- Writers never change their input. They take an output path
+  (`set <in> <out> ...`, `import <in> <edits.csv> <out>`), and only
+  `patch_disc.py patch --in-place` writes over an image, when asked to.
 - Tools reuse each other through sibling imports (`from pac import BinPac`,
   `import svr`, `import tbb`). These work because the script's directory is
   on `sys.path`. Reuse `pac.py` for BINPAC/KC@P/PRS, `tbb.py` for TBB1/TBL1
-  tables, and `svr.py` for textures rather than reimplementing them.
+  tables, `svr.py` for textures, `sles_disasm.py`/`snr2.py` for the game
+  code, and `extract_disc.py`/`rofs_decrypt.py` for the disc image, rather
+  than reimplementing them.
 - Parse with `struct` and little-endian formats (`"<I"`, `"<H"`). Name magic
   numbers and give sizes and offsets in hex.
 - Match the comment style of the surrounding code. Comments explain *why* and

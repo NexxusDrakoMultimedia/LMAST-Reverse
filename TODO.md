@@ -54,8 +54,10 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 ## 2. Starting season and parameter tables (`PARAM/`, `0SYSTEM/`)
 
 The first thing [`GOALS.md`](GOALS.md) wants a mod to change. Every table
-parses with `tbb.py`, but no folder doc says what the tables and packs hold
-or which code loads them.
+parses with `tbb.py`, and [`DOC/PARAM_DIR.md`](DOC/PARAM_DIR.md) gives each
+file's loader and size. The starting leagues, squads, schedules and player
+database are decoded and editable (`initteam.py`, `schedule.py`,
+`pbdata.py`); `0SYSTEM/` has no folder doc yet.
 
 - [x] Write `DOC/PARAM_DIR.md`: each file's loader, row count and record size.
       Loaders found for all but `SPONSOR_BOARD.TBB` and `UNIFORM_NAME*.BIN`
@@ -121,7 +123,8 @@ or which code loads them.
 
 Documented in [`DOC/NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md). `SRC/ninja.py`
 checks all 8,822 blobs (loose files, archive entries and KC@P pack blocks)
-with no problems, and exports textured static meshes to OBJ.
+with no problems, exports textured meshes to OBJ, and exports skinned,
+animated models to glTF.
 
 - [x] Document the chunk layouts (`DOC/NINJA_FORMAT.md`)
 - [x] Add a parser (`ninja.py info`/`dump`) and add it to `regress.py`
@@ -154,9 +157,10 @@ with no problems, and exports textured static meshes to OBJ.
 
 ## 4. `DAT/PLAYER/`
 
-The largest directory (1.2 GB). `pac.py` covers the containers (KC@P face
-packs, uniform CLUT packs, `CUTINHUMANPACK.MRG`, ...), but what the entries
-hold (player models, faces, edit/uniform data) is undocumented.
+The largest directory (1.2 GB), surveyed in
+[`DOC/PLAYER_DIR.md`](DOC/PLAYER_DIR.md). `pac.py` covers the containers and
+`packdata.py` the `etc::PackData` entries inside the KC@P packs. Some block
+contents and three tables are still undecoded.
 
 - [x] Survey the entry types: the KC@P packs (faces, `PLPACK_*` kits,
       `EDITFACEPACK`) wrap each entry in `etc::PackData`; everything else is
@@ -181,8 +185,9 @@ hold (player models, faces, edit/uniform data) is undocumented.
 - [x] Listen to the decoded WAVs: ADX (`BGM`, `OPEN`, `VIC`, `KANSEI`,
       `OUENKA`) and DTPK (`SYS_SE`, `EFFECTS`) sound right by ear
 - [ ] Commentary (`BC_ENG`), tannoy (`JYONAI_A`) and `MAP01` still unheard
-- [ ] Document `SOUND/`: which scene each `MAP01`–`MAP23` belongs to.
-      `MAP11`–`MAP23` are stereo pieces (two channels, 11–26 s): the
+- [ ] Document `SOUND/` in a folder doc (the `MAP` banks are described in
+      `DOC/GAME_DIR.md` for now): which scene each `MAP01`–`MAP23` belongs
+      to. `MAP11`–`MAP23` are stereo pieces (two channels, 11–26 s): the
       pre-match jingles and the quick-match music;
       `MAP01`–`MAP10` are sequenced music (instruments + TBLD note data)
 - [x] DTPK songs: the SoundFactory sequence format, from the IOP driver
