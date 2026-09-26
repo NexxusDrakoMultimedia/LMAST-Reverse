@@ -40,10 +40,8 @@ extent. It never writes to the table of contents.
 - The `CVMH` header has no checksum field. It holds sizes, a date and the
   `ROFSBLD Ver.1.52` string.
 - `0FLIST.DIR` in the disc root lists only the `AUDIO/*.afs` files.
-- `PBDATA_EU.PAC`'s records appear nowhere else on the disc. Other files
-  may have copies, though: `.HED` files duplicate their archive's header,
-  and `PRELOAD/GAMEFILE*.PAC` bundles some small files. An edit has to be
-  made to every copy the game actually reads.
+- `PBDATA_EU.PAC`'s records and `OTEAMMEMBER.TBB` appear nowhere else on
+  the disc. Many other files do have copies; see [Copies](#copies).
 
 **Tested:**
 - Patching an edited `PBDATA_EU.PAC` (three fields of one player) into a
@@ -58,6 +56,51 @@ bars). So nothing checks the file contents, and the game reads
 `PBDATA_EU.PAC` from this one copy. Details are in
 [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#writing).
 
+## Copies
+
+The same data is often on the disc more than once, and an edit has to
+reach every copy the game actually reads. `patch_disc.py copies` and
+`patch` find them by indexing `DAT/`: every loose file, every BINPAC
+header and every archive entry (54,032 units), by size and SHA-1. Two
+units are **copies** if their bytes are identical and their names match
+(equal, or one is the tail of a name of 15+ characters, since BINPAC
+names are truncated). Identical data under other names, such as shared
+stadium parts, is only reported. Compressed entries are compared as
+stored, so a copy stored with different compression wouldn't be found.
+
+**Empirical, from the index:**
+
+| What | Count | Example |
+|---|---|---|
+| Loose files with a copy elsewhere | 325 | `PARAM/REGULATION.TBB` is also entry 9 of all seven `PRELOAD/SIMFILE*.PAC` |
+| Archive headers repeated by a `.HED` | 193 | `BG/HUMAN_1000_PALETTE.HED` = the `.MRG`'s header |
+| `MES.PAC` message files also in a `PRELOAD` pack | 763 | `100001_0.mbb` is `PRELOAD/SIMLOCALMEM0.PAC` entry 34 |
+| `PRELOAD/*.PAC` packs holding copies | 139 | |
+
+The 14 PARAM files with copies are `CLUBRESULT`, `REGULATION`,
+`SCHEDULE_LIST`, `STADIUM_DATA`, `TACTICS_FORMATION_SET` and
+`TRAINING_LIST` (`.TBB`), `PLRESOURCECOMMON`, `PLRESOURCESIM`,
+`PSCCOMMON`, `PSCGAME` and `SCHEDULE_SYSTEM` (`.PAC`), and the
+`SCHEDULE_*` `.HED` files. Which copy the game reads in which mode
+hasn't been traced. The `PRELOAD` packs are what the overlays load in
+bulk (`SIMFILE*` for the season mode), so both copies are assumed to
+matter.
+
+`patch` compares each target with the unmodified file in `DAT/` and finds
+every unit whose bytes change: the whole file, its header, the entries
+it overlaps. It warns about each one's copies, and `--copies` writes the
+new bytes into them as well. They are the same size, so this is always
+possible. A copy that already holds the new bytes is left alone, so a
+second run is harmless. A target can also be a single archive entry,
+`<path>#<index>` or `<path>#<name>`.
+
+Tested on a copy of `DATA.CVM`:
+- A one-byte edit to `REGULATION.TBB` with `--copies` wrote all 8
+  locations. The whole CVM then differed from the original in exactly 8
+  bytes.
+- A one-byte edit to `MES.PAC#7` (`100001_0.mbb`) also updated
+  `SIMLOCALMEM0.PAC#34`.
+
 ## Usage
 
 ```bash
@@ -65,6 +108,8 @@ python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30 na
 python SRC/patch_disc.py patch disc.iso modded.iso PARAM/PBDATA_EU.PAC=out/PBDATA_EU.PAC
 python SRC/patch_disc.py verify modded.iso PARAM/PBDATA_EU.PAC=out/PBDATA_EU.PAC
 python SRC/patch_disc.py locate ISO/DATA.CVM PARAM/PBDATA_EU.PAC      # sector, size, byte range
+python SRC/patch_disc.py copies DAT PARAM/REGULATION.TBB              # where else these bytes are
+python SRC/patch_disc.py patch disc.iso modded.iso PARAM/REGULATION.TBB=out/REGULATION.TBB --copies
 ```
 
 `patch` copies the image first (use `--in-place` to patch a copy you made

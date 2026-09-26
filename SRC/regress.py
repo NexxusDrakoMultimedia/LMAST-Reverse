@@ -76,6 +76,9 @@ def checks():
         # Decrypts DATA.CVM's table of contents to find where files live.
         ("patch_disc_locate", ["patch_disc.py", "locate", "ISO/DATA.CVM", "PARAM/PBDATA_EU.PAC",
                                "PARAM/OTEAMMEMBER.TBB", "MESSAGE/MES.PAC"], ["ISO/DATA.CVM"]),
+        ("patch_disc_copies", ["patch_disc.py", "copies", "DAT", "PARAM/REGULATION.TBB",
+                               "PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/PBDATA_EU.PAC",
+                               "BG/HUMAN_1000_PALETTE.MRG#header"], ["DAT"]),
         ("sles_syms", ["sles_disasm.py", "ISO/SLES_541.51", "syms", "CMsgSubCategory"],
          ["ISO/SLES_541.51"]),
         ("sles_relocs", ["sles_disasm.py", "ISO/SLES_541.51", "relocs"], ["ISO/SLES_541.51"]),

@@ -251,8 +251,12 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       Terry's edited name, weight, leg and bars appeared in a new game.
       His height wrapped at 255 (a byte in `PlPbase`) and his age comes
       from `OTEAMMEMBER.TBB`; both now handled (`initteam.py set`)
-- [ ] Find every file the game reads a second copy of (`.HED` headers,
-      `PRELOAD/GAMEFILE*.PAC` bundles) so edits reach all copies
+- [x] Copies: `patch_disc.py copies` and `patch --copies` index `DAT/`
+      (files, headers, entries) and update same-named copies (325 loose
+      files have one, e.g. `REGULATION.TBB` in all seven `SIMFILE` packs;
+      193 `.HED` headers; 763 `MES.PAC` entries); `path#entry` targets
+- [ ] Which copy the game actually reads in each mode (loose file or
+      `PRELOAD` pack), so `--copies` can be narrowed
 - [ ] Size changes: re-lay `DATA.ISO`, rewrite directory records,
       re-encrypt the table of contents, fix the `CVMH`/`ZONE` lengths and the
       disc's `DATA.CVM` entry
