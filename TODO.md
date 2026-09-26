@@ -299,8 +299,13 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       alone, as the serial change is an optional feature, not the default
 - [ ] Which rate slot is which currency: pound (2) and euro (3) seen in
       game; 400 presumably the yen (the option screen's code)
-- [ ] The second value of each ability triplet; the rest of PlPinfo
-      (contract, condition, injuries, stats)
+- [x] PlPinfo: growth limit (`pwkGUtl_AddExp`), current age, team, the
+      embedded `PlPbase` copy, salary, contract years, fatigue, condition,
+      motivation, injuries; match statistics (season, last season, career)
+      checked against two players' screens; `save.py player` shows them and
+      `set` edits fatigue/condition/motivation
+- [ ] The T-FIT bar (not "power" or "kan"), stats table 1, PlPinfo flags
+      at `0x20c`, dissatisfaction and style icons
 - [ ] Map more of the blocks through their accessors (staff, youth, other
       clubs, finances), and name the fields an editor should offer
 - [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same

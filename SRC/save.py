@@ -41,6 +41,7 @@ Usage:
     python save.py player    <save> <slot>                # one squad player's 64 abilities
     python save.py set       <save> <out> money=N         # edit into a new main file
     python save.py set       <save> <out> 3:all=99 3:15=80  #  slot:ability=level (0-99)
+    python save.py set       <save> <out> 3:fatigue=0 3:condition=65535  #  slot:field=value
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
     python save.py roundtrip <save> ...                   # decode + encode, compare
@@ -714,9 +715,41 @@ DATE_OFF = 0x88
 TEAM_OFF = 0x4b4
 SQUAD_OFF, SQUAD_SLOTS, PINFO_SIZE = 0x20, 25, 0x2a0
 # PlPinfo: +0 s16 database id (negative = empty slot, 0x2664d0);
-# +0xa 64 x {u16 exp, u16, u16 cap} abilities (plPinfo_ConvAbilLv 0x216c90).
+# +0xa 64 x {u16 exp, u16 limit, u16 cap} abilities (plPinfo_ConvAbilLv 0x216c90;
+# pwkGUtl_AddExp 0x246028 clamps exp to the limit on every gain).
 ABIL_OFF, ABIL_COUNT = 0xa, 64
 PINFO_POS, PINFO_AGE, PINFO_NAME, NAME_LEN = 0x4, 0x8, 0x198, 0x13
+# +0x198 holds a copy of the player's PlPbase header (0x74 bytes, pbdata.py's
+# struct offsets): plPinfo_IsForeigner reads +0x1ac (PlPbase +0x14),
+# plPinfo_SetUnumber +0x1c3 (+0x2b), plPinfo_IsEU +0x1fb (+0x63),
+# plPinfo_IsSkill +0x1fc (+0x64).
+PBASE_COPY, PBASE_COPY_SIZE = 0x198, 0x74
+# Game state after it. (name, offset, struct format, settable range, source)
+PINFO_FIELDS = (
+    ("position", 0x4, "<I", None, "grid cell; 0 = GK (ConvertPlayer_Bar)"),
+    ("age", 0x8, "<B", None, "current age; plPinfo_kanLowLimit(age) via ChangeKan 0x21c840"),
+    ("team", 0x190, "<I", None, "plPinfo_Team 0x218358"),
+    ("fatigue", 0x23c, "<H", (0, 1000), "ChangeGtired clamps 0-1000; GetGTiredLevel 0x21b090"),
+    ("status", 0x23e, "<H", None, "plPinfo_ChangeStatus"),
+    ("condition", 0x240, "<H", (0, 65535), "plPinfo_Cond5 0x217800"),
+    ("motivation", 0x242, "<H", (0, 65535), "plPinfo_Moti2Lv 0x217b88: / 0x3333"),
+    ("power", 0x24c, "<H", (0, 1000), "plPinfo_ChangePower 0x21c8c0 clamps 0-1000"),
+    ("kan", 0x24e, "<H", (0, 1000), "plPinfo_ChangeKan 0x21c840 clamps to age limit-1000"),
+    ("injury_days", 0x250, "<H", None, "_plPinfo_SetKega, KegaRecoverDaysChno"),
+    ("injury", 0x254, "<I", None, "_plPinfo_SetKega kind, IsHkegaFunou"),
+    ("captain_exp", 0x25a, "<H", None, "plPinfo_ChangeCaptainExp"),
+    ("keyman_exp", 0x25c, "<H", None, "plPinfo_ChangeKeymanExp"),
+    ("play_style", 0x278, "<I", None, "plPinfo_GetPStyle / SetPStyle"),
+    ("salary", 0x218, "<I", None, "annual salary / 100, stored money unit (pwkTeam_ArrivePlayer)"),
+    ("contract_years", 0x21d, "<B", None, "years remaining (pwkMoney_*, CheckRentalMoveEnable)"),
+)
+# Block 1 +0xec90 + slot * 0x11e is what pwkTeam_GetPlayerStats (0x265810)
+# indexes. The rows start 2 bytes before it: four tables of five
+# competitions, 14 bytes a row, then 6 bytes not traced.
+STATS_OFF, STATS_SIZE = 0xec8e, 0x11e
+STATS_TABLES = ("table 1 (unknown)", "season", "table 3 (last season?)", "career")
+COMPETITIONS = ("pre-season", "domestic league", "overseas league", "Euro", "international")
+STATS_ROW = "<6H2B"     # goals, assists, games, games2, mom, points x 100, red, yellow
 # SLES_541.51: ability experience per level 0-100, plMisc_AbilExp2Lv (0x2153c0)
 # and plMisc_AbilLv2Exp (0x215438).
 ABIL_EXP = 0x531c70
@@ -780,21 +813,58 @@ class Save:
         b = self.blocks
         name = b[o + PINFO_NAME:o + PINFO_NAME + NAME_LEN].split(b"\0")[0].decode("cp850")
         abil = [struct.unpack_from("<3H", b, o + ABIL_OFF + 6 * k) for k in range(ABIL_COUNT)]
-        return {"id": struct.unpack_from("<h", b, o)[0], "name": name,
-                "pos": b[o + PINFO_POS], "age": b[o + PINFO_AGE], "abil": abil}
+        p = {"id": struct.unpack_from("<h", b, o)[0], "name": name,
+             "pos": b[o + PINFO_POS], "age": b[o + PINFO_AGE], "abil": abil}
+        for fname, off, fmt, _, _ in PINFO_FIELDS:
+            p[fname] = struct.unpack_from(fmt, b, o + off)[0]
+        return p
+
+    def pbase_copy(self, o):
+        """{field: value} from the PlPbase copy, as pbdata.py names them."""
+        import pbdata
+        b, base, out = self.blocks, o + PBASE_COPY, {}
+        for fname, off, bits, count, _ in pbdata.PLAYER_FIELDS:
+            if off >= PBASE_COPY_SIZE:
+                continue
+            size = 2 if bits > 8 else 1
+            vals = [int.from_bytes(b[base + off + size * i:base + off + size * (i + 1)], "little")
+                    for i in range(count)]
+            out[fname] = vals if count > 1 else vals[0]
+        return out
+
+    def stats(self, slot):
+        """{table: [(goals, assists, games, games2, mom, points x 100, red,
+        yellow) per competition]} for a squad slot."""
+        base = self.at(1, STATS_OFF) + slot * STATS_SIZE
+        return {name: [struct.unpack_from(STATS_ROW, self.blocks, base + 70 * t + 14 * c)
+                       for c in range(len(COMPETITIONS))]
+                for t, name in enumerate(STATS_TABLES)}
+
+    def set_field(self, o, fname, value):
+        for name, off, fmt, rng, _ in PINFO_FIELDS:
+            if name == fname:
+                if rng is None:
+                    raise ValueError("%s is read-only (its meaning isn't pinned down)" % fname)
+                if not rng[0] <= value <= rng[1]:
+                    raise ValueError("%s must be %d-%d" % (fname, rng[0], rng[1]))
+                struct.pack_into(fmt, self.blocks, o + off, value)
+                return
+        raise ValueError("unknown field %r" % fname)
 
     def set_ability(self, o, k, level):
         """Set ability k to `level` (0-99): its experience becomes
         plMisc_AbilLv2Exp(level, 50), halfway into the level (a value on a
-        threshold reads back one level lower), and the cap is raised to
-        match if it was lower."""
+        threshold reads back one level lower). The growth limit and the cap
+        are raised to match if they were lower: pwkGUtl_AddExp (0x246028)
+        clamps experience to the limit on every gain, so a value above it
+        would fall back at the next training."""
         if not 0 <= level <= 99:
             raise ValueError("level must be 0-99")
         t = self.exp
         exp = t[level] + (t[level + 1] - t[level]) * 50 // 100
         a = o + ABIL_OFF + 6 * k
-        cur, mid, cap = struct.unpack_from("<3H", self.blocks, a)
-        struct.pack_into("<3H", self.blocks, a, exp, mid, max(cap, exp))
+        cur, limit, cap = struct.unpack_from("<3H", self.blocks, a)
+        struct.pack_into("<3H", self.blocks, a, exp, max(limit, exp), max(cap, exp))
 
     def encode(self):
         return build(self.game, bytes(self.blocks), self.file)[0]
@@ -906,15 +976,43 @@ def cmd_player(game, path, slot):
     hit = [o for i, o in s.squad() if i == slot]
     if not hit:
         raise SystemExit("squad slot %d is empty" % slot)
-    p = s.pinfo(hit[0])
+    import pbdata
+    o = hit[0]
+    p, db = s.pinfo(o), s.pbase_copy(o)
     print("%s: slot %d, id %d, %s" % (s.path, slot, p["id"], p["name"]))
-    print("  ability  level  cap   (exp, ?, cap exp)")
+    print("  position %s, age %d, shirt %d, %d cm, %d kg, %s foot, nation %d, team %d" % (
+        pbdata.position_name(p["position"]), p["age"], db["shirt"], db["height"], db["weight"],
+        "right" if db["leg"] & 1 else "left", db["nation"], p["team"]))
+    print("  fatigue %d/1000, condition %d%%, motivation %d%%, power %d/1000, kan %d/1000" % (
+        p["fatigue"], p["condition"] * 100 // 65535, p["motivation"] * 100 // 65535,
+        p["power"], p["kan"]))
+    print("  injury %d, %d days; captain exp %d, keyman exp %d; play style %d; status %d" % (
+        p["injury"], p["injury_days"], p["captain_exp"], p["keyman_exp"], p["play_style"],
+        p["status"]))
+    print("  contract %d year%s left, salary %d a year (stored unit; GBP %d)" % (
+        p["contract_years"], "" if p["contract_years"] == 1 else "s", p["salary"] * 100,
+        p["salary"] * 100 // 6))
+    for table, rows in s.stats(slot).items():
+        if not any(r[2] for r in rows):
+            continue
+        print("  %s: games/goals/assists/mom/yellow/red/points" % table)
+        for comp, (gol, ast, games, games2, mom, pnt, red, ylw) in zip(COMPETITIONS, rows):
+            if games:
+                print("    %-16s %3d %3d %3d %3d %3d %3d  %.2f   (second count %d)" % (
+                    comp, games, gol, ast, mom, ylw, red, pnt / 100, games2))
+    lv = [exp2lv(s.exp, a[0]) for a in p["abil"]]
+    print("  bars    " + "  ".join("%s %d" % b for b in pbdata.bars(lv, p["position"] == 0)))
+    print("  database copy: age %d at the start, rank %d, positions %s, skills %#06x" % (
+        db["age"], db["rank"], "/".join(pbdata.position_name(x) for x in db["position"]),
+        db["skills"]))
+    print("  ability  level  limit  cap   (exp, limit exp, cap exp)")
     for k, (cur, mid, cap) in enumerate(p["abil"]):
-        print("  %7d  %5d  %3d   (%d, %d, %d)" % (k, exp2lv(s.exp, cur), exp2lv(s.exp, cap), cur, mid, cap))
+        print("  %7d  %5d  %5d  %3d   (%d, %d, %d)" % (k, lv[k], exp2lv(s.exp, mid), exp2lv(s.exp, cap), cur, mid, cap))
 
 
 def cmd_set(game, path, out, assigns):
-    """money=N, or slot:ability=level / slot:all=level for a squad player."""
+    """money=N; for a squad player slot:ability=level, slot:all=level, or
+    slot:field=value for the settable PINFO_FIELDS (fatigue, condition, ...)."""
     s = Save(game, path)
     squad = dict(s.squad())
     for a in assigns:
@@ -926,9 +1024,15 @@ def cmd_set(game, path, out, assigns):
             continue
         slot, _, which = key.partition(":")
         if not slot.isdigit() or int(slot) not in squad or not which:
-            raise SystemExit("%r: use money=N, <slot>:<ability>=level or <slot>:all=level "
-                             "(slot = a filled squad slot, see `show`)" % a)
+            raise SystemExit("%r: use money=N, <slot>:<ability>=level, <slot>:all=level or "
+                             "<slot>:<field>=value (slot = a filled squad slot, see `show`)" % a)
         o = squad[int(slot)]
+        if not which.isdigit() and which != "all":
+            try:
+                s.set_field(o, which, int(val, 0))
+            except ValueError as e:
+                raise SystemExit("%s: %s" % (a, e))
+            continue
         for k in range(ABIL_COUNT) if which == "all" else [int(which)]:
             if not 0 <= k < ABIL_COUNT:
                 raise SystemExit("ability must be 0-%d" % (ABIL_COUNT - 1))

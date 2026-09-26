@@ -81,6 +81,7 @@ All **confirmed** by the accessor named. Offsets are within the block.
 | 0 | `0x1344` | | `pwkGen_GetDifficultyPointer` (`0x244c78`) | difficulty settings (not decoded) |
 | 1 | `0x4b4` | PlTeamData | `pwkTeam_GetMyTeamData` (`0x259898`) | your club |
 | 1 | `0x4b4 + 0x20` | 25 × PlPinfo | `pwkTeam_GetForeignCitizenNumber` (`0x266450`) | the squad, 0x2a0 bytes per player |
+| 1 | `0xec8e` | 25 × 0x11e | `pwkTeam_GetPlayerStats` (`0x265810`, indexes `0xec90 + slot × 0x11e`) | each squad slot's match statistics (below) |
 | 1 | `0xe290` | 3 × PlPinfo | `0x266600` | a second, smaller group of players (not identified) |
 
 **Money** is stored in the game's own unit. `plMisc_MoneyRate`
@@ -109,20 +110,63 @@ euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
 | Offset | Type | What | Source |
 |---|---|---|---|
 | `0x0` | s16 | database id; negative = empty slot | confirmed, `0x2664d0` |
-| `0x4` | u8 | position (grid cell, as `pbdata.py`'s `POSITION_NAMES`) | empirical: GKs are 0, and a GK's bars depend on it (`PBDATA_FORMAT.md`) |
-| `0x8` | u8 | age | empirical: matches the players checked |
-| `0xa` | 64 × {u16 exp, u16, u16 cap} | abilities | confirmed, `plPinfo_ConvAbilLv` (`0x216c90`) |
-| `0x198` | char[19] | short name, e.g. `A.Deasy` | empirical |
+| `0x4` | u32 | position (grid cell, as `pbdata.py`'s `POSITION_NAMES`) | empirical: GKs are 0, and a GK's bars depend on it (`PBDATA_FORMAT.md`) |
+| `0x8` | u8 | current age | confirmed: `plPinfo_ChangeKan` (`0x21c840`) passes it to `plPinfo_kanLowLimit`; matches the screen |
+| `0xa` | 64 × {u16 exp, u16 limit, u16 cap} | abilities (below) | confirmed, `plPinfo_ConvAbilLv` (`0x216c90`), `pwkGUtl_AddExp` (`0x246028`) |
+| `0x190` | u32 | team | confirmed, `plPinfo_Team` (`0x218358`) |
+| `0x198` | 0x74 bytes | a copy of the player's database record header (`PlPbase`, the offsets in [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)): name, nation, database age, height, weight, shirt, leg, skills | confirmed: `plPinfo_IsForeigner` reads `+0x1ac` (`PlPbase +0x14`), `plPinfo_SetUnumber` `+0x1c3` (`+0x2b`), `plPinfo_IsEU` `+0x1fb` (`+0x63`), `plPinfo_IsSkill` `+0x1fc` (`+0x64`). Height, weight, leg and shirt match the screen |
+| `0x218` | u32 | annual salary ÷ 100, in the stored money unit | empirical: Carson 75,600 → £1,260,000, Aiblinger 72,000 → £1,200,000 (× 100 ÷ 6) |
+| `0x21d` | u8 | contract years remaining | empirical: 1 and 3, as on screen. Read by the `pwkMoney_*` transfer prices |
+| `0x23c` | u16 | fatigue, 0–1000 | confirmed: `plPinfo_ChangeGtired` clamps to 1000; `plPinfo_GetGTiredLevel` (`0x21b090`) gives level 0 up to 400, 1 up to 700, else 2 |
+| `0x240` | u16 | condition, 0–65535 | confirmed, `plPinfo_Cond5` (`0x217800`); the bar matches (Aiblinger 88%, "fully fit") |
+| `0x242` | u16 | motivation, 0–65535 | confirmed, `plPinfo_Moti2Lv` (`0x217b88`): ÷ `0x3333` gives 5 levels |
+| `0x24c` | u16 | "power", 0–1000 | confirmed range, `plPinfo_ChangePower` (`0x21c8c0`). Not the T-FIT bar |
+| `0x24e` | u16 | "kan", age-dependent minimum to 1000 | confirmed range, `plPinfo_ChangeKan`. Not the T-FIT bar either |
+| `0x250`, `0x254` | u16, u32 | injury days left, injury kind | `_plPinfo_SetKega`, `plPinfo_KegaRecoverDaysChno`, `plPinfo_IsHkegaFunou` |
+| `0x25a`, `0x25c` | u16 | captain and keyman experience | `plPinfo_ChangeCaptainExp`, `plPinfo_ChangeKeymanExp` |
+| `0x278` | u32 | play style | `plPinfo_GetPStyle` / `SetPStyle` |
+
+The rest of the record between `0x18a` and `0x2a0` is read by the functions
+listed by a scan of every `PlPinfo` accessor (flags at `0x20c`, the job
+change at `0x210`, dissatisfaction bytes in the database copy), not decoded
+yet. The T-FIT bar isn't found: neither "power" nor "kan" fits both players
+checked (Carson: full bar, power 991, kan 370; Aiblinger: about 60%, power
+1000, kan 682).
 
 Ability values are experience. `plMisc_AbilExp2Lv` (`0x2153c0`) turns
 experience into a level 0–99 through 101 thresholds at SLES `0x531c70`: the
 level is one below the first threshold that reaches the value, so a value
 exactly on a threshold reads one level low. `plMisc_AbilLv2Exp(lv, pct)`
 (`0x215438`) goes the other way, `t[lv] + (t[lv+1] − t[lv]) × pct / 100`.
-The third value of each triplet is always exactly a threshold, and is
-never below the first (**empirical**, all 7,424 abilities of the 116 squad
-players in the 5 saves): the player's ceiling for that ability. What the
-second value means isn't known yet.
+The second value is the growth limit: `pwkGUtl_AddExp` (`0x246028`)
+adds experience as `exp = min(exp + gain, limit)`. The third value is
+always exactly a threshold, and exp ≤ limit ≤ cap holds for all 7,424
+abilities of the 116 squad players in the 5 saves (**empirical**): the cap
+is the player's ceiling. Young players have limits well above their
+current value, veterans' limits sit on it. `save.py set` raises the limit
+and cap along with the value, or the next training would clamp the edit
+back to the old limit.
+
+**Match statistics.** For squad slot `s`, the stats start at block 1
+`+0xec8e + s × 0x11e`: four tables of five rows (pre-season, domestic
+league, overseas league, Euro, international), then 6 bytes not traced.
+A row is 14 bytes:
+
+| Offset | Type | What |
+|---|---|---|
+| `0x0` | u16 | goals |
+| `0x2` | u16 | assists |
+| `0x4` | u16 | games played |
+| `0x6` | u16 | the club's games while the player was there |
+| `0x8` | u16 | man of the match |
+| `0xa` | u16 | average points × 100 |
+| `0xc` | u8 | red cards |
+| `0xd` | u8 | yellow cards |
+
+Table 2 is the Season Stats page and table 4 Career Stats (**empirical**:
+every value on both pages matches for Carson and Aiblinger). Table 3 looks
+like last season (38 league games for a regular). Table 1 is empty in
+every slot checked. The Total lines are computed by the screen.
 
 ## Decoding
 
@@ -205,9 +249,9 @@ and `_pcsx2_index` for folder memory cards.
 
 ## Still unknown
 
-- The second value of each ability triplet.
-- The rest of PlPinfo (contract, condition, injuries, stats) and of the
-  blocks. The accessors that call `get(i)` are the way in.
+- The T-FIT bar, table 1 of the statistics, and the rest of PlPinfo
+  (flags, dissatisfaction, style icons). The rest of the blocks: the
+  accessors that call `get(i)` are the way in.
 - `info.bin` past the date, and `dm.bin`.
 - Whether the game checks `info.bin` against the main file.
 - The VS data (`BESLES-54151-C000`, main file 16,152 bytes). It uses the
