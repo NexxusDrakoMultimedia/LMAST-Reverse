@@ -47,6 +47,10 @@ def checks():
         ("pac", ["pac.py", "info", "DAT"], ["DAT"]),
         ("tbb", ["tbb.py", "info", "DAT"], ["DAT"]),
         ("tbb_roundtrip", ["tbb.py", "roundtrip", "DAT"], ["DAT"]),
+        ("initteam", ["initteam.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        # Club names from MES.PAC category 3 against the division lists.
+        ("initteam_leagues", ["initteam.py", "leagues", "DAT/PARAM"],
+         ["DAT/PARAM", "DAT/MESSAGE/MES.PAC"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),
         ("schedule", ["schedule.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("svr", ["svr.py", "info", "DAT"], ["DAT"]),

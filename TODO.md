@@ -47,9 +47,15 @@ or which code loads them.
 - [ ] Still open from the schedules: `GROUP2COMPE.TBB`, `CLUB_RANK_SYSTEM.TBB`,
       `PeriodName.tbb`, the `make_list` source functions, game bits `w0`
       8–9 and competition header bytes `0x0A`–`0x0F`
-- [ ] Initial clubs, squads and stadiums: `PLRRSRC_INITTEAMDATA.TBB`,
-      `INITNATIDATA.TBB`, `OTEAMMEMBER.TBB`, `MAPTEAM_LIST.TBB`,
-      `STADIUM_DATA.TBB`
+- [x] Initial clubs and squads: `PLRRSRC_INITTEAMDATA.TBB` (divisions, last
+      season's order) and `OTEAMMEMBER.TBB` (player, age, shirt, contract),
+      with club names from `MES.PAC` category 3 (`DOC/INITTEAM_FORMAT.md`,
+      `SRC/initteam.py`)
+- [ ] The rest of the starting data: `INITNATIDATA.TBB`, `MAPTEAM_LIST.TBB`,
+      `STADIUM_DATA.TBB`, the 24-byte `plOteam_GetDb` record, and what
+      `PLRRSRC_INITTEAMDATA` table 2's negative values do
+- [ ] Player database `PBDATA_EU.PAC` (27,950 records?), so squads can show
+      player names, positions and ratings (`plBp_GetBpinfo`, `getPbase`)
 - [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC`, `PBDATA_{EU,JP}.PAC`,
       `PSC{COMMON,GAME,PRACTICE}.PAC`
 - [x] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`: 27,950 × `char[19]`

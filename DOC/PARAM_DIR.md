@@ -63,8 +63,8 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 
 | File | Container | Loaded by | Contents |
 |---|---|---|---|
-| `OTEAMMEMBER.TBB` | TBB, 1 table | `ePLRSRC` 3 | computer-team squads, see below. **confirmed** |
-| `PLRRSRC_INITTEAMDATA.TBB` | TBB, 3 tables | `ePLRSRC` 4 | starting league line-ups and past winners, see below. **confirmed** |
+| `OTEAMMEMBER.TBB` | TBB, 1 table | `ePLRSRC` 3 | computer-team squads (player, age, shirt, contract), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md). **confirmed** |
+| `PLRRSRC_INITTEAMDATA.TBB` | TBB, 3 tables | `ePLRSRC` 4 | starting divisions and last season's order per competition, see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md). **confirmed** |
 | `INITNATIDATA.TBB` | TBB, 1 table | `ePLRSRC` 6 | per-nation start values, see below. **confirmed** |
 | `TEAM_INIT_DATA.TBB` | TBB, 9 tables | `ePLRSRC` 5, `CEDITPRG.REL` list | 9 tables of u32 (3,168 / 864 / 432 / 384 / 216 / 216 / 12 / 18 / 120 words). Reader not traced |
 | `REGULATION.TBB` | TBB, 1 table | `plRec_MatchRegulations` (`0x21dc60`), `SIMPRG.REL` list | 165 match regulations × **120 bytes**, indexed by `PLSCHE_GROUP`. **confirmed** (`0x21dd18`: `group * 0x78`) |
@@ -108,8 +108,11 @@ each, reading 16-byte records:
 | `0x0C` | u8 | slot `+4` |
 
 The other bytes are padding (the exporter wrote each field as a u32). 439
-teams × 25 × 16 = 175,600 bytes, exactly the table size. What the three
-bytes mean isn't known yet.
+teams × 25 × 16 = 175,600 bytes, exactly the table size. The three bytes
+are the age, shirt number and contract years. That is confirmed by
+`UpdateConyear` and `pwkTeam_SetUnumberOpinfo`: see
+[`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md), and `SRC/initteam.py` for a
+reader.
 
 ## `PLRRSRC_INITTEAMDATA.TBB`: starting leagues
 
@@ -118,13 +121,14 @@ its own function:
 
 | Table | Size | Reader | Layout |
 |---|---|---|---|
-| 0 | 1,248 | `0x253228` | 6 leagues (`pwkLg_GetLeague` 0–5) × 2 divisions × `0x68` bytes. Each `0x68` block is passed to `plLg_EntryTeamSetToDiv` (`0x2e94c8`) as the division's team list |
+| 0 | 1,248 | `0x253228` | 6 leagues (`pwkLg_GetLeague` 0–5) × 2 divisions × `0x68` bytes. Each `0x68` block is passed to `plLg_EntryTeamSetToDiv` (`0x2e94c8`) as the division's team list: up to 26 u32 team ids, ending at a 0 |
 | 1 | 7,168 | `0x2531b0` | 56 × `0x80`-byte records. The first 49 (`slti 0x31`) are passed to `pwkRec_SetPastRecordLastTeam` per `PLSCHE_COMPE`. The last 7 aren't read |
 | 2 | 112 | `0x2532c8` | 56 × u16. The first 49 go to `pwkRec_GetCompeConventionRecordKeikayear` (the years since a competition was last held?) |
 
 So table 0 decides which clubs start in which league and division. That is
 the main thing [`GOALS.md`](../GOALS.md) wants a starting-season mod to
-change.
+change. The field layouts and a reader with club names are in
+[`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md).
 
 ## `INITNATIDATA.TBB`: nations
 
@@ -192,8 +196,9 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- Field meanings in every table above, including the three `OTEAMMEMBER`
-  bytes and the 24-byte `plOteam_GetDb` record.
+- Field meanings in most tables above, including the 24-byte
+  `plOteam_GetDb` record. (`OTEAMMEMBER` and `PLRRSRC_INITTEAMDATA` are
+  done, in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md).)
 - `TEAM_INIT_DATA.TBB`: no reader found in `SLES`. The edit-mode overlay
   lists it.
 - Parts of the schedule packs, listed in
