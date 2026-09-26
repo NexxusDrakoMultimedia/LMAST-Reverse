@@ -341,4 +341,40 @@ python SRC/sqb.py dis     DAT/SEQ/ROOTMAINSEQ.SQB      # listing with labels and
 python SRC/sqb.py dis     "DAT/PARAM/PSCCOMMON.PAC#PscCommon_PinfoPoint.sqb"
 python SRC/sqb.py names   DAT/SEQ/SQBFILENAME.TBB      # script ids
 python SRC/sqb.py globals DAT/SEQ/GLOBALMEMORY.TBB     # global memory records
+python SRC/sqb.py roundtrip DAT/SEQ DAT/PARAM          # re-encode all 41 scripts byte for byte
+python SRC/sqb.py setcmd  DAT/SEQ/ROOTMAINSEQ.SQB out/ROOTMAINSEQ.SQB 0x98 0:27
 ```
+
+`setcmd` is a minimal writer. It swaps one command for another with the
+same argument count, so the file keeps its size and can be patched onto the
+disc with `patch_disc.py`. It re-checks the script's labels before writing.
+
+## The developer launcher
+
+**Confirmed** from the code: `Dummy.CheckLauncher` (`0x109270`) always
+writes 1 to its argument 0. `RootMainSeq.sqb` runs it at `0x88` and at
+`0x98` branches past the launcher when the value is non-zero:
+
+```
+  0088  4:113 Dummy.CheckLauncher          m3[1]
+  0098  0:28  BranchIfNotZero              m3[0], m3[1], L0
+  00d0  4:7   SeqSub.Create                m3[2], k12  ; RootLauncherSeq.sqb
+```
+
+So in the retail game the launcher never runs. `RootLauncherSeq.sqb`
+(script 12) loads file resource 7, which is `testprg.rel` in the overlay
+table ([`SNR2_FORMAT.md`](SNR2_FORMAT.md#which-overlay-the-game-loads)),
+and starts module 69 (Launcher). What happens next depends on the
+launcher's result *n* (`Module.GetBranch`):
+
+| *n* | Label | Effect |
+|---|---|---|
+| 1, 101 | `L1` | leave the launcher |
+| 2–100 | `L2` | read the player database, make a new game (`Pwk.NewGame`, `ClubEditEnd`), start SimRoot, then test module `71 + n − 2` |
+| 102 and up | `L3` | make a new game, then start module `71 + n − 2` on its own |
+
+After each test module, the script goes back to the launcher. Once the
+launcher is left, the main script continues with the normal boot at `L0`.
+
+`setcmd ... 0x98 0:27` (`BranchIfZero`) changes 1 byte and sends the boot
+into the launcher. Not yet tested in PCSX2.

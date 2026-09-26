@@ -39,6 +39,14 @@ Usage:
     python sqb.py dis     <file.SQB | pack.PAC#entry.sqb> [root|pwk]
     python sqb.py names   <SQBFILENAME.TBB>       # script id -> file
     python sqb.py globals <GLOBALMEMORY.TBB>      # {type, value, min, max}
+    python sqb.py roundtrip <file | dir> ...      # re-encode every script, !! if not identical
+    python sqb.py setcmd  <in.SQB> <out.SQB> <offset> <table:cmd>
+
+`setcmd` replaces the command at a script offset (as `dis` prints it) with
+another of the same argument count, keeping its arguments, so the file
+keeps its size and every other command its place. E.g. `setcmd
+ROOTMAINSEQ.SQB out.SQB 0x98 0:27` turns the launcher check's
+BranchIfNotZero into BranchIfZero (DOC/SQB_FORMAT.md).
 """
 import os
 import struct
@@ -246,6 +254,16 @@ def decode(script, cmdset):
         out.append(Command(p, table, cmd, name, list(zip(raw[0::2], raw[1::2]))))
         p += 8 * (argc + 1)
     return out
+
+
+def encode(cmds):
+    """Commands back to script bytes (the inverse of decode)."""
+    out = bytearray()
+    for c in cmds:
+        out += struct.pack("<II", c.table, c.cmd)
+        for t, v in c.args:
+            out += struct.pack("<Ii", t, v)
+    return bytes(out)
 
 
 def label_arg(c):
@@ -470,9 +488,65 @@ def cmd_globals(path):
         print("g[%2d]  type=%d  value=%d  min=%d  max=%d" % (i, typ, value, lo, hi))
 
 
+def cmd_roundtrip(paths):
+    ok = count = 0
+    for label, blob in scripts(paths):
+        label = label.replace("\\", "/")
+        name, result = fit(blob)
+        if name is None:
+            continue            # reported by info
+        count += 1
+        tables = dict(sqb_tables(blob))
+        bad = [o for o, cmds in result if encode(cmds) != tables[o]]
+        if bad:
+            print("%s  !! table @%s re-encodes differently" % (label, ", @".join("0x%x" % o for o in bad)))
+        else:
+            ok += 1
+    print("%d/%d scripts re-encode byte for byte" % (ok, count))
+
+
+def cmd_setcmd(src, dst, offset, spec):
+    """Swap one command's table:cmd for another with the same argc."""
+    blob = bytearray(open(src, "rb").read())
+    cmdset, result = fit(bytes(blob))
+    if cmdset is None:
+        raise ValueError(result)
+    if len(result) != 1:
+        raise ValueError("setcmd handles single-script files only")
+    table_off, cmds = result[0]
+    doff = struct.unpack_from("<I", blob, table_off + 4)[0]
+    old = next((c for c in cmds if c.pos == offset), None)
+    if old is None:
+        raise ValueError("no command starts at 0x%x" % offset)
+    table, cmd = (int(x, 0) for x in spec.split(":"))
+    tables = SETS[cmdset]
+    if table not in tables or cmd >= len(tables[table]):
+        raise ValueError("the %s set has no command %d:%d" % (cmdset, table, cmd))
+    name, argc = tables[table][cmd]
+    if argc != len(old.args):
+        raise ValueError("%s takes %d arguments, %s takes %d"
+                         % (name, argc, old.name, len(old.args)))
+    struct.pack_into("<II", blob, table_off + doff + offset, table, cmd)
+    # Re-decode the edited script with the same set and re-check its labels.
+    size = struct.unpack_from("<I", blob, table_off + 8)[0]
+    start = table_off + doff
+    _, problems = check(decode(bytes(blob[start:start + size]), cmdset))
+    if problems:
+        raise ValueError("the edit breaks the script: " + "; ".join(problems))
+    with open(dst, "wb") as f:
+        f.write(blob)
+    print("0x%04x  %s -> %s  (%s)" % (offset, old.name, name, dst))
+
+
 def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
+    if cmd == "roundtrip" and args:
+        cmd_roundtrip(args)
+        return 0
+    if cmd == "setcmd" and len(args) == 4:
+        cmd_setcmd(args[0], args[1], int(args[2], 16), args[3])
+        return 0
     if cmd == "info" and args:
         cmd_info(args)
     elif cmd == "dis" and len(args) in (1, 2):

@@ -273,8 +273,12 @@ The event tables, the procedures and the overlay loader are documented in
       header fields `0x20`/`0x24`/`0x38` tell the caller
 - [ ] Whether anything starts module 69 (the `TESTPRG` launcher) or the test
       modules at 71–129; their viewers could be useful for modding.
-      Lead: `RootLauncherSeq.sqb` (script 12) starts modules, and
-      `RootMainSeq` runs it after `Dummy.CheckLauncher`
+      `RootMainSeq` skips `RootLauncherSeq.sqb` because
+      `Dummy.CheckLauncher` always returns 1; `sqb.py setcmd
+      ROOTMAINSEQ.SQB out 0x98 0:27` flips the test (1 byte,
+      `DOC/SQB_FORMAT.md#the-developer-launcher`)
+- [ ] Boot the launcher patch in PCSX2: what the Launcher (module 69)
+      shows, and which test modules work
 - [x] Sequencer scripts (`SEQ/*.SQB`, `PSC*.PAC`): `CSeqController`'s
       command encoding, argument types, labels and calls; the root set
       (Base, Scene, RootEvent: 125 commands, 94 by symbol) and the

@@ -71,6 +71,7 @@ def checks():
         # catches renamed commands and changed label handling.
         ("sqb", ["sqb.py", "info", "DAT/SEQ", "DAT/PARAM"], ["DAT/SEQ", "DAT/PARAM"]),
         ("sqb_dis", ["sqb.py", "dis", "DAT/SEQ/ROOTMAINSEQ.SQB"], ["DAT/SEQ"]),
+        ("sqb_roundtrip", ["sqb.py", "roundtrip", "DAT/SEQ", "DAT/PARAM"], ["DAT/SEQ", "DAT/PARAM"]),
         ("svr", ["svr.py", "info", "DAT"], ["DAT"]),
         ("csp", ["csp.py", "info", "DAT"], ["DAT"]),
         ("zbf", ["zbf.py", "info", "DAT"], ["DAT"]),
