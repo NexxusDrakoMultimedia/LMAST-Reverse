@@ -83,6 +83,10 @@ All **confirmed** by the accessor named. Offsets are within the block.
 | 1 | `0x4b4 + 0x20` | 25 × PlPinfo | `pwkTeam_GetForeignCitizenNumber` (`0x266450`) | the squad, 0x2a0 bytes per player |
 | 1 | `0xec8e` | 25 × 0x11e | `pwkTeam_GetPlayerStats` (`0x265810`, indexes `0xec90 + slot × 0x11e`) | each squad slot's match statistics (below) |
 | 1 | `0xe290` | 3 × PlPinfo | `0x266600` | a second, smaller group of players (not identified) |
+| 1 | `0x4d08` | PlMinfo | `pwkTeam_GetCoachManager` (`0x26cdc8`): PlTeamData `+0x4854` | the manager |
+| 1 | `0x8e00` | PlMinfo | `pwkTeam_GetYManager` (`0x26bdd8`): `pwkTeam_GetYteamData` (`+0x4f00`) `+0x3f00` | the youth manager |
+| 1 | `0x9148` | 4 × PlMinfo | `pwkTeam_GetCoaches` (`0x26a7b8`) | the coaches, 0xbc bytes each |
+| 1 | `0x8f8c` | 3 × PlSinfo | `pwkTeam_GetScouts` (`0x26d098`) | the scouts, 0x94 bytes each |
 
 **Money** is stored in the game's own unit. `plMisc_MoneyRate`
 (`0x215660`) converts between currencies as `value × rate[to] ÷
@@ -157,6 +161,23 @@ is the player's ceiling. Young players have limits well above their
 current value, veterans' limits sit on it. `save.py set` raises the limit
 and cap along with the value, or the next training would clamp the edit
 back to the old limit.
+
+**Staff.** A PlMinfo (managers and coaches, 0xbc bytes) or PlSinfo
+(scouts, 0x94 bytes) is 4 bytes and then a copy of the staff member's
+database record (`PlMbase` / `PlSbase`, the offsets in
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md) plus 4): the name at `+4`, the
+abilities at `+0x6a` (48) or `+0x31` (45).
+
+| PlMinfo | PlSinfo | Type | What | Source |
+|---|---|---|---|---|
+| `0x9c` | `0x60` | s16 | database id; −1 = empty | confirmed, `plMinfo_CloseContract` (`0x216ef0`) / `plSinfo_CloseContract` (`0x218a10`) set it to −1 |
+| `0x9e` | `0x62` | u8 | contract years remaining | empirical: the only byte matching all three screens checked (1, 2, 3) |
+| `0xa0` | | u32 | job: 0–2 coaches, 3 physical coach, 4 GK coach, 5 manager, 6 youth manager | `pbdata.py`'s `CalcManagerAbil` notes; 5 and 6 empirical |
+| `0xb8` | `0x90` | u32 | annual salary ÷ 100, stored money unit | empirical: £2,510,000, £950,000 and £1,060,000 match |
+
+`plMinfo_GetConyear` (`0x218dd8`) is something else: the longest contract
+offered, from the age at `+0x26`. `save.py staff` lists everyone with
+their bars (`pbdata.py`'s staff formulas).
 
 **Match statistics.** For squad slot `s`, the stats start at block 1
 `+0xec8e + s × 0x11e`: four tables of five rows (pre-season, domestic

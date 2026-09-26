@@ -38,7 +38,8 @@ See DOC/SAVE_FORMAT.md.
 Usage:
     python save.py info      <save> ...                   # header, CRC, stream length
     python save.py show      <save>                       # date, money, squad
-    python save.py player    <save> <slot>                # one squad player's 64 abilities
+    python save.py player    <save> <slot>                # one squad player in full
+    python save.py staff     <save>                       # manager, youth manager, coaches, scouts
     python save.py set       <save> <out> money=N         # edit into a new main file
     python save.py set       <save> <out> 3:all=99 3:15=80  #  slot:ability=level (0-99)
     python save.py set       <save> <out> 3:fatigue=0 3:condition=65535  #  slot:field=value
@@ -750,6 +751,19 @@ PINFO_FIELDS = (
     ("salary", 0x218, "<I", None, "annual salary / 100, stored money unit (pwkTeam_ArrivePlayer)"),
     ("contract_years", 0x21d, "<B", None, "years remaining (pwkMoney_*, CheckRentalMoveEnable)"),
 )
+# Staff, block 1. PlMinfo (0xbc bytes) and PlSinfo (0x94) are 4 bytes and
+# then a copy of the PlMbase / PlSbase (pbdata.py's struct offsets, + 4).
+# (role, offset, count, kind): the manager is PlTeamData +0x4854
+# (pwkTeam_GetCoachManager 0x26cdc8), the youth manager YteamData (+0x4f00,
+# pwkTeam_GetYteamData) +0x3f00 (pwkTeam_GetYManager 0x26bdd8), coaches
+# pwkTeam_GetCoaches (0x26a7b8), scouts pwkTeam_GetScouts (0x26d098).
+STAFF = (("manager", TEAM_OFF + 0x4854, 1, "M"), ("youth manager", 0x8e00, 1, "M"),
+         ("coach", 0x9148, 4, "M"), ("scout", 0x8f8c, 3, "S"))
+# kind: (size, id offset (-1 = empty, plMinfo/plSinfo_CloseContract 0x216ef0/0x218a10),
+# contract years (empirical), salary / 100 (empirical, last word),
+# job (PlMinfo +0xa0), abilities offset, ability count)
+STAFF_KIND = {"M": (0xbc, 0x9c, 0x9e, 0xb8, 0xa0, 4 + 0x66, 48),
+              "S": (0x94, 0x60, 0x62, 0x90, None, 4 + 0x2d, 45)}
 # Block 1 +0xec90 + slot * 0x11e is what pwkTeam_GetPlayerStats (0x265810)
 # indexes. The rows start 2 bytes before it: four tables of five
 # competitions, 14 bytes a row, then 6 bytes not traced.
@@ -837,6 +851,25 @@ class Save:
             vals = [int.from_bytes(b[base + off + size * i:base + off + size * (i + 1)], "little")
                     for i in range(count)]
             out[fname] = vals if count > 1 else vals[0]
+        return out
+
+    def staff(self):
+        """[(role, index, dict)] for every filled staff slot."""
+        b, out = self.blocks, []
+        for role, off, count, kind in STAFF:
+            size, id_off, con_off, sal_off, job_off, ab_off, ab_n = STAFF_KIND[kind]
+            for i in range(count):
+                o = self.at(1, off) + i * size
+                sid = struct.unpack_from("<h", b, o + id_off)[0]
+                if sid < 0:
+                    continue
+                out.append((role, i, {
+                    "id": sid, "offset": o,
+                    "name": b[o + 4:o + 4 + NAME_LEN].split(b"\0")[0].decode("cp850"),
+                    "contract_years": b[o + con_off],
+                    "salary": struct.unpack_from("<I", b, o + sal_off)[0],
+                    "job": struct.unpack_from("<I", b, o + job_off)[0] if job_off else None,
+                    "abil": list(b[o + ab_off:o + ab_off + ab_n])}))
         return out
 
     def stats(self, slot):
@@ -1020,6 +1053,22 @@ def cmd_player(game, path, slot):
         print("  %7d  %5d  %5d  %3d   (%d, %d, %d)" % (k, lv[k], exp2lv(s.exp, mid), exp2lv(s.exp, cap), cur, mid, cap))
 
 
+def cmd_staff(game, path):
+    import pbdata
+    s = Save(game, path)
+    print(s.path)
+    for role, i, st in s.staff():
+        print("  %-13s %d  id %5d  %-18s job %-4s %d year%s left, GBP %d a year" % (
+            role, i, st["id"], st["name"], "-" if st["job"] is None else st["job"],
+            st["contract_years"], "" if st["contract_years"] == 1 else "s",
+            st["salary"] * 100 // 6))
+        if st["job"] is None:
+            bars = pbdata.average_bars(st["abil"], pbdata.SCOUT_BARS)
+        else:
+            bars = pbdata.staff_bars(st["abil"], pbdata.JOB_ROLE.get(st["job"], "manager"))
+        print("      " + "  ".join("%s %d" % b for b in bars))
+
+
 def cmd_set(game, path, out, assigns):
     """money=N; for a squad player slot:ability=level, slot:all=level, or
     slot:field=value for the settable PINFO_FIELDS (fatigue, condition, ...)."""
@@ -1184,6 +1233,8 @@ def main(argv):
         return cmd_roundtrip(game, args)
     elif cmd == "show" and len(args) == 1:
         cmd_show(game, args[0])
+    elif cmd == "staff" and len(args) == 1:
+        cmd_staff(game, args[0])
     elif cmd == "player" and len(args) == 2:
         cmd_player(game, args[0], int(args[1]))
     elif cmd == "set" and len(args) >= 3:
