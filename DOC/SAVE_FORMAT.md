@@ -87,9 +87,11 @@ All **confirmed** by the accessor named. Offsets are within the block.
 (`0x215660`) converts between currencies as `value × rate[to] ÷
 rate[from]`, with s16 rates at SLES `0x5314e8`: 12, 3, 2, 400. The stored
 unit is rate 12 and the pound is rate 2 (**empirical**: a save edited to
-2,000,000,000 shows £333,333,333, exactly ÷ 6). That 3 is the euro and 400
-the yen is a guess from 2005 exchange rates (€1 ≈ ¥133, £1 ≈ ¥200), which
-would make the stored unit €0.25. It isn't the yen.
+2,000,000,000 shows £333,333,333, exactly ÷ 6). The euro is rate 3
+(**empirical**: in game, euro amounts are 1.5 times the pound amounts), so
+euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
+400 is the yen is still a guess from 2005 exchange rates (€1 ≈ ¥133,
+£1 ≈ ¥200). The stored unit isn't the yen.
 
 **PlDate** (`plMisc_SetTurn2Date` `0x214698`, `plMisc_PlDate2TotalTurn`
 `0x214d08`):

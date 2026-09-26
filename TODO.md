@@ -296,7 +296,8 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       --rename` rewrites its ISO9660 and UDF directory entries
 - [ ] Confirm in game: the renamed disc shows as PYRA-31396 and saves to
       `BEPYRA-31396-Gnnn`
-- [ ] Which rate slot is which currency (the option screen's code)
+- [ ] Which rate slot is which currency: pound (2) and euro (3) seen in
+      game; 400 presumably the yen (the option screen's code)
 - [ ] The second value of each ability triplet; the rest of PlPinfo
       (contract, condition, injuries, stats)
 - [ ] Map more of the blocks through their accessors (staff, youth, other
