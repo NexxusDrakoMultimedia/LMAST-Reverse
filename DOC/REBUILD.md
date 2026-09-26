@@ -124,6 +124,14 @@ executable with its save names moved to another serial, see
 `disc:DLL/SAVEPRG.REL=...`. The outer disc is plain ISO9660, so the same
 same-size rule applies.
 
+`--rename disc:<path>=<NAME>` renames an outer file without changing the
+name's length. The disc is a UDF bridge (volume descriptors `BEA01` and
+`NSR02` after the ISO9660 ones), so the name is in two places, both
+unencrypted: the ISO9660 directory record, and a UDF File Identifier
+Descriptor (compression id 16, big-endian UTF-16) whose tag carries a
+CRC-16/CCITT over the descriptor and a checksum over the tag. `--rename`
+checks the old CRC before it rewrites both. There is no Joliet tree.
+
 ## Sharing a mod
 
 `SRC/vcdiff.py` turns a patched image into an xdelta patch (VCDIFF, RFC

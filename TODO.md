@@ -289,8 +289,14 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - [x] Separate saves for a modded disc: `save.py serial` (e.g.
       `PYRA-31396`; the VS data `-C` moves too, as anti-cheat against
       Virtua Pro Football, while its `FASYS` import save stays) and `rename`
-- [ ] Confirm in game: an edited save loads with the new money and
-      abilities, and the serial-patched disc saves to `BEPYRA-31396-Gnnn`
+- [x] Confirm in game: an edited save loads with the new money and
+      abilities (money shows ÷ 6 in pounds: `plMisc_MoneyRate`)
+- [x] PCSX2 reads the serial from `SYSTEM.CNF`'s boot file, so `serial`
+      also renames the executable (`PYRA_313.96`) and `patch_disc.py
+      --rename` rewrites its ISO9660 and UDF directory entries
+- [ ] Confirm in game: the renamed disc shows as PYRA-31396 and saves to
+      `BEPYRA-31396-Gnnn`
+- [ ] Which rate slot is which currency (the option screen's code)
 - [ ] The second value of each ability triplet; the rest of PlPinfo
       (contract, condition, injuries, stats)
 - [ ] Map more of the blocks through their accessors (staff, youth, other

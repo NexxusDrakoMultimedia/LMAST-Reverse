@@ -42,7 +42,7 @@ Usage:
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
     python save.py roundtrip <save> ...                   # decode + encode, compare
     python save.py blocks                                 # block sizes and offsets in .bin
-    python save.py serial    <SLES_541.51> <out> PYRA-31396   # move saves to another serial
+    python save.py serial    <ISO dir> <out dir> PYRA-31396   # new boot file + SYSTEM.CNF
     python save.py rename    <save folder> <parent> PYRA-31396  # copy a save to that serial
 
 <save> is a BESLES-54151-Gnnn folder or the main file inside it (on a
@@ -54,8 +54,11 @@ ISO/DLL/SAVEPRG.REL and ISO/SLES_541.51.
 saved games (-G) and VS data (-C). Moving the VS data keeps a modded
 game's teams out of Virtua Pro Football and unmodded VS mode. It leaves
 BESLES-54153FASYS alone: that is Virtua Pro Football's own save, read by
-the import feature. Patch the
-result into a disc image with patch_disc.py (target disc:SLES_541.51).
+the import feature. Emulators and loaders read the serial from
+SYSTEM.CNF's boot file name, so `serial` also names the executable after
+the serial (PYRA_313.96) and writes a SYSTEM.CNF that boots it; it prints
+the patch_disc.py command that writes both and renames the file on the
+disc (--rename).
 """
 import os
 import struct
@@ -742,11 +745,27 @@ def cmd_set(game, path, out, assigns):
 CARD_NAMES = ((0x5213e8, b"BESLES-54151-G"), (0x5213f8, b"BESLES-54151-C"))
 
 
-def cmd_serial(src, out, serial):
-    """Copy SLES_541.51 with the memory-card names moved to another serial."""
+BOOT_NAME = "SLES_541.51"
+
+
+def cmd_serial(iso_dir, out_dir, serial):
+    """Write <out_dir>/<new boot name> (SLES_541.51 with the memory-card
+    names moved to `serial`) and a SYSTEM.CNF booting it. Emulators and
+    loaders take the serial from SYSTEM.CNF's BOOT2 file name, so the
+    executable is renamed on the disc too (patch_disc.py --rename)."""
     import re
     if not re.fullmatch(r"[A-Z]{4}-\d{5}", serial):
         raise SystemExit("serial must look like ABCD-12345")
+    boot = serial.replace("-", "_")[:8] + "." + serial[-2:]     # PYRA_313.96
+    src = os.path.join(iso_dir, BOOT_NAME)
+    with open(os.path.join(iso_dir, "SYSTEM.CNF"), "rb") as f:
+        cnf = f.read()
+    if cnf.count(BOOT_NAME.encode()) != 1:
+        raise SystemExit("SYSTEM.CNF doesn't name %s once" % BOOT_NAME)
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, "SYSTEM.CNF"), "wb") as f:
+        f.write(cnf.replace(BOOT_NAME.encode(), boot.encode()))
+    out = os.path.join(out_dir, boot)
     elf = Elf(src)
     data = bytearray(elf.data)
     for va, old in CARD_NAMES:
@@ -759,6 +778,11 @@ def cmd_serial(src, out, serial):
     with open(out, "wb") as f:
         f.write(data)
     print("%s: %d bytes" % (out, len(data)))
+    print("%s: BOOT2 = cdrom0:\\%s;1" % (os.path.join(out_dir, "SYSTEM.CNF"), boot))
+    print("Patch them in with:")
+    print("  python SRC/patch_disc.py patch <disc.iso> <modded.iso> "
+          "disc:%s=%s disc:SYSTEM.CNF=%s --rename disc:%s=%s" % (
+              BOOT_NAME, out, os.path.join(out_dir, "SYSTEM.CNF"), BOOT_NAME, boot))
 
 
 def cmd_rename(src, parent, serial):

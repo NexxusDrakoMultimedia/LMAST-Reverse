@@ -199,7 +199,7 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back in place (same size only), and files outside `DATA.CVM` (`disc:SLES_541.51`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), finds where each file lives, and checks an image holds given bytes |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back in place (same size only), and files outside `DATA.CVM` (`disc:SLES_541.51`, renamed with `--rename`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), finds where each file lives, and checks an image holds given bytes |
 
 ```bash
 python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30
@@ -227,8 +227,8 @@ python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
 ```bash
 python SRC/save.py show <card>/BESLES-54151-G003
 python SRC/save.py set <card>/BESLES-54151-G003 edited.bin money=2000000000 0:all=99
-python SRC/save.py serial ISO/SLES_541.51 out/SLES_541.51 PYRA-31396
-python SRC/patch_disc.py patch disc.iso modded.iso disc:SLES_541.51=out/SLES_541.51
+python SRC/save.py serial ISO out PYRA-31396
+python SRC/patch_disc.py patch disc.iso modded.iso disc:SLES_541.51=out/PYRA_313.96 disc:SYSTEM.CNF=out/SYSTEM.CNF --rename disc:SLES_541.51=PYRA_313.96
 ```
 
 See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).

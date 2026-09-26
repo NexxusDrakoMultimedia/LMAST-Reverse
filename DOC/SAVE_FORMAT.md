@@ -76,12 +76,20 @@ All **confirmed** by the accessor named. Offsets are within the block.
 
 | Block | Offset | Type | Accessor | What |
 |---|---|---|---|---|
-| 0 | `0x0` | s64 | `pwkGen_GetSikin` (`0x2444e0`) | club money |
+| 0 | `0x0` | s64 | `pwkGen_GetSikin` (`0x2444e0`) | club money, in the game's own unit (below) |
 | 0 | `0x88` | PlDate | `pwkGen_GetDate` (`0x244368`) | the current date |
 | 0 | `0x1344` | | `pwkGen_GetDifficultyPointer` (`0x244c78`) | difficulty settings (not decoded) |
 | 1 | `0x4b4` | PlTeamData | `pwkTeam_GetMyTeamData` (`0x259898`) | your club |
 | 1 | `0x4b4 + 0x20` | 25 × PlPinfo | `pwkTeam_GetForeignCitizenNumber` (`0x266450`) | the squad, 0x2a0 bytes per player |
 | 1 | `0xe290` | 3 × PlPinfo | `0x266600` | a second, smaller group of players (not identified) |
+
+**Money** is stored in the game's own unit. `plMisc_MoneyRate`
+(`0x215660`) converts between currencies as `value × rate[to] ÷
+rate[from]`, with s16 rates at SLES `0x5314e8`: 12, 3, 2, 400. The stored
+unit is rate 12 and the pound is rate 2 (**empirical**: a save edited to
+2,000,000,000 shows £333,333,333, exactly ÷ 6). That 3 is the euro and 400
+the yen is a guess from 2005 exchange rates (€1 ≈ ¥133, £1 ≈ ¥200), which
+would make the stored unit €0.25. It isn't the yen.
 
 **PlDate** (`plMisc_SetTurn2Date` `0x214698`, `plMisc_PlDate2TotalTurn`
 `0x214d08`):
@@ -146,9 +154,19 @@ the same length (`PYRA-31396` → `BEPYRA-31396-G000`, `BEPYRA-31396-C000`).
 Moving the VS data is deliberate, as anti-cheat: teams built in a modded
 game can't be carried into Virtua Pro Football or an unmodded game's VS
 mode. Category 2 stays, so the import from Virtua Pro Football still
-works. Changing the
-executable changes its CRC, so PCSX2 patches and cheats keyed to the
-original CRC won't apply to the modded disc.
+works.
+
+That only separates the saves. PCSX2 (and disc loaders) take a disc's
+serial from the boot file named in `SYSTEM.CNF`
+(`BOOT2 = cdrom0:\SLES_541.51;1`), so a disc that still boots
+`SLES_541.51` still shows up as SLES-54151 (**empirical**: tested in
+PCSX2). `save.py serial` therefore also writes the executable as
+`PYRA_313.96` with a `SYSTEM.CNF` that boots it, and prints the
+`patch_disc.py` command that patches both and renames the file on the
+disc (`--rename`, see [`REBUILD.md`](REBUILD.md#usage)). The names are the
+same length, so nothing moves. Nothing in the executable refers to its own
+file name. Changing the executable changes its CRC, so PCSX2 patches and
+cheats keyed to the original CRC won't apply to the modded disc.
 
 The game opens `<folder>/<folder>`, so a save moved to the new serial
 needs both names changed. `save.py rename` copies a save folder with both

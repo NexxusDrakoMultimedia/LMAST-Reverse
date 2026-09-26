@@ -21,13 +21,19 @@ PARAM/PBDATA_EU.PAC (either slash, any case). Files on the disc outside
 DATA.CVM take a disc: prefix, e.g. disc:SLES_541.51 or disc:DLL/SAVEPRG.REL
 (whole disc images only).
 
+--rename disc:<path>=<NEWNAME> (repeatable) renames a file on the outer
+disc, keeping the name's length: it rewrites the ISO9660 directory record
+and, since the disc is a UDF bridge, the UDF File Identifier Descriptor
+(recomputing its tag CRC and checksum). Neither is encrypted. Other
+targets in the same run still use the old name.
+
 <target> is <path>, or <path>#<entry> for one archive entry (its index,
 its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulation.tbb.
 
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>]
     python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
@@ -307,9 +313,111 @@ def parse_pairs(args):
 
 
 class Job:
-    """Bytes to write at `off` inside DAT file `file`."""
+    """Bytes to write at `off` inside DAT file `file`, or at byte `off` of
+    the image when `file` is None (directory records)."""
     def __init__(self, file, off, data, label, why):
         self.file, self.off, self.data, self.label, self.why = file, off, data, label, why
+
+    def pos(self, img):
+        return self.off if self.file is None else img.offset(img.entry(self.file)) + self.off
+
+
+# --- renaming files outside DATA.CVM -------------------------------------------
+
+ISO_NAME_CHARS = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.")
+UDF_FID = 0x101     # File Identifier Descriptor tag
+
+
+def udf_crc(data):
+    """CRC-16/CCITT (poly 0x1021, init 0), as UDF descriptor tags use."""
+    crc = 0
+    for b in data:
+        crc ^= b << 8
+        for _ in range(8):
+            crc = ((crc << 1) ^ 0x1021 if crc & 0x8000 else crc << 1) & 0xFFFF
+    return crc
+
+
+def udf_tag_ok(buf, pos):
+    tag = buf[pos:pos + 16]
+    return len(tag) == 16 and (sum(tag) - tag[4]) & 0xFF == tag[4]
+
+
+def plan_rename(f, img, target, new):
+    """Jobs renaming a file on the outer disc (same name length) in its
+    ISO9660 directory record and, on a UDF bridge disc, its UDF File
+    Identifier Descriptor."""
+    from extract_disc import _read, _parse_record
+    if img.kind != "disc image" or not target.lower().startswith(DISC):
+        raise ValueError("--rename takes disc:<path> on a whole disc image")
+    e = img.entry(target)
+    path = e.path[len(DISC):]
+    parent, _, old = path.rpartition("/")
+    new = new.upper()
+    if len(new) != len(old) or not set(new) <= ISO_NAME_CHARS:
+        raise ValueError("%s: the new name must have the same length (%d) and use only "
+                         "A-Z, 0-9, _ and ." % (target, len(old)))
+    jobs = []
+
+    # ISO9660: the record in the parent directory whose extent is the file's.
+    dirs = {"": None}
+    for d in walk_iso(SectorView(f, 0)):
+        if d.is_dir:
+            dirs[d.path.upper()] = d
+    if parent:
+        dext, dsize = dirs[parent.upper()].extent, dirs[parent.upper()].size
+    else:
+        pvd = _read(SectorView(f, 0), PVD_SECTOR, SECTOR)
+        _, dext, dsize, _, _, _ = _parse_record(pvd, 156)
+    buf = _read(SectorView(f, 0), dext, dsize)
+    hits = []
+    for sec in range(0, dsize, SECTOR):
+        pos = sec
+        while pos < min(sec + SECTOR, dsize) and buf[pos]:
+            rec_len, ext, _, _, name, _ = _parse_record(buf, pos)
+            if ext == e.extent and name.split(b";")[0].rstrip(b".").decode("ascii") == old:
+                hits.append((pos, name))
+            pos += rec_len
+    if len(hits) != 1:
+        raise ValueError("%s: found %d ISO9660 records for it" % (target, len(hits)))
+    pos, name = hits[0]
+    jobs.append(Job(None, dext * SECTOR + pos + 33, new.encode() + name[len(old):],
+                    "%s (ISO9660 record)" % target, "rename to " + new))
+
+    # UDF: FIDs sit in the metadata before the first file. Match the name
+    # and require exactly one, with a tag whose CRC checks out.
+    first = min(x.extent for x in img.files.values() if x.path.startswith(DISC))
+    f.seek(0)
+    meta = f.read(first * SECTOR)
+    want = [(8, old.encode("latin1")), (16, old.encode("utf-16-be"))]
+    hits = []
+    for sec in range(0, len(meta), SECTOR):
+        pos = sec
+        while pos + 38 <= min(sec + SECTOR, len(meta)):
+            if meta[pos:pos + 2] == UDF_FID.to_bytes(2, "little") and udf_tag_ok(meta, pos):
+                crc_len = struct.unpack_from("<H", meta, pos + 10)[0]
+                l_fi = meta[pos + 19]
+                l_iu = struct.unpack_from("<H", meta, pos + 36)[0]
+                ident = meta[pos + 38 + l_iu:pos + 38 + l_iu + l_fi]
+                if ident and (ident[0], ident[1:]) in want:
+                    hits.append((pos, crc_len, l_iu, ident))
+                pos += (38 + l_iu + l_fi + 3) & ~3
+            else:
+                pos += 4
+    if len(hits) > 1:
+        raise ValueError("%s: found %d UDF entries with its name" % (target, len(hits)))
+    if hits:
+        pos, crc_len, l_iu, ident = hits[0]
+        desc = bytearray(meta[pos:pos + 16 + crc_len])
+        if udf_crc(desc[16:]) != struct.unpack_from("<H", desc, 8)[0]:
+            raise ValueError("%s: its UDF descriptor's CRC doesn't check out" % target)
+        enc = "latin1" if ident[0] == 8 else "utf-16-be"
+        at = 38 + l_iu + 1
+        desc[at:at + len(ident) - 1] = new.encode(enc)
+        struct.pack_into("<H", desc, 8, udf_crc(desc[16:]))
+        desc[4] = (sum(desc[:16]) - desc[4]) & 0xFF
+        jobs.append(Job(None, pos, bytes(desc), "%s (UDF identifier)" % target, "rename to " + new))
+    return jobs
 
 
 def resolve_target(img, index, target):
@@ -413,7 +521,7 @@ def copy_file(src, dst):
     os.chmod(dst, 0o644)
 
 
-def cmd_patch(image, out, in_place, args, dat, write_copies):
+def cmd_patch(image, out, in_place, args, dat, write_copies, renames=()):
     pairs = parse_pairs(args)
     img = Image(image)
     index = Index(dat) if dat else None
@@ -441,6 +549,9 @@ def cmd_patch(image, out, in_place, args, dat, write_copies):
                 cjobs, cnotes = plan_copies(img, index, f, file, off, old, data, write_copies)
                 jobs += cjobs
                 notes += cnotes
+        for r in renames:
+            target, _, new = r.partition("=")
+            jobs += plan_rename(f, img, target, new)
     if index is None:
         notes.append("note: no DAT index (--dat), so copies elsewhere on the disc weren't checked")
 
@@ -453,7 +564,7 @@ def cmd_patch(image, out, in_place, args, dat, write_copies):
         target_path = out
     with open(target_path, "r+b") as f:
         for j in jobs:
-            pos = img.offset(img.entry(j.file)) + j.off
+            pos = j.pos(img)
             f.seek(pos)
             old = f.read(len(j.data))
             changed = sum(1 for a, b in zip(old, j.data) if a != b)
@@ -467,8 +578,9 @@ def cmd_patch(image, out, in_place, args, dat, write_copies):
                 target_path, j.label, j.why, changed, "" if changed else " (no change)"))
     for n in notes:
         print(n)
-    print("%s: %d write%s in place; table of contents untouched" % (
-        target_path, len(jobs), "" if len(jobs) == 1 else "s"))
+    print("%s: %d write%s in place; %s" % (
+        target_path, len(jobs), "" if len(jobs) == 1 else "s",
+        "outer directory records renamed" if renames else "table of contents untouched"))
 
 
 def cmd_verify(image, args):
@@ -506,6 +618,9 @@ def main(argv):
     if write_copies:
         args.remove("--copies")
     dat = _opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
+    renames = []
+    while "--rename" in args:
+        renames.append(_opt(args, "--rename"))
     try:
         if cmd == "locate" and len(args) >= 2:
             cmd_locate(args[0], args[1:])
@@ -513,9 +628,10 @@ def main(argv):
         if cmd == "copies" and len(args) >= 2:
             cmd_copies(args[0], args[1:])
             return 0
-        if cmd == "patch" and len(args) >= 3:
+        if cmd == "patch" and (len(args) >= 3 or renames and len(args) == 2):
             in_place = args[1] == "--in-place"
-            cmd_patch(args[0], None if in_place else args[1], in_place, args[2:], dat, write_copies)
+            cmd_patch(args[0], None if in_place else args[1], in_place, args[2:], dat,
+                      write_copies, renames)
             return 0
         if cmd == "verify" and len(args) >= 2:
             return cmd_verify(args[0], args[1:])
