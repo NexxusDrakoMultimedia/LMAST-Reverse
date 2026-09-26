@@ -35,7 +35,16 @@ An event request is a struct the event manager queues:
 | `0x12b580` | dispatch by type byte (jump table `0x238860`): 1 EVENT, 2 MAIL, 3 NEWS, 4 procedure |
 | `0x12caf0` | build the procedure object: `(ID & 0xffffff) − 9` into the jump table `0x238970`, so indexes 9–29 |
 
-`0x12e5a8` is the event clock; its unit isn't traced. A procedure sends a mail with
+**The event clock is the game turn (confirmed).** `0x12e5a8` returns
+`Param::plMisc_PlDate2TotalTurn` (`SLES_541.51 0x214d08`) of the current
+date (`pwkGen_GetDate`): a turn counter, `(season − 2006) × 96 + 8 × month
++ turn in month`, with January–June counted as months 13–18 of the season
+(the formula adds 96 for them). A season has 96 turns, 8 a month: four
+weeks, each split into a midweek and a weekend turn, the "Week 2
+Weekend" of the top bar. So a delay of 1 is the next turn, half a week
+later, and a delay of 8 would be a month.
+
+A procedure sends a mail with
 `0x124f50(this, 0x02000000 | record, n)`, which fetches the MAIL record
 (getter `0x128e78`) and fills in the procedure's message fields.
 
@@ -71,8 +80,8 @@ it covers the methods as well (only the constructor's own registration
 is certain to be that class's; the rest is by address). Each procedure
 sends one of them at a time, depending on how the step turns out.
 
-Every "Next" step is queued with `0x12c160(req, 1, 4)`: one clock unit
-later. The "Next" column lists the sites that build each ID; which
+Every "Next" step is queued with `0x12c160(req, 1, 4)`: the next turn,
+half a week later. The "Next" column lists the sites that build each ID; which
 procedure owns a site is by address (a class's methods follow its
 constructor), except where a vtable ties it down (27: vtable `0x20a878`).
 
@@ -207,13 +216,21 @@ two columns and the centre, 4 the right two columns and the centre. The
 approaches on the team-style screen (category 420) are 200 Counter-Attack,
 201 Possession, 202 Individual Play and 203 Teamwork. 103–106 pair them
 as quick/slow build-up and playmaker/whole team, which fits two axes.
-That 1–4 follow that order is an assumption.
+That 1–4 follow that order is an assumption, but it fits the team vision
+screen, whose grid has Counter at the top, Possession at the bottom,
+Individual on the left and Organisation on the right (each player's point
+there is `PlPinfo +0x296`/`+0x298`, see
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md)) — if the 25 styles are laid out the
+same way.
 
 **The search repeats.** The procedure copies its own request (`0x12bff0`)
 and submits it again after `0x12efb0(region)`. That clamps the region to
-0–12 and reads a delay from the byte table at `0x238ee0`: 4, 4, 4, 4, 6, 6,
-5, 5, 5, 6, 6, 5, 6. If the club has an overseas branch in the region
-(`pwkTown_GetPlOverseasBranchPointer`, byte `+1` set), the delay is 4.
+0–12 and reads a delay in turns from the byte table at `0x238ee0`: 4, 4,
+4, 4, 6, 6, 5, 5, 5, 6, 6, 5, 6. If the club has an overseas branch in the
+region (`pwkTown_GetPlOverseasBranchPointer`, byte `+1` set), the delay is
+4. So a scout reports every two weeks in Europe or with a branch, and
+every two and a half to three weeks elsewhere. The first report of a new
+scout request (`0x746b4`) waits the same delay.
 
 ### Loaning out (procedure 28)
 
@@ -261,21 +278,31 @@ layout (`WP::CReport`, `SIMPRG.REL 0x99130`) and the region list
 (`0xbee14`) both add `0x136` to the region. The scout-search repeat delay
 from the table at `0x238ee0` is shown with each:
 
-| Region | Name | Delay |
-|---|---|---|
-| 0 | Western Europe | 4 |
-| 1 | Central Europe | 4 |
-| 2 | Eastern Europe | 4 |
-| 3 | Northern Europe | 4 |
-| 4 | South America A | 6 |
-| 5 | South America B | 6 |
-| 6 | North Africa | 5 |
-| 7 | West Africa | 5 |
-| 8 | East and South Africa | 5 |
-| 9 | North Central America, Caribbean | 6 |
-| 10 | East Asia | 6 |
-| 11 | South Asia and Middle East | 5 |
-| 12 | Oceania | 6 |
+A second table at `0x238ef0` (`0x12f000`, 2 turns with an overseas
+branch) gives the delay for dealing with a club in the region:
+`0x12f050(club)` looks up `plMisc_Club2DRegion`. Procedure 9's player
+search report (`0x9e8c4`) waits that long. Both in turns:
+
+| Region | Name | Scout search | Club dealings |
+|---|---|---|---|
+| 0 | Western Europe | 4 | 2 |
+| 1 | Central Europe | 4 | 2 |
+| 2 | Eastern Europe | 4 | 2 |
+| 3 | Northern Europe | 4 | 2 |
+| 4 | South America A | 6 | 4 |
+| 5 | South America B | 6 | 4 |
+| 6 | North Africa | 5 | 3 |
+| 7 | West Africa | 5 | 3 |
+| 8 | East and South Africa | 5 | 3 |
+| 9 | North Central America, Caribbean | 6 | 4 |
+| 10 | East Asia | 6 | 4 |
+| 11 | South Asia and Middle East | 5 | 3 |
+| 12 | Oceania | 6 | 4 |
+
+Of the 25 calls to `0x12c160` in `SIMPRG.REL`, 17 use a delay of 1 and 3
+a delay of 0 (this turn); the scout and club delays above account for
+three more, and two take it from data (`0x130894` from `+0x9c` of its
+object, `0x13357c` from its caller).
 
 Messages 1:300–305 name the six continents.
 
@@ -287,8 +314,6 @@ happen. The offers they react to come from `Param` code.
 
 ## Open questions
 
-- The unit of the event clock `0x12e5a8`, and so how long "one step later"
-  is.
 - What `+0x0C` (always 4 for procedure steps) and the `0x12c058` argument
   (1, 6, 7, 8, 21) mean.
 - How `0x260590` decides that a player is available for loan.

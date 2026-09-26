@@ -823,8 +823,11 @@ class Save:
         struct.pack_into("<q", self.blocks, self.at(0, MONEY_OFF), v)
 
     def date(self):
-        """(year, turn of season 0-95, month 1-12, turn of month 0-7);
-        see plMisc_SetTurn2Date (0x214698)."""
+        """(season, turn of season 0-95, month 1-12, turn of month 0-7).
+        The year is the season's first (2019 for 2019-20, January to June
+        too): plMisc_PlDate2TotalTurn (0x214d08) only counts upwards that
+        way. A turn is half a week: week = turn of month // 2 + 1, then
+        midweek (even) or weekend (odd); see plMisc_SetTurn2Date."""
         o = self.at(0, DATE_OFF)
         year, turn, month = struct.unpack_from("<HBB", self.blocks, o)
         return year, turn, month, struct.unpack_from("<I", self.blocks, o + 4)[0]
@@ -1012,7 +1015,8 @@ def cmd_show(game, path):
     s = Save(game, path)
     year, turn, month, week = s.date()
     print("%s" % s.path)
-    print("  date   %s %d, week %d (turn %d of the season)" % (MONTHS[month - 1], year, week + 1, turn))
+    print("  date   %d-%d Week %d %s %s. (turn %d of the season)" % (
+        year, year + 1, week // 2 + 1, ("Midweek", "Weekend")[week & 1], MONTHS[month - 1], turn))
     print("  money  %d" % s.money)
     print("  squad (youth team slots start with y)")
     for slot, o in s.squad():

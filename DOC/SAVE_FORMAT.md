@@ -104,11 +104,11 @@ euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
 
 | Offset | Type | What |
 |---|---|---|
-| `0x0` | u16 | calendar year |
+| `0x0` | u16 | the season's first year: 2019 for 2019–20, from January to June as well (confirmed: `plMisc_PlDate2TotalTurn` only counts upwards that way; `plMisc_SetTurn2Date` stores the year it is given with a turn of the season) |
 | `0x2` | u8 | turn of the season, 0–95 (8 per month, from July) |
 | `0x3` | u8 | month, 1–12 |
 | `0x4` | u32 | turn within the month, 0–7 |
-| `0x8`, `0xc` | u32 | that turn ÷ 2 and its remainder |
+| `0x8`, `0xc` | u32 | that turn ÷ 2 and its remainder: the week (from 0) and midweek (0) or weekend (1). Turn 3 of November is the top bar's "Week 2 Weekend Nov." (**empirical**, one save) |
 
 **PlPinfo** (a player in your squad):
 

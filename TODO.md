@@ -213,8 +213,10 @@ The event tables, the procedures and the overlay loader are documented in
 - [x] Procedure 28's squad and loan limits (8 minimum, 24 maximum, 5 loans)
 - [x] Scout-list search criteria for players, youth, coaches and managers,
       with the option texts (category 590) and the 13 region names
-- [ ] The unit of the event clock (`0x12e5a8`), so how long a procedure step
-      or a scout search takes
+- [x] The event clock (`0x12e5a8`) counts game turns
+      (`plMisc_PlDate2TotalTurn`, 96 a season): a procedure step is the
+      next turn (half a week), scout reports come every 4-6 turns by
+      region, club dealings take 2-4
 - [ ] Request fields `+0x0C` (always 4 for procedure steps) and the
       `0x12c058` argument (1, 6, 7, 8, 21)
 - [ ] How `0x260590` decides a player is available for loan
