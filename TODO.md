@@ -277,8 +277,13 @@ The event tables, the procedures and the overlay loader are documented in
       `Dummy.CheckLauncher` always returns 1; `sqb.py setcmd
       ROOTMAINSEQ.SQB out 0x98 0:27` flips the test (1 byte,
       `DOC/SQB_FORMAT.md#the-developer-launcher`)
-- [ ] Boot the launcher patch in PCSX2: what the Launcher (module 69)
-      shows, and which test modules work
+- [x] Boot the launcher patch in PCSX2: it works. A developer menu with
+      `simprg` (MAIN GAME START, BPINFO CHECK, 3D TEST, MODEL VIEWER, CSE
+      TEST, BG CONTROL, ...) and `gameprg` (STADIUM VIEWER MK2, GAME, BC
+      TEST) tabs (`DOC/SQB_FORMAT.md#the-developer-launcher`)
+- [ ] Try each launcher entry in PCSX2 and record which work (model
+      viewer, stadium viewer, CSE test are the most useful for modding),
+      the full scrolling `simprg` list, and the controls
 - [x] Sequencer scripts (`SEQ/*.SQB`, `PSC*.PAC`): `CSeqController`'s
       command encoding, argument types, labels and calls; the root set
       (Base, Scene, RootEvent: 125 commands, 94 by symbol) and the

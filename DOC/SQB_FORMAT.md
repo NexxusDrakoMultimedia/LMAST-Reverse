@@ -377,4 +377,19 @@ After each test module, the script goes back to the launcher. Once the
 launcher is left, the main script continues with the normal boot at `L0`.
 
 `setcmd ... 0x98 0:27` (`BranchIfZero`) changes 1 byte and sends the boot
-into the launcher. Not yet tested in PCSX2.
+into the launcher.
+
+**Tested in PCSX2** (the 1-byte patch written with `patch_disc.py`): the
+game boots into a developer menu instead of the video-mode screen. It has
+two tabs, `simprg` and `gameprg`, each with a list:
+
+| Tab | Entries seen (top of the list) |
+|---|---|
+| `simprg` | MAIN GAME START, BPINFO CHECK, 3D TEST, MODEL VIEWER, CSE TEST, BG CONTROL, INOUE TEST, SAKAUE TEST, SATO TEST, SIDE MENU, … (the list scrolls) |
+| `gameprg` | MAIN GAME START, STADIUM VIEWER MK2, GAME, BC TEST |
+
+Below MAIN GAME START, the `simprg` entries follow the module ids from 71
+in order: 71 BpinfoCheck, 72 Test3D, 73 ModelViewer, 74 TestCse, 75
+BGControl, 76 InoueTest, 77 SakaueTest, then 79 SideMenu. So SATO TEST is
+probably module 78, the one module in that range with no name in the
+tables. What each entry does, and whether it works, isn't checked yet.
