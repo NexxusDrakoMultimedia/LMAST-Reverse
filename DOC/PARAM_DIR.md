@@ -181,7 +181,7 @@ arguments to `plResource_GetResourceDataBinPacTbb[Tbl]`):
 | 7 | TBB, 2,000 × u16 | `GetPlayerIntroducePlayerNo` |
 | 8 | TBB, 164 × u32 | `pwkTeam_GetPlPlayerIndivFromPinfo` |
 | 9 | TBB, 7 tables | not traced |
-| 10 | TBB, 6 × 25 bytes | `plTeam_GetStadiumDataIndex` |
+| 10 | TBB, 6 × 25 bytes | `plTeam_GetStadiumDataIndex`: stadium id by league, level and stand/roof/lights. The same bytes as `STADIUM/CONV_INFO_BUILD.TBB` ([`STADIUM_DIR.md`](STADIUM_DIR.md#conv_info_buildtbb)) |
 | 11, 12 | raw, 22,528 bytes each | `SLES 0x21ea08` / `0x21ea28` return them. Callers not traced |
 | 13, 14 | raw, 4,096 / 2,048 bytes | `plMail_ManagerTone2No` |
 | 15 | TBB, 1,301 × u16 | `CMakeDataBase::Set_InitDBSet` |

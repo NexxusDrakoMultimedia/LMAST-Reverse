@@ -11,12 +11,19 @@ from a model. See DOC/STADIUM_DIR.md. Addresses are GAMEPRG.REL offsets.
                          and requested with OpenReq(folder 0xa) at 0x1cdf60.
                          0x1cae18 / 0x1cae98 draw priorities 0-49, then 50-100.
   BUILD_STADIUM.TBB      t0: 119 x 129 bytes, one row per stadium (0x1cdb38:
-                         i * 0x81). Byte 0 is the model (0x1cd72c: < 10),
-                         byte 115 the crowd set (request +0xa9, 0x1d3848),
-                         bytes 116-127 the 12 advert textures (0x299750,
-                         0x1d31b8). t1: 10 x 12, one row per model (0x1cdbb0).
-                         t2: 4 x 10 models x 10 bytes (0x1cdc28).
-  CONV_INFO_BUILD.TBB    6 x 5 x 5 stadium ids: t[b*25 + a*5 + c] (0x1ce0b8).
+                         i * 0x81). Byte 0 is the model (0x1cd72c: < 10);
+                         bytes 1-109 switch parts per lighting variant (the
+                         builders at 0x1cede0-0x1cf4e8, see PARTS); byte 110-114
+                         are SHADOWCOLLI entries and byte 128 the WALLCOLLI
+                         entry (GAME/, 0x169d4 -> 0x212a8); byte 115 the crowd
+                         set (0x1d3848); bytes 116-127 the 12 advert textures
+                         (0x1d31b8). t1: 10 x 12, one row per model (0x1cdbb0).
+                         t2: 4 variants x 10 models x 10 STAND_NODE_NAME
+                         entries (0x1cdc28, 0x1cfd58).
+  CONV_INFO_BUILD.TBB    6 leagues x 5 levels x 5 variants of stadium ids:
+                         t[league*25 + level*5 + variant] (0x1ce0b8; the same
+                         table is PARAM/PLRESOURCESIM.PAC entry 10, read by
+                         plTeam_GetStadiumDataIndex, SLES 0x22c1e0).
   BUILD_ADVERTISE.TBB    32 x {s16 type, s16 alt type, s16 link, s16 part}
                          (0x1d1c60, 0x1d21c0); types 0-4 pick a creator class
                          (jump table 0x299d30, factory 0x1d2028).
@@ -26,13 +33,18 @@ from a model. See DOC/STADIUM_DIR.md. Addresses are GAMEPRG.REL offsets.
   AUD_JAM_LW.TBB         rows of {u16 threshold, u16 level} (0x1d8558).
   AUD_SET_<model>_<n>    t0: 9 stand sections {u16 share, u16 tiers,
                          u32 pointer slot} (0x1d68b0 patches in t1-t9);
-                         t1-t9 per-section rows; t10: 40-byte crowd blocks
-                         {char[32] name, u8 section, u8 tier, ...}; t11: 1 byte.
+                         t1-t9 per section, one 8-byte row per tier {u32
+                         capacity, u16 fill/1024, u8 flag, u8 0} (0x1d73c0,
+                         0x1d7d00); t10: 40-byte crowd blocks {char[32] name,
+                         u8 section, u8 tier, u8 flag, ...}; t11: 1 byte, the
+                         number of high-detail tiers (0x1d6ac4).
 
 `info` checks all of these and the cross-references between them: every
 crowd block has a model in its AUD_MODEL packs, every crowd set matches its
-stadium's model, and BUILD_STADIUM has one row per PARAM/STADIUM_DATA.TBB
-stadium.
+stadium's model, every table-2 entry names a node list of its own model and
+variant, the collision entries exist in GAME/SHADOWCOLLI and GAME/WALLCOLLI
+(when DAT/GAME is next to DAT/STADIUM), and BUILD_STADIUM has one row per
+PARAM/STADIUM_DATA.TBB stadium.
 
 Usage:
     python stadium.py info  <DAT/STADIUM> [<DAT/PARAM>]   # check the folder
@@ -56,6 +68,8 @@ PRI_MAX = 100                                 # the second draw pass ends at 0x6
 PRI_PASS = 50                                 # first pass draws 0-0x31
 BUILD_ROW = 0x81                              # 0x1cdb90: (i << 7) + i
 BUILD_CROWD = 115                             # request +0xa9 = row +0x36 + 115
+BUILD_SHADOW = slice(110, 115)                # 0x169d4: request bytes 0x6e-0x72
+BUILD_WALL = 128                              # 0x169d4: object +0x172e
 BUILD_ADVERT = slice(116, 128)                # offsets listed at 0x299750
 MONTHS = 12
 T2_ROW, T2_ENTRY = 100, 10                    # 0x1cdc28: row * 100 + model * 10
@@ -74,6 +88,34 @@ JAM_ONE = 1024
 AUD_SECTIONS = 9
 AUD_BLOCK = 0x28
 AUD_NAME = 0x20
+# Row bytes 1-109 that switch parts on, from the builders called at 0x1cec70:
+# (first byte, last byte, step, slot, pack, first entry, entry step, what).
+# A byte shows its part in the variants whose bit it has (01 02 04 04 at
+# 0x299828, D1 D2 N1 N2). "first" means the first enabled byte in the group
+# wins. Slot is the .PRI slot. Pack "stcmn" is STCMN_<variant>, "model" the
+# model's own <MODEL>_<variant> pack, "op" <MODEL>_OP.
+PARTS = (
+    (1, 3, 1, 0, "stcmn", 0, 1, "goal (first)"),                  # 0x1cede0
+    (4, 12, 1, 3, "stcmn", 3, 1, "pitch pattern (first), + season * 9"),   # 0x1ceed8
+    (13, 13, 1, 4, "model", 44, 1, "pitch edge ptp_su / ptp_wi by table 1"),
+    (14, 18, 2, 5, "stcmn", 39, 2, "bench (first)"),               # 0x1cefb8
+    (20, 20, 1, 1, "stcmn", 45, 1, "corner flags"),                # 0x1cee40
+    (25, 25, 1, 42, "stcmn", 46, 1, "pitch lines A, + request byte 7"),    # 0x1cf018
+    (26, 26, 1, 43, "stcmn", 50, 1, "pitch lines B, + request byte 5"),
+    (27, 31, 1, 7, "model", 0, 1, "fence 1-5"),                    # 0x1cf0a8
+    (32, 32, 1, 8, "model", 5, 1, "fence shadow"),
+    (33, 35, 2, 9, "model", 6, 2, "net 1-2"),                      # 0x1cf138
+    (34, 36, 2, 10, "model", 7, 2, "net shadow 1-2"),
+    (37, 41, 1, 11, "model", 10, 1, "banners"),                    # 0x1cf1e0
+    (70, 77, 1, 12, "model", 15, 1, "stands 0-3 and their shadows"),   # 0x1cf238
+    (78, 84, 1, 20, "model", 23, 1, "lights and light shafts"),    # 0x1cf2a8
+    (85, 88, 1, 27, "model", 30, 1, "spotlights 0-3"),             # 0x1cf318
+    (89, 93, 1, 31, "model", 34, 1, "caps 1-5"),                   # 0x1cf388
+    (98, 98, 1, 39, "model", 42, 1, "advert rig avi1 (if adverts on)"),    # 0x1cf468
+    (99, 99, 1, 40, "model", 43, 1, "advert rig avs1 (if adverts on)"),
+    (100, 100, 1, 41, "op", 0, 1, "the _OP part (if adverts on)"),
+    (107, 109, 1, 36, "model", 39, 1, "staff areas 0-2"),          # 0x1cf3f8
+)
 # Packs every model has, as (prefix, suffix) around the model name.
 MODEL_PACKS = ([("", "_" + v) for v in VARIANTS + ("op",)] +
                [("adt_", "_" + v) for v in VARIANTS] +
@@ -104,7 +146,7 @@ class Build:
         self.model_rows = list(t[1].rows())
         self.t2 = rows(t[2].data, T2_ROW)
 
-    def problems(self):
+    def problems(self, stand_nodes=None, shadows=None, walls=None):
         out = []
         bad = [i for i, r in enumerate(self.rows) if r[0] >= len(MODELS)]
         if bad:
@@ -116,8 +158,23 @@ class Build:
         if len(self.model_rows) != len(MODELS) or self.tables[1].line_size != MONTHS:
             out.append("table 1 is %d x %d, expected %d x %d" % (
                 len(self.model_rows), self.tables[1].line_size, len(MODELS), MONTHS))
-        if len(self.t2) != 4:
-            out.append("table 2 has %d rows, expected 4" % len(self.t2))
+        if len(self.t2) != len(VARIANTS):
+            out.append("table 2 has %d rows, expected %d" % (len(self.t2), len(VARIANTS)))
+        if stand_nodes is not None:
+            for v, row in enumerate(self.t2):
+                for m in range(len(MODELS)):
+                    for e in row[m * T2_ENTRY:(m + 1) * T2_ENTRY]:
+                        want = "%s_%s_" % (MODELS[m][1:], VARIANTS[v])
+                        if e != 0xff and (e >= len(stand_nodes) or not stand_nodes[e].startswith(want)):
+                            out.append("table 2 %s %s: node list %d" % (VARIANTS[v], MODELS[m], e))
+        if shadows is not None:
+            bad = [i for i, r in enumerate(self.rows) if any(x >= shadows for x in r[BUILD_SHADOW])]
+            if bad:
+                out.append("SHADOWCOLLI entry out of range in rows %s" % bad)
+        if walls is not None:
+            bad = [i for i, r in enumerate(self.rows) if r[BUILD_WALL] >= walls]
+            if bad:
+                out.append("WALLCOLLI entry out of range in rows %s" % bad)
         return out
 
 
@@ -147,6 +204,15 @@ class Crowd:
                 out.append("block %s: section %d" % (name, sec))
             elif tier >= self.sections[sec][1]:
                 out.append("block %s: tier %d >= %d" % (name, tier, self.sections[sec][1]))
+        for sec, (_, tiers, _) in enumerate(self.sections):
+            data = self.section_rows[sec]
+            if tiers * 8 > len(data):
+                out.append("section %d: %d tiers but %d rows" % (sec, tiers, len(data) // 8))
+                continue
+            for t in range(tiers):
+                cap, _, flag, zero = struct.unpack_from("<IHBB", data, 8 * t)
+                if cap == 0 or flag > 1 or zero:
+                    out.append("section %d tier %d: %08x" % (sec, t, cap))
         if len(self.last) != 1:
             out.append("table 11 is %d bytes" % len(self.last))
         return out
@@ -208,7 +274,13 @@ def cmd_info(root, param):
     b = check(find(root, "build_stadium.tbb"), Build)
     if b is not None:
         use = Counter(r[0] for r in b.rows)
-        probs = b.problems()
+        game = os.path.join(os.path.dirname(os.path.abspath(root)), "GAME")
+        counts = []
+        for name in ("shadowcolli.hed", "wallcolli.hed"):
+            path = find(game, name) if os.path.isdir(game) else None
+            h = pac.load_header(path) if path else None
+            counts.append(h.count if h else None)
+        probs = b.problems(pack_names(root, "stand_node_name.pac"), *counts)
         if param and find(param, "stadium_data.tbb"):
             _, t = tbb.load(find(param, "stadium_data.tbb"))
             if t[0].size // STADIUM_DATA_ROW != len(b.rows):
@@ -306,17 +378,23 @@ def cmd_build(root, sid):
     r = b.rows[sid]
     m = r[0]
     print("stadium %d: model %d (%s)" % (sid, m, MODELS[m] if m < len(MODELS) else "?"))
-    print("  bytes 1-114: %s" % r[1:BUILD_CROWD].hex(" "))
+    for lo, hi, step, slot, pack, entry, estep, what in PARTS:
+        vals = [r[k] for k in range(lo, hi + 1, step)]
+        if any(vals):
+            print("  bytes %3d-%3d  slot %2d  %-5s %2d+  %-40s %s" % (
+                lo, hi, slot, pack, entry, what, " ".join("%x" % v for v in vals)))
+    print("  advert switches (42-69, 94-97): %s %s" % (r[42:70].hex(), r[94:98].hex()))
+    print("  shadow collision (110-114): %s  wall collision (128): %d" % (
+        " ".join(str(x) for x in r[BUILD_SHADOW]), r[BUILD_WALL]))
     cs = r[BUILD_CROWD]
     if cs < len(CROWD_SETS):
         print("  byte 115 crowd set: %d (AUD_SET_%s_%d)" % (
             cs, MODELS[CROWD_SETS[cs][0]].upper(), CROWD_SETS[cs][1]))
     print("  bytes 116-127 advert textures: %s" % " ".join(str(x) for x in r[BUILD_ADVERT]))
-    print("  byte 128: %d" % r[128])
     if m < len(b.model_rows):
         print("  model row (table 1): %s" % " ".join(str(x) for x in b.model_rows[m]))
         for k, row in enumerate(b.t2):
-            print("  table 2 row %d: %s" % (k, row[m * T2_ENTRY:(m + 1) * T2_ENTRY].hex(" ")))
+            print("  stand node lists %s: %s" % (VARIANTS[k], row[m * T2_ENTRY:(m + 1) * T2_ENTRY].hex(" ")))
 
 
 def cmd_crowd(path):

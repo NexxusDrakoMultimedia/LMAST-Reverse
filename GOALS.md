@@ -87,7 +87,7 @@ Where each folder stands (September 2026):
 | `PRELOAD/` | 139 `PAC` | containers parse; no folder doc |
 | `SEQ/` | 19 `SQB`, `TBB`, `WPX` | not studied |
 | `SOUND/` | 28 `DAT` sound banks | banks parse; no folder doc |
-| `STADIUM/` | `PAC`/`HED`, 24 `TBB`, `PRI` | surveyed in [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md); `PRI` and all 24 tables decoded in outline (stadium build, crowd sets, adverts), some fields unknown |
+| `STADIUM/` | `PAC`/`HED`, 24 `TBB`, `PRI` | surveyed in [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md); `PRI` and all 24 tables decoded: part slots, stadium build, collision, crowd sets and tiers, adverts, stadium id by level (a few flags unknown) |
 | `TEST3D/` | Ninja models, `SVR`/`SVP`/`SVM`, `LBI` | textures and models done; `LBI` not parsed |
 | `CVS/` and `*/CVS/` | the developers' version-control metadata | not game data; worth noting in a doc, nothing to parse |
 

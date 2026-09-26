@@ -157,9 +157,14 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       `BUILD_ADVERTISE` (board types and switches), `AUD_SET_*` (18 crowd
       sets: sections, tiers, blocks), `AUD_JAM_*` (fill thresholds); all
       checked by `stadium.py info`
-- [ ] Still open in `STADIUM/`: which part each `.PRI` slot and
-      `BUILD_STADIUM` byte 1–41/70–93/98–114 is, `BUILD_STADIUM` byte 128 and
-      table 2, `AUD_SET` tables 1–9 and 11, the lighting-variant choice
+- [x] `STADIUM/` unknowns: the 44 `.PRI` part slots and which
+      `BUILD_STADIUM` bytes switch them; bytes 110–114/128 (shadow and wall
+      collision in `GAME/`); table 2 (stand node lists); `AUD_SET` tier rows
+      and the high-detail tier count; the lighting-variant and sky choice;
+      `CONV_INFO_BUILD` = `plTeam_GetStadiumDataIndex` (league, level,
+      stand/roof/lights)
+- [ ] Still open in `STADIUM/`: what sets the night flag (request `+0x88`,
+      `N2` over `N1`), request byte `+7`, the crowd block and tier flags
 - [ ] `GAME/` tactics AI: `PLAYBOOK.BPB`, `COMBINATION.BPB`,
       `COMBINATION2.CBB/.CSB` (`fb::PlayBookData`, `fb::Combination`)
 - [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
