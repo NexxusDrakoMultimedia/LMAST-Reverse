@@ -126,11 +126,87 @@ Each player's shirt number here matches their preferred number (`+0x2b`)
 in the database for these examples, but the squad's own number is the
 one used.
 
+## Club records (`PLRESOURCESIM.PAC` entry 3)
+
+**Confirmed, `plOteam_GetDb` (`0x2165d8`).** One TBB table of 457 × 24
+bytes, record `PlTeam − 3` (teams 3–459; later ids read record 0, and
+team 2, the rival, uses a runtime record). Readers were found for most
+fields by following all 21 callers:
+
+| Offset | Type | Name | Reader | Meaning |
+|---|---|---|---|---|
+| `0x00` | s16 | rank | `plOteam_GetManagerClubRank`, `pwkOteam_GetRank` (via `pwkOteam_Init2` → `+0xa0`) | club rank, 0–31 |
+| `0x02` | u16 | world_rank | `pwkOteam_Init2` → `+0xa2`, `pwkOteam_GetWorldClubRank` | world club rank points, 0–1020 (Chelsea 980) |
+| `0x04` | s16 | manager | `plOteam_GetManagerNoOffset` | manager: database id − `0x6d2e`. All 457 differ |
+| `0x06` | s16 | stadium | `PlGiTask::InitStadium`, `plTeam_GetStadiumNoFromNation` | `STADIUM_DATA` row (below) |
+| `0x08` | u8 | foreign | `GetCanBelongForeignPlayerNum`, `CAcquirePlayer::GetSearchNation` | 0–7: row of `PLRESOURCESIM` entry 6, table 1 (2 bytes: foreign players allowed, % chance to search abroad) |
+| `0x09` | u8 | newface | `CAcquirePlayer::IsAcquireNewfacePlayer` | 0–3: index into the % table at `0x533ff8` (chance to sign new faces) |
+| `0x0a` | u8 | search_region | `CAcquirePlayer::GetSearchNation` | 0–31: row of entry 6, table 4 (13 weights, one per scouting region) |
+| `0x0b`, `0x0c`, `0x0d`, `0x0f` | u8 | | none found | `0x0b` always equals `0x0a`; `0x0c` 1–87; `0x0d` 0–4; `0x0f` 0–25 in steps of 5 |
+| `0x0e` | u8 | money | `plTeam_IsAgreeTransferChangeMoney`, `0x248140` | transfer sums × 1.0 below 60, × 0.95 for 60–79, × 0.9 from 80. 438 clubs have 0, 8 have 70, 11 have 85. Clubs without a record count as 50 |
+| `0x10` | u16 | city | `plTeam_GetCity` | home city |
+| `0x12` | u16 | list_state | `plState_GetEmblemDisplayTeamList` | the state the club is listed under in the emblem screens |
+| `0x14` | u32 | list_city | `plCity_GetEmblemDisplayTeamList` | the city it is listed under (Chelsea: West London). 0 for clubs outside the six leagues |
+
+National teams (460–542) take their manager from `PLRESOURCESIM` entry 4
+instead: 18 bytes per nation, with the s16 at `+0` read by
+`plOteam_GetManagerNoOffset`. Their rank is the nation's world rating
+÷ 4.
+
+City names are message category 961 and state names category 960
+(**empirical**: city 604 is London, state 17 Greater London, and every
+club checked is in its own town). `plCity_GetString` and
+`plState_GetString` take the category from their caller.
+
+The best clubs by world club rank share the game's few huge grounds:
+Chelsea and Highbury (Arsenal) are at stadium 96, AC Milan and Inter at
+99, Bayern, Dortmund and Leverkusen at 98, and Barcelona and La Boca at
+100 (110,000 seats each). The game gives the biggest clubs by reputation
+these stadiums instead of their real grounds.
+
+## `INITNATIDATA.TBB`: nations
+
+**Confirmed, the load callback `0x253418`, `pwkRec_GetUefaNation`
+(`0x253e08`) and `pwkRec_GetWorldNation` (`0x253e68`).** 145 records of
+6 bytes, for nations 1–145:
+
+| Offset | Type | Nations | Meaning |
+|---|---|---|---|
+| `0x0` | u8 | 1–52 | UEFA ranking position (Italy 2, England 3, France 4) |
+| `0x2` | u16 | 1–52 | UEFA coefficient points (Italy 492, England 482) |
+| `0x4` | u8 | all | world rating (Brazil 125, Argentina 120). ÷ 4 is the national team's rank |
+
+Nations 1–52 are the UEFA members. Their `+0`/`+2` go into 4-byte slots
+of save block 5 at `0x4663c`, and `+4` into bytes at `0x4670c`.
+
+## `STADIUM_DATA.TBB`: stadiums
+
+**Confirmed, `plTeam_IsRoofFromID`, `plTeam_GetStadiumLvFromID` and
+`plTeam_GetCapacityFromID` (`0x22ae18`, `0x22adc8`, `0x22ae68`).** 119
+records of 3 bytes: roof (0/1, 52 have one), stadium level (0–4), and
+capacity in thousands. `GetCapacityFromID` adds 500 seats for stadiums
+103, 105 and 107. Capacities run from 8,000 to 110,000.
+
+## `MAPTEAM_LIST.TBB`
+
+242 × `{u16 team, u16 flag}`, the league clubs 3–244 in order. Only the
+file name is known from the code (`SIMPRG.REL`'s load list at
+`0x80694`). The reader hasn't been found. **Empirical**: the 116 clubs
+with flag 1 are the real 2005/06 top divisions. Compared with the
+starting divisions (`PLRRSRC_INITTEAMDATA` table 0, which has the
+2004/05 line-up), the flags move the clubs promoted and relegated in
+2005: Sunderland, West Ham and Wigan in, Crystal Palace, Norwich and
+Southampton out, and likewise in the other five leagues.
+
+`initteam.py teams`, `nations` and `stadiums` list all of this, `info`
+checks it, and `setteam` edits a club record into a same-size copy of
+`PLRESOURCESIM.PAC`.
+
 ## Still unknown
 
 - What the game does with table 2's negative values.
-- `INITNATIDATA.TBB`'s three fields, `STADIUM_DATA.TBB`, and the 24-byte
-  computer-team record (`plOteam_GetDb`, `PLRESOURCESIM.PAC` entry 3).
+- Club-record bytes `0x0b`, `0x0c`, `0x0d` and `0x0f`.
+- What reads `MAPTEAM_LIST.TBB`, and what its flag is for.
 
 ## Checking the claims
 
@@ -139,6 +215,11 @@ python SRC/initteam.py info DAT/PARAM          # layout checks and counts
 python SRC/initteam.py leagues DAT/PARAM       # clubs per division, with names
 python SRC/initteam.py past DAT/PARAM          # table 1 and 2 per competition
 python SRC/initteam.py squads DAT/PARAM 7      # one squad
+python SRC/initteam.py teams DAT/PARAM 7       # a club record, with names
+python SRC/initteam.py nations DAT/PARAM
+python SRC/initteam.py stadiums DAT/PARAM
+python SRC/sles_disasm.py ISO/SLES_541.51 dis plOteam_ pwkOteam_Init2 plTeam_IsAgreeTransferChangeMoney
+python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkRec_GetUefaNation pwkRec_GetWorldNation plTeam_GetCapacityFromID
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 253228 40
 python SRC/sles_disasm.py ISO/SLES_541.51 dis plLg_EntryTeamSetToDiv UpdateConyear pwkTeam_SetUnumberOpinfo
 python SRC/sles_disasm.py ISO/SLES_541.51 dis GetString__3MsgQ23Msg5eTYPEUib GlobalMsgSetup

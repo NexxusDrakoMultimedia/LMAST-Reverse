@@ -51,9 +51,13 @@ or which code loads them.
       season's order) and `OTEAMMEMBER.TBB` (player, age, shirt, contract),
       with club names from `MES.PAC` category 3 (`DOC/INITTEAM_FORMAT.md`,
       `SRC/initteam.py`)
-- [ ] The rest of the starting data: `INITNATIDATA.TBB`, `MAPTEAM_LIST.TBB`,
-      `STADIUM_DATA.TBB`, the 24-byte `plOteam_GetDb` record, and what
-      `PLRRSRC_INITTEAMDATA` table 2's negative values do
+- [x] The rest of the starting data: the 24-byte club record (rank, world
+      rank, manager, stadium, transfer policy, money, city), `INITNATIDATA`
+      (UEFA rank/points, world rating), `STADIUM_DATA` (roof, level,
+      capacity), `MAPTEAM_LIST` (flag = real 2005/06 top divisions);
+      `initteam.py teams/nations/stadiums/setteam`
+- [ ] Still open: club-record bytes `0x0b`-`0x0d`/`0x0f`, the reader of
+      `MAPTEAM_LIST`, and `PLRRSRC_INITTEAMDATA` table 2's negative values
 - [x] Player database `PBDATA_EU.PAC`: bit-packed records for 27,950
       players, 3,000 managers and 1,000 scouts, field widths from
       `plBits_DecPl{P,M,S}baseEx` (`DOC/PBDATA_FORMAT.md`, `SRC/pbdata.py`);

@@ -65,11 +65,11 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 |---|---|---|---|
 | `OTEAMMEMBER.TBB` | TBB, 1 table | `ePLRSRC` 3 | computer-team squads (player, age, shirt, contract), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md). **confirmed** |
 | `PLRRSRC_INITTEAMDATA.TBB` | TBB, 3 tables | `ePLRSRC` 4 | starting divisions and last season's order per competition, see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md). **confirmed** |
-| `INITNATIDATA.TBB` | TBB, 1 table | `ePLRSRC` 6 | per-nation start values, see below. **confirmed** |
+| `INITNATIDATA.TBB` | TBB, 1 table | `ePLRSRC` 6 | UEFA rank and points, world rating per nation, see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#initnatidatatbb-nations). **confirmed** |
 | `TEAM_INIT_DATA.TBB` | TBB, 9 tables | `ePLRSRC` 5, `CEDITPRG.REL` list | 9 tables of u32 (3,168 / 864 / 432 / 384 / 216 / 216 / 12 / 18 / 120 words). Reader not traced |
 | `REGULATION.TBB` | TBB, 1 table | `plRec_MatchRegulations` (`0x21dc60`), `SIMPRG.REL` list | 165 match regulations × **120 bytes**, indexed by `PLSCHE_GROUP`. **confirmed** (`0x21dd18`: `group * 0x78`) |
 | `CLUBRESULT.TBB` | TBB, 1 table | `SIMPRG.REL 0x167e90` | 165 × **8 bytes** (u16 fields), same count as `REGULATION`. **confirmed** (`0x167f4c`: `i << 3`) |
-| `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**. **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`) |
+| `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**: roof, level, capacity (thousands). **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`; readers in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) |
 | `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 flags. **confirmed**, see below |
 | `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | `SLES 0x246540` (table 11), `SIMPRG.REL` lists | training menus. Table 11 (845 bytes) feeds `pwkMatchGrow_ClubRankCoe` (`0x246520`). Other tables not traced |
 | `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648` | training camps. Reader not traced |
@@ -78,7 +78,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. Reader not traced |
 | `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 332 bytes (166 × u16?): schedule group to competition |
 | `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170` | 424 bytes (212 × u16?) |
-| `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 968 bytes (484 × u16?) |
+| `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical). Reader not found |
 | `TACTICS_FORMATION_SET.TBB` | TBB, 1 table | entry 11 of the `GetPreLoadData` list (`SLES 0x55b560`), and `SLES 0x55b2d8` | 8 formations × 8 bytes |
 | `SPONSOR_BOARD.TBB` | TBB, 1 table | **not referenced by name** | 132 bytes, `01 02 03 ...` |
 | `PLRESOURCECOMMON.PAC` | BINPAC, 5 TBB entries | `ePLRSRC` 0 | team facilities, formations, nations. See [the packs](#plresourcecommonpac) |
@@ -174,7 +174,7 @@ arguments to `plResource_GetResourceDataBinPacTbb[Tbl]`):
 | 0 | TBB, 5 byte tables | `GetAreaData_Pointer(i)` (`0x21ef58`), `i < 5` |
 | 1 | TBB, 2 tables | `SLES 0x232d88` (table `i < 2`) |
 | 2 | TBB, 2 tables | not traced |
-| 3 | TBB, 10,968 bytes | `plOteam_GetDb(team)` (`0x2165d8`): **457 × 24 bytes**, indexed by `PlTeam − 3`. Team 2 uses a runtime rival record instead |
+| 3 | TBB, 10,968 bytes | `plOteam_GetDb(team)` (`0x2165d8`): **457 × 24 bytes**, indexed by `PlTeam − 3`: rank, world rank, manager, stadium, transfer policy, city. See [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#club-records-plresourcesimpac-entry-3). Team 2 uses a runtime rival record instead |
 | 4 | TBB, 1,305 × u16 | `plOteam_GetManagerNoOffset`, `plTeam_GetPlTeamFromNation` |
 | 5 | raw, 32,152 bytes | `PlayerAffiliateaSearchTableInitialize`, `plMisc_GetPlayerAffiliateTeam` |
 | 6 | TBB, 6 byte tables | `CAcquirePlayer::*` (tables 0, 1, 3, 4, 5), `CComOffer::CalcuOfferClub`, `CContractReform::Execute`, `CMakeDataBase::GetOutOfClubRange` |

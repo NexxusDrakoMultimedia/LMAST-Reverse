@@ -59,6 +59,8 @@ def checks():
                          "0", "p:27949", "m:0", "m:2999", "s:0", "s:999"],
          ["DAT/PARAM/PBDATA_EU.PAC", "DAT/MESSAGE/MES.PAC"]),
         # Club names from MES.PAC category 3 against the division lists.
+        ("initteam_teams", ["initteam.py", "teams", "DAT/PARAM"],
+         ["DAT/PARAM", "DAT/MESSAGE/MES.PAC"]),
         ("initteam_leagues", ["initteam.py", "leagues", "DAT/PARAM"],
          ["DAT/PARAM", "DAT/MESSAGE/MES.PAC"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),
