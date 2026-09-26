@@ -177,13 +177,24 @@ MODULES = dict(enumerate((
     "VSModeScheduleTop", "TicketSet", "Broadcast", "PlayerEdit", "ManaPlan",
     "BootCheck", "ForcedDismissPlayer", "NewGameInstall",
     "CheckActionPlayerData", "Launcher", "WildCard")))
-MODULES.update({
-    71: "BpinfoCheck", 72: "Test3D", 73: "ModelViewer", 74: "TestCse",
-    76: "InoueTest", 77: "SakaueTest", 83: "PersonalAffairs", 89: "SugioTest",
-    93: "SeasonEndTest", 104: "CharacterViewer", 107: "AcrobataViewer",
-    113: "CseViewer", 124: "Goods", 125: "Hdd", 126: "HddUtil",
-    127: "BootCheck", 128: "UniformViewer", 129: "TalkCheck",
-    171: "StadiumViewer", 172: "Game", 173: "ShimizuTest"})
+# 71-129 as the developer launcher lists them, entry i being module 70 + i
+# (tested in PCSX2, DOC/SQB_FORMAT.md#the-developer-launcher); 171-173 are
+# the launcher's gameprg tab.
+MODULES.update(enumerate((
+    "BpinfoCheck", "3DTest", "ModelViewer", "CseTest", "BGControl",
+    "InoueTest", "SakaueTest", "SatoTest", "SideMenu", "IwasakiTest",
+    "SpanverseTest", "EmblemEditTest", "PersonalAffairs", "YamazakiTest",
+    "ClubEditMenu", "UniformEdit", "EmblemEdit", "FlagEdit", "SugioTest",
+    "ToumuraTest", "InitialPersonnelAffairs", "Talk", "SeasonEnd", "MonthEnd",
+    "Mail", "MatchResult", "Schedule", "ScoutingMenu", "PersonnelAffairsMenu",
+    "News", "SpriteTest", "Tactics", "Training", "CharacterViewer",
+    "PlayerContract", "NewsViewer", "AcrobataViewer", "MemorycardUtility",
+    "MailViewer", "GameIncome", "SelectUniform", "Sponsor", "CseTest2",
+    "HayasiTest", "PlayerEdit", "BGLightTest", "TicketSetTest", "TicketSet",
+    "ManaPlanTest", "ManaPlan", "TVSelect", "ArrayBlockTest", "ColorTest",
+    "Goods", "HddInstall", "HddUtil", "BootCheck", "UniformViewer",
+    "TalkCheck"), 71))
+MODULES.update({171: "StadiumViewerMk2", 172: "Game", 173: "BCTest"})
 MODULE_COMMANDS = range(0, 7)       # table 4: Module.Start .. Module.Get
 SEQSUB_COMMANDS = (7,)              # table 4: SeqSub.Create, argument 1
 

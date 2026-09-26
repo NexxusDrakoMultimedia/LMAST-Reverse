@@ -281,9 +281,13 @@ The event tables, the procedures and the overlay loader are documented in
       `simprg` (MAIN GAME START, BPINFO CHECK, 3D TEST, MODEL VIEWER, CSE
       TEST, BG CONTROL, ...) and `gameprg` (STADIUM VIEWER MK2, GAME, BC
       TEST) tabs (`DOC/SQB_FORMAT.md#the-developer-launcher`)
-- [ ] Try each launcher entry in PCSX2 and record which work (model
-      viewer, stadium viewer, CSE test are the most useful for modding),
-      the full scrolling `simprg` list, and the controls
+- [x] The launcher's full list: 59 `simprg` entries = modules 71-129 in
+      order, `gameprg` = 171-173 (names in `DOC/SQB_FORMAT.md` and
+      `sqb.py`)
+- [ ] Try each launcher entry in PCSX2 and record which work and their
+      controls (MODEL VIEWER, CHARACTER VIEWER, STADIUM VIEWER MK2,
+      Uniform Viewer, CSE TEST, NEWS/MAIL VIEWER, Talk Check are the most
+      useful for modding)
 - [x] Sequencer scripts (`SEQ/*.SQB`, `PSC*.PAC`): `CSeqController`'s
       command encoding, argument types, labels and calls; the root set
       (Base, Scene, RootEvent: 125 commands, 94 by symbol) and the

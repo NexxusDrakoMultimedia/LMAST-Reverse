@@ -381,15 +381,34 @@ into the launcher.
 
 **Tested in PCSX2** (the 1-byte patch written with `patch_disc.py`): the
 game boots into a developer menu instead of the video-mode screen. It has
-two tabs, `simprg` and `gameprg`, each with a list:
+two tabs, `simprg` and `gameprg`.
 
-| Tab | Entries seen (top of the list) |
+The `simprg` tab lists MAIN GAME START and then 59 entries, 10 to a page.
+Entry *i* after MAIN GAME START is module `70 + i`. That is the launcher
+script's `L2` path (result *n* = *i* + 1, module `71 + n − 2`). The
+screenshots and the module tables in
+[`SNR2_FORMAT.md`](SNR2_FORMAT.md#which-overlay-the-game-loads) agree
+wherever both name a module: 89 SugioTest, 93 SeasonEndTest, 104
+CharacterViewer, 107 AcrobataViewer, 113 CseViewer, 124 Goods, 125 Hdd,
+126 HddUtil, 127 BootCheck, 128 UniformViewer and 129 TalkCheck. The
+overlays also match: 85, 87, 88 and 91 are in `CEDITPRG` (club edit),
+and 105 and 115 in `YRSTPRG` (contracts, player edit).
+
+| Modules | Entries |
 |---|---|
-| `simprg` | MAIN GAME START, BPINFO CHECK, 3D TEST, MODEL VIEWER, CSE TEST, BG CONTROL, INOUE TEST, SAKAUE TEST, SATO TEST, SIDE MENU, … (the list scrolls) |
-| `gameprg` | MAIN GAME START, STADIUM VIEWER MK2, GAME, BC TEST |
+| 71–79 | BPINFO CHECK, 3D TEST, MODEL VIEWER, CSE TEST, BG CONTROL, INOUE TEST, SAKAUE TEST, SATO TEST, SIDE MENU |
+| 80–89 | IWASAKI TEST, SPANVERSE TEST, EMBLEM EDIT TEST, PERSONAL AFFAIRS, YAMAZAKI TEST, CLUB EDIT MENU, UNIFORM EDIT, EMBLEM EDIT, FLAG EDIT, SUGIO TEST |
+| 90–99 | TOUMURA TEST, INITIAL PERSONNEL AFFAIRS, Talk, SEASON END, MONTH END, MAIL, MATCH RESULT, SCHEDULE, SCOUTING MENU, PERSONNEL AFFAIRS MENU |
+| 100–109 | NEWS, SPRITE TEST, TACTICS, TRAINING, CHARACTER VIEWER, PLAYER CONTRACT, NEWS VIEWER, ACROBATA VIEWER, MEMORYCARD UTILITY, MAIL VIEWER |
+| 110–119 | GAME INCOME, SELECT UNIFORM, SPONSOR, CSE TEST 2, HAYASI TEST, PLAYER EDIT, BG LIGHT TEST, TICKET SET TEST, TICKET SET, MANA PLAN TEST |
+| 120–129 | MANA PLAN, TV SELECT, ARRAY BLOCK TEST, COLOR TEST, GOODS, HDD INSTALL, HDD UTIL(FORMATER), BOOT CHECK, Uniform Viewer, Talk Check |
 
-Below MAIN GAME START, the `simprg` entries follow the module ids from 71
-in order: 71 BpinfoCheck, 72 Test3D, 73 ModelViewer, 74 TestCse, 75
-BGControl, 76 InoueTest, 77 SakaueTest, then 79 SideMenu. So SATO TEST is
-probably module 78, the one module in that range with no name in the
-tables. What each entry does, and whether it works, isn't checked yet.
+The `gameprg` tab lists MAIN GAME START, STADIUM VIEWER MK2, GAME and BC
+TEST. This fits the script's other branch, though it isn't confirmed from
+the launcher's code. Result 101 leaves like 1 does. Results 102–104 take
+the `L3` path, which loads file resource 1 (`gameprg.rel`) and starts
+modules 171 StadiumViewer, 172 Game and 173 (`ShimizuTest` in the setup
+function's name, "BC TEST" in the menu).
+
+`sqb.py` uses these names for modules 71–129 and 171–173. What each entry
+does, and whether it works, isn't checked yet.
