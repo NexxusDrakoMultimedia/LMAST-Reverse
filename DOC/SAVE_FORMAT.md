@@ -125,7 +125,7 @@ euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
 | `0x240` | u16 | condition, 0–65535 | confirmed, `plPinfo_Cond5` (`0x217800`); the bar matches (Aiblinger 88%, "fully fit") |
 | `0x242` | u16 | motivation, 0–65535 | confirmed, `plPinfo_Moti2Lv` (`0x217b88`): ÷ `0x3333` gives 5 levels |
 | `0x24c` | u16 | "power", 0–1000 | confirmed range, `plPinfo_ChangePower` (`0x21c8c0`). Not the T-FIT bar |
-| `0x24e` | u16 | "kan", age-dependent minimum to 1000 | confirmed range, `plPinfo_ChangeKan`. Not the T-FIT bar either |
+| `0x24e` | u16 | form (the game's "kan"), an age-dependent minimum to 1000 | confirmed: `plPinfo_ChangeKan` clamps it; below 400 the condition line says the player has lost form (`ConvertPlayer_Condition`, below) |
 | `0x250`, `0x254` | u16, u32 | injury days left, injury kind | `_plPinfo_SetKega`, `plPinfo_KegaRecoverDaysChno`, `plPinfo_IsHkegaFunou` |
 | `0x25a`, `0x25c` | u16 | captain and keyman experience | `plPinfo_ChangeCaptainExp`, `plPinfo_ChangeKeymanExp` |
 | `0x278` | u32 | play style | `plPinfo_GetPStyle` / `SetPStyle` |
@@ -144,9 +144,25 @@ screen: Carson (`0xffff`, `0x7fff`) is top centre; Aiblinger comes out
 The rest of the record between `0x18a` and `0x2a0` is read by the functions
 listed by a scan of every `PlPinfo` accessor (flags at `0x20c`, the job
 change at `0x210`, dissatisfaction bytes in the database copy), not decoded
-yet. The T-FIT bar isn't found: neither "power" nor "kan" fits both players
-checked (Carson: full bar, power 991, kan 370; Aiblinger: about 60%, power
-1000, kan 682).
+yet.
+
+**The condition line** under the bars is chosen by
+`WP::CDetailManager::ConvertPlayer_Condition` (`0x285728`), first match
+wins: an injury (with the days left); flag `0x800000` at `+0x20c`
+(message 11); a slump (12); fatigue ≥ 700 (17), ≥ 400 (16), ≥ 200 (15);
+form < 400 (18); condition > 55,000 (14), > 40,000 (13); otherwise 19.
+Checked in game: Ben Arfa with fatigue 900 shows "Seriously fatigued and
+off form", Carson with form 370 "Lost form and not playing as well as he'd
+like", Aiblinger with condition 58,276 "Fully fit and on top form".
+
+The T-FIT bar isn't found. Form fits two players (Ben Arfa 240 and about
+20%, Aiblinger 682 and about 65%) but not Carson (370 and a full bar, with
+every ability at 99), so it probably mixes form with abilities; power is
+1,000 or 991 for all three.
+
+Edits to fatigue, condition and motivation show in game as set (Ben Arfa:
+900, 0 and 65,535), and abilities set to 99 with the growth limit raised
+stay at 99 after training (Carson, two turns later).
 
 Ability values are experience. `plMisc_AbilExp2Lv` (`0x2153c0`) turns
 experience into a level 0–99 through 101 thresholds at SLES `0x531c70`: the

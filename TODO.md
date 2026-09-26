@@ -316,8 +316,11 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       motivation, injuries; match statistics (season, last season, career)
       checked against two players' screens; `save.py player` shows them and
       `set` edits fatigue/condition/motivation
-- [ ] The T-FIT bar (not "power" or "kan"), stats table 1, PlPinfo flags
-      at `0x20c`, dissatisfaction and style icons
+- [x] "kan" is form: the condition line's thresholds
+      (`ConvertPlayer_Condition`) match three players; edited fatigue,
+      condition, motivation and 99 abilities hold in game
+- [ ] The T-FIT bar (form fits two players, not an all-99 Carson), stats
+      table 1, PlPinfo flags at `0x20c`, dissatisfaction and style icons
 - [ ] Map more of the blocks through their accessors (staff, youth, other
       clubs, finances), and name the fields an editor should offer
 - [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same

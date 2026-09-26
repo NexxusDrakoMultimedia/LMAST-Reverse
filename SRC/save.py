@@ -43,7 +43,7 @@ Usage:
     python save.py set       <save> <out> money=N         # edit into a new main file
     python save.py set       <save> <out> 3:all=99 3:15=80  #  slot:ability=level (0-99)
     python save.py set       <save> <out> 3:fatigue=0 3:condition=65535  #  slot:field=value
-                                   (fields: fatigue, condition, motivation, power, kan,
+                                   (fields: fatigue, condition, motivation, power, form,
                                     policy_counter, policy_organisation)
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
@@ -737,7 +737,9 @@ PINFO_FIELDS = (
     ("condition", 0x240, "<H", (0, 65535), "plPinfo_Cond5 0x217800"),
     ("motivation", 0x242, "<H", (0, 65535), "plPinfo_Moti2Lv 0x217b88: / 0x3333"),
     ("power", 0x24c, "<H", (0, 1000), "plPinfo_ChangePower 0x21c8c0 clamps 0-1000"),
-    ("kan", 0x24e, "<H", (0, 1000), "plPinfo_ChangeKan 0x21c840 clamps to age limit-1000"),
+    ("form", 0x24e, "<H", (0, 1000),
+     "the game's 'kan': ChangeKan 0x21c840 clamps to an age limit-1000; below 400 the "
+     "condition line says he has lost form (ConvertPlayer_Condition 0x285728)"),
     ("injury_days", 0x250, "<H", None, "_plPinfo_SetKega, KegaRecoverDaysChno"),
     ("injury", 0x254, "<I", None, "_plPinfo_SetKega kind, IsHkegaFunou"),
     ("captain_exp", 0x25a, "<H", None, "plPinfo_ChangeCaptainExp"),
@@ -1023,9 +1025,9 @@ def cmd_player(game, path, slot):
     print("  position %s, age %d, shirt %d, %d cm, %d kg, %s foot, nation %d, team %d" % (
         pbdata.position_name(p["position"]), p["age"], db["shirt"], db["height"], db["weight"],
         "right" if db["leg"] & 1 else "left", db["nation"], p["team"]))
-    print("  fatigue %d/1000, condition %d%%, motivation %d%%, power %d/1000, kan %d/1000" % (
+    print("  fatigue %d/1000, condition %d%%, motivation %d%%, power %d/1000, form %d/1000" % (
         p["fatigue"], p["condition"] * 100 // 65535, p["motivation"] * 100 // 65535,
-        p["power"], p["kan"]))
+        p["power"], p["form"]))
     print("  injury %d, %d days; captain exp %d, keyman exp %d; play style %d; status %d" % (
         p["injury"], p["injury_days"], p["captain_exp"], p["keyman_exp"], p["play_style"],
         p["status"]))
