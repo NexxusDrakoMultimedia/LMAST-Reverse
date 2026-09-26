@@ -48,6 +48,7 @@ def checks():
         ("tbb", ["tbb.py", "info", "DAT"], ["DAT"]),
         ("tbb_roundtrip", ["tbb.py", "roundtrip", "DAT"], ["DAT"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),
+        ("schedule", ["schedule.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("svr", ["svr.py", "info", "DAT"], ["DAT"]),
         ("csp", ["csp.py", "info", "DAT"], ["DAT"]),
         ("zbf", ["zbf.py", "info", "DAT"], ["DAT"]),

@@ -39,9 +39,14 @@ or which code loads them.
       (nothing names them). Record layouts confirmed for `OTEAMMEMBER`,
       `PLRRSRC_INITTEAMDATA`, `INITNATIDATA`, `SCHEDULE_LIST`, `REGULATION`,
       `CLUBRESULT` and `STADIUM_DATA`, plus the `plResource` pack readers
-- [ ] Schedules and competitions: `0SYSTEM/SCHEDULE.TBB`,
-      `SCHEDULE_LIST.TBB`, `SCHEDULE_{COMPETITION,SYSTEM,TEAM_ENTRY}.PAC/.HED`,
-      `GROUP2COMPE.TBB`, `REGULATION.TBB`, `CLUB_RANK_SYSTEM.TBB`
+- [x] Schedules and competitions: `DOC/SCHEDULE_FORMAT.md` and
+      `SRC/schedule.py` (in `regress.py`) cover the three `SCHEDULE_*` packs
+      for all 164 UIDs. `SCHEDULE_LIST` and `REGULATION` are indexed by
+      the same UID, and `0SYSTEM/SCHEDULE.TBB` is an unreferenced 2005 version.
+      One `!!`: UID 117 has 6 game days but 3 turns
+- [ ] Still open from the schedules: `GROUP2COMPE.TBB`, `CLUB_RANK_SYSTEM.TBB`,
+      `PeriodName.tbb`, the `make_list` source functions, game bits `w0`
+      8–9 and competition header bytes `0x0A`–`0x0F`
 - [ ] Initial clubs, squads and stadiums: `PLRRSRC_INITTEAMDATA.TBB`,
       `INITNATIDATA.TBB`, `OTEAMMEMBER.TBB`, `MAPTEAM_LIST.TBB`,
       `STADIUM_DATA.TBB`

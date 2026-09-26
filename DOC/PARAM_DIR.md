@@ -83,9 +83,9 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `SPONSOR_BOARD.TBB` | TBB, 1 table | **not referenced by name** | 132 bytes, `01 02 03 ...` |
 | `PLRESOURCECOMMON.PAC` | BINPAC, 5 TBB entries | `ePLRSRC` 0 | team facilities, formations, nations. See [the packs](#plresourcecommonpac) |
 | `PLRESOURCESIM.PAC` | BINPAC, 16 entries | `ePLRSRC` 1 | computer teams, transfers, mail. See [the packs](#plresourcesimpac) |
-| `SCHEDULE_SYSTEM.PAC/.HED` | BINPAC, 5 named TBBs | `ScheEuro_SubCtrl::requestLoad` (`0x209b50`) | `year_schedule_data`, `open_nation`, `make_list`, `PeriodName`, `savectrl` |
-| `SCHEDULE_COMPETITION.PAC/.HED` | BINPAC, 164 entries | `ScheEuro_LoadModule::Execute` (`0x208c50`), name table `0x390658` | one entry per competition. Not decoded |
-| `SCHEDULE_TEAM_ENTRY.PAC/.HED` | BINPAC, 164 entries | as above | entry lists per competition. Not decoded |
+| `SCHEDULE_SYSTEM.PAC/.HED` | BINPAC, 5 named TBBs | `ScheEuro_SubCtrl::requestLoad` (`0x209b50`) | `year_schedule_data`, `open_nation`, `make_list`, `PeriodName`, `savectrl`. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
+| `SCHEDULE_COMPETITION.PAC/.HED` | BINPAC, 164 entries | `ScheEuro_LoadModule::Execute` (`0x208c50`), name table `0x390658` | one schedule per UID: games and pairings. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
+| `SCHEDULE_TEAM_ENTRY.PAC/.HED` | BINPAC, 164 entries | as above | where each UID's entrants come from. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
 | `PSCCOMMON.PAC` | BINPAC, 20 named `TBB1` `.sqb` scripts | `FC_EURO_PWK_CALLBACK`, table `0x35c908` | `PscCommon_PinfoInit.sqb`, `_seasonticket`, `_spectator`, ... |
 | `PSCGAME.PAC`, `PSCPRACTICE.PAC` | BINPAC, 2 entries | as above | copies of the first 2 `PSCCOMMON` entries |
 | `PBDATA_EU.PAC` / `PBDATA_JP.PAC` | BINPAC, 4 entries | `FC_EURO_PWK_CALLBACK::PwkCallbackCommand_BpDataReadFile` (`0x110d50`), names at `0x35c968` | player database. EU entry 1 is 3 MB (starts with a name, `Maik`); JP entry 1 is empty. Not decoded |
@@ -196,8 +196,8 @@ unused placeholders for kit names.
   bytes and the 24-byte `plOteam_GetDb` record.
 - `TEAM_INIT_DATA.TBB`: no reader found in `SLES`. The edit-mode overlay
   lists it.
-- `SCHEDULE_COMPETITION` and `SCHEDULE_TEAM_ENTRY` entries, and the
-  `SCHEDULE_SYSTEM` tables (the next TODO item).
+- Parts of the schedule packs, listed in
+  [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown).
 - `PBDATA_*.PAC` and the `.sqb` scripts in `PSC*.PAC`.
 - The meaning of the other fields in the overlay load-list entries, and the
   code that walks the `SIMPRG.REL` list holding `ClubEvent` and
