@@ -245,7 +245,7 @@ def main(argv):
             return 0
         if cmd == "verify" and len(args) >= 2:
             return cmd_verify(args[0], args[1:])
-    except ValueError as e:
+    except (ValueError, OSError) as e:
         raise SystemExit(str(e))
     print(__doc__)
     return 1

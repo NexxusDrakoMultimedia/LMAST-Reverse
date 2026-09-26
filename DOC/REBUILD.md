@@ -52,8 +52,11 @@ extent. It never writes to the table of contents.
 - Patching the original file back gives an image byte-identical to the
   Redump dump.
 
-**Not yet confirmed:** that the game boots and shows the change. That
-needs a run in PCSX2 or on hardware.
+**Confirmed in the game (PCSX2):** a disc patched this way boots, and a
+new game shows the edited player (renamed, new weight, leg and ability
+bars). So nothing checks the file contents, and the game reads
+`PBDATA_EU.PAC` from this one copy. Details are in
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#writing).
 
 ## Usage
 

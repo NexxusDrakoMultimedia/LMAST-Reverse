@@ -244,7 +244,10 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       encrypted table of contents; `locate` in `regress.py`. Tested byte-exact
       (12 bytes changed for a 3-field player edit, and reverting gives the
       Redump image back)
-- [ ] Boot a patched image in PCSX2 and confirm the edit shows in game
+- [x] Boot a patched image in PCSX2 and confirm the edit shows in game:
+      Terry's edited name, weight, leg and bars appeared in a new game.
+      His height wrapped at 255 (a byte in `PlPbase`) and his age comes
+      from `OTEAMMEMBER.TBB`; both now handled (`initteam.py set`)
 - [ ] Find every file the game reads a second copy of (`.HED` headers,
       `PRELOAD/GAMEFILE*.PAC` bundles) so edits reach all copies
 - [ ] Size changes: re-lay `DATA.ISO`, rewrite directory records,

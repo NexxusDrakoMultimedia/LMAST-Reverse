@@ -24,6 +24,12 @@ Usage:
     python initteam.py leagues <DAT/PARAM> [--mes MES.PAC] [--lang N]
     python initteam.py past    <DAT/PARAM> [--mes MES.PAC] [--lang N]
     python initteam.py squads  <DAT/PARAM> [team ...] [--mes MES.PAC] [--lang N]
+    python initteam.py set     <OTEAMMEMBER.TBB> <out.TBB> <team>:<slot> <field>=<value> ...
+
+`set` edits squad slots (fields player, age, shirt, contract) and writes a
+new OTEAMMEMBER.TBB of the same size, ready for patch_disc.py. A computer
+team's players take their age from here, not from the player database; a
+new game shows it one year older (Terry's 25 shows as 26).
 
 Names are read from <DAT/PARAM>/../MESSAGE/MES.PAC unless --mes is given,
 in language slot 1 (English) unless --lang is given. Without MES.PAC the
@@ -214,6 +220,49 @@ def cmd_info(root):
         print("  %-8s %d-%d" % (name, min(vals), max(vals)))
 
 
+# Limits for `set`: the fields are copied into PlOpinfo bytes, and
+# pwkTeam_SetUnumberOpinfo only keeps shirt numbers 1-99.
+SET_LIMITS = {"player": (0, 0xffff), "age": (0, 0xff), "shirt": (1, 99), "contract": (0, 0xff)}
+
+
+def cmd_set(path, out_path, args):
+    if os.path.abspath(out_path) == os.path.abspath(path):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    with open(path, "rb") as f:
+        buf = f.read()
+    end, tables = tbb.parse(buf)
+    OteamMembers(path)                  # layout check
+    data = bytearray(tables[0].data)
+    offsets = {name: (off, fmt) for name, off, fmt in OTEAM_FIELDS}
+    slot_base = None
+    for a in args:
+        if "=" not in a:
+            team, slot = (int(x, 0) for x in a.split(":"))
+            if not OTEAM_FIRST <= team < OTEAM_END or not 0 <= slot < SQUAD:
+                raise SystemExit("%s: teams are %d-%d and slots 0-%d" % (
+                    a, OTEAM_FIRST, OTEAM_END - 1, SQUAD - 1))
+            slot_base = ((team - OTEAM_FIRST) * SQUAD + slot) * OTEAM_ROW
+            label = a
+            continue
+        if slot_base is None:
+            raise SystemExit("give <team>:<slot> before %r" % a)
+        name, value = a.split("=", 1)
+        if name not in offsets:
+            raise SystemExit("fields are %s" % ", ".join(offsets))
+        value = int(value, 0)
+        lo, hi = SET_LIMITS[name]
+        if not lo <= value <= hi:
+            raise SystemExit("%s must be %d-%d" % (name, lo, hi))
+        off, fmt = offsets[name]
+        old = struct.unpack_from(fmt, data, slot_base + off)[0]
+        struct.pack_into(fmt, data, slot_base + off, value)
+        print("%s %s: %d -> %d" % (label, name, old, value))
+    tables[0].data = bytes(data)
+    with open(out_path, "wb") as f:
+        f.write(tbb.build(tables, end, tbb.trailer(buf, tables)))
+    print("wrote %s" % out_path)
+
+
 def cmd_leagues(root, names):
     init = InitTeamData(find(root, INIT_TBB))
     for dv in init.divisions:
@@ -274,6 +323,9 @@ def main(argv):
         print(__doc__)
         return 1
     root = args[0]
+    if cmd == "set" and len(args) >= 4:
+        cmd_set(args[0], args[1], args[2:])
+        return 0
     if cmd == "info" and len(args) == 1:
         cmd_info(root)
         return 0

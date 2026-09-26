@@ -95,6 +95,9 @@ Empirical, checked by `initteam.py info`:
 - Every slot is filled. The player numbers are 0–10,974, each used exactly
   once.
 - Ages are 16–40, and contract lengths are 2–6.
+- These are the ages a computer team's players show in game, one year
+  older in a new game (Terry's 25 shows as 26, tested in PCSX2). The
+  player database's own age field doesn't override them.
 - Shirt numbers are 1–99 and never repeat within a team.
 - All padding bytes are zero.
 
@@ -139,6 +142,11 @@ python SRC/sles_disasm.py ISO/SLES_541.51 addr 253228 40
 python SRC/sles_disasm.py ISO/SLES_541.51 dis plLg_EntryTeamSetToDiv UpdateConyear pwkTeam_SetUnumberOpinfo
 python SRC/sles_disasm.py ISO/SLES_541.51 dis GetString__3MsgQ23Msg5eTYPEUib GlobalMsgSetup
 ```
+
+`python SRC/initteam.py set OTEAMMEMBER.TBB out.TBB 7:1 age=15` edits a
+squad slot (team 7, slot 1: Terry) and writes a same-size table that
+`patch_disc.py` can put on the disc. Shirt numbers are limited to 1–99,
+the range `pwkTeam_SetUnumberOpinfo` keeps.
 
 A starting-season mod can change these tables with
 `python SRC/tbb.py extract` / `replace` ([`TBB_FORMAT.md`](TBB_FORMAT.md#tool)).

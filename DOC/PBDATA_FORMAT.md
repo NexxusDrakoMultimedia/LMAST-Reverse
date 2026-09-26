@@ -65,8 +65,8 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 | 8 | 1 | `+0x14` | nation | nationality, 1–144. **confirmed** |
 | 5 | 1 | `+0x18` | rank | 0–15. **confirmed** (read directly only for ids ≥ `0x63f7`) |
 | 4 | 3 | `+0x1c` | position | main and up to two more positions, 0–12, with 13 meaning none. The first is **confirmed**. Which number is which position isn't known (goalkeepers are 0, *empirical*) |
-| 7 | 1 | `+0x28` | age | stored − 16. *Empirical* meaning: 16–40, and it matches the real players in 2005 |
-| 8 | 1 | `+0x29` | height | stored − 150, in cm (158–205). *Empirical* |
+| 7 | 1 | `+0x28` | age | stored − 16. *Empirical* meaning: 16–40, and it matches the real players in 2005. Computer-team players don't show this age: their squad slot's age from `OTEAMMEMBER.TBB` is used instead ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)). Tested in game: a database age of 16 didn't change Terry's shown age |
+| 8 | 1 | `+0x29` | height | stored − 150, in cm (158–205). *Empirical*. The decoder stores the sum in a byte (`sb` at `0x2e8a14`), so heights above 255 wrap. Tested in game: 313 cm shows as 57 cm |
 | 7 | 1 | `+0x2a` | weight | stored − 45, in kg (48–100). *Empirical* |
 | 7 | 1 | `+0x2b` | shirt | preferred shirt number. **confirmed** |
 | 3 | 1 | `+0x2c` | leg | 0–3. Bit 0 set means right-footed, clear means left. *Empirical*: every well-known left-footer tested (Robben, Ashley Cole, Giggs, Messi, Roberto Carlos, Duff, Cech) has it clear. Bit 1 is set for famously two-footed players (Maldini, Henry, Rooney, Duff). The detail screen shows a message from 100–103 (LEFT, RIGHT, LEFT, RIGHT), which fits `100 + leg`, but the copy into `PlPinfo +0x1c4` hasn't been traced |
@@ -240,9 +240,18 @@ Edits are given as the values `show` prints, and are converted back:
 - Names are cp850, at most 18 bytes, zero-padded to 19 (every name on the
   disc has a terminator).
 
-The limits are the field widths, not what the game considers sensible:
-a height of 300 cm fits the 8-bit field (150–405), and the game would
-take it.
+The limits are mostly the field widths, not what the game considers
+sensible. The exception is `age`, `height` and `weight`: the decoder adds
+their offset and stores the sum in a byte, so `pbdata.py` refuses values
+above 255. Height is the only one where that matters (the field alone
+would allow up to 405 cm). Otherwise the game takes whatever fits.
+
+**Tested in the game** (PCSX2, new game, patched with `patch_disc.py`):
+Terry renamed `J.Terry.MOD`, 96 kg, left-footed, with abilities
+alternating 38 and 99. The name, weight, leg and the bar pattern all
+showed as predicted by `pbdata.py show` (low SPEED and FK, high STAMI,
+HEAD, INTER and MARK). A height of 313 cm showed as 57 cm, which is what
+led to the byte limit above.
 
 ```bash
 python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out.PAC 101 age=30 ability.13=99 name=J.Terry

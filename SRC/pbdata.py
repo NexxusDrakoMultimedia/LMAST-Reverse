@@ -80,7 +80,7 @@ PLAYER_FIELDS = (
     ("rank", 0x18, 5, 1, None),          # getPinfoRank (ids >= 0x63f7)
     ("position", 0x1c, 4, 3, None),      # getPinfoApos0 returns the first; 13 = none
     ("age", 0x28, 7, 1, ("add", 16)),    # decoder adds 0x10
-    ("height", 0x29, 8, 1, ("add", 150)),  # adds 0x96
+    ("height", 0x29, 8, 1, ("add", 150)),  # adds 0x96; the sum is a byte, so 255 cm at most
     ("weight", 0x2a, 7, 1, ("add", 45)),   # adds 0x2d
     ("shirt", 0x2b, 7, 1, None),         # pwkTeam_SetUnumberOpinfo's preferred number
     ("leg", 0x2c, 3, 1, None),           # bit 0: right foot, else left (empirical); bit 1: two-footed?
@@ -283,6 +283,10 @@ def unconvert(conv, value, bits, old_raw=None):
             raise ValueError("%d does not fit a signed %d-bit field" % (value, bits))
         raw = value & ((1 << bits) - 1)
     else:
+        # plBits_DecPlPbaseEx stores the sum in a byte (sb at 0x2e8a14), so
+        # anything above 255 wraps: 313 cm shows as 57 cm.
+        if value > 0xff:
+            raise ValueError("%d is above 255; the game keeps this value in a byte" % value)
         raw = value - conv[1]
     if not 0 <= raw < 1 << bits:
         lo, hi = convert(conv, 0, bits), convert(conv, (1 << bits) - 1, bits)
