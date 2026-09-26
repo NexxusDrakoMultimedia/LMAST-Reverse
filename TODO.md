@@ -27,7 +27,11 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
       each file kept at its size (zero-padded, safe per `Initialize`
       `0x30d1f4`); all 461,992 records round-trip (`roundtrip`, in
       `regress.py`); `patch_disc.py --copies` updates the `PRELOAD` copies
-- [ ] Confirm in PCSX2 that an edited message shows in game
+- [x] Confirm in PCSX2 that an edited message shows in game: the
+      welcome mail's subject and body (`563:11000`/`563:1000`, English),
+      written to `MES.PAC` and `PRELOAD/MAIL1.PAC`
+- [ ] Which copy the mail text is read from: `MES.PAC` or `PRELOAD/MAIL*.PAC`
+      (patch only one of them and look)
 - [ ] Let a message file grow into `MES.PAC`'s `0x800` padding (median
       1,544 bytes free): rewrite the entry size in the header; files with a
       `PRELOAD` copy (`0x40` alignment) need that pack rebuilt too

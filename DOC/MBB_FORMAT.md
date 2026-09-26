@@ -285,6 +285,15 @@ Keeping the size means the `MES.PAC` header, every other entry, and the
 of `DATA.CVM`: editing `1_1.mbb` and `1_3.mbb` also rewrote
 `STATIONMES1.PAC#0` and `STATIONMES3.PAC#0`.
 
+**Confirmed in the game (PCSX2).** The English subject (`563:11000`) and
+body (`563:1000`) of the first mail in a new game, "Welcome to Football
+E-mail", were set to "Test email, please ignore." and "Hacked by Nexxus
+Drako." with `import`. The shorter body left 381 bytes of zero padding
+in `563_1.mbb`, and every later record moved up. `patch --copies` wrote
+`MES.PAC` and its copy `PRELOAD/MAIL1.PAC#6`. In a new game the mail
+showed the new subject and body, with the sender (`{var:1:101}`) still
+filled in. Which of the two copies the game read wasn't checked.
+
 **Room to grow (not used yet).** `MES.PAC` aligns entries to `0x800`, so
 most files are followed by unused padding (median 1,544 bytes, fewer
 than 64 bytes after only 15 files). A file could grow into it by changing
@@ -300,5 +309,3 @@ hasn't been checked.
 - Which variable ids each category defines, and how they're filled (the
   `Msg::VarBuf_*` functions at `0x11e7f0`… cover the global ones).
 - Which screens use the `1000xx` variant categories instead of the originals.
-- Whether an edit shows in game. `set` and `import` haven't been tried in
-  PCSX2 yet.

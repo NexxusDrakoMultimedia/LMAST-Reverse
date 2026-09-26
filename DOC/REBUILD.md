@@ -102,6 +102,11 @@ Tested on a copy of `DATA.CVM`:
 - A one-byte edit to `MES.PAC#7` (`100001_0.mbb`) also updated
   `SIMLOCALMEM0.PAC#34`.
 
+Confirmed in PCSX2: an `mbb.py import` edit to the welcome mail
+(`563_1.mbb`), patched with `--copies` into `MES.PAC` and
+`PRELOAD/MAIL1.PAC#6`, showed in a new game
+([`MBB_FORMAT.md`](MBB_FORMAT.md#size)).
+
 ## Usage
 
 ```bash
