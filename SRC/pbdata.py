@@ -73,7 +73,7 @@ PLAYER_FIELDS = (
     ("height", 0x29, 8, 1, ("add", 150)),  # adds 0x96
     ("weight", 0x2a, 7, 1, ("add", 45)),   # adds 0x2d
     ("shirt", 0x2b, 7, 1, None),         # pwkTeam_SetUnumberOpinfo's preferred number
-    ("f_2c", 0x2c, 3, 1, None),
+    ("leg", 0x2c, 3, 1, None),           # bit 0: right foot, else left (empirical); bit 1: two-footed?
     ("f_30", 0x30, 16, 1, None),
     ("f_32", 0x32, 16, 1, None),
     ("money", 0x34, 16, 1, "money"),
@@ -103,7 +103,7 @@ PLAYER_FIELDS = (
 MANAGER_FIELDS = (
     ("nation", 0x14, 8, 1, None),
     ("f_18", 0x18, 5, 1, None),
-    ("f_1c", 0x1c, 3, 1, None),
+    ("job", 0x1c, 3, 1, None),           # PlMinfo +0xa0: which bars CalcManagerAbil shows
     ("f_20", 0x20, 16, 1, None),
     ("f_22", 0x22, 6, 1, None),
     ("money", 0x24, 16, 1, "money"),
@@ -185,6 +185,41 @@ def hexagon(abilities, weights, goalkeeper):
     if goalkeeper:
         vals[0], vals[1] = calc(0, 0), calc(1, 0)
     return vals
+
+
+# Manager and coach bars, WP::CDetailManager::CalcManagerAbil (0x286cd0).
+# PlMinfo is 4 bytes and then the PlMbase, so PlMinfo +0x6a is ability 0.
+# 12 shared bars, then a set chosen by the job (PlMinfo +0xa0 = PlMbase
+# +0x1c) through the jump table at 0x557630.
+STAFF_BARS = (("ATTST", (45,)), ("TEAMW", (46,)), ("FK", (47,)), ("TRAIN", (5,)),
+              ("ATKDF", (22,)), ("CENTA", (28,)), ("FLANK", (29, 30)), ("MOTIV", (0,)),
+              ("PHYSC", (1,)), ("COMMU", (3,)), ("POPUL", (2,)), ("ASSES", (4,)))
+JOB_BARS = {
+    "coach": (("DRIBB", (10,)), ("SHOT", (11,)), ("PASS", (12,)), ("HEAD", (13,)),
+              ("INTER", (14,)), ("MARK", (15,))),                      # jobs 0-2
+    "physical coach": (("SPEED", (18,)), ("PHYSI", (20,)), ("STAMI", (19,)),
+                       ("MENTA", (21,))),                               # job 3
+    "GK coach": (("SAVIN", (16,)), ("HND", (17,))),                    # job 4
+    "manager": (("FASTB", (39,)), ("SLOWB", (40,)), ("WINGP", (41,)), ("DIREC", (42,)),
+                ("OFFSI", (43,)), ("CLOSD", (44,))),                    # job 5 and up
+}
+JOB_ROLE = {0: "coach", 1: "coach", 2: "coach", 3: "physical coach", 4: "GK coach"}
+
+# Scout bars, WP::CDetailManager::ConvertScout (0x287c60): single abilities.
+# PlSinfo is 4 bytes and then the PlSbase. A 12th value (ability 25) is
+# computed as well but has no label on the screen.
+SCOUT_BARS = (("CLB", (0,)), ("PLAYE", (1,)), ("FINDP", (3,)), ("YOUTH", (4,)),
+              ("YOUNG", (5,)), ("OLDER", (6,)), ("VETER", (7,)), ("MANAG", (21,)),
+              ("ACOAC", (22,)), ("PCOAC", (23,)), ("GCOAC", (24,)))
+
+
+def average_bars(abilities, spec):
+    return [(label, sum(abilities[a] for a in src) // len(src)) for label, src in spec]
+
+
+def staff_bars(abilities, role):
+    """The 12 shared bars plus the set for `role` ("manager", "coach", ...)."""
+    return average_bars(abilities, STAFF_BARS + JOB_BARS[role])
 
 
 def hex_weights(pac_path):
@@ -409,8 +444,12 @@ def summary(r, nations):
     nat = nations.get(f["nation"], str(f["nation"]))
     if r.kind == "players":
         pos = "/".join(str(p) for p in f["position"] if p != 13) or "-"
-        return "%5d  %-19s %-16s age %2d  %3dcm %3dkg  pos %-8s shirt %2d  rank %2d" % (
-            r.db_id, r.name, nat, f["age"], f["height"], f["weight"], pos, f["shirt"], f["rank"])
+        leg = ("R" if f["leg"] & 1 else "L") + ("+" if f["leg"] & 2 else " ")
+        return "%5d  %-19s %-16s age %2d  %3dcm %3dkg  %s  pos %-8s shirt %2d  rank %2d" % (
+            r.db_id, r.name, nat, f["age"], f["height"], f["weight"], leg, pos, f["shirt"], f["rank"])
+    if r.kind == "managers":
+        return "%5d  %-19s %-16s %-14s money %5d" % (
+            r.db_id, r.name, nat, JOB_ROLE.get(f["job"], "manager"), f["money"])
     return "%5d  %-19s %-16s money %5d" % (r.db_id, r.name, nat, f["money"])
 
 
@@ -437,6 +476,14 @@ def cmd_show(path, ids, nations):
                 shown += "  (stored %s)" % (" ".join(map(str, raw)) if isinstance(raw, list) else raw)
             print("    +%#04x %-9s %2d bit%s  %s" % (off, fname, bits,
                                                    " x%-2d" % count if count > 1 else "    ", shown))
+        if kind == "managers":
+            role = JOB_ROLE.get(r.fields["job"], "manager")
+            print("    as %-14s %s" % (role, "  ".join("%s %d" % lv for lv in staff_bars(r.fields["ability"], role))))
+            if role != "manager":
+                print("    as manager        %s" % "  ".join(
+                    "%s %d" % lv for lv in average_bars(r.fields["ability"], JOB_BARS["manager"])))
+        if kind == "scouts":
+            print("    screen    %s" % "  ".join("%s %d" % lv for lv in average_bars(r.fields["ability"], SCOUT_BARS)))
         if kind == "players":
             gk = r.fields["position"][0] == 0
             print("    screen    %s" % "  ".join("%s %d" % lv for lv in bars(r.fields["ability"], gk)))
@@ -457,6 +504,11 @@ def cmd_csv(path, kind, out_path):
         header += ["entry2", "entry3"]
         header += [label for label, _ in BARS_COMMON]
         header += ["%s/%s" % (f, g) for (f, _), (g, _) in zip(BARS_FIELD, BARS_GK)]
+    elif kind == "managers":
+        header += [label for label, _ in STAFF_BARS + JOB_BARS["manager"]]
+        header += ["job_bar_%d" % i for i in range(6)]
+    else:
+        header += [label for label, _ in SCOUT_BARS]
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(header)
@@ -469,6 +521,13 @@ def cmd_csv(path, kind, out_path):
             if kind == "players":
                 row += [db.entry2[r.index], db.rank_values[r.index]]
                 row += [v for _, v in bars(r.fields["ability"], r.fields["position"][0] == 0)]
+            elif kind == "managers":
+                role = JOB_ROLE.get(r.fields["job"], "manager")
+                row += [v for _, v in staff_bars(r.fields["ability"], "manager")]
+                job = [v for _, v in average_bars(r.fields["ability"], JOB_BARS[role])]
+                row += job + [""] * (6 - len(job))
+            else:
+                row += [v for _, v in average_bars(r.fields["ability"], SCOUT_BARS)]
             w.writerow(row)
             n += 1
     print("%s: %d %s" % (out_path, n, kind))

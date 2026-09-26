@@ -69,7 +69,7 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 | 8 | 1 | `+0x29` | height | stored − 150, in cm (158–205). *Empirical* |
 | 7 | 1 | `+0x2a` | weight | stored − 45, in kg (48–100). *Empirical* |
 | 7 | 1 | `+0x2b` | shirt | preferred shirt number. **confirmed** |
-| 3 | 1 | `+0x2c` | | 0–3 |
+| 3 | 1 | `+0x2c` | leg | 0–3. Bit 0 set means right-footed, clear means left. *Empirical*: every well-known left-footer tested (Robben, Ashley Cole, Giggs, Messi, Roberto Carlos, Duff, Cech) has it clear. Bit 1 is set for famously two-footed players (Maldini, Henry, Rooney, Duff). The detail screen shows a message from 100–103 (LEFT, RIGHT, LEFT, RIGHT), which fits `100 + leg`, but the copy into `PlPinfo +0x1c4` hasn't been traced |
 | 16 | 1 | `+0x30` | | always 0 |
 | 16 | 1 | `+0x32` | | 0–17,172 |
 | 16 | 1 | `+0x34` | money | band 0–15, looked up in the money table. What the money is (value or wages) isn't known |
@@ -90,7 +90,7 @@ The 5 bits after the last field are zero in every record.
 
 `char[19]` name, then (bits × count at offset): 8 `+0x14` (nationality,
 *empirical*: same range and position as the players'), 5 `+0x18`,
-3 `+0x1c`, 16 `+0x20`, 6 `+0x22`, 16 `+0x24` (money band, **confirmed**
+3 `+0x1c` (job, see below), 16 `+0x20`, 6 `+0x22`, 16 `+0x24` (money band, **confirmed**
 table lookup), 4 ×4 `+0x26`, 2 ×5 `+0x2a`, 3 ×4 `+0x2f`, 2 `+0x33`,
 6 `+0x34`, 3 ×8 `+0x35`, 8 ×3 `+0x3d`, 3 ×7 `+0x40`, 5 ×5 `+0x47`,
 signed 9 ×2 `+0x4c`, signed 9 ×4 `+0x54`, 1 ×2 `+0x64`, and 48 abilities
@@ -164,6 +164,46 @@ Skills, clockwise from the top). Which index goes to which label is
 `python SRC/pbdata.py show` prints both the bars and the hexagon, and
 `csv` adds the bars as columns.
 
+### Manager, coach and scout bars
+
+**Confirmed, `WP::CDetailManager::CalcManagerAbil` (`0x286cd0`).**
+`PlMinfo` is 4 bytes followed by the `PlMbase` (`plMinfo_InitDb`
+`0x2e9720` copies it to `+4`), so `PlMinfo +0x6a` is ability 0 and
+`+0xa0` is the job at `PlMbase +0x1c`. Every manager and coach screen has
+12 shared bars, then a set picked by the job through the jump table at
+`0x557630`. All are single abilities except FLANK:
+
+| Bar | Ability | Bar | Ability | Job | Extra bars (abilities) |
+|---|---|---|---|---|---|
+| ATTST | 45 | FLANK | avg 29, 30 | 0, 1, 2 | DRIBB 10, SHOT 11, PASS 12, HEAD 13, INTER 14, MARK 15 |
+| TEAMW | 46 | MOTIV | 0 | 3 | SPEED 18, PHYSI 20, STAMI 19, MENTA 21 |
+| FK | 47 | PHYSC | 1 | 4 | SAVIN 16, HND 17 |
+| TRAIN | 5 | COMMU | 3 | 5+ | FASTB 39, SLOWB 40, WINGP 41, DIREC 42, OFFSI 43, CLOSD 44 |
+| ATKDF | 22 | POPUL | 2 | | |
+| CENTA | 28 | ASSES | 4 | | |
+
+The labels match the in-game help pages: 0–2 are assistant coaches, 3
+physical coaches, 4 goalkeeper coaches. The database holds jobs 0 (439),
+1 (786), 2 (714), 3 (678) and 4 (383), and no 5. A staff member hired as
+manager gets the job-5 bars. In a save, C. Collin (job 0 in the
+database) shows the manager bars, and they match abilities 39–44. So the
+job is changed at run time (*empirical*; the code that sets it hasn't
+been traced). The shared bars for Collin and M. Boismortier match their
+detail screens exactly.
+
+**Confirmed, `WP::CDetailManager::ConvertScout` (`0x287c60`).**
+`PlSinfo` is 4 bytes followed by the `PlSbase` (`plSinfo_InitDb`
+`0x21eb80`). The 11 scout bars are single abilities (the 45 mapped
+scout abilities, starting at `PlSbase +0x2d`): CLB 0, PLAYE 1, FINDP 3,
+YOUTH 4, YOUNG 5, OLDER 6, VETER 7, MANAG 21, ACOAC 22, PCOAC 23,
+GCOAC 24. A 12th value, ability 25, is computed too but not labelled.
+Staff and scout bars are drawn as `value / 99`. Player bars add 10
+first.
+
+`python SRC/pbdata.py show` prints these bars for managers and scouts
+(the job's own set, plus the manager set for coaches), and `csv` adds
+them as columns.
+
 ## Entries 2 and 3
 
 Each is 27,950 u16, one per player. Entry 3 is the value `getPinfoRank`
@@ -187,10 +227,12 @@ info` reports this as a note, not a problem.
 - Which of hexagons 0 and 3 is Attacking and which is Skills. The label
   order in `GP::CHexWindowBase::DrawString` (`0x27c700`) comes from a
   screen layout and hasn't been traced.
-- Which field is the preferred leg. `WP::CDetailManager::AddPlate_LEG`
-  (`0x2898a0`) shows the global message whose id is at `CDetailManager
-  +0x4f40` ("RIGHT" is category 1, ids 101 and 103). What fills that id
-  hasn't been traced.
+- What bit 1 of the leg field means (two-footed is a guess), and the code
+  that turns it into `PlPinfo +0x1c4`.
+- What separates jobs 0, 1 and 2, and what sets job 5 on hiring.
+- Staff abilities other than the ones the bars name (6–9, 23–27, 31–38),
+  and scout abilities 2, 8–20 and 26–44 (the preferred areas and search
+  types on the scout screen probably come from some of them).
 - Entry 2, header `+0x14`, `+0x24` and the last 8 header bytes.
 - How entry 3's value becomes a rank: the threshold table at `0x5eac08` is
   filled at run time.
