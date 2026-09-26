@@ -42,6 +42,8 @@ Usage:
     python save.py set       <save> <out> money=N         # edit into a new main file
     python save.py set       <save> <out> 3:all=99 3:15=80  #  slot:ability=level (0-99)
     python save.py set       <save> <out> 3:fatigue=0 3:condition=65535  #  slot:field=value
+                                   (fields: fatigue, condition, motivation, power, kan,
+                                    policy_counter, policy_organisation)
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
     python save.py roundtrip <save> ...                   # decode + encode, compare
@@ -740,6 +742,11 @@ PINFO_FIELDS = (
     ("captain_exp", 0x25a, "<H", None, "plPinfo_ChangeCaptainExp"),
     ("keyman_exp", 0x25c, "<H", None, "plPinfo_ChangeKeymanExp"),
     ("play_style", 0x278, "<I", None, "plPinfo_GetPStyle / SetPStyle"),
+    ("policy_type", 0x294, "<B", None, "pwkTeamType_PolicyInit 0x270328: from PlPbase +0x52"),
+    ("policy_counter", 0x296, "<H", (0, 65535),
+     "team vision: 0 possession - 65535 counter (l_calculate_policy_rect_player 0x300ba8)"),
+    ("policy_organisation", 0x298, "<H", (0, 65535),
+     "team vision: 0 individual - 65535 organisation"),
     ("salary", 0x218, "<I", None, "annual salary / 100, stored money unit (pwkTeam_ArrivePlayer)"),
     ("contract_years", 0x21d, "<B", None, "years remaining (pwkMoney_*, CheckRentalMoveEnable)"),
 )
@@ -989,6 +996,9 @@ def cmd_player(game, path, slot):
     print("  injury %d, %d days; captain exp %d, keyman exp %d; play style %d; status %d" % (
         p["injury"], p["injury_days"], p["captain_exp"], p["keyman_exp"], p["play_style"],
         p["status"]))
+    print("  policy type %d: %d%% towards counter (vs possession), %d%% towards organisation "
+          "(vs individual)" % (p["policy_type"], (p["policy_counter"] + 1) * 100 // 65536,
+                               (p["policy_organisation"] + 1) * 100 // 65536))
     print("  contract %d year%s left, salary %d a year (stored unit; GBP %d)" % (
         p["contract_years"], "" if p["contract_years"] == 1 else "s", p["salary"] * 100,
         p["salary"] * 100 // 6))

@@ -125,6 +125,17 @@ euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
 | `0x250`, `0x254` | u16, u32 | injury days left, injury kind | `_plPinfo_SetKega`, `plPinfo_KegaRecoverDaysChno`, `plPinfo_IsHkegaFunou` |
 | `0x25a`, `0x25c` | u16 | captain and keyman experience | `plPinfo_ChangeCaptainExp`, `plPinfo_ChangeKeymanExp` |
 | `0x278` | u32 | play style | `plPinfo_GetPStyle` / `SetPStyle` |
+| `0x294` | u8 | policy type, copied from `PlPbase +0x52` | confirmed, `pwkTeamType_PolicyInit` (`0x270328`) |
+| `0x296` | u16 | policy point, Possession (0) to Counter (65535) | confirmed, `l_calculate_policy_rect_player` (`0x300ba8`): the P marker's height is `(v + 1) / 65536` of the grid |
+| `0x298` | u16 | policy point, Individual (0) to Organisation (65535) | confirmed, the same function, across |
+
+The policy point is the P marker on a player's second page and his
+number on the team vision screen. `PolicyInit` takes its start from a
+table of u16 pairs per policy type at SLES `0x555340`
+(`pwkTeamType_GetPolicyBseExp`); `PolicyInitNotBlong` adds a random
+−5,000 to +5,000 to each axis for players outside your club. Checked on
+screen: Carson (`0xffff`, `0x7fff`) is top centre; Aiblinger comes out
+0.57 up and 0.37 across, where his marker is on both screens.
 
 The rest of the record between `0x18a` and `0x2a0` is read by the functions
 listed by a scan of every `PlPinfo` accessor (flags at `0x20c`, the job
