@@ -34,6 +34,16 @@ Usage:
     python pbdata.py list <PBDATA.PAC> [players|managers|scouts] [--find TEXT] [--mes MES.PAC]
     python pbdata.py show <PBDATA.PAC> <id> ... [--mes MES.PAC]      # every field of some records
     python pbdata.py csv  <PBDATA.PAC> <players|managers|scouts> <out.csv>
+    python pbdata.py roundtrip <PBDATA_*.PAC> ...                    # re-encode everything, !! if not identical
+    python pbdata.py set    <in.PAC> <out.PAC> <id> <field>=<value> ... [<id> <field>=<value> ...]
+    python pbdata.py import <in.PAC> <out.PAC> <players|managers|scouts> <edited.csv>
+
+Writing: records are re-encoded bit for bit (every record on the disc
+round-trips) and entry 1 is patched in a copy of the pack; nothing else
+moves. Values are given as shown (age=30, height=185, ability.15=99,
+money=15000, position.0=3), names up to 18 characters (name=J.Smith).
+`import` takes a CSV from `csv`, edited in a spreadsheet, and writes only
+the values that changed; the bar columns are derived and ignored.
 
 <id> is a database id (players 0-27,949, managers 27,950-30,949, scouts
 30,950-31,949), or kind:index such as m:0. Nationality
@@ -252,6 +262,52 @@ def convert(conv, v, bits):
     return v + conv[1]
 
 
+def unconvert(conv, value, bits, old_raw=None):
+    """The stored value for `value`, the inverse of convert(). If the old
+    stored value already converts to `value` it is kept, so lossy fields
+    (money uses only the low 4 bits) round-trip unchanged."""
+    if old_raw is not None and convert(conv, old_raw, bits) == value:
+        return old_raw
+    if conv is None:
+        raw = value
+    elif conv == "money":
+        if value not in MONEY:
+            raise ValueError("money must be one of %s" % ", ".join(map(str, MONEY)))
+        raw = MONEY.index(value)
+    elif conv in ("ability", "ability7"):
+        if value not in ABILITY:
+            raise ValueError("ability must be one of %s" % ", ".join(map(str, ABILITY)))
+        raw = ABILITY.index(value)
+    elif conv == "signed":
+        if not -(1 << (bits - 1)) <= value < 1 << (bits - 1):
+            raise ValueError("%d does not fit a signed %d-bit field" % (value, bits))
+        raw = value & ((1 << bits) - 1)
+    else:
+        raw = value - conv[1]
+    if not 0 <= raw < 1 << bits:
+        lo, hi = convert(conv, 0, bits), convert(conv, (1 << bits) - 1, bits)
+        raise ValueError("%d is out of range (%d-%d)" % (value, lo, hi))
+    return raw
+
+
+class BitWriter:
+    """The inverse of BitReader: MSB first."""
+    def __init__(self):
+        self.out, self.acc, self.n = bytearray(), 0, 0
+
+    def write(self, value, bits):
+        for i in range(bits - 1, -1, -1):
+            self.acc = (self.acc << 1) | ((value >> i) & 1)
+            self.n += 1
+            if self.n == 8:
+                self.out.append(self.acc)
+                self.acc = self.n = 0
+
+    def data(self):
+        assert self.n == 0, "record is not a whole number of bytes"
+        return bytes(self.out)
+
+
 class BitReader:
     """PlBitsClass::readBits: MSB first, bytes in order."""
     def __init__(self, buf):
@@ -282,7 +338,49 @@ class Record:
             self.fields[fname] = conv_vals if count > 1 else conv_vals[0]
         self.used_bits = r.pos
         # The rest of the record is padding; readBits never gets there.
-        self.spare = r.read(len(raw) * 8 - r.pos) if len(raw) * 8 > r.pos else 0
+        self.spare_bits = len(raw) * 8 - r.pos
+        self.spare = r.read(self.spare_bits) if self.spare_bits > 0 else 0
+        self.name_raw = bytes(name)
+
+    def encode(self):
+        """The record's bytes: name, fields in readBits order, padding."""
+        w = BitWriter()
+        for byte in self.name_raw:
+            w.write(byte, 8)
+        for fname, _, bits, count, _ in FIELDS[self.kind]:
+            v = self.raw_fields[fname]
+            for x in (v if count > 1 else [v]):
+                w.write(x, bits)
+        w.write(self.spare, self.spare_bits)
+        return w.data()
+
+    def set_name(self, text):
+        b = text.encode("cp850")
+        if len(b) > NAME_LEN - 1:
+            raise ValueError("name %r is longer than %d bytes" % (text, NAME_LEN - 1))
+        self.name_raw = b + bytes(NAME_LEN - len(b))
+        self.name, self.name_tail = text, self.name_raw[len(b):]
+
+    def set(self, fname, value, index=None):
+        """Set a field by its shown (converted) value. Returns the old value."""
+        spec = next((f for f in FIELDS[self.kind] if f[0] == fname), None)
+        if spec is None:
+            raise ValueError("%s have no field %r" % (self.kind, fname))
+        _, _, bits, count, conv = spec
+        if (count > 1) != (index is not None):
+            raise ValueError("%s needs an index 0-%d" % (fname, count - 1) if count > 1
+                             else "%s takes no index" % fname)
+        if count > 1 and not 0 <= index < count:
+            raise ValueError("%s index %d out of range 0-%d" % (fname, index, count - 1))
+        raws, shown = self.raw_fields, self.fields
+        if count > 1:
+            raws, shown, key = raws[fname], shown[fname], index
+        else:
+            key = fname
+        old = shown[key]
+        raws[key] = unconvert(conv, value, bits, raws[key])
+        shown[key] = convert(conv, raws[key], bits)
+        return old
 
     @property
     def db_id(self):
@@ -296,6 +394,8 @@ class PbData:
             raise ValueError("not a BINPAC")
         with open(pac.data_path(path, h), "rb") as f:
             buf = f.read()
+        self.file = buf
+        self.entry_spans = [(off, size) for off, size, _, _ in h.entries]
         self.entries = [buf[off:off + size] for off, size, _, _ in h.entries]
         if len(self.entries) != 4:
             raise ValueError("%d entries, expected 4" % len(self.entries))
@@ -337,6 +437,20 @@ class PbData:
             return
         for i in range(self.counts[KINDS.index(kind)]):
             yield self.record(kind, i)
+
+
+def encode_records(records):
+    """Entry 1 rebuilt from {kind: [Record]} (players, managers, scouts)."""
+    return b"".join(r.encode() for kind in KINDS for r in records[kind])
+
+
+def rebuild(db, entry1):
+    """The whole pack with entry 1 replaced. Records are fixed-size, so the
+    entry keeps its offset and size and nothing else moves."""
+    off, size = db.entry_spans[1]
+    if len(entry1) != size:
+        raise ValueError("records are %d bytes, the entry is %d" % (len(entry1), size))
+    return db.file[:off] + entry1 + db.file[off + size:]
 
 
 def parse_id(text):
@@ -533,6 +647,134 @@ def cmd_csv(path, kind, out_path):
     print("%s: %d %s" % (out_path, n, kind))
 
 
+def cmd_roundtrip(paths):
+    for path in paths:
+        try:
+            db = PbData(path)
+        except (ValueError, struct.error) as e:
+            print("%s  !! %s" % (path, e))
+            continue
+        if not db.data:
+            print("%s  records entry is empty, nothing to rebuild" % path)
+            continue
+        records = {k: list(db.records(k)) for k in KINDS}
+        bad = [r.db_id for k in KINDS for r in records[k] if r.encode() != r.raw]
+        out = rebuild(db, encode_records(records))
+        probs = []
+        if bad:
+            probs.append("records differ: %s%s" % (", ".join(map(str, bad[:10])),
+                                                  " ..." if len(bad) > 10 else ""))
+        if out != db.file:
+            probs.append("rebuilt pack is not byte-identical")
+        print("%s  %d records re-encoded, %d differ; pack %s%s" % (
+            path, sum(len(v) for v in records.values()), len(bad),
+            "identical" if out == db.file else "differs",
+            "  !! " + "; ".join(probs) if probs else ""))
+
+
+def _parse_assign(text):
+    """name=Foo, age=30, ability.15=99 -> (field, index, value text)."""
+    key, value = text.split("=", 1)
+    index = None
+    if "." in key:
+        key, idx = key.split(".", 1)
+        index = int(idx, 0)
+    return key, index, value
+
+
+def apply_value(r, fname, index, text):
+    """Set one field from its text. Returns (old, new) shown values."""
+    if fname == "name":
+        old = r.name
+        r.set_name(text)
+        return old, r.name
+    old = r.set(fname, int(text, 0), index)
+    return old, (r.fields[fname][index] if index is not None else r.fields[fname])
+
+
+def _load_for_edit(src, out_path):
+    if os.path.abspath(out_path) == os.path.abspath(src):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    db = PbData(src)
+    if not db.data:
+        raise SystemExit("%s has no records" % src)
+    return db, {k: list(db.records(k)) for k in KINDS}
+
+
+def _write_pack(out_path, db, records):
+    with open(out_path, "wb") as f:
+        f.write(rebuild(db, encode_records(records)))
+
+
+def _plural(n, word):
+    return "%d %s%s" % (n, word, "" if n == 1 else "s")
+
+
+def cmd_set(src, out_path, args):
+    db, records = _load_for_edit(src, out_path)
+    r, changes = None, 0
+    for a in args:
+        if "=" not in a:
+            kind, index = parse_id(a)
+            if not 0 <= index < len(records[kind]):
+                raise SystemExit("%s: no such record" % a)
+            r = records[kind][index]
+            continue
+        if r is None:
+            raise SystemExit("give a record id before %r" % a)
+        fname, index, text = _parse_assign(a)
+        try:
+            old, new = apply_value(r, fname, index, text)
+        except ValueError as e:
+            raise SystemExit("%d %s: %s" % (r.db_id, r.name, e))
+        label = fname if index is None else "%s.%d" % (fname, index)
+        print("%5d  %-19s %s: %s -> %s" % (r.db_id, r.name, label, old, new))
+        changes += 1
+    _write_pack(out_path, db, records)
+    print("%s: %s" % (out_path, _plural(changes, "change")))
+
+
+def cmd_import(src, out_path, kind, csv_path):
+    """Apply a CSV written by `csv`, possibly edited. Only values that differ
+    from the pack are written. Other columns (the bars, entry2/entry3) are
+    derived and ignored."""
+    db, records = _load_for_edit(src, out_path)
+    columns = {"name": ("name", None)}
+    for fname, _, _, count, _ in FIELDS[kind]:
+        if count == 1:
+            columns[fname] = (fname, None)
+        else:
+            columns.update(("%s_%d" % (fname, i), (fname, i)) for i in range(count))
+    changed_records = changes = 0
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        for line_no, row in enumerate(csv.DictReader(f), 2):
+            row_kind, index = parse_id(row["id"])
+            if row_kind != kind or not 0 <= index < len(records[kind]):
+                raise SystemExit("%s line %d: id %s is not one of the %s" % (
+                    csv_path, line_no, row["id"], kind))
+            r = records[kind][index]
+            touched = False
+            for col, text in row.items():
+                if col not in columns or not text:
+                    continue
+                fname, i = columns[col]
+                current = r.name if fname == "name" else (
+                    r.fields[fname][i] if i is not None else r.fields[fname])
+                if str(current) == text:
+                    continue
+                try:
+                    old, new = apply_value(r, fname, i, text)
+                except ValueError as e:
+                    raise SystemExit("%s line %d, %s: %s" % (csv_path, line_no, col, e))
+                print("%5d  %-19s %s: %s -> %s" % (r.db_id, r.name, col, old, new))
+                changes += 1
+                touched = True
+            changed_records += touched
+    _write_pack(out_path, db, records)
+    print("%s: %s in %s" % (out_path, _plural(changes, "change"),
+                            _plural(changed_records, "record")))
+
+
 def _opt(args, flag, default=None):
     if flag in args:
         i = args.index(flag)
@@ -563,6 +805,15 @@ def main(argv):
             return 0
     if cmd == "csv" and len(args) == 3 and args[1] in KINDS:
         cmd_csv(args[0], args[1], args[2])
+        return 0
+    if cmd == "roundtrip" and args:
+        cmd_roundtrip(args)
+        return 0
+    if cmd == "set" and len(args) >= 4:
+        cmd_set(args[0], args[1], args[2:])
+        return 0
+    if cmd == "import" and len(args) == 4 and args[2] in KINDS:
+        cmd_import(args[0], args[1], args[2], args[3])
         return 0
     print(__doc__)
     return 1

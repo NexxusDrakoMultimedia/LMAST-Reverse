@@ -218,6 +218,43 @@ The same header and identical entries 2 and 3, but entry 1 is empty (0
 bytes). The European disc carries no Japanese player records. `pbdata.py
 info` reports this as a note, not a problem.
 
+## Writing
+
+`pbdata.py` can write the database back out. Each record is re-encoded
+from its stored field values in `readBits` order: the 19 name bytes as
+they were, every field at its width, then the padding bits as they were.
+Entry 1 is then replaced in a copy of the pack. Records are fixed-size,
+so the entry keeps its offset and size and nothing else in the file
+moves. `pbdata.py roundtrip` does this for all 31,950 records without
+changes, and the result is byte-identical to the disc's file (a
+`regress.py` check).
+
+Edits are given as the values `show` prints, and are converted back:
+
+- `add` fields subtract their offset (age 30 is stored as 14).
+- Abilities must be one of the 32 table values, 38–99.
+- `money` must be one of the 16 table values, stored as its index. The
+  game reads only the low 4 bits of the 16-bit field, so an unchanged
+  value keeps its stored bits.
+- Signed manager fields must fit 9 bits.
+- Names are cp850, at most 18 bytes, zero-padded to 19 (every name on the
+  disc has a terminator).
+
+The limits are the field widths, not what the game considers sensible:
+a height of 300 cm fits the 8-bit field (150–405), and the game would
+take it.
+
+```bash
+python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out.PAC 101 age=30 ability.13=99 name=J.Terry
+python SRC/pbdata.py csv DAT/PARAM/PBDATA_EU.PAC players players.csv   # edit in a spreadsheet
+python SRC/pbdata.py import DAT/PARAM/PBDATA_EU.PAC out.PAC players players.csv
+```
+
+`import` writes only the values that differ from the pack, so an unedited
+CSV gives an identical file. The bar and `entry2`/`entry3` columns are
+derived and ignored. Putting the edited pack back on a disc is the
+Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
+
 ## Still unknown
 
 - The meaning of most fields, and the position numbering.

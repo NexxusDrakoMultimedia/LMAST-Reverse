@@ -224,7 +224,7 @@ The event tables, the procedures and the overlay loader are documented in
       `regress.py`); `replace` puts an edited table back
 - [ ] Decode the `RBD0` trailer in `GAME/ROUTEBOX_*.BCR` (copied as-is by
       the writer)
-- [ ] `pbdata.py` writer: re-encode the bit-packed records and rebuild
-      `PBDATA_EU.PAC` byte for byte (round-trip check in `regress.py`), so
-      mods can edit players, managers and scouts
+- [x] `pbdata.py` writer: all 31,950 records re-encode and the pack
+      rebuilds byte for byte (`roundtrip`, in `regress.py`); `set` and CSV
+      `import` edit players, managers and scouts
 - [x] Update the `PLAYER/` and `PARAM/` rows in `GOALS.md`'s coverage table
