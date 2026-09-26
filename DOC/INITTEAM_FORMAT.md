@@ -96,8 +96,9 @@ Empirical, checked by `initteam.py info`:
   once.
 - Ages are 16–40, and contract lengths are 2–6.
 - These are the ages a computer team's players show in game, one year
-  older in a new game (Terry's 25 shows as 26, tested in PCSX2). The
-  player database's own age field doesn't override them.
+  older in a new game. Tested in PCSX2: Terry's 25 shows as 26, and after
+  `initteam.py set 7:1 age=15` he shows as 16. The player database's own
+  age field doesn't override them.
 - Shirt numbers are 1–99 and never repeat within a team.
 - All padding bytes are zero.
 

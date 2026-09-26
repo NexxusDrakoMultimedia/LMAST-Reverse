@@ -292,7 +292,7 @@ Terry renamed `J.Terry.MOD`, 96 kg, left-footed, with abilities
 alternating 38 and 99. The name, weight, leg and the bar pattern all
 showed as predicted by `pbdata.py show` (low SPEED and FK, high STAMI,
 HEAD, INTER and MARK). A height of 313 cm showed as 57 cm, which is what
-led to the byte limit above.
+led to the byte limit above. A second test with 255 cm showed 255 cm.
 
 ```bash
 python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out.PAC 101 age=30 ability.13=99 name=J.Terry
