@@ -46,7 +46,7 @@ DOC/    format documentation
 ```
 
 Put a dump of the disc that matches Redump
-([disc 12334](http://redump.org/disc/12334/), SLES-54151 v1.01) in the repo
+([disc 12334](https://redump.info/disc/12334/), SLES-54151 v1.01) in the repo
 root, then run:
 
 ```bash

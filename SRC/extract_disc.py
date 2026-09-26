@@ -2,7 +2,7 @@
 
 Automates the README's setup steps for the PAL disc (SLES-54151):
 
-  1. verify   the image matches the Redump dump (redump.org/disc/12334/):
+  1. verify   the image matches the Redump dump (redump.info/disc/12334/):
               size, CRC-32, MD5 and SHA-1 of the 1-track 2048-byte image.
   2. extract  the disc's ISO9660 filesystem into ISO/ (SLES_541.51, DLL/,
               AUDIO/, DATA.CVM, ...).
@@ -44,7 +44,7 @@ PVD_SECTOR = 16
 CHUNK = 0x1000000  # 16 MiB copy/hash buffer
 
 # Redump "Let's Make a Soccer Team!" (Europe, Australia), SLES-54151, v1.01,
-# http://redump.org/disc/12334/ (one DVD-5 track, 1,732,512 sectors).
+# https://redump.info/disc/12334/ (one DVD-5 track, 1,732,512 sectors).
 REDUMP = {
     "size": 3548184576,
     "crc32": "1c34e97e",

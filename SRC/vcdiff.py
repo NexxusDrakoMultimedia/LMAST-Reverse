@@ -23,7 +23,7 @@ Usage:
 
 `make` and `apply` print SHA-1s so a patch can be published with the hash
 of the image it expects and the one it produces; `make` warns if the source
-isn't the Redump dump (redump.org/disc/12334).
+isn't the Redump dump (redump.info/disc/12334).
 """
 import hashlib
 import io
