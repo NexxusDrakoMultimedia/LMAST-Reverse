@@ -79,6 +79,11 @@ def checks():
         ("patch_disc_copies", ["patch_disc.py", "copies", "DAT", "PARAM/REGULATION.TBB",
                                "PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/PBDATA_EU.PAC",
                                "BG/HUMAN_1000_PALETTE.MRG#header"], ["DAT"]),
+        # VCDIFF encoder/decoder round trips (shrink, grow, identical).
+        ("vcdiff_roundtrip", ["vcdiff.py", "roundtrip", "DAT/PARAM/PBDATA_EU.PAC",
+                              "DAT/PARAM/PBDATA_JP.PAC"], ["DAT/PARAM"]),
+        ("vcdiff_roundtrip_grow", ["vcdiff.py", "roundtrip", "DAT/PARAM/CLUBRESULT.TBB",
+                                   "DAT/PARAM/REGULATION.TBB"], ["DAT/PARAM"]),
         ("sles_syms", ["sles_disasm.py", "ISO/SLES_541.51", "syms", "CMsgSubCategory"],
          ["ISO/SLES_541.51"]),
         ("sles_relocs", ["sles_disasm.py", "ISO/SLES_541.51", "relocs"], ["ISO/SLES_541.51"]),

@@ -56,13 +56,14 @@ Each stage depends on the one before it.
    the game would recognise (a club, a player, a season) rather than by file.
    The GUI checks values against the documented ranges and cross-references
    (for example, a message reference that no longer resolves).
-6. **Distribute.** Share mods as xdelta patches (VCDIFF, made with
-   `xdelta3`) against the user's own unmodified disc image, never as game
-   data or disc images. This matches the rule that no game data goes in the
-   repo. xdelta is the usual format for disc-image mods, and players can
-   apply a patch with existing tools such as xdelta UI or DeltaPatcher,
-   without installing anything from this repo. `xdelta3` runs as an external
-   program, so it doesn't add a Python dependency.
+6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284) against
+   the user's own unmodified disc image, never as game data or disc images.
+   This matches the rule that no game data goes in the repo. xdelta is the
+   usual format for disc-image mods, and players can apply a patch with
+   existing tools such as xdelta UI or DeltaPatcher, without installing
+   anything from this repo. *Started:* `SRC/vcdiff.py` makes and applies
+   these patches in plain Python, so `xdelta3` isn't needed
+   ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod)).
 
 ## Coverage of `DATA.CVM`
 

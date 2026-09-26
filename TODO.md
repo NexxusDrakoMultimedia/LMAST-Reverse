@@ -261,4 +261,7 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       re-encrypt the table of contents, fix the `CVMH`/`ZONE` lengths and the
       disc's `DATA.CVM` entry
 - [ ] BINPAC/KC@P repacking and PRS recompression for entries that change size
-- [ ] xdelta patches against the Redump image for distribution (stage 6)
+- [x] xdelta patches: `SRC/vcdiff.py` makes and applies VCDIFF (RFC 3284)
+      in plain Python; the Terry mod is a 10,642-byte patch that applies to
+      a byte-identical image
+- [ ] Confirm a `vcdiff.py` patch applies with xdelta UI or DeltaPatcher

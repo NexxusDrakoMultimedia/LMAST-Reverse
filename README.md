@@ -210,6 +210,14 @@ Only the table of contents of `DATA.CVM` is encrypted, so a file that keeps
 its size can be written over the original without re-encrypting anything.
 Size changes aren't supported yet. See [`REBUILD.md`](DOC/REBUILD.md).
 
+| Tool | Reads | Does |
+|---|---|---|
+| [`vcdiff.py`](SRC/vcdiff.py) | two disc images, or an image and a patch | makes and applies xdelta patches (VCDIFF, RFC 3284) in plain Python, for sharing a mod against the Redump image |
+
+```bash
+python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
+```
+
 ## How the tools fit together
 
 - `csp.py` uses `svr.py` to decode the textures inside CSP packs.
@@ -244,7 +252,7 @@ workflow is:
 | Doc | Covers |
 |---|---|
 | [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | repo layout, regenerating `DATA.ISO` |
-| [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc: same-size in-place patching, what's still needed for size changes |
+| [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc (same-size in-place patching, copies), sharing mods as xdelta patches, what's still needed for size changes |
 | [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | ROFS key recovery in PCSX2 |
 | [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format, the SN DLL loader, `SLES_541.51`'s imports, which overlay each sequencer module lives in, the wild-card module |
 | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH |

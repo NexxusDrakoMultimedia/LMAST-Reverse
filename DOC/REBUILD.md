@@ -117,6 +117,51 @@ yourself). It refuses a file of a different size, then re-reads every
 patched range. Several `<path>=<file>` pairs can go in one run. To undo a
 patch, patch the original `DAT/` file back.
 
+## Sharing a mod
+
+`SRC/vcdiff.py` turns a patched image into an xdelta patch (VCDIFF, RFC
+3284) against the Redump image. It needs only the standard library:
+
+```bash
+python SRC/vcdiff.py make  disc.iso modded.iso mymod.xdelta   # prints source/target/patch SHA-1s
+python SRC/vcdiff.py apply disc.iso mymod.xdelta modded.iso   # or use xdelta UI / DeltaPatcher
+python SRC/vcdiff.py info  mymod.xdelta
+```
+
+**How `make` encodes.** It reads both images in 8 MiB windows (xdelta3's
+default window size). Each window's source segment is the same range of
+the source image. Unchanged runs become COPY instructions (default code
+table index 19: `VCD_SELF`, size given), and changed bytes become ADD
+instructions (index 1), with equal gaps of up to 16 bytes folded into the
+ADD. There's no secondary compression, no custom code table, no
+application header, and no checksum. That is the plainest RFC 3284, which
+any decoder should accept. A target longer than the source gets windows
+without a source segment for the extra bytes.
+
+**How `apply` decodes.** It handles any VCDIFF without secondary
+compression or a custom code table: the whole default code table
+(including the paired instructions), the NEAR/SAME address cache, RUN,
+COPYs that overlap their own output, xdelta3's application header, and
+xdelta3's per-window Adler-32, which is checked. Patches made by
+`xdelta3 -S none` should therefore apply too.
+
+**Tested:**
+- The Terry mod (two files, 56 changed bytes): a 10,642-byte patch, 423
+  windows, 68 bytes of new data. `make` and `apply` take about 6 seconds
+  each on the 3.5 GB image, and the applied image is byte-identical to the
+  patched one.
+- In-memory round trips between files of different sizes (larger,
+  smaller, identical, unrelated).
+- A hand-built window using RUN, a paired ADD+COPY and a HERE-mode copy
+  of the window's own output.
+
+**Not tested:** decoding a patch with xdelta3 itself, and decoding a
+patch made by xdelta3. Neither was available here.
+
+A patch holds only the changed bytes, so the game data it carries is
+limited to the edit itself (a few dozen bytes for a player edit). Keep
+patches out of the repo anyway, like everything built from the disc.
+
 ## Still to do
 
 - **Size changes.** Re-lay files in `DATA.ISO`, rewrite the directory
@@ -125,5 +170,6 @@ patch, patch the original `DAT/` file back.
   lengths, and then the disc's entry for `DATA.CVM`.
 - **Archive repacking** for edits inside BINPAC/KC@P entries that change
   size, and PRS recompression.
-- **Distribution** as xdelta patches against the Redump image (GOALS.md
-  stage 6).
+- **Checking an xdelta3-based tool** (xdelta UI, DeltaPatcher) applies a
+  patch from `vcdiff.py`. The format is plain RFC 3284, but it hasn't been
+  run through xdelta3 yet.
