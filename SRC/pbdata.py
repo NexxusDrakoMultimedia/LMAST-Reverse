@@ -164,6 +164,23 @@ BARS_GK = (("SAVIN", (15,)), ("HANDL", (16,)), ("CROSS", (17,)), ("GO FW", (18,)
            ("DISTR", (4, 5, 24)), ("AGILI", (22,)), ("JUMP", (21,)))
 
 
+# Player skills, the bits of +0x64 (plPinfo_IsSkill 0x218748). Bit n is
+# described by message 6000 + n of category 2000; the short labels here
+# are summaries of those texts. Empirical: across the database bits 3, 5
+# and 10 are held by goalkeepers only, 0 and 1 mostly by defenders, 2, 4
+# and 11-14 mostly by forwards. The tactics substitution menu tests bit 7
+# (0x2f6558), the super sub.
+SKILL_MESSAGE = (2000, 6000)
+SKILLS = ("covering", "offside line", "penalty taker", "penalty stopper",
+          "one-on-one finisher", "one-on-one keeper", "long throw", "super sub",
+          "through balls", "positioning", "reflex saves", "acrobatic shot",
+          "one-touch shot", "goal machine", "poacher", "playmaker")
+
+
+def skill_names(mask):
+    return [SKILLS[b] for b in range(16) if mask >> b & 1]
+
+
 def bars(abilities, goalkeeper):
     """[(label, value)] as the detail screen computes them. With database
     values this is the player before InitAbil's random start offset and
@@ -665,6 +682,7 @@ def cmd_show(path, ids, nations):
             print("    screen    %s" % "  ".join("%s %d" % lv for lv in average_bars(r.fields["ability"], SCOUT_BARS)))
         if kind == "players":
             gk = r.fields["position"][0] == 0
+            print("    skills    %s" % (", ".join(skill_names(r.fields["skills"])) or "none"))
             print("    screen    %s" % "  ".join("%s %d" % lv for lv in bars(r.fields["ability"], gk)))
             print("    positions %s  (levels 0-4, forwards at the top, left centre right)" % aptitude_grid(
                 aptitude(r.fields["ability"], r.fields["position"])[1]))

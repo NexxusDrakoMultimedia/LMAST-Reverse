@@ -80,7 +80,7 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 | 2, 3, 2, 3, 1, 4 | 3, 2, 1, 1, 1, 1 | `+0x55`…`+0x5d` | | `+0x57` is always 0 |
 | 5 | 5 | `+0x5e` | | 0–22, mostly 0 after the first |
 | 3 | 1 | `+0x63` | flags | bit 1: EU passport. **confirmed**. Set in 19,333 players |
-| 16 | 1 | `+0x64` | skills | bit mask. **confirmed**. All 16 bits are used |
+| 16 | 1 | `+0x64` | skills | bit mask. **confirmed**. All 16 bits are used; see [Skills](#skills) |
 | 3 | 11 | `+0x66` | | 0–4 |
 | 5 | 64 | `+0x74` | ability | 64 ratings (`PlAbilNo` 0–63), each mapped to 38–99. **confirmed**. See [Abilities](#abilities-and-the-detail-screen) |
 
@@ -163,6 +163,39 @@ Skills, clockwise from the top). Which index goes to which label is
 
 `python SRC/pbdata.py show` prints both the bars and the hexagon, and
 `csv` adds the bars as columns.
+
+## Skills
+
+`+0x64` holds one bit per `PlPlayerSkill` (`plPinfo_IsSkill`, `0x218748`).
+Bit *n* is described by message 6000 + *n* of category 2000. The short
+labels are summaries of those texts, as `pbdata.py` prints them:
+
+| Bit | Label | Description (message 2000:6000 + bit) |
+|---|---|---|
+| 0 | covering | superb covering, bails the team out |
+| 1 | offside line | holds the defensive line, works the offside trap |
+| 2 | penalty taker | superb penalty taker |
+| 3 | penalty stopper | puts pressure on the penalty taker (a keeper) |
+| 4 | one-on-one finisher | cool in one-on-ones with the keeper |
+| 5 | one-on-one keeper | saves one-on-ones |
+| 6 | long throw | very long throw-ins |
+| 7 | super sub | swings a match when brought on |
+| 8 | through balls | vision for through balls |
+| 9 | positioning | exquisite positioning |
+| 10 | reflex saves | miraculous reactions |
+| 11 | acrobatic shot | shoots even off balance |
+| 12 | one-touch shot | one-touch finishing |
+| 13 | goal machine | pin-point shooting |
+| 14 | poacher | pounces on loose balls in the box |
+| 15 | playmaker | leads the team with killer passes |
+
+That bit *n* goes with message 6000 + *n* is **empirical**, from who holds
+which bit. Of 2,465 goalkeepers, 90, 91 and 86 hold bits 3, 5 and 10, and
+of 14,395 defenders and forwards only 1 holds any of the three. Bits 0 and
+1 go mostly to defenders (237 of 238), and bits 2, 4 and 11–14 mostly to
+forwards. The code confirms one: the substitutions screen tests bit 7, the
+super sub (`CTacticsMenuSubstitutionsImplement::Update_MessDisplay`,
+`0x2f6558`). What the skills do in a match isn't traced.
 
 ## Positions and aptitude
 

@@ -753,6 +753,9 @@ PINFO_FIELDS = (
     ("team_fit", 0x29a, "<B", None,
      "T-FIT bar, 0-100 (ConvertPlayer_Bar 0x285380 / 100); recomputed by pwkTeamType_FitCalc "
      "0x270b58 from the policy point and the manager's, so move the policy point instead"),
+    ("styles_learned", 0x290, "<B", None,
+     "how many of the style path at +0x27c are learned (ConvertPlayer_PlayStyle 0x285238)"),
+    ("style_progress", 0x292, "<H", None, "towards the next style (pwkPlayStyle_GetExp)"),
     ("salary", 0x218, "<I", None, "annual salary / 100, stored money unit (pwkTeam_ArrivePlayer)"),
     ("contract_years", 0x21d, "<B", None, "years remaining (pwkMoney_*, CheckRentalMoveEnable)"),
 )
@@ -769,6 +772,16 @@ STAFF = (("manager", TEAM_OFF + 0x4854, 1, "M"), ("youth manager", 0x8e00, 1, "M
 # job (PlMinfo +0xa0), abilities offset, ability count)
 STAFF_KIND = {"M": (0xbc, 0x9c, 0x9e, 0xb8, 0xa0, 4 + 0x66, 48),
               "S": (0x94, 0x60, 0x62, 0x90, None, 4 + 0x2d, 45)}
+# Play styles: +0x278 the current one, +0x27c five u32 (the style path),
+# +0x290 how many of them are learned. ConvertPlayer_PlayStyle (0x285238)
+# draws the current style and the learned ones, skipping repeats and 0;
+# the tactics Playing Style menu offers the learned ones. Names: message
+# category 100001, 150 + style (empirical, matches the screens).
+STYLE_PATH, STYLE_PATH_LEN = 0x27c, 5
+STYLES = ("none", "Centre Forward", "Moving", "Postplayer", "Dash out", "Second Striker",
+          "Wing", "Play maker", "Shadow striker", "Attacker", "Dynamo", "Man marker",
+          "Covering", "Centre MF", "Winger", "Threaten to cut in", "Full back", "Sweeper",
+          "Defensive Sweeper", "Stopper", "CB", "GK", "Attacking GK")
 # Block 1 +0xec90 + slot * 0x11e is what pwkTeam_GetPlayerStats (0x265810)
 # indexes. The rows start 2 bytes before it: four tables of five
 # competitions, 14 bytes a row, then 6 bytes not traced.
@@ -1045,6 +1058,14 @@ def cmd_player(game, path, slot):
     print("  injury %d, %d days; captain exp %d, keyman exp %d; play style %d; status %d" % (
         p["injury"], p["injury_days"], p["captain_exp"], p["keyman_exp"], p["play_style"],
         p["status"]))
+    path = struct.unpack_from("<%dI" % STYLE_PATH_LEN, s.blocks, o + STYLE_PATH)
+    name = lambda x: STYLES[x] if x < len(STYLES) else str(x)
+    learned = [name(x) for x in path[:p["styles_learned"]] if x]
+    later = [name(x) for x in path[p["styles_learned"]:] if x]
+    print("  style %s; learned: %s; still to learn: %s (progress %d)" % (
+        name(p["play_style"]), ", ".join(learned) or "-", ", ".join(later) or "-",
+        p["style_progress"]))
+    print("  skills: %s" % (", ".join(pbdata.skill_names(db["skills"])) or "none"))
     print("  policy type %d: %d%% towards counter (vs possession), %d%% towards organisation "
           "(vs individual)" % (p["policy_type"], (p["policy_counter"] + 1) * 100 // 65536,
                                (p["policy_organisation"] + 1) * 100 // 65536))

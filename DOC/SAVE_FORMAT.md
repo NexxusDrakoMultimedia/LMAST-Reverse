@@ -129,7 +129,10 @@ euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
 | `0x24e` | u16 | form (the game's "kan"), an age-dependent minimum to 1000 | confirmed: `plPinfo_ChangeKan` clamps it; below 400 the condition line says the player has lost form (`ConvertPlayer_Condition`, below) |
 | `0x250`, `0x254` | u16, u32 | injury days left, injury kind | `_plPinfo_SetKega`, `plPinfo_KegaRecoverDaysChno`, `plPinfo_IsHkegaFunou` |
 | `0x25a`, `0x25c` | u16 | captain and keyman experience | `plPinfo_ChangeCaptainExp`, `plPinfo_ChangeKeymanExp` |
-| `0x278` | u32 | play style | `plPinfo_GetPStyle` / `SetPStyle` |
+| `0x278` | u32 | current play style (below) | `plPinfo_GetPStyle` / `SetPStyle` |
+| `0x27c` | 5 × u32 | the style path: styles in the order the player learns them | confirmed, `ConvertPlayer_PlayStyle` (`0x285238`) |
+| `0x290` | u8 | how many of the path are learned | confirmed, the same function draws the current style and this many from the path (skipping repeats and 0) as the style icons |
+| `0x292` | u16 | progress towards the next style | `pwkPlayStyle_GetExp` |
 | `0x294` | u8 | policy type, copied from `PlPbase +0x52` | confirmed, `pwkTeamType_PolicyInit` (`0x270328`) |
 | `0x29a` | u8 | team fit, 0–100: the T-FIT bar | confirmed: `ConvertPlayer_Bar` (`0x285380`) draws it as value ÷ 100; `pwkTeamType_FitCalc` (`0x270b58`) sets it from `pwkTeamType_GetFit(manager, player)`. Carson 100, Aiblinger 60, Ben Arfa 27 match the screens |
 | `0x296` | u16 | policy point, Possession (0) to Counter (65535) | confirmed, `l_calculate_policy_rect_player` (`0x300ba8`): the P marker's height is `(v + 1) / 65536` of the grid |
@@ -179,6 +182,18 @@ is the player's ceiling. Young players have limits well above their
 current value, veterans' limits sit on it. `save.py set` raises the limit
 and cap along with the value, or the next training would clamp the edit
 back to the old limit.
+
+**Play styles.** Style names are message 150 + style of category 100001
+(**empirical**): 0 none, 1 Centre Forward, 2 Moving, 3 Postplayer, 4 Dash
+out, 5 Second Striker, 6 Wing, 7 Play maker, 8 Shadow striker, 9
+Attacker, 10 Dynamo, 11 Man marker, 12 Covering, 13 Centre MF, 14 Winger,
+15 Threaten to cut in, 16 Full back, 17 Sweeper, 18 Defensive Sweeper, 19
+Stopper, 20 CB, 21 GK, 22 Attacking GK. Checked in game: the icon rows of
+Carson (GK, Attacking GK), Aiblinger (Sweeper, Defensive Sweeper, Stopper)
+and Ben Arfa (Attacker), and the tactics screen's Playing Style menus of
+Senderos, Schram and Poulter, which list exactly their learned styles in
+style order. The player's skills are the bits at `+0x1fc` (the PlPbase
+copy's `+0x64`, see [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#skills)).
 
 **Staff.** A PlMinfo (managers and coaches, 0xbc bytes) or PlSinfo
 (scouts, 0x94 bytes) is 4 bytes and then a copy of the staff member's

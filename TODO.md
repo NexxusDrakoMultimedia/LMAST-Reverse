@@ -91,9 +91,13 @@ or which code loads them.
 - [x] Position numbering and aptitude: the 13 pitch-grid cells
       (`plPinfo_CalcAptPos`); abilities 33–44 are position aptitudes; the
       grid levels match two in-game screenshots of Terry
-- [ ] Name the rest of the player fields: skill bits (probably the style
-      icons), money band, abilities 45–63, entry 2, and whether hexagon 0
-      or 3 is Skills/Attacking
+- [x] Skill bits: bit n is message 2000:6000+n (goalkeeper, defender and
+      forward bits split cleanly across the database); the style icons are
+      the play styles instead (`PlPinfo +0x278`/`+0x27c`/`+0x290`, names
+      100001:150+style)
+- [ ] Name the rest of the player fields: money band, abilities 45–63,
+      entry 2, whether hexagon 0 or 3 is Skills/Attacking, and what the
+      skills do in a match
 - [ ] What separates staff jobs 0–2, and the code that switches a hired
       manager to job 5
 - [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC` (entries not listed in
