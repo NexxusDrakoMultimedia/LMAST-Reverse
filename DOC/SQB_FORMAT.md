@@ -410,5 +410,28 @@ the `L3` path, which loads file resource 1 (`gameprg.rel`) and starts
 modules 171 StadiumViewer, 172 Game and 173 (`ShimizuTest` in the setup
 function's name, "BC TEST" in the menu).
 
-`sqb.py` uses these names for modules 71–129 and 171–173. What each entry
-does, and whether it works, isn't checked yet.
+`sqb.py` uses these names for modules 71–129 and 171–173.
+
+**Tested in PCSX2**, the entries tried so far:
+
+| Entry | What happened |
+|---|---|
+| MODEL VIEWER (73) | a shaded test triangle with red and green axis lines. The buttons do nothing |
+| 3D TEST (72) | blank screen |
+| CSE TEST (74) | stays on "NOW LOADING" |
+| BG CONTROL (75) | goes straight back to the launcher |
+| SIDE MENU (79) | blank screen |
+| BPINFO CHECK (71) | the training-ground background and the debug text `CBpinfoCheckModule( return X button ), m_bra` / `0 all=27949 0=18871 1mil=8063`, plus a few garbled characters |
+| STADIUM VIEWER MK2 (171) | **works.** A menu (CREATE, BUILD, VISIBLE, DRAW_PRIORITY, NODE_CHECK, CLIP_CHECK, AUDIENCE, PROJECTION, FILTER, COLLISION, SAVE, RESET, EXIT). CREATE sets the build parameters: STADIUM_LEVEL, NATION_ID, STAND_LEVEL, TIME_ID (DAY …), WEATHER_ID (FINE …), SEASON_ID, LANDSCAPE_LEVEL, MONTH_ID, TEAM_COLOR1_16/2_16, HOME/AWAY_TEAMCOLOR, HOME/AWAY_SUPPORTER, CIVILIAN_VISITOR (110000 each by default) and ADVERTISE_INDEX. BUILD then shows the stadium, with crowd and adverts, and lets you move the camera |
+| GAME (172), BC TEST (173) | blank screen |
+
+BPINFO CHECK's numbers match the player database (`pbdata.py csv`):
+27,949 is the last player index, 18,871 players have money 0, and 8,063
+have money between 1 and 9,999. The other 1,016 have 10,000 or more, and
+the three counts add up to 27,950. See
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md) for what the "1mil" label suggests.
+
+The stadium viewer's CREATE fields look like the stadium build request of
+[`STADIUM_DIR.md`](STADIUM_DIR.md): level, stand level, time of day,
+weather, season and month, crowd sizes and adverts. That makes it a way to
+work out the open request fields there.

@@ -99,7 +99,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       forward bits split cleanly across the database); the style icons are
       the play styles instead (`PlPinfo +0x278`/`+0x27c`/`+0x290`, names
       100001:150+style)
-- [ ] Name the rest of the player fields: money band, abilities 45–63,
+- [ ] Name the rest of the player fields: money band (lead: BPINFO CHECK
+      calls band value 10,000 "1mil"), abilities 45–63,
       entry 2, whether hexagon 0 or 3 is Skills/Attacking, and what the
       skills do in a match
 - [x] Staff jobs: 0 manager, 1 attacking coach, 2 defensive coach
@@ -227,7 +228,10 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       `CONV_INFO_BUILD` = `plTeam_GetStadiumDataIndex` (league, level,
       stand/roof/lights)
 - [ ] Still open in `STADIUM/`: what sets the night flag (request `+0x88`,
-      `N2` over `N1`), request byte `+7`, the crowd block and tier flags
+      `N2` over `N1`), request byte `+7`, the crowd block and tier flags.
+      Lead: the launcher's STADIUM VIEWER MK2 works in PCSX2, and its
+      CREATE panel sets the build request fields (time, weather, season,
+      month, crowd sizes, adverts)
 - [ ] `GAME/` tactics AI: `PLAYBOOK.BPB`, `COMBINATION.BPB`,
       `COMBINATION2.CBB/.CSB` (`fb::PlayBookData`, `fb::Combination`)
 - [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
@@ -285,9 +289,13 @@ The event tables, the procedures and the overlay loader are documented in
       order, `gameprg` = 171-173 (names in `DOC/SQB_FORMAT.md` and
       `sqb.py`)
 - [ ] Try each launcher entry in PCSX2 and record which work and their
-      controls (MODEL VIEWER, CHARACTER VIEWER, STADIUM VIEWER MK2,
-      Uniform Viewer, CSE TEST, NEWS/MAIL VIEWER, Talk Check are the most
-      useful for modding)
+      controls. Done: STADIUM VIEWER MK2 works; BPINFO CHECK shows player
+      money counts; MODEL VIEWER shows only a test triangle; 3D TEST, SIDE
+      MENU, GAME and BC TEST are blank; CSE TEST hangs on loading; BG
+      CONTROL returns. Still to try: CHARACTER VIEWER, Uniform Viewer,
+      ACROBATA/NEWS/MAIL VIEWER, Talk Check, SPRITE TEST, COLOR TEST
+- [ ] Why the blank test modules show nothing: missing data, or waiting
+      for input or arguments from the launcher
 - [x] Sequencer scripts (`SEQ/*.SQB`, `PSC*.PAC`): `CSeqController`'s
       command encoding, argument types, labels and calls; the root set
       (Base, Scene, RootEvent: 125 commands, 94 by symbol) and the

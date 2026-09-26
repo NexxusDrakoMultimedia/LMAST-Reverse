@@ -72,7 +72,7 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 | 3 | 1 | `+0x2c` | leg | 0–3. Bit 0 set means right-footed, clear means left. *Empirical*: every well-known left-footer tested (Robben, Ashley Cole, Giggs, Messi, Roberto Carlos, Duff, Cech) has it clear. Bit 1 is set for famously two-footed players (Maldini, Henry, Rooney, Duff). The detail screen shows a message from 100–103 (LEFT, RIGHT, LEFT, RIGHT), which fits `100 + leg`, but the copy into `PlPinfo +0x1c4` hasn't been traced |
 | 16 | 1 | `+0x30` | | always 0 |
 | 16 | 1 | `+0x32` | | 0–17,172 |
-| 16 | 1 | `+0x34` | money | band 0–15, looked up in the money table. What the money is (value or wages) isn't known |
+| 16 | 1 | `+0x34` | money | band 0–15, looked up in the money table. What the money is (value or wages) isn't known. A lead: the developer BPINFO CHECK screen counts 8,063 players with money between 1 and 9,999 and labels the 10,000 cutoff "1mil" ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)), so one unit may be 100 of some currency |
 | 3 | 1 | `+0x36` | | |
 | 2 | 8 | `+0x37` | | |
 | 4 | 8 | `+0x3f` | | the last 4 are usually 0 |
