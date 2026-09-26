@@ -20,6 +20,13 @@ The long-term aim is GUI tools for editing the game's data to build mods.
 See [`GOALS.md`](GOALS.md) for the plan and [`TODO.md`](TODO.md) for the
 next tasks.
 
+## Disclaimer
+
+100% of the reverse engineering has been done using Claude Opus 5.5. I'm
+neither anti-AI nor pro-AI, and I am pro user choice. If you hate genAI with
+the passion of a thousand suns, this project is not for you. If you're a
+far-right techbro chud, this project is ALSO not for you.
+
 ## Requirements
 
 - Python 3, standard library only for most commands
