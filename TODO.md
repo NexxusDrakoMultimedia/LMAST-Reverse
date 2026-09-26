@@ -182,7 +182,8 @@ hold (player models, faces, edit/uniform data) is undocumented.
       `OUENKA`) and DTPK (`SYS_SE`, `EFFECTS`) sound right by ear
 - [ ] Commentary (`BC_ENG`), tannoy (`JYONAI_A`) and `MAP01` still unheard
 - [ ] Document `SOUND/`: which scene each `MAP01`–`MAP23` belongs to.
-      `MAP11`–`MAP23` are stereo pieces (two channels, 11–26 s);
+      `MAP11`–`MAP23` are stereo pieces (two channels, 11–26 s): the
+      pre-match jingles and the quick-match music;
       `MAP01`–`MAP10` are sequenced music (instruments + TBLD note data)
 - [ ] Decode the DTPK sequence data in `MAP01`–`MAP10` (the missing
       `bgm01`–`bgm12`?) and render it with the bank's instruments

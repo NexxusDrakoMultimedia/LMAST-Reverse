@@ -248,7 +248,7 @@ file):
 | Banks | Samples | TBLD size | What |
 |---|---|---|---|
 | `MAP01`–`MAP10` | 27–166, 7–41 of them looped, 8–48 kHz | 22–97 KB | instrument sets with large tone tables: sequenced (MIDI-like) music whose note data is presumably in the TBLD. Not decoded |
-| `MAP11`–`MAP23` | exactly 2, same length, 32 kHz, not looped | 896 bytes | the left and right channels of one stereo piece, 11–26 s. The channels differ (0–6% of samples coincide) |
+| `MAP11`–`MAP23` | exactly 2, same length, 32 kHz, not looped | 896 bytes | the left and right channels of one stereo piece, 11–26 s. The channels differ (0–6% of samples coincide). In game: the jingles before a full match and the quick-match music (identified by ear) |
 
 `BGM.AFS` in `ISO/AUDIO` holds only `bgm13`–`bgm21` and the ending, so
 these banks are the likely home of the other music.
