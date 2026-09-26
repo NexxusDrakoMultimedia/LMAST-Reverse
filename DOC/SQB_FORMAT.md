@@ -421,9 +421,21 @@ function's name, "BC TEST" in the menu).
 | CSE TEST (74) | stays on "NOW LOADING" |
 | BG CONTROL (75) | goes straight back to the launcher |
 | SIDE MENU (79) | blank screen |
+| INOUE TEST (76), SAKAUE TEST (77) | blank screen. `TESTPRG.REL` names a `SAKAUETEST_MODULE::CNewsTextureTestTask` next to `news_ad.pac` |
+| SATO TEST (78) | **a head viewer.** One head at a time over the training-ground background, with the debug text `ID = 10`, `NAME = REFREE_11`, `ADD = 1` |
 | BPINFO CHECK (71) | the training-ground background and the debug text `CBpinfoCheckModule( return X button ), m_bra` / `0 all=27949 0=18871 1mil=8063`, plus a few garbled characters |
 | STADIUM VIEWER MK2 (171) | **works.** A menu (CREATE, BUILD, VISIBLE, DRAW_PRIORITY, NODE_CHECK, CLIP_CHECK, AUDIENCE, PROJECTION, FILTER, COLLISION, SAVE, RESET, EXIT). CREATE sets the build parameters: STADIUM_LEVEL, NATION_ID, STAND_LEVEL, TIME_ID (DAY …), WEATHER_ID (FINE …), SEASON_ID, LANDSCAPE_LEVEL, MONTH_ID, TEAM_COLOR1_16/2_16, HOME/AWAY_TEAMCOLOR, HOME/AWAY_SUPPORTER, CIVILIAN_VISITOR (110000 each by default) and ADVERTISE_INDEX. BUILD then shows the stadium, with crowd and adverts, and lets you move the camera |
 | GAME (172), BC TEST (173) | blank screen |
+
+SATO TEST's names come from a list of 208 strings in `TESTPRG.REL`
+(`0x29280` is `REFREE_11`), in 18 groups: `REFREE` 20, `FLAGMAN` 16,
+`ANNOUNCER_M` 4, `ANNOUNCER_F` 2, `SUPPORTER_M` 50, `SUPPORTER_F` 30,
+`AGENT` 10, `COACH` 4, `SALESMAN_M` 2, `SALESMAN_F` 2, `COMMISSIONER` 20,
+`REPORTER` 5, `CAMERAMAN` 5, `MANAGER` 6, `VISITOR_M` 6, `VISITOR_F` 6,
+`STAFF_M` 12 and `STAFF_F` 8. These are the event characters of
+`FC_EURO_FACEPACK_01` ([`PLAYER_DIR.md`](PLAYER_DIR.md)). That pack has
+215 heads, 7 more than the list, so how IDs map to pack entries isn't
+confirmed.
 
 BPINFO CHECK's numbers match the player database (`pbdata.py csv`):
 27,949 is the last player index, 18,871 players have money 0, and 8,063

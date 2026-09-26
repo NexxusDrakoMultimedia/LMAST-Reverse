@@ -21,7 +21,7 @@ game code. Everything else here (what the names mean, counts) is
 | Files | Container | Entries hold |
 |---|---|---|
 | `FC_EURO_FACEPACK_00.HED` + `.BIN` | KC@P, PRSH entries | 21,171 real-player heads, one `PackData` each (see [Face packs](#face-packs)) |
-| `FC_EURO_FACEPACK_01.HED` + `.BIN` | KC@P, PRSH entries | 215 heads for event characters (referees, supporters, staff, commissioners) |
+| `FC_EURO_FACEPACK_01.HED` + `.BIN` | KC@P, PRSH entries | 215 heads for event characters (referees, supporters, staff, commissioners). The developer SATO TEST viewer names 208 of them (`REFREE_01` …, see [`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)); how its IDs map to entries isn't confirmed |
 | `EDITFACEPACK_BIN.HED` + `EDITFACEPACK.BIN` | KC@P, 1 raw entry | the face-edit resources, one `PackData` (see [Edit face pack](#edit-face-pack)) |
 | `PLPACK_HOME.HED` / `_AWAY` + `.PAC` | KC@P, 116 raw entries | licensed club kits, one `PackData` per club (see [Licensed kits](#licensed-kits-plpack_)) |
 | `PLAYER_MODEL.PAC/.HED`, `PLAYER_MODEL_PRI.PAC/.HED` | BINPAC v1, extension-only names | 267 / 317 entries: `.svm` textures, `.snq`/`.sno` models, `.snp` node trees, one `.sna` |
