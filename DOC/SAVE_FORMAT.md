@@ -82,7 +82,8 @@ All **confirmed** by the accessor named. Offsets are within the block.
 | 1 | `0x4b4` | PlTeamData | `pwkTeam_GetMyTeamData` (`0x259898`) | your club |
 | 1 | `0x4b4 + 0x20` | 25 × PlPinfo | `pwkTeam_GetForeignCitizenNumber` (`0x266450`) | the squad, 0x2a0 bytes per player |
 | 1 | `0xec8e` | 25 × 0x11e | `pwkTeam_GetPlayerStats` (`0x265810`, indexes `0xec90 + slot × 0x11e`) | each squad slot's match statistics (below) |
-| 1 | `0xe290` | 3 × PlPinfo | `0x266600` | a second, smaller group of players (not identified) |
+| 1 | `0x4f00` | 24 × PlPinfo | `pwkTeam_GetYteamData` (`0x270c18`); `pwkTeamType_FitCalc` (`0x270b58`) walks them up to `+0x3f00` | the youth team (21 players in the save checked, 3-year contracts, no salary) |
+| 1 | `0xe290` | 3 × 0x2a0 | `0x266600` | read like PlPinfo by one foreign-player count, but the save holds ids of 0 and no players there; not identified |
 | 1 | `0x4d08` | PlMinfo | `pwkTeam_GetCoachManager` (`0x26cdc8`): PlTeamData `+0x4854` | the manager |
 | 1 | `0x8e00` | PlMinfo | `pwkTeam_GetYManager` (`0x26bdd8`): `pwkTeam_GetYteamData` (`+0x4f00`) `+0x3f00` | the youth manager |
 | 1 | `0x9148` | 4 × PlMinfo | `pwkTeam_GetCoaches` (`0x26a7b8`) | the coaches, 0xbc bytes each |
@@ -130,6 +131,7 @@ euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
 | `0x25a`, `0x25c` | u16 | captain and keyman experience | `plPinfo_ChangeCaptainExp`, `plPinfo_ChangeKeymanExp` |
 | `0x278` | u32 | play style | `plPinfo_GetPStyle` / `SetPStyle` |
 | `0x294` | u8 | policy type, copied from `PlPbase +0x52` | confirmed, `pwkTeamType_PolicyInit` (`0x270328`) |
+| `0x29a` | u8 | team fit, 0–100: the T-FIT bar | confirmed: `ConvertPlayer_Bar` (`0x285380`) draws it as value ÷ 100; `pwkTeamType_FitCalc` (`0x270b58`) sets it from `pwkTeamType_GetFit(manager, player)`. Carson 100, Aiblinger 60, Ben Arfa 27 match the screens |
 | `0x296` | u16 | policy point, Possession (0) to Counter (65535) | confirmed, `l_calculate_policy_rect_player` (`0x300ba8`): the P marker's height is `(v + 1) / 65536` of the grid |
 | `0x298` | u16 | policy point, Individual (0) to Organisation (65535) | confirmed, the same function, across |
 
@@ -155,10 +157,10 @@ Checked in game: Ben Arfa with fatigue 900 shows "Seriously fatigued and
 off form", Carson with form 370 "Lost form and not playing as well as he'd
 like", Aiblinger with condition 58,276 "Fully fit and on top form".
 
-The T-FIT bar isn't found. Form fits two players (Ben Arfa 240 and about
-20%, Aiblinger 682 and about 65%) but not Carson (370 and a full bar, with
-every ability at 99), so it probably mixes form with abilities; power is
-1,000 or 991 for all three.
+The four condition bars are drawn by the end of `ConvertPlayer_Bar`:
+fatigue ÷ 1000, condition ÷ 65535, motivation ÷ 65535 and team fit ÷ 100.
+Team fit is recomputed from the policy points, so an edit to it wouldn't
+last: move the player's policy point (or change the manager) instead.
 
 Edits to fatigue, condition and motivation show in game as set (Ben Arfa:
 900, 0 and 65,535), and abilities set to 99 with the growth limit raised

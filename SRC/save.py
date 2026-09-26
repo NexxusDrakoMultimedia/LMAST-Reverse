@@ -38,7 +38,7 @@ See DOC/SAVE_FORMAT.md.
 Usage:
     python save.py info      <save> ...                   # header, CRC, stream length
     python save.py show      <save>                       # date, money, squad
-    python save.py player    <save> <slot>                # one squad player in full
+    python save.py player    <save> <slot>                # one player in full (youth: y<slot>)
     python save.py staff     <save>                       # manager, youth manager, coaches, scouts
     python save.py set       <save> <out> money=N         # edit into a new main file
     python save.py set       <save> <out> 3:all=99 3:15=80  #  slot:ability=level (0-99)
@@ -750,6 +750,9 @@ PINFO_FIELDS = (
      "team vision: 0 possession - 65535 counter (l_calculate_policy_rect_player 0x300ba8)"),
     ("policy_organisation", 0x298, "<H", (0, 65535),
      "team vision: 0 individual - 65535 organisation"),
+    ("team_fit", 0x29a, "<B", None,
+     "T-FIT bar, 0-100 (ConvertPlayer_Bar 0x285380 / 100); recomputed by pwkTeamType_FitCalc "
+     "0x270b58 from the policy point and the manager's, so move the policy point instead"),
     ("salary", 0x218, "<I", None, "annual salary / 100, stored money unit (pwkTeam_ArrivePlayer)"),
     ("contract_years", 0x21d, "<B", None, "years remaining (pwkMoney_*, CheckRentalMoveEnable)"),
 )
@@ -770,6 +773,10 @@ STAFF_KIND = {"M": (0xbc, 0x9c, 0x9e, 0xb8, 0xa0, 4 + 0x66, 48),
 # indexes. The rows start 2 bytes before it: four tables of five
 # competitions, 14 bytes a row, then 6 bytes not traced.
 STATS_OFF, STATS_SIZE = 0xec8e, 0x11e
+# The youth team: pwkTeam_GetYteamData (0x270c18) returns block 1 +0x4f00;
+# pwkTeamType_FitCalc (0x270b58) walks its PlPinfo up to +0x3f00, where the
+# youth manager is (pwkTeam_GetYManager): 24 slots.
+YOUTH_OFF, YOUTH_SLOTS = 0x4f00, 0x3f00 // PINFO_SIZE
 STATS_TABLES = ("table 1 (unknown)", "season", "table 3 (last season?)", "career")
 COMPETITIONS = ("pre-season", "domestic league", "overseas league", "Euro", "international")
 STATS_ROW = "<6H2B"     # goals, assists, games, games2, mom, points x 100, red, yellow
@@ -823,13 +830,16 @@ class Save:
         return year, turn, month, struct.unpack_from("<I", self.blocks, o + 4)[0]
 
     def squad(self):
-        """[(slot, offset of the PlPinfo in blocks)] for filled slots."""
-        base = self.at(1, TEAM_OFF + SQUAD_OFF)
+        """[(slot label, offset of the PlPinfo in blocks)] for filled slots:
+        "0"-"24" for the squad, "y0"-"y23" for the youth team."""
         out = []
-        for i in range(SQUAD_SLOTS):
-            o = base + i * PINFO_SIZE
-            if struct.unpack_from("<h", self.blocks, o)[0] >= 0:
-                out.append((i, o))
+        for prefix, off, count in (("", TEAM_OFF + SQUAD_OFF, SQUAD_SLOTS),
+                                   ("y", YOUTH_OFF, YOUTH_SLOTS)):
+            base = self.at(1, off)
+            for i in range(count):
+                o = base + i * PINFO_SIZE
+                if struct.unpack_from("<h", self.blocks, o)[0] >= 0:
+                    out.append(("%s%d" % (prefix, i), o))
         return out
 
     def pinfo(self, o):
@@ -1004,11 +1014,11 @@ def cmd_show(game, path):
     print("%s" % s.path)
     print("  date   %s %d, week %d (turn %d of the season)" % (MONTHS[month - 1], year, week + 1, turn))
     print("  money  %d" % s.money)
-    print("  squad")
+    print("  squad (youth team slots start with y)")
     for slot, o in s.squad():
         p = s.pinfo(o)
         lv = [exp2lv(s.exp, a[0]) for a in p["abil"]]
-        print("    %2d  id %5d  %-18s %-5s age %2d  mean ability %d" % (
+        print("    %3s  id %5d  %-18s %-5s age %2d  mean ability %d" % (
             slot, p["id"], p["name"], pbdata.position_name(p["pos"]), p["age"],
             round(sum(lv) / len(lv))))
 
@@ -1017,17 +1027,17 @@ def cmd_player(game, path, slot):
     s = Save(game, path)
     hit = [o for i, o in s.squad() if i == slot]
     if not hit:
-        raise SystemExit("squad slot %d is empty" % slot)
+        raise SystemExit("squad slot %s is empty (see `show`)" % slot)
     import pbdata
     o = hit[0]
     p, db = s.pinfo(o), s.pbase_copy(o)
-    print("%s: slot %d, id %d, %s" % (s.path, slot, p["id"], p["name"]))
+    print("%s: slot %s, id %d, %s" % (s.path, slot, p["id"], p["name"]))
     print("  position %s, age %d, shirt %d, %d cm, %d kg, %s foot, nation %d, team %d" % (
         pbdata.position_name(p["position"]), p["age"], db["shirt"], db["height"], db["weight"],
         "right" if db["leg"] & 1 else "left", db["nation"], p["team"]))
-    print("  fatigue %d/1000, condition %d%%, motivation %d%%, power %d/1000, form %d/1000" % (
-        p["fatigue"], p["condition"] * 100 // 65535, p["motivation"] * 100 // 65535,
-        p["power"], p["form"]))
+    print("  fatigue %d/1000, condition %d%%, motivation %d%%, team fit %d%%, form %d/1000, "
+          "power %d/1000" % (p["fatigue"], p["condition"] * 100 // 65535,
+                             p["motivation"] * 100 // 65535, p["team_fit"], p["form"], p["power"]))
     print("  injury %d, %d days; captain exp %d, keyman exp %d; play style %d; status %d" % (
         p["injury"], p["injury_days"], p["captain_exp"], p["keyman_exp"], p["play_style"],
         p["status"]))
@@ -1037,7 +1047,7 @@ def cmd_player(game, path, slot):
     print("  contract %d year%s left, salary %d a year (stored unit; GBP %d)" % (
         p["contract_years"], "" if p["contract_years"] == 1 else "s", p["salary"] * 100,
         p["salary"] * 100 // 6))
-    for table, rows in s.stats(slot).items():
+    for table, rows in (s.stats(int(slot)) if slot.isdigit() else {}).items():
         if not any(r[2] for r in rows):
             continue
         print("  %s: games/goals/assists/mom/yellow/red/points" % table)
@@ -1084,10 +1094,10 @@ def cmd_set(game, path, out, assigns):
             s.money = int(val, 0)
             continue
         slot, _, which = key.partition(":")
-        if not slot.isdigit() or int(slot) not in squad or not which:
+        if slot not in squad or not which:
             raise SystemExit("%r: use money=N, <slot>:<ability>=level, <slot>:all=level or "
                              "<slot>:<field>=value (slot = a filled squad slot, see `show`)" % a)
-        o = squad[int(slot)]
+        o = squad[slot]
         if not which.isdigit() and which != "all":
             try:
                 s.set_field(o, which, int(val, 0))
@@ -1238,7 +1248,7 @@ def main(argv):
     elif cmd == "staff" and len(args) == 1:
         cmd_staff(game, args[0])
     elif cmd == "player" and len(args) == 2:
-        cmd_player(game, args[0], int(args[1]))
+        cmd_player(game, args[0], args[1])
     elif cmd == "set" and len(args) >= 3:
         cmd_set(game, args[0], args[1], args[2:])
     elif cmd == "fields" and len(args) <= 1:

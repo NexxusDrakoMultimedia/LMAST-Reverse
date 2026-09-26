@@ -319,8 +319,11 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - [x] "kan" is form: the condition line's thresholds
       (`ConvertPlayer_Condition`) match three players; edited fatigue,
       condition, motivation and 99 abilities hold in game
-- [ ] The T-FIT bar (form fits two players, not an all-99 Carson), stats
-      table 1, PlPinfo flags at `0x20c`, dissatisfaction and style icons
+- [x] T-FIT is team fit (`+0x29a`, 0-100, `pwkTeamType_FitCalc` from the
+      policy points); the youth team (block 1 `+0x4f00`, 24 slots) in
+      `show`/`player`/`set` as `y<slot>`
+- [ ] Stats table 1, PlPinfo flags at `0x20c`, dissatisfaction, style
+      icons, and what the 3 records at block 1 `+0xe290` are
 - [ ] Map more of the blocks through their accessors (staff, youth, other
       clubs, finances), and name the fields an editor should offer
 - [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same
