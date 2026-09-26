@@ -230,12 +230,13 @@ JOB_BARS = {
     "manager": (("FASTB", (39,)), ("SLOWB", (40,)), ("WINGP", (41,)), ("DIREC", (42,)),
                 ("OFFSI", (43,)), ("CLOSD", (44,))),                    # job 5 and up
 }
-# Jobs (empirical, from each job's average bars): 0 a manager type, 1 an
+# Jobs (empirical, from each job's average bars): 0 a manager, 1 an
 # attacking coach, 2 a defensive coach. The game titles all three
 # "Assistant Coach" and shows them the same coaching bars. Hired staff get
-# 5 (manager) or 6 (youth manager, pwkTeam_SetYManager 0x26bd28).
+# 5 (manager) or 6 (youth manager, pwkTeam_SetYManager 0x26bd28). Coaches
+# and former players can become managers too.
 JOB_ROLE = {0: "coach", 1: "coach", 2: "coach", 3: "physical coach", 4: "GK coach"}
-JOB_NAMES = {0: "manager type", 1: "attacking coach", 2: "defensive coach",
+JOB_NAMES = {0: "manager", 1: "attacking coach", 2: "defensive coach",
              3: "physical coach", 4: "GK coach", 5: "manager", 6: "youth manager"}
 
 # Scout bars, WP::CDetailManager::ConvertScout (0x287c60): single abilities.

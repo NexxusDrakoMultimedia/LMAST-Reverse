@@ -269,14 +269,20 @@ database (**empirical**) separates 0–2:
 
 | Job | Count | Coaching bars (DRIBB SHOT PASS HEAD INTER MARK) | Is |
 |---|---|---|---|
-| 0 | 439 | 68 68 68 60 68 68 | a manager type: all even. Hired as manager it becomes 5, as youth manager 6 |
+| 0 | 439 | 68 68 68 60 68 68 | the database's managers: all even. Hired as manager it becomes 5, as youth manager 6 |
 | 1 | 786 | 80 80 80 68 55 55 | an attacking coach |
 | 2 | 714 | 68 55 61 76 80 80 | a defensive coach |
 | 3 | 678 | physical bars | physical coach |
 | 4 | 383 | saving bars | goalkeeper coach |
 
 In a save, M. Eulenburg and S. Saioni (job 0 in the database) are the
-manager (5) and youth manager (6), and the coaches keep jobs 1–4.
+manager (5) and youth manager (6), and the coaches keep jobs 1–4. Job 0
+is where managers start, not the only way to become one: in the game,
+coaches and former players can become managers too. The code has a coach
+job-change work area (`pwkTeam_SetCoachJobChangeWork`,
+`pwkTeam_PutCoachJobChangeWork` and neighbours, `0x26b998`–`0x26bc88`),
+and a player's `PlPinfo +0x210` holds a job change
+(`plPinfo_GetChangeJob` / `SetChangeJob`); neither is traced yet.
 `pwkTeam_SetYManager` (`0x26bd28`) writes 6 into the youth manager's
 `+0xa0` after copying him in (**confirmed**); where 5 is set for a manager
 isn't traced (`pwkTeam_SignManager`, `0x269e20`, copies the record as it

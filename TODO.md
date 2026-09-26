@@ -100,11 +100,13 @@ or which code loads them.
 - [ ] Name the rest of the player fields: money band, abilities 45–63,
       entry 2, whether hexagon 0 or 3 is Skills/Attacking, and what the
       skills do in a match
-- [x] Staff jobs: 0 manager type, 1 attacking coach, 2 defensive coach
+- [x] Staff jobs: 0 manager, 1 attacking coach, 2 defensive coach
       (database averages); 0-2 share the title "Assistant Coach" and one
       icon; `pwkTeam_SetYManager` sets job 6
-- [ ] What sets job 5 when a manager is hired, and a screenshot of a job 1
-      or 2 coach's page to confirm the "Assistant Coach" title
+- [ ] What sets job 5 when a manager is hired, how coaches and former
+      players become managers (`pwkTeam_*CoachJobChangeWork`, PlPinfo
+      `+0x210`), and a screenshot of a job 1 or 2 coach's page to confirm
+      the "Assistant Coach" title
 - [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC` (entries not listed in
       `PARAM_DIR.md`) and `PSC{COMMON,GAME,PRACTICE}.PAC`
 - [x] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`: 27,950 × `char[19]`
