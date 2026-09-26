@@ -336,8 +336,18 @@ are for isn't known, so `--copies` stays the safe choice.
 **Growth tested on a copy of `DATA.CVM`.** Growing `1_3.mbb` by 4 bytes
 and `487_1.mbb` by 12 changed only those two entries. `mbb.py info` and
 `pac.py info` pass on the result. `patch --copies` wrote `MES.PAC`, warned
-about `STATIONMES3.PAC#0`, and left it byte-identical. A grown file hasn't
-been tried in PCSX2 yet.
+about `STATIONMES3.PAC#0`, and left it byte-identical.
+
+**Growth confirmed in the game (PCSX2).** The rival's lines 102 and 104
+were rewritten about 60% longer. That made `487_1.mbb` grow from 9,636 to
+9,704 bytes inside its 10,240-byte slot. Every line showed in full in the
+Big Bang street interview. What this doesn't show: the game reads
+`(size >> 11) + 1` sectors, and entries start on sector boundaries, so it
+already reads the whole slot of an unedited file. Here 9,636 and 9,704
+bytes are both 5 sectors, so the test confirms that the game takes a grown
+file with a larger `data_size`, but not that it uses the new header size.
+That would need a file whose growth crosses into an extra sector, which
+only happens in slots that end with a whole spare sector.
 
 ## Open questions
 

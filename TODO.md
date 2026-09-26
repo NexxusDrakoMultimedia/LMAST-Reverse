@@ -41,7 +41,9 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
       the loader reads `(size >> 11) + 1` sectors from it (`0x10cf1c`).
       `patch_disc.py --copies` warns about, and leaves alone, `PRELOAD`
       copies of grown files instead of writing them cut short
-- [ ] Confirm a grown message file in PCSX2
+- [x] Confirm a grown message file in PCSX2: the rival's Big Bang lines,
+      `487_1.mbb` grown 9,636 -> 9,704 bytes (same 5 sectors, so the new
+      header size itself isn't exercised)
 - [ ] Rebuild `PRELOAD` packs so grown files' copies can follow, if any of
       those copies turn out to be read
 - [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`,
