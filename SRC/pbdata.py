@@ -25,6 +25,10 @@ functions that read them (plPinfo_IsForeigner, plPinfo_IsEU,
 plPinfo_IsSkill, getPinfoRank, getPinfoApos0, pwkTeam_SetUnumberOpinfo);
 fields without a known reader keep their offset as a name (f_2c, ...).
 
+The player detail screen's 14 bars (SPEED ... MARK, or SAVIN ... JUMP for
+goalkeepers) are averages of the first 33 abilities (ConvertPlayer_Bar,
+0x285380); `show` and `csv` compute them from the database values.
+
 Usage:
     python pbdata.py info <PBDATA_*.PAC> ...                         # layout checks + counts
     python pbdata.py list <PBDATA.PAC> [players|managers|scouts] [--find TEXT] [--mes MES.PAC]
@@ -129,6 +133,70 @@ SCOUT_FIELDS = (
     ("ability", 0x2d, 7, 45, "ability7"),  # 7-bit, clamped to 31 before the table
 )
 FIELDS = dict(zip(KINDS, (PLAYER_FIELDS, MANAGER_FIELDS, SCOUT_FIELDS)))
+
+# plPinfo_Abil2PSM (0x216f10): the growth group of each of the 64 player
+# abilities. InitAbil scales an ability's random start offset by +0x4a, +0x4b
+# or +0x4c for groups P, S and M.
+def ability_group(n):
+    return "S" if n < 0x13 else ("P" if n < 0x1a else "M")
+
+# The 14 bars of the player detail screen, WP::CDetailManager::
+# ConvertPlayer_Bar (0x285380). Each is a list of ability numbers whose
+# levels are averaged (integer division). The first 7 are shared; the last
+# 7 depend on whether the player is a goalkeeper (PlPinfo +4 == 0, the main
+# position). Labels are messages 0x2774+ of the detail category.
+BARS_COMMON = (("SPEED", (0, 20, 22)), ("PHYSI", (24, 25)), ("STAMI", (23,)),
+               ("MENTA", (26, 27)), ("SUPPO", (30, 31)),
+               ("SYSTE", tuple(range(8))), ("TACTI", tuple(range(11))))
+BARS_FIELD = (("DRIBB", (0, 1)), ("SHOT", (2, 3, 24)), ("PASS", (4, 5, 6)),
+              ("FK", (14,)), ("HEAD", (7, 25, 21)), ("INTER", (11,)), ("MARK", (13,)))
+BARS_GK = (("SAVIN", (15,)), ("HANDL", (16,)), ("CROSS", (17,)), ("GO FW", (18,)),
+           ("DISTR", (4, 5, 24)), ("AGILI", (22,)), ("JUMP", (21,)))
+
+
+def bars(abilities, goalkeeper):
+    """[(label, value)] as the detail screen computes them. With database
+    values this is the player before InitAbil's random start offset and
+    before any growth, so a save will differ."""
+    out = []
+    for label, src in BARS_COMMON + (BARS_GK if goalkeeper else BARS_FIELD):
+        out.append((label, sum(abilities[a] for a in src) // len(src)))
+    return out
+
+
+def hexagon(abilities, weights, goalkeeper):
+    """The 6 hexagon values, plPinfo_CalcHexagon (0x217ce0) through
+    plPinfo_CalcHexAbil (0x217850): for hexagon h, the weighted average of the
+    abilities whose {u8 hexagon, u8 weight} pairs name h. `weights` is
+    PLRESOURCECOMMON.PAC entry 2, table 0: 8 bytes per ability, the field
+    variant at +4 and the goalkeeper variant at +0. CalcHexagonNG uses the
+    field variant for all six; CalcHexagon redoes 0 and 1 with the
+    goalkeeper variant for goalkeepers."""
+    def calc(h, var):
+        total = wsum = 0
+        for a in range(64):
+            for k in range(2):
+                o = a * 8 + var + k * 2
+                if weights[o] == h and weights[o + 1]:
+                    total += abilities[a] * weights[o + 1]
+                    wsum += weights[o + 1]
+        return total // wsum if wsum else 0
+    vals = [calc(h, 4) for h in range(6)]
+    if goalkeeper:
+        vals[0], vals[1] = calc(0, 0), calc(1, 0)
+    return vals
+
+
+def hex_weights(pac_path):
+    common = os.path.join(os.path.dirname(pac_path), "PLRESOURCECOMMON.PAC")
+    if not os.path.exists(common):
+        return None
+    h = pac.load_header(common)
+    with open(pac.data_path(common, h), "rb") as f:
+        buf = f.read()
+    off, size, _, _ = h.entries[2]
+    _, tables = tbb.parse(buf[off:off + size])
+    return tables[0].data
 
 
 def field_bits(fields):
@@ -356,6 +424,7 @@ def cmd_list(path, kind, find, nations):
 
 def cmd_show(path, ids, nations):
     db = PbData(path)
+    weights = hex_weights(path)
     for text in ids:
         kind, index = parse_id(text)
         r = db.record(kind, index)
@@ -369,6 +438,11 @@ def cmd_show(path, ids, nations):
             print("    +%#04x %-9s %2d bit%s  %s" % (off, fname, bits,
                                                    " x%-2d" % count if count > 1 else "    ", shown))
         if kind == "players":
+            gk = r.fields["position"][0] == 0
+            print("    screen    %s" % "  ".join("%s %d" % lv for lv in bars(r.fields["ability"], gk)))
+            if weights:
+                print("    hexagon   %s" % "  ".join(
+                    "%d:%d" % hv for hv in enumerate(hexagon(r.fields["ability"], weights, gk))))
             print("    entry 2 %d, entry 3 %d%s" % (
                 db.entry2[index], db.rank_values[index],
                 "" if index < RANK_FROM_ENTRY3 else " (rank read from +0x18 instead)"))
@@ -381,6 +455,8 @@ def cmd_csv(path, kind, out_path):
         header += [fname] if count == 1 else ["%s_%d" % (fname, i) for i in range(count)]
     if kind == "players":
         header += ["entry2", "entry3"]
+        header += [label for label, _ in BARS_COMMON]
+        header += ["%s/%s" % (f, g) for (f, _), (g, _) in zip(BARS_FIELD, BARS_GK)]
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(header)
@@ -392,6 +468,7 @@ def cmd_csv(path, kind, out_path):
                 row += v if count > 1 else [v]
             if kind == "players":
                 row += [db.entry2[r.index], db.rank_values[r.index]]
+                row += [v for _, v in bars(r.fields["ability"], r.fields["position"][0] == 0)]
             w.writerow(row)
             n += 1
     print("%s: %d %s" % (out_path, n, kind))

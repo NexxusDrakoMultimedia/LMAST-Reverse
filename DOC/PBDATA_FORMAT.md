@@ -82,7 +82,7 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 | 3 | 1 | `+0x63` | flags | bit 1: EU passport. **confirmed**. Set in 19,333 players |
 | 16 | 1 | `+0x64` | skills | bit mask. **confirmed**. All 16 bits are used |
 | 3 | 11 | `+0x66` | | 0–4 |
-| 5 | 64 | `+0x74` | ability | 64 ratings, each mapped to 38–99. **confirmed**. Which rating is which isn't known |
+| 5 | 64 | `+0x74` | ability | 64 ratings (`PlAbilNo` 0–63), each mapped to 38–99. **confirmed**. See [Abilities](#abilities-and-the-detail-screen) |
 
 The 5 bits after the last field are zero in every record.
 
@@ -103,6 +103,67 @@ signed 9 ×2 `+0x4c`, signed 9 ×4 `+0x54`, 1 ×2 `+0x64`, and 48 abilities
 and 49 × 7 bits at `+0x29`. The last 45 of those are abilities, clamped
 to 31 and mapped to 38–99. The 3 bits left over are zero.
 
+## Abilities and the detail screen
+
+The 64 player abilities are finer-grained than anything the game shows.
+The detail screen's 14 bars and the 6-axis "Evaluation" hexagon are
+worked out from them.
+
+**Groups (confirmed, `plPinfo_Abil2PSM` `0x216f10`).** Abilities 0–18
+return 1, 19–25 return 0, and 26–63 return 2. `plPinfo_InitAbil`
+(`0x21b470`) uses the group to pick which growth byte (`+0x4a`, `+0x4b`,
+`+0x4c`) scales an ability's random start offset. From the bars below,
+0–18 are skills, 19–25 physical and 26–63 mental, which fits the name
+(P/S/M).
+
+**Bars (confirmed, `WP::CDetailManager::ConvertPlayer_Bar` `0x285380`).**
+Each bar is the integer average of the listed abilities' levels, and it
+is drawn as `(value + 10) / 99` of full width. The labels are detail
+messages `0x2774`+. The last 7 bars depend on whether the player's main
+position (`PlPinfo +4`) is 0, the goalkeeper:
+
+| Bar | Abilities | | Field bar | Abilities | | GK bar | Abilities |
+|---|---|---|---|---|---|---|---|
+| SPEED | 0, 20, 22 | | DRIBB | 0, 1 | | SAVIN | 15 |
+| PHYSI | 24, 25 | | SHOT | 2, 3, 24 | | HANDL | 16 |
+| STAMI | 23 | | PASS | 4, 5, 6 | | CROSS | 17 |
+| MENTA | 26, 27 | | FK | 14 | | GO FW | 18 |
+| SUPPO | 30, 31 | | HEAD | 7, 25, 21 | | DISTR | 4, 5, 24 |
+| SYSTE | 0–7 | | INTER | 11 | | AGILI | 22 |
+| TACTI | 0–10 | | MARK | 13 | | JUMP | 21 |
+
+Only abilities 0–32 feed the bars. Where a bar has a single source, it
+names that ability: 11 intercept, 13 marking, 14 free kick, 15 saving,
+16 handling, 17 crosses, 18 going out, 21 jumping, 22 agility, 23
+stamina. The others are named only by the bars they feed. A check with
+well-known players fits (database values, before the random start
+offset): Terry has MARK 98, INTER 94 and HEAD 92, Pirlo has PASS 93 and
+FK 94, Henry has SPEED 94 and DRIBB 95, and Cech and Buffon have SAVIN 98.
+
+**Hexagon (confirmed computation, `plPinfo_CalcHexagon` `0x217ce0`,
+`plPinfo_CalcHexAbil` `0x217850`).** `PLRESOURCECOMMON.PAC` entry 2,
+table 0 has 8 bytes per ability. Each 4-byte half holds two
+`{u8 hexagon, u8 weight}` pairs: `+4` is the field-player variant, and
+`+0` is the goalkeeper variant. Hexagon *h* is the weighted average of
+every ability with a pair naming *h*. `CalcHexagonNG` fills all six from
+the field variant, then `CalcHexagon` recomputes 0 and 1 with the
+goalkeeper variant for goalkeepers. The screen's labels are messages
+670–675 of category 1 (Attacking, Physical, Teamwork, Defence, Attitude,
+Skills, clockwise from the top). Which index goes to which label is
+**empirical**:
+
+| Hexagon | Main abilities (weight 80) | Label |
+|---|---|---|
+| 0 | 2, 4–7, 14 (shot, pass, head, free kick) | Skills or Attacking |
+| 1 | 10–13 (15–18 for goalkeepers) | Defence (defenders score ~90) |
+| 2 | 33, 42–44 (60), 53–58 | Teamwork |
+| 3 | 1, 3, 8, 9 | Attacking or Skills |
+| 4 | 0, 19–25 | Physical |
+| 5 | 26–32 | Attitude |
+
+`python SRC/pbdata.py show` prints both the bars and the hexagon, and
+`csv` adds the bars as columns.
+
 ## Entries 2 and 3
 
 Each is 27,950 u16, one per player. Entry 3 is the value `getPinfoRank`
@@ -119,9 +180,17 @@ info` reports this as a note, not a problem.
 
 ## Still unknown
 
-- The meaning of most fields, the position numbering, and which of the
-  64 player abilities is which (the player screens in the overlays should
-  name them).
+- The meaning of most fields, and the position numbering.
+- Names for abilities 0–10, 12, 19, 20, 24–32 beyond the bars they feed,
+  and 33–63, which feed only the hexagon's Teamwork and Skills/Attacking
+  axes.
+- Which of hexagons 0 and 3 is Attacking and which is Skills. The label
+  order in `GP::CHexWindowBase::DrawString` (`0x27c700`) comes from a
+  screen layout and hasn't been traced.
+- Which field is the preferred leg. `WP::CDetailManager::AddPlate_LEG`
+  (`0x2898a0`) shows the global message whose id is at `CDetailManager
+  +0x4f40` ("RIGHT" is category 1, ids 101 and 103). What fills that id
+  hasn't been traced.
 - Entry 2, header `+0x14`, `+0x24` and the last 8 header bytes.
 - How entry 3's value becomes a rank: the threshold table at `0x5eac08` is
   filled at run time.
