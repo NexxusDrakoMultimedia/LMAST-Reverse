@@ -301,6 +301,10 @@ The event tables, the procedures and the overlay loader are documented in
       `packdata.py`/`ninja.py` output (confirm ID = entry by tracing the
       viewer's load, or by exporting a head and comparing it with the
       screenshot)
+- [ ] The PBDATA blocks of 25 low-rank players with shirts 1-25 (e.g.
+      England 25591-25615, then 25616-): the player's own starting squads?
+      Find where `Pwk.NewGame` / club creation picks them (lead from the
+      launcher's PERSONAL AFFAIRS list)
 - [ ] Why the blank test modules show nothing: missing data, or waiting
       for input or arguments from the launcher
 - [x] Sequencer scripts (`SEQ/*.SQB`, `PSC*.PAC`): `CSeqController`'s

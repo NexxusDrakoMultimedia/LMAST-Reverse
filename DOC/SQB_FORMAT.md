@@ -424,7 +424,8 @@ function's name, "BC TEST" in the menu).
 | INOUE TEST (76), SAKAUE TEST (77) | blank screen. `TESTPRG.REL` names a `SAKAUETEST_MODULE::CNewsTextureTestTask` next to `news_ad.pac` |
 | SATO TEST (78) | **a head viewer.** One head at a time over the training-ground background, with the debug text `ID`, `NAME` and `ADD`. IDs run from 0 to 214. `ADD` is the step for each press. Screenshots: ID 10 `REFREE_11`, ID 211 `STAFF_F_08` (the last name) |
 | IWASAKI TEST (80) | goes straight back to the launcher |
-| SPANVERSE TEST (81) | blank |
+| SPANVERSE TEST (81), EMBLEM EDIT TEST (82) | blank |
+| PERSONAL AFFAIRS (83) | a squad list (Num, Pos, Name, Age, Country), with Num and Pos empty. Choosing any row returns to the launcher. The players shown (L.Borthwick, A.Bullard, A.Magunda, R.Whaley, J.Pelham, P.Keats, D.Moran, J.Parkin) are all in database IDs 25591–25615 |
 | BPINFO CHECK (71) | the training-ground background and the debug text `CBpinfoCheckModule( return X button ), m_bra` / `0 all=27949 0=18871 1mil=8063`, plus a few garbled characters |
 | STADIUM VIEWER MK2 (171) | **works.** A menu (CREATE, BUILD, VISIBLE, DRAW_PRIORITY, NODE_CHECK, CLIP_CHECK, AUDIENCE, PROJECTION, FILTER, COLLISION, SAVE, RESET, EXIT). CREATE sets the build parameters: STADIUM_LEVEL, NATION_ID, STAND_LEVEL, TIME_ID (DAY …), WEATHER_ID (FINE …), SEASON_ID, LANDSCAPE_LEVEL, MONTH_ID, TEAM_COLOR1_16/2_16, HOME/AWAY_TEAMCOLOR, HOME/AWAY_SUPPORTER, CIVILIAN_VISITOR (110000 each by default) and ADVERTISE_INDEX. BUILD then shows the stadium, with crowd and adverts, and lets you move the camera |
 | GAME (172), BC TEST (173) | blank screen |
@@ -458,6 +459,13 @@ the 215 heads of `FC_EURO_FACEPACK_01`, the event-character pack
 ([`PLAYER_DIR.md`](PLAYER_DIR.md)), and the screenshots fit the table (ID
 10 `REFREE_11`, ID 211 `STAFF_F_08`). So ID *n* is very likely pack entry
 *n* (**empirical**; the viewer's load code isn't traced).
+
+PERSONAL AFFAIRS's players belong to a block of 25 English players,
+database IDs 25591–25615, with shirts 1–25 and ranks 1–4. None of them is
+in a computer club's squad (`initteam.py squads`). The next block, from
+25616, is another England squad numbered from shirt 1. **Empirical lead:**
+these look like ready-made squads for the player's own club, and the
+launcher's new game (`Pwk.NewGame`) gave its club the first English one.
 
 BPINFO CHECK's numbers match the player database (`pbdata.py csv`):
 27,949 is the last player index, 18,871 players have money 0, and 8,063
