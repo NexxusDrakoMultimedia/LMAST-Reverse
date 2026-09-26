@@ -178,9 +178,11 @@ hold (player models, faces, edit/uniform data) is undocumented.
       chants, ambience); `SRC/afs.py` checks all 65,225 entries and decodes
       them to WAV with loop points (`DOC/AUDIO_DIR.md`)
 - [ ] Which screens play which `bgm` track, and `OPMOVIE.SFD` (Sofdec)
-- [ ] Listen to the decoded WAVs to confirm the audio is right, and document
-      `SOUND/` (which scene each `MAP01`–`MAP23` belongs to; `MAP11`–`MAP23`
-      hold only 2 samples each)
+- [x] Listen to the decoded WAVs: ADX (`BGM`, `OPEN`, `VIC`, `KANSEI`,
+      `OUENKA`) and DTPK (`SYS_SE`, `EFFECTS`) sound right by ear
+- [ ] Commentary (`BC_ENG`), tannoy (`JYONAI_A`) and `MAP01` still unheard
+- [ ] Document `SOUND/`: which scene each `MAP01`–`MAP23` belongs to
+      (`MAP11`–`MAP23` hold only 2 samples each)
 - [x] Add `sounddat.py dtpk` over `SOUND/*.DAT` to `regress.py` (one check
       per file; each is a single bank filling the whole file)
 - [ ] `.SQB` sequences (19 files in `SEQ/`), with `SQBFILENAME.TBB`,

@@ -96,8 +96,10 @@ python SRC/afs.py wav ISO/AUDIO/BC_ENG.AFS out/commentary 1 2 3
 
 ## Still unknown
 
-- Whether the decoded audio sounds right: needs listening (pitch, speed,
-  crackle, stereo).
+- Whether the commentary and tannoy clips sound right. The music, opening,
+  victory tune, crowd loops and chants have been checked by ear and are
+  right (pitch, speed, stereo, no crackle), as are the `DAT/SOUND` effect
+  banks `SYS_SE` and `EFFECTS` decoded by `sounddat.py`.
 - Which screens play which `bgm` track, and where `VIC` and the chants are
   used.
 - The loader that maps `0FLIST.DIR` lines to archives, and the commentary
