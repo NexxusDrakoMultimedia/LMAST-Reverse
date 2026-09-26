@@ -110,7 +110,9 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `+0x210`). (The "Assistant Coach" title and the forwards/defence
       split are confirmed on screen.)
 - [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC` (entries not listed in
-      `PARAM_DIR.md`) and `PSC{COMMON,GAME,PRACTICE}.PAC`
+      `PARAM_DIR.md`). `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript
+      scripts, decoded in `DOC/SQB_FORMAT.md`; what each one computes is
+      still open (section 7)
 - [x] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`: 27,950 × `char[19]`
       placeholders (`"a"`, or `"0"` in 142 records of `UNIFORM_NAME2`), not
       referenced by name (`DOC/PARAM_DIR.md`). 27,950 is the player count,
@@ -201,8 +203,8 @@ contents and three tables are still undecoded.
       preset
 - [x] Add `sounddat.py dtpk` over `SOUND/*.DAT` to `regress.py` (one check
       per file; each is a single bank filling the whole file)
-- [ ] `.SQB` sequences (19 files in `SEQ/`), with `SQBFILENAME.TBB`,
-      `GLOBALMEMORY.TBB` and `INFORMATION.WPX`
+- [x] `.SQB` "sequences" (19 files in `SEQ/`): not audio but the game's
+      sequencer scripts. Moved to section 7 (`DOC/SQB_FORMAT.md`)
 
 ## 6. Files and folders nobody has looked at
 
@@ -270,7 +272,27 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] Where the overlay index passed to `0x10babc` comes from, and what SNR2
       header fields `0x20`/`0x24`/`0x38` tell the caller
 - [ ] Whether anything starts module 69 (the `TESTPRG` launcher) or the test
-      modules at 71–129; their viewers could be useful for modding
+      modules at 71–129; their viewers could be useful for modding.
+      Lead: `RootLauncherSeq.sqb` (script 12) starts modules, and
+      `RootMainSeq` runs it after `Dummy.CheckLauncher`
+- [x] Sequencer scripts (`SEQ/*.SQB`, `PSC*.PAC`): `CSeqController`'s
+      command encoding, argument types, labels and calls; the root set
+      (Base, Scene, RootEvent: 125 commands, 94 by symbol) and the
+      PwkScript set (Param, 30); `SQT1` data tables; `SQBFILENAME` ids
+      and `GLOBALMEMORY` records. `DOC/SQB_FORMAT.md`, `SRC/sqb.py`
+      (`info`, `dis`; in `regress.py`). 41 of 43 scripts decode, every
+      label resolves
+- [ ] Sequencer leftovers: Base 35, RootEvent `Root9`/`Root13`, Param 7,
+      8, 21, 25, 29, the `SQT1` flag and 2-D indexing, `BranchIf` vs
+      `JumpIf`; the command sets of `INFORMATION.SQB`/`CHECKCLUBEDIT.SQB`;
+      `INFORMATION.WPX`
+- [ ] Read the root scripts as the game's flow chart: which modules each
+      `Root*Seq` starts, in which order, and on which branch results
+      (`python SRC/sqb.py dis`)
+- [ ] What each PwkScript computes (`PinfoInit`, `PinfoPoint`,
+      `seasonticket`, `spectator*`, `Plpop*`, the `*_syousai_nouryokuMS`
+      detail-screen scripts): name the `pwkEdit` value ids they read and
+      write. A script edit could then be tested in PCSX2
 
 ## 8. Housekeeping
 
