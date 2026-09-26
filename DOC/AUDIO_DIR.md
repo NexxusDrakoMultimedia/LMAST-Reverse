@@ -22,7 +22,7 @@ WAV.
 | `KANSEI.AFS` | 4 | stereo 24 kHz | looping crowd noise (歓声, cheering): `EF_B_AWAY`, `EF_B_HOME`, `SND_CHR_BASE_B_20`, `TRAINING_AMBI` |
 | `OUENKA.AFS` | 622 | stereo 24 kHz | crowd chants (応援歌): `ap_*` (232) and `sp_*` (390), by region or team (`eng` 92, `ita` 92, `spa` 86, `fra` 78, `ger` 62, `ned` 62, `bra`, `arg`, `usa`, `afr`, `asi`, `arb`, `oeu`, `all`) and a per-player set (`plyr`, 74) |
 | `JYONAI_A.AFS` | 50 | stereo 24 kHz | stadium announcements (場内, in the ground): `tannoy00`–`tannoy49` |
-| `BC_ENG/FRA/GER/ITA/SPA.AFS` | 12,899 each | mono 24 kHz | match commentary, 3–4 hours per language. Entry *i* is named by entry *i* of `DAT/GAME/FNAME<lang>` (see [`GAME_DIR.md`](GAME_DIR.md)) |
+| `BC_ENG/FRA/GER/ITA/SPA.AFS` | 12,899 each | mono 24 kHz | match commentary, 3–4 hours per language, built from short pieces: 0.9 s on average in English, the longest 8.6 s, and the first entries (`WC*`, `WCPL_*`) a quarter of a second. Each clip's data fills exactly its header's sample count. Entry *i* is named by entry *i* of `DAT/GAME/FNAME<lang>` (see [`GAME_DIR.md`](GAME_DIR.md)) |
 | `BC_ENG2/FRA2/GER2/ITA2/SPA2.AFS` | 6 each | mono 24 kHz | six more lines per language (`eng_ba_pfb_2000`–`2005`) |
 | `BC_JPN2T.AFS` | 6 | mono 24 kHz | the same six lines in Japanese |
 
