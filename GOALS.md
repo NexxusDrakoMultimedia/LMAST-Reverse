@@ -87,7 +87,7 @@ Where each folder stands (September 2026):
 
 | Folder | Contents | Status |
 |---|---|---|
-| `0SYSTEM/` | `TBB`, `PAC`, `SVR`/`SVP`, `ICO`, `DAT` | containers and textures parse; no folder doc, table meanings unknown |
+| `0SYSTEM/` | `TBB`, `PAC`, `SVR`/`SVP`, `ICO`, `DAT` | surveyed in [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md), `system.py`: loader of every file, the colour table, the 8 texture packs and their index rules, fonts by language; `DETAILFLAG` meaning and colour uses unknown |
 | `ACROBATA/` | `PAC`, `DAT` | not studied |
 | `BG/` | 304 `MRG`, `HED`, `SVR`, Ninja `SNO`/`SNM`/`SNJ` | archives, textures, Z buffers and models done ([`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
 | `CSE/` | 490 `CSP`, `CSE`, `SVR`, a few others | screen layouts done ([`CSE_FORMAT.md`](DOC/CSE_FORMAT.md)) |

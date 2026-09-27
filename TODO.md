@@ -65,7 +65,8 @@ The first thing [`GOALS.md`](GOALS.md) wants a mod to change. Every table
 parses with `tbb.py`, and [`DOC/PARAM_DIR.md`](DOC/PARAM_DIR.md) gives each
 file's loader and size. The starting leagues, squads, schedules and player
 database are decoded and editable (`initteam.py`, `schedule.py`,
-`pbdata.py`); `0SYSTEM/` has no folder doc yet.
+`pbdata.py`); `0SYSTEM/` is surveyed in
+[`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
 - [x] Write `DOC/PARAM_DIR.md`: each file's loader, row count and record size.
       Loaders found for all but `SPONSOR_BOARD.TBB` and `UNIFORM_NAME*.BIN`
@@ -126,9 +127,19 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       placeholders (`"a"`, or `"0"` in 142 records of `UNIFORM_NAME2`), not
       referenced by name (`DOC/PARAM_DIR.md`). 27,950 is the player count,
       so they are probably one kit name per player
-- [ ] Write `DOC/0SYSTEM_DIR.md`: `COLORDATATABLE`, `DETAILFLAG` and
-      `MSGCOMMON` tables, the texture packs and fonts, `SAVE_VERSION.DAT`,
-      `STATIC*.ICO`
+- [x] Write `DOC/0SYSTEM_DIR.md` (and `SRC/system.py`, in `regress.py`):
+      the loader of every file; 77 UI colours (`clr::GetRGBA`); the 8
+      texture packs as `CFcEuro_CommonTexture` types 0-7, with how a team,
+      competition or sponsor id picks the entry; fonts by language;
+      `SAVE_VERSION.DAT` is a note matching the save header's version 105;
+      `MSGCOMMON`, `SCHEDULE.TBB` and the kanji palettes are unreferenced
+- [ ] `0SYSTEM` leftovers: what the `DETAILFLAG` flags switch (only the
+      first 99 of 528 bytes are read), which UI element uses each colour,
+      who the `V001`-`V032` crests are, and whether `SPONSOR_TEXTURE_M`
+      (type 6) is used at all
+- [ ] Check in game: a team detail screen should show Siena's real crest
+      (`FLAG_TEXTURE`) for the first team shown and the made-up one
+      (`EMBLEM_TEXTURE`) after switching teams (`CDetailTeamFlag`)
 
 ## 3. Ninja 3D models and motions
 
