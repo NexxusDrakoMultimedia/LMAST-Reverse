@@ -116,6 +116,10 @@ have no squad in this file.
 
 Club names are message category 3, record `2000 + team id`, in each
 language slot (`python SRC/mbb.py dump DAT/MESSAGE/MES.PAC --cat 3`).
+The game reads them from the copy in `PRELOAD/STATIONMES<lang>.PAC`, which
+stays loaded all game, not from `MES.PAC`. Tested in PCSX2: with different
+names in the two copies, VS mode showed the `STATIONMES1` one. An edit
+must be patched with `--copies` ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)).
 Categories 4 and 5 are parallel lists (5 holds the three-letter short
 names, `CHE`, `LIV`, ...). Category 10 has `<name> Stadium`, from 11000.
 Category 961 is something else: 839 English town names (`Reading`,

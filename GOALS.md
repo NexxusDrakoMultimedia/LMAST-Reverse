@@ -98,7 +98,7 @@ Where each folder stands (September 2026):
 | `NEWS/` | `PAC`/`HED`, `TBB` | containers parse; no folder doc |
 | `PARAM/` | 18 `TBB`, `PAC`/`HED`, `BIN` | tables parse; loaders and row counts in [`PARAM_DIR.md`](DOC/PARAM_DIR.md), 7 record layouts confirmed, the rest not decoded |
 | `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` parsed by `packdata.py`, block contents partly decoded; kit tables `UNIFORM_LIST` and `COLOR_TBL` decoded with an editor ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md)), `UNIFORM_GK` not; models parse, faces included ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
-| `PRELOAD/` | 139 `PAC` | containers parse; no folder doc |
+| `PRELOAD/` | 139 `PAC` | done ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md), `preload.py`): every entry is a byte-identical copy of a file elsewhere, the loader of every pack is known, and which copy the game reads is confirmed and tested in PCSX2 |
 | `SEQ/` | 19 `SQB`, `TBB`, `WPX` | sequencer scripts decoded ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md), `sqb.py`): 17 of 19 decode and check (two unused 2004 scripts don't); `SQBFILENAME` and `GLOBALMEMORY` done; `WPX` unreferenced, not decoded |
 | `SOUND/` | 28 `DAT` sound banks | all 28 `ps2_DTPK` banks parse; samples and the 41 songs in `MAP01`–`MAP10` decode (`sounddat.py`), described in [`GAME_DIR.md`](DOC/GAME_DIR.md#the-soundmap-banks); no folder doc of its own; instrument tone tables not decoded |
 | `STADIUM/` | `PAC`/`HED`, 24 `TBB`, `PRI` | surveyed in [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md); `PRI` and all 24 tables decoded: part slots, stadium build, collision, crowd sets and tiers, adverts, stadium id by level (a few flags unknown) |

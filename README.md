@@ -221,10 +221,17 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 |---|---|---|
 | [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back in place (same size only), and files outside `DATA.CVM` (`disc:SLES_541.51`, renamed with `--rename`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), finds where each file lives, and checks an image holds given bytes |
 
+| [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
+
 ```bash
 python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30
 python SRC/patch_disc.py patch disc.iso modded.iso PARAM/PBDATA_EU.PAC=out/PBDATA_EU.PAC
+python SRC/preload.py who DAT 3_1.mbb       # the English club names: read from STATIONMES1.PAC
 ```
+
+Many files have a copy in a `PRELOAD` pack, and the game reads that copy
+whenever the pack is loaded, so an edit must reach both (`--copies`). See
+[`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md).
 
 Only the table of contents of `DATA.CVM` is encrypted, so a file that keeps
 its size can be written over the original without re-encrypting anything.
@@ -269,6 +276,7 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
   `snr2.py`.
 - `patch_disc.py` uses `extract_disc.py` and `rofs_decrypt.py` to find files
   in the image.
+- `preload.py` uses `pac.py` for the packs and `MES.PAC`.
 
 The disassemblers connect to the format tools through the docs. The usual
 workflow is:
@@ -308,6 +316,7 @@ workflow is:
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
 | [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md) | `ISO/AUDIO`: the AFS archives (music, commentary, chants, ambience), AFS and ADX layouts, `0FLIST.DIR` |
 | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
+| [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md) | `DAT/PRELOAD`: the bulk-load packs, the load lists and folder ids, and which copy of a file the game reads |
 | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) | `DAT/STADIUM`: the 10 stadium models, `.PRI` draw priorities, crowds, adverts, `BUILD_STADIUM` |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |
 | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) | the player database: header, bit-packed player/manager/scout records, ability and money tables |

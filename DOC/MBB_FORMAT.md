@@ -313,9 +313,13 @@ A grown file's `PRELOAD` copies can't follow, because those packs align
 entries to `0x40` and leave no room. `patch_disc.py --copies` notices that
 the entry changed size and warns that the copy keeps the old text, rather
 than writing the first *old-size* bytes of the new file into it. That
-would leave a copy whose header promises more records than it holds. For
-the mail this is harmless, since the game reads `MES.PAC` (below). For the
-other `PRELOAD` packs it isn't known.
+would leave a copy whose header promises more records than it holds.
+**The stale copy is still read**: every `PRELOAD` copy is what the game
+reads while its pack is loaded ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)). The
+old text then shows on those screens. For example, a grown `1_1.mbb` shows
+its old text everywhere, because `STATIONMES` stays loaded all game. Only
+grow a file that `python SRC/preload.py who DAT <name>` says is in no
+pack, until the packs can be rebuilt.
 
 **Confirmed in the game (PCSX2).** The English subject (`563:11000`) and
 body (`563:1000`) of the first mail in a new game, "Welcome to Football
@@ -332,9 +336,13 @@ text in each copy of `563_1.mbb`: "Copy A: MES.PAC" in `MES.PAC` and
 **copy A**, so this mail is read from `MES.PAC`. The same disc changed
 the rival's lines 102 and 104 in `487_1.mbb`, which has no `PRELOAD` copy
 (the Big Bang street interview, 2005–2006 week 3 of June in a new game).
-They showed, and the window wrapped the long lines on its own. What the
-other `PRELOAD` copies (`SIMLOCALMEM`, `STATIONMES`, `TACTICS*`, ...)
-are for isn't known, so `--copies` stays the safe choice.
+They showed, and the window wrapped the long lines on its own.
+
+The pop-up is the event code's own request, made while no mail pack is
+loaded. A later test opened the same mail from the Mail screen, which
+loads `MAIL1.PAC` first. It showed **copy B**. So both copies are read,
+on different screens, and `--copies` is needed. The rule for every pack
+is in [`PRELOAD_DIR.md`](PRELOAD_DIR.md#which-copy-the-game-reads).
 
 **Growth tested on a copy of `DATA.CVM`.** Growing `1_3.mbb` by 4 bytes
 and `487_1.mbb` by 12 changed only those two entries. `mbb.py info` and

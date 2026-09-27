@@ -86,10 +86,15 @@ The 14 PARAM files with copies are `CLUBRESULT`, `REGULATION`,
 `SCHEDULE_LIST`, `STADIUM_DATA`, `TACTICS_FORMATION_SET` and
 `TRAINING_LIST` (`.TBB`), `PLRESOURCECOMMON`, `PLRESOURCESIM`,
 `PSCCOMMON`, `PSCGAME` and `SCHEDULE_SYSTEM` (`.PAC`), and the
-`SCHEDULE_*` `.HED` files. Which copy the game reads in which mode
-hasn't been traced. The `PRELOAD` packs are what the overlays load in
-bulk (`SIMFILE*` for the season mode), so both copies are assumed to
-matter.
+`SCHEDULE_*` `.HED` files.
+
+**Which copy the game reads (confirmed, and tested in PCSX2).** Both of
+them. A screen that loads a `PRELOAD` pack registers its entries by name
+and reads them from the pack. Everywhere else the original is read. Some
+packs stay loaded all game (`STATIONFILE`, and `STATIONMES` with the club
+names), and others only on one screen (`MAIL`, the talk scenes). So
+`--copies` can't be narrowed: every copy is read somewhere. The details,
+with the loader of every pack, are in [`PRELOAD_DIR.md`](PRELOAD_DIR.md).
 
 `patch` compares each target with the unmodified file in `DAT/` and finds
 every unit whose bytes change: the whole file, its header, the entries
@@ -109,8 +114,11 @@ Tested on a copy of `DATA.CVM`:
 Confirmed in PCSX2: an `mbb.py import` edit to the welcome mail
 (`563_1.mbb`), patched with `--copies` into `MES.PAC` and
 `PRELOAD/MAIL1.PAC#6`, showed in a new game. With different text in the
-two copies, the mail showed the `MES.PAC` one, so the `MAIL1` copy isn't
-what that mail reads ([`MBB_FORMAT.md`](MBB_FORMAT.md#size)).
+two copies, the mail showed the `MES.PAC` one when it popped up in a new
+game ([`MBB_FORMAT.md`](MBB_FORMAT.md#size)). Opened later from the Mail
+screen, the same mail showed the `MAIL1` copy, and the club names showed
+the `STATIONMES1` copy rather than `MES.PAC`'s
+([`PRELOAD_DIR.md`](PRELOAD_DIR.md#tested-in-pcsx2)).
 
 ## Usage
 

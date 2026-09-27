@@ -103,6 +103,10 @@ def checks():
         ("patch_disc_copies", ["patch_disc.py", "copies", "DAT", "PARAM/REGULATION.TBB",
                                "PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/PBDATA_EU.PAC",
                                "BG/HUMAN_1000_PALETTE.MRG#header"], ["DAT"]),
+        # Every PRELOAD entry against its source, and the load lists that
+        # decide which copy the game reads.
+        ("preload", ["preload.py", "info", "DAT"], ["DAT"]),
+        ("preload_lists", ["preload.py", "lists", "ISO"], ["ISO/SLES_541.51", "ISO/DLL"]),
         # Save layout from the game code: block sizes and the layout CRC
         # (saves themselves aren't game data we can ship or assume).
         ("save_blocks", ["save.py", "blocks"], ["ISO/SLES_541.51", "ISO/DLL/SAVEPRG.REL"]),

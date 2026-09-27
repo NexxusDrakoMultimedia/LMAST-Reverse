@@ -73,8 +73,11 @@ stride = 4*(version + 2)                     (tagged: name_len is forced to 4)
   the header. The game ignores it and treats column 2 as a single u32. In
   practice that u32 is a 3-letter type (`snm\0`, `bnt\0`, `opm\0`).
 - **Extra columns**:
-  - v3: two u32. Usually `0,0`. In `PRELOAD/GAMEFILE*.PAC` the first
-    one varies (3, 8, 9, 12) and looks like a load type.
+  - v3: two u32. Usually `0,0`. In the `PRELOAD` packs the first is the
+    folder id of the file the entry copies (3 `MESSAGE`, 4 `PARAM`, ...),
+    and the second is 1 when the name ends in a language digit. The game
+    uses them to register each entry under the original's name
+    (confirmed, `0x10d848`; see [`PRELOAD_DIR.md`](PRELOAD_DIR.md)).
   - v2 `.MRG`: one u32, the **merge user ID**. Confirmed from
     `CLoader::l_realize_merge`: it reads column `3 + idType` and matches
     the value against a 23-slot table, one slot per `CLoader::eFILETYPE`,

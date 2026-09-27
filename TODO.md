@@ -37,8 +37,12 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
       `MES.PAC` and `PRELOAD/MAIL1.PAC#6`; the welcome mail showed the
       `MES.PAC` one). The rival's Big Bang lines (`487`, no copy) also
       showed
-- [ ] What the other `PRELOAD` copies of message files are read for, if
-      anything (`SIMLOCALMEM`, `STATIONMES`, `TACTICS*`, `GAMEFILE`, `NEWS`)
+- [x] What the other `PRELOAD` copies of message files are read for: all
+      of them are read while their pack is loaded (`DOC/PRELOAD_DIR.md`).
+      The global categories 1, 3–11 (club names) come from `STATIONMES`
+      all game. Tested in PCSX2: club names showed the `STATIONMES1` copy,
+      and the welcome mail opened from the Mail screen showed the `MAIL1`
+      copy
 - [x] Let a message file grow into `MES.PAC`'s `0x800` slot (median 1,544
       bytes free; filler is ASCII `'0'`): only the header size changes, and
       the loader reads `(size >> 11) + 1` sectors from it (`0x10cf1c`).
@@ -47,8 +51,9 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 - [x] Confirm a grown message file in PCSX2: the rival's Big Bang lines,
       `487_1.mbb` grown 9,636 -> 9,704 bytes (same 5 sectors, so the new
       header size itself isn't exercised)
-- [ ] Rebuild `PRELOAD` packs so grown files' copies can follow, if any of
-      those copies turn out to be read
+- [ ] Rebuild `PRELOAD` packs so grown files' copies can follow. Needed:
+      the copies are read, so a grown file whose copy stays old shows old
+      text on those screens (`preload.py who` lists the packs)
 - [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`,
       and the EVENT `+0x68` timing enum (values 0–21, scan at `0x12df08`)
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)
@@ -262,9 +267,9 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
 - [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
       (467 f32, not referenced by name)
 - [ ] `TEST3D/SHADOWCOLLI.LBI` and `BG/HUMANID.BIN` (no doc mentions them)
-- [ ] Folder docs for `EMBLEM/`, `NEWS/`, `PRELOAD/`, `SOUND/`,
-      `SEQ/`, `ACROBATA/` and `TEST3D/`, plus a note on the `CVS/` metadata
-      (`STADIUM/` done: `DOC/STADIUM_DIR.md`)
+- [ ] Folder docs for `EMBLEM/`, `NEWS/`, `SOUND/`, `SEQ/`, `ACROBATA/`
+      and `TEST3D/`, plus a note on the `CVS/` metadata (`STADIUM/` done:
+      `DOC/STADIUM_DIR.md`; `PRELOAD/` done: `DOC/PRELOAD_DIR.md`)
 
 ## 7. Event system and game code
 
@@ -397,8 +402,13 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       (files, headers, entries) and update same-named copies (325 loose
       files have one, e.g. `REGULATION.TBB` in all seven `SIMFILE` packs;
       193 `.HED` headers; 763 `MES.PAC` entries); `path#entry` targets
-- [ ] Which copy the game actually reads in each mode (loose file or
-      `PRELOAD` pack), so `--copies` can be narrowed
+- [x] Which copy the game actually reads: a loaded `PRELOAD` pack
+      registers its entries under the originals' names, and requests are
+      served from it; the original is read when no pack holding it is
+      loaded. Every copy is read somewhere, so `--copies` stays
+      (`DOC/PRELOAD_DIR.md`, `SRC/preload.py`, in `regress.py`)
+- [ ] `TACTICSPITCH.PAC` is loaded through `CLoader`, not as a registering
+      resource: whether its entries stand in for their originals
 - [ ] Size changes: re-lay `DATA.ISO`, rewrite directory records,
       re-encrypt the table of contents, fix the `CVMH`/`ZONE` lengths and the
       disc's `DATA.CVM` entry
