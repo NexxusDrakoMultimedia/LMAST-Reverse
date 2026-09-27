@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # `DAT/PLAYER`: player models, faces, hair and kits
 
 `DAT/PLAYER` (92 files, 1.3 GB) holds everything needed to draw a player:

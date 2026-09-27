@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # CLAUDE.md
 
 Reverse-engineering notes (`DOC/`) and Python tools (`SRC/`) for the PAL PS2
@@ -74,6 +77,10 @@ Commits usually add a doc and its tool together, with messages like
 
 ## Code conventions (`SRC/`)
 
+- The repo is GPL-3.0-or-later (`LICENSE`). Every new `.py` file starts with
+  `# SPDX-License-Identifier: GPL-3.0-or-later` and
+  `# Copyright (C) 2026 Pyra Drake`, before the docstring. Every new `.md`
+  file starts with the same two lines as HTML comments (`<!-- ... -->`).
 - Each tool is a single standalone script run from the repo root as
   `python SRC/<tool>.py <command> ...`. There is no package, no
   `__init__.py`, and no tests.

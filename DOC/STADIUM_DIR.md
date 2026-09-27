@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # `DAT/STADIUM`: stadium models, crowds and adverts
 
 `DAT/STADIUM` (320 files, 35 MB, plus `CVS/`) holds the 3D stadiums used in

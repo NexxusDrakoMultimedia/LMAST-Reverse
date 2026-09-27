@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """Dump the EvsDataBin_{EVENT,NEWS,MAIL}.bin event tables to CSV.
 
 Headerless arrays of little-endian u32 records (EVENT 272 bytes, NEWS

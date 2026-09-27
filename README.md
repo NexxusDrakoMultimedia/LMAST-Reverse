@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # Let's Make A Soccer Team Reverse Engineering Project
 
 Reverse-engineering notes and tools for the PAL PS2 release of
@@ -312,6 +315,16 @@ workflow is:
 | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md) | club-management event tables, event ID types, scene types (what happens after a scene), talk types |
 | [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events), scout-list search criteria, squad and loan limits, the 13 regions |
 | [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md) | the unused turn-event prototype |
+
+## License
+
+The code in `SRC/` and the documentation in `DOC/` and this repository are
+licensed under the GNU General Public License, version 3 or (at your option)
+any later version. See [`LICENSE`](LICENSE). Each file carries an
+`SPDX-License-Identifier: GPL-3.0-or-later` header.
+
+This covers only the work in this repository. The game, its disc image and
+its data files are not part of it and are not covered by this license.
 
 ## Special thanks
 

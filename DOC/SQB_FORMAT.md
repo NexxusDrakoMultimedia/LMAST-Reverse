@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # SQB sequencer scripts (`SEQ/*.SQB`, `PARAM/PSC*.PAC`)
 
 `.SQB` files are **bytecode scripts**, not music. The game's sequencer

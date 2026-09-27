@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # `DAT/PARAM`: career-mode parameter tables
 
 `DAT/PARAM` (33 files, 5.5 MB, plus `CVS/`) holds the fixed data behind the

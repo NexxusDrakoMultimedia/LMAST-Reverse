@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """SQB sequencer script reader for Let's Make a Soccer Team! (PS2).
 
 A .sqb file is a TBB1 container (see DOC/TBB_FORMAT.md) whose tables are

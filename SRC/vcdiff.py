@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """VCDIFF (RFC 3284) patches, the format xdelta3 writes, for sharing mods
 of Let's Make a Soccer Team! (PS2) as small files against the user's own
 disc image. Standard library only; no xdelta3 needed.

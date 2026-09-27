@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # `DAT/CSE`: 2D screens (`*.CSP`, `*.CSE`)
 
 `DAT/CSE` (689 files, 80 MB) holds the game's 2D graphics: every menu screen,

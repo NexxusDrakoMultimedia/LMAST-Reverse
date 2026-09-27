@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # SNR2 overlays (`ISO/DLL/*.REL`)
 
 The game code outside `SLES_541.51` lives in ten SN Systems relocatable

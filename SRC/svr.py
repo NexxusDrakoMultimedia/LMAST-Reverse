@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """SVR / SVM / SVP texture reader for Let's Make a Soccer Team! (PS2).
 
 These are the Sega Ninja (PS2) texture formats:

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # Player database (`PARAM/PBDATA_EU.PAC`, `PBDATA_JP.PAC`)
 
 `PBDATA_EU.PAC` holds every real person the game knows: 27,950 players,

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # `ISO/AUDIO/`: music, commentary and crowd audio
 
 The streamed audio is outside `DATA.CVM`, in the disc's `AUDIO` folder: 18

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # Goals
 
 The aim of this project is to make the data in *Let's Make a Soccer Team!*

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """Patch edited game files into the disc image, DATA.CVM or DATA.ISO, for
 Let's Make a Soccer Team! (PS2). Same-size files only.
 

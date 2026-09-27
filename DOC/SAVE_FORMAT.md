@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # Save data (memory card)
 
 A saved game is a memory-card folder `BESLES-54151-Gnnn` (`nnn` = slot,

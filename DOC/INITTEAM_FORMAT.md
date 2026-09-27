@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # Starting leagues and squads
 
 Two tables in `DAT/PARAM` set up the clubs at the start of a career:

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # Ninja 3D models and motions (`*.SNJ`, `*.SNO`, `*.SNM`, `*.SNP`, `*.SNA`)
 
 The game's models, skeletons and animations use Sega's **NN** ("Ninja

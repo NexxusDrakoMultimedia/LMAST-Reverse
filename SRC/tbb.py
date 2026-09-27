@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """TBB1/TBL1 table container reader for Let's Make a Soccer Team! (PS2).
 
 A .TBB file is a small container of one or more TBL1 tables of raw,

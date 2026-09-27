@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # `DAT/GAME`: in-match data, commentary and sound banks
 
 `DAT/GAME` (156 files, 112 MB) holds the data for the match engine. Most of

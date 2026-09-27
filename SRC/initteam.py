@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """Starting leagues and computer-team squads for Let's Make a Soccer Team! (PS2).
 
 Two TBB1 files in DAT/PARAM set up the clubs at the start of a career

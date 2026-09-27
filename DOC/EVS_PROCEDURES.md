@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # Event procedures (type-4 events)
 
 Besides the EVENT, MAIL and NEWS records in the `EvsDataBin` tables (see

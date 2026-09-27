@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # `EVENT/EVENTDATA_TURN.TBB`
 
 An early export of the "turn" event sheet: one row per scripted event

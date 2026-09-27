@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # PAC / HED archive formats (`*.PAC`, `*.MRG`, `*.HED`)
 
 `DAT/` uses two archive formats:

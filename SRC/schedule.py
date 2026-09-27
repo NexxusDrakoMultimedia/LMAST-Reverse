@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """Season schedule reader for Let's Make a Soccer Team! (PS2).
 
 The season calendar lives in three BINPAC packs in DAT/PARAM, all full of

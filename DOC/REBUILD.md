@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # Putting edited files back on the disc
 
 This is stage 4 of [`GOALS.md`](../GOALS.md). The first step, same-size

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # SVR / SVM / SVP textures (`*.SVR`, `*.SVM`, `*.SVP`)
 
 These are the Sega **Ninja (PS2)** texture formats, the PS2 counterparts

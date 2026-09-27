@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """Reader for the CRI AFS archives in ISO/AUDIO and the ADX audio they hold,
 for Let's Make a Soccer Team! (PS2).
 

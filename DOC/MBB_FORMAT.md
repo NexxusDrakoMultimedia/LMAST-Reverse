@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # MBB1 message files (`MESSAGE/MES.PAC`)
 
 All of the game's text is in `DAT/MESSAGE/MES.PAC`, a named BINPAC (see

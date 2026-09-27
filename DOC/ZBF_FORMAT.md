@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Pyra Drake -->
+
 # ZBF pre-rendered depth buffers (`*.zbf`)
 
 The game's cut-scene and menu rooms (offices, changing rooms, TV studio,

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pyra Drake
 """Set up ISO/ and DAT/ from a Redump-verified disc image.
 
 Automates the README's setup steps for the PAL disc (SLES-54151):
