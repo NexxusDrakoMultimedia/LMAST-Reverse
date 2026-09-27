@@ -144,8 +144,8 @@ animated models to glTF.
       head models; `obj` exports them
 - [x] Export the face packs' own textures (sibling SVM blocks in the same
       `etc::PackData` entry); `obj` takes `info` labels for archive entries
-- [ ] Hair tint: the hair textures are grey patterns, probably coloured
-      from `COLOR_TBL`
+- [ ] Hair tint: the hair textures are grey patterns, tinted from
+      somewhere (not `COLOR_TBL`, which is the kit clash table)
 - [ ] PX Plus skin words, VU `0x21` weight remainder, VU type bit `0x100`
 - [x] Camera (`NSCA`/`NSMC`, one per pre-rendered background) and light
       (`NSLI`) chunks
@@ -177,8 +177,14 @@ contents and three tables are still undecoded.
 - [ ] `GAME/CUTINPACK.BIN` entries are `PackData` too (block types 19–24);
       reconcile with `PAC_FORMAT.md`'s "109 are empty" and document the blocks
 - [ ] Decode the face block-4 header and the `PLPACK` block-0 kit descriptor
-- [ ] `COLOR_TBL`, `UNIFORM_LIST`, `UNIFORM_GK` table layouts
-      (`UniformList_*` at `0x2d3078`)
+- [x] `UNIFORM_LIST` (every club's kits: designs and colours per shirt,
+      shorts, socks; bit layout from `0x2d2b68`) and `COLOR_TBL` (colour
+      clash table): `DOC/UNIFORM_FORMAT.md`, `SRC/uniform.py` (`info`,
+      `show`, `clash`, `set`, `roundtrip`; in `regress.py`). Tested in
+      PCSX2: Birmingham's shirt edited from blue to red shows in the
+      Uniform Viewer
+- [ ] Still open in the kit tables: `UNIFORM_GK`, the 6 side fields,
+      kit fields 4 and 14, the 3-bit flag, which clubs use licensed kits
 
 ## 5. Music and sound effects
 
@@ -296,9 +302,10 @@ The event tables, the procedures and the overlay loader are documented in
       VIEWER, SATO TEST (heads), CLUB EDIT and its sub-screens and many
       menu tests work; about 20 entries hang or return at once. YAMAZAKI TEST, Talk
       and BG LIGHT TEST not recorded
-- [ ] Use the Uniform Viewer to decode `UNIFORM_LIST`/`UNIFORM_GK`/
-      `COLOR_TBL`: it shows each club's kit fields (collar type
-      `l_nml_bdy_01_el`, number and captain-mark colours, pants type)
+- [x] Use the Uniform Viewer to check `UNIFORM_LIST` (done, see section
+      4). Its collar, number and captain-mark fields come from the
+      licensed-kit data (`GetLicenceUniformInfo`), a lead for the `PLPACK`
+      block-0 kit descriptor
 - [ ] `DAT/TEST3D/VIEWERPLAYERMOTION.PAC`: the CHARACTER VIEWER's motion
       set (`mendan_Asit_ang_001.snm`, ...); list it and link it to the
       Ninja motion docs

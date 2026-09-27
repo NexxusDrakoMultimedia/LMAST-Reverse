@@ -37,8 +37,8 @@ game code. Everything else here (what the names mean, counts) is
 | `EDIT_UNI_{SHT,PNT}_NUM.PAC/.HED` | BINPAC v3 | the same kits with numbers applied (`00/num_00_99.svr` ...) |
 | `EDIT_UNIFORM_CLUT{,_PRESS}.PAC/.HED` | BINPAC v3 | 96 kit palettes (`org_uni_A1.svp` ...) |
 | `NUMBER_00`–`_07{,_PRESS}.PAC/.HED`, `NUMBER_CLUT{,_PRESS}` | BINPAC v3 | 8 shirt-number fonts × 100 numbers (`num_00_00.svr` ... `num_00_99.svr`), 96 palettes |
-| `COLOR_TBL.TBB` | TBB, 96 × 96 bytes | bytes are 0/1: probably a mask per kit pattern. Unknown |
-| `UNIFORM_LIST.TBB` | TBB, 661 × 64 bytes | read by `UniformList_*` (`0x2d3078`–`0x2d3608`). Bit-packed, unknown |
+| `COLOR_TBL.TBB` | TBB, 96 × 96 bytes | the kit colour clash table (`UniformList_CheckColor`). See [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md) |
+| `UNIFORM_LIST.TBB` | TBB, 661 × 64 bytes | every club's home and away kits (designs and colours), bit-packed, read by `UniformList_*` (`0x2d2b68`–`0x2d3608`). See [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md) |
 | `UNIFORM_GK.TBB` | TBB, 209 × 3 and 38 × 66 bytes | 209 and 38 match the `ORG_SHT` and `GK_SHT` entry counts. Unknown |
 | `*.SNO`, `*.SNM`, `*.SNP` | Ninja | loose models (`HUMAN_1200.SNO`, `L/M/S_PLAYER.SNO`), motions, one node tree |
 | `*.SVR`, `*.SVM` | textures | `ACCE_CAP`, `HUM1200_H`, `REF_000_*` (referee kit) ... |
@@ -212,8 +212,8 @@ python SRC/svr.py info out/face                                 # the texture bl
 - The 0x18-byte header of face block 4, and whether its palette is skin.
 - The 32-byte kit descriptor in `PLPACK` block 0 (only 0x12 bytes are used).
 - What maps a club to its `PLPACK` index, and whether `<id>` is a club id.
-- `COLOR_TBL.TBB`, `UNIFORM_LIST.TBB` and `UNIFORM_GK.TBB` record layouts
-  (`UniformList_*` at `0x2d3078` is the place to start).
+- `UNIFORM_GK.TBB`'s layout. (`COLOR_TBL.TBB` and `UNIFORM_LIST.TBB` are
+  decoded in [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md).)
 - Which models in `PLAYER_MODEL*.PAC` are which. Their names were cut to
   the extension, so the game must address them by index.
 - Where `Param::PlPinfo+0x1ca` (the face index) is filled from.

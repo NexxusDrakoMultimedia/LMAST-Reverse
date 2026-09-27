@@ -69,6 +69,9 @@ def checks():
         # The 215 event-character heads by name.
         ("packdata_names", ["packdata.py", "names", "DAT/PLAYER/FC_EURO_FACEPACK_01.HED"],
          ["DAT/PLAYER/FC_EURO_FACEPACK_01.HED"]),
+        ("uniform", ["uniform.py", "info", "DAT/PLAYER"], ["DAT/PLAYER"]),
+        ("uniform_roundtrip", ["uniform.py", "roundtrip", "DAT/PLAYER/UNIFORM_LIST.TBB"],
+         ["DAT/PLAYER/UNIFORM_LIST.TBB"]),
         ("schedule", ["schedule.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("stadium", ["stadium.py", "info", "DAT/STADIUM", "DAT/PARAM"],
          ["DAT/STADIUM", "DAT/PARAM"]),

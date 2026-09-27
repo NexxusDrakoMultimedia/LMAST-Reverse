@@ -231,8 +231,8 @@ The face packs keep each head's and hair's texture as a sibling
 `etc::PackData` block, an SVM whose texture name is the `NSTL` name without
 `.svr` (`NIR_00_Maik_TAYLOR`, `buz004`). `ninja.py obj` finds them there.
 The hair textures are grey patterns; the game probably tints them with the
-player's hair colour (**not confirmed**; see `COLOR_TBL` in
-[`PLAYER_DIR.md`](PLAYER_DIR.md)).
+player's hair colour (**not confirmed**; not from `COLOR_TBL`, which is
+the kit colour clash table, see [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)).
 The player models name their kit, skin and number textures (`skn_00.svr`,
 `org_000_sht.svr`, ...), but those files aren't on the disc as-is: the
 game builds them from the `PLAYER/` packs.
