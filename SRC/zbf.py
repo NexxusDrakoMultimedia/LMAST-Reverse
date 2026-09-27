@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """ZBF pre-rendered depth buffer reader for Let's Make a Soccer Team! (PS2).
 
 A .zbf is the Z buffer of a pre-rendered background: 512x448 little-endian

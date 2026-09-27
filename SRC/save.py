@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """Reader / writer for the memory-card saves of Let's Make a Soccer Team! (PS2).
 
 A save is a folder BESLES-54151-Gnnn on the memory card. Its main file

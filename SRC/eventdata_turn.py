@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """Decode DAT/EVENT/EVENTDATA_TURN.TBB into CSV.
 
 EVENTDATA_TURN is an early (CVS rev 1.1, Jan 2005) export of the turn

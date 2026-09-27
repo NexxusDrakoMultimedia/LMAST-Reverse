@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """Player database reader (PBDATA_EU.PAC / PBDATA_JP.PAC) for Let's Make a
 Soccer Team! (PS2).
 

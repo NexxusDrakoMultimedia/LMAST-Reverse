@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """Stadium data checker for Let's Make a Soccer Team! (PS2).
 
 DAT/STADIUM holds 10 stadium models (7 home grounds ho00a-ho04a, 3 away

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """Reader for GAME/SOUNDDAT.PAC and the commentary / sound-bank formats it
 holds, for Let's Make a Soccer Team! (PS2).
 

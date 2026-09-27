@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Copyright (C) 2026 Pyra Drake -->
+<!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
 # Let's Make a Soccer Team (PS2) — DATA.CVM Decryption to DATA.ISO
 Special thanks to **@tw09627** on the LMAST Discord, who first decrypted `DATA.CVM` with the help of

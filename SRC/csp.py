@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """CSP / CSE 2D layout reader for Let's Make a Soccer Team! (PS2).
 
 A .CSE is a scene file for the game's `cse` 2D sprite library: a picture

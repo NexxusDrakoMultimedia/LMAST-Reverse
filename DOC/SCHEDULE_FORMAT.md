@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Copyright (C) 2026 Pyra Drake -->
+<!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
 # Season schedule: `SCHEDULE_SYSTEM`, `SCHEDULE_COMPETITION`, `SCHEDULE_TEAM_ENTRY`
 

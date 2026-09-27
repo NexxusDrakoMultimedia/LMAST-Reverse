@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """MBB1 message file reader for Let's Make a Soccer Team! (PS2).
 
 All of the game's text lives in DAT/MESSAGE/MES.PAC, a BINPAC of 3738

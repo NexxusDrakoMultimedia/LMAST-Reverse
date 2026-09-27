@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Copyright (C) 2026 Pyra Drake -->
+<!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
 # Ninja 3D models and motions (`*.SNJ`, `*.SNO`, `*.SNM`, `*.SNP`, `*.SNA`)
 

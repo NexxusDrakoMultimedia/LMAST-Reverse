@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """ROFS/CVM decryptor for Let's Make a Soccer Team! (PS2).
 
 Reimplements roxfan's CRI ROFS decryption algorithm (see

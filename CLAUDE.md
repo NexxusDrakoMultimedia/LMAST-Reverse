@@ -1,5 +1,5 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Copyright (C) 2026 Pyra Drake -->
+<!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
 # CLAUDE.md
 
@@ -79,7 +79,7 @@ Commits usually add a doc and its tool together, with messages like
 
 - The repo is GPL-3.0-or-later (`LICENSE`). Every new `.py` file starts with
   `# SPDX-License-Identifier: GPL-3.0-or-later` and
-  `# Copyright (C) 2026 Pyra Drake`, before the docstring. Every new `.md`
+  `# Copyright (C) 2026 Nexxus Drako Multimedia`, before the docstring. Every new `.md`
   file starts with the same two lines as HTML comments (`<!-- ... -->`).
 - Each tool is a single standalone script run from the repo root as
   `python SRC/<tool>.py <command> ...`. There is no package, no

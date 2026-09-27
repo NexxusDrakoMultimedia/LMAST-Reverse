@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """etc::PackData reader for Let's Make a Soccer Team! (PS2).
 
 Every entry of a KC@P pack (face packs, licensed kits, the edit-face pack,

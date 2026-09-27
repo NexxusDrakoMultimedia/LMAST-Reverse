@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """Symbol recovery + MIPS disassembler for SLES_541.51 (PS2).
 
 The executable has no .symtab, but .sndata holds a runtime export table

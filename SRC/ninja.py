@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 Pyra Drake
+# Copyright (C) 2026 Nexxus Drako Multimedia
 """Ninja (PS2 "NN") model and motion reader for Let's Make a Soccer Team! (PS2).
 
 .SNJ/.SNO (models), .SNM (motions), .SNP (node-tree models) and .SNA (node
