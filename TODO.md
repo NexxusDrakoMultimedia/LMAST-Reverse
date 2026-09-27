@@ -176,15 +176,22 @@ contents and three tables are still undecoded.
       samples `FC_EURO_FACEPACK_00` (`--all` for every entry). In `regress.py`
 - [ ] `GAME/CUTINPACK.BIN` entries are `PackData` too (block types 19–24);
       reconcile with `PAC_FORMAT.md`'s "109 are empty" and document the blocks
-- [ ] Decode the face block-4 header and the `PLPACK` block-0 kit descriptor
+- [ ] Decode the face block-4 header
+- [x] The `PLPACK` block-0 kit descriptor and which clubs are licensed:
+      teams 123-244 -> licence 0-115 (`0x3a08d8`), descriptor at
+      `0x3a0c80` (same bytes as block 0); `uniform.py licensed`,
+      `setlicence`, `setexe`. Tested in PCSX2: the number colour comes from
+      the executable's copy (pack-only edit: no change; exe-only: white)
 - [x] `UNIFORM_LIST` (every club's kits: designs and colours per shirt,
       shorts, socks; bit layout from `0x2d2b68`) and `COLOR_TBL` (colour
       clash table): `DOC/UNIFORM_FORMAT.md`, `SRC/uniform.py` (`info`,
       `show`, `clash`, `set`, `roundtrip`; in `regress.py`). Tested in
       PCSX2: Birmingham's shirt edited from blue to red shows in the
       Uniform Viewer
-- [ ] Still open in the kit tables: `UNIFORM_GK`, the 6 side fields,
-      kit fields 4 and 14, the 3-bit flag, which clubs use licensed kits
+- [ ] Still open in the kit tables: `UNIFORM_GK`, side fields 0/1/2/5, the
+      3-bit flag, descriptor bytes 14-15 (kit fields 4 = collar, 12/13 =
+      number colours, 14 = captain mark and side fields 3/4 = front number,
+      shorts number position are now named)
 
 ## 5. Music and sound effects
 

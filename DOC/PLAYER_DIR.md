@@ -164,7 +164,7 @@ is a 7-block `PackData`:
 
 | Block | Type | Contents |
 |---|---|---|
-| 0 | 0 | 32 bytes. `l_realize_licenceuniform` copies the first 0x12 into the kit struct. Always starts `ff ff`; the rest looks like colour/style indices. Unknown |
+| 0 | 0 | 32 bytes: the kit descriptor (number, name, collar and captain-mark settings), the same 18 bytes as the executable's copy at `0x3a0c80`, then zeros. `l_realize_licenceuniform` copies the first 0x12 into the kit struct. See [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#licensed-kits) |
 | 1 | 16 | `PVMH` `<nat>_<id>_X0_pnt` 128×128: outfield shorts |
 | 2 | 16 | `PVMH` `<nat>_<id>_X0_sht` 256×256: outfield shirt |
 | 3 | 16 | `PVMH` `<nat>_<id>_X0_sox` 128×64: outfield socks |
@@ -174,9 +174,12 @@ is a 7-block `PackData`:
 and away is `_01`/`_11`. The realizer opens blocks 1–6 as six textures.
 
 The 116 clubs are 36 Italian (`ita_228`–`ita_269`), 42 Spanish
-(`esp_307`–`esp_352`) and 38 Dutch (`ned_270`–`ned_307`). The numbers look
-like club ids. `esp_307` and `ned_307` both use 307, and one name is
-upper case (`NED_280`). Neither has been checked against the club tables.
+(`esp_307`–`esp_352`) and 38 Dutch (`ned_270`–`ned_307`). Entry *n* is
+licence *n*, and the table at `0x3a08d8` maps teams 123–244 to licences
+(**confirmed**, [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#licensed-kits)).
+The numbers in the names are **not** team ids: entry 0, `ita_228`, is team
+123 (AC Milan). `esp_307` and `ned_307` both use 307, and one name is upper
+case (`NED_280`).
 
 ## Edit face pack
 
@@ -210,8 +213,10 @@ python SRC/svr.py info out/face                                 # the texture bl
 ## Open questions
 
 - The 0x18-byte header of face block 4, and whether its palette is skin.
-- The 32-byte kit descriptor in `PLPACK` block 0 (only 0x12 bytes are used).
-- What maps a club to its `PLPACK` index, and whether `<id>` is a club id.
+- Bytes 14–15 of the `PLPACK` kit descriptor (the rest is decoded in
+  [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#licensed-kits)), and what the
+  pack's copy is used for, since the viewer draws numbers from the
+  executable's copy.
 - `UNIFORM_GK.TBB`'s layout. (`COLOR_TBL.TBB` and `UNIFORM_LIST.TBB` are
   decoded in [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md).)
 - Which models in `PLAYER_MODEL*.PAC` are which. Their names were cut to

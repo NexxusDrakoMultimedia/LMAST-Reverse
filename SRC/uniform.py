@@ -4,7 +4,9 @@
 
 DAT/PLAYER/UNIFORM_LIST.TBB holds every club's home and away kits, 64 bits
 packed per row (661 rows). DAT/PLAYER/COLOR_TBL.TBB is the 96 x 96 colour
-clash table. See DOC/UNIFORM_FORMAT.md.
+clash table. The 116 licensed clubs (team ids 123-244) use real kit
+textures from PLPACK_HOME/AWAY instead, each with an 18-byte descriptor.
+See DOC/UNIFORM_FORMAT.md.
 
   row      team id - 3 (0x2d2bc8); the row's first s16 repeats the id and
            the lookup checks it (0x2d2bd8). Rows 0-539 are teams 3-542, the
@@ -13,13 +15,23 @@ clash table. See DOC/UNIFORM_FORMAT.md.
            position and width of each). Per side (home, away): 6 side
            fields, then an outfield kit and a goalkeeper kit of 15 fields.
   kit      Param::PlUnifOne, 15 bytes (UniformList_GetDataPlayer 0x2d3078):
-           0 shirt design, 1-3 shirt colours, 4 ?, 5 shorts design, 6-8
-           shorts colours, 9 socks design, 10-13 socks colours, 14 ?.
+           0 shirt design, 1-3 shirt colours, 4 collar, 5 shorts design,
+           6-8 shorts colours, 9 socks design, 10-11 socks colours, 12
+           shirt number colour, 13 shorts number colour, 14 captain mark.
            CUniformLoader::_load_edit (0x2c2848) loads the designs from
            EDIT_UNIFORM_{ORG,GK}_{SHT,PNT} and ORG_SOX and the colours from
            EDIT_UNIFORM_CLUT, and clamps them first: outfield shirt < 209,
-           shorts < 61, keeper shirt and shorts < 38, socks < 18, socks
-           colours < 96 (0x2c28dc-0x2c297c).
+           shorts < 61, keeper shirt and shorts < 38, socks < 18, colours
+           10-13 < 96 (0x2c28dc-0x2c297c). Fields 4, 12, 13, 14 and side
+           fields 3 (front number on) and 4 (shorts number: off, right,
+           left) are named from the developer Uniform Viewer, which prints
+           them for unlicensed clubs (TESTPRG.REL 0x15cb8-0x15f20).
+  licensed _get_licence_no (0x2c24b0) looks the team up in {u32 team, u16
+           licence} at 0x3a08d8: 116 clubs, licence n = PLPACK entry n.
+           GetLicenceUniformInfo (0x2c4cc8) returns the 18-byte descriptor
+           at 0x3a0c80 + (side * 116 + n) * 0x12, the same bytes as PLPACK
+           block 0 (DESCRIPTOR below, byte pairs outfield/keeper, as the
+           viewer prints them at TESTPRG.REL 0x157f0-0x15bf0).
   colours  96 palettes org_uni_A1 .. org_uni_L8 (12 letters x 8 shades);
            colour n is letter 'A' + n // 8, digit n % 8 + 1.
   clash    COLOR_TBL[a][b] (UniformList_CheckColor 0x2d3420).
@@ -28,7 +40,10 @@ clash table. See DOC/UNIFORM_FORMAT.md.
            home or away kits.
 
 `info` checks the row ids, every design and colour against its pack's size
-(`!!` on a value the game would clamp) and COLOR_TBL's shape.
+(`!!` on a value the game would clamp), COLOR_TBL's shape, and the PLPACK
+descriptors; given SLES_541.51 it also checks them against the
+executable's copy. `licensed` lists the licensed clubs with their
+descriptors (team ids need SLES_541.51, names MES.PAC).
 
 `set` writes an edited copy of UNIFORM_LIST.TBB. A field is named
 <side>.<part>.<n>: side home or away, part outfield or keeper (kit fields
@@ -38,12 +53,19 @@ bits between fields are kept. `roundtrip` re-packs every row from its
 fields and marks any difference with `!!`.
 
 Usage:
-    python uniform.py info      <DAT/PLAYER>                 # check both tables
+    python uniform.py info      <DAT/PLAYER> [SLES_541.51]   # check the tables
     python uniform.py show      <DAT/PLAYER> <team> ...      # a club's kits
+    python uniform.py licensed  <DAT/PLAYER> [SLES_541.51]   # the 116 licensed kits
     python uniform.py clash     <DAT/PLAYER> <colour>        # colours that clash
     python uniform.py roundtrip <UNIFORM_LIST.TBB>
     python uniform.py set       <in.TBB> <out.TBB> <team> <field>=<value> ...
         e.g. set UNIFORM_LIST.TBB out.TBB 3 home.outfield.1=A4 home.outfield.3=A4
+    python uniform.py setlicence <PLPACK_HOME.HED> <out.PAC> <licence> <field>=<value> ...
+        e.g. setlicence PLPACK_HOME.HED out.PAC 0 outfield.backnumber=A8
+        (edits the pack's copy of the descriptor only, not the executable's)
+    python uniform.py setexe    <SLES_541.51> <out> <home|away> <licence> <field>=<value> ...
+        (edits the executable's copy, which the Uniform Viewer draws the
+        numbers from; patch it with patch_disc.py disc:SLES_541.51=<out>)
 """
 import os
 import struct
@@ -179,15 +201,108 @@ def kit_problems(kind, kit):
 
 
 def fmt_kit(kind, kit):
-    return ("shirt %3d %s/%s/%s  f4=%d  shorts %2d %s/%s/%s  socks %2d %s/%s/%s/%s  f14=%d"
+    return ("shirt %3d %s/%s/%s  collar %d  shorts %2d %s/%s/%s  socks %2d %s/%s  "
+            "numbers %s shorts %s  captain %d"
             % (kit[0], *(colour_name(kit[f]) for f in (1, 2, 3)), kit[4],
                kit[5], *(colour_name(kit[f]) for f in (6, 7, 8)),
                kit[9], *(colour_name(kit[f]) for f in (10, 11, 12, 13)), kit[14]))
 
 
+SHORTS_NUMBER = ("off", "right", "left")        # TESTPRG.REL 0x23560
+
+
+def fmt_side(s):
+    number = SHORTS_NUMBER[s[4]] if s[4] < len(SHORTS_NUMBER) else "?%d" % s[4]
+    return "front number %s  shorts number %s  unknown %d %d %d %d" % (
+        "on" if s[3] else "off", number, s[0], s[1], s[2], s[5])
+
+
+# --- licensed kits ---------------------------------------------------------------
+
+PLPACK = ("PLPACK_HOME.HED", "PLPACK_AWAY.HED")
+LICENCES = 116
+LICENCE_TABLE = 0x3a08d8        # {u32 team, u16 licence, u16 pad}, ends at team 0
+DESCRIPTOR_TABLE = 0x3a0c80     # (side * 116 + licence) * 0x12
+DESCRIPTOR_SIZE = 0x12
+NO_COLOUR = 0xff
+COLLARS = 12                    # l_nml_bdy_01..11, l_tgt_bdy_01 (TESTPRG.REL 0x23570)
+# (name, byte, kind): outfield at byte, keeper at byte + 1.
+DESCRIPTOR = (("front number", 0, "colour"), ("back number", 2, "colour"),
+              ("name type", 4, "int"), ("name colour", 6, "colour"),
+              ("collar", 8, "collar"), ("shorts number", 10, "side"),
+              ("shorts number colour", 12, "colour"), ("unknown", 14, "int"),
+              ("captain mark", 16, "int"))
+
+
+def licence_table(sles_path):
+    """{team id: licence number} from the executable."""
+    import sles_disasm
+    elf = sles_disasm.Elf(sles_path)
+    out, va = {}, LICENCE_TABLE
+    while True:
+        team, n = struct.unpack_from("<IH", elf.data, elf.v2f(va))
+        if team == 0:
+            return out, elf
+        out[team] = n
+        va += 8
+
+
+def plpack_descriptors(dat):
+    """[side][licence] -> (block-0 bytes, shirt texture name)."""
+    import pac
+    import packdata
+    import svr
+    out = []
+    for name in PLPACK:
+        path = os.path.join(dat, name)
+        h = pac.load_header(path)
+        side = []
+        with open(pac.data_path(path, h), "rb") as f:
+            for off, size, _, _ in h.entries:
+                buf = packdata.read_entry(f, off, size)
+                blocks = packdata.PackData(buf).blocks
+                _, bsize, d = blocks[0]
+                _, ssize, sd = blocks[2]
+                side.append((buf[d:d + bsize], svr.parse_svm(buf[sd:sd + ssize])[0].name))
+        out.append(side)
+    return out
+
+
+def descriptor_problems(desc):
+    out = []
+    if len(desc) < DESCRIPTOR_SIZE:
+        return ["descriptor is %d bytes" % len(desc)]
+    for name, b, kind in DESCRIPTOR:
+        for v in desc[b:b + 2]:
+            if kind == "colour" and v != NO_COLOUR and v >= COLOURS:
+                out.append("%s colour %d" % (name, v))
+            elif kind == "collar" and v >= COLLARS:
+                out.append("collar %d" % v)
+            elif kind == "side" and v >= len(SHORTS_NUMBER):
+                out.append("shorts number position %d" % v)
+    if any(desc[DESCRIPTOR_SIZE:]):
+        out.append("non-zero bytes after 0x12")
+    return out
+
+
+def fmt_descriptor(desc):
+    parts = []
+    for name, b, kind in DESCRIPTOR:
+        vals = []
+        for v in desc[b:b + 2]:
+            if kind == "colour":
+                vals.append("off" if v == NO_COLOUR else colour_name(v))
+            elif kind == "side":
+                vals.append(SHORTS_NUMBER[v] if v < len(SHORTS_NUMBER) else "?%d" % v)
+            else:
+                vals.append(str(v))
+        parts.append("%s %s" % (name, "/".join(vals)))
+    return "  ".join(parts)
+
+
 # --- commands ----------------------------------------------------------------
 
-def cmd_info(dat):
+def cmd_info(dat, sles_path=None):
     teams = load(dat)
     used = [t for i, t in enumerate(teams) if t.id == i + FIRST_TEAM]
     unused = [i for i, t in enumerate(teams) if t.id == 0]
@@ -223,6 +338,33 @@ def cmd_info(dat):
           % (COLOR_TBL, rows, line, (sum(data) - rows) // 2,
              "  !! " + "; ".join(problems) if problems else ""))
 
+    descs = plpack_descriptors(dat)
+    exe = None
+    if sles_path:
+        licences, elf = licence_table(sles_path)
+        base = elf.v2f(DESCRIPTOR_TABLE)
+        exe = elf.data[base:base + 2 * LICENCES * DESCRIPTOR_SIZE]
+        numbers = sorted(licences.values())
+        print("licence table  %d clubs (teams %d-%d)%s" % (
+            len(licences), min(licences), max(licences),
+            "" if numbers == list(range(LICENCES)) else "  !! licence numbers aren't 0-%d" % (LICENCES - 1)))
+    for s, name in enumerate(PLPACK):
+        bad = differ = 0
+        if len(descs[s]) != LICENCES:
+            print("%s  !! %d entries, expected %d" % (name, len(descs[s]), LICENCES))
+        for n, (desc, tex) in enumerate(descs[s]):
+            p = descriptor_problems(desc)
+            if exe is not None:
+                i = (s * LICENCES + n) * DESCRIPTOR_SIZE
+                if desc[:DESCRIPTOR_SIZE] != exe[i:i + DESCRIPTOR_SIZE]:
+                    differ += 1
+                    p.append("differs from the executable's copy")
+            if p:
+                bad += 1
+                print("  %s #%d %s  !! %s" % (name, n, tex, "; ".join(p)))
+        note = "" if exe is None else "; %d differ from the executable's copy" % differ
+        print("%s  %d kit descriptors, %d with problems%s" % (name, len(descs[s]), bad, note))
+
 
 def cmd_show(dat, ids):
     teams = {t.id: t for t in load(dat) if t.id}
@@ -232,9 +374,73 @@ def cmd_show(dat, ids):
             raise ValueError("no kit row for team %d" % tid)
         print("team %d  flag=%d" % (t.id, t.flag))
         for side, (sfields, fp, gk) in t.sides.items():
-            print("  %s  side fields %s" % (side, " ".join(str(x) for x in sfields)))
+            print("  %s  %s" % (side, fmt_side(sfields)))
             print("    outfield  " + fmt_kit("outfield", fp))
             print("    keeper    " + fmt_kit("keeper", gk))
+
+
+def cmd_licensed(dat, sles_path=None):
+    import initteam
+    descs = plpack_descriptors(dat)
+    team_of, names = {}, {}
+    if sles_path:
+        team_of = {n: t for t, n in licence_table(sles_path)[0].items()}
+        names = initteam.team_names(os.path.join(os.path.dirname(os.path.abspath(dat)),
+                                                 "MESSAGE", "MES.PAC"), 1)
+    for n in range(len(descs[0])):
+        team = team_of.get(n)
+        who = initteam.label(names, team) if team is not None else "   ?"
+        tex = descs[0][n][1].rsplit("_", 2)[0]
+        print("%3d  %-28s %s" % (n, who, tex))
+        for s, side in enumerate(("home", "away")):
+            print("       %s  %s" % (side, fmt_descriptor(descs[s][n][0])))
+
+
+def apply_descriptor_edits(data, base, label, edits):
+    """Apply <outfield|keeper>.<name>=<value> edits to the descriptor at
+    data[base:]. Names are DESCRIPTOR's without spaces (outfield.backnumber)."""
+    names = {name.replace(" ", ""): (b, kind) for name, b, kind in DESCRIPTOR}
+    for edit in edits:
+        field, _, text = edit.partition("=")
+        part, _, name = field.partition(".")
+        if part not in ("outfield", "keeper") or name not in names:
+            raise ValueError("no descriptor field %r (fields: %s)" % (field, ", ".join(names)))
+        b = names[name][0] + (part == "keeper")
+        value = NO_COLOUR if text.lower() == "off" else parse_value(text)
+        if not 0 <= value <= 0xff:
+            raise ValueError("%s: %d doesn't fit in a byte" % (field, value))
+        print("%s %s: %d -> %d" % (label, field, data[base + b], value))
+        data[base + b] = value
+
+
+def cmd_setlicence(header, dst, licence, edits):
+    """Edit one PLPACK entry's descriptor (block 0) in a copy of the pack's
+    data file."""
+    import pac
+    import packdata
+    h = pac.load_header(header)
+    data = bytearray(open(pac.data_path(header, h), "rb").read())
+    off, size, _, _ = h.entries[licence]
+    if data[off:off + 4] == pac.PRSH_MAGIC:
+        raise ValueError("entry %d is compressed; only raw entries can be edited" % licence)
+    _, _, d = packdata.PackData(bytes(data[off:off + size])).blocks[0]
+    apply_descriptor_edits(data, off + d, "licence %d pack" % licence, edits)
+    with open(dst, "wb") as f:
+        f.write(data)
+
+
+def cmd_setexe(sles_path, dst, side, licence, edits):
+    """Edit the executable's copy of a descriptor (0x3a0c80) in a copy of
+    SLES_541.51."""
+    import sles_disasm
+    if side not in ("home", "away") or not 0 <= licence < LICENCES:
+        raise ValueError("side must be home or away and licence 0-%d" % (LICENCES - 1))
+    elf = sles_disasm.Elf(sles_path)
+    data = bytearray(elf.data)
+    base = elf.v2f(DESCRIPTOR_TABLE) + ((side == "away") * LICENCES + licence) * DESCRIPTOR_SIZE
+    apply_descriptor_edits(data, base, "licence %d %s executable" % (licence, side), edits)
+    with open(dst, "wb") as f:
+        f.write(data)
 
 
 def cmd_clash(dat, colour):
@@ -296,8 +502,14 @@ def main(argv):
         cmd_roundtrip(args[0])
     elif cmd == "set" and len(args) >= 4:
         cmd_set(args[0], args[1], int(args[2], 0), args[3:])
-    elif cmd == "info" and len(args) == 1:
-        cmd_info(args[0])
+    elif cmd == "info" and len(args) in (1, 2):
+        cmd_info(*args)
+    elif cmd == "licensed" and len(args) in (1, 2):
+        cmd_licensed(*args)
+    elif cmd == "setlicence" and len(args) >= 4:
+        cmd_setlicence(args[0], args[1], int(args[2], 0), args[3:])
+    elif cmd == "setexe" and len(args) >= 5:
+        cmd_setexe(args[0], args[1], args[2], int(args[3], 0), args[4:])
     elif cmd == "show" and len(args) >= 2:
         cmd_show(args[0], [int(a, 0) for a in args[1:]])
     elif cmd == "clash" and len(args) == 2:

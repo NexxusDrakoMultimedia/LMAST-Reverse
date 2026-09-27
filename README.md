@@ -118,7 +118,7 @@ disassemble as unrelated MIPS instructions.
 | [`initteam.py`](SRC/initteam.py) | starting divisions, last season's order and computer-team squads (`PLRRSRC_INITTEAMDATA.TBB`, `OTEAMMEMBER.TBB`), with club names; club records, nations and stadiums; edits squad slots (`set`) and club records (`setteam`) | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) |
 | [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
 | [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command and module names; `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
-| [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits) and the colour clash table `COLOR_TBL.TBB`; edits kits (`set`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
+| [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, and the 116 licensed kits' descriptors (`PLPACK` and the executable's copy); edits kits (`set`, `setlicence`, `setexe`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
 | [`stadium.py`](SRC/stadium.py) | `DAT/STADIUM`: `.PRI` draw priorities, `BUILD_STADIUM.TBB` (which model each of the 119 stadiums uses), packs per model | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) | club kits: `UNIFORM_LIST` bit layout, kit designs and colours, the 96 colours, the `COLOR_TBL` clash table |
 | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) |
 
