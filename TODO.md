@@ -291,7 +291,7 @@ The event tables, the procedures and the overlay loader are documented in
 - [x] Try each launcher entry in PCSX2 (all recorded in
       `DOC/SQB_FORMAT.md`): STADIUM VIEWER MK2, Uniform Viewer, CHARACTER
       VIEWER, SATO TEST (heads), CLUB EDIT and its sub-screens and many
-      menu tests work; about 20 entries hang or reset. YAMAZAKI TEST, Talk
+      menu tests work; about 20 entries hang or return at once. YAMAZAKI TEST, Talk
       and BG LIGHT TEST not recorded
 - [ ] Use the Uniform Viewer to decode `UNIFORM_LIST`/`UNIFORM_GK`/
       `COLOR_TBL`: it shows each club's kit fields (collar type

@@ -435,7 +435,7 @@ the real game screen, opened on its own with the launcher's new game.
 | 86–88 | UNIFORM EDIT, EMBLEM EDIT, FLAG EDIT | **work**: the club edit menu's own sub-screens |
 | 89 | SUGIO TEST | a plain teal screen |
 | 90 | TOUMURA TEST | hangs |
-| 91 | INITIAL PERSONNEL AFFAIRS | resets the console |
+| 91 | INITIAL PERSONNEL AFFAIRS | goes straight back to the launcher |
 | 92–100 | Talk … NEWS | Talk not recorded. SEASON END, MONTH END, MAIL, MATCH RESULT, SCHEDULE, SCOUTING MENU, PERSONNEL AFFAIRS MENU and NEWS are menu tests |
 | 101 | SPRITE TEST | hangs |
 | 102, 103 | TACTICS, TRAINING | menu tests |
@@ -444,7 +444,7 @@ the real game screen, opened on its own with the launcher's new game.
 | 106, 107 | NEWS VIEWER, ACROBATA VIEWER | newspaper menu tests. ACROBATA VIEWER is the newspaper intro at the start of a game |
 | 108 | MEMORYCARD UTILITY | hangs |
 | 109 | MAIL VIEWER | the e-mail menu test |
-| 110 | GAME INCOME | resets the console |
+| 110 | GAME INCOME | goes straight back to the launcher |
 | 111 | SELECT UNIFORM | the shirt-number selection screen |
 | 112 | SPONSOR | a sponsor menu test |
 | 113 | CSE TEST 2 | a separate news viewer |
