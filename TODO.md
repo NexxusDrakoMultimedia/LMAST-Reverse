@@ -137,9 +137,10 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       first 99 of 528 bytes are read), which UI element uses each colour,
       who the `V001`-`V032` crests are, and whether `SPONSOR_TEXTURE_M`
       (type 6) is used at all
-- [ ] Check in game: a team detail screen should show Siena's real crest
-      (`FLAG_TEXTURE`) for the first team shown and the made-up one
-      (`EMBLEM_TEXTURE`) after switching teams (`CDetailTeamFlag`)
+- [x] Siena's crest in game: always the made-up one (user report), so
+      `FLAG_TEXTURE`'s real crest is never shown. Still open: what
+      `CDetailTeamFlag`, the only type-1 (`FLAG_TEXTURE`) request, draws;
+      probably nationality flags, which are the same in both packs
 
 ## 3. Ninja 3D models and motions
 

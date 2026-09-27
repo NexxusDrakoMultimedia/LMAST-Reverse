@@ -50,7 +50,8 @@ mode reads instead ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)):
 | `0x34d3f8` | (name table) | the 8 texture packs, in type order 0–7 |
 | `0x105950` | `CFcEuro_CommonTexture(type, id, ...)` | one texture from one of the packs |
 | `0x1057e8`, `0x105c70` | `ConvertFlag`, `ConvertIndex` | turn a team, competition or sponsor id into an entry index (below) |
-| `0x28e354`, `0x28e474` | `WP::CDetailTeamFlag::Execute` | the team detail crest: type **1** for the first team shown, type **0** for every later one |
+| `0x28e354`, `0x28e474` | `WP::CDetailTeamFlag::Execute` | type **1** for its first request, type **0** for every later one. The only type-1 request in the code |
+| `0x105e98`–`0x105ed4` | `CFcEuro_CommonTexture::Execute` | the pack name comes from `0x34d3f8[type]`, and the entry's offset and size from the executable's own per-type tables (`0x34d3d8[type]`), not from the pack header |
 | `SIMPRG.REL 0x8294c` | `WP::CMapWindow_Task::SetLogoDraw` | type 0 |
 | `0x2c2f2c`, table `0x55a248` | `CUniformLoader::_load_edit` | types 0, 5 and 7: the kit's crest and sponsors |
 | `GAMEPRG.REL 0x20858c`, table `0x29e2b0` | (match overlay) | types 0, 0 and 2: both teams' crests and the competition badge |
@@ -83,9 +84,12 @@ made-up crest (a white animal on a black and white oval) in
 `EMBLEM_TEXTURE`, and the real A.C. Siena crest in `FLAG_TEXTURE`. The other 633 entries are
 byte-identical. The file dates are June 2006 for `EMBLEM_TEXTURE` and
 May 2006 for `FLAG_TEXTURE`, so the real crest was probably replaced late.
-Because `CDetailTeamFlag` loads type 1 for the first team it shows, a team
-detail screen should show the real crest first and the generic one after
-switching teams. Not checked in the game.
+**Seen in the game (reported by the user):** Siena is unlicensed and always
+shows the made-up crest. The real one in `FLAG_TEXTURE` is never seen. The
+only type-1 request is `CDetailTeamFlag`'s first one (`0x28e354`, state 0
+at `Init`), so that class is probably not drawing club crests. Its name
+suggests the nationality flag on a detail screen, and the 145 nation
+entries are identical in both packs. What ids it gets hasn't been traced.
 
 ## Competition badges: `MATCH_TEXTURE` and `MINIMATCH_TEXTURE`
 
@@ -174,4 +178,5 @@ described here.
 - Who the `V001`–`V032` crests are.
 - Whether anything uses `SPONSOR_TEXTURE_M.PAC` (type 6).
 - The `FONT_KANJI_*.SVP` palettes (unreferenced).
-- In game: whether a team detail screen shows the real Siena crest first.
+- What `CDetailTeamFlag` draws, and so whether `FLAG_TEXTURE`'s crests are
+  ever shown (Siena's real crest never is).
