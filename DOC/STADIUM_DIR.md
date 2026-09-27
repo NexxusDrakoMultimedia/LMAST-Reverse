@@ -49,11 +49,55 @@ build request (**confirmed**):
 
 The same fields pick the sky (`0x1ce278`, `STCMN_SK` entry `season × 5 +
 k`). k is 0 for day with `+5` = 0, 1 for `+5` = 1, 2 for `+5` = 2–3, 3 for
-night with `+5` = 0 and 4 for night otherwise. The sky names (`f_sky`,
-`c_sky`, `r_sky`: fine, cloudy, rain) make `+5` the weather: 0 fine, 1
-cloudy, 2–3 rain (and probably snow). `+6` is the season, 0–3 = the `sp`,
-`su`, `au`, `wi` names. What sets the night flag at `+0x88` wasn't found:
-the request is filled by a block copy, not field by field.
+night with `+5` = 0 and 4 for night otherwise. `+5` is the weather: 0 fine,
+1 cloudy, 2 rain, 3 snow (the sky names `f_sky`, `c_sky`, `r_sky`, and the
+Stadium Viewer's list FINE, CLOUDY, RAIN, SNOW at `0x24d510`). `+6` is the
+season, 0–3 = the `sp`, `su`, `au`, `wi` names.
+
+**The night flag (confirmed).** `+0x88` is byte 82 of the stadium's
+`BUILD_STADIUM` row, because the build code copies the 129-byte row to
+request `+0x36` (`0x1cd680`). Every caller of the picker passes
+"`+0x88` ≠ 0" as the flag (`0x1cd864`, `0x1ce9ac`, `0x1cdaac`). Byte 82 is
+the switch for the `LIGHT_1` part (the second set of floodlights, below),
+so **a stadium uses `N2` at night exactly when it has `LIGHT_1`**.
+
+**Empirical.** 19 of the 119 stadiums set byte 82: ids 10, 15, 20, …, 95
+and 111. Every stadium sets exactly one of byte 81 (`ILLUMINATION_0`) and
+byte 82. In `CONV_INFO_BUILD` the 18 ids 10–95 are exactly the variant-4
+stadiums of levels 1–3, the ground with stand, roof and lights built
+([below](#conv_info_buildtbb)); the variant-4 stadiums of levels 0 and 4
+use `N1`. So building the lights at a club's ground switches its night
+lighting to `N2`. Stadium 111 (`ho02a`) isn't in `CONV_INFO_BUILD`.
+
+## The build request
+
+The developer Stadium Viewer (module 171, see
+[`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)) edits a build
+request field by field. Its BUILD panel's handler (`GAMEPRG.REL 0x1c7d08`,
+jump table `0x298a50`) names these fields (**confirmed**):
+
+| Offset | Viewer name | Contents |
+|---|---|---|
+| `+0x00` (u32) | DATA_INDEX | stadium id, 0–118 |
+| `+0x04` | TIME_ID | 0 day, 1 night |
+| `+0x05` | WEATHER_ID | 0 fine, 1 cloudy, 2 rain, 3 snow |
+| `+0x06` | SEASON_ID | 0 spring, 1 summer, 2 autumn, 3 winter |
+| `+0x07` | LANDSCAPE_LEVEL | added to the `LANDSCAPE_A` part's entry (`lna01`–`04`) |
+| `+0x08` | NATION_ID | 0 England, 1 France, 2 Germany, 3 Italy, 4 Spain, 5 Holland |
+| `+0x09`, `+0x0a` | TEAM_COLOR1_16, TEAM_COLOR2_16 | |
+| `+0x0b` | MONTH_ID | 0 January … 11 December (picks the pitch edge, table 1) |
+| `+0x11`, `+0x12` | HOME_TEAMCOLOR, AWAY_TEAMCOLOR | |
+| `+0x14`, `+0x18`, `+0x1c` (u32) | HOME_SUPPORTER, AWAY_SUPPORTER, CIVILIAN_VISITOR | crowd sizes (110000 each by default) |
+| `+0x20` | ADVERTISE_INDEX | the first of the 12 advert textures at `+0x20`–`+0x2b` ([Adverts](#adverts)) |
+| `+0x0c`, `+0x0d` | – | pitch edge (from table 1) and adverts on (below) |
+| `+0x2c`–`+0x35` | – | the stand node lists (table 2) |
+| `+0x36`–`+0xb6` | – | the stadium's `BUILD_STADIUM` row |
+
+The value names (DAY/NIGHT, FINE…SNOW, SPRING…WINTER, ENGLAND…HOLLAND,
+JAN…DEC) are the viewer's lists at `GAMEPRG.REL 0x24d4c8`–`0x24d554`. Its
+CREATE panel has STADIUM_LEVEL, NATION_ID and STAND_LEVEL instead of
+DATA_INDEX. **Tested in PCSX2:** the viewer builds and shows stadiums from
+these settings (see `SQB_FORMAT.md`).
 
 ## Directory overview
 
@@ -106,6 +150,16 @@ On the disc every value is 0–100, and 18–20 slots per model are in the
 first pass. `HO01A.PRI` differs most from the others (for example slot 0
 is 80, where the others have 94).
 
+The Stadium Viewer's VISIBLE menu names the 44 slots, in slot order
+(`GAMEPRG.REL 0x24d3c8`): GOAL, CFLAG, SKY, PITCH, PITCH_PEEL, BENCH_LOW,
+BENCH_HIGH, FENCE, FENCE_SHADOW, NET, NET_SHADOW, BANNER, STAND_0 …
+STAND_SHADOW_3, LIGHT_0, LIGHT_SHADOW_0A, LIGHT_SHADOW_0B, ILLUMINATION_0,
+LIGHT_1, LIGHT_SHADOW_1, ILLUMINATION_1, SPOT_0–3, STAND_CAP_1–5,
+STAFF_0–2, AURORA_VISION_1, AURORA_VISION_SHADOW_1,
+AURORA_VISION_MONITOR_1, LANDSCAPE_A and LANDSCAPE_B. They match the
+slots the builders use below and the part file names (`lig0`, `lis0a`,
+`ilm0`, `lna`, `lnb`). `stadium.py build` prints them.
+
 A slot is a kind of part, not a pack entry. The build functions called
 at `0x1cec70` load each part into a fixed slot. `0x1cf760(slot, entry)`
 loads from `STCMN_<variant>`, `0x1cf8e0` from the model's own pack,
@@ -120,7 +174,7 @@ loads from `STCMN_<variant>`, `0x1cf8e0` from the model's own pack,
 | 3 | pitch | `STCMN` 3–38 (`pit01`–`09` × 4 seasons) |
 | 4 | pitch edge | model 44–45 (`ptp_su`, `ptp_wi`, by `BUILD_STADIUM` table 1) |
 | 5 | bench | `STCMN` 39, 41, 43 (`ben1l`–`ben3l`) |
-| 6 | – | nothing loads this slot |
+| 6 | bench, high detail (`BENCH_HIGH`) | nothing loads this slot (see the unused bytes 15, 17, 19 below) |
 | 7, 8 | fences, fence shadow | model 0–4, 5 |
 | 9, 10 | nets, net shadows | model 6, 8 and 7, 9 |
 | 11 | banners | model 10–14 |
@@ -131,7 +185,7 @@ loads from `STCMN_<variant>`, `0x1cf8e0` from the model's own pack,
 | 36–38 | staff areas | model 39–41 |
 | 39, 40 | advert rigs `avi1`, `avs1` | model 42, 43 |
 | 41 | the `_OP` part | `<MODEL>_OP` 0 |
-| 42, 43 | pitch lines | `STCMN` 46–49 (`lna`), 50–54 (`lnb`) |
+| 42, 43 | landscape A, B (the scenery behind the stands) | `STCMN` 46–49 (`lna`), 50–54 (`lnb`) |
 
 So the model packs' 46 entries are slots 7–40 plus the two pitch edges.
 
@@ -143,7 +197,7 @@ Three tables. `GAMEPRG.REL 0x1cd648` builds a stadium from a request whose
 | Table | Rows × size | Reader | Contents |
 |---|---|---|---|
 | 0 | 119 × 129 | `0x1cdb38` (`id * 0x81`) | one row per stadium. The row is copied to the request at `+0x36` |
-| 1 | 10 × 12 | `0x1cdbb0` | one row per model. The request's byte `+0x0b` (< 12, probably the month) picks a value, 1 or 2, stored at `+0x0c`. It chooses the pitch edge: 1 = `ptp_su`, 2 = `ptp_wi` (`0x1cef54`). Most rows read `2 2 2 2 2 1 1 1 1 2 2 2` or similar: winter and summer if the index is the month from January |
+| 1 | 10 × 12 | `0x1cdbb0` | one row per model. The request's byte `+0x0b` (the month, 0–11, see [the build request](#the-build-request)) picks a value, 1 or 2, stored at `+0x0c`. It chooses the pitch edge: 1 = `ptp_su`, 2 = `ptp_wi` (`0x1cef54`). Most rows read `2 2 2 2 2 1 1 1 1 2 2 2` or similar: the winter edge from October to May, the summer edge from June to September |
 | 2 | 4 × 100 | `0x1cdc28` | 4 variants × 10 models × 10 bytes: `t[variant*100 + model*10]`. The 10 bytes go to the request at `+0x2c`, and `0x1ced60` loads each one that isn't `ff` as `STAND_NODE_NAME` entry *n* into node slot 0–9 (`0x1cfd58`). Every entry names a list of its own model and variant (`o01a_n1_std0.sna` ...) |
 
 A table-0 row (**confirmed** where cited):
@@ -167,7 +221,7 @@ in the [`.PRI` table](#pri-part-draw-priorities)):
 | 13 | 4 | pitch edge | |
 | 14, 16, 18 | 5 | bench 1–3 | first enabled |
 | 20 | 1 | corner flags | |
-| 25, 26 | 42, 43 | pitch lines A, B | the entry adds request byte `+7` / `+5` |
+| 25, 26 | 42, 43 | landscape A, B | the entry adds request byte `+7` (landscape level) / `+5` (weather) |
 | 27–31, 32 | 7, 8 | fences 1–5, fence shadow | |
 | 33, 35 / 34, 36 | 9 / 10 | nets 1–2 / their shadows | |
 | 37–41 | 11 | banners | |
@@ -275,12 +329,11 @@ All thresholds ascend. The names suggest the high- and low-detail crowds
 
 ## Still unknown
 
-- What sets the night flag (request `+0x88`) that picks `N2` over `N1`,
-  and what the request byte `+7` for pitch lines A is.
 - What the crowd block flag (`+0x22`) and the tier flag do in the draw
   code, beyond being copied.
-- Slot 6: every `.PRI` file gives it a priority (60), but nothing loads a
-  part into it.
+- Slot 6 (`BENCH_HIGH`): every `.PRI` file gives it a priority (60), but
+  nothing loads a part into it.
+- Request bytes `+0x0e`–`+0x10` and `+0x13`.
 
 ## Checking the claims
 

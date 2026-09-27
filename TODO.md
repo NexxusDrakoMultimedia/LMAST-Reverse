@@ -243,11 +243,14 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       and the high-detail tier count; the lighting-variant and sky choice;
       `CONV_INFO_BUILD` = `plTeam_GetStadiumDataIndex` (league, level,
       stand/roof/lights)
-- [ ] Still open in `STADIUM/`: what sets the night flag (request `+0x88`,
-      `N2` over `N1`), request byte `+7`, the crowd block and tier flags.
-      Lead: the launcher's STADIUM VIEWER MK2 works in PCSX2, and its
-      CREATE panel sets the build request fields (time, weather, season,
-      month, crowd sizes, adverts)
+- [x] `STADIUM/` night flag and request fields, via the Stadium Viewer's
+      code: `+0x88` = `BUILD_STADIUM` row byte 82 (the `LIGHT_1` switch), so
+      `N2` = stadiums with the second floodlight set (every lights-built
+      variant of levels 1-3); `+7` = landscape level (slots 42/43 are
+      LANDSCAPE_A/B, not pitch lines); the whole request named; the 44 part
+      slots named (`stadium.py build`)
+- [ ] Still open in `STADIUM/`: the crowd block and tier flags, request
+      bytes `+0x0e`-`+0x10` and `+0x13`
 - [ ] `GAME/` tactics AI: `PLAYBOOK.BPB`, `COMBINATION.BPB`,
       `COMBINATION2.CBB/.CSB` (`fb::PlayBookData`, `fb::Combination`)
 - [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`

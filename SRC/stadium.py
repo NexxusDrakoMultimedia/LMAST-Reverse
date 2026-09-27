@@ -66,6 +66,23 @@ MODELS = ("ho00a", "ho00b", "ho01a", "ho01b", "ho02a", "ho03a", "ho04a",
           "aw01a", "aw03a", "aw04b")          # GAMEPRG.REL 0x24d6a8
 VARIANTS = ("d1", "d2", "n1", "n2")
 PRI_SLOTS = 44                                # loops of 0x2b + 1 at 0x1caf80
+# The 44 part slots as the developer Stadium Viewer names them in its VISIBLE
+# menu (GAMEPRG.REL 0x24d3c8), in slot order. They match the builders'
+# slots and the part file names (lig0 LIGHT_0, lna LANDSCAPE_A, ...).
+SLOT_NAMES = (
+    "GOAL", "CFLAG", "SKY", "PITCH", "PITCH_PEEL", "BENCH_LOW", "BENCH_HIGH",
+    "FENCE", "FENCE_SHADOW", "NET", "NET_SHADOW", "BANNER", "STAND_0",
+    "STAND_SHADOW_0", "STAND_1", "STAND_SHADOW_1", "STAND_2", "STAND_SHADOW_2",
+    "STAND_3", "STAND_SHADOW_3", "LIGHT_0", "LIGHT_SHADOW_0A", "LIGHT_SHADOW_0B",
+    "ILLUMINATION_0", "LIGHT_1", "LIGHT_SHADOW_1", "ILLUMINATION_1", "SPOT_0",
+    "SPOT_1", "SPOT_2", "SPOT_3", "STAND_CAP_1", "STAND_CAP_2", "STAND_CAP_3",
+    "STAND_CAP_4", "STAND_CAP_5", "STAFF_0", "STAFF_1", "STAFF_2",
+    "AURORA_VISION_1", "AURORA_VISION_SHADOW_1", "AURORA_VISION_MONITOR_1",
+    "LANDSCAPE_A", "LANDSCAPE_B")
+# Request +0x88 = row byte 82 (the row is copied to +0x36 at 0x1cd680). The
+# callers pass "+0x88 != 0" to the variant picker 0x1ce208, which chooses N2
+# over N1 at night; byte 82 is the LIGHT_1 switch.
+BUILD_NIGHT2 = 82
 PRI_MAX = 100                                 # the second draw pass ends at 0x64
 PRI_PASS = 50                                 # first pass draws 0-0x31
 BUILD_ROW = 0x81                              # 0x1cdb90: (i << 7) + i
@@ -102,8 +119,8 @@ PARTS = (
     (13, 13, 1, 4, "model", 44, 1, "pitch edge ptp_su / ptp_wi by table 1"),
     (14, 18, 2, 5, "stcmn", 39, 2, "bench (first)"),               # 0x1cefb8
     (20, 20, 1, 1, "stcmn", 45, 1, "corner flags"),                # 0x1cee40
-    (25, 25, 1, 42, "stcmn", 46, 1, "pitch lines A, + request byte 7"),    # 0x1cf018
-    (26, 26, 1, 43, "stcmn", 50, 1, "pitch lines B, + request byte 5"),
+    (25, 25, 1, 42, "stcmn", 46, 1, "landscape A, + request byte 7 (landscape level)"),    # 0x1cf018
+    (26, 26, 1, 43, "stcmn", 50, 1, "landscape B, + request byte 5 (weather)"),
     (27, 31, 1, 7, "model", 0, 1, "fence 1-5"),                    # 0x1cf0a8
     (32, 32, 1, 8, "model", 5, 1, "fence shadow"),
     (33, 35, 2, 9, "model", 6, 2, "net 1-2"),                      # 0x1cf138
@@ -383,8 +400,9 @@ def cmd_build(root, sid):
     for lo, hi, step, slot, pack, entry, estep, what in PARTS:
         vals = [r[k] for k in range(lo, hi + 1, step)]
         if any(vals):
-            print("  bytes %3d-%3d  slot %2d  %-5s %2d+  %-40s %s" % (
-                lo, hi, slot, pack, entry, what, " ".join("%x" % v for v in vals)))
+            print("  bytes %3d-%3d  slot %2d %-16s %-5s %2d+  %-45s %s" % (
+                lo, hi, slot, SLOT_NAMES[slot], pack, entry, what, " ".join("%x" % v for v in vals)))
+    print("  night variant: %s (byte %d, LIGHT_1)" % ("N2" if r[BUILD_NIGHT2] else "N1", BUILD_NIGHT2))
     print("  advert switches (42-69, 94-97): %s %s" % (r[42:70].hex(), r[94:98].hex()))
     print("  shadow collision (110-114): %s  wall collision (128): %d" % (
         " ".join(str(x) for x in r[BUILD_SHADOW]), r[BUILD_WALL]))
