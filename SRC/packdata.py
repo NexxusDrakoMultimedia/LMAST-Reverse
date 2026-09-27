@@ -29,6 +29,12 @@ Usage:
     python packdata.py info    <file|dir> ... [--all]      # check every KC@P pack found
     python packdata.py list    <header> <index>            # blocks of one entry
     python packdata.py extract <header> <index> <outdir>   # write each block's data
+    python packdata.py names   <header> [first [last]]     # model and texture names
+
+`names` prints the NFN0 model name and the NSTL texture names of each
+entry's first Ninja block. In FC_EURO_FACEPACK_01 they name the event
+characters (REFREE_11.sno, STAFF_F_08.svr, ...); the developer SATO TEST
+viewer's table in TESTPRG.REL 0x21d18 lists the same names by entry.
 """
 import os
 import struct
@@ -199,6 +205,30 @@ def cmd_extract(path, index, outdir):
         print(os.path.join(outdir, name))
 
 
+def cmd_names(path, first=0, last=None):
+    import ninja
+    h = pac.load_header(path)
+    if not isinstance(h, pac.KcAtP):
+        raise SystemExit("%s: not a KC@P header" % path)
+    last = len(h.entries) - 1 if last is None else last
+    with open(pac.data_path(path, h), "rb") as f:
+        for index in range(first, last + 1):
+            off, size, _, _ = h.entries[index]
+            buf = read_entry(f, off, size)
+            model, textures = "-", []
+            for _, bsize, d in PackData(buf).blocks:
+                if buf[d:d + 4] != b"NSIF":
+                    continue
+                nf = ninja.NinjaFile(buf[d:d + bsize])
+                for tag, coff, csize in nf.chunks:
+                    if tag == b"NFN0":
+                        model = nf.buf[coff + 0x10:coff + 8 + csize].rstrip(b"\0").decode("cp932")
+                    elif tag == b"NSTL":
+                        textures = ninja.texture_names(nf, nf.main_struct((tag, coff, csize)))
+                break
+            print("%5d  %-24s %s" % (index, model, " ".join(textures) or "-"))
+
+
 def main(argv):
     args = [a for a in argv[2:] if a != "--all"]
     cmd = argv[1] if len(argv) > 1 else ""
@@ -208,6 +238,8 @@ def main(argv):
         cmd_list(args[0], int(args[1], 0))
     elif cmd == "extract" and len(args) == 3:
         cmd_extract(args[0], int(args[1], 0), args[2])
+    elif cmd == "names" and 1 <= len(args) <= 3:
+        cmd_names(args[0], *(int(a, 0) for a in args[1:]))
     else:
         print(__doc__)
         return 1

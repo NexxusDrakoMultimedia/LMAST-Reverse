@@ -502,8 +502,13 @@ row is `{char *name, u32 female}`, one row per ID:
 The flag is 1 on exactly the 40 `_F` names. The viewer's 215 IDs equal
 the 215 heads of `FC_EURO_FACEPACK_01`, the event-character pack
 ([`PLAYER_DIR.md`](PLAYER_DIR.md)), and the screenshots fit the table (ID
-10 `REFREE_11`, ID 211 `STAFF_F_08`). So ID *n* is very likely pack entry
-*n* (**empirical**; the viewer's load code isn't traced).
+10 `REFREE_11`, ID 211 `STAFF_F_08`). ID *n* is pack entry *n*: every head
+in the pack carries its own model and texture name, and those names match
+this table row by row (`python SRC/packdata.py names
+DAT/PLAYER/FC_EURO_FACEPACK_01.HED`). The rows without a name are
+`kihon.sno` (188–191, four identical copies) and the untextured test heads
+`HUMAN_head_9000/9500/9600.snj` (212–214). The viewer's load code isn't
+traced.
 
 PERSONAL AFFAIRS's players belong to a block of 25 English players,
 database IDs 25591–25615, with shirts 1–25 and ranks 1–4. None of them is

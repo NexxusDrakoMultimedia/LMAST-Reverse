@@ -302,10 +302,10 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] `DAT/TEST3D/VIEWERPLAYERMOTION.PAC`: the CHARACTER VIEWER's motion
       set (`mendan_Asit_ang_001.snm`, ...); list it and link it to the
       Ninja motion docs
-- [ ] Label `FC_EURO_FACEPACK_01` entries with those roles in
-      `packdata.py`/`ninja.py` output (confirm ID = entry by tracing the
-      viewer's load, or by exporting a head and comparing it with the
-      screenshot)
+- [x] Label `FC_EURO_FACEPACK_01` entries: each head carries its own
+      model/texture name (`packdata.py names`, in `regress.py`), matching
+      the viewer's table row by row; 188-191 `kihon`, 212-214
+      `HUMAN_head_9000/9500/9600`
 - [ ] The PBDATA blocks of 25 low-rank players with shirts 1-25 (e.g.
       England 25591-25615, then 25616-): the player's own starting squads?
       Find where `Pwk.NewGame` / club creation picks them (lead from the
