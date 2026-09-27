@@ -90,6 +90,10 @@ jump table `0x298a50`) names these fields (**confirmed**):
 | `+0x14`, `+0x18`, `+0x1c` (u32) | HOME_SUPPORTER, AWAY_SUPPORTER, CIVILIAN_VISITOR | crowd sizes (110000 each by default) |
 | `+0x20` | ADVERTISE_INDEX | the first of the 12 advert textures at `+0x20`–`+0x2b` ([Adverts](#adverts)) |
 | `+0x0c`, `+0x0d` | – | pitch edge (from table 1) and adverts on (below) |
+| `+0x0e` | – | advert board style: 1 makes boards 43 and 52 electric (sets bit 8, `0x1cd9c8`); 2 replaces boards 43–45 and 52–54 with 46–50 and 55–59 (`0x1cda28`, lists at `0x2997a0`, `0x2997a8`). Each applies only if the boards it starts from are on |
+| `+0x0f` | – | advert board level: clears boards 95–97, then turns on board 95 at level ≥ 2 and 96 at ≥ 3 for `ho01a`/`ho01b`, 95 at ≥ 4 for `ho02a` and 95 at ≥ 5 for `ho03a` (`0x1cd8c8`, `{model, level, byte}` list at `0x299788`) |
+| `+0x10` | – | when set, the 11 advert textures at `+0x20` move up one and `+0x20` becomes 232 (`0x1cd618`), which the texture clamp at `0x1d31b8` turns into the last advert texture |
+| `+0x13` | – | not read by the stadium code |
 | `+0x2c`–`+0x35` | – | the stand node lists (table 2) |
 | `+0x36`–`+0xb6` | – | the stadium's `BUILD_STADIUM` row |
 
@@ -307,9 +311,30 @@ one crowd layout for a model, and the three-set models have three sizes
 | Table | Contents |
 |---|---|
 | 0 | 9 stand sections × 8 bytes: `{u16 share, u16 tiers, u32 slot}`. The game writes a pointer to table *k*+1 into section *k*'s slot. Shares are 1024 = 1.0 and add up to 1018–1022 in every file |
-| 1–9 | one per section, one 8-byte row per tier: `{u32 capacity, u16 fill, u8 flag, u8 0}` (**confirmed**, `0x1d73c0` and `0x1d7d00`). The capacity (240–10000 across the 326 tiers in use) is most likely the number of people the tier holds, and fill/1024 its fill ratio. The flag (0/1) is copied into the tier's work data. Rows past the tier count are zero, except a 3600-person row in section 6 of `HO01A_2` and `_3`, whose tier count is 0 so the game skips it |
-| 10 | crowd blocks, 40 bytes each: `char[32]` name, `u8 section`, `u8 tier`, `u8 flag` (0/1, read at `0x1d83f8`), then two copies of one byte (`+0x23`, `+0x26`) that count up through the file or are 0. The game only reads `+0x20`–`+0x22`. The name builds the model name `<model>_<variant>_aud_<name>.snj` (`0x1d5b08`), and every block has its model in all four `AUD_MODEL` packs. Every tier is below its section's tier count |
+| 1–9 | one per section, one 8-byte row per tier: `{u32 capacity, u16 fill, u8 flag, u8 0}` (**confirmed**, `0x1d73c0` and `0x1d7d00`). The capacity (240–10000 across the 326 tiers in use) is most likely the number of people the tier holds, and fill/1024 its fill ratio. The flag (0/1) picks the tier's fill curve: it is copied to byte `+0x10` of the tier's work record, which indexes the tables of `AUD_JAM_HI` (pointer array at `+0x124`, filled at `0x1d3a30`; read at `0x1d82ec`, then searched by `0x1d8188`). So flag 0 uses `AUD_JAM_HI` table 0 and flag 1 table 1 (**confirmed**). Rows past the tier count are zero, except a 3600-person row in section 6 of `HO01A_2` and `_3`, whose tier count is 0 so the game skips it |
+| 10 | crowd blocks, 40 bytes each: `char[32]` name, `u8 section`, `u8 tier`, `u8 flag` (0/1, see [crowd kinds](#crowd-kinds)), then two copies of one byte (`+0x23`, `+0x26`) that count up through the file or are 0. The game only reads `+0x20`–`+0x22`. The name builds the model name `<model>_<variant>_aud_<name>.snj` (`0x1d5b08`), and every block has its model in all four `AUD_MODEL` packs. Every tier is below its section's tier count |
 | 11 | 1 byte, 1 or 2: the number of high-detail tiers. `0x1d6ac4` builds blocks whose tier is below it with the high-detail crowd (driven by `AUD_JAM_HI`) and the rest with the low-detail one (`AUD_JAM_LW`) |
+
+### Crowd kinds
+
+**Confirmed.** The build request's three crowd sizes (`+0x14` home
+supporters, `+0x18` away supporters, `+0x1c` other visitors) are split
+over the 9 sections (`0x1d7998`) and then over each section's tiers
+(`0x1d73c0`). For each tier `0x1d7d00` sums the three counts into its fill
+ratio (sum / capacity) and sorts the three kinds (0 home, 1 away, 2
+visitors, starting order at `0x29a1e0`) by count. It stores the largest
+kind in the tier's work record at `+8` and the second at `+0xc`. The
+debug line `  %s %3d%% [%d:%d]` prints the fill and these two kinds.
+
+Each crowd block has two figure groups. `0x1d83dc` gives one group the
+tier's main kind and the other its second kind, and the block flag
+decides which: with flag 0 the home supporters (when they are one of the
+two) go to group 0, with flag 1 to group 1. When home fans aren't in the
+top two, the flag swaps the away fans and visitors the same way. The
+tier's work records are `+0x27c + section × 0x64 + tier × 0x14` in the
+crowd object.
+
+### Fill curves
 
 `AUD_JAM_HI` and `AUD_JAM_LW` control how the crowd fills up (the debug
 line `  %s %3d%% [%d:%d]` at `0x29a210` prints `hi`/`lw` and a percentage):
@@ -329,11 +354,12 @@ All thresholds ascend. The names suggest the high- and low-detail crowds
 
 ## Still unknown
 
-- What the crowd block flag (`+0x22`) and the tier flag do in the draw
-  code, beyond being copied.
+- Which figure group of a crowd model is which on screen, and what the
+  two `AUD_JAM_HI` tables look like when drawn.
+- Who sets request `+0x0e`–`+0x10` in a real match (the viewer doesn't).
 - Slot 6 (`BENCH_HIGH`): every `.PRI` file gives it a priority (60), but
   nothing loads a part into it.
-- Request bytes `+0x0e`–`+0x10` and `+0x13`.
+- Request byte `+0x13` (not read by the stadium code).
 
 ## Checking the claims
 

@@ -249,8 +249,14 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       variant of levels 1-3); `+7` = landscape level (slots 42/43 are
       LANDSCAPE_A/B, not pitch lines); the whole request named; the 44 part
       slots named (`stadium.py build`)
-- [ ] Still open in `STADIUM/`: the crowd block and tier flags, request
-      bytes `+0x0e`-`+0x10` and `+0x13`
+- [x] `STADIUM/` crowd flags and the last request bytes: the tier flag
+      picks the `AUD_JAM_HI` table (fill curve); the block flag picks which
+      of a block's two figure groups gets the home supporters (tiers sort
+      home/away/visitor counts from request `+0x14`-`+0x1c`); `+0x0e`
+      advert board style (electric / bigger layout), `+0x0f` extra-board
+      level by model, `+0x10` special first advert; `+0x13` unread
+- [ ] Still open in `STADIUM/`: which crowd figure group is which on
+      screen, who sets request `+0x0e`-`+0x10` in a real match
 - [ ] `GAME/` tactics AI: `PLAYBOOK.BPB`, `COMBINATION.BPB`,
       `COMBINATION2.CBB/.CSB` (`fb::PlayBookData`, `fb::Combination`)
 - [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
