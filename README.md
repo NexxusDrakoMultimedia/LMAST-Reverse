@@ -330,6 +330,7 @@ workflow is:
 | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) | `DAT/EMBLEM`: the club editor's crest and flag parts, its colour palette, the edit tables, and the player-editor tables |
 | [`NEWS_DIR.md`](DOC/NEWS_DIR.md) | `DAT/NEWS`: newspaper mastheads, article pictures, ads and cartoons, and the monthly ranking flags |
 | [`SOUND_DIR.md`](DOC/SOUND_DIR.md) | `DAT/SOUND`: which bank is which, the executable's bank table, and the music table (music id → song or stream) |
+| [`SEQ_DIR.md`](DOC/SEQ_DIR.md) | `DAT/SEQ`: the root sequencer scripts, which are loaded, their CVS history |
 | [`CVS_DIR.md`](DOC/CVS_DIR.md) | the `CVS/` folders left on the disc: original file names, commit dates, which files the build made |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |
 | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) | the player database: header, bit-packed player/manager/scout records, ability and money tables |
