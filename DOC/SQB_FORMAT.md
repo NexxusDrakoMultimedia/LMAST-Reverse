@@ -352,6 +352,59 @@ python SRC/sqb.py setcmd  DAT/SEQ/ROOTMAINSEQ.SQB out/ROOTMAINSEQ.SQB 0x98 0:27
 same argument count, so the file keeps its size and can be patched onto the
 disc with `patch_disc.py`. It re-checks the script's labels before writing.
 
+## Skipping the tutorial (the opening playoffs)
+
+A new career starts with a scripted promotion playoff, with cutscenes:
+the club's way into the league (the game has no third division; user
+report). `RootClubEditSeq.sqb` runs it after club creation and the first
+save, behind a developer switch:
+
+```
+  0868  4:88  Dummy.CheckFirstMatchSkip    m3[1]
+  0878  0:28  BranchIfNotZero              m3[0], m3[1], L9
+  08b0  ...   (L2) Sche.InitializeFirstCheck, YearStart, MonthStart, then the
+              turn and match loop (RootEventSeq, RootMatchSeq) until
+              Sche.FirstCheck: won -> L8 (MonthEnd, YearEnd, Finalize) -> L9;
+              lost -> L6 (cutscene 7, Finalize) and the script ends with m4[2] = 1
+  0d18  4:73  Pwk.PromotionEnd             m3[0]       (L9; then the save)
+```
+
+**Confirmed** from the code:
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x108d20` | `fcEuroDummyCommand_CheckFirstMatchSkip` (command 88) | writes 1 when the word at `0x34d430` is 1, else 0. It is 0 on the disc |
+| `0x108d98` | `fcEuroDummyCommand_CheckClubEditSkip` (command 89) | when the word at `0x34d434` is 1: `pwkLg_Init(0)`, `ScheCallback_ProcPromotion`, and writes 1; else writes 0. It is 0 on the disc |
+| `0x1131c8` | `ScheCallback_ProcPromotion` | enters the club in last season's records of its competitions (`pwkRec_SetPastRecordLastTeamOne`). Called only by command 89 and by `Sche.FirstCheck` (`0x114174`) after the playoffs |
+| `0x1114c0` | `Pwk.PromotionEnd` (command 73) | `pwkOteam_InitNonresident` and `pwkRec_Promote` only, not the club's own promotion |
+
+Command 89 is also used by `RootMainSeq.sqb` at `0x6d8` (non-zero skips
+club creation) and by `RootYearStartSeq.sqb` at `0x30` (non-zero skips
+the year start). So setting `0x34d430` alone would skip the playoffs
+without promoting the club, and setting `0x34d434` alone would also skip
+club creation and every year start.
+
+**The patch** (four bytes, test disc `LMAST-skiptutorial.iso`):
+
+| File | Change |
+|---|---|
+| `SLES_541.51` `0x34d434` (file offset `0x24e434`) | 0 → 1 |
+| `ROOTCLUBEDITSEQ.SQB` `0x868` | `4:88` → `4:89`: promote, then branch to `L9` |
+| `ROOTMAINSEQ.SQB` `0x6d8` | `4:89` → `4:88`, which writes 0: club creation stays |
+| `ROOTYEARSTARTSEQ.SQB` `0x30` | `4:89` → `4:88`: year starts stay |
+
+```bash
+python SRC/sqb.py setcmd DAT/SEQ/ROOTCLUBEDITSEQ.SQB out/ROOTCLUBEDITSEQ.SQB 0x868 4:89
+python SRC/sqb.py setcmd DAT/SEQ/ROOTMAINSEQ.SQB out/ROOTMAINSEQ.SQB 0x6d8 4:88
+python SRC/sqb.py setcmd DAT/SEQ/ROOTYEARSTARTSEQ.SQB out/ROOTYEARSTARTSEQ.SQB 0x30 4:88
+```
+
+The skip route leaves out what the playoff route runs between `L2` and
+`L9` (the schedule's first year, month and turn steps, and their ends),
+as the developers' own switch does. `pwkLg_Init(0)` names league 0
+(England), so other leagues may not come out right. Not yet tested in
+PCSX2.
+
 ## The developer launcher
 
 **Confirmed** from the code: `Dummy.CheckLauncher` (`0x109270`) always

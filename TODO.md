@@ -167,10 +167,12 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       records can be free agents; Buffon (rank 14) is held back by a gate
 - [ ] Trace the gate that keeps high-rank free agents (Buffon, rank 14)
       off a small club's Transfer List (reputation vs. player rank?)
-- [ ] Testing aid: a way to skip the 5-10 minute tutorial (and its
-      playoff final) when starting a new career on a test disc, e.g. a
-      sequencer-script or event-flag patch, or the developer launcher's
-      MAIN GAME START
+- [ ] Testing aid: skip the opening playoffs (the tutorial). Found the
+      developers' switches (`Dummy.CheckFirstMatchSkip`/`CheckClubEditSkip`,
+      flags `0x34d430`/`0x34d434`); a 4-byte patch is on
+      `LMAST-skiptutorial.iso` (`DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs`).
+      Test it (England); then other leagues, and make it a tool option.
+      (The launcher's MAIN GAME START still has the tutorial: user report)
 - [ ] Trace which code builds a national team's squad from players
       26,041-27,949 (83 blocks of 23, one per national team; empirical,
       `DOC/PBDATA_FORMAT.md#player-id-blocks-empirical`)
