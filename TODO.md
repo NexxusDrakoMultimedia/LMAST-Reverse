@@ -59,8 +59,9 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
       sectors, `0x307f24`), and its directory record is rewritten and
       re-encrypted. Tested on a copy of `DATA.CVM`, reverts byte-exact
       (`DOC/PRELOAD_DIR.md#rebuilding-a-pack`)
-- [ ] Load a rebuilt pack in PCSX2: a grown club name in
-      `STATIONMES1.PAC` (entries moved, directory record changed)
+- [x] Load a rebuilt pack in PCSX2: two lengthened club names
+      (`STATIONMES1.PAC` 45,264 -> 45,328 bytes, entries 3-9 moved,
+      directory record changed) showed in VS mode Team Selection
 - [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`,
       and the EVENT `+0x68` timing enum (values 0–21, scan at `0x12df08`)
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)

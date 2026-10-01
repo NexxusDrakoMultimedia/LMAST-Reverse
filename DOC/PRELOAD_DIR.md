@@ -192,9 +192,18 @@ of 45,328 bytes whose 10 entries all equal their new `MES.PAC` sources.
 A second run changed nothing. Patching the original `MES.PAC` and
 `STATIONMES1.PAC` back gave a `DATA.CVM` byte-identical to the original.
 
+**Tested in PCSX2.** Birmingham (`3:2003`) and Blackburn (`3:2004`) were
+renamed "Birmingham City FC (rebuilt pack)" and "Blackburn Rovers FC
+(rebuilt pack)". That grew `3_1.mbb` from 6,672 to 6,720 bytes, one byte
+past its `0x40` gap. `patch --copies` rebuilt `STATIONMES1.PAC` from
+45,264 to 45,328 bytes, moving entries 3–9 by `0x40`, and rewrote its
+directory record. In VS mode, Team Selection showed both new names in
+full. The game loaded the larger pack, through the new size in the
+re-encrypted directory record, and found the entries at their new
+offsets.
+
 ## Still unknown
 
-- A rebuilt pack hasn't been loaded in PCSX2 yet.
 - What record field `+0x18` selects (3, 4 or 5).
 - Whether `TACTICSPITCH.PAC`'s entries (loaded through `CLoader`) are ever
   used in place of their originals.

@@ -320,7 +320,8 @@ because the game reads whole sectors
 ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)). `python SRC/preload.py
 info DAT` gives each pack's room (4 to 2,032 bytes, median 1,244), and
 `preload.py who DAT <name>` lists the packs holding a file. A file whose
-pack would need another sector is refused.
+pack would need another sector is refused. Tested in PCSX2: two
+lengthened club names in a rebuilt `STATIONMES1.PAC` showed in VS mode.
 
 **Confirmed in the game (PCSX2).** The English subject (`563:11000`) and
 body (`563:1000`) of the first mail in a new game, "Welcome to Football

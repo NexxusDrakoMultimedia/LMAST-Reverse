@@ -166,6 +166,11 @@ contents gave the new size, and the pack's entries matched their
 sources. Patching the original `MES.PAC` and `STATIONMES1.PAC` back gave
 a byte-identical `DATA.CVM`, so the re-encrypted sector is exact.
 
+**Confirmed in the game (PCSX2).** A disc with two lengthened English
+club names (`3_1.mbb` 6,672 -> 6,720 bytes, `STATIONMES1.PAC` rebuilt to
+45,328 bytes, its later entries moved) showed both names in VS mode Team
+Selection ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)).
+
 ## Usage
 
 ```bash
