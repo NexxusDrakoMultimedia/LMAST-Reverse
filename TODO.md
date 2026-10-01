@@ -112,8 +112,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       England / Counter-Attack) showed in a new career's squad at 30, and
       the squad was exactly the group's first 18 records
 - [ ] `TEAM_INIT_DATA` leftovers: what the game shows the staff lists
-      (tables 4, 5) as; the rival's squad from the opposite style, and
-      the Individual Play group, not yet seen in game
+      (tables 4, 5) as. (That the style picks the group and the rival gets
+      the opposite style is known from playing: user report)
 - [ ] Name manager field `f_22` and scout field `f_18` in `pbdata.py`:
       very probably the staff ages (they equal `TEAM_INIT_DATA`'s staff
       age byte in all 288 records, and the fallback code reads them there)

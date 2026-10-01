@@ -208,12 +208,13 @@ game shows (not one year more, unlike `OTEAMMEMBER`'s squads, which a
 new game shows a year older). The captain is chosen by
 `plTeam_GetCaptainFitPoint`, not by record order.
 
+**From playing the game (user report).** The team style sets the
+starting players, and the rival club gets the opposite style. This
+matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
+
 ## Still unknown
 
 - What the game shows the staff lists of tables 4 and 5 as.
-- Not yet checked in the game: the Individual Play group (Terry at 31 on
-  the same test disc) and the rival's squad coming from the opposite
-  style.
 - Whether the staff `+0x0c` byte is shown as the age (the database
   fields it matches aren't named yet).
 - The unit of the salary before `SM2MoneySave_WithInRange`.
