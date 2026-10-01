@@ -5,7 +5,8 @@
 
 At the start of a career you pick a league and a team style. That choice
 selects, from this file, the new club's squad, youth team, manager,
-coaches and scouts, its starting staff lists, and the rival club. It is
+coaches and scouts, the first coach and scout candidates, and the rival
+club. It is
 a TBB1 file ([`TBB_FORMAT.md`](TBB_FORMAT.md)) of 9 tables, all made of
 u32 fields.
 
@@ -64,8 +65,8 @@ from there.
 | 1 | 3,456 | 24 | 144 | 6 per (league, style) | `0x25ed5c`–`0x25eea8` | manager, youth-team manager, 4 coaches |
 | 2 | 1,728 | 24 | 72 | 3 per (league, style) | `0x25eeb4`–`0x25ef7c` | 3 scouts |
 | 3 | 1,536 | 16 | 96 | 16 per league | `0x25e190` | youth team |
-| 4 | 864 | 24 | 36 | 6 per league | `0x25eba8`–`0x25ec68` | first 6 of a 30-slot manager list |
-| 5 | 864 | 24 | 36 | 6 per league | `0x25ec84`–`0x25ed40` | first 6 of a 13-slot scout list |
+| 4 | 864 | 24 | 36 | 6 per league | `0x25eba8`–`0x25ec68` | first 6 of the 30-slot Coach Candidate List |
+| 5 | 864 | 24 | 36 | 6 per league | `0x25ec84`–`0x25ed40` | first 6 of the 13-slot Scout Candidate List |
 | 6 | 48 | 12 | 4 | by style | `0x25e6a8`–`0x25e6e8` | rival's manager |
 | 7 | 72 | 12 | 6 | by league | `0x25e6f4`–`0x25e738` | rival's stadium |
 | 8 | 480 | 20 | 24 | by (league, style) | `0x25e740`–`0x25e7a8` | rival's club-record bytes |
@@ -90,9 +91,9 @@ empty slot: `getPbase` finds no player and the slot stays empty
   48 youth records. The table's age is the one the game uses.
 - Staff `+0x0c` equals manager field `f_22` in all 180 manager records
   (tables 1 and 4), and scout field `f_18` in all 108 scout records
-  (tables 2 and 5). Values run from 38 to 58, so those two database
-  fields are very probably the staff ages, which `pbdata.py` doesn't
-  name yet.
+  (tables 2 and 5). The game shows this byte as the age (tested, below),
+  so those two database fields are the staff ages, which `pbdata.py`
+  doesn't name yet.
 - Contracts: 2–4 years for players, 1–3 for staff. Salaries: 90,000 to
   1,620,000 for players, 360,000 to 900,000 for staff.
 - No player in table 0 or 3 is in a computer club's squad (`OTEAMMEMBER`).
@@ -123,15 +124,21 @@ and Possession face each other, as do Individual Play and Teamwork.
 | table 1, 2–5 | four coaches (`pwork +0x9148`, `0xbc` apart) |
 | table 2, 0–2 | three scouts (`pwork +0x8f8c`, `0x94` apart) |
 
-### Staff lists (tables 4 and 5)
+### Candidate lists (tables 4 and 5)
 
 Each league's 6 records fill the first 6 slots of a list of 12-byte
 entries `{u32 salary, s16 id + 0x6d2e, u8 contract, u8 age, u8 8}`, and
-the remaining slots are set to `-1`: 30 slots at `pwork +0x9ac8` for
-managers, 13 at `+0x9c30` for scouts. Without the file, the lists hold
-30 managers (database 29,950–29,979) and 13 scouts (30,953–30,965). What
-the game shows these lists as, probably the staff on offer at the start,
-hasn't been traced.
+the remaining slots are set to `-1`: 30 slots at `pwork +0x9ac8` from
+table 4, 13 at `+0x9c30` from table 5. Without the file, the lists hold
+30 managers (database 29,950–29,979) and 13 scouts (30,953–30,965).
+
+**Tested in PCSX2:** they are the Club House / Club Personnel screens'
+**Coach Candidate List** (table 4) and **Scout Candidate List** (table
+5). In an England career, both lists showed exactly that league's six
+records, with the table's ages and contracts, after the club's own coach
+or scout. The **Manager Candidate List** doesn't come from this file. Its
+"List criteria" column showed "7 Training cycle" for every candidate;
+whether that counts down from the entry's last byte (8) is a guess.
 
 ### The rival club (tables 6, 7 and 8)
 
@@ -212,12 +219,28 @@ new game shows a year older). The captain is chosen by
 starting players, and the rival club gets the opposite style. This
 matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
 
+**Tested in PCSX2, more careers on the same disc.**
+- England / Individual Play: the squad was records 44–61, with Terry at
+  31 in place of record 44.
+- England / Teamwork: the rival club (SC Dunstable) had Terry, at 32 in
+  2006–07, a season after the start. It also had Sexton, Jennings and
+  Challinor, records 62–65, which only the rival gets, all one year
+  older than the table. So the rival takes the whole 22-record group
+  of the opposite style (Individual Play).
+- The same career's manager P.Hodgson, coach H.Dale and scout L.Reily
+  are England / Teamwork records 18, 20 and 9 of tables 1 and 2. A
+  season later each was a year older, with a year less on the contract.
+  So the staff `+0x0c` byte is the age the game shows.
+- Salaries show in pounds as the table's value ÷ 6, the pound rate in
+  [`SAVE_FORMAT.md`](SAVE_FORMAT.md): Hodgson 900,000 showed £150,000
+  and Reily 540,000 £90,000. Dale showed £80,000, not £75,000, maybe
+  after a raise during the season.
+
 ## Still unknown
 
-- What the game shows the staff lists of tables 4 and 5 as.
-- Whether the staff `+0x0c` byte is shown as the age (the database
-  fields it matches aren't named yet).
-- The unit of the salary before `SM2MoneySave_WithInRange`.
+- Whether the candidate lists' "List criteria" counts down from the
+  entry's last byte.
+- Why H.Dale's salary showed £80,000 rather than 450,000 ÷ 6.
 
 ## Checking the claims
 

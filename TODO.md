@@ -111,12 +111,16 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [x] Tested in PCSX2: an edited squad record (John Terry, age 30, in
       England / Counter-Attack) showed in a new career's squad at 30, and
       the squad was exactly the group's first 18 records
-- [ ] `TEAM_INIT_DATA` leftovers: what the game shows the staff lists
-      (tables 4, 5) as. (That the style picks the group and the rival gets
-      the opposite style is known from playing: user report)
-- [ ] Name manager field `f_22` and scout field `f_18` in `pbdata.py`:
-      very probably the staff ages (they equal `TEAM_INIT_DATA`'s staff
-      age byte in all 288 records, and the fallback code reads them there)
+- [x] Tested in PCSX2: tables 4 and 5 are the starting Coach and Scout
+      Candidate Lists; the Individual Play squad, the rival's full
+      22-player squad of the opposite style, and the staff (ages shown,
+      salaries in pounds = value / 6) all match the table
+- [ ] `TEAM_INIT_DATA` leftovers: the candidate lists' "List criteria"
+      (7 Training cycle) and H.Dale's salary showing 80,000 not 75,000
+- [ ] Name manager field `f_22` and scout field `f_18` in `pbdata.py` as
+      the staff ages: they equal `TEAM_INIT_DATA`'s staff age byte in all
+      288 records, the fallback code reads them there, and that byte is
+      the age the game shows (tested)
 - [x] Player database `PBDATA_EU.PAC`: bit-packed records for 27,950
       players, 3,000 managers and 1,000 scouts, field widths from
       `plBits_DecPl{P,M,S}baseEx` (`DOC/PBDATA_FORMAT.md`, `SRC/pbdata.py`);

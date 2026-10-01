@@ -24,10 +24,10 @@ reader finds the first record with its key and takes the group after it.
   2  scouts     24 B  {league, style, scout, age, contract, salary}, 3 per group
   3  youth      16 B  {league, 4, player, age}, 16 per league (0x25e190);
                 player 0xffffffff = empty slot
-  4  managers   24 B  {league, 4, manager, age, contract, salary}, 6 per league:
-                the first 6 of a 30-slot staff list (pwork +0x9ac8)
+  4  coachlist  24 B  {league, 4, manager, age, contract, salary}, 6 per league:
+                the first 6 of the 30-slot Coach Candidate List (pwork +0x9ac8)
   5  scoutlist  24 B  {league, 4, scout, age, contract, salary}, 6 per league:
-                the first 6 of a 13-slot list (pwork +0x9c30)
+                the first 6 of the 13-slot Scout Candidate List (pwork +0x9c30)
   6  rivalmgr   12 B  {6, style, manager}, 4 records. The loop at 0x25e6d0
                 always loads the first record's manager, whatever the style
   7  rivalstad  12 B  {league, 4, stadium}: the rival's STADIUM_DATA row
@@ -77,7 +77,7 @@ TABLES = (
     ("scouts", 24, ("league", "style", "scout", "age", "contract", "salary"),
      "scouts", "ls", 3, None),
     ("youth", 16, ("league", "style", "player", "age"), "players", "l", 16, None),
-    ("managers", 24, ("league", "style", "manager", "age", "contract", "salary"),
+    ("coachlist", 24, ("league", "style", "manager", "age", "contract", "salary"),
      "managers", "l", 6, None),
     ("scoutlist", 24, ("league", "style", "scout", "age", "contract", "salary"),
      "scouts", "l", 6, None),
