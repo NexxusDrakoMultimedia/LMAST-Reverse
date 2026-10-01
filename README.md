@@ -121,6 +121,7 @@ disassemble as unrelated MIPS instructions.
 | [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, and the 116 licensed kits' descriptors (`PLPACK` and the executable's copy); edits kits (`set`, `setlicence`, `setexe`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
 | [`stadium.py`](SRC/stadium.py) | `DAT/STADIUM`: `.PRI` draw priorities, `BUILD_STADIUM.TBB` (which model each of the 119 stadiums uses), packs per model | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) |
 | [`system.py`](SRC/system.py) | `DAT/0SYSTEM`: the 77 UI colours, `DETAILFLAG`, the 8 crest, badge and sponsor texture packs (which entry a team id picks), icons | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) |
+| [`emblem.py`](SRC/emblem.py) | `DAT/EMBLEM`: the club editor's 96-colour palette and its 32/16-colour maps, crest masks, patterns and accessories, flag parts, and how the tables and packs line up | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) |
 | [`news.py`](SRC/news.py) | `DAT/NEWS`: the newspaper's picture packs (mastheads by league, article pictures, ads) and `NEWSMONTHFLAG` (which months print the best-player rankings) | [`NEWS_DIR.md`](DOC/NEWS_DIR.md) |
 | [`cvs.py`](SRC/cvs.py) | the developers' `CVS/` folders: each file's original name, revision and date, and which files the build added | [`CVS_DIR.md`](DOC/CVS_DIR.md) |
 
@@ -323,6 +324,7 @@ workflow is:
 | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) | `DAT/0SYSTEM`: UI colours, crest/badge/sponsor texture packs and how an id picks an entry, fonts by language, icons, leftovers |
 | [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md) | `DAT/PRELOAD`: the bulk-load packs, the load lists and folder ids, and which copy of a file the game reads, and rebuilding a pack |
 | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) | `DAT/STADIUM`: the 10 stadium models, `.PRI` draw priorities, crowds, adverts, `BUILD_STADIUM` |
+| [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) | `DAT/EMBLEM`: the club editor's crest and flag parts, its colour palette, the edit tables, and the player-editor tables |
 | [`NEWS_DIR.md`](DOC/NEWS_DIR.md) | `DAT/NEWS`: newspaper mastheads, article pictures, ads and cartoons, and the monthly ranking flags |
 | [`CVS_DIR.md`](DOC/CVS_DIR.md) | the `CVS/` folders left on the disc: original file names, commit dates, which files the build made |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |

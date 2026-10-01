@@ -108,6 +108,7 @@ def checks():
         # decide which copy the game reads.
         ("preload", ["preload.py", "info", "DAT"], ["DAT"]),
         ("system", ["system.py", "info", "DAT/0SYSTEM"], ["DAT/0SYSTEM"]),
+        ("emblem", ["emblem.py", "info", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         ("news", ["news.py", "info", "DAT/NEWS"], ["DAT/NEWS"]),
         # The developers' CVS checkout files, against what is on the disc.
         ("cvs", ["cvs.py", "info", "DAT"], ["DAT"]),

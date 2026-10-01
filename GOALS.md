@@ -94,7 +94,7 @@ Where each folder stands (October 2026):
 | `ACROBATA/` | `PAC`, `DAT` | not studied |
 | `BG/` | 304 `MRG`, `HED`, `SVR`, Ninja `SNO`/`SNM`/`SNJ` | archives, textures, Z buffers and models done ([`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
 | `CSE/` | 490 `CSP`, `CSE`, `SVR`, a few others | screen layouts done ([`CSE_FORMAT.md`](DOC/CSE_FORMAT.md)) |
-| `EMBLEM/` | `TBB`, `PAC`/`HED` | tables parse (3 are a byte short, see [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md)); no folder doc |
+| `EMBLEM/` | `TBB`, `PAC`/`HED` | surveyed in [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md), `emblem.py`: loaders of every file, the 96-colour palette and its maps, which `EDIT_EMBLEM`/`EDIT_FLAG` table holds what and how they line up with the part packs, what the game does with the 3 short tables; preset and crest record fields and `EDIT_PLAYER.TBB` not decoded |
 | `EVENT/` | `EvsDataBin_*.bin`, `EVENTDATA_TURN.TBB` | done ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md)); some NEWS/MAIL columns unnamed |
 | `GAME/` | commentary `TBL`, sound banks, models, many small types | surveyed in [`GAME_DIR.md`](DOC/GAME_DIR.md); `SOUNDDAT.PAC` and commentary tables decode (`sounddat.py`); models parse ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)); tactics AI, `GAMEDATA.BIN`, `AI_PARAM.BIN` not parsed |
 | `MESSAGE/` | `MES.PAC` | done, with a writer ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md)) |

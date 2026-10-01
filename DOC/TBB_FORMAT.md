@@ -123,11 +123,14 @@ The single byte after the data is the usual `00` alignment padding.
 It looks like an authoring slip repeated in three tables that follow
 the same pattern, not a different record size. The game counts rows as
 `size / line_size` (`GetDataTableCount`), so it sees 11 rows and never
-reaches record 11. Rows 4–10 would come out misaligned if it walks them
-by line size. The code that reads these tables (`edit_emblem.tbb` is
-named in `DLL/CEDITPRG.REL`) hasn't been found yet, so what the game
-actually does with them is unconfirmed. `tbb.py info` keeps reporting
-them as `!!` because the data really doesn't fit the line size.
+reaches record 11. The reader is
+`EDIT::CEmblemData::GetSampleLayerAcceData` (`DLL/SIMPRG.REL 0x104180`),
+and it walks the rows 12 bytes at a time, so **confirmed**: records 4–10
+come out misaligned, with wrong keys, and lookups for them find nothing.
+These are the layer tables of samples 20, 22 and 23 (see
+[`EMBLEM_DIR.md`](EMBLEM_DIR.md#the-layer-tables-12143)). `tbb.py info`
+keeps reporting them as `!!` because the data really doesn't fit the line
+size.
 
 For single-type tables the line size is usually the element size, and
 for string tables the string width. It is *not* reliably the widest

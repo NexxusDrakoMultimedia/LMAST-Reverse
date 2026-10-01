@@ -290,6 +290,11 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
 - [ ] Folder docs for `EMBLEM/`, `NEWS/`, `SOUND/`, `SEQ/`, `ACROBATA/`
       and `TEST3D/`, plus a note on the `CVS/` metadata (`STADIUM/` done:
       `DOC/STADIUM_DIR.md`; `PRELOAD/` done: `DOC/PRELOAD_DIR.md`)
+- [ ] `EMBLEM/` leftovers: the preset records (`EDIT_EMBLEM` t4–t6), the
+      110-byte crests (t7–t9, `Param::PlEmblem`?), the layer records and
+      their key, `EDIT_FLAG` t1 variants and t2 bytes, all of
+      `EDIT_PLAYER.TBB`; whether the 3 short layer tables lose parts in the
+      crest editor (a PCSX2 check)
 - [ ] `NEWS/` leftovers: which of a league's two papers a page uses, when
       the special editions show, where the ads and cartoons go
 
@@ -395,7 +400,10 @@ The event tables, the procedures and the overlay loader are documented in
       HI16/LO16, data words) with their import names; `relocs` lists them
 - [x] `EMBLEM/EDIT_EMBLEM.TBB` t93/101/105: 12-byte records, but record 4
       is missing its `04 00` index, so each table is a byte short
-      (`TBB_FORMAT.md`). The reader in `CEDITPRG.REL` is still unfound
+      (`TBB_FORMAT.md`). The reader is `EDIT::CEmblemData::
+      GetSampleLayerAcceData` (`SIMPRG.REL 0x104180`): it walks 12-byte
+      rows, so records 4–10 are misread and 11 never reached
+      (`DOC/EMBLEM_DIR.md`)
 - [x] Start the write stage with `tbb.py`: `build()` round-trips all 70
       `.TBB`/`.BCR`/`.BCB` files byte for byte (`roundtrip`, in
       `regress.py`); `replace` puts an edited table back
