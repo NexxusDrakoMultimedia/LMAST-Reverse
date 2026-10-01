@@ -291,10 +291,15 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       `COMBINATION2.CBB/.CSB` (`fb::PlayBookData`, `fb::Combination`)
 - [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
       (467 f32, not referenced by name)
-- [ ] `TEST3D/SHADOWCOLLI.LBI` and `BG/HUMANID.BIN` (no doc mentions them)
-- [ ] Folder docs for `EMBLEM/`, `NEWS/`, `SOUND/`, `SEQ/`, `ACROBATA/`
-      and `TEST3D/`, plus a note on the `CVS/` metadata (`STADIUM/` done:
-      `DOC/STADIUM_DIR.md`; `PRELOAD/` done: `DOC/PRELOAD_DIR.md`)
+- [ ] `TEST3D/SHADOWCOLLI.LBI` and `BG/HUMANID.BIN`. The `.LBI` starts
+      like the 27 entries of `GAME/SHADOWCOLLI.PAC` but matches none and
+      isn't named in the code (`DOC/TEST3D_DIR.md`); decode the format
+      with the `GAME/` pack
+- [x] Folder docs for `EMBLEM/`, `NEWS/`, `SOUND/`, `SEQ/` and `TEST3D/`,
+      plus the `CVS/` metadata: `DOC/EMBLEM_DIR.md`, `NEWS_DIR.md`,
+      `SOUND_DIR.md`, `SEQ_DIR.md`, `TEST3D_DIR.md`, `CVS_DIR.md`, with
+      `emblem.py`, `news.py` and `cvs.py` (all in `regress.py`)
+- [ ] Folder doc for `ACROBATA/` (with `ACROBATAPACKFILE.PAC` above)
 - [ ] `EMBLEM/` leftovers: the preset records (`EDIT_EMBLEM` t4–t6), the
       110-byte crests (t7–t9, `Param::PlEmblem`?), the layer records and
       their key, `EDIT_FLAG` t1 variants and t2 bytes, all of
@@ -302,6 +307,9 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       crest editor (a PCSX2 check)
 - [ ] `NEWS/` leftovers: which of a league's two papers a page uses, when
       the special editions show, where the ads and cartoons go
+- [ ] `TEST3D/`: who reads the executable's test lists (`0x346d20`,
+      `0x3472d0`, `0x4b0634`) and calls `CPlayer::ChangeUniform` with the
+      six test kits
 
 ## 7. Event system and game code
 
@@ -359,9 +367,11 @@ The event tables, the procedures and the overlay loader are documented in
       4). Its collar, number and captain-mark fields come from the
       licensed-kit data (`GetLicenceUniformInfo`), a lead for the `PLPACK`
       block-0 kit descriptor
-- [ ] `DAT/TEST3D/VIEWERPLAYERMOTION.PAC`: the CHARACTER VIEWER's motion
-      set (`mendan_Asit_ang_001.snm`, ...); list it and link it to the
-      Ninja motion docs
+- [x] `DAT/TEST3D/VIEWERPLAYERMOTION.PAC`: the CHARACTER VIEWER's motion
+      set, 5 player motions (`mendan_Asit_ang_001`–`004`,
+      `mendan_sit_ang_001`) read by `CCharacterViewer::CallExecute`
+      (`TESTPRG.REL 0x190a4`); `VIEWERSECRETARYMOTION.PAC` holds
+      `cameron.snm` (`DOC/TEST3D_DIR.md`; `ninja.py info` parses them)
 - [x] Label `FC_EURO_FACEPACK_01` entries: each head carries its own
       model/texture name (`packdata.py names`, in `regress.py`), matching
       the viewer's table row by row; 188-191 `kihon`, 212-214

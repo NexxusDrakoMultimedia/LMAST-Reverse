@@ -105,7 +105,7 @@ Where each folder stands (October 2026):
 | `SEQ/` | 19 `SQB`, `TBB`, `WPX` | sequencer scripts decoded ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md), `sqb.py`), folder overview in [`SEQ_DIR.md`](DOC/SEQ_DIR.md): 17 of 19 decode and check (two unused 2004 scripts don't); `SQBFILENAME` and `GLOBALMEMORY` done; `WPX` unreferenced, not decoded |
 | `SOUND/` | 28 `DAT` sound banks | surveyed in [`SOUND_DIR.md`](DOC/SOUND_DIR.md): all 28 `ps2_DTPK` banks parse, and samples, songs and instruments decode (`sounddat.py`, [`GAME_DIR.md`](DOC/GAME_DIR.md#the-soundmap-banks)); the executable's bank table and music table (music id → song) decoded (`sounddat.py music`); which screen plays which music id, and 4 banks the code never names, unknown |
 | `STADIUM/` | `PAC`/`HED`, 24 `TBB`, `PRI` | surveyed in [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md); `PRI` and all 24 tables decoded: part slots, stadium build, collision, crowd sets and tiers, adverts, stadium id by level (a few flags unknown) |
-| `TEST3D/` | Ninja models, `SVR`/`SVP`/`SVM`, `LBI` | textures and models done; `LBI` not parsed |
+| `TEST3D/` | Ninja models, `SVR`/`SVP`/`SVM`, `LBI` | surveyed in [`TEST3D_DIR.md`](DOC/TEST3D_DIR.md): test data only; textures and models done, what reads 53 of the 163 files known; `LBI` not parsed |
 | `CVS/` and `*/CVS/` | the developers' version-control metadata | done ([`CVS_DIR.md`](DOC/CVS_DIR.md), `cvs.py`): not read by the game; gives original file names and dates, and shows which files the build made |
 
 "Containers parse" means `pac.py` or `tbb.py` reads the file, but what the
