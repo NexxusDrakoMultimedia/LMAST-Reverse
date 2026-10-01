@@ -18,8 +18,16 @@ Usage:
     python sounddat.py wav     <file> <outdir> [song]         # render songs with the bank's own instruments
     python sounddat.py tbl     <file.TBL> [<FNAMExx>]         # dump a clip table, optionally with clip names
     python sounddat.py fname   <FNAMExx> [id ...]             # list clip names (FNAMEEN, BCFNAME, ...)
+    python sounddat.py music   <SLES_541.51> [<DAT/SOUND>]    # the game's bank and music tables
 
 <FNAMExx> is the .DAT/.TOC pair without extension, e.g. DAT/GAME/FNAMEEN.
+
+`music` reads two tables from the executable (DOC/SOUND_DIR.md): the 24
+SOUND banks the sound manager loads (0x35cb54: SYS_SE, map01-map23, with
+their TBLD and VAGD sizes and song requests) and the 63 music ids
+FC_EURO_BGM_CALLBACK::CFcEuro_ChangeBgm plays (0x5190d8: a song in one of
+those banks, or a streamed track). Given DAT/SOUND, it checks each record
+against its bank.
 
 Songs are Sega SoundFactory sequences, played by ISO/DRIVERS/SNDFI.IRX:
 MIDI-like streams with running status, where the last data byte's top bit
@@ -849,6 +857,101 @@ def cmd_fname(base, ids):
         print("%5d %s" % (i, names[i]))
 
 
+# --- the game's bank and music tables (SLES_541.51) --------------------------
+#
+# Bank table at 0x35cb54: 24 records of 0x1c bytes {char *name, u32 TBLD
+# size, u32 VAGD size, u32 *requests, u32 request count, u32 ?, u32 ?}.
+# Record 0 is SYS_SE.dat, 1-23 map01.dat-map23.dat; nothing in the code
+# names EFFECTS, EVENT_SE, PACK0 or TRAINING. A request word is the driver
+# request {u8 sub-area kind (0xa8 song, 0xa9 effect), u8 sub-area id, u16
+# entry}. CFcEuro_ChangeSoundData(bank) (0x115540) loads a bank by index.
+#
+# Music table at 0x5190d8: 63 records of 0x18 bytes, indexed by music id in
+# CFcEuro_ChangeBgm::Execute (0x103bd4-0x103c18): {u32 source, then for
+# source 0 (a DTPK song) u32 bank index, u32 request word, u32 ?; for
+# source 1 (a streamed track) u32 0, u32 track, u32 -1, u32 ?, u32 ?}.
+# Which stream file a track comes from wasn't traced.
+BANK_TABLE, BANK_RECORD, BANK_COUNT = 0x35CB54, 0x1C, 24
+MUSIC_TABLE, MUSIC_RECORD, MUSIC_COUNT = 0x5190D8, 0x18, 63
+
+
+def read_music_tables(sles_path):
+    """(banks, music): banks = [(name, tbld, vagd, [requests], f5, f6)],
+    music = [(source, a, b, c, d, e)] from the executable."""
+    from sles_disasm import Elf
+    elf = Elf(sles_path)
+    d = elf.data
+
+    def cstr(va):
+        o = elf.v2f(va)
+        return d[o:d.index(b"\0", o)].decode("latin1")
+
+    banks = []
+    for i in range(BANK_COUNT):
+        name, tbld, vagd, req, n, f5, f6 = struct.unpack_from(
+            "<7I", d, elf.v2f(BANK_TABLE + BANK_RECORD * i))
+        reqs = list(struct.unpack_from("<%dI" % n, d, elf.v2f(req)))
+        banks.append((cstr(name), tbld, vagd, reqs, f5, f6))
+    music = [struct.unpack_from("<6I", d, elf.v2f(MUSIC_TABLE + MUSIC_RECORD * i))
+             for i in range(MUSIC_COUNT)]
+    return banks, music
+
+
+def request_text(w):
+    kind, aid, entry = w & 0xFF, (w >> 8) & 0xFF, w >> 16
+    what = {AREA_SONGS: "song", AREA_EFFECTS: "effect"}.get(kind, "kind %#x" % kind)
+    return "%s %d of sub-area %d" % (what, entry, aid)
+
+
+def cmd_music(sles_path, sound_dir):
+    banks, music = read_music_tables(sles_path)
+    print("Bank table (0x%x):" % BANK_TABLE)
+    for i, (name, tbld, vagd, reqs, f5, f6) in enumerate(banks):
+        line = "  bank %2d  %-10s TBLD %#7x  VAGD %#8x  %2d requests  (%#x, %d)" % (
+            i, name, tbld, vagd, len(reqs), f5, f6)
+        problems = []
+        if sound_dir:
+            path = os.path.join(sound_dir, name.upper())
+            try:
+                with open(path, "rb") as f:
+                    data = f.read()
+                bank = Dtpk(data)
+                areas = {(kind, aid): entries for kind, aid, entries in song_areas(bank)}
+            except (OSError, ValueError, struct.error) as e:
+                print(line + "  !! %s" % e)
+                continue
+            if (bank.tbld_size, bank.vag_size) != (tbld, vagd):
+                problems.append("file has TBLD %#x, VAGD %#x" % (bank.tbld_size, bank.vag_size))
+            for w in reqs:
+                key = (w & 0xFF, (w >> 8) & 0xFF)
+                if w and (key not in areas or w >> 16 >= len(areas[key])):
+                    problems.append("no %s" % request_text(w))
+            kinds = sorted({k for k, _ in areas})
+            line += "  file: %s" % ", ".join(
+                "%d %s" % (sum(len(v) for (k, _), v in areas.items() if k == kind),
+                           {AREA_SONGS: "songs", AREA_EFFECTS: "effects"}.get(kind, hex(kind)))
+                for kind in kinds)
+        print(line + ("  !! " + "; ".join(problems) if problems else ""))
+    print("Music table (0x%x):" % MUSIC_TABLE)
+    used = set()
+    for i, (src, a, b, c, d, e) in enumerate(music):
+        if src == 0:
+            name = banks[a][0] if a < len(banks) else "?"
+            line = "  music %2d  bank %2d %-10s %-24s (+0xc %#x)" % (i, a, name, request_text(b), c)
+            used.add((a, b))
+            if a >= len(banks) or b not in banks[a][3]:
+                line += "  !! not one of the bank's requests"
+        elif src == 1:
+            line = "  music %2d  stream %d  (+0xc %#x, +0x10 %d, +0x14 %d)" % (i, b, c, d, e)
+        else:
+            line = "  music %2d  !! source %d" % (i, src)
+        print(line)
+    for i, (name, _, _, reqs, _, _) in enumerate(banks):
+        unused = [w for w in reqs if (i, w) not in used]
+        if i and unused:
+            print("  %s: %d of %d songs have no music id" % (name, len(unused), len(reqs)))
+
+
 def main(argv):
     if len(argv) < 3:
         print(__doc__)
@@ -872,6 +975,8 @@ def main(argv):
         cmd_tbl(args[0], args[1] if len(args) > 1 else None)
     elif cmd == "fname":
         cmd_fname(args[0], args[1:])
+    elif cmd == "music" and len(args) in (1, 2):
+        cmd_music(args[0], args[1] if len(args) == 2 else None)
     else:
         print(__doc__)
         return 1

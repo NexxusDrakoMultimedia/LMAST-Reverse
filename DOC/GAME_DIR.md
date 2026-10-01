@@ -245,8 +245,9 @@ all 42 banks.
 
 ### The `SOUND/MAP` banks
 
-`DAT/SOUND/MAP01`–`MAP23` fall into two groups (**empirical**, every
-file):
+Which bank the game loads and which music id plays which song are in
+[`SOUND_DIR.md`](SOUND_DIR.md). `DAT/SOUND/MAP01`–`MAP23` fall into two
+groups (**empirical**, every file):
 
 | Banks | Samples | TBLD size | What |
 |---|---|---|---|

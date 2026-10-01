@@ -225,15 +225,20 @@ contents and three tables are still undecoded.
 - [x] `ISO/AUDIO`: 18 CRI AFS archives of ADX audio (music, commentary,
       chants, ambience); `SRC/afs.py` checks all 65,225 entries and decodes
       them to WAV with loop points (`DOC/AUDIO_DIR.md`)
-- [ ] Which screens play which `bgm` track, and `OPMOVIE.SFD` (Sofdec)
+- [ ] Which screens play which `bgm` track, and `OPMOVIE.SFD` (Sofdec).
+      Lead: the music table (`DOC/SOUND_DIR.md`) maps the 63 music ids to
+      `MAP` songs or streams; trace the callers of
+      `CFcEuro_ChangeBgm` and what selects the stream archive (`+0x10`)
 - [x] Listen to the decoded WAVs: ADX (`BGM`, `OPEN`, `VIC`, `KANSEI`,
       `OUENKA`) and DTPK (`SYS_SE`, `EFFECTS`) sound right by ear
 - [ ] Commentary (`BC_ENG`), tannoy (`JYONAI_A`) and `MAP01` still unheard
-- [ ] Document `SOUND/` in a folder doc (the `MAP` banks are described in
-      `DOC/GAME_DIR.md` for now): which scene each `MAP01`–`MAP23` belongs
-      to. `MAP11`–`MAP23` are stereo pieces (two channels, 11–26 s): the
-      pre-match jingles and the quick-match music;
-      `MAP01`–`MAP10` are sequenced music (instruments + TBLD note data)
+- [x] Document `SOUND/` in a folder doc (`DOC/SOUND_DIR.md`): the
+      executable's bank table (`SYS_SE`, `map01`–`map23`, with song
+      requests) and music table (63 music ids: 45 `MAP` songs, 18
+      streams); `sounddat.py music` (in `regress.py`)
+- [ ] `SOUND/` leftovers: `MAP06` and `map02` songs 3–5 have no music id;
+      `EFFECTS`, `EVENT_SE`, `PACK0` and `TRAINING` aren't named in the
+      code. Find out whether anything plays them
 - [x] DTPK songs: the SoundFactory sequence format, from the IOP driver
       `SNDFI.IRX` (stream, records, 1 ms ticks at 200 Hz); 41 songs in
       `MAP01`-`MAP10`, `sounddat.py songs` and `midi` (checked by ear)

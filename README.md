@@ -160,7 +160,7 @@ python SRC/ninja.py gltf out/player.gltf DAT/PLAYER/M_PLAYER.SNO "DAT/GAME/PLAYE
 
 | Tool | Formats | Doc |
 |---|---|---|
-| [`sounddat.py`](SRC/sounddat.py) | `SOUNDDAT.PAC`, commentary `.TBL`, `ps2_DTPK` banks (samples, instruments, and songs as MIDI files or rendered WAVs), `FNAME*` clip names | [`GAME_DIR.md`](DOC/GAME_DIR.md) |
+| [`sounddat.py`](SRC/sounddat.py) | `SOUNDDAT.PAC`, commentary `.TBL`, `ps2_DTPK` banks (samples, instruments, and songs as MIDI files or rendered WAVs), `FNAME*` clip names; the executable's sound-bank and music-id tables (`music`) | [`GAME_DIR.md`](DOC/GAME_DIR.md), [`SOUND_DIR.md`](DOC/SOUND_DIR.md) |
 | [`afs.py`](SRC/afs.py) | `ISO/AUDIO/*.AFS`: music, commentary, crowd chants and ambience (CRI AFS + ADX); checks every entry, decodes to WAV with loop points | [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md) |
 
 ```bash
@@ -168,6 +168,7 @@ python SRC/sounddat.py info DAT/GAME/SOUNDDAT.PAC
 python SRC/sounddat.py extract DAT/GAME/SOUNDDAT.PAC out/sound --wav
 python SRC/sounddat.py songs DAT/SOUND
 python SRC/sounddat.py midi DAT/SOUND/MAP01.DAT out/midi
+python SRC/sounddat.py music ISO/SLES_541.51 DAT/SOUND
 python SRC/afs.py list ISO/AUDIO/BGM.AFS
 python SRC/afs.py wav ISO/AUDIO/BGM.AFS out/bgm
 ```
@@ -281,6 +282,8 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
   in the image and rewrite directory records, and `pac.py` to rebuild
   `PRELOAD` packs.
 - `preload.py` uses `pac.py` for the packs and `MES.PAC`.
+- `emblem.py` and `news.py` use `pac.py`, `tbb.py` and `svr.py`;
+  `sounddat.py music` reads the executable through `sles_disasm.py`.
 
 The disassemblers connect to the format tools through the docs. The usual
 workflow is:
@@ -326,6 +329,7 @@ workflow is:
 | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) | `DAT/STADIUM`: the 10 stadium models, `.PRI` draw priorities, crowds, adverts, `BUILD_STADIUM` |
 | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) | `DAT/EMBLEM`: the club editor's crest and flag parts, its colour palette, the edit tables, and the player-editor tables |
 | [`NEWS_DIR.md`](DOC/NEWS_DIR.md) | `DAT/NEWS`: newspaper mastheads, article pictures, ads and cartoons, and the monthly ranking flags |
+| [`SOUND_DIR.md`](DOC/SOUND_DIR.md) | `DAT/SOUND`: which bank is which, the executable's bank table, and the music table (music id → song or stream) |
 | [`CVS_DIR.md`](DOC/CVS_DIR.md) | the `CVS/` folders left on the disc: original file names, commit dates, which files the build made |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |
 | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) | the player database: header, bit-packed player/manager/scout records, ability and money tables |
