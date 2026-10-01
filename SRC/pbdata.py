@@ -29,7 +29,10 @@ fields without a known reader keep their offset as a name (f_2c, ...).
 
 The player detail screen's 14 bars (SPEED ... MARK, or SAVIN ... JUMP for
 goalkeepers) are averages of the first 33 abilities (ConvertPlayer_Bar,
-0x285380); `show` and `csv` compute them from the database values.
+0x285380); `show` and `csv` compute them from the database values. `show`
+also names the play styles (+0x5e, message 1:150 + style, AddPlate_
+PLAYSTYLE 0x289e50) and the 64 abilities. Most ability names come from
+Virtua Pro Football, which uses the same engine; the doc says which.
 
 Usage:
     python pbdata.py info <PBDATA_*.PAC> ...                         # layout checks + counts
@@ -106,7 +109,7 @@ PLAYER_FIELDS = (
     ("f_5b", 0x5b, 3, 1, None),
     ("f_5c", 0x5c, 1, 1, None),
     ("f_5d", 0x5d, 4, 1, None),
-    ("f_5e", 0x5e, 5, 5, None),
+    ("style", 0x5e, 5, 5, None),         # play styles 1-22 (STYLES), 0 = none; pwkPlayStyle_Init
     ("flags", 0x63, 3, 1, None),         # bit 1: EU passport (plPinfo_IsEU)
     ("skills", 0x64, 16, 1, None),       # bit mask, plPinfo_IsSkill
     ("f_66", 0x66, 3, 11, None),
@@ -181,6 +184,50 @@ SKILLS = ("covering", "offside line", "penalty taker", "penalty stopper",
 
 def skill_names(mask):
     return [SKILLS[b] for b in range(16) if mask >> b & 1]
+
+
+# Play styles, the 5 bytes of +0x5e (PlPinfo +0x1f6). pwkPlayStyle_Init
+# (0x24d8a8) lists the non-zero ones and adds random ones for the position;
+# styles run 1-22 (slti 0x17). The detail screen names the current one with
+# Msg::GetString type 5, whose base id is 150 in category 1 (0x52f708).
+STYLE_MESSAGE = (1, 150)
+STYLES = ("none", "Centre Forward", "Moving", "Postplayer", "Dash out",
+          "Second Striker", "Wing", "Play maker", "Shadow striker", "Attacker",
+          "Dynamo", "Man marker", "Covering", "Centre MF", "Winger",
+          "Threaten to cut in", "Full back", "Sweeper", "Defensive Sweeper",
+          "Stopper", "CB", "GK", "Attacking GK")
+
+
+def style_names(styles):
+    return [STYLES[s] if s < len(STYLES) else str(s) for s in styles if s]
+
+
+# Names for the 64 player abilities. Only the bar sources (11, 13-18,
+# 21-23), the position aptitudes (33-44) and the systems (45-52, by match
+# growth at 0x246884) come from the game code. The rest follow Virtua Pro
+# Football's edit screen, which runs on the same engine: same order, and
+# Maik Taylor's values there match his record here. None means unnamed.
+# DOC/PBDATA_FORMAT.md#ability-names says which is which.
+SYSTEMS = ("3-4-3", "3-5-2", "3-6-1", "4-3-3", "4-4-2", "4-5-1", "5-3-2", "5-4-1")
+ABILITY_NAMES = (
+    "dribble pace", "dribble skill", "shot skill", "shot technique",
+    "short pass", "long pass", "cross", "header", "trap", "ball keeping",
+    "tackle", "intercept", "ball winning", "marking", "placekick",
+    "saving", "catching", "aerial ability", "rushing out",
+    "pace", "acceleration", "jump", "agility", "stamina", "kick strength",
+    "contact strength",
+    "leadership", "consistency", "attack minded", "defence minded",
+    "supportiveness", "vision", None,
+    "GK", "DF side", "DF centre", "DM side", "DM centre", "AM side",
+    "AM centre", "FW side", "FW centre", "centre", "left side", "right side",
+) + tuple("system " + s for s in SYSTEMS) + (
+    "counterattack", None, "attacks down wings", "attacks through middle",
+    "line DF", "pressing", None, None, None, None, None)
+assert len(ABILITY_NAMES) == 64
+
+
+def ability_name(n):
+    return ABILITY_NAMES[n] or "?"
 
 
 def bars(abilities, goalkeeper):
@@ -635,6 +682,8 @@ def cmd_info(paths):
                 pos = [x for r in recs for x in r.fields["position"]]
                 if max(pos) > 13:
                     p.append("position above 13")
+                if max(s for r in recs for s in r.fields["style"]) >= len(STYLES):
+                    p.append("play style above %d" % (len(STYLES) - 1))
             print(line + ("  !! " + "; ".join(p) if p else ""))
         players = list(db.records("players"))
         for fname in ("age", "height", "weight", "shirt", "rank"):
@@ -695,6 +744,11 @@ def cmd_show(path, ids, nations):
         if kind == "players":
             gk = r.fields["position"][0] == 0
             print("    skills    %s" % (", ".join(skill_names(r.fields["skills"])) or "none"))
+            print("    styles    %s" % (", ".join(style_names(r.fields["style"])) or "none"))
+            ab = r.fields["ability"]
+            for row in range(0, 64, 4):
+                print("    " + "  ".join("%2d %-22s %2d" % (n, ability_name(n), ab[n])
+                                         for n in range(row, row + 4)))
             print("    screen    %s" % "  ".join("%s %d" % lv for lv in bars(r.fields["ability"], gk)))
             print("    positions %s  (levels 0-4, forwards at the top, left centre right)" % aptitude_grid(
                 aptitude(r.fields["ability"], r.fields["position"])[1]))

@@ -52,9 +52,14 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [ ] `TEAM_INIT_DATA` leftovers: the candidate lists' "List criteria"
       (7 Training cycle) and H.Dale's salary showing 80,000 not 75,000
 - [ ] Name the rest of the player fields: money band (lead: BPINFO CHECK
-      calls band value 10,000 "1mil"), abilities 45–63,
-      entry 2, whether hexagon 0 or 3 is Skills/Attacking, and what the
-      skills do in a match
+      calls band value 10,000 "1mil"), entry 2, the bit fields `+0x30`
+      to `+0x5d` and `+0x66`, abilities 32, 54 and 59–63, and what the
+      skills and play styles do in a match. Settle the names that rest on
+      one VPF player (19/20, 26/27, 53–58): a second VPF Player Edit
+      screenshot set of an outfield player with known values would do it
+- [ ] User check (PCSX2): give a player play styles with `pbdata.py set`
+      (`style.0=7`) and see the detail screen's Play Style plate show
+      "Play maker"
 - [ ] What sets job 5 when a manager is hired, and how coaches and former
       players become managers (`pwkTeam_*CoachJobChangeWork`, PlPinfo
       `+0x210`). (The "Assistant Coach" title and the forwards/defence

@@ -186,8 +186,11 @@ current value, veterans' limits sit on it. `save.py set` raises the limit
 and cap along with the value, or the next training would clamp the edit
 back to the old limit.
 
-**Play styles.** Style names are message 150 + style of category 100001
-(**empirical**): 0 none, 1 Centre Forward, 2 Moving, 3 Postplayer, 4 Dash
+**Play styles.** Style names are message 150 + style of category 1
+(**confirmed**: `AddPlate_PLAYSTYLE` `0x289e50` calls `Msg::GetString(5,
+style)`, and type 5's base is 150; category 100001 holds the same text).
+A player's database styles are the record's `+0x5e`
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#play-styles)): 0 none, 1 Centre Forward, 2 Moving, 3 Postplayer, 4 Dash
 out, 5 Second Striker, 6 Wing, 7 Play maker, 8 Shadow striker, 9
 Attacker, 10 Dynamo, 11 Man marker, 12 Covering, 13 Centre MF, 14 Winger,
 15 Threaten to cut in, 16 Full back, 17 Sweeper, 18 Defensive Sweeper, 19

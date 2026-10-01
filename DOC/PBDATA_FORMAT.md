@@ -35,6 +35,10 @@ names on the squads.
 | `0x20d908` | `getPinfoRank` | for ids ≥ `0x63f7` the rank is `+0x18`. Below that it is worked out from entry 3's value for the player (against thresholds at `0x5eac08`) |
 | `0x20d9a0` | `getPinfoApos0` | the main position is `+0x1c` (for ids below `0x63f7`, it is derived from the rank again) |
 | `0x2734c8` | `pwkTeam_SetUnumberOpinfo` | `+0x2b` is the player's preferred shirt number, 1–99 |
+| `0x218728` | `plPinfo_IsSkill` (PlPinfo overload) | reads the skills at `PlPinfo +0x1fc`, so the game's copy of the record starts at `PlPinfo +0x198` |
+| `0x24d8a8` | `pwkPlayStyle_Init` | `PlPinfo +0x1f6` (record `+0x5e`) holds 5 play styles: it copies the non-zero ones into the style list at `+0x27c`, then adds random styles 1–22 (`slti 0x17`) for the player's position. The first stored style becomes the current one (`+0x278`) |
+| `0x289e50`, `0x52f708` | `CDetailManager::AddPlate_PLAYSTYLE`, `Msg::GetString`'s base ids | the current style is drawn as `GetString(5, style)`. Type 5's base id is 150, and types below `0x29` use global slot 0, category 1. So style *n* is message 1:150 + *n* |
+| `0x246884` | match growth (in the function before `pwkGUtl_AddExp`'s caller at `0x246930`) | abilities 45–52 (`0x2d` + *k*) gain experience only when *k* is the `system` of the club's current team style (my-team data `+0x4204`); abilities 33–41 only for the player's own position row |
 | `0x215a00` | `plMisc_Nati2NatiTeam` | nation → national team: `PLRESOURCECOMMON.PAC` entry 3, table 2, one u16 per nation. `pbdata.py` names nations through it, because the team names are known (message category 3) |
 
 ## Entry 0: header (46 bytes)
@@ -81,7 +85,7 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 | 4 | 8 | `+0x3f` | | the last 4 are usually 0 |
 | 3, 5, 4, 3, 4, 5, 3, 4 | 2, 1, 3, 3, 2, 1, 1, 1 | `+0x47`…`+0x54` | | `+0x54` is always 0 |
 | 2, 3, 2, 3, 1, 4 | 3, 2, 1, 1, 1, 1 | `+0x55`…`+0x5d` | | `+0x57` is always 0 |
-| 5 | 5 | `+0x5e` | | 0–22, mostly 0 after the first |
+| 5 | 5 | `+0x5e` | style | play styles, 1–22, 0 for none. **confirmed**. See [Play styles](#play-styles) |
 | 3 | 1 | `+0x63` | flags | bit 1: EU passport. **confirmed**. Set in 19,333 players |
 | 16 | 1 | `+0x64` | skills | bit mask. **confirmed**. All 16 bits are used; see [Skills](#skills) |
 | 3 | 11 | `+0x66` | | 0–4 |
@@ -167,7 +171,10 @@ position (`PlPinfo +4`) is 0, the goalkeeper:
 Only abilities 0–32 feed the bars. Where a bar has a single source, it
 names that ability: 11 intercept, 13 marking, 14 free kick, 15 saving,
 16 handling, 17 crosses, 18 going out, 21 jumping, 22 agility, 23
-stamina. The others are named only by the bars they feed. A check with
+stamina. The labels SYSTE and TACTI (messages 200:10105/10106, "SYS" and
+"TAC" in Japanese) suggest the systems and tactics (45–52 and 53–63, see
+[Ability names](#ability-names)), but the code averages abilities 0–7 and
+0–10. A check with
 well-known players fits (database values, before the random start
 offset): Terry has MARK 98, INTER 94 and HEAD 92, Pirlo has PASS 93 and
 FK 94, Henry has SPEED 94 and DRIBB 95, and Cech and Buffon have SAVIN 98.
@@ -182,19 +189,79 @@ the field variant, then `CalcHexagon` recomputes 0 and 1 with the
 goalkeeper variant for goalkeepers. The screen's labels are messages
 670–675 of category 1 (Attacking, Physical, Teamwork, Defence, Attitude,
 Skills, clockwise from the top). Which index goes to which label is
-**empirical**:
+**empirical**. Hexagons 0 and 3 are told apart by Virtua Pro Football's
+categories ([Ability names](#ability-names)): 0's main abilities are its
+"Attack" page, and 3's are its "Skill" page.
 
 | Hexagon | Main abilities (weight 80) | Label |
 |---|---|---|
-| 0 | 2, 4–7, 14 (shot, pass, head, free kick) | Skills or Attacking |
+| 0 | 2, 4–7, 14 (shot skill, passes, cross, header, placekick) | Attacking |
 | 1 | 10–13 (15–18 for goalkeepers) | Defence (defenders score ~90) |
 | 2 | 33, 42–44 (60), 53–58 | Teamwork |
-| 3 | 1, 3, 8, 9 | Attacking or Skills |
+| 3 | 1, 3, 8, 9 (dribble skill, shot technique, trap, ball keeping) | Skills |
 | 4 | 0, 19–25 | Physical |
 | 5 | 26–32 | Attitude |
 
 `python SRC/pbdata.py show` prints both the bars and the hexagon, and
 `csv` adds the bars as columns.
+
+### Ability names
+
+Virtua Pro Football (VPF) runs on the same engine, and its Player Edit
+screen names its parameters on 8 pages. The user supplied screenshots of
+that screen for Maik Taylor, who is player 0 here. VPF's pages follow
+this game's ability order, and Taylor's values match his record within a
+few points: short pass 54/54, long pass 63/64, tackle 48/48, placekick
+51/52, rushing out 78/78, contact strength 80/80, defence minded 84/84,
+vision 59/60, GK aptitude 82/82, centre 84/84, left 49/50, right 45/46.
+VPF has 9 parameters this game lacks (cross technique, 1 on 1 response,
+balance and 6 tactical ones), so the lists are aligned by value, not by
+position.
+
+The evidence column says where each name comes from: **code** (the bars,
+the position grid or match growth above), **VPF + data** (VPF's name,
+and Taylor's value or a trend across the whole database fits), or **VPF**
+(VPF's name and Taylor's value only).
+
+| Ability | Name | Evidence |
+|---|---|---|
+| 0 | dribble pace | VPF + data (SPEED and DRIBB bars) |
+| 1 | dribble skill | VPF + data (DRIBB bar) |
+| 2 | shot skill | VPF + data (SHOT bar) |
+| 3 | shot technique | VPF + data (SHOT bar). VPF's "Skill" page |
+| 4, 5 | short pass, long pass | VPF + data (PASS bar, Taylor 54, 64) |
+| 6 | cross | VPF + data (PASS bar, Taylor 40 vs 39) |
+| 7 | header | VPF + data (HEAD bar) |
+| 8, 9 | trap, ball keeping | VPF (Taylor 60 vs 55, 38 vs 36). VPF's "Skill" page |
+| 10 | tackle | VPF (Taylor 48 vs 48) |
+| 11 | intercept | code (INTER bar) |
+| 12 | ball winning | VPF (Taylor 38 vs 37) |
+| 13 | marking | code (MARK bar) |
+| 14 | placekick | code (FK bar) |
+| 15–18 | saving, catching, aerial ability, rushing out | code (goalkeeper bars SAVIN, HANDL, CROSS, GO FW) |
+| 19, 20 | pace, acceleration | VPF (Taylor 74, 74 vs 70, 69). Which is which isn't settled |
+| 21–23 | jump, agility, stamina | code (JUMP, AGILI, STAMI bars) |
+| 24 | kick strength | VPF + data (SHOT and DISTR bars, Taylor 74 vs 73) |
+| 25 | contact strength | VPF + data (PHYSI and HEAD bars, Taylor 80 vs 80) |
+| 26, 27 | leadership, consistency | VPF (MENTA bar). Taylor has 40, 40 here and 40, 51 in VPF |
+| 28 | attack minded | VPF + data: averages 45 for goalkeepers, 80 for forwards |
+| 29 | defence minded | VPF + data: averages 80 for goalkeepers, 45 for forwards |
+| 30, 31 | supportiveness, vision | VPF + data (SUPPO bar, Taylor 40 vs 40, 60 vs 59) |
+| 32 | unknown (Attitude hexagon) | Taylor 78; no VPF counterpart |
+| 33–44 | position aptitudes | code ([Positions](#positions-and-aptitude)). VPF names 33 GK, 34 SB, 35 CB, 36 WB, 37 DM, 38 SM, 39 OM; 40/41 are both "FW" there |
+| 45–52 | fit with systems 3-4-3, 3-5-2, 3-6-1, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1 | code for "system *k*" (match growth); the order of the systems is empirical: the formation names (messages 801:0–7, 1:530–537) and their descriptions (700:270–293) are listed in this order |
+| 53 | counterattack | VPF (Taylor 82 vs 82) |
+| 54 | unknown (Teamwork hexagon) | Taylor 42 |
+| 55, 56 | attacks down wings, attacks through middle | VPF (Taylor 80 vs 79, 38 vs 34) |
+| 57, 58 | line DF, pressing | VPF (Taylor 64 vs 64, 68 vs 68). VPF lists pressing first, so this pair rests on the values alone |
+| 59–63 | unknown | 60 is in the Teamwork hexagon |
+
+Across the database, abilities 26, 27, 32 and 45–63 average 51 for every
+position and play style. They are only higher across the board for
+stronger players (about 62 for the holders of any skill), which suggests
+filler values. That is why most of those names rest on Taylor
+alone. A second VPF player with distinctive values would settle 19/20,
+26/27 and 53–58.
 
 ## Skills
 
@@ -202,24 +269,27 @@ Skills, clockwise from the top). Which index goes to which label is
 Bit *n* is described by message 6000 + *n* of category 2000. The short
 labels are summaries of those texts, as `pbdata.py` prints them:
 
-| Bit | Label | Description (message 2000:6000 + bit) |
-|---|---|---|
-| 0 | covering | superb covering, bails the team out |
-| 1 | offside line | holds the defensive line, works the offside trap |
-| 2 | penalty taker | superb penalty taker |
-| 3 | penalty stopper | puts pressure on the penalty taker (a keeper) |
-| 4 | one-on-one finisher | cool in one-on-ones with the keeper |
-| 5 | one-on-one keeper | saves one-on-ones |
-| 6 | long throw | very long throw-ins |
-| 7 | super sub | swings a match when brought on |
-| 8 | through balls | vision for through balls |
-| 9 | positioning | exquisite positioning |
-| 10 | reflex saves | miraculous reactions |
-| 11 | acrobatic shot | shoots even off balance |
-| 12 | one-touch shot | one-touch finishing |
-| 13 | goal machine | pin-point shooting |
-| 14 | poacher | pounces on loose balls in the box |
-| 15 | playmaker | leads the team with killer passes |
+| Bit | Label | Description (message 2000:6000 + bit) | VPF name |
+|---|---|---|---|
+| 0 | covering | superb covering, bails the team out | Covering |
+| 1 | offside line | holds the defensive line, works the offside trap | Line Control |
+| 2 | penalty taker | superb penalty taker | PK Taker |
+| 3 | penalty stopper | puts pressure on the penalty taker (a keeper) | PK Goal Keeper |
+| 4 | one-on-one finisher | cool in one-on-ones with the keeper | Shot on 1 on 1 |
+| 5 | one-on-one keeper | saves one-on-ones | GK on 1 on 1 |
+| 6 | long throw | very long throw-ins | Long Throw |
+| 7 | super sub | swings a match when brought on | Super Sub |
+| 8 | through balls | vision for through balls | Ball Feeding |
+| 9 | positioning | exquisite positioning | Positioning |
+| 10 | reflex saves | miraculous reactions | Fine Saving |
+| 11 | acrobatic shot | shoots even off balance | Acrobatic Play |
+| 12 | one-touch shot | one-touch finishing | Volleys |
+| 13 | goal machine | pin-point shooting | Controlled Shot |
+| 14 | poacher | pounces on loose balls in the box | Good Positioning |
+| 15 | playmaker | leads the team with killer passes | Through Ball |
+
+VPF's Special Skill page lists its 16 skills in this order, and each
+name fits the description of the same bit, which backs up the bit order.
 
 That bit *n* goes with message 6000 + *n* is **empirical**, from who holds
 which bit. Of 2,465 goalkeepers, 90, 91 and 86 hold bits 3, 5 and 10, and
@@ -228,6 +298,48 @@ of 14,395 defenders and forwards only 1 holds any of the three. Bits 0 and
 forwards. The code confirms one: the substitutions screen tests bit 7, the
 super sub (`CTacticsMenuSubstitutionsImplement::Update_MessDisplay`,
 `0x2f6558`). What the skills do in a match isn't traced.
+
+## Play styles
+
+**Confirmed (`pwkPlayStyle_Init` `0x24d8a8`, `AddPlate_PLAYSTYLE`
+`0x289e50`).** `+0x5e` holds up to 5 play styles, 1–22, with 0 for an
+empty slot. When a player is set up, the game lists the stored styles,
+then adds random ones that suit the player's position until the
+position's count (table at `0x398e98`) is reached. The first stored
+style is the one the detail screen shows. Style *n* is named by message
+1:150 + *n*:
+
+| Style | Name (message 1:150 + n) | VPF name | Players |
+|---|---|---|---|
+| 1 | Centre Forward | Centre Forward | forwards |
+| 2 | Moving | Moving | forwards |
+| 3 | Postplayer | Target man | forwards (Crouch) |
+| 4 | Dash out | Darting run | forwards (Inzaghi, Shevchenko) |
+| 5 | Second Striker | Second Attacker | forwards (Totti, Del Piero) |
+| 6 | Wing | Wings | forwards and attacking midfielders |
+| 7 | Play maker | Playmaker | midfielders (Pirlo, Zidane) |
+| 8 | Shadow striker | Shadow Striker | midfielders (Lampard) |
+| 9 | Attacker | Attacker | attacking midfielders (Robben, Ronaldinho) |
+| 10 | Dynamo | Dynamo | midfielders (Gattuso, Vieira) |
+| 11 | Man marker | Hard Marker | defensive midfielders (Makelele, Gattuso) |
+| 12 | Covering | Anchor | defensive midfielders (Makelele) |
+| 13 | Centre MF | Central Midfielder | midfielders (Lampard, Beckham) |
+| 14 | Winger | Side Attacker | wide players (Beckham, Roberto Carlos) |
+| 15 | Threaten to cut in | Wing Forward | wide players (Henry, Cafu) |
+| 16 | Full back | Wing half | full-backs (Cafu) |
+| 17 | Sweeper | Sweeper | defenders |
+| 18 | Defensive Sweeper | Libero | defenders |
+| 19 | Stopper | Stopper | defenders (Puyol, Nesta) |
+| 20 | CB | Centre Back | defenders (Puyol, Nesta) |
+| 21 | GK | Orthodox | goalkeepers only (Cech, Lehmann) |
+| 22 | Attacking GK | Libero GK | goalkeepers only (Buffon, Barthez) |
+
+Across the database (**empirical**), 19,403 players have at least one
+style. Styles 21 and 22 are held only by goalkeepers (841 and 220), and
+1–5 almost only by forwards. VPF shows its 22 styles in the same order,
+each with a rating. This game stores only which styles a player has. The
+style names were already checked in game through a save
+([`SAVE_FORMAT.md`](SAVE_FORMAT.md)).
 
 ## Positions and aptitude
 
@@ -407,13 +519,15 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 
 ## Still unknown
 
-- The meaning of most fields.
-- Names for abilities 0–10, 12, 19, 20, 24–32 beyond the bars they feed,
-  and 45–63, which feed only the hexagon's Teamwork and Skills/Attacking
-  axes. (33–44 are the position aptitudes.)
-- Which of hexagons 0 and 3 is Attacking and which is Skills. The label
-  order in `GP::CHexWindowBase::DrawString` (`0x27c700`) comes from a
-  screen layout and hasn't been traced.
+- The meaning of most fields between `+0x30` and `+0x5d`, and `+0x66`.
+- Abilities 32, 54 and 59–63. Which of 19/20 is pace, which of 26/27 is
+  leadership, and the 53–58 names, which rest on one VPF player. The
+  game code that reads 53–63 hasn't been found (the match engine,
+  `GAMEPRG.REL`, is the likely reader).
+- The hexagon labels are matched to indices from the data and VPF's
+  pages. The label order in `GP::CHexWindowBase::DrawString` (`0x27c700`)
+  comes from a screen layout and hasn't been traced.
+- What the play styles do in a match, beyond which abilities grow.
 - What bit 1 of the leg field means (two-footed is a guess), and the code
   that turns it into `PlPinfo +0x1c4`.
 - What sets job 5 when a manager is hired.

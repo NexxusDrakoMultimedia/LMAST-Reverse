@@ -165,6 +165,13 @@ files. Each item keeps what was found, where, and how it was tested.
       playoffs run one of them. `--skip-tutorial` now starts them a year
       in (6 more bytes). Tested in PCSX2: the first Sponsor screen offers
       the main and sub-sponsor slots (`DOC/SQB_FORMAT.md`)
+- [x] Player play styles and ability names: `+0x5e` is 5 play styles
+      (`pwkPlayStyle_Init`, names message 1:150 + style), abilities 45–52
+      are the 8 systems (match growth at `0x246884`), hexagon 0 is
+      Attacking and 3 Skills, and most of the 64 abilities are named from
+      Virtua Pro Football's Player Edit screen (user screenshots of Maik
+      Taylor, player 0). `pbdata.py show` prints the names
+      (`DOC/PBDATA_FORMAT.md#ability-names`)
 
 ## 3. Ninja 3D models and motions
 
