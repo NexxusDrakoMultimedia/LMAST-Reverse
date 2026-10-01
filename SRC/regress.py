@@ -66,6 +66,12 @@ def checks():
          ["DAT/PARAM", "DAT/MESSAGE/MES.PAC"]),
         ("initteam_leagues", ["initteam.py", "leagues", "DAT/PARAM"],
          ["DAT/PARAM", "DAT/MESSAGE/MES.PAC"]),
+        ("teaminit", ["teaminit.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("teaminit_roundtrip", ["teaminit.py", "roundtrip", "DAT/PARAM/TEAM_INIT_DATA.TBB"],
+         ["DAT/PARAM/TEAM_INIT_DATA.TBB"]),
+        # The new club's squads and staff, named from the player database.
+        ("teaminit_show", ["teaminit.py", "show", "DAT/PARAM/TEAM_INIT_DATA.TBB"],
+         ["DAT/PARAM/TEAM_INIT_DATA.TBB", "DAT/PARAM/PBDATA_EU.PAC"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),
         # The 215 event-character heads by name.
         ("packdata_names", ["packdata.py", "names", "DAT/PLAYER/FC_EURO_FACEPACK_01.HED"],

@@ -39,7 +39,7 @@ There are three routes.
    | 2 | `plresourcegame.pac` | **not on the disc**. No code requests it |
    | 3 | `OteamMember.tbb` | `pwkOteam_RequestInit` (`0x24b720`), callback `0x24ac40` |
    | 4 | `PlRrsrc_InitTeamData.tbb` | `pwkRec_RequestInit` (`0x2534e0`), callback `0x253338` |
-   | 5 | `team_init_data.tbb` | no `LoadRequest` in `SLES`. `CEDITPRG.REL` lists it (below) |
+   | 5 | `team_init_data.tbb` | only `TESTPRG.REL`'s `HayasiTest` module. The game loads it through `CEDITPRG.REL`'s load list instead ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md)) |
    | 6 | `InitNatiData.tbb` | `pwkRec_RequestInit`, callback `0x253418` |
 
    Pack entries are read with
@@ -69,7 +69,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `OTEAMMEMBER.TBB` | TBB, 1 table | `ePLRSRC` 3 | computer-team squads (player, age, shirt, contract), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md). **confirmed** |
 | `PLRRSRC_INITTEAMDATA.TBB` | TBB, 3 tables | `ePLRSRC` 4 | starting divisions and last season's order per competition, see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md). **confirmed** |
 | `INITNATIDATA.TBB` | TBB, 1 table | `ePLRSRC` 6 | UEFA rank and points, world rating per nation, see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#initnatidatatbb-nations). **confirmed** |
-| `TEAM_INIT_DATA.TBB` | TBB, 9 tables | `ePLRSRC` 5, `CEDITPRG.REL` list | 9 tables of u32 (3,168 / 864 / 432 / 384 / 216 / 216 / 12 / 18 / 120 words). Reader not traced |
+| `TEAM_INIT_DATA.TBB` | TBB, 9 tables | `CEDITPRG.REL` list `0x1b288` (`CSelectTeamStyleModule`) → `pwkTeam_Init2` (`0x25eae8`) | the player's new club by league and team style: squad, youth team, manager, coaches, scouts, staff lists and the rival club, see [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md). **confirmed** |
 | `REGULATION.TBB` | TBB, 1 table | `plRec_MatchRegulations` (`0x21dc60`), `SIMPRG.REL` list | 165 match regulations × **120 bytes**, indexed by `PLSCHE_GROUP`. **confirmed** (`0x21dd18`: `group * 0x78`) |
 | `CLUBRESULT.TBB` | TBB, 1 table | `SIMPRG.REL 0x167e90` | 165 × **8 bytes** (u16 fields), same count as `REGULATION`. **confirmed** (`0x167f4c`: `i << 3`) |
 | `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**: roof, level, capacity (thousands). **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`; readers in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) |
@@ -201,9 +201,8 @@ unused placeholders for kit names.
 
 - Field meanings in most tables above, including the 24-byte
   `plOteam_GetDb` record. (`OTEAMMEMBER` and `PLRRSRC_INITTEAMDATA` are
-  done, in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md).)
-- `TEAM_INIT_DATA.TBB`: no reader found in `SLES`. The edit-mode overlay
-  lists it.
+  done, in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md), and
+  `TEAM_INIT_DATA` in [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md).)
 - Parts of the schedule packs, listed in
   [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown).
 - What each `.sqb` script in `PSC*.PAC` computes. The format and commands

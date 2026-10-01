@@ -100,6 +100,19 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `initteam.py teams/nations/stadiums/setteam`
 - [ ] Still open: club-record bytes `0x0b`-`0x0d`/`0x0f`, the reader of
       `MAPTEAM_LIST`, and `PLRRSRC_INITTEAMDATA` table 2's negative values
+- [x] `TEAM_INIT_DATA.TBB`: the player's new club by league and team style
+      (Counter-Attack, Possession, Individual Play, Teamwork). Read by
+      `pwkTeam_Init2` (`0x25eae8`), called from the Club Edit overlay:
+      squad (18; the rival takes all 22 of the opposite style), youth team,
+      manager, youth manager, coaches, scouts, two staff lists, and the
+      rival's manager, stadium and club bytes. `DOC/TEAMINIT_FORMAT.md`,
+      `SRC/teaminit.py` (`info`, `show`, `set`, `roundtrip`; in
+      `regress.py`). Table 6 quirk: only its first record is ever read
+- [ ] `TEAM_INIT_DATA` leftovers: what the game shows the staff lists
+      (tables 4, 5) as, and an edited squad seen in PCSX2 (new career)
+- [ ] Name manager field `f_22` and scout field `f_18` in `pbdata.py`:
+      very probably the staff ages (they equal `TEAM_INIT_DATA`'s staff
+      age byte in all 288 records, and the fallback code reads them there)
 - [x] Player database `PBDATA_EU.PAC`: bit-packed records for 27,950
       players, 3,000 managers and 1,000 scouts, field widths from
       `plBits_DecPl{P,M,S}baseEx` (`DOC/PBDATA_FORMAT.md`, `SRC/pbdata.py`);
@@ -385,10 +398,11 @@ The event tables, the procedures and the overlay loader are documented in
       model/texture name (`packdata.py names`, in `regress.py`), matching
       the viewer's table row by row; 188-191 `kihon`, 212-214
       `HUMAN_head_9000/9500/9600`
-- [ ] The PBDATA blocks of 25 low-rank players with shirts 1-25 (e.g.
-      England 25591-25615, then 25616-): the player's own starting squads?
-      Find where `Pwk.NewGame` / club creation picks them (lead from the
-      launcher's PERSONAL AFFAIRS list)
+- [x] The PBDATA blocks of 25 low-rank players with shirts 1-25 (e.g.
+      England 25591-25615, then 25616-): the built-in default club that
+      `pwkTeam_Init` builds without `TEAM_INIT_DATA` (lists at `0x3995a8`,
+      `0x3995d0`; rival 25655-). Club creation then replaces it from
+      `TEAM_INIT_DATA.TBB` (`DOC/TEAMINIT_FORMAT.md#without-the-file`)
 - [ ] Why the blank test modules show nothing: missing data, or waiting
       for input or arguments from the launcher
 - [x] Sequencer scripts (`SEQ/*.SQB`, `PSC*.PAC`): `CSeqController`'s
