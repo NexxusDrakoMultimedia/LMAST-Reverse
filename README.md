@@ -20,8 +20,8 @@ was inferred from the data and checked against every file on the disc.
 No game data is included. You need your own copy of the disc.
 
 The long-term aim is GUI tools for editing the game's data to build mods.
-See [`GOALS.md`](GOALS.md) for the plan and [`TODO.md`](TODO.md) for the
-next tasks.
+See [`GOALS.md`](GOALS.md) for the plan, [`TODO.md`](TODO.md) for the
+next tasks and [`DONE.md`](DONE.md) for what's finished.
 
 ## Disclaimer
 

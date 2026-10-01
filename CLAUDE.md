@@ -6,7 +6,8 @@
 Reverse-engineering notes (`DOC/`) and Python tools (`SRC/`) for the PAL PS2
 game *Let's Make a Soccer Team!* (`SLES_541.51`). See `README.md` for setup,
 the tool list, and the doc index. See `GOALS.md` for what the project is
-working towards and `TODO.md` for what to work on next.
+working towards, `TODO.md` for what to work on next, and `DONE.md` for the
+finished items.
 
 ## Data layout
 
@@ -34,8 +35,10 @@ working towards and `TODO.md` for what to work on next.
 3. Write `SRC/<name>.py`.
 4. Run its `info` over all of `DAT/` until it reports no problems, then add
    a check to `checks()` in `SRC/regress.py` and `bless` it.
-5. Update the README's tool table and doc index, and tick off `TODO.md`.
-   If a folder's status changes, update the coverage table in `GOALS.md`.
+5. Update the README's tool table and doc index. Tick off the `TODO.md`
+   item and move it to the end of the same section in `DONE.md`. If part of
+   it is still open, leave that part in `TODO.md` as its own item. If a
+   folder's status changes, update the coverage table in `GOALS.md`.
 
 Adding a writer (the write stage in `GOALS.md`) follows the same steps, plus
 a `roundtrip` command that re-encodes every file or record and marks any
@@ -46,8 +49,8 @@ existing writers are `pac.py` (BINPACs), `tbb.py`, `pbdata.py`, `mbb.py`,
 
 Some things can only be checked by a person: that an edit shows in the game
 (PCSX2), what a screen shows, or how audio sounds. Ask the user to check,
-then record the result in the doc and `TODO.md` ("Tested in PCSX2: ...",
-"identified by ear"). The user doesn't write code, so don't hand code tasks
+then record the result in the doc and in `TODO.md` or `DONE.md` ("Tested
+in PCSX2: ...", "identified by ear"). The user doesn't write code, so don't hand code tasks
 to them.
 
 After changing any tool, run `python SRC/regress.py run`. A diff is a
