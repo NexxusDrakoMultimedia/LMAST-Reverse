@@ -89,6 +89,23 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 
 The 5 bits after the last field are zero in every record.
 
+### Player id blocks (empirical)
+
+The last 2,359 player records (25,591–27,949) aren't in any club's
+starting squad (`OTEAMMEMBER.TBB`):
+
+| Ids | Blocks | What |
+|---|---|---|
+| 25,591–26,040 | 6 × 75, nations 1–6 (England, France, Germany, Italy, Spain, Netherlands) | made-up players. England's first 18 and 16 from 25,623 are the built-in default club ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#without-the-file)) |
+| 26,041–27,949 | 83 × 23, one nation each | national-team squads: 83 blocks for the 83 national teams (`PlTeam` 460–542), and 26,041 + 83 × 23 = 27,950 |
+
+A national-team record repeats a club player under the same name, as a
+separate record: Gianluigi Buffon is 3,175 at Juventus and 26,110 (shirt
+1) in Italy's block, John Terry 101 at Chelsea and 26,046 (shirt 6) in
+England's. The two can differ (that Terry's height, abilities and age
+aren't the club Terry's). Which code picks a nation's 23 hasn't been
+traced. The user identified these as national-team players.
+
 ### Managers and coaches (81 bytes, 642 bits used)
 
 `char[19]` name, then (bits × count at offset): 8 `+0x14` (nationality,

@@ -154,11 +154,16 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       player affiliations, introductions, statistics row per schedule UID,
       the edit colour palette, scouts' exclusive players, good and bad
       player/manager combinations, free agents. Entry 2 is never read
-- [ ] `PLRESOURCESIM` leftovers: weather and season names, entry 4's 8
-      clubs per nation, entry 7's groups and counter, entry 6 in full;
-      nothing checked in game yet (an edit to entry 15, the free agents,
-      or entry 13, the combinations, would be a good first test); a
-      writer for the streams (5, 11-15)
+- [ ] `PLRESOURCESIM` leftovers: season numbers, entry 4's 8 clubs per
+      nation, entry 7's groups and counter, entry 6 in full; writers for
+      the streams (5, 11-14). User reports: weathers are sunny, overcast,
+      rain, snow; combinations are hidden in game
+- [ ] Test in PCSX2: `LMAST-freeagent.iso`, Buffon (26,110, Italy's
+      national-team record) in place of J.Galvan in the free-agent list
+      (`plrsim.py setfree`)
+- [ ] Trace which code builds a national team's squad from players
+      26,041-27,949 (83 blocks of 23, one per national team; empirical,
+      `DOC/PBDATA_FORMAT.md#player-id-blocks-empirical`)
 - [ ] The packs: `PLRESOURCECOMMON.PAC` (readers listed in `PARAM_DIR.md`,
       layouts not decoded). `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript
       scripts, decoded in `DOC/SQB_FORMAT.md`; what each one computes is

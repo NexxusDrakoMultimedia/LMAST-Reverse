@@ -69,8 +69,9 @@ The city record:
   season 1, in between by month (table at `0x533d40`).
 - `plCity_GetListProbability` copies the city's month's row of table 4.
   Below 4 degrees it moves the third chance to the fourth and sets the
-  third to 0 (`0x21fcd4`), as rain would turn to snow. Which weather each
-  chance is hasn't been checked.
+  third to 0 (`0x21fcd4`): rain turns to snow. **From playing the game
+  (user report):** the game's four weathers are sunny, overcast, rain
+  and snow, which fits the chances in that order.
 - State 48 counts the cities of three nations (table at `0x533d70`), and
   state 71 is special-cased too (`0x21f4c0`).
 
@@ -178,6 +179,9 @@ ids. The lookup (`0x21ea48`) answers whether a player is in a scout's
 group. With scout −1 it searches every group, which is how
 `plPinfo_CheckExclusive` asks whether any scout has the player.
 
+Exclusive players weren't known to the user from playing, so nothing on
+screen has been matched to these lists yet.
+
 **Empirical:** entry 11 has 155 groups for 154 scouts (scout 1's header
 appears twice) and 486 players. Entry 12 has 134 groups for
 133 scouts and 440 players. The rest of each 22,528-byte entry is zeros.
@@ -192,13 +196,19 @@ and `plMisc_GetBadLevel` take two ids and return their level.
 **Empirical:** entry 13 has 189 groups (159 pairs, 20 trios, 7 of four, 3
 of five) with 56 managers among the members, for example Owen, Gerrard
 and Carragher. Entry 14 has 63 pairs, with 29 managers. How the level
-changes a match or a player hasn't been traced.
+changes a match or a player hasn't been traced. **User report:** the
+combinations are hidden: no screen shows them.
 
 ## Entry 15: free agents at the start
 
 u16 player ids, ending at `0xffff`. `Set_InitDBSet` reads up to 1,500
 (`slti 0x5dc`) and adds each with `pwkDb_addFreePlayer`, with the age from
 the database. **Empirical:** 1,300 players.
+
+`python SRC/plrsim.py setfree <in> <out> <slot>=<player>` replaces players
+in the list and keeps the pack's size. The pack has copies in the seven
+`PRELOAD/SIMLOCALMEM*.PAC` packs, so patch it with `patch_disc.py
+--copies`.
 
 ## Entry 6 table 2
 
@@ -208,17 +218,18 @@ and [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md).
 
 ## Still unknown
 
-- Which weather each of the four chances in entry 0 table 4 is, and the
-  season numbers.
+- The season numbers (entry 0).
 - What the 8 clubs per nation in entry 4 are for.
 - What the 10 introduction groups of entry 7 and their counter are.
 - The exact meaning of statistics rows 1 and 2 (entry 8).
 - How combination levels act in the game.
 - Entry 6's tables in full.
 
-None of this has been checked in the game yet. A good first test would
-be an edit to entry 15 (a well-known player becomes a free agent at the
-start) or to entry 13.
+Not yet checked in the game: a test disc (`LMAST-freeagent.iso`) puts
+Gianluigi Buffon in the free-agent list in place of J.Galvan (slot 627).
+The record used, 26,110, is Italy's national-team Buffon
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#player-id-blocks-empirical)); the
+club Buffon (3,175) stays at Juventus.
 
 ## Checking the claims
 

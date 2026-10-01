@@ -31,11 +31,14 @@ DOC/PLRESOURCESIM_FORMAT.md.
   15 free agents           u16 players, ending at 0xffff (Set_InitDBSet)
 
 Usage:
-    python plrsim.py info <PLRESOURCESIM.PAC | DAT/PARAM>
-    python plrsim.py show <PLRESOURCESIM.PAC | DAT/PARAM> <entry> [--pbdata PBDATA.PAC]
+    python plrsim.py info    <PLRESOURCESIM.PAC | DAT/PARAM>
+    python plrsim.py show    <PLRESOURCESIM.PAC | DAT/PARAM> <entry> [--pbdata PBDATA.PAC]
+    python plrsim.py setfree <in.PAC> <out.PAC> <slot>=<player> ...
 
 `show` prints one entry in readable form, naming players, managers and
-scouts from PBDATA_EU.PAC next to the pack (or --pbdata).
+scouts from PBDATA_EU.PAC next to the pack (or --pbdata). `setfree`
+replaces players in the free-agent list (entry 15; slots as `show 15`
+numbers them) and writes a same-size pack for patch_disc.py.
 """
 import os
 import struct
@@ -389,8 +392,8 @@ def cmd_show(path, entry, pbpath):
             print("  map %s  %s" % (label, " ".join(str(x) for x in t[i])))
     elif entry == 15:
         v = s16s(tables(b)[0])
-        for x in v[:v.index(-1)]:
-            print("  %5d %s" % (x, name("players", x)))
+        for i, x in enumerate(v[:v.index(-1)]):
+            print("  %4d  %5d %s" % (i, x, name("players", x)))
     elif entry == 1:
         t = tables(b)
         for i in range(13):
@@ -399,6 +402,38 @@ def cmd_show(path, entry, pbpath):
     else:
         for i, x in enumerate(tables(b)):
             print("  table %d (%d bytes): %s%s" % (i, len(x), x[:48].hex(), "..." if len(x) > 48 else ""))
+
+
+def cmd_setfree(src, dst, pairs):
+    if os.path.abspath(src) == os.path.abspath(dst):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    with open(src, "rb") as f:
+        data = f.read()
+    h, blobs = pac.binpac_blobs(data)
+    end, raw = tbb.parse(blobs[15])
+    v = s16s(raw[0].data)
+    count = v.index(-1)
+    for pair in pairs:
+        slot, sep, player = pair.partition("=")
+        if not sep or not slot.isdigit() or not player.isdigit():
+            raise SystemExit("expected <slot>=<player>, got %r" % pair)
+        slot, player = int(slot), int(player)
+        if not 0 <= slot < count:
+            raise SystemExit("slot %d: the list has slots 0-%d" % (slot, count - 1))
+        if not 0 <= player < PLAYERS:
+            raise SystemExit("player %d: players are 0-%d" % (player, PLAYERS - 1))
+        if player in v[:count]:
+            raise SystemExit("player %d is already in the list (slot %d)" % (player, v.index(player)))
+        print("slot %d: %d -> %d" % (slot, v[slot], player))
+        v[slot] = player
+    raw[0].data = struct.pack("<%dh" % len(v), *v)
+    blobs[15] = tbb.build(raw, end, tbb.trailer(blobs[15], raw))
+    out = pac.build_binpac(data[:h.header_size], blobs)
+    if len(out) != len(data):
+        raise SystemExit("rebuilt pack is %d bytes, not %d" % (len(out), len(data)))
+    with open(dst, "wb") as f:
+        f.write(out)
+    print("wrote %s" % dst)
 
 
 def _opt(args, flag):
@@ -418,6 +453,8 @@ def main(argv):
         cmd_info(args[0])
     elif cmd == "show" and len(args) == 2 and args[1].isdigit() and int(args[1]) < ENTRIES:
         cmd_show(args[0], int(args[1]), pbpath)
+    elif cmd == "setfree" and len(args) >= 3:
+        cmd_setfree(args[0], args[1], args[2:])
     else:
         print(__doc__)
         return 1
