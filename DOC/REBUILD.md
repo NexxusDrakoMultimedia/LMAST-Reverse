@@ -182,7 +182,18 @@ python SRC/patch_disc.py copies DAT PARAM/REGULATION.TBB              # where el
 python SRC/patch_disc.py patch disc.iso modded.iso PARAM/REGULATION.TBB=out/REGULATION.TBB --copies
 python SRC/patch_disc.py patch disc.iso modded.iso MESSAGE/MES.PAC=out/MES.PAC --copies   # rebuilds PRELOAD packs as needed
 python SRC/preload.py info DAT                                        # each pack's free room
+python SRC/patch_disc.py patch disc.iso test.iso PARAM/...=... --skip-tutorial   # test disc without the opening playoffs
 ```
+
+`--skip-tutorial` is for test discs. It skips the opening playoffs of a
+new career (5–10 minutes) with the developers' own switch, 4 bytes in
+the executable and three sequencer scripts
+([`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs)).
+Tested in PCSX2: the career goes from club creation to the 2006–07 season.
+Side effects: the club's playoff-period sponsors aren't ended, so the
+first Sponsor screen only offers the main sponsor; and start the career
+in England, since the switch names league 0. It needs the whole disc
+image. Running it again changes nothing.
 
 `patch` copies the image first (use `--in-place` to patch a copy you made
 yourself). It refuses a file that would need another sector, then

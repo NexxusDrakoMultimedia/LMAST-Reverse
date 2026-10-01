@@ -167,17 +167,18 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       records can be free agents; Buffon (rank 14) is held back by a gate
 - [ ] Trace the gate that keeps high-rank free agents (Buffon, rank 14)
       off a small club's Transfer List (reputation vs. player rank?)
-- [ ] Testing aid: skip the opening playoffs (the tutorial). Found the
-      developers' switches (`Dummy.CheckFirstMatchSkip`/`CheckClubEditSkip`,
-      flags `0x34d430`/`0x34d434`); a 4-byte patch is on
-      `LMAST-skiptutorial.iso` (`DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs`).
-      Tested (England): the playoffs are skipped and the season starts,
-      but the playoff-period sponsors (Fosty Misty, Doclla, four
+- [x] Testing aid: `patch_disc.py --skip-tutorial`, the developers'
+      switches (`Dummy.CheckFirstMatchSkip`/`CheckClubEditSkip`, flags
+      `0x34d430`/`0x34d434`), 4 bytes
+      (`DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs`).
+      Tested in PCSX2 (England): the playoffs are skipped and the season
+      starts. (The launcher's MAIN GAME START still has the tutorial: user
+      report)
+- [ ] Clean up the tutorial skip: the playoff-period sponsors (Fosty Misty, Doclla, four
       sub-sponsors) aren't ended, so the first sponsor screen only offers
       the main slot and the supplier isn't Egamucho (user report). Find
-      what ends them in the playoff period (events, turns, matches); then
-      other leagues, and make it a tool option.
-      (The launcher's MAIN GAME START still has the tutorial: user report)
+      what ends them in the playoff period (events, turns, matches); and
+      check other leagues (the switch calls pwkLg_Init(0)).
 - [ ] Trace which code builds a national team's squad from players
       26,041-27,949 (83 blocks of 23, one per national team; empirical,
       `DOC/PBDATA_FORMAT.md#player-id-blocks-empirical`)

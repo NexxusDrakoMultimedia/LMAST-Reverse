@@ -36,8 +36,8 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>]
-    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--skip-tutorial]
+    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--skip-tutorial]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
 `patch` re-reads every patched range afterwards. Keep an unmodified copy
@@ -50,6 +50,15 @@ its last sector. `patch` then also rewrites the size in the file's
 directory record, decrypting and re-encrypting that one sector. A file
 that needs more sectors is refused (that needs files moved, which isn't
 supported yet). Files outside DATA.CVM keep their size.
+
+--skip-tutorial (test discs; whole disc image only) skips the opening
+playoffs of a new career, the tutorial, with the developers' own switch:
+it sets the flag word at SLES 0x34d434 (Dummy.CheckClubEditSkip, which
+promotes the club) and swaps commands 88/89 in RootClubEditSeq.sqb,
+RootMainSeq.sqb and RootYearStartSeq.sqb, 4 bytes in all. Side effect:
+the playoff-period sponsor contracts aren't ended, so the first season's
+Sponsor screen only offers the main sponsor. The club must be in England
+(the switch calls pwkLg_Init(0)). See DOC/SQB_FORMAT.md.
 
 Copies: the same data is often on the disc more than once. PRELOAD/*.PAC
 bundles hold copies of loose files (REGULATION.TBB is in all seven
@@ -561,6 +570,51 @@ class PackEdits:
         return jobs, notes
 
 
+# --- skipping the tutorial (DOC/SQB_FORMAT.md) --------------------------------
+
+SKIP_FLAG = (DISC + "SLES_541.51", 0x24e434)    # SLES 0x34d434, Dummy.CheckClubEditSkip's flag
+SKIP_SCRIPTS = (                                # (file, offset, old command, new command)
+    ("SEQ/ROOTCLUBEDITSEQ.SQB", 0x868, "Dummy.CheckFirstMatchSkip", "4:89"),
+    ("SEQ/ROOTMAINSEQ.SQB", 0x6d8, "Dummy.CheckClubEditSkip", "4:88"),
+    ("SEQ/ROOTYEARSTARTSEQ.SQB", 0x30, "Dummy.CheckClubEditSkip", "4:88"),
+)
+
+
+def plan_skip_tutorial(f, img):
+    """Jobs for --skip-tutorial, made from the files as the image holds
+    them. A spot that already holds the patched value is left alone."""
+    import sqb
+    if img.kind != "disc image":
+        raise ValueError("--skip-tutorial patches SLES_541.51 too, so it needs the whole "
+                         "disc image, not %s" % img.kind)
+    jobs, notes = [], []
+    file, off = SKIP_FLAG
+    word = struct.unpack("<I", read_at(f, img, file, off, 4))[0]
+    if word == 0:
+        jobs.append(Job(file, off, struct.pack("<I", 1), file + " (0x34d434)",
+                        "--skip-tutorial: Dummy.CheckClubEditSkip flag 0 -> 1"))
+    elif word == 1:
+        notes.append("note: %s 0x34d434 already holds 1" % file)
+    else:
+        raise ValueError("%s 0x34d434 holds %d, not 0 or 1; not the retail executable?" % (file, word))
+    for path, offset, old, spec in SKIP_SCRIPTS:
+        e = img.entry(path)
+        data = read_at(f, img, e.path, 0, e.size)
+        new, held, name = sqb.set_command(data, offset, spec)
+        if held == name:
+            notes.append("note: %s 0x%x already holds %s" % (path, offset, name))
+        elif held != old:
+            raise ValueError("%s 0x%x holds %s, expected %s" % (path, offset, held, old))
+        else:
+            for i, (a, b) in enumerate(zip(data, new)):
+                if a != b:
+                    jobs.append(Job(e.path, i, new[i:i + 1], "%s 0x%x" % (path, offset),
+                                    "--skip-tutorial: %s -> %s" % (held, name)))
+    notes.append("note: --skip-tutorial: the first season's sponsor screen will only offer "
+                 "the main sponsor; start the career in England")
+    return jobs, notes
+
+
 def resolve_target(img, index, target):
     """(file, offset in file, size, label) for 'PATH' or 'PATH#entry'."""
     if "#" in target:
@@ -693,7 +747,7 @@ def copy_file(src, dst):
     os.chmod(dst, 0o644)
 
 
-def cmd_patch(image, out, in_place, args, dat, write_copies, renames=()):
+def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tutorial=False):
     pairs = parse_pairs(args)
     img = Image(image)
     index = Index(dat) if dat else None
@@ -752,6 +806,15 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=()):
         for r in renames:
             target, _, new = r.partition("=")
             jobs += plan_rename(f, img, target, new)
+        if skip_tutorial:
+            touched = {norm(j.file) for j in jobs if j.file is not None}
+            clash = touched & {norm(p) for p, _, _, _ in SKIP_SCRIPTS}
+            if clash:
+                raise SystemExit("--skip-tutorial edits %s; don't patch it as a target too"
+                                 % ", ".join(sorted(clash)))
+            sjobs, snotes = plan_skip_tutorial(f, img)
+            jobs += sjobs
+            notes += snotes
     if index is None:
         notes.append("note: no DAT index (--dat), so copies elsewhere on the disc weren't checked")
 
@@ -823,6 +886,9 @@ def main(argv):
     write_copies = "--copies" in args
     if write_copies:
         args.remove("--copies")
+    skip_tutorial = "--skip-tutorial" in args
+    if skip_tutorial:
+        args.remove("--skip-tutorial")
     dat = _opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
     renames = []
     while "--rename" in args:
@@ -834,10 +900,10 @@ def main(argv):
         if cmd == "copies" and len(args) >= 2:
             cmd_copies(args[0], args[1:])
             return 0
-        if cmd == "patch" and (len(args) >= 3 or renames and len(args) == 2):
+        if cmd == "patch" and (len(args) >= 3 or (renames or skip_tutorial) and len(args) == 2):
             in_place = args[1] == "--in-place"
             cmd_patch(args[0], None if in_place else args[1], in_place, args[2:], dat,
-                      write_copies, renames)
+                      write_copies, renames, skip_tutorial)
             return 0
         if cmd == "verify" and len(args) >= 2:
             return cmd_verify(args[0], args[1:])

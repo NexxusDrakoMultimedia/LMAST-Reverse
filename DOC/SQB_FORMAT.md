@@ -384,7 +384,8 @@ the year start). So setting `0x34d430` alone would skip the playoffs
 without promoting the club, and setting `0x34d434` alone would also skip
 club creation and every year start.
 
-**The patch** (four bytes, test disc `LMAST-skiptutorial.iso`):
+**The patch** (four bytes; `python SRC/patch_disc.py patch <disc> <out> ...
+--skip-tutorial` writes it, on a whole disc image):
 
 | File | Change |
 |---|---|

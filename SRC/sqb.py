@@ -518,9 +518,11 @@ def cmd_roundtrip(paths):
     print("%d/%d scripts re-encode byte for byte" % (ok, count))
 
 
-def cmd_setcmd(src, dst, offset, spec):
-    """Swap one command's table:cmd for another with the same argc."""
-    blob = bytearray(open(src, "rb").read())
+def set_command(data, offset, spec):
+    """(new bytes, old name, new name) with the command at `offset`
+    swapped for `spec` ("table:cmd"), which must take as many arguments.
+    The edited script is decoded again and its labels re-checked."""
+    blob = bytearray(data)
     cmdset, result = fit(bytes(blob))
     if cmdset is None:
         raise ValueError(result)
@@ -546,9 +548,16 @@ def cmd_setcmd(src, dst, offset, spec):
     _, problems = check(decode(bytes(blob[start:start + size]), cmdset))
     if problems:
         raise ValueError("the edit breaks the script: " + "; ".join(problems))
+    return bytes(blob), old.name, name
+
+
+def cmd_setcmd(src, dst, offset, spec):
+    """Swap one command's table:cmd for another with the same argc."""
+    with open(src, "rb") as f:
+        blob, old, new = set_command(f.read(), offset, spec)
     with open(dst, "wb") as f:
         f.write(blob)
-    print("0x%04x  %s -> %s  (%s)" % (offset, old.name, name, dst))
+    print("0x%04x  %s -> %s  (%s)" % (offset, old, new, dst))
 
 
 def main(argv):
