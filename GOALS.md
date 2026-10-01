@@ -86,7 +86,7 @@ and a tool whose `info` passes over all of `DAT/`. Nothing is left as "unknown
 binary". Even a format that nobody plans to edit is documented, because an
 unexplained file can hide a dependency that breaks a rebuilt disc.
 
-Where each folder stands (September 2026):
+Where each folder stands (October 2026):
 
 | Folder | Contents | Status |
 |---|---|---|
@@ -106,7 +106,7 @@ Where each folder stands (September 2026):
 | `SOUND/` | 28 `DAT` sound banks | all 28 `ps2_DTPK` banks parse; samples and the 41 songs in `MAP01`–`MAP10` decode (`sounddat.py`), described in [`GAME_DIR.md`](DOC/GAME_DIR.md#the-soundmap-banks); no folder doc of its own; instrument tone tables not decoded |
 | `STADIUM/` | `PAC`/`HED`, 24 `TBB`, `PRI` | surveyed in [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md); `PRI` and all 24 tables decoded: part slots, stadium build, collision, crowd sets and tiers, adverts, stadium id by level (a few flags unknown) |
 | `TEST3D/` | Ninja models, `SVR`/`SVP`/`SVM`, `LBI` | textures and models done; `LBI` not parsed |
-| `CVS/` and `*/CVS/` | the developers' version-control metadata | not game data; worth noting in a doc, nothing to parse |
+| `CVS/` and `*/CVS/` | the developers' version-control metadata | done ([`CVS_DIR.md`](DOC/CVS_DIR.md), `cvs.py`): not read by the game; gives original file names and dates, and shows which files the build made |
 
 "Containers parse" means `pac.py` or `tbb.py` reads the file, but what the
 entries or rows mean isn't documented yet.
