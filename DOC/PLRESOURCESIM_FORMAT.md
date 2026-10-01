@@ -239,9 +239,13 @@ decides which free agents the Transfer List shows hasn't been traced.
 club's own transfer list (`pwkTeam_AddPinfoTransferFree`), but it is
 given the player; it doesn't choose him.
 
-A second test disc puts Paul Jones (Wales's national-team goalkeeper,
-26,455, rank 5 like J.Galvan) in the same slot. If he shows, national-team
-records are allowed and Buffon was held back by his rank.
+**Tested in PCSX2, second disc.** Paul Jones (Wales's national-team
+goalkeeper, 26,455, rank 5 like J.Galvan) in the same slot showed on the
+Transfer List (Club House / Scouting, "Acquire transfer list") in
+2006–07, with no team, aged 32. So national-team records can be free
+agents, and Buffon was held back by something else, most likely his
+rank (14) against the club's reputation, as the user suggested. The
+code that applies that gate hasn't been found yet.
 
 ## Checking the claims
 

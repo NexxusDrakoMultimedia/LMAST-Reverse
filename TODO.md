@@ -162,9 +162,15 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       the Transfer List, so the free agents come from there. Buffon
       (26,110, rank 14) didn't show: the screen shows only part of the
       pool (reputation gate? user's suggestion)
-- [ ] Test: Paul Jones (26,455, rank 5, Wales national team) in Galvan's
-      slot, to tell a rank gate from national-team records being
-      excluded; then trace what picks the Transfer List's free agents
+- [x] Tested in PCSX2: Paul Jones (26,455, rank 5, Wales national team)
+      in Galvan's slot shows on the Transfer List, so national-team
+      records can be free agents; Buffon (rank 14) is held back by a gate
+- [ ] Trace the gate that keeps high-rank free agents (Buffon, rank 14)
+      off a small club's Transfer List (reputation vs. player rank?)
+- [ ] Testing aid: a way to skip the 5-10 minute tutorial (and its
+      playoff final) when starting a new career on a test disc, e.g. a
+      sequencer-script or event-flag patch, or the developer launcher's
+      MAIN GAME START
 - [ ] Trace which code builds a national team's squad from players
       26,041-27,949 (83 blocks of 23, one per national team; empirical,
       `DOC/PBDATA_FORMAT.md#player-id-blocks-empirical`)
