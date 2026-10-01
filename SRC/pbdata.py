@@ -88,7 +88,7 @@ PLAYER_FIELDS = (
     ("height", 0x29, 8, 1, ("add", 150)),  # adds 0x96; the sum is a byte, so 255 cm at most
     ("weight", 0x2a, 7, 1, ("add", 45)),   # adds 0x2d
     ("shirt", 0x2b, 7, 1, None),         # pwkTeam_SetUnumberOpinfo's preferred number
-    ("leg", 0x2c, 3, 1, None),           # bit 0: right foot, else left (empirical); bit 1: two-footed?
+    ("leg", 0x2c, 3, 1, None),           # bit 0: right foot, else left; bit 1: two-footed (empirical)
     ("f_30", 0x30, 16, 1, None),
     ("f_32", 0x32, 16, 1, None),
     ("money", 0x34, 16, 1, "money"),
@@ -206,7 +206,8 @@ def style_names(styles):
 # 21-23), the position aptitudes (33-44) and the systems (45-52, by match
 # growth at 0x246884) come from the game code. The rest follow Virtua Pro
 # Football's edit screen, which runs on the same engine: same order, and
-# Maik Taylor's values there match his record here. None means unnamed.
+# Maik Taylor's and Wayne Rooney's values there match their records here.
+# None means unnamed.
 # DOC/PBDATA_FORMAT.md#ability-names says which is which.
 SYSTEMS = ("3-4-3", "3-5-2", "3-6-1", "4-3-3", "4-4-2", "4-5-1", "5-3-2", "5-4-1")
 ABILITY_NAMES = (
@@ -216,7 +217,7 @@ ABILITY_NAMES = (
     "saving", "catching", "aerial ability", "rushing out",
     "pace", "acceleration", "jump", "agility", "stamina", "kick strength",
     "contact strength",
-    "leadership", "consistency", "attack minded", "defence minded",
+    "leadership", None, "attack minded", "defence minded",
     "supportiveness", "vision", None,
     "GK", "DF side", "DF centre", "DM side", "DM centre", "AM side",
     "AM centre", "FW side", "FW centre", "centre", "left side", "right side",

@@ -53,10 +53,12 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       (7 Training cycle) and H.Dale's salary showing 80,000 not 75,000
 - [ ] Name the rest of the player fields: money band (lead: BPINFO CHECK
       calls band value 10,000 "1mil"), entry 2, the bit fields `+0x30`
-      to `+0x5d` and `+0x66`, abilities 32, 54 and 59–63, and what the
-      skills and play styles do in a match. Settle the names that rest on
-      one VPF player (19/20, 26/27, 53–58): a second VPF Player Edit
-      screenshot set of an outfield player with known values would do it
+      to `+0x5d` and `+0x66`, abilities 27, 32, 54 and 59–63, and what
+      the skills and play styles do in a match. Still open after the
+      Taylor and Rooney VPF screenshots: which of 19/20 is pace and of
+      57/58 pressing (equal VPF values in both), and whether 54/55 are
+      the left and right flanks. A VPF player with a clear left/right
+      bias or pace/acceleration gap would settle them
 - [ ] User check (PCSX2): give a player play styles with `pbdata.py set`
       (`style.0=7`) and see the detail screen's Play Style plate show
       "Play maker"

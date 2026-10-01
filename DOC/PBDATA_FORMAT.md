@@ -76,7 +76,7 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 | 8 | 1 | `+0x29` | height | stored − 150, in cm (158–205). *Empirical*. The decoder stores the sum in a byte (`sb` at `0x2e8a14`), so heights above 255 wrap. Tested in game: 313 cm shows as 57 cm |
 | 7 | 1 | `+0x2a` | weight | stored − 45, in kg (48–100). *Empirical* |
 | 7 | 1 | `+0x2b` | shirt | preferred shirt number. **confirmed** |
-| 3 | 1 | `+0x2c` | leg | 0–3. Bit 0 set means right-footed, clear means left. *Empirical*: every well-known left-footer tested (Robben, Ashley Cole, Giggs, Messi, Roberto Carlos, Duff, Cech) has it clear. Bit 1 is set for famously two-footed players (Maldini, Henry, Rooney, Duff). The detail screen shows a message from 100–103 (LEFT, RIGHT, LEFT, RIGHT), which fits `100 + leg`, but the copy into `PlPinfo +0x1c4` hasn't been traced |
+| 3 | 1 | `+0x2c` | leg | 0–3. Bit 0 set means right-footed, clear means left. *Empirical*: every well-known left-footer tested (Robben, Ashley Cole, Giggs, Messi, Roberto Carlos, Duff, Cech) has it clear. Bit 1 is set for famously two-footed players (Maldini, Henry, Rooney, Duff), and VPF's Player Edit screen shows Rooney (leg 3) as "Both(R)", so bit 1 is two-footed (*empirical*). The detail screen shows a message from 100–103 (LEFT, RIGHT, LEFT, RIGHT), which fits `100 + leg`, but the copy into `PlPinfo +0x1c4` hasn't been traced |
 | 16 | 1 | `+0x30` | | always 0 |
 | 16 | 1 | `+0x32` | | 0–17,172 |
 | 16 | 1 | `+0x34` | money | band 0–15, looked up in the money table. What the money is (value or wages) isn't known. A lead: the developer BPINFO CHECK screen counts 8,063 players with money between 1 and 9,999 and labels the 10,000 cutoff "1mil" ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)), so one unit may be 100 of some currency |
@@ -209,59 +209,72 @@ categories ([Ability names](#ability-names)): 0's main abilities are its
 
 Virtua Pro Football (VPF) runs on the same engine, and its Player Edit
 screen names its parameters on 8 pages. The user supplied screenshots of
-that screen for Maik Taylor, who is player 0 here. VPF's pages follow
-this game's ability order, and Taylor's values match his record within a
-few points: short pass 54/54, long pass 63/64, tackle 48/48, placekick
-51/52, rushing out 78/78, contact strength 80/80, defence minded 84/84,
-vision 59/60, GK aptitude 82/82, centre 84/84, left 49/50, right 45/46.
-VPF has 9 parameters this game lacks (cross technique, 1 on 1 response,
-balance and 6 tactical ones), so the lists are aligned by value, not by
-position.
+that screen for two players in this database: Maik Taylor (player 0, a
+goalkeeper) and Wayne Rooney (player 258, a forward). VPF's pages follow
+this game's ability order, and most values match within a point or two.
+VPF has parameters this game lacks (cross technique, 1 on 1 response,
+balance and some tactical ones), so the lists are aligned by value, not
+by position.
 
+The values column gives this game / VPF, for Taylor (T) and Rooney (R).
 The evidence column says where each name comes from: **code** (the bars,
-the position grid or match growth above), **VPF + data** (VPF's name,
-and Taylor's value or a trend across the whole database fits), or **VPF**
-(VPF's name and Taylor's value only).
+the position grid or match growth above), **VPF + data** (VPF's name, and
+both players' values or a trend across the whole database fit), or
+**VPF** (VPF's name, with the values as shown).
 
-| Ability | Name | Evidence |
-|---|---|---|
-| 0 | dribble pace | VPF + data (SPEED and DRIBB bars) |
-| 1 | dribble skill | VPF + data (DRIBB bar) |
-| 2 | shot skill | VPF + data (SHOT bar) |
-| 3 | shot technique | VPF + data (SHOT bar). VPF's "Skill" page |
-| 4, 5 | short pass, long pass | VPF + data (PASS bar, Taylor 54, 64) |
-| 6 | cross | VPF + data (PASS bar, Taylor 40 vs 39) |
-| 7 | header | VPF + data (HEAD bar) |
-| 8, 9 | trap, ball keeping | VPF (Taylor 60 vs 55, 38 vs 36). VPF's "Skill" page |
-| 10 | tackle | VPF (Taylor 48 vs 48) |
-| 11 | intercept | code (INTER bar) |
-| 12 | ball winning | VPF (Taylor 38 vs 37) |
-| 13 | marking | code (MARK bar) |
-| 14 | placekick | code (FK bar) |
-| 15–18 | saving, catching, aerial ability, rushing out | code (goalkeeper bars SAVIN, HANDL, CROSS, GO FW) |
-| 19, 20 | pace, acceleration | VPF (Taylor 74, 74 vs 70, 69). Which is which isn't settled |
-| 21–23 | jump, agility, stamina | code (JUMP, AGILI, STAMI bars) |
-| 24 | kick strength | VPF + data (SHOT and DISTR bars, Taylor 74 vs 73) |
-| 25 | contact strength | VPF + data (PHYSI and HEAD bars, Taylor 80 vs 80) |
-| 26, 27 | leadership, consistency | VPF (MENTA bar). Taylor has 40, 40 here and 40, 51 in VPF |
-| 28 | attack minded | VPF + data: averages 45 for goalkeepers, 80 for forwards |
-| 29 | defence minded | VPF + data: averages 80 for goalkeepers, 45 for forwards |
-| 30, 31 | supportiveness, vision | VPF + data (SUPPO bar, Taylor 40 vs 40, 60 vs 59) |
-| 32 | unknown (Attitude hexagon) | Taylor 78; no VPF counterpart |
-| 33–44 | position aptitudes | code ([Positions](#positions-and-aptitude)). VPF names 33 GK, 34 SB, 35 CB, 36 WB, 37 DM, 38 SM, 39 OM; 40/41 are both "FW" there |
-| 45–52 | fit with systems 3-4-3, 3-5-2, 3-6-1, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1 | code for "system *k*" (match growth); the order of the systems is empirical: the formation names (messages 801:0–7, 1:530–537) and their descriptions (700:270–293) are listed in this order |
-| 53 | counterattack | VPF (Taylor 82 vs 82) |
-| 54 | unknown (Teamwork hexagon) | Taylor 42 |
-| 55, 56 | attacks down wings, attacks through middle | VPF (Taylor 80 vs 79, 38 vs 34) |
-| 57, 58 | line DF, pressing | VPF (Taylor 64 vs 64, 68 vs 68). VPF lists pressing first, so this pair rests on the values alone |
-| 59–63 | unknown | 60 is in the Teamwork hexagon |
+| Ability | Name | Values T, R | Evidence |
+|---|---|---|---|
+| 0 | dribble pace | 38/31, 88/92 | VPF + data (SPEED and DRIBB bars) |
+| 1 | dribble skill | 38/38, 90/90 | VPF + data (DRIBB bar) |
+| 2 | shot skill | 38/35, 86/91 | VPF + data (SHOT bar) |
+| 3 | shot technique | 38/35, 88/87 | VPF + data (SHOT bar). VPF's "Skill" page |
+| 4, 5 | short pass, long pass | 54/54, 84/83; 64/63, 82/81 | VPF + data (PASS bar) |
+| 6 | cross | 40/39, 80/80 | VPF + data (PASS bar) |
+| 7 | header | 38/35, 82/82 | VPF + data (HEAD bar) |
+| 8, 9 | trap, ball keeping | 60/55, 88/88; 38/36, 82/82 | VPF + data. VPF's "Skill" page |
+| 10 | tackle | 48/48, 66/65 | VPF + data |
+| 11 | intercept | 38/38, 46/46 | code (INTER bar) |
+| 12 | ball winning | 38/37, 48/48 | VPF + data |
+| 13 | marking | 38/35, 50/49 | code (MARK bar) |
+| 14 | placekick | 52/51, 80/80 | code (FK bar) |
+| 15–18 | saving, catching, aerial ability, rushing out | 78/77, 78/77, 82/81, 78/78 for T | code (goalkeeper bars SAVIN, HANDL, CROSS, GO FW) |
+| 19, 20 | pace, acceleration | 74/70, 74/69; 86/94, 92/94 | VPF. Both players have equal VPF values, so which is which isn't settled |
+| 21–23 | jump, agility, stamina | 76/71, 88/83, 62/57; 76/80, 86/85, 86/85 | code (JUMP, AGILI, STAMI bars) |
+| 24 | kick strength | 74/73, 88/88 | VPF + data (SHOT and DISTR bars) |
+| 25 | contact strength | 80/80, 90/91 | VPF + data (PHYSI and HEAD bars) |
+| 26 | leadership | 40/40, 70/70 | VPF + data (MENTA bar) |
+| 27 | unknown, "consistency" by VPF's order | 40/51, 94/45 | the values don't fit (MENTA bar) |
+| 28 | attack minded | 52/51, 96/96 | VPF + data: averages 45 for goalkeepers, 80 for forwards |
+| 29 | defence minded | 84/84, 54/70 | VPF + data: averages 80 for goalkeepers, 45 for forwards |
+| 30, 31 | supportiveness, vision | 40/40, 88/79; 60/59, 76/75 | VPF + data (SUPPO bar) |
+| 32 | unknown (Attitude hexagon) | T 78, R 72 | no VPF counterpart |
+| 33–44 | position aptitudes | see below | code ([Positions](#positions-and-aptitude)) |
+| 45–52 | fit with systems 3-4-3, 3-5-2, 3-6-1, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1 | | code for "system *k*" (match growth); the order of the systems is empirical: the formation names (messages 801:0–7, 1:530–537) and their descriptions (700:270–293) are listed in this order |
+| 53 | counterattack | 82/82, 88/87 | VPF + data |
+| 54 | unknown (Teamwork hexagon) | T 42, R 88 | possibly one flank of VPF's "wings" (see below) |
+| 55 | attacks down wings | 80/79, 62/78 | VPF; fits Taylor only |
+| 56 | attacks through middle | 38/34, 86/86 | VPF + data |
+| 57, 58 | line DF, pressing | 64/64, 68/68 for T; 58, 58 vs 57, 57 for R | VPF. VPF lists pressing first, so this pair rests on Taylor's values |
+| 59–63 | unknown | | 60 is in the Teamwork hexagon |
+
+VPF's aptitude page names the position cells. For Rooney: 34 = SB
+(40/39), 35 = CB (44/44), 36 = WB (46/46), 39 = OM (86/85), 41 = FW
+(96/95), 42 = centre (94/93), 43 = left (82/82), 44 = right (54/53). VPF's
+DM (48) and SM (48) don't match 37 and 38 (66, 64). For Taylor, 33 = GK
+(82/82), and VPF's FW is the centre cell. The left/right match backs up
+43 = left. 40, the forward line's sides, has no VPF counterpart.
+
+Rooney prefers the left (43 = 82, 44 = 54) and has 88 in 54 but 62 in
+55, while VPF gives him 78 for "wings". So 54 and 55 may be the left and
+right flank attacks that VPF merges into one value. The game's own attack
+names (messages 1:620–649) do list Left Flank and Right Flank
+separately. This isn't settled.
 
 Across the database, abilities 26, 27, 32 and 45–63 average 51 for every
 position and play style. They are only higher across the board for
 stronger players (about 62 for the holders of any skill), which suggests
-filler values. That is why most of those names rest on Taylor
-alone. A second VPF player with distinctive values would settle 19/20,
-26/27 and 53–58.
+filler values. That is why those names rest on the two VPF players, and
+why 19/20 and 57/58 stay open: both players have equal VPF values there.
 
 ## Skills
 
@@ -290,6 +303,8 @@ labels are summaries of those texts, as `pbdata.py` prints them:
 
 VPF's Special Skill page lists its 16 skills in this order, and each
 name fits the description of the same bit, which backs up the bit order.
+VPF marks Rooney with Shot on 1 on 1, Acrobatic Play and Controlled
+Shot, and his `+0x64` has exactly bits 4, 11 and 13.
 
 That bit *n* goes with message 6000 + *n* is **empirical**, from who holds
 which bit. Of 2,465 goalkeepers, 90, 91 and 86 hold bits 3, 5 and 10, and
@@ -520,16 +535,16 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 ## Still unknown
 
 - The meaning of most fields between `+0x30` and `+0x5d`, and `+0x66`.
-- Abilities 32, 54 and 59–63. Which of 19/20 is pace, which of 26/27 is
-  leadership, and the 53–58 names, which rest on one VPF player. The
+- Abilities 27, 32, 54 and 59–63. Which of 19/20 is pace and which of
+  57/58 is pressing (both VPF players have equal values there), and
+  whether 54/55 are the left and right flanks. The
   game code that reads 53–63 hasn't been found (the match engine,
   `GAMEPRG.REL`, is the likely reader).
 - The hexagon labels are matched to indices from the data and VPF's
   pages. The label order in `GP::CHexWindowBase::DrawString` (`0x27c700`)
   comes from a screen layout and hasn't been traced.
 - What the play styles do in a match, beyond which abilities grow.
-- What bit 1 of the leg field means (two-footed is a guess), and the code
-  that turns it into `PlPinfo +0x1c4`.
+- The code that turns the leg field into `PlPinfo +0x1c4`.
 - What sets job 5 when a manager is hired.
 - Staff abilities other than the ones the bars name (6–9, 23–27, 31–38),
   and scout abilities 2, 8–20 and 26–44 (the preferred areas and search
