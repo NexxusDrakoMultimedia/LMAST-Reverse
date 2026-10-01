@@ -225,11 +225,23 @@ and [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md).
 - How combination levels act in the game.
 - Entry 6's tables in full.
 
-Not yet checked in the game: a test disc (`LMAST-freeagent.iso`) puts
-Gianluigi Buffon in the free-agent list in place of J.Galvan (slot 627).
-The record used, 26,110, is Italy's national-team Buffon
-([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#player-id-blocks-empirical)); the
-club Buffon (3,175) stays at Juventus.
+**Tested in PCSX2.** J.Galvan (slot 627) was replaced by Gianluigi
+Buffon, using Italy's national-team record 26,110
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#player-id-blocks-empirical)). In a
+new career J.Galvan was gone from the in-game Transfer List, so the
+game's free agents come from this entry. Buffon didn't appear there
+either. `pwkDb_addFreePlayer` (`0x235f08`) refuses only edit players
+(`plPinfo_IsEdit`: id 31,950 and up), so Buffon should be in the pool.
+The screen must show only part of the pool, perhaps gated by reputation
+(the user's suggestion; Buffon is rank 14, J.Galvan rank 5). What
+decides which free agents the Transfer List shows hasn't been traced.
+`SIMPRG.REL 0x15b030` moves one named free agent from the pool to the
+club's own transfer list (`pwkTeam_AddPinfoTransferFree`), but it is
+given the player; it doesn't choose him.
+
+A second test disc puts Paul Jones (Wales's national-team goalkeeper,
+26,455, rank 5 like J.Galvan) in the same slot. If he shows, national-team
+records are allowed and Buffon was held back by his rank.
 
 ## Checking the claims
 

@@ -158,9 +158,13 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       nation, entry 7's groups and counter, entry 6 in full; writers for
       the streams (5, 11-14). User reports: weathers are sunny, overcast,
       rain, snow; combinations are hidden in game
-- [ ] Test in PCSX2: `LMAST-freeagent.iso`, Buffon (26,110, Italy's
-      national-team record) in place of J.Galvan in the free-agent list
-      (`plrsim.py setfree`)
+- [x] Tested in PCSX2: replacing J.Galvan in entry 15 removed him from
+      the Transfer List, so the free agents come from there. Buffon
+      (26,110, rank 14) didn't show: the screen shows only part of the
+      pool (reputation gate? user's suggestion)
+- [ ] Test: Paul Jones (26,455, rank 5, Wales national team) in Galvan's
+      slot, to tell a rank gate from national-team records being
+      excluded; then trace what picks the Transfer List's free agents
 - [ ] Trace which code builds a national team's squad from players
       26,041-27,949 (83 blocks of 23, one per national team; empirical,
       `DOC/PBDATA_FORMAT.md#player-id-blocks-empirical`)
