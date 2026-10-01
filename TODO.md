@@ -3,8 +3,25 @@
 
 # TODO
 
-Rough priority order, most valuable first. Finished items move to
+The sections group the open items by area. Finished items move to
 [`DONE.md`](DONE.md), under the same section numbers.
+
+## Next up
+
+What to work on next, most valuable first. Each line points to the full
+item in its section below.
+
+1. **Clean up the tutorial skip** (section 2). The test discs every other
+   season-mode check relies on still start with the wrong sponsors.
+2. **The free-agent gate** (section 2). Testing is already under way: Galvan
+   and Paul Jones show on the Transfer List, Buffon doesn't.
+3. **Name the rest of the player fields** (section 2). The editor can only
+   offer a field once it has a name and a range (stage 2 in
+   [`GOALS.md`](GOALS.md)).
+4. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
+   and 7). This is the largest piece of starting-season data still undecoded.
+5. **Size changes on the disc** (section 9). Until files can move, an edit
+   can only grow to the end of its last sector, which limits every writer.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 

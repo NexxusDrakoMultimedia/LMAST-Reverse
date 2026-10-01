@@ -37,7 +37,9 @@ finished items.
    a check to `checks()` in `SRC/regress.py` and `bless` it.
 5. Update the README's tool table and doc index. Tick off the `TODO.md`
    item and move it to the end of the same section in `DONE.md`. If part of
-   it is still open, leave that part in `TODO.md` as its own item. If a
+   it is still open, leave that part in `TODO.md` as its own item. If the
+   item was in TODO's "Next up" list, take it off and suggest a
+   replacement to the user. If a
    folder's status changes, update the coverage table in `GOALS.md`.
 
 Adding a writer (the write stage in `GOALS.md`) follows the same steps, plus
