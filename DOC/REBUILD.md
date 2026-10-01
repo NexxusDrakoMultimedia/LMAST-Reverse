@@ -3,9 +3,11 @@
 
 # Putting edited files back on the disc
 
-This is stage 4 of [`GOALS.md`](../GOALS.md). The first step, same-size
-patching, works. Changing a file's size, repacking archives and producing
-a distributable patch are still to do.
+This is stage 4 of [`GOALS.md`](../GOALS.md). Same-size patching works,
+and so does a size change that stays inside a file's last sector, which
+is enough to rebuild the `PRELOAD` packs around a grown message file.
+Moving files, and repacking archives other than `PRELOAD` packs, are
+still to do.
 
 `SRC/patch_disc.py` writes edited `DAT/` files into a copy of the disc
 image (or `DATA.CVM`, or `DATA.ISO`), provided each file keeps its size.
@@ -99,9 +101,12 @@ with the loader of every pack, are in [`PRELOAD_DIR.md`](PRELOAD_DIR.md).
 `patch` compares each target with the unmodified file in `DAT/` and finds
 every unit whose bytes change: the whole file, its header, the entries
 it overlaps. It warns about each one's copies, and `--copies` writes the
-new bytes into them as well. They are the same size, so this is always
-possible. A copy that already holds the new bytes is left alone, so a
-second run is harmless. A target can also be a single archive entry,
+new bytes into them as well. A copy inside a `PRELOAD` pack can take
+new bytes of a different size: the pack is rebuilt
+([below](#size-changes-inside-the-last-sector)). Any other copy is a
+fixed-size slot, so a unit that changed size is only warned about there.
+A copy that already holds the new bytes is left alone, so a second run
+is harmless. A target can also be a single archive entry,
 `<path>#<index>` or `<path>#<name>`.
 
 Tested on a copy of `DATA.CVM`:
@@ -120,6 +125,47 @@ screen, the same mail showed the `MAIL1` copy, and the club names showed
 the `STATIONMES1` copy rather than `MES.PAC`'s
 ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#tested-in-pcsx2)).
 
+## Size changes inside the last sector
+
+The game reads a whole file as `(size + 0x7ff) >> 11` sectors
+(**confirmed**: `CFileManagerRofs::FileUpdateCore` takes the length from
+`ADXF_GetFsizeSct`, `0x307f24`, and reads that many sectors; see
+[`PRELOAD_DIR.md`](PRELOAD_DIR.md#confirmed-from-the-game-code)). A file
+can therefore grow or shrink as long as it ends in the same sector, and
+no other file moves. Only two things change: the file's bytes, and the
+size in its directory record.
+
+The directory record sits in the encrypted table of contents.
+`patch_disc.py` decrypts the one sector holding it, writes the new size
+in both byte orders (ISO9660 `+10` little-endian, `+14` big-endian), and
+encrypts the sector again. The XOR stream depends only on the sector
+number and the key, so encrypting is the same operation as decrypting.
+
+**Empirical:** the bytes after the end of every file, up to the end of its
+last sector, are zero (2,024 of 2,024 files whose size isn't a whole
+number of sectors). A file that changes size is written with zeros up to
+the end of its last sector, so patching the original back gives the
+original image.
+
+This is used for:
+- a whole file given as a target with a new size (still inside its last
+  sector), and
+- `PRELOAD` packs. An entry that changes size, as a `--copies` copy or as
+  a `PRELOAD/<pack>#<entry>` target, makes `patch` rebuild the pack with
+  `pac.build_binpac` ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)).
+  The pack's entries are located through the header it has in the image,
+  so a second run works on a rebuilt pack.
+
+A file or pack that would need another sector is refused. The message
+says how many bytes it is over.
+
+**Tested** on a copy of `DATA.CVM`. A grown `3_1.mbb` (6,672 -> 6,724
+bytes) rebuilt `STATIONMES1.PAC` from 45,264 to 45,328 bytes, and its
+directory record was rewritten. The patched image's decrypted table of
+contents gave the new size, and the pack's entries matched their
+sources. Patching the original `MES.PAC` and `STATIONMES1.PAC` back gave
+a byte-identical `DATA.CVM`, so the re-encrypted sector is exact.
+
 ## Usage
 
 ```bash
@@ -129,19 +175,22 @@ python SRC/patch_disc.py verify modded.iso PARAM/PBDATA_EU.PAC=out/PBDATA_EU.PAC
 python SRC/patch_disc.py locate ISO/DATA.CVM PARAM/PBDATA_EU.PAC      # sector, size, byte range
 python SRC/patch_disc.py copies DAT PARAM/REGULATION.TBB              # where else these bytes are
 python SRC/patch_disc.py patch disc.iso modded.iso PARAM/REGULATION.TBB=out/REGULATION.TBB --copies
+python SRC/patch_disc.py patch disc.iso modded.iso MESSAGE/MES.PAC=out/MES.PAC --copies   # rebuilds PRELOAD packs as needed
+python SRC/preload.py info DAT                                        # each pack's free room
 ```
 
 `patch` copies the image first (use `--in-place` to patch a copy you made
-yourself). It refuses a file of a different size, then re-reads every
-patched range. Several `<path>=<file>` pairs can go in one run. To undo a
-patch, patch the original `DAT/` file back.
+yourself). It refuses a file that would need another sector, then
+re-reads every patched range. Several `<path>=<file>` pairs can go in
+one run. To undo a patch, patch the original `DAT/` files back, including
+any `PRELOAD` packs that `--copies` changed (the run lists them).
 
 Files on the disc outside `DATA.CVM` take a `disc:` prefix and need the
 whole disc image, for example `disc:SLES_541.51=out/SLES_541.51` (the
 executable with its save names moved to another serial, see
 [`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)) or
-`disc:DLL/SAVEPRG.REL=...`. The outer disc is plain ISO9660, so the same
-same-size rule applies.
+`disc:DLL/SAVEPRG.REL=...`. These keep their size: `patch` doesn't
+rewrite the outer disc's directory records (or its UDF copies of them).
 
 `--rename disc:<path>=<NAME>` renames an outer file without changing the
 name's length. The disc is a UDF bridge (volume descriptors `BEA01` and
@@ -207,11 +256,13 @@ patches out of the repo anyway, like everything built from the disc.
 
 ## Still to do
 
-- **Size changes.** Re-lay files in `DATA.ISO`, rewrite the directory
-  records, re-encrypt the table of contents (the XOR stream in
-  `rofs_decrypt.decrypt_sectors` is its own inverse), fix the `CVMH`/`ZONE`
-  lengths, and then the disc's entry for `DATA.CVM`.
-- **Archive repacking** for edits inside BINPAC/KC@P entries that change
-  size, and PRS recompression.
+- **Moving files.** Growth past a file's last sector: re-lay files in
+  `DATA.ISO`, rewrite their directory records (done for one record, see
+  above), fix the `CVMH`/`ZONE` lengths, and then the disc's entry for
+  `DATA.CVM`.
+- **Archive repacking** outside `PRELOAD`: `pac.py` rebuilds any
+  self-describing BINPAC byte for byte, but archives with `.HED` copies of
+  their header, `MES.PAC` and KC@P packs aren't rebuilt by `patch`. PRS
+  recompression.
 - **Compressed images.** Players who keep CSO or CHD images have to
   decompress them before patching. `vcdiff.py` could read CSO directly.

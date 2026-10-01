@@ -1,24 +1,38 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """Reader for the BINPAC (.PAC/.MRG/.HED) and KC@P (.HED + .BIN/.PAC)
-archive formats in DATA.CVM, plus the PRSH (Sega PRS) compression wrapper.
+archive formats in DATA.CVM, plus the PRSH (Sega PRS) compression wrapper,
+and a writer for self-describing BINPACs.
 
 See DOC/PAC_FORMAT.md for the layouts.
 
+The writer lays entries out as the original packer did (empirical, all
+662 self-describing BINPACs in DAT/): the first entry starts at
+(table_end + 4 + align - 1) & ~(align - 1), or right at table_end when
+align is 4; each next one at (offset + size + align) & ~(align - 1), so
+there is always at least one byte of gap; gaps are filled with ASCII '0'
+and the header padding with zeros; the file ends at the last entry's end.
+Names, flags and the extra columns are copied from the original header.
+
 Usage:
-    python pac.py info    <file|dir> ...          # header summary + sanity checks
-    python pac.py list    <file>                  # one line per entry
-    python pac.py extract <file> <outdir> [--prs] # write entries (--prs: expand PRSH)
-    python pac.py unprs   <in> <out>              # expand one PRSH blob
+    python pac.py info      <file|dir> ...          # header summary + sanity checks
+    python pac.py list      <file>                  # one line per entry
+    python pac.py extract   <file> <outdir> [--prs] # write entries (--prs: expand PRSH)
+    python pac.py unprs     <in> <out>              # expand one PRSH blob
+    python pac.py roundtrip <file|dir> ...          # rebuild every BINPAC, compare bytes
+    python pac.py replace   <in> <out> <entry>=<file> ...   # repack with new entries
 
 <file> may be a self-describing .PAC/.MRG, or a detached header (.HED, or a
 KC@P *_HEADER.BIN); the data file is then found next to it by name.
+`roundtrip` and `replace` work on self-describing BINPACs only (not .HED
+headers or KC@P). <entry> is an index or a name.
 """
 import os
 import struct
 import sys
 
 BINPAC_NAMELESS = 0x49421001  # u32 @ +0x08: entries carry a u32 tag, not a name
+GAP_FILL = b"0"               # the packer's filler between entries (34,410 of 34,410 gaps)
 KCAP_MAGIC = b"KC@P"
 PRSH_MAGIC = b"PRSH"
 
@@ -105,6 +119,60 @@ class BinPac:
 
     def table_end(self):
         return 0x20 + self.count * self.stride
+
+
+def binpac_header_size(table_end, align):
+    """Where the packer put the first entry: one spare u32 after the table,
+    then padding to `align`. The 46 archives aligned to 4 have no spare u32."""
+    if align == 4:
+        return table_end
+    return (table_end + 4 + align - 1) & ~(align - 1)
+
+
+def build_binpac(hdr_bytes, blobs):
+    """A self-describing BINPAC holding `blobs`, one per entry of the archive
+    whose header is `hdr_bytes`. Only the header size and each entry's
+    offset and size change; names, flags and extra columns are kept."""
+    h = BinPac(hdr_bytes)
+    if len(blobs) != h.count:
+        raise ValueError("%d blobs for %d entries" % (len(blobs), h.count))
+    end = h.table_end()
+    size = binpac_header_size(end, h.align)
+    out = bytearray(hdr_bytes[:end]) + bytes(size - end)
+    struct.pack_into("<I", out, 0, size)
+    pos = size
+    for i, blob in enumerate(blobs):
+        struct.pack_into("<II", out, 0x20 + i * h.stride, pos, len(blob))
+        out += blob
+        if i < h.count - 1:
+            pos = (pos + len(blob) + h.align) & ~(h.align - 1)
+            out += GAP_FILL * (pos - len(out))
+    return bytes(out)
+
+
+def binpac_blobs(data):
+    """(header, [entry bytes]) of a self-describing BINPAC."""
+    h = BinPac(data[:struct.unpack_from("<I", data)[0]])
+    blobs = []
+    for i, (off, size, _, _) in enumerate(h.entries):
+        if off + size > len(data):
+            raise ValueError("entry %d past EOF" % i)
+        blobs.append(data[off:off + size])
+    return h, blobs
+
+
+def find_entry(h, sel):
+    """Index of the entry named or numbered `sel`."""
+    if sel.isdigit():
+        i = int(sel)
+        if i >= h.count:
+            raise ValueError("entry %d out of range (%d entries)" % (i, h.count))
+        return i
+    hits = [i for i, e in enumerate(h.entries) if e[2].lower() == sel.lower()]
+    if len(hits) != 1:
+        raise ValueError("%s: %s" % (sel, "no such entry" if not hits else
+                                     "%d entries match; use the index" % len(hits)))
+    return hits[0]
 
 
 class KcAtP:
@@ -252,11 +320,65 @@ def cmd_extract(path, outdir, prs):
                                   " (%d PRSH expanded)" % expanded if prs else ""))
 
 
+def cmd_roundtrip(paths):
+    ok = bad = 0
+    for p in _walk(paths):
+        if p.upper().endswith(".HED"):
+            continue                    # detached headers; their data file is checked
+        with open(p, "rb") as f:
+            data = f.read()
+        if data[10:16] != b"BINPAC":
+            continue
+        try:
+            h, blobs = binpac_blobs(data)
+            out = build_binpac(data[:h.header_size], blobs)
+        except (ValueError, struct.error) as e:
+            print("%-50s !! %s" % (p, e))
+            bad += 1
+            continue
+        if out == data:
+            ok += 1
+            print("%-50s %d entries  identical" % (p, h.count))
+            continue
+        bad += 1
+        diff = next((i for i in range(min(len(out), len(data))) if out[i] != data[i]), None)
+        print("%-50s %d entries  !! rebuilt archive differs: %s" % (
+            p, h.count, "first difference at %#x" % diff if diff is not None
+            else "length %d, rebuilt %d" % (len(data), len(out))))
+    print("%d identical, %d differ" % (ok, bad))
+
+
+def cmd_replace(src, dst, pairs):
+    with open(src, "rb") as f:
+        data = f.read()
+    h, blobs = binpac_blobs(data)
+    for pair in pairs:
+        sel, sep, path = pair.partition("=")
+        if not sep:
+            raise SystemExit("expected <entry>=<file>, got %r" % pair)
+        i = find_entry(h, sel)
+        with open(path, "rb") as f:
+            new = f.read()
+        print("#%d %s: %d -> %d bytes" % (i, h.entries[i][2], len(blobs[i]), len(new)))
+        blobs[i] = new
+    out = build_binpac(data[:h.header_size], blobs)
+    with open(dst, "wb") as f:
+        f.write(out)
+    print("%s: %d -> %d bytes (%d -> %d sectors)" % (
+        dst, len(data), len(out), (len(data) + 0x7ff) >> 11, (len(out) + 0x7ff) >> 11))
+
+
 def main(argv):
     if len(argv) < 3:
         print(__doc__)
         return 1
     cmd, args = argv[1], argv[2:]
+    if cmd == "roundtrip":
+        cmd_roundtrip(args)
+        return 0
+    if cmd == "replace" and len(args) >= 3:
+        cmd_replace(args[0], args[1], args[2:])
+        return 0
     if cmd == "info":
         cmd_info(args)
     elif cmd == "list":

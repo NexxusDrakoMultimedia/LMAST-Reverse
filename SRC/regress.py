@@ -47,6 +47,7 @@ def checks():
     """(name, [tool, args...], [required inputs]) for every check."""
     out = [
         ("pac", ["pac.py", "info", "DAT"], ["DAT"]),
+        ("pac_roundtrip", ["pac.py", "roundtrip", "DAT"], ["DAT"]),
         ("tbb", ["tbb.py", "info", "DAT"], ["DAT"]),
         ("tbb_roundtrip", ["tbb.py", "roundtrip", "DAT"], ["DAT"]),
         ("initteam", ["initteam.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),

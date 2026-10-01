@@ -309,17 +309,18 @@ header. The archive keeps its size and every other entry stays where it
 was. A file too big for its slot is refused, and the message says how
 many bytes over it is.
 
-A grown file's `PRELOAD` copies can't follow, because those packs align
-entries to `0x40` and leave no room. `patch_disc.py --copies` notices that
-the entry changed size and warns that the copy keeps the old text, rather
-than writing the first *old-size* bytes of the new file into it. That
-would leave a copy whose header promises more records than it holds.
-**The stale copy is still read**: every `PRELOAD` copy is what the game
-reads while its pack is loaded ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)). The
-old text then shows on those screens. For example, a grown `1_1.mbb` shows
-its old text everywhere, because `STATIONMES` stays loaded all game. Only
-grow a file that `python SRC/preload.py who DAT <name>` says is in no
-pack, until the packs can be rebuilt.
+A grown file's `PRELOAD` copies follow too. Every copy is what the game
+reads while its pack is loaded ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)), so a
+stale one would show the old text on those screens: a grown `1_1.mbb`
+would show its old text everywhere, because `STATIONMES` stays loaded all
+game. The packs align entries to `0x40` and have no room inside, so
+`patch_disc.py --copies` rebuilds each pack holding a grown file, moving
+its later entries. The pack may grow to the end of its last sector,
+because the game reads whole sectors
+([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)). `python SRC/preload.py
+info DAT` gives each pack's room (4 to 2,032 bytes, median 1,244), and
+`preload.py who DAT <name>` lists the packs holding a file. A file whose
+pack would need another sector is refused.
 
 **Confirmed in the game (PCSX2).** The English subject (`563:11000`) and
 body (`563:1000`) of the first mail in a new game, "Welcome to Football
@@ -347,7 +348,9 @@ is in [`PRELOAD_DIR.md`](PRELOAD_DIR.md#which-copy-the-game-reads).
 **Growth tested on a copy of `DATA.CVM`.** Growing `1_3.mbb` by 4 bytes
 and `487_1.mbb` by 12 changed only those two entries. `mbb.py info` and
 `pac.py info` pass on the result. `patch --copies` wrote `MES.PAC`, warned
-about `STATIONMES3.PAC#0`, and left it byte-identical.
+about `STATIONMES3.PAC#0`, and left it byte-identical. (That was before
+packs could be rebuilt. Now `--copies` rebuilds the pack; see
+[`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack) for that test.)
 
 **Growth confirmed in the game (PCSX2).** The rival's lines 102 and 104
 were rewritten about 60% longer. That made `487_1.mbb` grow from 9,636 to

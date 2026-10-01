@@ -58,8 +58,11 @@ Each stage depends on the one before it.
    size. *Started:* `SRC/patch_disc.py` patches same-size files straight into
    the disc image, since only the table of contents is encrypted
    ([`REBUILD.md`](DOC/REBUILD.md)). A message file can also grow into
-   the spare room of its `MES.PAC` slot. Other size changes and repacking
-   are still to do.
+   the spare room of its `MES.PAC` slot. A file can change size inside its
+   last sector (its directory record is rewritten and re-encrypted), and
+   `PRELOAD` packs are rebuilt around grown entries with `pac.py`'s BINPAC
+   writer. Moving files, and repacking other archives on the disc, are
+   still to do.
 5. **Edit.** GUI tools on top of the writers, organised by what a player of
    the game would recognise (a club, a player, a season) rather than by file.
    The GUI checks values against the documented ranges and cross-references

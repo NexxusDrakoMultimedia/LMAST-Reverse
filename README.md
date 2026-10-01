@@ -111,7 +111,7 @@ disassemble as unrelated MIPS instructions.
 
 | Tool | Formats | Doc |
 |---|---|---|
-| [`pac.py`](SRC/pac.py) | BINPAC `.PAC`/`.MRG`/`.HED`, KC@P headers, PRSH (Sega PRS) | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) |
+| [`pac.py`](SRC/pac.py) | BINPAC `.PAC`/`.MRG`/`.HED`, KC@P headers, PRSH (Sega PRS); rebuilds BINPACs byte for byte (`roundtrip`, `replace`) | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) |
 | [`tbb.py`](SRC/tbb.py) | `TBB1`/`TBL1` parameter tables; reads and writes (all 70 files round-trip) | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) |
 | [`packdata.py`](SRC/packdata.py) | `etc::PackData` inside KC@P entries (face packs, licensed kits, edit face, cut-ins); `names` lists each head's model and texture name | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) |
 | [`pbdata.py`](SRC/pbdata.py) | player database `PBDATA_*.PAC`: 27,950 players, 3,000 managers, 1,000 scouts (bit-packed records); list, show, CSV; writes edits (`set`, CSV `import`; every record round-trips) | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) |
@@ -219,9 +219,9 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back in place (same size only), and files outside `DATA.CVM` (`disc:SLES_541.51`, renamed with `--rename`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), finds where each file lives, and checks an image holds given bytes |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back in place (a file may change size inside its last sector, and `PRELOAD` packs are rebuilt around entries that change size), and files outside `DATA.CVM` (`disc:SLES_541.51`, renamed with `--rename`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), finds where each file lives, and checks an image holds given bytes |
 
-| [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
+| [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
 
 ```bash
 python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30
@@ -275,7 +275,8 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - `save.py` loads the game's serializers with `sles_disasm.py` and
   `snr2.py`.
 - `patch_disc.py` uses `extract_disc.py` and `rofs_decrypt.py` to find files
-  in the image.
+  in the image and rewrite directory records, and `pac.py` to rebuild
+  `PRELOAD` packs.
 - `preload.py` uses `pac.py` for the packs and `MES.PAC`.
 
 The disassemblers connect to the format tools through the docs. The usual
@@ -302,12 +303,12 @@ workflow is:
 | Doc | Covers |
 |---|---|
 | [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | repo layout, regenerating `DATA.ISO` |
-| [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc (same-size in-place patching, copies), sharing mods as xdelta patches, what's still needed for size changes |
+| [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc (in-place patching, size changes inside a file's last sector, copies and rebuilt `PRELOAD` packs), sharing mods as xdelta patches, what's still needed for size changes |
 | [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, the save-name serial |
 | [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | ROFS key recovery in PCSX2 |
 | [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format, the SN DLL loader, `SLES_541.51`'s imports, which overlay each sequencer module lives in, the wild-card module |
 | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) | `SEQ/*.SQB` and `PSC*.PAC` sequencer scripts: command encoding, argument types, labels, the root and PwkScript command sets, global memory |
-| [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH |
+| [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH, and how the packer laid BINPACs out (the writer) |
 | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) | TBB1/TBL1 tables, symbol recovery from `SLES_541.51` |
 | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) | textures and GS swizzling |
 | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) | `DAT/CSE` 2D layouts |
@@ -318,7 +319,7 @@ workflow is:
 | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
 | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) | club kits: `UNIFORM_LIST` bit layout, kit designs and colours, the 96 colours, the `COLOR_TBL` clash table |
 | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) | `DAT/0SYSTEM`: UI colours, crest/badge/sponsor texture packs and how an id picks an entry, fonts by language, icons, leftovers |
-| [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md) | `DAT/PRELOAD`: the bulk-load packs, the load lists and folder ids, and which copy of a file the game reads |
+| [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md) | `DAT/PRELOAD`: the bulk-load packs, the load lists and folder ids, and which copy of a file the game reads, and rebuilding a pack |
 | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) | `DAT/STADIUM`: the 10 stadium models, `.PRI` draw priorities, crowds, adverts, `BUILD_STADIUM` |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |
 | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) | the player database: header, bit-packed player/manager/scout records, ability and money tables |

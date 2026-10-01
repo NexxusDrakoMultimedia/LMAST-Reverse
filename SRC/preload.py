@@ -26,7 +26,10 @@ pack and never reach the disc. See DOC/PRELOAD_DIR.md.
 
 `info` checks every pack: it is one the code loads, every entry's folder
 is known, its source file exists and holds the same bytes, and a
-language-digit entry ends in the pack's own digit. `lists` prints every
+language-digit entry ends in the pack's own digit. It also gives each
+pack's free room: the bytes left in its last sector, which is how far a
+rebuilt pack may grow (the game reads whole sectors, ADXF_GetFsizeSct;
+patch_disc.py --copies rebuilds packs, see DOC/PRELOAD_DIR.md). `lists` prints every
 load list that names a PRELOAD pack, from the executable and overlays.
 `who` finds the packs holding a file and says what loads them.
 
@@ -52,6 +55,7 @@ MSG_FOLDER = 3          # messages are MES.PAC entries, not loose files
 
 KIND = {0: "file", 1: "cse", 2: "msg", 3: "texlist", 4: "commontex", 5: "end"}
 REC_SIZE = 0x28
+SECTOR = 0x800          # a whole file is read as (size + 0x7ff) >> 11 sectors
 
 # pack name (no digit) -> (language digit?, what loads it). Addresses of
 # the load list and of the function that returns it; see PRELOAD_DIR.md.
@@ -199,7 +203,8 @@ def cmd_info(dat):
                 n_same += 1
         if what is None:
             n_unloaded += 1
-        line = "%-26s %4d entries  %s" % (fname, len(entries), what or "not loaded by the code")
+        line = "%-26s %4d entries %5d free  %s" % (fname, len(entries), -len(data) % SECTOR,
+                                                   what or "not loaded by the code")
         if problems:
             line += "  !! " + "; ".join(problems[:3])
             if len(problems) > 3:

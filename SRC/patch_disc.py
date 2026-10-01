@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """Patch edited game files into the disc image, DATA.CVM or DATA.ISO, for
-Let's Make a Soccer Team! (PS2). Same-size files only.
+Let's Make a Soccer Team! (PS2). Files keep their sectors: a file may
+change size only inside its last sector.
 
 DATA.CVM is a ROFSBLD container: a CVMH/ZONE header, then an ISO9660 image
 whose table of contents (the volume descriptor and directory sectors) is
@@ -39,10 +40,16 @@ Usage:
     python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
-`patch` refuses a replacement whose size differs from the original (that
-needs a rebuilt table of contents, which isn't supported yet) and re-reads
-every patched range afterwards. Keep an unmodified copy of the disc:
---in-place cannot be undone except by patching the original files back.
+`patch` re-reads every patched range afterwards. Keep an unmodified copy
+of the disc: --in-place cannot be undone except by patching the original
+files back.
+
+Size changes: the game reads a whole file as (size + 0x7ff) >> 11 sectors
+(ADXF_GetFsizeSct, used at 0x307f24), so a file may grow or shrink inside
+its last sector. `patch` then also rewrites the size in the file's
+directory record, decrypting and re-encrypting that one sector. A file
+that needs more sectors is refused (that needs files moved, which isn't
+supported yet). Files outside DATA.CVM keep their size.
 
 Copies: the same data is often on the disc more than once. PRELOAD/*.PAC
 bundles hold copies of loose files (REGULATION.TBB is in all seven
@@ -50,16 +57,23 @@ SIMFILE packs) and of MES.PAC entries, and a .HED repeats its archive's
 header. `patch` indexes DAT/ (or --dat) and, for every file, header or
 entry whose bytes the edit changes, lists the other places holding the
 same bytes. Those with the same name are copies the game may read
-instead; --copies writes the new bytes into them too (they are the same
-size, so this is safe). Identical data under other names (shared stadium
-parts, say) is only reported.
+instead; --copies writes the new bytes into them too. Identical data
+under other names (shared stadium parts, say) is only reported.
+
+PRELOAD packs: an entry that changes size (a message file mbb.py grew
+into its MES.PAC slot, say) is written by rebuilding its pack with
+pac.build_binpac, which moves the later entries; the pack may grow to the
+end of its last sector. Entries of a PRELOAD pack, as copies or as
+<path>#<entry> targets, are located through the header the pack has in
+the image now, so a second run works on a rebuilt pack. Any other copy
+is a fixed-size slot and keeps the old data, with a warning.
 """
 import os
 import shutil
 import struct
 import sys
 
-from extract_disc import walk_iso, IsoEntry, SECTOR, PVD_SECTOR
+from extract_disc import walk_iso, IsoEntry, SECTOR, PVD_SECTOR, DIR_FLAG
 import rofs_decrypt
 
 DISC = "disc:"
@@ -130,7 +144,7 @@ class Image:
                 base = cvm_base + hdr["iso_start_sector"] * SECTOR
                 shift = hdr["iso_zone_sector"] - hdr["iso_start_sector"]
                 view = SectorView(f, base, key if hdr["encrypted"] else None, shift)
-            self.iso_base = view.base
+            self.iso_base, self.key, self.zone_shift = view.base, view.key, view.zone_shift
             try:
                 self.files = {e.path.upper(): e for e in walk_iso(view) if not e.is_dir}
             except ValueError as e:
@@ -157,6 +171,10 @@ class Image:
         if entry.path.startswith(DISC):
             return entry.extent * SECTOR
         return self.iso_base + entry.extent * SECTOR
+
+    def toc(self, f):
+        """View of the DATA.CVM image that decrypts table-of-contents reads."""
+        return SectorView(f, self.iso_base, self.key, self.zone_shift)
 
 
 class _Offset:
@@ -422,6 +440,127 @@ def plan_rename(f, img, target, new):
     return jobs
 
 
+# --- size changes inside the last sector --------------------------------------
+
+def sectors(size):
+    return (size + SECTOR - 1) // SECTOR
+
+
+def to_sector_end(data):
+    """`data` zero-padded to the end of its last sector. Every file's last
+    sector ends in zeros (2,024 of 2,024 in DATA.CVM), so a file that
+    changes size is written with them, and patching the original back
+    gives the original image."""
+    return data + bytes(-len(data) % SECTOR)
+
+
+def plan_resize(f, img, path, new_size):
+    """Job rewriting a DATA.CVM file's size in its directory record. Only
+    a size inside the file's last sector is allowed: the game reads a
+    whole file as (size + 0x7ff) >> 11 sectors (ADXF_GetFsizeSct, used by
+    CFileManagerRofs::FileUpdateCore at 0x307f24), and nothing else moves.
+    The sector is decrypted, edited and encrypted again (the XOR stream is
+    its own inverse)."""
+    from extract_disc import _parse_record
+    e = img.entry(path)
+    if e.path.startswith(DISC):
+        raise ValueError("%s: files outside DATA.CVM can't change size" % path)
+    if sectors(new_size) != sectors(e.size):
+        raise ValueError("%s: %d bytes need %d sectors, but the file has %d; moving files "
+                         "isn't supported yet" % (path, new_size, sectors(new_size), sectors(e.size)))
+    view = img.toc(f)
+    parent = e.path.rpartition("/")[0].upper()
+    if parent:
+        d = next(x for x in walk_iso(img.toc(f)) if x.is_dir and x.path.upper() == parent)
+        dext, dsize = d.extent, d.size
+    else:
+        view.seek(PVD_SECTOR * SECTOR)
+        _, dext, dsize, _, _, _ = _parse_record(view.read(SECTOR), 156)
+    for sec in range(dext, dext + sectors(dsize)):
+        view.seek(sec * SECTOR)
+        buf = bytearray(view.read(SECTOR))
+        pos = 0
+        while pos < SECTOR and buf[pos]:
+            rec_len, ext, size, flags, name, _ = _parse_record(buf, pos)
+            if ext == e.extent and not flags & DIR_FLAG:
+                if size != e.size:
+                    raise ValueError("%s: directory record says %d bytes" % (path, size))
+                struct.pack_into("<I", buf, pos + 10, new_size)    # both-endian u32
+                struct.pack_into(">I", buf, pos + 14, new_size)
+                data = bytes(buf)
+                if img.key is not None:
+                    data = rofs_decrypt.decrypt_sectors(data, sec + img.zone_shift, SECTOR, img.key)
+                return Job(None, img.iso_base + sec * SECTOR, data,
+                           "%s (directory record)" % e.path, "size %d -> %d" % (e.size, new_size))
+            pos += rec_len
+    raise ValueError("%s: no directory record found" % path)
+
+
+# PRELOAD packs are the only archives that can be rebuilt with entries
+# moved: the game finds their entries through the pack's own header
+# (CFcEuro_FileResource::Execute, 0x10d848-0x10d9dc). MES.PAC entries are
+# found by the executable too, and other archives have .HED copies of
+# their header, so those keep the same-size rule.
+REPACKABLE = "PRELOAD/"
+
+
+def repackable(file):
+    return norm(file).startswith(REPACKABLE)
+
+
+class PackEdits:
+    """Entry edits for PRELOAD packs, collected so that each pack is written
+    once, located by the header it has in the image now (an earlier run
+    may have rebuilt it), and rebuilt if an entry changes size."""
+
+    def __init__(self):
+        self.packs = {}
+
+    def add(self, file, index, new, old, label, why):
+        pack = self.packs.setdefault(norm(file), {"file": file, "edits": {}})
+        prev = pack["edits"].get(index)
+        if prev is not None and prev[0] != new:
+            raise ValueError("%s gets two different new contents (%s, %s)" % (label, prev[3], why))
+        pack["edits"][index] = (new, old, label, why)
+
+    def plan(self, f, img):
+        import pac
+        jobs, notes = [], []
+        for pack in self.packs.values():
+            file = pack["file"]
+            e = img.entry(file)
+            cur = read_at(f, img, file, 0, e.size)
+            h, blobs = pac.binpac_blobs(cur)
+            todo = []
+            for i, (new, old, label, why) in sorted(pack["edits"].items()):
+                if blobs[i] == new:
+                    notes.append("note: %s already holds the new bytes" % label)
+                elif old is not None and blobs[i] != old:
+                    notes.append("note: %s holds neither the original nor the new bytes of "
+                                 "%s; left alone" % (label, why))
+                else:
+                    todo.append((i, new, label, why))
+            if all(len(new) == len(blobs[i]) for i, new, _, _ in todo):
+                for i, new, label, why in todo:
+                    jobs.append(Job(file, h.entries[i][0], new, label, why))
+                continue
+            for i, new, label, why in todo:
+                notes.append("note: %s %d -> %d bytes (%s)" % (label, len(blobs[i]), len(new), why))
+                blobs[i] = new
+            out = pac.build_binpac(cur[:h.header_size], blobs)
+            if sectors(len(out)) > sectors(e.size):
+                raise ValueError(
+                    "%s: rebuilt it is %d bytes, %d over the end of its last sector (%d bytes "
+                    "free); moving files isn't supported yet" % (
+                        file, len(out), len(out) - sectors(e.size) * SECTOR,
+                        sectors(e.size) * SECTOR - e.size))
+            jobs.append(Job(file, 0, to_sector_end(out), file,
+                            "rebuilt, %d -> %d bytes" % (e.size, len(out))))
+            if len(out) != e.size:
+                jobs.append(plan_resize(f, img, file, len(out)))
+        return jobs, notes
+
+
 def resolve_target(img, index, target):
     """(file, offset in file, size, label) for 'PATH' or 'PATH#entry'."""
     if "#" in target:
@@ -438,15 +577,16 @@ def read_at(f, img, file, off, size):
     return f.read(size)
 
 
-def plan_copies(img, index, f, file, off, old, new, write_copies):
+def plan_copies(img, index, f, file, off, old, new, write_copies, packs):
     """Copy jobs (with write_copies) and notes for every unit of `file` that
     lies inside [off, off + len(new)) and differs between `old` (the DAT
-    original) and `new`.
+    original) and `new`. Copies inside PRELOAD packs go to `packs` instead.
 
     Units are DAT's original entries, so an entry that the new file moved
     or resized (mbb.py grows message files into their slot) is compared
-    over its old range only. Copying that range would write a cut-off
-    entry into a same-size copy, so such entries are reported instead."""
+    over its old range only, and its new bytes are taken from the new
+    header. A PRELOAD pack holding a copy is rebuilt around the new size;
+    any other copy is a fixed-size slot, so it is reported instead."""
     import pac
     moved = {}
     if off == 0 and new[10:16] == b"BINPAC":
@@ -457,15 +597,18 @@ def plan_copies(img, index, f, file, off, old, new, write_copies):
     jobs, notes, seen = [], [], set()
     for u in index.units(file):
         lo, hi = u.off - off, u.off - off + u.size
-        if lo < 0 or hi > len(new) or old[lo:hi] == new[lo:hi]:
+        if lo < 0 or hi > len(old):
             continue
-        if u.kind == "entry" and moved.get(u.index, (u.off, u.size)) != (u.off, u.size):
-            now = moved[u.index]
-            for c in index.copies(u)[0]:
-                notes.append("warning: %s is now %d bytes (was %d); its copy %s is a "
-                             "fixed-size slot, so it keeps the old data" % (
-                                 u.label, now[1], u.size, c.label))
+        if lo == 0 and hi == len(old):
+            blob = new                  # the target itself, whatever its new size
+        elif u.kind == "entry" and u.index in moved:
+            o, s = moved[u.index]
+            blob = new[o - off:o - off + s]
+        else:
+            blob = new[lo:hi]
+        if blob == old[lo:hi]:
             continue
+        resized = len(blob) != u.size
         named, other = index.copies(u)
         for c in named:
             if (c.file.upper(), c.off) in seen:
@@ -474,15 +617,23 @@ def plan_copies(img, index, f, file, off, old, new, write_copies):
             if not write_copies:
                 notes.append("warning: %s changes, but %s holds a copy of it" % (u.label, c.label))
                 continue
+            if c.kind == "entry" and repackable(c.file):
+                packs.add(c.file, c.index, blob, old[lo:hi], c.label, "copy of " + u.label)
+                continue
+            if resized:
+                notes.append("warning: %s is now %d bytes (was %d); its copy %s is a "
+                             "fixed-size slot, so it keeps the old data" % (
+                                 u.label, len(blob), u.size, c.label))
+                continue
             held = read_at(f, img, c.file, c.off, c.size)
-            if held == new[lo:hi]:
+            if held == blob:
                 notes.append("note: %s already holds the new bytes" % c.label)
                 continue
             if held != old[lo:hi]:
                 notes.append("note: %s holds neither the original nor the new %s; left alone"
                              % (c.label, u.label))
                 continue
-            jobs.append(Job(c.file, c.off, new[lo:hi], c.label, "copy of " + u.label))
+            jobs.append(Job(c.file, c.off, blob, c.label, "copy of " + u.label))
         if other:
             notes.append("note: %s has the same bytes as %d unit%s with other names (%s%s); "
                          "not treated as copies" % (
@@ -550,26 +701,54 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=()):
         raise SystemExit("--copies needs the DAT index (--dat)")
 
     # Plan everything against the unmodified image before copying it.
-    jobs, notes = [], []
+    jobs, notes, packs = [], [], PackEdits()
     with open(image, "rb") as f:
         for target, src, data in pairs:
             file, off, size, label = resolve_target(img, index, target)
-            if len(data) != size:
+            if "#" in target and repackable(file):
+                # Located by the pack's current header, and may change size.
+                u = index.resolve(target)
+                packs.add(file, u.index, data, None, label, src)
+            elif len(data) == size:
+                jobs.append(Job(file, off, data, label, src))
+            elif "#" not in target and not file.startswith(DISC) and \
+                    sectors(len(data)) == sectors(size):
+                jobs.append(Job(file, 0, to_sector_end(data), label, src))
+                jobs.append(plan_resize(f, img, file, len(data)))
+            elif "#" in target:
                 raise SystemExit(
-                    "%s is %d bytes but %s is %d bytes on the disc. Only same-size "
-                    "files can be patched in place; a size change needs a rebuilt "
-                    "table of contents, which isn't supported yet." % (src, len(data), label, size))
-            jobs.append(Job(file, off, data, label, src))
+                    "%s is %d bytes but %s is %d bytes. Only entries of PRELOAD packs can "
+                    "change size; other archives keep their layout." % (
+                        src, len(data), label, size))
+            else:
+                raise SystemExit(
+                    "%s is %d bytes but %s is %d bytes on the disc. A file may only change "
+                    "size inside its last sector (%d bytes free here); moving files isn't "
+                    "supported yet." % (src, len(data), label, size, sectors(size) * SECTOR - size))
             # Files outside DATA.CVM aren't in DAT, and nothing there copies them.
             if index is not None and not file.startswith(DISC):
                 # Changes are judged against the unmodified data in DAT, so a
                 # second run on an already patched image still finds them.
                 with open(os.path.join(index.dat, file), "rb") as g:
-                    g.seek(off)
-                    old = g.read(size)
-                cjobs, cnotes = plan_copies(img, index, f, file, off, old, data, write_copies)
+                    if "#" in target:
+                        u = index.resolve(target)
+                        off = u.off
+                        g.seek(off)
+                        old = g.read(u.size)
+                    else:
+                        off, old = 0, g.read()
+                cjobs, cnotes = plan_copies(img, index, f, file, off, old, data,
+                                            write_copies, packs)
                 jobs += cjobs
                 notes += cnotes
+        busy = {norm(j.file) for j in jobs if j.file is not None}
+        clash = busy & set(packs.packs)
+        if clash:
+            raise SystemExit("%s: written whole and as single entries in the same run; "
+                             "patch one or the other" % ", ".join(sorted(clash)))
+        pjobs, pnotes = packs.plan(f, img)
+        jobs += pjobs
+        notes += pnotes
         for r in renames:
             target, _, new = r.partition("=")
             jobs += plan_rename(f, img, target, new)
@@ -599,9 +778,15 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=()):
                 target_path, j.label, j.why, changed, "" if changed else " (no change)"))
     for n in notes:
         print(n)
+    resized = sum(1 for j in jobs if j.label.endswith("(directory record)"))
+    toc = []
+    if resized:
+        toc.append("%d directory record%s resized" % (resized, "" if resized == 1 else "s"))
+    if renames:
+        toc.append("outer directory records renamed")
     print("%s: %d write%s in place; %s" % (
         target_path, len(jobs), "" if len(jobs) == 1 else "s",
-        "outer directory records renamed" if renames else "table of contents untouched"))
+        ", ".join(toc) or "table of contents untouched"))
 
 
 def cmd_verify(image, args):

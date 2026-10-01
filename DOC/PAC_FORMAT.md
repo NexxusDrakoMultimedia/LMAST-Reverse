@@ -93,14 +93,40 @@ stride = 4*(version + 2)                     (tagged: name_len is forced to 4)
 - The entry table is zero-padded up to `header_size`. The first entry's
   offset always equals `header_size`, and every offset is a multiple of
   `align`.
-- In all 309 `.MRG`s the packer places data with
-  `(pos + align) & ~(align - 1)`, so there is always at least one byte of
-  gap:
-  - `header_size = (0x20 + N*stride + 4 + align - 1) & ~(align - 1)`
-    (the table is followed by one zero u32, then the padding);
-  - `offset[i+1] = (offset[i] + size[i] + align) & ~(align - 1)`, so
-    zero-size `dummy.bin` slots still take one alignment unit;
-  - the file ends exactly at `offset[N-1] + size[N-1]`.
+### How the packer laid them out (empirical)
+
+All 662 self-describing BINPACs (every `.PAC` and `.MRG`; `.HED` files
+are copies of a header) follow one layout rule, so a rebuilt archive is
+byte-identical to the original. The packer places data with
+`(pos + align) & ~(align - 1)`, so there is always at least one byte of
+gap:
+
+- `header_size = (0x20 + N*stride + 4 + align - 1) & ~(align - 1)`: the
+  table is followed by one zero u32, then zero padding. The 46 archives
+  aligned to 4 (the tagged motion packs, `STADIUM/ADT_*` and the two
+  `AUD_*_CLUT_CMN`) are the exception: their first entry starts right
+  after the table, `header_size = 0x20 + N*stride`.
+- `offset[i+1] = (offset[i] + size[i] + align) & ~(align - 1)`, so
+  zero-size `dummy.bin` slots still take one alignment unit.
+- The gap after each entry is filled with ASCII `'0'` (`0x30`): 34,410 of
+  34,410 gaps. The header padding is zeros.
+- The file ends exactly at `offset[N-1] + size[N-1]`.
+
+### Writing
+
+`pac.build_binpac(header, blobs)` lays out new entry data by these rules.
+Names, flags and the extra columns are copied from the original header;
+only the header size and each entry's offset and size change.
+`python SRC/pac.py roundtrip DAT` rebuilds all 662 archives from their own
+entries and gets the same bytes back (in `regress.py` as
+`pac_roundtrip`). `pac.py replace` puts new entries into an archive.
+
+A rebuilt archive is only safe where nothing else holds its offsets. A
+`.HED` copy of the header would go stale, `MES.PAC` entries are also
+found through the executable, and some archives are read entry by entry
+by offset. `patch_disc.py` therefore rebuilds only `PRELOAD` packs,
+whose entries are found through the pack's own header
+([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)).
 
 ### Variants seen
 
@@ -201,6 +227,8 @@ python SRC/pac.py info DAT                                   # check every archi
 python SRC/pac.py list DAT/PRELOAD/GAMEFILE0.PAC              # entries + payload magic
 python SRC/pac.py extract DAT/PLAYER/NUMBER_00.HED out/       # .HED -> reads NUMBER_00.PAC
 python SRC/pac.py extract DAT/PLAYER/FC_EURO_FACEPACK_01.HED out/ --prs   # expand PRSH
+python SRC/pac.py roundtrip DAT                              # rebuild every BINPAC, compare
+python SRC/pac.py replace DAT/PRELOAD/STATIONMES1.PAC out/STATIONMES1.PAC 3_1.mbb=out/3_1.mbb
 ```
 
 Extracted files are named `<index>_<name>`, or `<index><.ext>` when only an

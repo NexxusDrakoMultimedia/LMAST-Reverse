@@ -41,9 +41,9 @@ rest of its 0x800-aligned slot in MES.PAC, and only its size in the
 archive header changes (the loader reads (size >> 11) + 1 sectors,
 0x10cf1c). A file too big for its slot is refused. The output always has
 MES.PAC's size and every entry keeps its offset, so patch_disc.py can
-write it to a disc; --copies updates the PRELOAD copies of files that
-kept their size and warns about copies of grown files, which keep the
-old text.
+write it to a disc; --copies updates the PRELOAD copies, rebuilding a
+pack around a grown file as long as the pack stays inside its last
+sector (DOC/PRELOAD_DIR.md#rebuilding-a-pack).
 
 Languages (FC_EURO_LOCALIZE): 0 Japanese, 1 English, 2 French, 3 German,
 4 Italian, 5 Spanish, 6 unused slot (mostly English).
@@ -428,8 +428,8 @@ def apply_edits(pac_path, out_path, edits):
     0x800 boundaries and the gap after each is '0' filler, and the game
     reads (size >> 11) + 1 sectors from the header's size (0x10cf1c), so
     only the entry's size field changes. The archive keeps its size and
-    every other entry stays put, but a PRELOAD copy of a grown file can't
-    be updated (patch_disc.py warns). A file that doesn't fit its slot is
+    every other entry stays put. patch_disc.py --copies rebuilds the
+    PRELOAD packs holding a grown file. A file that doesn't fit its slot is
     reported and nothing is written."""
     if os.path.abspath(out_path) == os.path.abspath(pac_path):
         raise SystemExit("write to a new file, not over %s" % pac_path)
@@ -497,8 +497,9 @@ def apply_edits(pac_path, out_path, edits):
     print("%d messages in %d files -> %s" % (
         sum(len(v) for v in changed.values()), len(changed), out_path))
     if grown:
-        print("%d file%s grew: patch_disc.py can't update PRELOAD copies of those, "
-              "and says which it leaves alone" % (grown, "" if grown == 1 else "s"))
+        print("%d file%s grew: patch_disc.py --copies rebuilds the PRELOAD packs holding "
+              "copies of those (python SRC/preload.py who DAT <name>)"
+              % (grown, "" if grown == 1 else "s"))
 
 
 def cmd_set(pac_path, out_path, cat, rid, lang, text, copy):

@@ -51,9 +51,16 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 - [x] Confirm a grown message file in PCSX2: the rival's Big Bang lines,
       `487_1.mbb` grown 9,636 -> 9,704 bytes (same 5 sectors, so the new
       header size itself isn't exercised)
-- [ ] Rebuild `PRELOAD` packs so grown files' copies can follow. Needed:
-      the copies are read, so a grown file whose copy stays old shows old
-      text on those screens (`preload.py who` lists the packs)
+- [x] Rebuild `PRELOAD` packs so grown files' copies can follow:
+      `patch_disc.py --copies` rebuilds each pack holding a grown file
+      (`pac.build_binpac`, the original packer's layout; all 662 BINPACs
+      round-trip, `pac_roundtrip` in `regress.py`). A pack may grow to the
+      end of its last sector (the game reads `(size + 0x7ff) >> 11`
+      sectors, `0x307f24`), and its directory record is rewritten and
+      re-encrypted. Tested on a copy of `DATA.CVM`, reverts byte-exact
+      (`DOC/PRELOAD_DIR.md#rebuilding-a-pack`)
+- [ ] Load a rebuilt pack in PCSX2: a grown club name in
+      `STATIONMES1.PAC` (entries moved, directory record changed)
 - [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`,
       and the EVENT `+0x68` timing enum (values 0–21, scan at `0x12df08`)
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)
@@ -424,7 +431,12 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
 - [ ] Size changes: re-lay `DATA.ISO`, rewrite directory records,
       re-encrypt the table of contents, fix the `CVMH`/`ZONE` lengths and the
       disc's `DATA.CVM` entry
-- [ ] BINPAC/KC@P repacking and PRS recompression for entries that change size
+- [x] BINPAC writer: `pac.py roundtrip` rebuilds all 662 self-describing
+      BINPACs byte for byte, `replace` repacks with new entries;
+      `patch_disc.py` rebuilds `PRELOAD` packs and lets a file change
+      size inside its last sector (directory record re-encrypted)
+- [ ] Repacking where something else holds the offsets (`.HED` copies,
+      `MES.PAC`), KC@P repacking, and PRS recompression
 - [x] xdelta patches: `SRC/vcdiff.py` makes and applies VCDIFF (RFC 3284)
       in plain Python; the Terry mod is a 10,642-byte patch that applies to
       a byte-identical image
