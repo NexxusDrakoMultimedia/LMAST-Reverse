@@ -91,7 +91,7 @@ Where each folder stands (October 2026):
 | Folder | Contents | Status |
 |---|---|---|
 | `0SYSTEM/` | `TBB`, `PAC`, `SVR`/`SVP`, `ICO`, `DAT` | surveyed in [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md), `system.py`: loader of every file, the colour table, the 8 texture packs and their index rules, fonts by language; `DETAILFLAG` meaning and colour uses unknown |
-| `ACROBATA/` | `PAC`, `DAT` | not studied |
+| `ACROBATA/` | `PAC`, `DAT` | surveyed in [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md), `acrobata.py`: the 875 Acroarts scenes (`ABDA` + `ABRS`), their `POF0` pointers and 4,841 Ninja and texture resources check; the executable's index copy and scene-id table decoded; the `ABDT` scene layout not decoded |
 | `BG/` | 304 `MRG`, `HED`, `SVR`, Ninja `SNO`/`SNM`/`SNJ` | archives, textures, Z buffers and models done ([`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
 | `CSE/` | 490 `CSP`, `CSE`, `SVR`, a few others | screen layouts done ([`CSE_FORMAT.md`](DOC/CSE_FORMAT.md)) |
 | `EMBLEM/` | `TBB`, `PAC`/`HED` | surveyed in [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md), `emblem.py`: loaders of every file, the 96-colour palette and its maps, which `EDIT_EMBLEM`/`EDIT_FLAG` table holds what and how they line up with the part packs, what the game does with the 3 short tables; preset and crest record fields and `EDIT_PLAYER.TBB` not decoded |

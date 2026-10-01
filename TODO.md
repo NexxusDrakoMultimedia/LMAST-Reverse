@@ -258,7 +258,15 @@ contents and three tables are still undecoded.
 Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
 "unknown binary".
 
-- [ ] `ACROBATA/ACROBATAPACKFILE.PAC` (the folder is marked "not studied")
+- [x] `ACROBATA/ACROBATAPACKFILE.PAC`: 875 Acroarts scenes, each an `ABDA`
+      scene part and an `ABRS` part of wrapped Ninja files and textures
+      (all 4,841 parse); `POF0` pointer lists decoded; the executable's
+      own copy of the pack index (`SLES 0x3a3b08`) and its scene-id table
+      (`0x55d7a8`, 719 ids, 26 by language). `DOC/ACROBATA_DIR.md`,
+      `SRC/acrobata.py` (`info`, `scenes`; in `regress.py`)
+- [ ] `ACROBATA/` leftovers: the `ABDT` scene layout, `ABRS` header table
+      and `+0x14`, which code plays which scene id. A rebuilt pack whose
+      entries move needs `SLES 0x3a3b08` patched (no tool does that yet)
 - [x] `STADIUM/*.PRI`: 44 × u32 part draw priorities per model, drawn in
       two passes (0–49, 50–100). `DOC/STADIUM_DIR.md`, `SRC/stadium.py`
       (in `regress.py`)
@@ -299,7 +307,8 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       plus the `CVS/` metadata: `DOC/EMBLEM_DIR.md`, `NEWS_DIR.md`,
       `SOUND_DIR.md`, `SEQ_DIR.md`, `TEST3D_DIR.md`, `CVS_DIR.md`, with
       `emblem.py`, `news.py` and `cvs.py` (all in `regress.py`)
-- [ ] Folder doc for `ACROBATA/` (with `ACROBATAPACKFILE.PAC` above)
+- [x] Folder doc for `ACROBATA/` (`DOC/ACROBATA_DIR.md`): every folder in
+      `DAT/` now has a doc
 - [ ] `EMBLEM/` leftovers: the preset records (`EDIT_EMBLEM` t4–t6), the
       110-byte crests (t7–t9, `Param::PlEmblem`?), the layer records and
       their key, `EDIT_FLAG` t1 variants and t2 bytes, all of

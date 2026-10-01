@@ -116,6 +116,7 @@ disassemble as unrelated MIPS instructions.
 | [`packdata.py`](SRC/packdata.py) | `etc::PackData` inside KC@P entries (face packs, licensed kits, edit face, cut-ins); `names` lists each head's model and texture name | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) |
 | [`pbdata.py`](SRC/pbdata.py) | player database `PBDATA_*.PAC`: 27,950 players, 3,000 managers, 1,000 scouts (bit-packed records); list, show, CSV; writes edits (`set`, CSV `import`; every record round-trips) | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) |
 | [`initteam.py`](SRC/initteam.py) | starting divisions, last season's order and computer-team squads (`PLRRSRC_INITTEAMDATA.TBB`, `OTEAMMEMBER.TBB`), with club names; club records, nations and stadiums; edits squad slots (`set`) and club records (`setteam`) | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) |
+| [`teaminit.py`](SRC/teaminit.py) | the player's new club (`TEAM_INIT_DATA.TBB`) by league and team style: squad, youth team, staff, staff lists and the rival club, named from the player database; edits records (`set`), round-trips | [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) |
 | [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
 | [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command and module names; `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
 | [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, and the 116 licensed kits' descriptors (`PLPACK` and the executable's copy); edits kits (`set`, `setlicence`, `setexe`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
@@ -123,6 +124,7 @@ disassemble as unrelated MIPS instructions.
 | [`system.py`](SRC/system.py) | `DAT/0SYSTEM`: the 77 UI colours, `DETAILFLAG`, the 8 crest, badge and sponsor texture packs (which entry a team id picks), icons | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) |
 | [`emblem.py`](SRC/emblem.py) | `DAT/EMBLEM`: the club editor's 96-colour palette and its 32/16-colour maps, crest masks, patterns and accessories, flag parts, and how the tables and packs line up | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) |
 | [`news.py`](SRC/news.py) | `DAT/NEWS`: the newspaper's picture packs (mastheads by league, article pictures, ads) and `NEWSMONTHFLAG` (which months print the best-player rankings) | [`NEWS_DIR.md`](DOC/NEWS_DIR.md) |
+| [`acrobata.py`](SRC/acrobata.py) | `DAT/ACROBATA`: the 875 Acroarts event scenes (`ABDA`/`ABRS`, `POF0` pointers, the Ninja and texture resources inside), and the executable's index copy and scene-id table | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md) |
 | [`cvs.py`](SRC/cvs.py) | the developers' `CVS/` folders: each file's original name, revision and date, and which files the build added | [`CVS_DIR.md`](DOC/CVS_DIR.md) |
 
 ```bash
@@ -274,6 +276,7 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - `packdata.py` uses `pac.py` to find KC@P entries and expand PRSH.
 - `ninja.py` uses `pac.py` to check the Ninja entries inside `.PAC`/`.MRG`/
   `.HED` archives.
+- `teaminit.py` uses `tbb.py`, and `pbdata.py` for names.
 - `mbb.py` uses `pac.py` for `MES.PAC`; `pbdata.py`, `initteam.py`,
   `schedule.py` and `stadium.py` use `pac.py` and `tbb.py`.
 - `save.py` loads the game's serializers with `sles_disasm.py` and
@@ -283,6 +286,8 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
   `PRELOAD` packs.
 - `preload.py` uses `pac.py` for the packs and `MES.PAC`.
 - `emblem.py` and `news.py` use `pac.py`, `tbb.py` and `svr.py`;
+  `acrobata.py` uses `pac.py`, `ninja.py`, `svr.py`, `snr2.py` and
+  `sles_disasm.py`;
   `sounddat.py music` reads the executable through `sles_disasm.py`.
 
 The disassemblers connect to the format tools through the docs. The usual
@@ -332,10 +337,12 @@ workflow is:
 | [`SOUND_DIR.md`](DOC/SOUND_DIR.md) | `DAT/SOUND`: which bank is which, the executable's bank table, and the music table (music id → song or stream) |
 | [`SEQ_DIR.md`](DOC/SEQ_DIR.md) | `DAT/SEQ`: the root sequencer scripts, which are loaded, their CVS history |
 | [`TEST3D_DIR.md`](DOC/TEST3D_DIR.md) | `DAT/TEST3D`: test models, debug shapes, test kits, the launcher viewers' data |
+| [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md) | `DAT/ACROBATA`: the Acroarts event scenes, their chunk layout and resources, the executable's copy of the pack index, scene ids by language |
 | [`CVS_DIR.md`](DOC/CVS_DIR.md) | the `CVS/` folders left on the disc: original file names, commit dates, which files the build made |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |
 | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) | the player database: header, bit-packed player/manager/scout records, ability and money tables |
 | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) | starting leagues and divisions, last season's order, computer-team squads, where club names come from |
+| [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) | the player's new club: what the league and team style choose (squad, youth team, staff, rival club) |
 | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) | the season calendar: schedule UIDs, turns, games, pairings, where entrants come from |
 | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) | message text, encodings and escape codes, talk-scene body reactions (`{react:N}`) |
 | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md) | club-management event tables, event ID types, scene types (what happens after a scene), talk types |

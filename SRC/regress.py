@@ -110,6 +110,10 @@ def checks():
         ("system", ["system.py", "info", "DAT/0SYSTEM"], ["DAT/0SYSTEM"]),
         ("emblem", ["emblem.py", "info", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         ("news", ["news.py", "info", "DAT/NEWS"], ["DAT/NEWS"]),
+        ("acrobata", ["acrobata.py", "info", "DAT/ACROBATA"], ["DAT/ACROBATA"]),
+        # The executable's copy of the pack index and its scene-id table.
+        ("acrobata_scenes", ["acrobata.py", "scenes", "DAT/ACROBATA", "ISO"],
+         ["DAT/ACROBATA", "ISO/SLES_541.51", "ISO/DLL/SIMPRG.REL"]),
         # The developers' CVS checkout files, against what is on the disc.
         ("cvs", ["cvs.py", "info", "DAT"], ["DAT"]),
         # The executable's sound-bank and music tables, against SOUND/*.DAT.
