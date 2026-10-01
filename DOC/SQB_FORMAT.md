@@ -402,8 +402,19 @@ python SRC/sqb.py setcmd DAT/SEQ/ROOTYEARSTARTSEQ.SQB out/ROOTYEARSTARTSEQ.SQB 0
 The skip route leaves out what the playoff route runs between `L2` and
 `L9` (the schedule's first year, month and turn steps, and their ends),
 as the developers' own switch does. `pwkLg_Init(0)` names league 0
-(England), so other leagues may not come out right. Not yet tested in
-PCSX2.
+(England), so other leagues may not come out right.
+
+**Tested in PCSX2** (England): club creation ran as usual, the playoffs
+were skipped, and the career went on to 2006–07 Week 1 Mid-Week July with
+the season's Sponsor contract screen. But the sponsors weren't right: only
+the main sponsor changed, and the supplier and the four sub-sponsors were
+left as they were (user report: in a normal career they don't come out
+like this). The year-start Sponsor module (`RootYearStartSeq.sqb`
+`0x390`, module 55) runs in both routes, so something the skipped playoff
+period does feeds the offers. Candidates are the steps between `L2` and
+`L9`: `Sche.YearEnd` (`0x113668`) runs `ClubRank::UpdateYearEnd`,
+`pwkTeam_YearEndCheck` and `pwkTeam_ChangePop_Year`, and the playoff
+events themselves. Not yet traced.
 
 ## The developer launcher
 
