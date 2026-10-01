@@ -384,8 +384,9 @@ the year start). So setting `0x34d430` alone would skip the playoffs
 without promoting the club, and setting `0x34d434` alone would also skip
 club creation and every year start.
 
-**The patch** (four bytes; `python SRC/patch_disc.py patch <disc> <out> ...
---skip-tutorial` writes it, on a whole disc image):
+**The patch** (four bytes, plus the six sponsor bytes described
+[below](#why-the-playoff-sponsors-stayed); `python SRC/patch_disc.py patch
+<disc> <out> ... --skip-tutorial` writes it, on a whole disc image):
 
 | File | Change |
 |---|---|
@@ -413,19 +414,60 @@ left as they were. **User report:** those are the club's sponsors during
 the playoffs (main sponsor Fosty Misty, supplier Doclla, four
 sub-sponsors). In a normal career they end with the playoffs: the first
 sponsor screen lets you sign the sub-sponsors, and the supplier becomes
-Egamucho on a random 1–3 year contract. So the skip leaves out whatever
-ends the playoff contracts.
+Egamucho on a random 1–3 year contract.
 
-Ruled out: the year-start Sponsor module (`RootYearStartSeq.sqb`
-`0x390`, module 55) and `pwkSponsor_UpdateStatus` (`SIMPRG.REL
-0x16af40`, run when that module starts) run in both routes;
-`Sche.MonthEnd` (`0x1137b8`) only advances the schedule's month; and
-`Sche.YearEnd` (`0x113668`) runs the schedule and club-rank year end,
-`pwkTeam_YearEndCheck` and `pwkTeam_ChangePop_Year`, none of which touch
-sponsors. Left: the playoff period's turns, events (`RootEventSeq.sqb`
-with the tutorial's event batches, `m4[3] = 12 + first-match count`) and
-matches. Sponsor names are messages of category 10000 (Egamucho 211,
-Doclla 212, Biassenn 183).
+### Why the playoff sponsors stayed
+
+The club's sponsors are 14 slots of `0x14` bytes at `+0x11cc4` in pwork
+task 1: slot 0 is the main sponsor, slots 1–12 the sub-sponsors, slot 13
+the supplier. **Confirmed** from the code:
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x257200` | (called by `pwkSponsor_Initialize`, from `PwkCallbackCommand_NewGame` `0x110abc`) | copies 6 records of `0x14` bytes from the table at `0x3994a8` into the slots. Byte `+6` of a record picks the slot: `0xff` main, `0xfe` next free sub-slot, `0xfc` supplier |
+| `0x113608` | `ScheCallbackCommand_YearStart` (`Sche.YearStart`, command 18) | calls `pwkSponsor_UpdateStatus` |
+| `SIMPRG.REL 0x16af80` | `pwkSponsor_UpdateStatus` | adds 1 to every slot's `+4` (years served) |
+| `SIMPRG.REL 0x16b580` | `pwkSponsor_UpdateStatus` | then clears every slot whose `+5` (contract length) is less than `+4` |
+| `SIMPRG.REL 0x16b878` | (signs an offer) | a new contract starts at `+4` = 1, with the offer's length in `+5` |
+
+The table at `0x3994a8` (sponsor ids are message ids of category 10000):
+
+| Record | Sponsor | Slot | Years served | Length |
+|---|---|---|---|---|
+| 0 | 193 Fostymisty | main | 0 | 1 |
+| 1–4 | 184, 199, 187, 198 | sub | 0 | 1 |
+| 5 | 212 Doclla | supplier | 0 | 2 |
+
+The playoff route runs `Sche.YearStart` twice before the first Sponsor
+screen: once in `RootClubEditSeq.sqb` (`0x8d0`) and once for the season
+(`RootMainSeq.sqb` `0xc70`). That takes the main and sub-sponsors to 2
+years served against a length of 1, so they end. The skip route runs only
+the second, so they reach 1 and stay.
+
+`--skip-tutorial` now also starts the six records one year in (`+4` = 1,
+6 bytes at `0x3994ac` + `0x14`·*n*). Only `0x257200` reads the table.
+TV contracts aren't affected: `pwkTv_UpdateStatus` (`SIMPRG.REL
+0x164598`) does nothing while `pwkGen_Keika` (the year minus 2006) is 0
+or less.
+
+**Tested in PCSX2** with the 6-byte change (England): the first Sponsor
+screen let the user sign a new main sponsor (Biassenn) and four new
+sub-sponsors. The supplier was still Doclla. A second test disc also
+started Doclla two years in, so its contract ended at the season's year
+start, and the screen showed Doclla again: the game signed it anew. So
+the supplier is chosen, not left over. The Sponsor module's setup
+(`SIMPRG.REL 0xc49c0`) signs an offer by itself when `pwkGen_Keika` is 0
+or less (`0xc49e0`–`0xc49f0`).
+
+The sponsor database is 213 records of `0x48` bytes at `SIMPRG.REL
+0x23d978`, indexed by sponsor id (`plSponsor_GetDb`, `0x160dc0`). Ids
+206–212 have kind 3 at `+4`, the suppliers. Egamucho (211) and Doclla
+(212) are both tier 6 (`+8`) with no fee, and differ in one condition
+(empirical: the field's meaning isn't traced): Egamucho has type `0x18`
+with value 500 at `+0x16`/`+0x18`, Doclla type `0x17` with value 0.
+Lead: the playoffs raise something to 500 that Egamucho requires, and a
+skipped club falls back to Doclla. The code that tests these conditions
+hasn't been read.
 
 ## The developer launcher
 

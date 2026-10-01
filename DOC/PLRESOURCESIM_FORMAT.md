@@ -232,9 +232,9 @@ new career J.Galvan was gone from the in-game Transfer List, so the
 game's free agents come from this entry. Buffon didn't appear there
 either. `pwkDb_addFreePlayer` (`0x235f08`) refuses only edit players
 (`plPinfo_IsEdit`: id 31,950 and up), so Buffon should be in the pool.
-The screen must show only part of the pool, perhaps gated by reputation
-(the user's suggestion; Buffon is rank 14, J.Galvan rank 5). What
-decides which free agents the Transfer List shows hasn't been traced.
+The screen shows only part of the pool, gated by rank (the user's
+suggestion; Buffon is rank 14, J.Galvan rank 5): see
+[below](#which-free-agents-the-transfer-list-shows).
 `SIMPRG.REL 0x15b030` moves one named free agent from the pool to the
 club's own transfer list (`pwkTeam_AddPinfoTransferFree`), but it is
 given the player; it doesn't choose him.
@@ -244,8 +244,43 @@ goalkeeper, 26,455, rank 5 like J.Galvan) in the same slot showed on the
 Transfer List (Club House / Scouting, "Acquire transfer list") in
 2006–07, with no team, aged 32. So national-team records can be free
 agents, and Buffon was held back by something else, most likely his
-rank (14) against the club's reputation, as the user suggested. The
-code that applies that gate hasn't been found yet.
+rank (14) against the club's reputation, as the user suggested.
+
+## Which free agents the Transfer List shows
+
+The Transfer List shows a player from the pool only when his rank lies
+in a band set by the club's rank. Rank 14 is above every band, so Buffon
+can never show. **Confirmed** from the code:
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x25c168` | (band) | reads the club rank (`+0x41f8` of `pwkTeam_GetMyTeamData`, the byte `pwkOteam_GetRank` returns, 0–31), halves it and picks the band from a jump table at `0x553170` (below) |
+| `0x25bfc8` | (test) | a player passes when his rank (`getPinfoRank`) is ≥ the band's low end and ≤ its high end, and his main position matches the one asked for (9 = any) |
+| `0x25bf40` | (test) | a player one of the club's scouts is working on (`pwkTeam_GetScouts`, `+0x8c`) is left out |
+| `0x25c3b8` | (stride) | counts the players who pass, then takes every *n*-th: *n* = 1 up to 100 players, 2 up to 200, 3 up to 300, 4 up to 400, else 5 (table at `0x5531b0`) |
+| `0x25d2b8` | `pwkTeam_CheckMoveListData` | walks the 1,500 pool slots (`pwkDb_getFreePlayer`) with the band and stride, up to 30 free agents, then the clubs' out-of-plan players (`pwkDb_getComOutOfTeamPlan`) up to 60 in all. `pwkTeam_GetMoveListData` (`0x25c440`) and `pwkTeam_CheckMoveListPlayerExist` (`0x25c228`) use the same tests |
+
+| Club rank | Player ranks shown |
+|---|---|
+| 0–5 | 0–5 |
+| 6–9 | 0–6 |
+| 10–13 | 1–7 |
+| 14–17 | 1–8 |
+| 18–21 | 2–9 |
+| 22–25 | 2–10 |
+| 26–31 | 3–11 |
+
+Player ranks run 0–15 ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)), so free
+agents of rank 12–15 never reach the Transfer List, at any club. A top
+club also stops seeing ranks 0–2. Because of the stride, a player inside
+the band may still be skipped when more than 100 players pass. To offer
+a star as a free agent, lower his rank (`+0x18` for ids from `0x63f7`
+up) to 11 or less, and to the club's band for a new club (5 or less).
+Not tested in PCSX2.
+
+That the "move list" functions build the Transfer List screen is read
+from their names and from their use of the free-agent pool; the screen's
+call into them hasn't been traced.
 
 ## Checking the claims
 
@@ -256,4 +291,6 @@ python SRC/sles_disasm.py ISO/SLES_541.51 dis GetAreaData_Pointer plCity_GetAver
 python SRC/sles_disasm.py ISO/SLES_541.51 dis _GetUp1SituLevelCapital Set_InitDBSet plOteam_GetManagerNoOffset
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 21ea48 45     # exclusive-player lookup
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 2b99f8 120    # EDIT::CColor
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 25bf40 300    # Transfer List tests and band
+python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_CheckMoveListData
 ```

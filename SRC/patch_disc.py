@@ -55,9 +55,10 @@ supported yet). Files outside DATA.CVM keep their size.
 playoffs of a new career, the tutorial, with the developers' own switch:
 it sets the flag word at SLES 0x34d434 (Dummy.CheckClubEditSkip, which
 promotes the club) and swaps commands 88/89 in RootClubEditSeq.sqb,
-RootMainSeq.sqb and RootYearStartSeq.sqb, 4 bytes in all. Side effect:
-the playoff-period sponsor contracts aren't ended, so the first season's
-Sponsor screen only offers the main sponsor. The club must be in England
+RootMainSeq.sqb and RootYearStartSeq.sqb, 4 bytes in all. It also starts
+the six playoff-period sponsors one year into their contracts (SLES
+0x3994a8, 6 bytes), so they end on time: the playoffs run one extra
+Sche.YearStart, which is what ends them. The club must be in England
 (the switch calls pwkLg_Init(0)). See DOC/SQB_FORMAT.md.
 
 Copies: the same data is often on the disc more than once. PRELOAD/*.PAC
@@ -578,6 +579,13 @@ SKIP_SCRIPTS = (                                # (file, offset, old command, ne
     ("SEQ/ROOTMAINSEQ.SQB", 0x6d8, "Dummy.CheckClubEditSkip", "4:88"),
     ("SEQ/ROOTYEARSTARTSEQ.SQB", 0x30, "Dummy.CheckClubEditSkip", "4:88"),
 )
+# The starting sponsors (main, 4 subs, supplier), copied into the club's
+# slots at new game by SLES 0x257200. Sche.YearStart adds a year to each
+# contract (+4) and ends it once its length (+5) is less (SIMPRG.REL
+# 0x16b580). The playoffs run one extra Sche.YearStart, so a skip disc
+# starts them one year in.
+SKIP_SPONSORS = (DISC + "SLES_541.51", 0x29a4a8)  # SLES 0x3994a8
+SKIP_SPONSOR_COUNT, SKIP_SPONSOR_SIZE = 6, 0x14
 
 
 def plan_skip_tutorial(f, img):
@@ -610,8 +618,22 @@ def plan_skip_tutorial(f, img):
                 if a != b:
                     jobs.append(Job(e.path, i, new[i:i + 1], "%s 0x%x" % (path, offset),
                                     "--skip-tutorial: %s -> %s" % (held, name)))
-    notes.append("note: --skip-tutorial: the first season's sponsor screen will only offer "
-                 "the main sponsor; start the career in England")
+    file, base = SKIP_SPONSORS
+    for i in range(SKIP_SPONSOR_COUNT):
+        off = base + i * SKIP_SPONSOR_SIZE
+        rec = read_at(f, img, file, off, SKIP_SPONSOR_SIZE)
+        if rec[6] not in (0xff, 0xfe, 0xfc):
+            raise ValueError("%s: starting sponsor %d has slot code 0x%02x; not the retail "
+                             "executable?" % (file, i, rec[6]))
+        if rec[4] == 0:
+            jobs.append(Job(file, off + 4, b"\x01", "%s (0x%x)" % (file, 0x3994a8 + i * 0x14 + 4),
+                            "--skip-tutorial: starting sponsor %d one year into its contract" % i))
+        elif rec[4] == 1:
+            notes.append("note: %s: starting sponsor %d already one year in" % (file, i))
+        else:
+            raise ValueError("%s: starting sponsor %d has %d years served, not 0 or 1"
+                             % (file, i, rec[4]))
+    notes.append("note: --skip-tutorial: start the career in England")
     return jobs, notes
 
 

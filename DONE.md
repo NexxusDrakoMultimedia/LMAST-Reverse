@@ -155,6 +155,16 @@ files. Each item keeps what was found, where, and how it was tested.
       `FLAG_TEXTURE`'s real crest is never shown. Still open: what
       `CDetailTeamFlag`, the only type-1 (`FLAG_TEXTURE`) request, draws;
       probably nationality flags, which are the same in both packs
+- [x] The free-agent gate: the Transfer List shows a free agent only if
+      his rank is in a band set by the club rank (`0x25c168`, `0x25bfc8`):
+      0–5 for club ranks 0–5, rising to 3–11 for 26–31. Ranks 12–15 never
+      show, so Buffon (14) can't; above 100 matches it shows every 2nd–5th
+      player, at most 30 (`DOC/PLRESOURCESIM_FORMAT.md`)
+- [x] Tutorial skip, sub-sponsors: the starting sponsors (table at SLES
+      `0x3994a8`) end when `Sche.YearStart` has run twice, and the
+      playoffs run one of them. `--skip-tutorial` now starts them a year
+      in (6 more bytes). Tested in PCSX2: the first Sponsor screen offers
+      the main and sub-sponsor slots (`DOC/SQB_FORMAT.md`)
 
 ## 3. Ninja 3D models and motions
 

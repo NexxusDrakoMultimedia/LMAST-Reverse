@@ -11,17 +11,19 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **Clean up the tutorial skip** (section 2). The test discs every other
-   season-mode check relies on still start with the wrong sponsors.
-2. **The free-agent gate** (section 2). Testing is already under way: Galvan
-   and Paul Jones show on the Transfer List, Buffon doesn't.
-3. **Name the rest of the player fields** (section 2). The editor can only
+1. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
-4. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
+2. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
    and 7). This is the largest piece of starting-season data still undecoded.
-5. **Size changes on the disc** (section 9). Until files can move, an edit
+3. **Size changes on the disc** (section 9). Until files can move, an edit
    can only grow to the end of its last sector, which limits every writer.
+4. **The tutorial skip's supplier** (section 2). Find the condition that
+   gives a normal career Egamucho instead of Doclla, so the skip disc
+   matches a played-through start.
+5. **Read the root scripts as the game's flow chart** (section 7). Knowing
+   which `Root*Seq` runs what, and in which order, would have found the
+   sponsor bug in minutes.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -61,14 +63,13 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       nation, entry 7's groups and counter, entry 6 in full; writers for
       the streams (5, 11-14). User reports: weathers are sunny, overcast,
       rain, snow; combinations are hidden in game
-- [ ] Trace the gate that keeps high-rank free agents (Buffon, rank 14)
-      off a small club's Transfer List (reputation vs. player rank?)
-- [ ] Clean up the tutorial skip: the playoff-period sponsors (Fosty
-      Misty, Doclla, four sub-sponsors) aren't ended, so the first sponsor
-      screen only offers the main slot and the supplier isn't Egamucho
-      (user report). Find what ends them in the playoff period (events,
-      turns, matches); and check other leagues (the switch calls
-      `pwkLg_Init(0)`)
+- [ ] Tutorial skip leftovers: the supplier stays Doclla instead of
+      Egamucho, even when Doclla's contract ends (Tested in PCSX2). Lead:
+      Egamucho's record has condition `0x18` = 500 that the playoffs may
+      provide (`DOC/SQB_FORMAT.md#why-the-playoff-sponsors-stayed`). Also
+      check other leagues (the switch calls `pwkLg_Init(0)`)
+- [ ] Test in PCSX2: a free agent lowered to rank 5 or less shows on a
+      new club's Transfer List (`DOC/PLRESOURCESIM_FORMAT.md`)
 - [ ] Trace which code builds a national team's squad from players
       26,041-27,949 (83 blocks of 23, one per national team; empirical,
       `DOC/PBDATA_FORMAT.md#player-id-blocks-empirical`)
