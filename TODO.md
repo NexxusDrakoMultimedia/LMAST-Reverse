@@ -148,8 +148,19 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       players become managers (`pwkTeam_*CoachJobChangeWork`, PlPinfo
       `+0x210`). (The "Assistant Coach" title and the forwards/defence
       split are confirmed on screen.)
-- [ ] The packs: `PLRESOURCE{COMMON,SIM}.PAC` (entries not listed in
-      `PARAM_DIR.md`). `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript
+- [x] `PLRESOURCESIM.PAC`: every entry's reader and layout
+      (`DOC/PLRESOURCESIM_FORMAT.md`, `SRC/plrsim.py`, in `regress.py`):
+      states/cities/climate/weather, overseas branch costs, nations,
+      player affiliations, introductions, statistics row per schedule UID,
+      the edit colour palette, scouts' exclusive players, good and bad
+      player/manager combinations, free agents. Entry 2 is never read
+- [ ] `PLRESOURCESIM` leftovers: weather and season names, entry 4's 8
+      clubs per nation, entry 7's groups and counter, entry 6 in full;
+      nothing checked in game yet (an edit to entry 15, the free agents,
+      or entry 13, the combinations, would be a good first test); a
+      writer for the streams (5, 11-15)
+- [ ] The packs: `PLRESOURCECOMMON.PAC` (readers listed in `PARAM_DIR.md`,
+      layouts not decoded). `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript
       scripts, decoded in `DOC/SQB_FORMAT.md`; what each one computes is
       still open (section 7)
 - [x] `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`: 27,950 × `char[19]`

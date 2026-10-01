@@ -70,6 +70,14 @@ def checks():
         ("teaminit_roundtrip", ["teaminit.py", "roundtrip", "DAT/PARAM/TEAM_INIT_DATA.TBB"],
          ["DAT/PARAM/TEAM_INIT_DATA.TBB"]),
         # The new club's squads and staff, named from the player database.
+        ("plrsim", ["plrsim.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        # Combinations and free agents by name, cities and weather.
+        ("plrsim_show_combi", ["plrsim.py", "show", "DAT/PARAM", "13"],
+         ["DAT/PARAM/PLRESOURCESIM.PAC", "DAT/PARAM/PBDATA_EU.PAC"]),
+        ("plrsim_show_free", ["plrsim.py", "show", "DAT/PARAM", "15"],
+         ["DAT/PARAM/PLRESOURCESIM.PAC", "DAT/PARAM/PBDATA_EU.PAC"]),
+        ("plrsim_show_cities", ["plrsim.py", "show", "DAT/PARAM", "0"],
+         ["DAT/PARAM/PLRESOURCESIM.PAC"]),
         ("teaminit_show", ["teaminit.py", "show", "DAT/PARAM/TEAM_INIT_DATA.TBB"],
          ["DAT/PARAM/TEAM_INIT_DATA.TBB", "DAT/PARAM/PBDATA_EU.PAC"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),

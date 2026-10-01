@@ -117,6 +117,8 @@ disassemble as unrelated MIPS instructions.
 | [`pbdata.py`](SRC/pbdata.py) | player database `PBDATA_*.PAC`: 27,950 players, 3,000 managers, 1,000 scouts (bit-packed records); list, show, CSV; writes edits (`set`, CSV `import`; every record round-trips) | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) |
 | [`initteam.py`](SRC/initteam.py) | starting divisions, last season's order and computer-team squads (`PLRRSRC_INITTEAMDATA.TBB`, `OTEAMMEMBER.TBB`), with club names; club records, nations and stadiums; edits squad slots (`set`) and club records (`setteam`) | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) |
 | [`teaminit.py`](SRC/teaminit.py) | the player's new club (`TEAM_INIT_DATA.TBB`) by league and team style: squad, youth team, staff, staff lists and the rival club, named from the player database; edits records (`set`), round-trips | [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) |
+| [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) | the season-mode resource pack: what each of its 16 entries holds and which code reads it |
+| [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
 | [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
 | [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command and module names; `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
 | [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, and the 116 licensed kits' descriptors (`PLPACK` and the executable's copy); edits kits (`set`, `setlicence`, `setexe`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
@@ -276,7 +278,8 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - `packdata.py` uses `pac.py` to find KC@P entries and expand PRSH.
 - `ninja.py` uses `pac.py` to check the Ninja entries inside `.PAC`/`.MRG`/
   `.HED` archives.
-- `teaminit.py` uses `tbb.py`, and `pbdata.py` for names.
+- `teaminit.py` uses `tbb.py`, and `pbdata.py` for names; `plrsim.py`
+  uses `pac.py`, `tbb.py` and `pbdata.py`.
 - `mbb.py` uses `pac.py` for `MES.PAC`; `pbdata.py`, `initteam.py`,
   `schedule.py` and `stadium.py` use `pac.py` and `tbb.py`.
 - `save.py` loads the game's serializers with `sles_disasm.py` and

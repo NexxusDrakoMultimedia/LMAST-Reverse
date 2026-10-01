@@ -85,7 +85,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `TACTICS_FORMATION_SET.TBB` | TBB, 1 table | entry 11 of the `GetPreLoadData` list (`SLES 0x55b560`), and `SLES 0x55b2d8` | 8 formations × 8 bytes |
 | `SPONSOR_BOARD.TBB` | TBB, 1 table | **not referenced by name** | 132 bytes, `01 02 03 ...` |
 | `PLRESOURCECOMMON.PAC` | BINPAC, 5 TBB entries | `ePLRSRC` 0 | team facilities, formations, nations. See [the packs](#plresourcecommonpac) |
-| `PLRESOURCESIM.PAC` | BINPAC, 16 entries | `ePLRSRC` 1 | computer teams, transfers, mail. See [the packs](#plresourcesimpac) |
+| `PLRESOURCESIM.PAC` | BINPAC, 16 entries | `ePLRSRC` 1 | cities and weather, club records, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ... See [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md) |
 | `SCHEDULE_SYSTEM.PAC/.HED` | BINPAC, 5 named TBBs | `ScheEuro_SubCtrl::requestLoad` (`0x209b50`) | `year_schedule_data`, `open_nation`, `make_list`, `PeriodName`, `savectrl`. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
 | `SCHEDULE_COMPETITION.PAC/.HED` | BINPAC, 164 entries | `ScheEuro_LoadModule::Execute` (`0x208c50`), name table `0x390658` | one schedule per UID: games and pairings. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
 | `SCHEDULE_TEAM_ENTRY.PAC/.HED` | BINPAC, 164 entries | as above | where each UID's entrants come from. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
@@ -170,23 +170,25 @@ arguments to `plResource_GetResourceDataBinPacTbb[Tbl]`):
 
 ## `PLRESOURCESIM.PAC`
 
-16 entries, 12 TBB and 4 raw. **Confirmed** readers:
+16 entries, 12 TBB and 4 raw. Every entry is described in
+[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md) and checked by
+`plrsim.py`. **Confirmed** readers:
 
 | Entry | Contents | Reader |
 |---|---|---|
-| 0 | TBB, 5 byte tables | `GetAreaData_Pointer(i)` (`0x21ef58`), `i < 5` |
-| 1 | TBB, 2 tables | `SLES 0x232d88` (table `i < 2`) |
-| 2 | TBB, 2 tables | not traced |
+| 0 | TBB, 5 byte tables | `GetAreaData_Pointer(i)` (`0x21ef58`), `i < 5`: states, cities, climate, weather |
+| 1 | TBB, 2 tables | `SLES 0x232d88` (table `i < 2`): overseas branch costs |
+| 2 | TBB, 2 tables | none: no call asks for entry 2 |
 | 3 | TBB, 10,968 bytes | `plOteam_GetDb(team)` (`0x2165d8`): **457 × 24 bytes**, indexed by `PlTeam − 3`: rank, world rank, manager, stadium, transfer policy, city. See [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#club-records-plresourcesimpac-entry-3). Team 2 uses a runtime rival record instead |
 | 4 | TBB, 1,305 × u16 | `plOteam_GetManagerNoOffset`, `plTeam_GetPlTeamFromNation` |
 | 5 | raw, 32,152 bytes | `PlayerAffiliateaSearchTableInitialize`, `plMisc_GetPlayerAffiliateTeam` |
 | 6 | TBB, 6 byte tables | `CAcquirePlayer::*` (tables 0, 1, 3, 4, 5), `CComOffer::CalcuOfferClub`, `CContractReform::Execute`, `CMakeDataBase::GetOutOfClubRange` |
 | 7 | TBB, 2,000 × u16 | `GetPlayerIntroducePlayerNo` |
-| 8 | TBB, 164 × u32 | `pwkTeam_GetPlPlayerIndivFromPinfo` |
-| 9 | TBB, 7 tables | not traced |
+| 8 | TBB, 164 × u32 | `0x267bf8` from `pwkTeam_AddPlayerRecord`: statistics row per schedule UID |
+| 9 | TBB, 7 tables | `EDIT::CColor`: the edit screens' colour palette (8 `SIMPRG.REL` screens, `PlGiTask::InitStadium`) |
 | 10 | TBB, 6 × 25 bytes | `plTeam_GetStadiumDataIndex`: stadium id by league, level and stand/roof/lights. The same bytes as `STADIUM/CONV_INFO_BUILD.TBB` ([`STADIUM_DIR.md`](STADIUM_DIR.md#conv_info_buildtbb)) |
-| 11, 12 | raw, 22,528 bytes each | `SLES 0x21ea08` / `0x21ea28` return them. Callers not traced |
-| 13, 14 | raw, 4,096 / 2,048 bytes | `plMail_ManagerTone2No` |
+| 11, 12 | raw, 22,528 bytes each | `SLES 0x21ea08` / `0x21ea28`: scouts' exclusive and semi-exclusive players (`plSinfo_Check[Semi]Exclusive`) |
+| 13, 14 | raw, 4,096 / 2,048 bytes | `0x2145b8` / `0x2145d8`: good and bad player/manager combinations (`plMisc_GetGood/BadLevel`) |
 | 15 | TBB, 1,301 × u16 | `CMakeDataBase::Set_InitDBSet` |
 
 ## `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`
