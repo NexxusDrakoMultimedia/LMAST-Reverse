@@ -117,7 +117,7 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       salaries in pounds = value / 6) all match the table
 - [ ] `TEAM_INIT_DATA` leftovers: the candidate lists' "List criteria"
       (7 Training cycle) and H.Dale's salary showing 80,000 not 75,000
-- [ ] Name manager field `f_22` and scout field `f_18` in `pbdata.py` as
+- [x] Name manager field `f_22` and scout field `f_18` in `pbdata.py` as
       the staff ages: they equal `TEAM_INIT_DATA`'s staff age byte in all
       288 records, the fallback code reads them there, and that byte is
       the age the game shows (tested)

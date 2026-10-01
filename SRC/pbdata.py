@@ -117,7 +117,7 @@ MANAGER_FIELDS = (
     ("f_18", 0x18, 5, 1, None),
     ("job", 0x1c, 3, 1, None),           # PlMinfo +0xa0: which bars CalcManagerAbil shows
     ("f_20", 0x20, 16, 1, None),
-    ("f_22", 0x22, 6, 1, None),
+    ("age", 0x22, 6, 1, None),           # stored as is; shown as the age (TEAM_INIT_DATA tests)
     ("money", 0x24, 16, 1, "money"),
     ("f_26", 0x26, 4, 4, None),
     ("f_2a", 0x2a, 2, 5, None),
@@ -135,7 +135,7 @@ MANAGER_FIELDS = (
 )
 SCOUT_FIELDS = (
     ("nation", 0x14, 8, 1, None),
-    ("f_18", 0x18, 8, 1, None),
+    ("age", 0x18, 8, 1, None),           # stored as is; shown as the age (TEAM_INIT_DATA tests)
     ("f_1c", 0x1c, 5, 1, None),
     ("f_20", 0x20, 16, 1, None),
     ("money", 0x22, 16, 1, "money"),
@@ -642,6 +642,9 @@ def cmd_info(paths):
             print("  players %-7s %d-%d" % (fname, min(vals), max(vals)))
         ab = [a for r in players for a in r.fields["ability"]]
         print("  players ability %d-%d over %d values" % (min(ab), max(ab), len(ab)))
+        for kind in ("managers", "scouts"):
+            vals = [r.fields["age"] for r in db.records(kind)]
+            print("  %-8s age     %d-%d" % (kind, min(vals), max(vals)))
 
 
 def summary(r, nations):
@@ -653,9 +656,9 @@ def summary(r, nations):
         return "%5d  %-19s %-16s age %2d  %3dcm %3dkg  %s  pos %-14s shirt %2d  rank %2d" % (
             r.db_id, r.name, nat, f["age"], f["height"], f["weight"], leg, pos, f["shirt"], f["rank"])
     if r.kind == "managers":
-        return "%5d  %-19s %-16s %-14s money %5d" % (
-            r.db_id, r.name, nat, JOB_ROLE.get(f["job"], "manager"), f["money"])
-    return "%5d  %-19s %-16s money %5d" % (r.db_id, r.name, nat, f["money"])
+        return "%5d  %-19s %-16s age %2d  %-14s money %5d" % (
+            r.db_id, r.name, nat, f["age"], JOB_ROLE.get(f["job"], "manager"), f["money"])
+    return "%5d  %-19s %-16s age %2d  money %5d" % (r.db_id, r.name, nat, f["age"], f["money"])
 
 
 def cmd_list(path, kind, find, nations):

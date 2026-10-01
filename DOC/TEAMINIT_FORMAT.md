@@ -89,11 +89,10 @@ empty slot: `getPbase` finds no player and the slot stays empty
 **Empirical**, from the file and `PBDATA_EU.PAC`:
 - Player ages match the database in 456 of 528 squad records and 42 of
   48 youth records. The table's age is the one the game uses.
-- Staff `+0x0c` equals manager field `f_22` in all 180 manager records
-  (tables 1 and 4), and scout field `f_18` in all 108 scout records
+- Staff `+0x0c` equals manager field `age` (`+0x22`) in all 180 manager records
+  (tables 1 and 4), and scout field `age` (`+0x18`) in all 108 scout records
   (tables 2 and 5). The game shows this byte as the age (tested, below),
-  so those two database fields are the staff ages, which `pbdata.py`
-  doesn't name yet.
+  so those two database fields are the staff ages (`age` in `pbdata.py`).
 - Contracts: 2–4 years for players, 1–3 for staff. Salaries: 90,000 to
   1,620,000 for players, 360,000 to 900,000 for staff.
 - No player in table 0 or 3 is in a computer club's squad (`OTEAMMEMBER`).

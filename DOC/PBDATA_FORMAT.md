@@ -93,7 +93,7 @@ The 5 bits after the last field are zero in every record.
 
 `char[19]` name, then (bits × count at offset): 8 `+0x14` (nationality,
 *empirical*: same range and position as the players'), 5 `+0x18`,
-3 `+0x1c` (job, see below), 16 `+0x20`, 6 `+0x22`, 16 `+0x24` (money band, **confirmed**
+3 `+0x1c` (job, see below), 16 `+0x20`, 6 `+0x22` (age, see below), 16 `+0x24` (money band, **confirmed**
 table lookup), 4 ×4 `+0x26`, 2 ×5 `+0x2a`, 3 ×4 `+0x2f`, 2 `+0x33`,
 6 `+0x34`, 3 ×8 `+0x35`, 8 ×3 `+0x3d`, 3 ×7 `+0x40`, 5 ×5 `+0x47`,
 signed 9 ×2 `+0x4c`, signed 9 ×4 `+0x54`, 1 ×2 `+0x64`, and 48 abilities
@@ -101,10 +101,22 @@ signed 9 ×2 `+0x4c`, signed 9 ×4 `+0x54`, 1 ×2 `+0x64`, and 48 abilities
 
 ### Scouts (71 bytes, 565 bits used)
 
-`char[19]` name, then 8 `+0x14` (nationality, *empirical*), 8 `+0x18`,
-5 `+0x1c`, 16 `+0x20`, 16 `+0x22` (money band), 4 ×4 `+0x24`, 1 `+0x28`,
+`char[19]` name, then 8 `+0x14` (nationality, *empirical*), 8 `+0x18`
+(age, see below), 5 `+0x1c`, 16 `+0x20`, 16 `+0x22` (money band), 4 ×4 `+0x24`, 1 `+0x28`,
 and 49 × 7 bits at `+0x29`. The last 45 of those are abilities, clamped
 to 31 and mapped to 38–99. The 3 bits left over are zero.
+
+### Staff age
+
+Manager `+0x22` and scout `+0x18` are the age, stored as is (no offset,
+unlike the players' `+0x28`). Without `TEAM_INIT_DATA.TBB`,
+`pwkTeam_Init2` copies manager byte `0x22` (`0x25eff4`) and scout byte
+`0x18` (`0x25f038`) into the slot where the table otherwise puts the
+age. Where the table gives it, it equals these fields in all 180 manager
+and 108 scout records. **Tested in PCSX2:** the game shows that value as
+the staff member's age, in the Coach and Scout Candidate Lists and for
+the club's own staff ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md)). Ages
+run 35–55 for managers and 35–58 for scouts.
 
 ## Abilities and the detail screen
 
