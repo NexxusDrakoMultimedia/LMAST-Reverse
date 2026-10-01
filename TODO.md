@@ -174,11 +174,12 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       Tested in PCSX2 (England): the playoffs are skipped and the season
       starts. (The launcher's MAIN GAME START still has the tutorial: user
       report)
-- [ ] Clean up the tutorial skip: the playoff-period sponsors (Fosty Misty, Doclla, four
-      sub-sponsors) aren't ended, so the first sponsor screen only offers
-      the main slot and the supplier isn't Egamucho (user report). Find
-      what ends them in the playoff period (events, turns, matches); and
-      check other leagues (the switch calls pwkLg_Init(0)).
+- [ ] Clean up the tutorial skip: the playoff-period sponsors (Fosty
+      Misty, Doclla, four sub-sponsors) aren't ended, so the first sponsor
+      screen only offers the main slot and the supplier isn't Egamucho
+      (user report). Find what ends them in the playoff period (events,
+      turns, matches); and check other leagues (the switch calls
+      `pwkLg_Init(0)`)
 - [ ] Trace which code builds a national team's squad from players
       26,041-27,949 (83 blocks of 23, one per national team; empirical,
       `DOC/PBDATA_FORMAT.md#player-id-blocks-empirical`)
@@ -255,7 +256,7 @@ contents and three tables are still undecoded.
 - [x] `SRC/packdata.py` parses `etc::PackData` in all 5 KC@P packs; `info`
       samples `FC_EURO_FACEPACK_00` (`--all` for every entry). In `regress.py`
 - [ ] `GAME/CUTINPACK.BIN` entries are `PackData` too (block types 19–24);
-      reconcile with `PAC_FORMAT.md`'s "109 are empty" and document the blocks
+      reconcile with `GAME_DIR.md`'s "109 are empty" and document the blocks
 - [ ] Decode the face block-4 header
 - [x] The `PLPACK` block-0 kit descriptor and which clubs are licensed:
       teams 123-244 -> licence 0-115 (`0x3a08d8`), descriptor at

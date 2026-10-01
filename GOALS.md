@@ -48,10 +48,12 @@ Each stage depends on the one before it.
    a file and writing it back unchanged gives the original bytes. That check
    runs over every file on the disc before any edit is trusted, and goes into
    `regress.py`. *Started:* `tbb.py` (all 70 tables), `pbdata.py` (the
-   player database) and `mbb.py` (message text) write and round-trip every
-   file. `initteam.py` edits squads and club records, and `save.py` edits
-   saved games. Edits to the player database, text and saves have been
-   tested in PCSX2.
+   player database), `mbb.py` (message text), `teaminit.py` (the player's
+   new club), `uniform.py` (club kits), `sqb.py` (sequencer scripts) and
+   `pac.py` (BINPACs) write and round-trip every file. `initteam.py` edits
+   squads and club records, and `save.py` edits saved games. Edits to the
+   player database, text, the new club's squad, kits, free agents and saves
+   have been tested in PCSX2.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
    `DATA.CVM`, and produce a disc image that boots. This includes repacking
    BINPAC/KC@P archives and PRS compression, and handling files that change
@@ -108,9 +110,6 @@ Where each folder stands (October 2026):
 | `TEST3D/` | Ninja models, `SVR`/`SVP`/`SVM`, `LBI` | surveyed in [`TEST3D_DIR.md`](DOC/TEST3D_DIR.md): test data only; textures and models done, what reads 53 of the 163 files known; `LBI` not parsed |
 | `CVS/` and `*/CVS/` | the developers' version-control metadata | done ([`CVS_DIR.md`](DOC/CVS_DIR.md), `cvs.py`): not read by the game; gives original file names and dates, and shows which files the build made |
 
-"Containers parse" means `pac.py` or `tbb.py` reads the file, but what the
-entries or rows mean isn't documented yet.
-
 Outside `DATA.CVM`, the disc's `AUDIO/` folder (music, commentary, chants and
 ambience) is done in [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md), the `DLL/*.REL`
 overlays in [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md), and memory-card saves in
@@ -136,3 +135,5 @@ studied.
 - Distributing the game, its data, or patched disc images.
 - Changes that need new game code, until the data side is done. Patching
   `SLES_541.51` or the `.REL` overlays may come later if a mod needs it.
+  Small patches that flip switches already in the code (the tutorial skip,
+  the developer launcher, the save serial) are fine as testing aids.

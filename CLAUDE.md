@@ -40,8 +40,9 @@ working towards and `TODO.md` for what to work on next.
 Adding a writer (the write stage in `GOALS.md`) follows the same steps, plus
 a `roundtrip` command that re-encodes every file or record and marks any
 difference with `!!`. It goes into `regress.py` as `<name>_roundtrip`. The
-existing writers are `tbb.py`, `pbdata.py`, `mbb.py`, `initteam.py`
-(`set`, `setteam`) and `save.py`.
+existing writers are `pac.py` (BINPACs), `tbb.py`, `pbdata.py`, `mbb.py`,
+`initteam.py` (`set`, `setteam`), `teaminit.py`, `uniform.py`, `sqb.py`
+(`setcmd`) and `save.py`.
 
 Some things can only be checked by a person: that an edit shows in the game
 (PCSX2), what a screen shows, or how audio sounds. Ask the user to check,
