@@ -98,7 +98,7 @@ Where each folder stands (October 2026):
 | `EVENT/` | `EvsDataBin_*.bin`, `EVENTDATA_TURN.TBB` | done ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md)); some NEWS/MAIL columns unnamed |
 | `GAME/` | commentary `TBL`, sound banks, models, many small types | surveyed in [`GAME_DIR.md`](DOC/GAME_DIR.md); `SOUNDDAT.PAC` and commentary tables decode (`sounddat.py`); models parse ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)); tactics AI, `GAMEDATA.BIN`, `AI_PARAM.BIN` not parsed |
 | `MESSAGE/` | `MES.PAC` | done, with a writer ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md)) |
-| `NEWS/` | `PAC`/`HED`, `TBB` | containers parse; no folder doc |
+| `NEWS/` | `PAC`/`HED`, `TBB` | done ([`NEWS_DIR.md`](DOC/NEWS_DIR.md), `news.py`): the loader of every pack, mastheads by league, article pictures by index, `NEWSMONTHFLAG` decoded; where ads and cartoons go on the page not traced |
 | `PARAM/` | 18 `TBB`, `PAC`/`HED`, `BIN` | tables parse; loaders and row counts in [`PARAM_DIR.md`](DOC/PARAM_DIR.md), 7 record layouts confirmed, the rest not decoded |
 | `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` parsed by `packdata.py`, block contents partly decoded; kit tables `UNIFORM_LIST` and `COLOR_TBL` decoded with an editor ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md)), `UNIFORM_GK` not; models parse, faces included ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
 | `PRELOAD/` | 139 `PAC` | done ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md), `preload.py`): every entry is a byte-identical copy of a file elsewhere, the loader of every pack is known, and which copy the game reads is confirmed and tested in PCSX2 |

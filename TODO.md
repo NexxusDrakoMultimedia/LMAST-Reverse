@@ -290,6 +290,8 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
 - [ ] Folder docs for `EMBLEM/`, `NEWS/`, `SOUND/`, `SEQ/`, `ACROBATA/`
       and `TEST3D/`, plus a note on the `CVS/` metadata (`STADIUM/` done:
       `DOC/STADIUM_DIR.md`; `PRELOAD/` done: `DOC/PRELOAD_DIR.md`)
+- [ ] `NEWS/` leftovers: which of a league's two papers a page uses, when
+      the special editions show, where the ads and cartoons go
 
 ## 7. Event system and game code
 
