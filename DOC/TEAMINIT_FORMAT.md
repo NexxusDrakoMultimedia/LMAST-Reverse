@@ -194,12 +194,26 @@ break a group. Use `-` for an empty youth slot. `teaminit.py roundtrip`
 re-encodes every table and rebuilds the file byte for byte (in
 `regress.py`).
 
-Not yet seen in the game: an edited record. A test would start a new
-career in a given league and style and look at the squad.
+**Tested in PCSX2.** Squad record 0 of England / Counter-Attack
+(A.Hinshelwood, 23) was set to database player 26,046 ("John Terry",
+in no computer squad) at age 30, and record 44 (England / Individual
+Play) to the same player at 31. A new career in England with
+Counter-Attack (the club came out as Dunstable Utd, English League 1)
+showed John Terry in the squad at age **30**, as a centre back and
+captain. The squad was exactly records 0–17 of the group: 11 starters,
+5 on the bench and 2 not registered. Records 18–21, which only the
+rival gets, weren't in it. So the game reads this file, the style picks
+the group, the club takes 18 records, and the age field is the age the
+game shows (not one year more, unlike `OTEAMMEMBER`'s squads, which a
+new game shows a year older). The captain is chosen by
+`plTeam_GetCaptainFitPoint`, not by record order.
 
 ## Still unknown
 
 - What the game shows the staff lists of tables 4 and 5 as.
+- Not yet checked in the game: the Individual Play group (Terry at 31 on
+  the same test disc) and the rival's squad coming from the opposite
+  style.
 - Whether the staff `+0x0c` byte is shown as the age (the database
   fields it matches aren't named yet).
 - The unit of the salary before `SM2MoneySave_WithInRange`.

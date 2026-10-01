@@ -108,8 +108,12 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       rival's manager, stadium and club bytes. `DOC/TEAMINIT_FORMAT.md`,
       `SRC/teaminit.py` (`info`, `show`, `set`, `roundtrip`; in
       `regress.py`). Table 6 quirk: only its first record is ever read
+- [x] Tested in PCSX2: an edited squad record (John Terry, age 30, in
+      England / Counter-Attack) showed in a new career's squad at 30, and
+      the squad was exactly the group's first 18 records
 - [ ] `TEAM_INIT_DATA` leftovers: what the game shows the staff lists
-      (tables 4, 5) as, and an edited squad seen in PCSX2 (new career)
+      (tables 4, 5) as; the rival's squad from the opposite style, and
+      the Individual Play group, not yet seen in game
 - [ ] Name manager field `f_22` and scout field `f_18` in `pbdata.py`:
       very probably the staff ages (they equal `TEAM_INIT_DATA`'s staff
       age byte in all 288 records, and the fallback code reads them there)
