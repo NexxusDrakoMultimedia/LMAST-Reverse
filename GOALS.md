@@ -88,27 +88,35 @@ and a tool whose `info` passes over all of `DAT/`. Nothing is left as "unknown
 binary". Even a format that nobody plans to edit is documented, because an
 unexplained file can hide a dependency that breaks a rebuilt disc.
 
-Where each folder stands (October 2026):
+Where each folder stands (October 2026). The status is one of:
 
-| Folder | Contents | Status |
-|---|---|---|
-| `0SYSTEM/` | `TBB`, `PAC`, `SVR`/`SVP`, `ICO`, `DAT` | surveyed in [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md), `system.py`: loader of every file, the colour table, the 8 texture packs and their index rules, fonts by language; `DETAILFLAG` meaning and colour uses unknown |
-| `ACROBATA/` | `PAC`, `DAT` | surveyed in [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md), `acrobata.py`: the 875 Acroarts scenes (`ABDA` + `ABRS`), their `POF0` pointers and 4,841 Ninja and texture resources check; the executable's index copy and scene-id table decoded; the `ABDT` scene layout not decoded |
-| `BG/` | 304 `MRG`, `HED`, `SVR`, Ninja `SNO`/`SNM`/`SNJ` | archives, textures, Z buffers and models done ([`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
-| `CSE/` | 490 `CSP`, `CSE`, `SVR`, a few others | screen layouts done ([`CSE_FORMAT.md`](DOC/CSE_FORMAT.md)) |
-| `EMBLEM/` | `TBB`, `PAC`/`HED` | surveyed in [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md), `emblem.py`: loaders of every file, the 96-colour palette and its maps, which `EDIT_EMBLEM`/`EDIT_FLAG` table holds what and how they line up with the part packs, what the game does with the 3 short tables; preset and crest record fields and `EDIT_PLAYER.TBB` not decoded |
-| `EVENT/` | `EvsDataBin_*.bin`, `EVENTDATA_TURN.TBB` | done ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md)); some NEWS/MAIL columns unnamed |
-| `GAME/` | commentary `TBL`, sound banks, models, many small types | surveyed in [`GAME_DIR.md`](DOC/GAME_DIR.md); `SOUNDDAT.PAC` and commentary tables decode (`sounddat.py`); models parse ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)); tactics AI, `GAMEDATA.BIN`, `AI_PARAM.BIN` not parsed |
-| `MESSAGE/` | `MES.PAC` | done, with a writer ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md)) |
-| `NEWS/` | `PAC`/`HED`, `TBB` | done ([`NEWS_DIR.md`](DOC/NEWS_DIR.md), `news.py`): the loader of every pack, mastheads by league, article pictures by index, `NEWSMONTHFLAG` decoded; where ads and cartoons go on the page not traced |
-| `PARAM/` | 18 `TBB`, `PAC`/`HED`, `BIN` | tables parse; loaders and row counts in [`PARAM_DIR.md`](DOC/PARAM_DIR.md), 8 record layouts confirmed (`TEAM_INIT_DATA`, the player's new club, in [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md)), and every entry of `PLRESOURCESIM.PAC` ([`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md)); `PLRESOURCECOMMON` and some tables not decoded |
-| `PLAYER/` | `PAC`/`HED`, `MRG`, KC@P face/kit packs, Ninja models, `TBB` | surveyed in [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md); `etc::PackData` parsed by `packdata.py`, block contents partly decoded; kit tables `UNIFORM_LIST` and `COLOR_TBL` decoded with an editor ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md)), `UNIFORM_GK` not; models parse, faces included ([`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md)) |
-| `PRELOAD/` | 139 `PAC` | done ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md), `preload.py`): every entry is a byte-identical copy of a file elsewhere, the loader of every pack is known, and which copy the game reads is confirmed and tested in PCSX2 |
-| `SEQ/` | 19 `SQB`, `TBB`, `WPX` | sequencer scripts decoded ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md), `sqb.py`), folder overview in [`SEQ_DIR.md`](DOC/SEQ_DIR.md): 17 of 19 decode and check (two unused 2004 scripts don't); `SQBFILENAME` and `GLOBALMEMORY` done; `WPX` unreferenced, not decoded |
-| `SOUND/` | 28 `DAT` sound banks | surveyed in [`SOUND_DIR.md`](DOC/SOUND_DIR.md): all 28 `ps2_DTPK` banks parse, and samples, songs and instruments decode (`sounddat.py`, [`GAME_DIR.md`](DOC/GAME_DIR.md#the-soundmap-banks)); the executable's bank table and music table (music id → song) decoded (`sounddat.py music`); which screen plays which music id, and 4 banks the code never names, unknown |
-| `STADIUM/` | `PAC`/`HED`, 24 `TBB`, `PRI` | surveyed in [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md); `PRI` and all 24 tables decoded: part slots, stadium build, collision, crowd sets and tiers, adverts, stadium id by level (a few flags unknown) |
-| `TEST3D/` | Ninja models, `SVR`/`SVP`/`SVM`, `LBI` | surveyed in [`TEST3D_DIR.md`](DOC/TEST3D_DIR.md): test data only; textures and models done, what reads 53 of the 163 files known; `LBI` not parsed |
-| `CVS/` and `*/CVS/` | the developers' version-control metadata | done ([`CVS_DIR.md`](DOC/CVS_DIR.md), `cvs.py`): not read by the game; gives original file names and dates, and shows which files the build made |
+- **done**: every file type parses and is checked over all of `DAT/`. What
+  is left is the meaning of some fields.
+- **most files**: one or two file types aren't parsed yet.
+- **partly**: several file types aren't parsed yet.
+
+The "Still open" column is a summary. The full items are in
+[`TODO.md`](TODO.md), and what is known is in the docs.
+
+| Folder | Holds | Status | Docs, tools | Still open |
+|---|---|---|---|---|
+| `0SYSTEM/` | UI colours, crest/badge/sponsor textures, fonts | done | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md), `system.py` | what `DETAILFLAG` switches, which UI element uses each colour |
+| `ACROBATA/` | 875 Acroarts event scenes | most files | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md), `acrobata.py` | the `ABDT` scene layout, which code plays which scene |
+| `BG/` | pre-rendered rooms: archives, textures, Z buffers, models | most files | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md), `zbf.py`, `ninja.py`; no folder doc | `HUMANID.BIN` |
+| `CSE/` | 2D screen layouts | done | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md), `csp.py` | |
+| `EMBLEM/` | the club editor's crest and flag parts | most files | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md), `emblem.py` | preset and crest records, `EDIT_PLAYER.TBB` |
+| `EVENT/` | the event, news and mail tables | done | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md), `evsdatabin.py` | three NEWS columns, the EVENT timing enum |
+| `GAME/` | match data: commentary, sound, models, tactics AI | partly | [`GAME_DIR.md`](DOC/GAME_DIR.md), `sounddat.py`, `ninja.py` | tactics AI, `GAMEDATA.BIN`, `AI_PARAM.BIN`, `CUTINPACK` blocks, the `RBD0` trailer |
+| `MESSAGE/` | all message text | done, with a writer | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md), `mbb.py` | what fills each variable id |
+| `NEWS/` | newspaper pictures and ranking months | done | [`NEWS_DIR.md`](DOC/NEWS_DIR.md), `news.py` | where ads and cartoons go on the page |
+| `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `plrsim.py` | `PLRESOURCECOMMON.PAC`, a few schedule tables, some player fields |
+| `PLAYER/` | faces, kits, player models | most files, with a kit writer | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md), [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md), `packdata.py`, `uniform.py` | `UNIFORM_GK`, the face block-4 header |
+| `PRELOAD/` | copies of other files for bulk loading | done, with a writer | [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md), `preload.py` | |
+| `SEQ/` | the root sequencer scripts | most files | [`SEQ_DIR.md`](DOC/SEQ_DIR.md), [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md), `sqb.py` | two unused 2004 scripts, `WPX` |
+| `SOUND/` | 28 sound banks: effects and music | done | [`SOUND_DIR.md`](DOC/SOUND_DIR.md), `sounddat.py` | which screen plays which music, 4 banks the code never names |
+| `STADIUM/` | stadium models, crowds, adverts | done | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md), `stadium.py` | a few flags |
+| `TEST3D/` | the developers' test data | most files | [`TEST3D_DIR.md`](DOC/TEST3D_DIR.md) | `SHADOWCOLLI.LBI`, who reads 110 of the 163 files |
+| `CVS/` and `*/CVS/` | the developers' version-control metadata, not read by the game | done | [`CVS_DIR.md`](DOC/CVS_DIR.md), `cvs.py` | |
 
 Outside `DATA.CVM`, the disc's `AUDIO/` folder (music, commentary, chants and
 ambience) is done in [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md), the `DLL/*.REL`
