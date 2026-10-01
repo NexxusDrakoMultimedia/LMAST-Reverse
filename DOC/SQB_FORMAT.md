@@ -408,13 +408,23 @@ as the developers' own switch does. `pwkLg_Init(0)` names league 0
 were skipped, and the career went on to 2006–07 Week 1 Mid-Week July with
 the season's Sponsor contract screen. But the sponsors weren't right: only
 the main sponsor changed, and the supplier and the four sub-sponsors were
-left as they were (user report: in a normal career they don't come out
-like this). The year-start Sponsor module (`RootYearStartSeq.sqb`
-`0x390`, module 55) runs in both routes, so something the skipped playoff
-period does feeds the offers. Candidates are the steps between `L2` and
-`L9`: `Sche.YearEnd` (`0x113668`) runs `ClubRank::UpdateYearEnd`,
-`pwkTeam_YearEndCheck` and `pwkTeam_ChangePop_Year`, and the playoff
-events themselves. Not yet traced.
+left as they were. **User report:** those are the club's sponsors during
+the playoffs (main sponsor Fosty Misty, supplier Doclla, four
+sub-sponsors). In a normal career they end with the playoffs: the first
+sponsor screen lets you sign the sub-sponsors, and the supplier becomes
+Egamucho on a random 1–3 year contract. So the skip leaves out whatever
+ends the playoff contracts.
+
+Ruled out: the year-start Sponsor module (`RootYearStartSeq.sqb`
+`0x390`, module 55) and `pwkSponsor_UpdateStatus` (`SIMPRG.REL
+0x16af40`, run when that module starts) run in both routes;
+`Sche.MonthEnd` (`0x1137b8`) only advances the schedule's month; and
+`Sche.YearEnd` (`0x113668`) runs the schedule and club-rank year end,
+`pwkTeam_YearEndCheck` and `pwkTeam_ChangePop_Year`, none of which touch
+sponsors. Left: the playoff period's turns, events (`RootEventSeq.sqb`
+with the tutorial's event batches, `m4[3] = 12 + first-match count`) and
+matches. Sponsor names are messages of category 10000 (Egamucho 211,
+Doclla 212, Biassenn 183).
 
 ## The developer launcher
 
