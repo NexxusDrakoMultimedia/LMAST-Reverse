@@ -46,6 +46,7 @@ Usage:
     python save.py player    <save> <slot>                # one player in full (youth: y<slot>)
     python save.py staff     <save>                       # manager, youth manager, coaches, scouts
     python save.py finances  <save>                       # season plan, accounts by income/payment type
+    python save.py candidates <save>                      # scouted players and youth, staff candidates
     python save.py set       <save> <out> money=N         # edit into a new main file
     python save.py set       <save> <out> status=30000 status_rank=4  # your club's standing
     python save.py set       <save> <out> plan:ticket_price=120 plan:season_tickets=5000
@@ -767,6 +768,19 @@ PLAN_OTHER, PLAN_OTHER_IDS, PLAN_OTHERS = 0x18, 0x38, 8
 PLAN_EDITS = {"ad_budget": (0x0, 0, 30000000, 1), "ticket_price": (0x4, 60, 300, 1),
               "season_ticket_rate": (0x8, 50, 150, 10), "season_tickets": (0x10, 0, None, 100)}
 PLAN_TICKET, PLAN_RATE, PLAN_SEAT_PRICE, SEASON_TICKET_SHARE = 0x4, 0x8, 0xc, 80
+# Block 1: the candidate lists the scouts and the staff search fill. Each
+# entry has a database id (-1 = empty) and a count of turns it stays listed,
+# which pwkTeam_CandidatesDecrement (0x2643c8) lowers each turn, dropping
+# the entry at 0. (name, offset, entries, entry size, id offset, turns offset)
+CANDIDATE_LISTS = (
+    ("players", 0x9440, 30, 0x20, 0x0, 0x3),    # pwkTeam_AddPlayerCandidate 0x25b988
+    ("youth", 0x97f8, 30, 0xc, 0x0, 0x9),       # pwkTeam_AddYouthCandidate 0x25bdf0
+    ("managers", 0x9960, 30, 0xc, 0x4, 0x8),    # pwkTeam_AddManagerCandidate 0x269658
+    ("coaches", 0x9ac8, 30, 0xc, 0x4, 0x8),     # pwkTeam_AddCoachCandidate 0x269710
+    ("scouts", 0x9c30, 13, 0xc, 0x4, 0x8))      # pwkTeam_AddScoutCandidate 0x2697c8
+# A youth candidate (PlYCandidate, filled at 0x26316c): s16 id, u32 main
+# position (getPinfoApos0) at +0x4, u8 age at +0x8 (16), u8 turns at +0x9 (8).
+YCAND_POS, YCAND_AGE = 0x4, 0x8
 # Block 1 +0x4e99: your stadium (pwkTeam_GetStadium 0x25d910): s8 stadium,
 # s8 the one being built, u8 building flag, s8 stand level, ...
 # pwkUnkei_GetStandAllCapacity (0x271b48) reads the capacity as the u32 at
@@ -1421,6 +1435,30 @@ def cmd_staff(game, path):
         print("      " + "  ".join("%s %d" % b for b in bars))
 
 
+def cmd_candidates(game, path):
+    """The candidate lists: players, youth players, managers, coaches, scouts."""
+    import pbdata
+    s = Save(game, path)
+    b = s.blocks
+    db = pbdata.PbData(os.path.join("DAT", "PARAM", "PBDATA_EU.PAC"))
+    names = {r.db_id: r.name for kind in pbdata.KINDS for r in db.records(kind)}
+    print(s.path)
+    for name, off, count, size, id_off, turns_off in CANDIDATE_LISTS:
+        o = s.at(1, off)
+        rows = [o + i * size for i in range(count)
+                if struct.unpack_from("<h", b, o + i * size + id_off)[0] >= 0]
+        print("  %s: %d of %d" % (name, len(rows), count))
+        for r in rows:
+            pid = struct.unpack_from("<h", b, r + id_off)[0]
+            extra = ""
+            if name == "youth":
+                extra = "  %-5s age %d" % (pbdata.position_name(
+                    struct.unpack_from("<I", b, r + YCAND_POS)[0]), b[r + YCAND_AGE])
+            print("    id %5d  %-20s %d turn%s left%s" % (
+                pid, names.get(pid, "?"), b[r + turns_off],
+                "" if b[r + turns_off] == 1 else "s", extra))
+
+
 def cmd_finances(game, path):
     """The season plan and the accounts for this month and this season."""
     s = Save(game, path)
@@ -1712,6 +1750,8 @@ def main(argv):
         cmd_encode(game, *args)
     elif cmd == "roundtrip" and args:
         return cmd_roundtrip(game, args)
+    elif cmd == "candidates" and len(args) == 1:
+        cmd_candidates(game, args[0])
     elif cmd == "finances" and len(args) == 1:
         cmd_finances(game, args[0])
     elif cmd == "show" and len(args) == 1:

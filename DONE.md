@@ -577,3 +577,8 @@ files. Each item keeps what was found, where, and how it was tested.
       stored unit), with season tickets capped at 80% of the stadium's
       capacity (block 1 `+0x4e99`, `pwkUnkei_GetStandAllCapacity`) and the
       season-ticket price set as the screen does
+- [x] The youth block: the youth candidates (block 1 `+0x97f8`, 30 × 12
+      bytes: id, main position, age, turns left) and the four other
+      candidate lists (players, managers, coaches, scouts) with their
+      countdown. The youth join list isn't in the save and youth training
+      isn't stored. `save.py candidates` lists them all with names

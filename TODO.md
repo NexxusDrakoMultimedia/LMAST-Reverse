@@ -17,9 +17,8 @@ item in its section below.
 2. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
    and 7). This is the largest piece of starting-season data still undecoded.
 3. **Save data blocks for an editor** (section 10). Staff, other clubs,
-   your club's status, the finances and the season plan are mapped and
-   editable; the youth block is what an editor still needs to change a
-   career in progress.
+   your club's status, the finances, the season plan and the youth block
+   are mapped. What's left is leftovers; consider replacing this entry.
 4. **Message variables** (section 1). Which game value fills each
    variable id in the message text, so text edits can move or reuse
    them safely.
@@ -249,10 +248,9 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       (category 550 messages 217-251), the season plan's `+0x14` and
       `+0x16`, and where the plan window checks its limits (they're from a
       user report so far)
-- [ ] The youth block: the youth team's own data beyond its players
-      (candidate lists, promotion, the youth manager's settings), through
-      `pwkTeam_GetYteamData`, `pwkTeam_UpdateYouthCandidates` and
-      `pwkTeam_GetYouthPromoteConyear`, and the fields an editor should offer
+- [ ] Candidate list leftovers: the rest of the 32-byte player
+      candidate record, the first u32 of the staff candidate records, and
+      what the youth join limit of 4 (`pwkTeam_GetYouthPlayerMax`) counts
 - [ ] Other clubs and staff leftovers: the untraced club record bytes
       (`+0x9b`, `+0xa1`, `+0xa6`-`+0xa7`), the non-resident clubs (442 on),
       the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`, and how

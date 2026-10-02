@@ -94,6 +94,8 @@ All **confirmed** by the accessor named. Offsets are within the block.
 | 1 | `0x9148` | 4 × PlMinfo | `pwkTeam_GetCoaches` (`0x26a7b8`) | the coaches, 0xbc bytes each |
 | 1 | `0x8f8c` | 3 × PlSinfo | `pwkTeam_GetScouts` (`0x26d098`) | the scouts, 0x94 bytes each |
 | 1 | `0x12470` | | `pwkUnkei_GetWork` (`0x271cf8`) | the season plan: ad budget, ticket prices, season tickets (below) |
+| 1 | `0x4e99` | | `pwkTeam_GetStadium` (`0x25d910`) | your stadium: which one, the one being built, stand level (see the season plan below) |
+| 1 | `0x9440`–`0x9cc4` | 5 lists | `pwkTeam_Add*Candidate` | the candidate lists: players, youth, managers, coaches, scouts (below) |
 | 5 | `0x0` | 2 × (12 + 23) s64 | `pwkRec_AddMonthlyIncome` (`0x252d88`), `AddMonthlyPayment` (`0x252de0`), `GetMonthlyReport` (`0x252e38`), `GetAnnualReport` (`0x253090`) | the accounts for this month (`+0x0`) and this season (`+0x130`) (below) |
 
 **Money** is stored in the game's own unit. `plMisc_MoneyRate`
@@ -603,6 +605,39 @@ club" (rank 24, "World-class club", before). The style line under it
 stayed as the code picks it ("Fairly defence-minded", "Not very
 attack-minded"), and the world rankings (438, 53) didn't change.
 
+**The youth block.** The youth team is the 24 PlPinfo at block 1
+`+0x4f00` and the youth manager at `+0x8e00` (both above, and shown by
+`save.py show` and `staff`). The rest of what the game keeps on youth is
+the youth candidate list. **Confirmed from the game code:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x25bb18`, `0x25bc18` | `pwkTeam_InitYouthCandidate`, `GetYouthCandidateOne` | the youth candidates are 30 records of 12 bytes at block 1 `+0x97f8`, an s16 database id first (−1 = empty) |
+| `0x26316c` | `pwkTeam_UpdateYouthCandidates` | fills a record: s16 id, u32 main position (`getPinfoApos0`) at `+0x4`, u8 16 at `+0x8`, u8 8 at `+0x9` |
+| `0x25f540` | `pwkTeam_CreatePinfo_NoRandMove_FromPlYCandidate` | passes `+0x8` to `pwkTeam_CreatePinfo` as the age and makes a date from `+0x9` |
+| `0x2643c8` | `pwkTeam_CandidatesDecrement` | lowers `+0x9` each turn and drops the record at 0, so `+0x9` is the turns it stays listed |
+| `0x2712c8` | `pwkTeam_ClearYouthJoinList` | the youth join list (16 × 8 bytes) is at `0x399740` in the executable's memory, not in the save |
+| `0x270dc8` | `pwkTeam_SetYPrac` | does nothing: youth training settings aren't stored |
+| `0x270e30` | `pwkTeam_GetYouthPlayerMax` | returns 4 |
+
+The same countdown runs over the other candidate lists, which the
+`Add*Candidate` functions name:
+
+| Block 1 offset | Records | Id at | Turns at | List |
+|---|---|---|---|---|
+| `0x9440` | 30 × 0x20 | `+0x0` | `+0x3` | players (`pwkTeam_AddPlayerCandidate`, `0x25b988`) |
+| `0x97f8` | 30 × 0xc | `+0x0` | `+0x9` | youth players (`pwkTeam_AddYouthCandidate`, `0x25bdf0`) |
+| `0x9960` | 30 × 0xc | `+0x4` | `+0x8` | managers (`pwkTeam_AddManagerCandidate`, `0x269658`) |
+| `0x9ac8` | 30 × 0xc | `+0x4` | `+0x8` | coaches (`pwkTeam_AddCoachCandidate`, `0x269710`) |
+| `0x9c30` | 13 × 0xc | `+0x4` | `+0x8` | scouts (`pwkTeam_AddScoutCandidate`, `0x2697c8`) |
+
+**Empirical:** in saves G001 and G006 the youth candidates (12 and 10)
+are all 16, with 1–8 turns left, and every id in every list is a player,
+manager or scout of the right kind in the database. `save.py candidates`
+lists them with names; the main position uses the same position numbers
+as the squad. The rest of the player candidate record (32 bytes) isn't
+decoded.
+
 **Match statistics.** For squad slot `s`, the stats start at block 1
 `+0xec8e + s × 0x11e`: four tables of five rows (pre-season, domestic
 league, overseas league, Euro, international), then 6 bytes not traced.
@@ -725,6 +760,7 @@ python SRC/save.py show  <card>/BESLES-54151-G003
 python SRC/save.py combi <card>/BESLES-54151-G000 6
 python SRC/save.py clubs <card>/BESLES-54151-G000 167 54 432
 python SRC/save.py finances <card>/BESLES-54151-G000
+python SRC/save.py candidates <card>/BESLES-54151-G006
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x26dd40 38
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x288a24 60
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 151938 60 --sles ISO/SLES_541.51
