@@ -247,8 +247,9 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       icons, and what the 3 records at block 1 `+0xe290` are
 - [ ] Finance leftovers: name income types 0-3, 6, 9, 10 and payment
       types 0-6, 14, 15, 18, 21, 22 (booked from `SIMPRG.REL`); the
-      report screen's group labels (a screenshot of a report from save
-      G000 would match them to the groups); the season plan's `+0x14`,
+      report screen's group labels (from its layout, `SIMPRG.REL 0x997c8`;
+      the reports only show at month and season end, so not a quick
+      PCSX2 check); the season plan's `+0x14`,
       `+0x16` and the limits the plan screen sets, before `save.py` edits
       the plan (`SAVE_FORMAT.md`, "Finances")
 - [ ] Map more of the blocks through their accessors (youth, other
