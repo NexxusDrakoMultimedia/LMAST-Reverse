@@ -366,6 +366,11 @@ files. Each item keeps what was found, where, and how it was tested.
       `emblem.py`, `news.py` and `cvs.py` (all in `regress.py`)
 - [x] Folder doc for `ACROBATA/` (`DOC/ACROBATA_DIR.md`): every folder in
       `DAT/` now has a doc
+- [x] The play books `GAME/PLAYBOOK.BPB` (256 plays) and
+      `COMBINATION.BPB` (30): records of player and ball paths, points in
+      metres (x across, y along the pitch), the ball's route, play ids
+      (`Pwk::PlayBookData::CPlayBookDataBase`). `bpb.py` (`info`, `dump`),
+      checked by `regress.py`
 
 ## 7. Event system and game code
 

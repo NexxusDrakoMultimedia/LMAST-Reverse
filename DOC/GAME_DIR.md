@@ -29,7 +29,8 @@ BCB3, DTPK) are **empirical**, checked against every file on the disc.
 | `*.SVM`, `EF001.BIN`, `FLARE.BIN` | `PVMH` | texture archives |
 | `BALLMOTION`, `OPTMOTION*`, `PLAYERMOTION`, `SHADOWCOLLI`, `WALLCOLLI` | BINPAC | see `PAC_FORMAT.md` |
 | `CUTINPACK.BIN` + `_HEADER.BIN` | KC@P | see `PAC_FORMAT.md`. 168 of 277 entries hold `CIB0` blocks, 109 are empty |
-| `PLAYBOOK.BPB`, `COMBINATION.BPB`, `COMBINATION2.CBB/.CSB` | unknown | tactics AI: `fb::PlayBookData`, `fb::Combination` (`fb/thought/*.cpp`) |
+| `PLAYBOOK.BPB`, `COMBINATION.BPB` | play books | the players' and ball's paths in each set play and move, in metres: see [`BPB_FORMAT.md`](BPB_FORMAT.md) (`Pwk::PlayBookData`) |
+| `COMBINATION2.CBB/.CSB` | unknown | tactics AI: `fb::Combination` (`fb/thought/*.cpp`) |
 | `BACK_MATCH.TBB`, `TACTICS_PLAYBOOK_EDIT.TBB` | TBB | see `TBB_FORMAT.md` |
 | `AI_PARAM.BIN` | 467 × f32 | not referenced by name in any executable |
 | `GAMEDATA.BIN` | unknown | loaded by `GAMEPRG.REL` |

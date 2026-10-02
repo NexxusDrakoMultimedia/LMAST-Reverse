@@ -23,9 +23,10 @@ item in its section below.
 4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc.
-5. **The `GAME/` tactics AI files** (section 6). `PLAYBOOK.BPB`,
-   `COMBINATION.BPB`, `GAMEDATA.BIN` and `AI_PARAM.BIN` are undecoded, and
-   the AI's data tables are the lead for the player fields in #1.
+5. **The `GAME/` tactics AI files** (section 6). The play books are
+   decoded (`BPB_FORMAT.md`); `COMBINATION2.CBB/.CSB`, `GAMEDATA.BIN` and
+   `AI_PARAM.BIN` are left, and the AI's data tables are the lead for the
+   player fields in #1.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -167,8 +168,9 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       entries move needs `SLES 0x3a3b08` patched (no tool does that yet)
 - [ ] Still open in `STADIUM/`: which crowd figure group is which on
       screen, who sets request `+0x0e`-`+0x10` in a real match
-- [ ] `GAME/` tactics AI: `PLAYBOOK.BPB`, `COMBINATION.BPB`,
-      `COMBINATION2.CBB/.CSB` (`fb::PlayBookData`, `fb::Combination`)
+- [ ] `GAME/` tactics AI: `COMBINATION2.CBB/.CSB` (`fb::Combination`), and
+      in the play books (`DOC/BPB_FORMAT.md`) the path kinds, point codes,
+      which play is which, the `+0x20` block and `GetFormationData`
 - [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
       (467 f32, not referenced by name)
 - [ ] `TEST3D/SHADOWCOLLI.LBI` and `BG/HUMANID.BIN`. The `.LBI` starts
