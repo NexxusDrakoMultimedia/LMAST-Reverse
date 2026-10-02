@@ -246,8 +246,8 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       icons, and what the 3 records at block 1 `+0xe290` are
 - [ ] Map more of the blocks through their accessors (youth, other
       clubs, finances), and name the fields an editor should offer. Other clubs: the
-      untraced record bytes (`+0x9b`-`+0xa7` apart from the ranks), what the club rank
-      (`+0xa0`, not the League Ranking) measures, and the non-resident clubs (442 on). Staff
+      untraced record bytes (`+0x9b`-`+0xa7` apart from the ranks), which club-rank values give which
+      Information screen text ("World-class club", "Local club"), and the non-resident clubs (442 on). Staff
       leftovers: the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`,
       and how far the manager's popularity goes in play (0 in every save)
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0-3

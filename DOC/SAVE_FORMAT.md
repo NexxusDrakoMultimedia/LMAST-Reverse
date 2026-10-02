@@ -322,13 +322,22 @@ new young players, so "John Terry" at Chelsea is 17 in the 2019–20 save.
 
 **Empirical**, all 5 saves: friendship 0–82, club rank 0–31, world rank
 1–441 (0 in the 2005 save, before the first ranking), 22–25 players per
-club. The world rank matches the club Information screen's World
-Ranking (F.C. Barcelona 28 and Marseille 53, save G000). The club rank
+club. The world rank matches the game's rankings (save G000): the club
+Information screen's World Ranking (F.C. Barcelona 28, Marseille 53,
+Pirouzi 438), and all 20 clubs on the first and last pages of the All
+Clubs Ranking (AC Milan 1 to Chelsea 10, Diaconsa 432 to Venlo 441). The
+440 records hold every rank from 1 to 441 except 2, which on screen is
+your own club (kept in block 1); 6 is the rival, record 0. The club rank
 isn't the League Ranking shown there (26 and 24 against 7 and 5): the
 League Ranking is the club's place in its league table, and only clubs in
 the Euro6 (the six main leagues and their two divisions) have one (user
-report). The club rank is what `pwkOteam_GetRank` returns, which isn't
-traced further. Bytes
+report). The club rank is what `pwkOteam_GetRank` returns. **Empirical:** it runs
+29–31 for the clubs at the top of the world ranking and 0–5 at the
+bottom, and the Information screen calls F.C. Barcelona (26) and
+Marseille (24) a "World-class club" and Pirouzi (5) a "Local club", so
+it looks like the club's status, as in the starting club records
+([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)). Which text goes with which
+rank isn't traced. Bytes
 `+0x9b`–`+0x9f`, `+0xa1`–`+0xa3` and `+0xa6`–`+0xa7` aren't
 traced. `save.py clubs` lists the clubs (with their squads for the teams
 named), and `save.py set ... club:<team>:friendship=` edits friendship.
