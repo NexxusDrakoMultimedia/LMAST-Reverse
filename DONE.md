@@ -232,6 +232,14 @@ files. Each item keeps what was found, where, and how it was tested.
       match): boots, long sleeves, wristbands, the keeper's long pants and
       glove type show as documented
       (`DOC/PBDATA_FORMAT.md#kit-style`)
+- [x] The match engine's player parameters: `GAMEPRG.REL 0x1435a8` and
+      its helpers turn `PlPinfo` into a 0x108-byte record per player with
+      a parameter array at `+0x37` (abilities through the tables at
+      `0x28bd08`, `0x28bf38`, `0x28c048`; injury resistance, weak foot,
+      recovery, foul avoidance, professionalism, pressure, styles, skills,
+      `f_66`, ball touch, dribble style and the kit style directly).
+      `f_66` is not dead data: it becomes parameters 128–138
+      (`DOC/PBDATA_FORMAT.md#the-match-engines-player-parameters`)
 
 ## 3. Ninja 3D models and motions
 

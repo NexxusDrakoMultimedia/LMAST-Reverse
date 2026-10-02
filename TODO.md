@@ -52,11 +52,13 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `MAPTEAM_LIST`, and `PLRRSRC_INITTEAMDATA` table 2's negative values
 - [ ] `TEAM_INIT_DATA` leftovers: the candidate lists' "List criteria"
       (7 Training cycle) and H.Dale's salary showing 80,000 not 75,000
-- [ ] Player fields still open: `+0x43`–`+0x46` and the ten `+0x66`
-      values besides `+0x67` (no reader found), what the match engine
-      (`GAMEPRG.REL 0x1435a8` copies `+0x3f`–`+0x5d`) does with them,
-      abilities 53–63 and the skills and play styles, and which attack
-      pattern letter (59–63) is which
+- [ ] Player fields still open: `+0x43`–`+0x46` (no reader found), what
+      the match AI does with its player parameters (the map from fields
+      to parameters is done; `f_66` is parameters 128–138, ball touch
+      139, dribble style 140), where abilities 59–63 are used (not in the
+      match record), and which attack pattern letter is which.
+      Lead: the AI's data tables that index parameters (`0x146560` reads
+      the play styles that way)
 - [ ] Kit style leftovers: what `+0x5a` is (3 showed no hat), what sets
       `plGi +0x1f538` (outfield gloves; a night match didn't)
       (`DOC/PBDATA_FORMAT.md#kit-style`)

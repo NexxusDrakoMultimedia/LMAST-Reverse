@@ -117,7 +117,7 @@ also found.
 | 5 | 5 | `+0x5e` | style | play styles, 1–22, 0 for none. **confirmed**. See [Play styles](#play-styles) |
 | 3 | 1 | `+0x63` | flags | bit 1: EU passport. **confirmed**. Set in 19,333 players |
 | 16 | 1 | `+0x64` | skills | bit mask. **confirmed**. All 16 bits are used; see [Skills](#skills) |
-| 3 | 11 | `+0x66` | f_66 | 0–4. No label. `+0x67` is the row of the affinity table (see [Personality](#personality-and-condition-fields)). Team combos shift the other ten (`pwkPCombo_Add`, see [f_43 and f_66](#f_43-and-f_66)); no code was found that reads them |
+| 3 | 11 | `+0x66` | f_66 | 0–4. No label. `+0x67` is the row of the affinity table (see [Personality](#personality-and-condition-fields)). Team combos shift the other ten (`pwkPCombo_Add`, see [f_43 and f_66](#f_43-and-f_66)). All 11 become match-engine parameters 128–138 ([below](#the-match-engines-player-parameters)) |
 | 5 | 64 | `+0x74` | ability | 64 ratings (`PlAbilNo` 0–63), each mapped to 38–99. **confirmed**. See [Abilities](#abilities-and-the-detail-screen) |
 
 The 5 bits after the last field are zero in every record.
@@ -439,11 +439,65 @@ The players' `+0x30` is 0 in every record.
 | `injury_res` `+0x4e` | `plPinfo_CheckKega` (`0x21aa64`) | with the age, fatigue, power and motivation, the injury check |
 | `recovery` `+0x4f` | `plPinfo_CalcGTired`, `CalcPracTired`, `CalcRecover` | picks a pair of multipliers from `0x532870`: (1.1, 0.9), (1.1, 1.0), (1.0, 0.9), (1.0, 1.0), (1.0, 1.1), (0.9, 0.9), (0.9, 1.0), (0.7, 0.9) |
 
-The match engine (`GAMEPRG.REL`) reads `+0x3f`–`+0x5d` as well:
-`GAMEPRG.REL 0x1435a8` copies them from `PlPinfo` into its own player
-record. What the match does with pressure resistance, foul avoidance,
-weak-foot accuracy, ball-touch type and dribble style isn't traced.
-`+0x57`–`+0x5d` are the kit style ([below](#kit-style)).
+The match engine converts some of these fields into its own player
+parameters ([below](#the-match-engines-player-parameters)). What the
+match then does with them isn't traced. `+0x57`–`+0x5d` are the kit
+style ([below](#kit-style)).
+
+### The match engine's player parameters
+
+Before a match, `GAMEPRG.REL 0x143908`–`0x143968` builds a 0x108-byte
+record for each of a team's 25 players (team `+0x20` + 0x108 × slot).
+`0x1435a8` and the helpers it calls fill a byte array at record `+0x37`:
+parameter *k* is record `+0x37 + k`. `0x146480` reads parameter *k* and
+returns 0 for a value of 100 or more. A record field `+n` sits at
+`PlPinfo +n+0x198`, and ability *a* at `PlPinfo +0xa + 6a` (a halfword; the
+conversions add 15 to it).
+
+**Confirmed** from the code below. Three tables of 16-byte rows
+`{s32 parameter, s32 ability or −1, u32 add, s32 max}` turn abilities
+into parameters (ability + add, then clamped to max), and the rest is
+written directly:
+
+| Parameters | Source | Address |
+|---|---|---|
+| 13 | ability 23 (stamina) + 15 | `0x1435c0` |
+| 26–42, 46–57 | abilities 0–25 + 15, in order, except: 32 and 33 both ability 6, 41 ability 22, 42 ability 14, 54 ability 25 | table `0x28bd08`, `0x142ee0` |
+| 43, 44, 45 | 0.7 × ability 14 (placekick) + 0.3 × ability 5 (long pass) + 15 | `0x142f60` |
+| 58 | 7 − `injury_res` (`+0x4e`) | `0x142fd0` |
+| 59 | `weak_foot` (`+0x51`) / 2 | `0x142fdc` |
+| 60 | `recovery` (`+0x4f`) | `0x142fe8` |
+| 61, 67–70 | abilities 26, 28–31 + 15 | table `0x28bf38`, `0x143038` |
+| 62 | (15 − `foul_avoid` (`+0x50`)) / 2 | `0x1430c0` |
+| 63 | `professionalism` (`+0x3f`) / 2 | `0x143100` |
+| 64 | `pressure` (`+0x40`) / 2 | `0x14310c` |
+| 65, 66 | ability 32 (concentration) / 14, ability 27 (nerve) / 14 | `0x143118` |
+| 71 | 1 if `professionalism` ≥ 3 | `0x143138` |
+| 72, 75, 76 | abilities 53, 58, 57 + 15 | table `0x28bf38` |
+| 73 | 0.7 × ability 55 + 0.3 × ability 54 + 15 | `0x143148` |
+| 74 | 0.7 × ability 56 + 0.3 × ability 54 + 15 | `0x143180` |
+| 77 | `PlPinfo +0x294` (clamped to 25) | `0x1431c4` |
+| 78–89 | 0.7 × aptitude 33–44 + 0.3 × a system fit (ability 45 + the third argument; `0x1435a8` passes 4, the 4-4-2) + 15. Parameter 85 uses the larger of aptitudes 40 and 41 | table `0x28c048`, `0x143228` |
+| 90–111 | 99 for the play style held in `PlPinfo +0x278` (compared with 1–22; presumably the style the player plays), 0 for the others | `0x1433e8` |
+| 112–127 | skill bits 0–15 (`plPinfo_IsSkill`), 0 or 1 | `0x143430` |
+| 128–138 | the 11 `f_66` values (`+0x66`), a value of 5 or more becomes 4 | `0x143490` |
+| 139 | `ball_touch` (`+0x55`), 3 becomes 2 | `0x1434d8` |
+| 140 | `dribble_style` (`+0x56`), 4 or more becomes 2 | `0x1434f8` |
+| 141–149 | 1 if ability 1 (dribble skill) is at least 0x50 | `0x143518` |
+| 153–155, 159–162 | the kit style: `boots`, `gloves`, `f_5a`, `wristband`, `gk_gloves`, `gk_pants`, `sleeves` | `0x143558` |
+
+Parameters 150–152 and 156–158 are set to 0. Abilities 59–63 (the attack
+patterns) and 45–52 (the system fits, except through 78–89) are not
+copied. Neither are `tone`, `loyalty`, `star`, `f_43`, `moti_type`,
+`cond_type`, `potential`, `growth`, `travel`, `policy`, `adapt` and
+`intelligence`; those are only used outside the match.
+
+`f_66` is therefore read by the match: the team-combo bonuses
+(`pwkPCombo_Add`) feed parameters 128–138. No code was found that reads
+those parameters, or 139 and 140, at a fixed offset or through
+`0x146480`. The AI may index them from data tables, which aren't traced.
+Of the getter's 13 calls, `0x146560` picks a player's best play style
+from parameters `0x5a` + *n*.
 
 ```bash
 python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 4408     # Beckham: every field by name
@@ -677,7 +731,9 @@ Of the 11 values at `+0x66`, only `+0x67` is read (the affinity row).
 abilities when the club reaches one of 45 "combos" (conditions at
 `0x54fbe8`, 0x34 bytes each, checked by `pwkPCombo_Recalc` `0x24e0e8`;
 bonuses at `0x550510`, 0x98 bytes each), clamped to 0–4. The bonus to
-`+0x67` is always 0. Nothing was found that reads the other ten afterwards.
+`+0x67` is always 0. The match engine copies all 11 into its player
+parameters 128–138 ([above](#the-match-engines-player-parameters)), but
+what reads them there isn't found.
 
 ```bash
 python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 4408     # +0x57-+0x5d by name
@@ -1044,14 +1100,17 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 
 ## Still unknown
 
-- What `+0x30` (always 0), `+0x43`–`+0x46` and the ten `+0x66` values
-  other than `+0x67` mean; no reader was found for any of them.
+- What `+0x30` (always 0) and `+0x43`–`+0x46` mean; no reader was found.
+  What the ten `+0x66` values other than `+0x67` do in a match (they
+  become engine parameters 129–138).
 - Kit style: what `+0x5a` is (value 3 showed no hat in a VS match), what
   turns the outfield gloves on (`plGi +0x1f538`; not a night match),
   and whether the dissatisfaction
   code's use of `+0x58`/`+0x59` is intended ([Kit style](#kit-style)).
-- What the match engine (`GAMEPRG.REL`) does with `+0x3f`–`+0x5d` and
-  abilities 53–63, and which attack pattern letter is which.
+- What the match engine does with its player parameters
+  ([The match engine's player parameters](#the-match-engines-player-parameters)),
+  and which attack pattern letter is which. Abilities 59–63 aren't
+  copied into the match record, so their effect is outside it.
 - What each speech tone, condition type, ball-touch type and dribble
   style value is.
 - The hexagon labels are matched to indices from the data and VPF's
