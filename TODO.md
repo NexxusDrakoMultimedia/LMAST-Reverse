@@ -22,6 +22,12 @@ item in its section below.
    only takes effect in a new career; mapping the staff, youth, other
    clubs' and finance blocks would let an editor change a career in
    progress.
+5. **Goalkeeper kits, `UNIFORM_GK`** (section 4). Outfield kits are
+   decoded and editable (`uniform.py`); the keepers' aren't, and the
+   result is easy to check on a keeper in a match.
+6. **Message variables** (section 1). Which game value fills each
+   variable id in the message text, so text edits can move or reuse
+   them safely.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
