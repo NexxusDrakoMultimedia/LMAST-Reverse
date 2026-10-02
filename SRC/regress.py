@@ -72,6 +72,7 @@ def checks():
          ["DAT/PARAM/TEAM_INIT_DATA.TBB"]),
         # The new club's squads and staff, named from the player database.
         ("plrsim", ["plrsim.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("plrcommon", ["plrcommon.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         # Combinations and free agents by name, cities and weather.
         ("plrsim_show_combi", ["plrsim.py", "show", "DAT/PARAM", "13"],
          ["DAT/PARAM/PLRESOURCESIM.PAC", "DAT/PARAM/PBDATA_EU.PAC"]),

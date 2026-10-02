@@ -84,7 +84,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical). Reader not found |
 | `TACTICS_FORMATION_SET.TBB` | TBB, 1 table | entry 11 of the `GetPreLoadData` list (`SLES 0x55b560`), and `SLES 0x55b2d8` | 8 formations × 8 bytes |
 | `SPONSOR_BOARD.TBB` | TBB, 1 table | **not referenced by name** | 132 bytes, `01 02 03 ...` |
-| `PLRESOURCECOMMON.PAC` | BINPAC, 5 TBB entries | `ePLRSRC` 0 | team facilities, formations, nations. See [the packs](#plresourcecommonpac) |
+| `PLRESOURCECOMMON.PAC` | BINPAC, 5 TBB entries | `ePLRSRC` 0 | team facilities, formations, nations. See [`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md) |
 | `PLRESOURCESIM.PAC` | BINPAC, 16 entries | `ePLRSRC` 1 | cities and weather, club records, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ... See [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md) |
 | `SCHEDULE_SYSTEM.PAC/.HED` | BINPAC, 5 named TBBs | `ScheEuro_SubCtrl::requestLoad` (`0x209b50`) | `year_schedule_data`, `open_nation`, `make_list`, `PeriodName`, `savectrl`. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
 | `SCHEDULE_COMPETITION.PAC/.HED` | BINPAC, 164 entries | `ScheEuro_LoadModule::Execute` (`0x208c50`), name table `0x390658` | one schedule per UID: games and pairings. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
@@ -154,7 +154,8 @@ and European Championship years).
 
 ## `PLRESOURCECOMMON.PAC`
 
-5 TBB entries. **Confirmed** readers (entry/table from the constant
+Record layouts and the tool are in
+[`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md). 5 TBB entries. **Confirmed** readers (entry/table from the constant
 arguments to `plResource_GetResourceDataBinPacTbb[Tbl]`):
 
 | Entry.table | Rows × line | Reader |
