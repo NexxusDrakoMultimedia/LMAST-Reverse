@@ -29,8 +29,13 @@ functions that read them (plPinfo_IsForeigner, plPinfo_IsEU,
 plPinfo_IsSkill, getPinfoRank, getPinfoApos0, pwkTeam_SetUnumberOpinfo)
 and from the developers' player, manager and scout editors in DEBUGPRG.REL,
 which label the 64 player abilities ({label, number} table at 0x11128),
-the 48 manager and 45 scout abilities (0x103d8, 0x13240) and most fields;
-fields with neither keep their offset as a name (f_30, ...).
+the 48 manager and 45 scout abilities (0x103d8, 0x13240) and most fields.
+The kit style at +0x57-+0x5d (sleeves, wristband, gloves, goalkeeper's
+gloves and pants, boots) is named from the game's own Dressing and GK
+Style labels: GAMEPRG.REL 0x1e468 copies it to the player model, which
+clamps each byte (set_player_uniform_style_info, 0x2cd9c8); `info` flags
+values above those limits. Fields with no name keep their offset as a name
+(f_30, ...).
 
 The player detail screen's 14 bars (SPEED ... MARK, or SAVIN ... JUMP for
 goalkeepers) are averages of the first 33 abilities (ConvertPlayer_Bar,
@@ -203,12 +208,17 @@ PLAYER_FIELDS = (
     ("intelligence", 0x54, 4, 1, None),
     ("ball_touch", 0x55, 2, 1, None),    # ball-touch type
     ("dribble_style", 0x56, 2, 1, None),
-    ("f_57", 0x57, 2, 1, None),
-    ("f_58", 0x58, 3, 2, None),
-    ("f_5a", 0x5a, 2, 1, None),
-    ("f_5b", 0x5b, 3, 1, None),
-    ("f_5c", 0x5c, 1, 1, None),
-    ("f_5d", 0x5d, 4, 1, None),
+    # +0x57-+0x5d are how the player wears the kit: GAMEPRG.REL 0x1e468
+    # copies them to bytes 0-6 of player::SPlayerUniformStyleInfo
+    # (KIT_STYLE_MAX). Names from the game's Dressing and GK Style labels
+    # (messages 2000:1074-1082) and the common pack's texture names.
+    ("sleeves", 0x57, 2, 1, None),       # 0 by season, 1 short, 2 long (refresh_uniform_style)
+    ("wristband", 0x58, 3, 1, None),     # 0 none, 1-4 colour of the "wristband" texture
+    ("gloves", 0x59, 3, 1, None),        # outfield gloves: 0 none, 1-4 fpglv_00-03 (0x3a1dc8)
+    ("f_5a", 0x5a, 2, 1, None),          # 0-3; probably the GK Style page's hat (reader not found)
+    ("gk_gloves", 0x5b, 3, 1, None),     # gkglv_00-05 (0x3a1de0)
+    ("gk_pants", 0x5c, 1, 1, None),      # goalkeeper only: 1 long
+    ("boots", 0x5d, 4, 1, None),         # 15 palette pairs for "spk_00" (0x3a2238)
     ("style", 0x5e, 5, 5, None),         # play styles 1-22 (STYLES), 0 = none; pwkPlayStyle_Init
     ("flags", 0x63, 3, 1, None),         # bit 1: EU passport (plPinfo_IsEU)
     ("skills", 0x64, 16, 1, None),       # bit mask, plPinfo_IsSkill
@@ -264,6 +274,11 @@ SCOUT_FIELDS = (
     ("ability", 0x2d, 7, 45, "ability7"),  # 7-bit, clamped to 31 before the table
 )
 FIELDS = dict(zip(KINDS, (PLAYER_FIELDS, MANAGER_FIELDS, SCOUT_FIELDS)))
+
+# PlayerAssemblerBase::set_player_uniform_style_info (0x2cd9c8) clamps each
+# kit-style byte to these maximums, so a larger stored value can't show.
+KIT_STYLE_MAX = (("sleeves", 2), ("wristband", 4), ("gloves", 4), ("f_5a", 3),
+                 ("gk_gloves", 5), ("gk_pants", 1), ("boots", 14))
 
 # plPinfo_Abil2PSM (0x216f10): the growth group of each of the 64 player
 # abilities. InitAbil scales an ability's random start offset by +0x4a, +0x4b
@@ -885,6 +900,9 @@ def cmd_info(paths):
                     p.append("position above 13")
                 if max(s for r in recs for s in r.fields["style"]) >= len(STYLES):
                     p.append("play style above %d" % (len(STYLES) - 1))
+                for fname, top in KIT_STYLE_MAX:
+                    if max(r.fields[fname] for r in recs) > top:
+                        p.append("%s above %d" % (fname, top))
             print(line + ("  !! " + "; ".join(p) if p else ""))
         players = list(db.records("players"))
         breaks = ranking_breaks(db.entry2, players)
@@ -895,6 +913,9 @@ def cmd_info(paths):
             print("  players %-7s %d-%d" % (fname, min(vals), max(vals)))
         ab = [a for r in players for a in r.fields["ability"]]
         print("  players ability %d-%d over %d values" % (min(ab), max(ab), len(ab)))
+        print("  players kit style  %s" % "  ".join(
+            "%s %d-%d" % (f, min(r.fields[f] for r in players), max(r.fields[f] for r in players))
+            for f, _ in KIT_STYLE_MAX))
         for kind in ("managers", "scouts"):
             vals = [r.fields["age"] for r in db.records(kind)]
             print("  %-8s age     %d-%d" % (kind, min(vals), max(vals)))

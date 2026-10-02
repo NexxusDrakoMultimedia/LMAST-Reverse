@@ -92,7 +92,7 @@ also found.
 | 4 | 1 | `+0x40` | pressure | pressure resistance. Read by the match engine (`GAMEPRG.REL`), not traced |
 | 4 | 1 | `+0x41` | loyalty | club loyalty; sets a promoted youth player's contract years. **confirmed** |
 | 4 | 1 | `+0x42` | star | star quality; scales popularity changes. **confirmed** |
-| 4 | 4 | `+0x43` | f_43 | no label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players) |
+| 4 | 4 | `+0x43` | f_43 | no label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players), more often set for low-ranked players. No reader found |
 | 3 | 1 | `+0x47` | moti_type | motivation type, 0–7. **confirmed** |
 | 3 | 1 | `+0x48` | cond_type | condition type, 0–7. No reader found outside the debug and save code |
 | 5 | 1 | `+0x49` | potential | 0–7; read by `plPinfo_InitEditAbil` (`0x21b2b8`) |
@@ -107,13 +107,17 @@ also found.
 | 4 | 1 | `+0x54` | intelligence | always 0 |
 | 2 | 1 | `+0x55` | ball_touch | ball-touch type, 0–2 |
 | 2 | 1 | `+0x56` | dribble_style | 0–3 |
-| 2 | 1 | `+0x57` | f_57 | always 0; no label |
-| 3 | 2 | `+0x58` | f_58 | no label. Read by `pwkDissatis_PlayerResign` and `pwkDissatis_StaffResign` (`0x239a30`, `0x23a018`). 0 in 27,256 and 27,187 players |
-| 2, 3, 1, 4 | 1 each | `+0x5a`…`+0x5d` | f_5a…f_5d | no label. Mostly 0; read by the match engine |
+| 2 | 1 | `+0x57` | sleeves | 0 by season, 1 short, 2 long. **confirmed**; always 0. See [Kit style](#kit-style) |
+| 3 | 1 | `+0x58` | wristband | 0 none, 1–4 a colour. **confirmed**; 0 in 27,256 players |
+| 3 | 1 | `+0x59` | gloves | outfield gloves in cold weather: 0 none, 1–4 a glove texture. **confirmed**; 0 in 27,187 players |
+| 2 | 1 | `+0x5a` | f_5a | 0–3, probably the goalkeeper's hat (by elimination; reader not found). 1 in 46 players |
+| 3 | 1 | `+0x5b` | gk_gloves | goalkeeper's gloves, 0–5. **confirmed** |
+| 1 | 1 | `+0x5c` | gk_pants | 1: a goalkeeper wears long pants. **confirmed** |
+| 4 | 1 | `+0x5d` | boots | boot colours, 0–14. **confirmed** |
 | 5 | 5 | `+0x5e` | style | play styles, 1–22, 0 for none. **confirmed**. See [Play styles](#play-styles) |
 | 3 | 1 | `+0x63` | flags | bit 1: EU passport. **confirmed**. Set in 19,333 players |
 | 16 | 1 | `+0x64` | skills | bit mask. **confirmed**. All 16 bits are used; see [Skills](#skills) |
-| 3 | 11 | `+0x66` | f_66 | 0–4. No label. `+0x67` is the row of the affinity table (see [Personality](#personality-and-condition-fields)); the others aren't traced |
+| 3 | 11 | `+0x66` | f_66 | 0–4. No label. `+0x67` is the row of the affinity table (see [Personality](#personality-and-condition-fields)). Team combos shift the other ten (`pwkPCombo_Add`, see [f_43 and f_66](#f_43-and-f_66)); no code was found that reads them |
 | 5 | 64 | `+0x74` | ability | 64 ratings (`PlAbilNo` 0–63), each mapped to 38–99. **confirmed**. See [Abilities](#abilities-and-the-detail-screen) |
 
 The 5 bits after the last field are zero in every record.
@@ -257,7 +261,8 @@ play styles `+0x5e`. The manager and scout editors read their `+0x24`
 and `+0x22` under 必要ステータス too.
 
 The editor has no label for `+0x30`, `+0x37` (shown on its dissatisfaction
-page), `+0x43`–`+0x46`, `+0x57`–`+0x5d` or `+0x66`–`+0x70`.
+page), `+0x43`–`+0x46`, `+0x57`–`+0x5d` or `+0x66`–`+0x70`. The retail
+game's own labels name `+0x57`–`+0x5d` ([Kit style](#kit-style)).
 
 ## The developers' staff editors
 
@@ -434,9 +439,11 @@ The players' `+0x30` is 0 in every record.
 | `injury_res` `+0x4e` | `plPinfo_CheckKega` (`0x21aa64`) | with the age, fatigue, power and motivation, the injury check |
 | `recovery` `+0x4f` | `plPinfo_CalcGTired`, `CalcPracTired`, `CalcRecover` | picks a pair of multipliers from `0x532870`: (1.1, 0.9), (1.1, 1.0), (1.0, 0.9), (1.0, 1.0), (1.0, 1.1), (0.9, 0.9), (0.9, 1.0), (0.7, 0.9) |
 
-The match engine (`GAMEPRG.REL`) reads `+0x3f`–`+0x5d` as well; that
-code isn't traced, so what pressure resistance, foul avoidance, weak-foot
-accuracy, ball-touch type and dribble style do on the pitch is open.
+The match engine (`GAMEPRG.REL`) reads `+0x3f`–`+0x5d` as well:
+`GAMEPRG.REL 0x1435a8` copies them from `PlPinfo` into its own player
+record. What the match does with pressure resistance, foul avoidance,
+weak-foot accuracy, ball-touch type and dribble style isn't traced.
+`+0x57`–`+0x5d` are the kit style ([below](#kit-style)).
 
 ```bash
 python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 4408     # Beckham: every field by name
@@ -585,6 +592,83 @@ Across the database, abilities 26, 27, 32 and 45–63 average 51 for every
 position and play style. They are only higher across the board for
 stronger players (about 62 for the holders of any skill), which suggests
 filler values. That is why those names rest on the VPF players.
+
+## Kit style
+
+`+0x57`–`+0x5d` say how the player wears the kit. The retail game has an
+editor for them, and its labels are in message category 2000: a
+"Dressing" page (1070) with Sleeves, Gloves, Wristband and Spikes
+(1074–1077), and a "GK Style" page (1071) with Hat, Pants, Gloves,
+Wristband and Spikes (1078–1082). The help texts (3074–3082) explain each
+one: sleeves are "Short all year", "Long all year" or "Change length
+according to season", outfield gloves are worn "during cold weather", and
+the goalkeeper's leg wear is "Normal" or "Long". Edit players carry the
+same settings; the database players mostly have 0.
+
+**Confirmed from the game code:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `GAMEPRG.REL 0x1e468` | (called from `0x1e67c`, `0x1e7c8`, after `get_player_uniform_style_info_ptr`) | fills a 16-byte `player::SPlayerUniformStyleInfo` from `PlPinfo`: bytes 0–6 are record `+0x57`–`+0x5d`, byte 7 the shirt number (`+0x2b`), `+8` a pointer to the record (name and number for the shirt), `+0xc` a flag from `0x1e518`, which compares the player with the one picked by team `+0x41eb` (probably the captain). Byte 2 (`+0x59`) is copied only when `plGi_Get() +0x1f538` is set, and is 0 otherwise |
+| `0x2cd9c8` | `PlayerAssemblerBase::set_player_uniform_style_info` | clamps bytes 0–6 to at most 2, 4, 4, 3, 5, 1 and 14, then stores the 16 bytes at assembler `+0x8460` + 16 × slot. Slot 0 is the goalkeeper (`prepare_player_one` sets up the GK textures for it) |
+| `0x2cf3a0` | `set_default_uniform_style` | the defaults: all 0 except byte 4 (`+0x5b`) = 1 and the shirt number 10 |
+| `0x2cdd68` | `refresh_uniform_style` | byte 0 picks the arm models: 1 short, 2 long, 0 the team's choice (team style `+0x14`, set by the season, `IsLongSleeveUniformFromTempareture` `0x21fbc8`). Byte 1 non-zero adds the wristband meshes, only when the sleeves are short. Byte 5 (slot 0 only) swaps the goalkeeper's pants model for the long one |
+| `0x2c9c28` | `set_hand` | hand models: the goalkeeper always has gloved hands; an outfield player gets gloved hands when byte 2 is non-zero |
+| `0x2cb240`, `0x2cb2b0` | `prepare_player_one` | glove textures: the goalkeeper's from byte 4 through the table at `0x3a1de0` (common-pack entries 93–98, named `gkglv_00`–`gkglv_05`), an outfield player's from byte 2 through `0x3a1dc8` (1–4 → entries 89–92, `fpglv_00`–`fpglv_03`) |
+| `0x2cdad8` | `setup_player_uniform_style` | byte 6 picks a pair of palettes from the table at `0x3a2238` (15 pairs of entries 116–122) for common-pack texture 115, named `spk_00` (the boots). Byte 1 picks the palette of texture 123, named `wristband` (4 palettes, entries 124–127) |
+
+The common pack is `PLAYER/PLAYERDATACOMMONPACK1.MRG`; the texture names
+come from its `.svm` entries (`python SRC/svr.py info`).
+
+| Offset | Byte | Name | Values |
+|---|---|---|---|
+| `+0x57` | 0 | sleeves | 0 by season, 1 short all year, 2 long all year |
+| `+0x58` | 1 | wristband | 0 none, 1–4 a colour (shown only with short sleeves) |
+| `+0x59` | 2 | gloves | outfield players in cold weather: 0 none, 1–4 glove texture `fpglv_00`–`03` |
+| `+0x5a` | 3 | f_5a | 0–3. Probably the hat, the only GK Style item left over, but no reader of byte 3 was found. The cap texture `PLAYER/ACCE_CAP.SVR` is opened by `PlayerAssemblerBase::initialize` (`0x2c9264`) |
+| `+0x5b` | 4 | gk_gloves | goalkeeper's gloves `gkglv_00`–`05` |
+| `+0x5c` | 5 | gk_pants | goalkeeper only: 0 normal, 1 long |
+| `+0x5d` | 6 | boots | 0–14, one of 15 two-palette colourings |
+
+The Dressing and GK Style pages share bytes: both have a Wristband and
+Spikes item, and there is only one wristband and one boots byte.
+
+**Empirical:** across all 27,950 players the values stay within the
+clamps (`pbdata.py info` prints the ranges and marks a value above them
+with `!!`). Sleeves are always 0. Boots value 1 is held by several
+goalkeepers (Dudek, Kiely, Hoult, Howarth); the other values look random, with no link to nationality or position.
+
+**Also read by the dissatisfaction code.** `pwkDissatis_PlayerResign`
+(`0x239a30`) and `pwkDissatis_StaffResign` (`0x23a018`) use `+0x58` and
+`+0x59` as indexes into multiplier tables of 1.0, 1.1, 1.2, 1.3 (`0x3917c8`,
+`0x3919d0`), like the eight `dissatis` causes. The data looks like kit
+settings, not sensitivities: 26,524 players have both at 0, and only 31
+have both non-zero, where the eight `dissatis` causes are spread
+over 0–3. So a wristband or gloves also makes a player a little more upset
+when a teammate or a staff member he likes or dislikes leaves.
+
+What `plGi_Get() +0x1f538` is (the help text says cold weather) isn't
+traced.
+
+### f_43 and f_66
+
+No code was found that reads `+0x43`–`+0x46`. A scan of every load at
+their `PlPinfo` offsets (`+0x1db`–`+0x1de`) in `SLES_541.51` and the
+overlays found only other structures.
+
+Of the 11 values at `+0x66`, only `+0x67` is read (the affinity row).
+`pwkPCombo_Add` (`0x24e2e8`) adds a bonus to all 11 and to the 64
+abilities when the club reaches one of 45 "combos" (conditions at
+`0x54fbe8`, 0x34 bytes each, checked by `pwkPCombo_Recalc` `0x24e0e8`;
+bonuses at `0x550510`, 0x98 bytes each), clamped to 0–4. The bonus to
+`+0x67` is always 0. Nothing was found that reads the other ten afterwards.
+
+```bash
+python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 4408     # +0x57-+0x5d by name
+python SRC/sles_disasm.py ISO/SLES_541.51 dis set_player_uniform_style_info set_hand__Q2 setup_player_uniform_style__Q2
+python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x1e468 44 --sles ISO/SLES_541.51
+python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkPCombo_Add
+```
 
 ## Skills
 
@@ -944,9 +1028,11 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 
 ## Still unknown
 
-- The fields the developers' editor doesn't label: `+0x30`, `+0x43`–`+0x46`,
-  `+0x57`–`+0x5d` and `+0x66`–`+0x70` (except `+0x67`'s use as the
-  affinity row).
+- What `+0x30` (always 0), `+0x43`–`+0x46` and the ten `+0x66` values
+  other than `+0x67` mean; no reader was found for any of them.
+- Kit style: whether `+0x5a` is the goalkeeper's hat, what turns the
+  outfield gloves on (`plGi +0x1f538`), and whether the dissatisfaction
+  code's use of `+0x58`/`+0x59` is intended ([Kit style](#kit-style)).
 - What the match engine (`GAMEPRG.REL`) does with `+0x3f`–`+0x5d` and
   abilities 53–63, and which attack pattern letter is which.
 - What each speech tone, condition type, ball-touch type and dribble

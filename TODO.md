@@ -54,11 +54,14 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `MAPTEAM_LIST`, and `PLRRSRC_INITTEAMDATA` table 2's negative values
 - [ ] `TEAM_INIT_DATA` leftovers: the candidate lists' "List criteria"
       (7 Training cycle) and H.Dale's salary showing 80,000 not 75,000
-- [ ] Player fields still open: entry 2, the fields the developers'
-      editor doesn't label (`+0x30`, `+0x43`–`+0x46`, `+0x57`–`+0x5d`,
-      `+0x66`–`+0x70`), what the match engine (`GAMEPRG.REL`) does with
-      `+0x3f`–`+0x5d`, abilities 53–63 and the skills and play styles,
-      and which attack pattern letter (59–63) is which
+- [ ] Player fields still open: `+0x43`–`+0x46` and the ten `+0x66`
+      values besides `+0x67` (no reader found), what the match engine
+      (`GAMEPRG.REL 0x1435a8` copies `+0x3f`–`+0x5d`) does with them,
+      abilities 53–63 and the skills and play styles, and which attack
+      pattern letter (59–63) is which
+- [ ] Kit style leftovers: confirm `+0x5a` is the goalkeeper's hat, find
+      what sets `plGi +0x1f538` (outfield gloves), and test the kit bytes
+      in PCSX2 (`DOC/PBDATA_FORMAT.md#kit-style`)
 - [ ] Staff fields neither developers' editor labels: manager `+0x18`,
       `+0x20` (a serial number), `+0x26`, `+0x2a`-`+0x2e`; scout `+0x1c`,
       `+0x20`, `+0x24`; and what the 25 manager policies (`+0x34`), the

@@ -223,6 +223,13 @@ files. Each item keeps what was found, where, and how it was tested.
       exactly. Tested in PCSX2: free agent A.Rankin lowered from rank 9
       to 5 showed on a new club's Transfer List
       (`DOC/PBDATA_FORMAT.md#entries-2-and-3`)
+- [x] Player kit style, `+0x57`–`+0x5d`: sleeves, wristband, outfield
+      gloves, goalkeeper's gloves and pants, boots. Named from the game's
+      Dressing/GK Style labels (2000:1070–1082) and the common pack's
+      texture names; `GAMEPRG.REL 0x1e468` copies them to
+      `SPlayerUniformStyleInfo`, clamped by `0x2cd9c8`. `pbdata.py` names
+      them and `info` marks values above the clamps
+      (`DOC/PBDATA_FORMAT.md#kit-style`)
 
 ## 3. Ninja 3D models and motions
 
