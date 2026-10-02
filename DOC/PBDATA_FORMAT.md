@@ -743,7 +743,16 @@ are per pair of players: `CTacticsTeam::calculateCombinationLevel`
 `0x55b850` (13,107, 26,214, 39,322 and 52,430: fifths of 65,535).
 `CTacticsBase::refreshCombinationLevel` (`0x2a5518`) gives every icon
 the level of its pair with the selected player, through
-`CTacticsPlayerIcon::setCombinationLevel` and `GP::SetCooperationIcon`. How fast a
+`CTacticsPlayerIcon::setCombinationLevel` and `GP::SetCooperationIcon`.
+
+The five icons, from the weakest pair to the strongest, are a skull, "…",
+a blue heart, a red heart and a bigger red heart (user report for the
+three hearts; the skull and "…" at the bottom are inferred from
+screenshots). The lines follow the same levels: in one screenshot the
+only red line joined the selected player to the one player with the big
+red heart, and a substitute who had just come on had only "…" icons and
+white lines. Which colour (white, yellow, orange, red) is which level is
+empirical, from those screenshots. How fast a
 pair grows (`plCombi_GetCombinationGrow`, `0x20fb90`) depends on both
 players' `PlPinfo +0x1ea`, through an 8 × 8 table at `0x390698`, not on
 `+0x66`.
