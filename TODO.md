@@ -18,6 +18,10 @@ item in its section below.
    and 7). This is the largest piece of starting-season data still undecoded.
 3. **Size changes on the disc** (section 9). Until files can move, an edit
    can only grow to the end of its last sector, which limits every writer.
+4. **Save data blocks for an editor** (section 10). Every edit so far
+   only takes effect in a new career; mapping the staff, youth, other
+   clubs' and finance blocks would let an editor change a career in
+   progress.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
