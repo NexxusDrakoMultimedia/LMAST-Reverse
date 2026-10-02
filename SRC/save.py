@@ -55,6 +55,8 @@ Usage:
                                     dissat.0-4 and pop_supporters/pop_players 0-65535 for
                                     managers and coaches, abil.<n>|all 38-99 for all)
     python save.py combi     <save> [slot ...]            # pair combinations (tactics screen hearts)
+    python save.py clubs     <save> [team ...]            # other clubs: friendship, ranks, players
+    python save.py set       <save> <out> club:7:friendship=100   # 0-100
     python save.py set       <save> <out> combi:3:7=60000 combi:5:all=60000  # 0-65535
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
@@ -826,6 +828,21 @@ YOUTH_OFF, YOUTH_SLOTS = 0x4f00, 0x3f00 // PINFO_SIZE
 COMBI_OFF = TEAM_OFF + 0x4354
 COMBI_THRESHOLDS = (13107, 26214, 39322, 52430)
 COMBI_ICONS = ("skull", "...", "blue heart", "red heart", "big red heart")  # levels 1-5
+# Block 2: the other clubs, one 0xa8-byte record each (pwkOteam_GetPointer
+# 0x24b788). pwkOteam_Team2Otindex (0x24b7e8) maps the rival (team 2) to
+# record 0 and teams 3-441 to team - 2; clubs from 0x1ba on are
+# "non-resident" and kept elsewhere. +0 u32 team; +4 the PlOpinfo
+# (GetOpinfoPointer 0x24b920): 25 players of 6 bytes, which the expander
+# at 0x24b1e8 turns into PlPinfo: s16 database id (-1 empty), u8 age (->
+# +8), s8 shirt (-> +0x1c3, -1 keeps the database's), u8 contract years (->
+# +0x21d), u8 flags (-> +0x20c). +0x9a u8 friendship with your club, 0-100,
+# capped at 20 for the rival and 70 for a club in your city or abroad
+# without your branch (0x24a760, the pwkOteam_ChangeFS_* functions);
+# +0xa0 u8 club rank (pwkOteam_GetRank 0x24bec8); +0xa4 u16 world club
+# rank (pwkOteam_GetWorldClubRank 0x24bf70).
+CLUBS_OFF, CLUB_SIZE, CLUBS = 0x0, 0xa8, 440
+CLUB_PLAYERS, CLUB_PLAYER = 4, "<hBbBB"
+CLUB_FRIENDSHIP, CLUB_RANK, CLUB_WORLD_RANK = 0x9a, 0xa0, 0xa4
 STATS_TABLES = ("table 1 (unknown)", "season", "table 3 (last season?)", "career")
 COMPETITIONS = ("pre-season", "domestic league", "overseas league", "Euro", "international")
 STATS_ROW = "<6H2B"     # goals, assists, games, games2, mom, points x 100, red, yellow
@@ -1040,6 +1057,32 @@ class Save:
         struct.pack_into("<H", self.blocks, v, value)
         struct.pack_into("<H", self.blocks, c, max(cap, value))
 
+    def club(self, team):
+        """{team, offset, friendship, rank, world_rank, players: [(slot, id,
+        age, shirt, years, flags)]} for a resident club (team 2-441)."""
+        i = 0 if team == 2 else team - 2
+        if not 0 <= i < CLUBS or team < 2:
+            raise ValueError("teams 2-%d are kept in the save" % (CLUBS + 1))
+        o = self.at(2, CLUBS_OFF) + i * CLUB_SIZE
+        b = self.blocks
+        players = []
+        for k in range(SQUAD_SLOTS):
+            p = struct.unpack_from(CLUB_PLAYER, b, o + CLUB_PLAYERS + 6 * k)
+            if p[0] >= 0:
+                players.append((k,) + p)
+        return {"team": struct.unpack_from("<I", b, o)[0], "offset": o,
+                "friendship": b[o + CLUB_FRIENDSHIP], "rank": b[o + CLUB_RANK],
+                "world_rank": struct.unpack_from("<H", b, o + CLUB_WORLD_RANK)[0],
+                "players": players}
+
+    def set_club(self, team, field, value):
+        c = self.club(team)
+        if field != "friendship":
+            raise ValueError("only friendship can be set for a club")
+        if not 0 <= value <= 100:
+            raise ValueError("friendship is 0-100")
+        self.blocks[c["offset"] + CLUB_FRIENDSHIP] = value
+
     def encode(self):
         return build(self.game, bytes(self.blocks), self.file)[0]
 
@@ -1244,6 +1287,30 @@ def cmd_combi(game, path, slots):
                 b, name, value, cap, lv, COMBI_ICONS[lv - 1]))
 
 
+def cmd_clubs(game, path, teams):
+    """The other clubs (or the given teams) with friendship, ranks and
+    players. Player names are the database's: the save keeps only ids."""
+    import initteam
+    import pbdata
+    s = Save(game, path)
+    names = initteam.team_names(os.path.join("DAT", "MESSAGE", "MES.PAC"), 1)
+    db = pbdata.PbData(os.path.join("DAT", "PARAM", "PBDATA_EU.PAC"))
+    pnames = {r.db_id: r.name for r in db.records("players")}
+    for team in teams or [2] + list(range(3, CLUBS + 2)):
+        c = s.club(team)
+        if c["team"] != team:
+            print("%3d  !! record holds team %d" % (team, c["team"]))
+            continue
+        print("%s  friendship %d, rank %d, world rank %d, %d players" % (
+            initteam.label(names, team), c["friendship"], c["rank"], c["world_rank"],
+            len(c["players"])))
+        if teams:
+            for k, pid, age, shirt, years, flags in c["players"]:
+                print("    %2d  id %5d  %-20s age %2d  shirt %3s  %d year%s%s" % (
+                    k, pid, pnames.get(pid, "?"), age, "-" if shirt < 0 else shirt,
+                    years, "" if years == 1 else "s", "  flags %#x" % flags if flags else ""))
+
+
 def cmd_set(game, path, out, assigns):
     """money=N; for a squad player slot:ability=level, slot:all=level, or
     slot:field=value for the settable PINFO_FIELDS (fatigue, condition, ...);
@@ -1271,6 +1338,13 @@ def cmd_set(game, path, out, assigns):
                     s.set_combi(int(x), b, int(val, 0))
             except ValueError as e:
                 raise SystemExit("%s: %s" % (a, e))
+            continue
+        if key.startswith("club:"):
+            _, team, field = (key.split(":") + ["", ""])[:3]
+            try:
+                s.set_club(int(team, 0), field, int(val, 0))
+            except ValueError as e:
+                raise SystemExit("%s: %s (use club:<team>:friendship=0-100)" % (a, e))
             continue
         slot, _, which = key.partition(":")
         if slot.rstrip("0123456789") in ("manager", "ymanager", "coach", "scout"):
@@ -1432,6 +1506,8 @@ def main(argv):
         cmd_show(game, args[0])
     elif cmd == "staff" and len(args) == 1:
         cmd_staff(game, args[0])
+    elif cmd == "clubs" and len(args) >= 1:
+        cmd_clubs(game, args[0], [int(a, 0) for a in args[1:]])
     elif cmd == "combi" and len(args) >= 1:
         cmd_combi(game, args[0], [int(a) for a in args[1:]])
     elif cmd == "player" and len(args) == 2:

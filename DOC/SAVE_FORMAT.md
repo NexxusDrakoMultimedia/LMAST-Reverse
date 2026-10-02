@@ -88,6 +88,7 @@ All **confirmed** by the accessor named. Offsets are within the block.
 | 1 | `0xec8e` | 25 × 0x11e | `pwkTeam_GetPlayerStats` (`0x265810`, indexes `0xec90 + slot × 0x11e`) | each squad slot's match statistics (below) |
 | 1 | `0x4f00` | 24 × PlPinfo | `pwkTeam_GetYteamData` (`0x270c18`); `pwkTeamType_FitCalc` (`0x270b58`) walks them up to `+0x3f00` | the youth team (21 players in the save checked, 3-year contracts, no salary) |
 | 1 | `0xe290` | 3 × 0x2a0 | `0x266600` | read like PlPinfo by one foreign-player count, but the save holds ids of 0 and no players there; not identified |
+| 2 | `0x0` | 440 × 0xa8 | `pwkOteam_GetPointer` (`0x24b788`) | the other clubs: squads, friendship, ranks (below) |
 | 1 | `0x4d08` | PlMinfo | `pwkTeam_GetCoachManager` (`0x26cdc8`): PlTeamData `+0x4854` | the manager |
 | 1 | `0x8e00` | PlMinfo | `pwkTeam_GetYManager` (`0x26bdd8`): `pwkTeam_GetYteamData` (`+0x4f00`) `+0x3f00` | the youth manager |
 | 1 | `0x9148` | 4 × PlMinfo | `pwkTeam_GetCoaches` (`0x26a7b8`) | the coaches, 0xbc bytes each |
@@ -289,6 +290,41 @@ any value at or above the cap.
 (J.Hartman with Galletti and with Litmanen), loaded from a test card.
 With Hartman selected, Galletti's skull became a big red heart and
 Litmanen's "…" a skull.
+
+**The other clubs** (block 2). `pwkOteam_GetPointer` (`0x24b788`)
+returns block 2 + 0xa8 × `pwkOteam_Team2Otindex(team)` (`0x24b7e8`): the
+rival (team 2) is record 0 and teams 3–441 are records 1–439. Clubs from
+team 442 (`0x1ba`) on are "non-resident" (`pwkOteam_GetPlOpinfoNonresident`)
+and not in this block. **Confirmed:**
+
+| Offset | Type | What | Source |
+|---|---|---|---|
+| `0x0` | u32 | team id | empirical: all 440 records in all 5 saves hold the team their position gives |
+| `0x4` | 25 × 6 bytes | the squad (`PlOpinfo`, `pwkOteam_GetOpinfoPointer` `0x24b920`) | the loop at `0x24b520` steps 6 bytes 25 times |
+| `0x9a` | u8 | friendship with your club, 0–100 | the `pwkOteam_ChangeFS_*` functions (matches, players moving to or from your club, overseas branches) all go through `0x24a760`, which caps it at 20 for the rival, at 70 for a club in your city or abroad without your branch, and at 100 otherwise. The name "friendship" is empirical (FS; the loan code's `RentalPossibleClub`) |
+| `0xa0` | u8 | club rank | `pwkOteam_GetRank` (`0x24bec8`) |
+| `0xa4` | u16 | world club rank | `pwkOteam_GetWorldClubRank` (`0x24bf70`) |
+
+A squad entry, as the expander at `0x24b1e8` turns it into a PlPinfo:
+
+| Offset | Type | What |
+|---|---|---|
+| `0x0` | s16 | database id, −1 = empty slot |
+| `0x2` | u8 | current age (→ PlPinfo `+0x8`) |
+| `0x3` | s8 | shirt number (→ `+0x1c3`); −1 keeps the database's |
+| `0x4` | u8 | contract years left (→ `+0x21d`) |
+| `0x5` | u8 | flags (→ `+0x20c`) |
+
+Everything else about these players (abilities, condition, ...) is
+rebuilt from the database whenever the game needs them. The save keeps
+no names: by 2019 the game reuses retired players' database entries for
+new young players, so "John Terry" at Chelsea is 17 in the 2019–20 save.
+
+**Empirical**, all 5 saves: friendship 0–82, club rank 0–31, world rank
+1–441 (0 in the 2005 save, before the first ranking), 22–25 players per
+club. Bytes `+0x9b`–`+0x9f`, `+0xa1`–`+0xa3` and `+0xa6`–`+0xa7` aren't
+traced. `save.py clubs` lists the clubs (with their squads for the teams
+named), and `save.py set ... club:<team>:friendship=` edits friendship.
 
 **Match statistics.** For squad slot `s`, the stats start at block 1
 `+0xec8e + s × 0x11e`: four tables of five rows (pre-season, domestic
