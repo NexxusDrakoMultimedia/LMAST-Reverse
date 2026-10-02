@@ -571,3 +571,9 @@ files. Each item keeps what was found, where, and how it was tested.
       ticket prices, season tickets). All 35 types and the 12 report
       lines named from the report screen's text (category 550), matching
       the 16 types traced in the code. `save.py finances` prints both
+- [x] Season plan edits: `save.py set ... plan:ad_budget=`, `ticket_price=`,
+      `season_ticket_rate=`, `season_tickets=` within the plan screen's
+      limits (user report; the same ranges in pounds and euros in the
+      stored unit), with season tickets capped at 80% of the stadium's
+      capacity (block 1 `+0x4e99`, `pwkUnkei_GetStandAllCapacity`) and the
+      season-ticket price set as the screen does

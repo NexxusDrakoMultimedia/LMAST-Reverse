@@ -205,12 +205,42 @@ gives a new career's values. **Confirmed:**
 | `0x38` | 8 × u16 | their competition ids, `0xffff` for none | `0xffff` |
 
 **Empirical**, all five saves: the rate is always 100 and the
-season-ticket price equals the ticket price, so the rate looks like the
-price as a percentage. `+0x14` holds 83–100 and `+0x16` 7,000. One
-competition has its own ticket price in each later save (`0x2b`, `0x3d`
-or `0x3f`), at the league price. The limits the plan screen puts on
-these values aren't traced, so `save.py` doesn't edit them yet.
-`save.py finances` prints the plan and both sets of accounts.
+season-ticket price equals the ticket price. `+0x14` holds 83–100 and
+`+0x16` 7,000. One competition has its own ticket price in each later
+save (`0x2b`, `0x3d` or `0x3f`), at the league price; that price is set
+on another screen (`pwkUnkei_SetOtherTicket` from `SIMPRG.REL 0x3d7fc`).
+
+**Confirmed:** when the plan is confirmed, `SIMPRG.REL 0x3ec08` stores
+the ad budget, ticket price, rate and season tickets, and sets the
+season-ticket price to ticket price × rate ÷ 100. So the rate is the
+season-ticket price as a percentage of the ticket price.
+
+**The plan screen's limits** (user report): the ad budget runs from 0
+to £5,000,000 in steps of £10,000, the ticket price from £10 to £50, the
+rate from 50 to 150 in steps of 10, and season tickets in steps of 100
+up to 80% of the stadium's capacity (also in help message 1085:22).
+In euros the steps are the same and the values 1.5 times as large. In
+the stored unit (£1 = 6, €1 = 4) both give the same ranges: ad budget
+0–30,000,000 and ticket price 60–300. Only the money steps differ
+(60,000 for pounds, 40,000 for euros). That fits the saves: G001's ad
+budget of 4,000,000 is €1,000,000, and G000's ticket price of 220 is
+€55, neither a whole number of pounds.
+
+**Your stadium's capacity** (**confirmed**, `pwkUnkei_GetStandAllCapacity`,
+`0x271b48`): block 1 `+0x4e99` holds your stadium (`pwkTeam_GetStadium`,
+`0x25d910`): s8 stadium, s8 the stadium being built, u8 a building flag,
+s8 stand level. The capacity is the u32 at `+0x38` of
+`PLRESOURCECOMMON.PAC` entry 0 table 7 (`plTeam_GetStadiumDb`), at
+stadium × 0x80 + level × 0x10, using the stadium being built when the
+flag is set. **Empirical:** 8,000 for the starting stadium (G002, G003),
+15,000 in G001 and 110,000 in G006 and G000. Season tickets are 0–35.5%
+of it and multiples of 100 in all five saves.
+
+`save.py finances` prints the plan, the stadium capacity and both
+sets of accounts. `save.py set ... plan:ad_budget=`, `plan:ticket_price=`,
+`plan:season_ticket_rate=` and `plan:season_tickets=` edit the plan within
+these ranges (not the money steps, which depend on the currency) and set
+the season-ticket price as the screen does.
 
 **PlDate** (`plMisc_SetTurn2Date` `0x214698`, `plMisc_PlDate2TotalTurn`
 `0x214d08`):

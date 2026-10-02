@@ -48,6 +48,10 @@ Usage:
     python save.py finances  <save>                       # season plan, accounts by income/payment type
     python save.py set       <save> <out> money=N         # edit into a new main file
     python save.py set       <save> <out> status=30000 status_rank=4  # your club's standing
+    python save.py set       <save> <out> plan:ticket_price=120 plan:season_tickets=5000
+                                   (plan: ad_budget 0-30000000, ticket_price 60-300,
+                                    season_ticket_rate 50-150, season_tickets up to 80%
+                                    of capacity; stored unit, pounds x 6, euros x 4)
     python save.py set       <save> <out> 3:all=99 3:15=80  #  slot:ability=level (0-99)
     python save.py set       <save> <out> 3:fatigue=0 3:condition=65535  #  slot:field=value
                                    (fields: fatigue, condition, motivation, power, form,
@@ -753,6 +757,21 @@ PLAN_OFF = 0x12470
 PLAN_FIELDS = (("ad budget", 0x0), ("ticket price", 0x4), ("season-ticket rate", 0x8),
                ("season-ticket price", 0xc), ("season tickets", 0x10))
 PLAN_OTHER, PLAN_OTHER_IDS, PLAN_OTHERS = 0x18, 0x38, 8
+# The plan screen's limits (user report: £0-5,000,000 in steps of £10,000,
+# tickets £10-50, rate 50-150 in steps of 10, season tickets in steps of
+# 100 up to 80% of capacity; euros are 1.5 times the pound values). In the
+# stored unit the ranges are the same in either currency; the money steps
+# are not (60,000 for pounds, 40,000 for euros), so only ranges are checked.
+# On "Finish" the screen sets the season-ticket price to ticket price x
+# rate / 100 (SIMPRG.REL 0x3ec28).
+PLAN_EDITS = {"ad_budget": (0x0, 0, 30000000, 1), "ticket_price": (0x4, 60, 300, 1),
+              "season_ticket_rate": (0x8, 50, 150, 10), "season_tickets": (0x10, 0, None, 100)}
+PLAN_TICKET, PLAN_RATE, PLAN_SEAT_PRICE, SEASON_TICKET_SHARE = 0x4, 0x8, 0xc, 80
+# Block 1 +0x4e99: your stadium (pwkTeam_GetStadium 0x25d910): s8 stadium,
+# s8 the one being built, u8 building flag, s8 stand level, ...
+# pwkUnkei_GetStandAllCapacity (0x271b48) reads the capacity as the u32 at
+# +0x38 of PLRESOURCECOMMON.PAC entry 0 table 7, stadium x 0x80 + level x 0x10.
+STADIUM_OFF, STADIUM_ROW, STADIUM_LEVEL, STADIUM_CAPACITY = 0x4e99, 0x80, 0x10, 0x38
 # Block 5: the accounts. s64 per income type (12) at +0x0 and per payment
 # type (23) at +0x60 for this month (pwkRec_AddMonthlyIncome 0x252d88,
 # AddMonthlyPayment 0x252de0); the same at +0x130/+0x190 for the season
@@ -952,6 +971,31 @@ class Save:
     @money.setter
     def money(self, v):
         struct.pack_into("<q", self.blocks, self.at(0, MONEY_OFF), v)
+
+    def stadium_capacity(self):
+        import initteam
+        import tbb
+        buf, off, size = initteam.read_pac_entry(
+            os.path.join("DAT", "PARAM", "PLRESOURCECOMMON.PAC"), 0)
+        table = tbb.parse(buf[off:off + size])[1][7].data
+        st = struct.unpack_from("<bbBb", self.blocks, self.at(1, STADIUM_OFF))
+        stadium = st[1] if st[2] else st[0]
+        return struct.unpack_from("<I", table, stadium * STADIUM_ROW + st[3] * STADIUM_LEVEL
+                                  + STADIUM_CAPACITY)[0]
+
+    def set_plan(self, field, value):
+        if field not in PLAN_EDITS:
+            raise ValueError("plan fields are %s" % ", ".join(PLAN_EDITS))
+        off, lo, hi, step = PLAN_EDITS[field]
+        if hi is None:
+            hi = self.stadium_capacity() * SEASON_TICKET_SHARE // 100 // step * step
+        if not lo <= value <= hi or value % step:
+            raise ValueError("%s is %d-%d%s" % (field, lo, hi,
+                             " in steps of %d" % step if step > 1 else ""))
+        o = self.at(1, PLAN_OFF)
+        struct.pack_into("<I", self.blocks, o + off, value)
+        ticket, rate = struct.unpack_from("<II", self.blocks, o + PLAN_TICKET)
+        struct.pack_into("<I", self.blocks, o + PLAN_SEAT_PRICE, ticket * rate // 100)
 
     def status(self):
         """(status rank 0-8, its status cap, club status, your club rank)."""
@@ -1386,6 +1430,7 @@ def cmd_finances(game, path):
     o = s.at(1, PLAN_OFF)
     print("  season plan: %s" % ", ".join(
         "%s %d" % (name, struct.unpack_from("<I", b, o + off)[0]) for name, off in PLAN_FIELDS))
+    print("  stadium capacity %d" % s.stadium_capacity())
     others = ["competition %#x: %d" % (struct.unpack_from("<H", b, o + PLAN_OTHER_IDS + 2 * i)[0],
                                        struct.unpack_from("<I", b, o + PLAN_OTHER + 4 * i)[0])
               for i in range(PLAN_OTHERS)
@@ -1475,6 +1520,12 @@ def cmd_set(game, path, out, assigns):
             raise SystemExit("expected field=value, got %r" % a)
         if key == "money":
             s.money = int(val, 0)
+            continue
+        if key.startswith("plan:"):
+            try:
+                s.set_plan(key[5:], int(val, 0))
+            except ValueError as e:
+                raise SystemExit("%s: %s" % (a, e))
             continue
         if key in ("status", "status_rank"):
             status_edits[key] = int(val, 0)

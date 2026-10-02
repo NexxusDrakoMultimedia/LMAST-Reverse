@@ -17,9 +17,9 @@ item in its section below.
 2. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
    and 7). This is the largest piece of starting-season data still undecoded.
 3. **Save data blocks for an editor** (section 10). Staff, other clubs,
-   your club's status and the finances are mapped; the youth block and
-   the season plan's limits (before plan edits) are what an editor still
-   needs to change a career in progress.
+   your club's status, the finances and the season plan are mapped and
+   editable; the youth block is what an editor still needs to change a
+   career in progress.
 4. **Message variables** (section 1). Which game value fills each
    variable id in the message text, so text edits can move or reuse
    them safely.
@@ -246,9 +246,9 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - [ ] Stats table 1, PlPinfo flags at `0x20c`, dissatisfaction, style
       icons, and what the 3 records at block 1 `+0xe290` are
 - [ ] Finance leftovers: the code that reads the per-type names
-      (category 550 messages 217-251); the season plan's `+0x14`, `+0x16`
-      and the limits the plan screen sets, before `save.py` edits the plan
-      (`SAVE_FORMAT.md`, "Finances")
+      (category 550 messages 217-251), the season plan's `+0x14` and
+      `+0x16`, and where the plan window checks its limits (they're from a
+      user report so far)
 - [ ] The youth block: the youth team's own data beyond its players
       (candidate lists, promotion, the youth manager's settings), through
       `pwkTeam_GetYteamData`, `pwkTeam_UpdateYouthCandidates` and
