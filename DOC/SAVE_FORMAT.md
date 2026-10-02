@@ -301,7 +301,7 @@ and not in this block. **Confirmed:**
 |---|---|---|---|
 | `0x0` | u32 | team id | empirical: all 440 records in all 5 saves hold the team their position gives |
 | `0x4` | 25 × 6 bytes | the squad (`PlOpinfo`, `pwkOteam_GetOpinfoPointer` `0x24b920`) | the loop at `0x24b520` steps 6 bytes 25 times |
-| `0x9a` | u8 | friendship with your club, 0–100 | the `pwkOteam_ChangeFS_*` functions (matches, players moving to or from your club, overseas branches) all go through `0x24a760`, which caps it at 20 for the rival, at 70 for a club in your city or abroad without your branch, and at 100 otherwise. The name "friendship" is empirical (FS; the loan code's `RentalPossibleClub`) |
+| `0x9a` | u8 | friendship with your club, 0–100 | the `pwkOteam_ChangeFS_*` functions (matches, players moving to or from your club, overseas branches) all go through `0x24a760`, which caps it at 20 for the rival, at 70 for a club in your city or abroad without your branch, and at 100 otherwise. Shown as the FRIENDLY bar under the crest on a club's Information screen (user report; F.C. Barcelona's bar is about a third full at 34) |
 | `0xa0` | u8 | club rank | `pwkOteam_GetRank` (`0x24bec8`) |
 | `0xa4` | u16 | world club rank | `pwkOteam_GetWorldClubRank` (`0x24bf70`) |
 
@@ -322,7 +322,8 @@ new young players, so "John Terry" at Chelsea is 17 in the 2019–20 save.
 
 **Empirical**, all 5 saves: friendship 0–82, club rank 0–31, world rank
 1–441 (0 in the 2005 save, before the first ranking), 22–25 players per
-club. Bytes `+0x9b`–`+0x9f`, `+0xa1`–`+0xa3` and `+0xa6`–`+0xa7` aren't
+club. The world rank matches the club Information screen's World
+Ranking (F.C. Barcelona, 28, save G000). Bytes `+0x9b`–`+0x9f`, `+0xa1`–`+0xa3` and `+0xa6`–`+0xa7` aren't
 traced. `save.py clubs` lists the clubs (with their squads for the teams
 named), and `save.py set ... club:<team>:friendship=` edits friendship.
 
