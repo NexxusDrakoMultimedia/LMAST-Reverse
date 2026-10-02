@@ -22,6 +22,9 @@ item in its section below.
 4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc.
+5. **The `GAME/` tactics AI files** (section 6). `PLAYBOOK.BPB`,
+   `COMBINATION.BPB`, `GAMEDATA.BIN` and `AI_PARAM.BIN` are undecoded, and
+   the AI's data tables are the lead for the player fields in #1.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
