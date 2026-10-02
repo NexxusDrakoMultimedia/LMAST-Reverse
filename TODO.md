@@ -16,12 +16,12 @@ item in its section below.
    [`GOALS.md`](GOALS.md)).
 2. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
    and 7). This is the largest piece of starting-season data still undecoded.
-3. **Save data blocks for an editor** (section 10). Staff, other clubs,
-   your club's status, the finances, the season plan and the youth block
-   are mapped. What's left is leftovers; consider replacing this entry.
-4. **Message variables** (section 1). Which game value fills each
+3. **Message variables** (section 1). Which game value fills each
    variable id in the message text, so text edits can move or reuse
    them safely.
+4. **Export a complete in-game player** (section 3). One model from the
+   skeleton, the body and limb parts and the face-pack head, so the
+   model work gives a usable result.
 5. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc.
