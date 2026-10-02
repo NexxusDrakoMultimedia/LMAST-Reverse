@@ -302,7 +302,8 @@ and not in this block. **Confirmed:**
 | `0x0` | u32 | team id | empirical: all 440 records in all 5 saves hold the team their position gives |
 | `0x4` | 25 × 6 bytes | the squad (`PlOpinfo`, `pwkOteam_GetOpinfoPointer` `0x24b920`) | the loop at `0x24b520` steps 6 bytes 25 times |
 | `0x9a` | u8 | friendship with your club, 0–100 | the `pwkOteam_ChangeFS_*` functions (matches, players moving to or from your club, overseas branches) all go through `0x24a760`, which caps it at 20 for the rival, at 70 for a club in your city or abroad without your branch, and at 100 otherwise. Shown as the FRIENDLY bar under the crest on a club's Information screen (user report; F.C. Barcelona's bar is about a third full at 34) |
-| `0xa0` | u8 | club rank, 0–31 | `pwkOteam_GetRank` (`0x24bec8`); `pwkOteam_Init2` starts it from the club record's rank ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)) |
+| `0x9c` | s32 | main league, −1 for none | `plTeam_GetTeamMainLeague` (`0x22bf00`) reads it (your club's is PlTeamData `+0x41f4`); `SIMPRG.REL 0x150a80` sets it for each club entered in a league (`0x151f10`). The club ranking groups the Euro6 clubs by it (below) |
+| `0xa0` | u8 | club rank, 0–31 | `pwkOteam_GetRank` (`0x24bec8`); `pwkOteam_Init2` starts it from the club record's rank ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)). Picks the club's reputation text (below) |
 | `0xa2` | u16 | world rank points | `pwkOteam_Init2` starts it from the club record's points (0–1,020) |
 | `0xa4` | u16 | world club rank (the position) | `pwkOteam_GetWorldClubRank` (`0x24bf70`) |
 
@@ -338,24 +339,94 @@ report). The club rank is what `pwkOteam_GetRank` returns. **Empirical:** it run
 29–31 for the clubs at the top of the world ranking and 0–5 at the
 bottom, and the Information screen calls F.C. Barcelona (26) and
 Marseille (24) a "World-class club" and Pirouzi (5) a "Local club", so
-it is the club's status. Which text goes with which rank isn't traced.
+it is the club's status.
 
-**Club reputation.** The six texts are messages 0–5 of category 203: Local
-club, Home-grown club, Promising club in *X*, Well-known club in *X*,
-World-class club, World famous club (`mbb.py dump`). The code that picks
-one isn't found yet: `GetClubRankIndex` (`0x247010`, 8 bands at
-`0x54e050`: 2, 6, 11, 16, 21, 26, 29, 31) only feeds the transfer prices,
-and the two loads of 203 in `SIMPRG.REL` (`0x12f10`, `0x70954`) are a
-message window id. A community write-up (overthetop2, "Club reputation
-and AI club strength", March 2024) describes the same six levels as a
-band on the quality of players an AI club signs. By that account an AI
-club's level comes from its world ranking within its country, with each
-country's number of top-level clubs set by its Euro coefficient. Your
-own club's level comes from the world ranking alone (World famous in the
-top 30), and the rival gets boosts. None of this is checked against the
-code yet. Bytes
-`+0x9b`–`+0x9f`, `+0xa1` and `+0xa6`–`+0xa7` aren't traced. `save.py clubs` lists the clubs (with their squads for the teams
-named), and `save.py set ... club:<team>:friendship=` edits friendship.
+**Club reputation.** The text under a club's name on its Information
+screen comes from the club rank. Category 203 holds two sets of six
+texts (`mbb.py dump`): messages 0–5 (Local club, Home-grown club,
+Promising club in *X*, Well-known club in *X*, World-class club, World
+famous club) and messages 100–105 (Promising club in *X*, Well-known
+club in *X*, World class club, Leading world class club, World famous
+club, World champion club). *X* is variable 310, the region of the
+club's nation. **Confirmed from the game code:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x24baec` | `pwkOteam_GetTeamData` | a club's PlTeamData `+0x41f8` is `pwkOteam_GetRank`, so `+0xa0` here |
+| `0x2883f0`–`0x288474` | `WP::CDetailManager::ConvertTeam` | the page type at `+0x4fa8`: 2 for teams 460–542 (`0x1cc`, 83 teams), 1 for your club, 4 for teams 442–459, 0 for the other clubs (3 when a flag at `+0xa31c` is set, not traced) |
+| `0x288a24`–`0x288af0` | `ConvertTeam` | the message is *n* = how many of the 6 thresholds at `0x557710` (6, 12, 18, 24, 30, 32) the club rank reaches; page type 2 uses 100 + *n* |
+| `0x288c50` | `CheckTeamKoteiMessage` | always returns 0, so no club has a fixed text |
+| `0x28cbdc`–`0x28cc14` | `SetupDetailTeamPage1` | fills variable 310 (`0x136`) with `plMisc_Nati2Region` of the club's nation |
+
+So club rank 0–5 is Local club, 6–11 Home-grown, 12–17 Promising,
+18–23 Well-known, 24–29 World-class and 30–31 World famous. Across the
+440 clubs in save G000 that gives 88, 125, 104, 77, 38 and 8.
+(`GetClubRankIndex`, `0x247010`, with 8 bands at `0x54e050`, only feeds
+the transfer prices. The loads of 203 in `SIMPRG.REL` at `0x12f10` and
+`0x70954` are a message window id.) The same category holds the team
+style text under it: messages 20–49 are six levels each of attack-minded,
+defence-minded, athletic, tactically-minded and formation-minded.
+`ConvertTeam` (`0x288af4`–`0x288c14`) picks the largest of the team's
+graph values, skipping the fifth. It then picks the level from the 6
+thresholds at `0x557728` (56, 66, 76, 86, 92, 101).
+
+**How the club rank changes.** `SIMPRG.REL` ranks the clubs by their
+world rank points, using `PARAM/CLUB_RANK_SYSTEM.TBB`
+([`PARAM_DIR.md`](PARAM_DIR.md)). When in the season it runs isn't
+traced (`0x150680` updates the points, `0x150738` the ranks).
+**Confirmed:**
+
+| Address (`SIMPRG.REL`) | What it shows |
+|---|---|
+| `0x150c10`–`0x150d08` | the loader keeps the five tables of `CLUB_RANK_SYSTEM.TBB` at object `+0x18`, `+0x20`, `+0x2c`, `+0x34` (with the row count at `+0x38`) and `+0x3c` |
+| `0x151568` | the new world rank points of each club in nations 1–52: three weighted values plus the club rank, minus half of byte 2 of the nation's UEFA record. Clubs elsewhere get table 2's s16 for their rank, ±60 at random. Capped at 1,023 |
+| `0x151d58` | for each Euro6 nation (1–6) and each of its two divisions, the clubs of that division |
+| `0x151e60` | for nations 7–52, all the nation's clubs |
+| `0x151c10`, `0x151a28` | sorts the list by world rank points (`+0xa2`), highest first. Your club and the rival take their nation from your league (`plMisc_Club2Nati` `0x215b78`) |
+| `0x151ce0` | picks the table-3 row: nation slot = byte 2 of the nation's UEFA record (block 5 `+0x46638` + 4 × nation) |
+| `0x151938` | hands out the ranks: row byte 2 + *i* (*i* = 0–31) is a running position in the list; the clubs before it get rank 31 − *i*, and 0 skips that rank. Teams 1 and 2 take their place but aren't changed |
+
+Table 3 has 65 rows of 34 bytes: `{s8 nation slot, s8 league size,
+32 × s8 positions}`. Rows 7–18 are the Euro6 first divisions, by nation
+slot 1–6 and 20 or 18 clubs. Rows 0–6 are the second divisions (slot −1)
+by size, 18–26 clubs. Rows 19–64 are nations by slot 7–52 (size −1). For
+example, slot 7's row reaches positions 1–5 at ranks 27, 24, 20, 15 and
+10. Clubs past a row's last position keep their old rank, and clubs
+outside nations 1–52 are never ranked.
+
+**Empirical:** this rule gives the stored rank of every ranked club in
+the four saves after the first season (382 clubs each, G001, G003, G006
+and G000). The only exceptions are pairs of clubs with equal points that
+the game sorted the other way (2, 4, 2 and 0 clubs; `qsort` doesn't keep
+ties in order). The 57 clubs outside nations 1–52 keep their starting
+rank in all five saves.
+
+**Your club and the rival.** Neither is changed by this ranking. Your
+club's rank (PlTeamData `+0x41f8`, block 1 `+0x46ac`) equals
+`min(status ÷ 2,047, 31)` in all five saves (**empirical**). The status
+is the u16 at block 1 `+0x1126a` (`pwkTeam_Status`, `0x26e2f0`), and
+`pwkTeam_GetMyClubRank` (`0x259b60`) divides it by 2,047. What writes
+`+0x41f8` isn't found: outside the save loader, the only store is the
+setter at `SIMPRG.REL 0x151ff8`, which skips teams 1 and 2. The rival's
+rank rises too (11, 12, 22, 31, 31 in the five saves) without that
+setter. That part isn't traced either.
+
+**The community account.** A community write-up (overthetop2, "Club
+reputation and AI club strength", March 2024) says an AI club's level
+comes from its world ranking within its country, with each country's
+number of top-level clubs set by its Euro coefficient. The code agrees,
+with corrections: the order is by world rank points, a Euro6 club is
+ranked within its division, and a club past the row's last place keeps
+its old rank. The write-up says your club's level comes from the world
+ranking alone (World famous in the top 30). In the saves it follows the
+club status instead. That the rival gets boosts fits its rank rising
+outside this code. The write-up also says the level limits the players
+an AI club signs; that isn't checked.
+
+Bytes `+0x9b`, `+0xa1` and `+0xa6`–`+0xa7` aren't traced. `save.py
+clubs` lists the clubs with their reputation text and main league (with
+their squads for the teams named). `save.py set ... club:<team>:friendship=`
+and `club:<team>:rank=` (0–31) edit them.
 
 **Tested in PCSX2** (save G000 on a test card): with
 `club:167:friendship=100 club:54:friendship=0`, F.C. Barcelona's FRIENDLY
@@ -481,6 +552,10 @@ python SRC/save.py info  <card>/BESLES-54151-G003
 python SRC/save.py roundtrip <card>/BESLES-54151-G00*
 python SRC/save.py show  <card>/BESLES-54151-G003
 python SRC/save.py combi <card>/BESLES-54151-G000 6
+python SRC/save.py clubs <card>/BESLES-54151-G000 167 54 432
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x288a24 60
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 151938 60 --sles ISO/SLES_541.51
+python SRC/tbb.py dump DAT/PARAM/CLUB_RANK_SYSTEM.TBB 3
 python SRC/save.py set   <card>/BESLES-54151-G003 edited.bin money=2000000000 0:all=99
 python SRC/snr2.py dis ISO/DLL/SAVEPRG.REL 0x33140 160 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 dis initialize__Q22MC9CFcEuroIF pwkGen_GetSikin plMisc_AbilExp2Lv

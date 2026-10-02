@@ -256,7 +256,7 @@ python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers, shows the date, money, squad, youth team and staff, edits money, abilities, fatigue, condition, motivation the pair combinations behind the tactics screen's hearts (`combi`), staff abilities and the manager's dissatisfaction, and other clubs' friendship (`clubs`), and re-encodes byte for byte; moves saves to another serial (`serial`, `rename`) so a modded disc keeps its own |
+| [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers, shows the date, money, squad, youth team and staff, edits money, abilities, fatigue, condition, motivation the pair combinations behind the tactics screen's hearts (`combi`), staff abilities and the manager's dissatisfaction, and other clubs' friendship and club rank, with each club's reputation text (`clubs`), and re-encodes byte for byte; moves saves to another serial (`serial`, `rename`) so a modded disc keeps its own |
 
 ```bash
 python SRC/save.py show <card>/BESLES-54151-G003

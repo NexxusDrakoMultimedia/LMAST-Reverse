@@ -545,3 +545,14 @@ files. Each item keeps what was found, where, and how it was tested.
       world club rank. `save.py clubs`, `set ... club:<team>:friendship=`. Tested in
       PCSX2: the edits show on the FRIENDLY bar (full and empty), and the
       world ranks match the Information screen
+- [x] Club reputation: `CDetailManager::ConvertTeam` (`0x288a24`) picks
+      message 203:*n* from the club rank with thresholds 6, 12, 18, 24,
+      30 (`0x557710`); national teams use 203:100+*n*. The ranking that
+      changes the club rank (`SIMPRG.REL 0x150738`) sorts each Euro6
+      division and each other UEFA nation by world rank points and hands
+      out ranks from `CLUB_RANK_SYSTEM.TBB` table 3, by the nation's
+      coefficient slot. It matches every ranked club in four saves
+      except tied pairs. The community account is right in outline
+      (corrections in `SAVE_FORMAT.md`). Also named: `+0x9c`, the main
+      league. `save.py clubs` shows the text and league, and `set ...
+      club:<team>:rank=` edits the rank

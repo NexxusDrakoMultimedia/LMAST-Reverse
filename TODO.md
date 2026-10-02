@@ -45,7 +45,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 `pbdata.py`); `0SYSTEM/` is surveyed in
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
-- [ ] Still open from the schedules: `GROUP2COMPE.TBB`, `CLUB_RANK_SYSTEM.TBB`,
+- [ ] Still open from the schedules: `GROUP2COMPE.TBB`, `CLUB_RANK_SYSTEM.TBB`
+      tables 0, 1 and 4 (tables 2 and 3 are the club ranking, `SAVE_FORMAT.md`),
       `PeriodName.tbb`, the `make_list` source functions, game bits `w0`
       8–9 and competition header bytes `0x0A`–`0x0F`
 - [ ] Still open: club-record bytes `0x0b`-`0x0d`/`0x0f`, the reader of
@@ -246,12 +247,18 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       icons, and what the 3 records at block 1 `+0xe290` are
 - [ ] Map more of the blocks through their accessors (youth, other
       clubs, finances), and name the fields an editor should offer. Other clubs: the
-      untraced record bytes (`+0x9b`-`+0x9f`, `+0xa1`, `+0xa6`-`+0xa7`), the code that picks a club's
-      reputation text (messages 203:0-5) and how it relates to the club
-      rank; check the community account of reputation (world ranking
-      within the country, Euro coefficient slots; `SAVE_FORMAT.md`), and the non-resident clubs (442 on). Staff
+      untraced record bytes (`+0x9b`, `+0xa1`, `+0xa6`-`+0xa7`) and the
+      non-resident clubs (442 on). Club rank leftovers: what writes your
+      club's rank (it follows the status ÷ 2,047 in every save) and the
+      rival's, when in the season the ranking runs, the three weighted
+      values behind the world rank points (`SIMPRG.REL 0x151568`), and
+      whether the reputation limits the players an AI club signs (the
+      community account). Staff
       leftovers: the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`,
       and how far the manager's popularity goes in play (0 in every save)
+- [ ] Test in PCSX2: a club rank edit (`save.py set ... club:432:rank=31`)
+      should change Pirouzi's Information screen text from "Local club" to
+      "World famous club"
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0-3
       (kind 4 shows "Won't tolerate club's facilities."), to confirm their
       names. A save edit per kind would show each one

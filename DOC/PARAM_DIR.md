@@ -78,7 +78,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648` | training camps. Reader not traced |
 | `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8` | 612 bytes. Camp explanations (the name suggests message ids) |
 | `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 960 bytes. Club events (`plClubEvent_*`) |
-| `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. Reader not traced |
+| `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division. **confirmed**, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes"). Tables 0, 1 and 4 not traced |
 | `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 332 bytes (166 × u16?): schedule group to competition |
 | `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170` | 424 bytes (212 × u16?) |
 | `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical). Reader not found |

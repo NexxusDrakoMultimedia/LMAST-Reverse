@@ -56,7 +56,7 @@ Usage:
                                     managers and coaches, abil.<n>|all 38-99 for all)
     python save.py combi     <save> [slot ...]            # pair combinations (tactics screen hearts)
     python save.py clubs     <save> [team ...]            # other clubs: friendship, ranks, players
-    python save.py set       <save> <out> club:7:friendship=100   # 0-100
+    python save.py set       <save> <out> club:7:friendship=100 club:7:rank=31  # 0-100, 0-31
     python save.py set       <save> <out> combi:3:7=60000 combi:5:all=60000  # 0-65535
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
@@ -838,12 +838,19 @@ COMBI_ICONS = ("skull", "...", "blue heart", "red heart", "big red heart")  # le
 # +0x21d), u8 flags (-> +0x20c). +0x9a u8 friendship with your club, 0-100,
 # capped at 20 for the rival and 70 for a club in your city or abroad
 # without your branch (0x24a760, the pwkOteam_ChangeFS_* functions);
+# +0x9c u32 main league (plTeam_GetTeamMainLeague 0x22bf00);
 # +0xa0 u8 club rank 0-31 (pwkOteam_GetRank 0x24bec8), +0xa2 u16 world rank
 # points (both started by pwkOteam_Init2 from the club records), +0xa4
 # u16 world club rank, the position (pwkOteam_GetWorldClubRank 0x24bf70).
 CLUBS_OFF, CLUB_SIZE, CLUBS = 0x0, 0xa8, 440
 CLUB_PLAYERS, CLUB_PLAYER = 4, "<hBbBB"
-CLUB_FRIENDSHIP, CLUB_RANK, CLUB_POINTS, CLUB_WORLD_RANK = 0x9a, 0xa0, 0xa2, 0xa4
+CLUB_FRIENDSHIP, CLUB_LEAGUE = 0x9a, 0x9c
+CLUB_RANK, CLUB_POINTS, CLUB_WORLD_RANK = 0xa0, 0xa2, 0xa4
+CLUB_RANK_MAX = 31
+# SLES_541.51: the club's reputation text (message 203:n) is n = how many of
+# these 6 s32 thresholds the club rank reaches (CDetailManager::ConvertTeam,
+# 0x288a9c). National teams use 203:100+n instead.
+REPUTATION_TABLE, REPUTATION_CATEGORY = 0x557710, 203
 STATS_TABLES = ("table 1 (unknown)", "season", "table 3 (last season?)", "career")
 COMPETITIONS = ("pre-season", "domestic league", "overseas league", "Euro", "international")
 STATS_ROW = "<6H2B"     # goals, assists, games, games2, mom, points x 100, red, yellow
@@ -857,6 +864,16 @@ MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
 def exp_table(sles_path=SLES):
     elf = Elf(sles_path)
     return struct.unpack_from("<101H", elf.data, elf.v2f(ABIL_EXP))
+
+
+def reputation_table(sles_path=SLES):
+    elf = Elf(sles_path)
+    return struct.unpack_from("<6i", elf.data, elf.v2f(REPUTATION_TABLE))
+
+
+def reputation(table, rank):
+    """The message id in category 203 for a club rank (0x288a9c)."""
+    return sum(rank >= t for t in table)
 
 
 def exp2lv(table, exp):
@@ -1072,18 +1089,25 @@ class Save:
             if p[0] >= 0:
                 players.append((k,) + p)
         return {"team": struct.unpack_from("<I", b, o)[0], "offset": o,
-                "friendship": b[o + CLUB_FRIENDSHIP], "rank": b[o + CLUB_RANK],
+                "friendship": b[o + CLUB_FRIENDSHIP],
+                "league": struct.unpack_from("<i", b, o + CLUB_LEAGUE)[0],
+                "rank": b[o + CLUB_RANK],
                 "points": struct.unpack_from("<H", b, o + CLUB_POINTS)[0],
                 "world_rank": struct.unpack_from("<H", b, o + CLUB_WORLD_RANK)[0],
                 "players": players}
 
     def set_club(self, team, field, value):
         c = self.club(team)
-        if field != "friendship":
-            raise ValueError("only friendship can be set for a club")
-        if not 0 <= value <= 100:
-            raise ValueError("friendship is 0-100")
-        self.blocks[c["offset"] + CLUB_FRIENDSHIP] = value
+        if field == "friendship":
+            if not 0 <= value <= 100:
+                raise ValueError("friendship is 0-100")
+            self.blocks[c["offset"] + CLUB_FRIENDSHIP] = value
+        elif field == "rank":
+            if not 0 <= value <= CLUB_RANK_MAX:
+                raise ValueError("rank is 0-%d" % CLUB_RANK_MAX)
+            self.blocks[c["offset"] + CLUB_RANK] = value
+        else:
+            raise ValueError("only friendship and rank can be set for a club")
 
     def encode(self):
         return build(self.game, bytes(self.blocks), self.file)[0]
@@ -1298,14 +1322,19 @@ def cmd_clubs(game, path, teams):
     names = initteam.team_names(os.path.join("DAT", "MESSAGE", "MES.PAC"), 1)
     db = pbdata.PbData(os.path.join("DAT", "PARAM", "PBDATA_EU.PAC"))
     pnames = {r.db_id: r.name for r in db.records("players")}
+    rep_table = reputation_table()
+    rep_names = initteam.category_names(os.path.join("DAT", "MESSAGE", "MES.PAC"),
+                                        REPUTATION_CATEGORY)
     for team in teams or [2] + list(range(3, CLUBS + 2)):
         c = s.club(team)
         if c["team"] != team:
             print("%3d  !! record holds team %d" % (team, c["team"]))
             continue
-        print("%s  friendship %d, rank %d, world rank %d (%d points), %d players" % (
-            initteam.label(names, team), c["friendship"], c["rank"], c["world_rank"],
-            c["points"], len(c["players"])))
+        rep = reputation(rep_table, c["rank"])
+        print("%s  friendship %d, rank %d (%s), world rank %d (%d points), league %d, %d players" % (
+            initteam.label(names, team), c["friendship"], c["rank"],
+            rep_names.get(rep, "203:%d" % rep), c["world_rank"], c["points"],
+            c["league"], len(c["players"])))
         if teams:
             for k, pid, age, shirt, years, flags in c["players"]:
                 print("    %2d  id %5d  %-20s age %2d  shirt %3s  %d year%s%s" % (
@@ -1346,7 +1375,8 @@ def cmd_set(game, path, out, assigns):
             try:
                 s.set_club(int(team, 0), field, int(val, 0))
             except ValueError as e:
-                raise SystemExit("%s: %s (use club:<team>:friendship=0-100)" % (a, e))
+                raise SystemExit("%s: %s (use club:<team>:friendship=0-100 or rank=0-%d)"
+                                 % (a, e, CLUB_RANK_MAX))
             continue
         slot, _, which = key.partition(":")
         if slot.rstrip("0123456789") in ("manager", "ymanager", "coach", "scout"):
