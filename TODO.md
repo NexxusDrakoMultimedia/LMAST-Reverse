@@ -225,10 +225,6 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
 
 - [ ] `TACTICSPITCH.PAC` is loaded through `CLoader`, not as a registering
       resource: whether its entries stand in for their originals
-- [ ] Growing the disc: moved files can use the 10,247 free sectors after
-      `DATA.CVM` (about 20 MB); more needs the outer PVD volume size, the
-      UDF partition length and the end anchor moved
-      (`DOC/REBUILD.md#moving-files`)
 - [ ] Test in PCSX2: a `PRELOAD` pack that a rebuild moves (the code path
       is the same as a moved file, but untested in game)
 - [ ] Repacking where something else holds the offsets (`.HED` copies,

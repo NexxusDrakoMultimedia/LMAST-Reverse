@@ -189,7 +189,7 @@ there. Its old sectors are left as they are, and nothing else moves. A
 | the disc | `DATA.CVM` (sector 759,893, 962,371 sectors) is the last file. After it come 10,247 zero sectors, then a UDF anchor in the disc's last sector, 1,732,511 |
 
 So `DATA.CVM` can grow by up to 10,247 sectors (about 20 MB) without the
-disc changing size. Growing the disc as well isn't supported yet.
+disc changing size. Past that, the disc grows ([below](#growing-the-disc)).
 
 **What changes with `DATA.CVM`'s size.** Everything below is rewritten
 by `patch`, and each old value is checked before it's replaced:
@@ -245,6 +245,35 @@ moved from ISO sector 266,162 to 962,368. Afterwards:
 file carried the kit test's renamed England players, and a VS match
 listed them as England's starters (GK.Pants1.Hat3.G5, ACole.LongSleeve,
 … Rooney.Plain). So the game reads the file from its new sectors.
+
+### Growing the disc
+
+When the moved files don't fit before the anchor, `patch` makes the image
+bigger: in whole 16-sector blocks (a DVD ECC block), with the anchor in
+the new last sector, and refusing more than a single-layer DVD's
+2,295,104 sectors. The disc's size is held in these places (**empirical**,
+read from the disc), and each is rewritten with its descriptor's CRC and
+checksum:
+
+| Where | Field |
+|---|---|
+| disc PVD (sector 16) `+80`/`+84` | volume space size, 1,732,512 |
+| UDF Partition Descriptor, main and reserve sequence (sectors 34 and 50) `+192` | partition length, 1,732,246: the partition starts at 265 and ends at the anchor |
+| UDF Logical Volume Integrity Descriptor (sector 64) | the partition size in its size table |
+| UDF end anchor (last sector) | moved to the new last sector, with its tag location; the old one is cleared |
+
+The anchor at sector 256 and the volume descriptor sequences stay where
+they are. The user reports that an image with extra fan-work files added,
+so bigger than the original, still ran.
+
+**Tested.** A disc with the grown `PBDATA_EU.PAC` and
+`PLAYER/FC_EURO_FACEPACK_01.BIN` grown by 25 MB of zeros (6,103 to 18,903
+sectors; the game reads it at offsets from its `.HED`) grew from
+1,732,512 to 1,742,720 sectors. All 2,229 files matched, every UDF
+descriptor's tag, CRC and location checked out, and the sectors between
+`DATA.CVM` and the anchor were zero. **Confirmed in PCSX2:** it booted, a
+VS match listed the renamed England players, and the referee, whose head
+is in the moved face pack, showed his face normally.
 
 ## Usage
 
@@ -354,9 +383,9 @@ patches out of the repo anyway, like everything built from the disc.
 
 ## Still to do
 
-- **Growing the disc.** Moved files can use the 10,247 free sectors after
-  `DATA.CVM` (about 20 MB). More would need the disc to grow: its PVD
-  volume size, the UDF partition length and the end anchor.
+- **Dual-layer images.** The disc can grow to a single-layer DVD's
+  2,295,104 sectors (about 1.1 GB more). Past that would need a layer
+  break.
 - **Archive repacking** outside `PRELOAD`: `pac.py` rebuilds any
   self-describing BINPAC byte for byte, but archives with `.HED` copies of
   their header, `MES.PAC` and KC@P packs aren't rebuilt by `patch`. PRS

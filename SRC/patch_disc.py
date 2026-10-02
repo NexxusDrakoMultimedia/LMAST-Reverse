@@ -60,8 +60,11 @@ ROFS key: the game derives it from the CVMH header, whose +0x20..+0x23
 are the low bytes of the CVM's size (rofs_decrypt.header_key, from
 RSU_GenerateFixedKey 0x1e7550), so the whole table of contents is
 encrypted again with the new key. A file already moved to the end grows
-in place on a later run. Growing the disc itself isn't supported. Files
-outside DATA.CVM keep their size.
+in place on a later run. Past the free sectors the disc image grows (whole
+16-sector blocks, up to a single-layer DVD's 2,295,104 sectors): its PVD
+volume size, the UDF partition length in both partition descriptors and
+the integrity descriptor's size table change, and the UDF end anchor moves
+to the new last sector. Files outside DATA.CVM keep their size.
 
 --skip-tutorial (test discs; whole disc image only) skips the opening
 playoffs of a new career, the tutorial, with the developers' own switch:
@@ -645,8 +648,9 @@ class Moves:
                 e.path, sectors(len(data)), sectors(e.size),
                 "moved from ISO sector %d to %d" % (e.extent, start) if start != e.extent
                 else where))
-        jobs += plan_grow(f, img, end, toc)
-        return jobs, notes
+        # Growing comes first: growing the disc clears the old UDF end
+        # anchor, which the moved data may then cover.
+        return plan_grow(f, img, end, toc) + jobs, notes
 
 
 def _udf_cvm_entry(f, img):
@@ -692,6 +696,95 @@ def _udf_cvm_entry(f, img):
     return off, fe
 
 
+# A single-layer DVD holds 2,295,104 sectors; a bigger image would need a
+# layer break, which the disc doesn't have.
+DVD5_SECTORS = 2295104
+DVD_BLOCK = 16              # sectors per DVD ECC block
+UDF_ANCHOR, UDF_PARTITION, UDF_LVID = 2, 5, 9
+
+
+def _udf_retag(buf, location=None):
+    """Recompute a UDF descriptor tag's CRC (over the descriptor after the
+    16-byte tag) and checksum, optionally with a new tag location."""
+    crc_len = struct.unpack_from("<H", buf, 10)[0]
+    if location is not None:
+        struct.pack_into("<I", buf, 12, location)
+    struct.pack_into("<H", buf, 8, udf_crc(buf[16:16 + crc_len]))
+    buf[4] = (sum(buf[:16]) - buf[4]) & 0xFF
+
+
+def plan_grow_disc(f, img, cvm_end):
+    """Jobs growing the disc image so that DATA.CVM can end at sector
+    `cvm_end`, with the UDF end anchor in the new last sector. The size is
+    in the ISO9660 PVD (+80/+84), the UDF Partition Descriptors of the
+    main and reserve volume descriptor sequences (+192, the partition runs
+    to the anchor), the Logical Volume Integrity Descriptor's size table,
+    and the end anchor's own position. The user reports that an image with
+    extra files added, so bigger than the original, still ran."""
+    new_disc = -(-(cvm_end + 1) // DVD_BLOCK) * DVD_BLOCK
+    if new_disc > DVD5_SECTORS:
+        raise ValueError("the disc would need %d sectors, more than a single-layer DVD (%d)"
+                         % (new_disc, DVD5_SECTORS))
+    old_disc = img.disc_sectors
+    jobs = []
+    pvd = struct.pack("<I", new_disc) + struct.pack(">I", new_disc)
+    jobs.append(Job(None, PVD_SECTOR * SECTOR + 80, pvd, "disc volume descriptor",
+                    "volume size %d -> %d sectors" % (old_disc, new_disc)))
+
+    f.seek(256 * SECTOR)
+    anchor = bytearray(f.read(SECTOR))
+    f.seek((old_disc - 1) * SECTOR)
+    end_anchor = bytearray(f.read(SECTOR))
+    if struct.unpack_from("<H", anchor, 0)[0] != UDF_ANCHOR:
+        return jobs     # no UDF
+    if struct.unpack_from("<H", end_anchor, 0)[0] != UDF_ANCHOR or             struct.unpack_from("<I", end_anchor, 12)[0] != old_disc - 1:
+        raise ValueError("%s: no UDF anchor in the disc's last sector" % img.path)
+    # Main and reserve volume descriptor sequences (anchor +16, +24).
+    lvid_at = part_start = None
+    for at in (16, 24):
+        length, loc = struct.unpack_from("<II", anchor, at)
+        for n in range(loc, loc + length // SECTOR):
+            f.seek(n * SECTOR)
+            d = bytearray(f.read(SECTOR))
+            tag = struct.unpack_from("<H", d, 0)[0]
+            if tag == UDF_PARTITION:
+                part_start, part_len = struct.unpack_from("<II", d, 188)
+                if part_start + part_len != old_disc - 1:
+                    raise ValueError("%s: the UDF partition doesn't end at the anchor"
+                                     % img.path)
+                struct.pack_into("<I", d, 192, new_disc - 1 - part_start)
+                _udf_retag(d)
+                jobs.append(Job(None, n * SECTOR, bytes(d), "UDF partition descriptor (sector %d)"
+                                % n, "length %d -> %d" % (part_len, new_disc - 1 - part_start)))
+            elif tag == 6 and lvid_at is None:      # Logical Volume Descriptor
+                lvid_at = struct.unpack_from("<I", d, 436)[0]
+            elif tag in (0, 8):
+                break
+    if part_start is None:
+        raise ValueError("%s: no UDF partition descriptor" % img.path)
+    if lvid_at is not None:
+        f.seek(lvid_at * SECTOR)
+        d = bytearray(f.read(SECTOR))
+        if struct.unpack_from("<H", d, 0)[0] == UDF_LVID:
+            parts = struct.unpack_from("<I", d, 72)[0]
+            for i in range(parts):
+                at = 80 + 4 * parts + 4 * i
+                if struct.unpack_from("<I", d, at)[0] == old_disc - 1 - part_start:
+                    struct.pack_into("<I", d, at, new_disc - 1 - part_start)
+            _udf_retag(d)
+            jobs.append(Job(None, lvid_at * SECTOR, bytes(d), "UDF integrity descriptor",
+                            "partition size %d -> %d" % (old_disc - 1 - part_start,
+                                                         new_disc - 1 - part_start)))
+    # The anchor moves to the new last sector; the old one becomes zeros
+    # (written first, as DATA.CVM's new data may cover it).
+    _udf_retag(end_anchor, new_disc - 1)
+    jobs.insert(0, Job(None, (old_disc - 1) * SECTOR, bytes(SECTOR), "old UDF end anchor",
+                       "cleared"))
+    jobs.append(Job(None, (new_disc - 1) * SECTOR, bytes(end_anchor), "UDF end anchor",
+                    "moved to sector %d" % (new_disc - 1)))
+    return jobs
+
+
 def plan_grow(f, img, iso_sectors, toc):
     """Jobs setting the ISO's volume size to `iso_sectors` and, around it,
     DATA.CVM's lengths: its header and, on a whole disc image, its ISO9660
@@ -728,16 +821,15 @@ def plan_grow(f, img, iso_sectors, toc):
         return jobs
 
     # The sectors DATA.CVM grows into must be unused. On this disc they are
-    # zeros up to the UDF anchor in the last sector.
+    # zeros up to the UDF anchor in the last sector; past that, the disc
+    # grows (plan_grow_disc).
     lo, hi = sectors(img.cvm_base + old_size), sectors(img.cvm_base + new_size)
-    if hi > img.disc_sectors - 1:
-        raise ValueError("DATA.CVM would grow to %d bytes, %d sectors past the free space at "
-                         "the end of the disc; growing the disc isn't supported yet"
-                         % (new_size, hi - (img.disc_sectors - 1)))
     f.seek(lo * SECTOR)
-    for _ in range(lo, hi):
+    for _ in range(lo, min(hi, img.disc_sectors - 1)):
         if any(f.read(SECTOR)):
             raise ValueError("DATA.CVM can't grow: sectors after it aren't empty")
+    if hi > img.disc_sectors - 1:
+        jobs += plan_grow_disc(f, img, hi)
 
     # ISO9660 record in the root directory.
     pvd = _read(SectorView(f, 0), PVD_SECTOR, SECTOR)

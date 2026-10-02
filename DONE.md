@@ -466,6 +466,12 @@ files. Each item keeps what was found, where, and how it was tested.
       (`rofs_decrypt.header_key`). Tested in PCSX2: a moved, grown
       `PBDATA_EU.PAC` booted and its renamed players showed in a VS match
       (`DOC/REBUILD.md#moving-files`)
+- [x] Growing the disc past the free sectors after `DATA.CVM`: the PVD
+      volume size, both UDF partition descriptors, the integrity
+      descriptor and the end anchor follow (single-layer limit). Tested in
+      PCSX2: a disc 10,208 sectors bigger, with a 25 MB-grown referee face
+      pack moved, booted and showed the referee's face
+      (`DOC/REBUILD.md#growing-the-disc`)
 
 ## 10. Save data
 
