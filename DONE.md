@@ -247,6 +247,12 @@ files. Each item keeps what was found, where, and how it was tested.
       `f_66`, ball touch, dribble style and the kit style directly).
       `f_66` is not dead data: it becomes parameters 128–138
       (`DOC/PBDATA_FORMAT.md#the-match-engines-player-parameters`)
+- [x] `PLRESOURCECOMMON.PAC`: all 25 tables checked against their
+      readers. Entry 0's facility records have their sizes from the
+      getters (sites 0x1c, club houses 0x28, stadiums 0x80, ...), build
+      time from each `plTeam_Build*`, upkeep from `payment_Equip` and
+      stadium capacity by stand level; the nation tables are named.
+      `plrcommon.py` (`info`, `show`), checked by `regress.py`
 
 ## 3. Ninja 3D models and motions
 

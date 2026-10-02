@@ -14,8 +14,9 @@ item in its section below.
 1. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
-2. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
-   and 7). This is the largest piece of starting-season data still undecoded.
+2. **What each PwkScript computes** (sections 2 and 7). The formulas
+   behind player points, spectators, season tickets and popularity, so a
+   script edit could be tested in PCSX2.
 3. **Export a complete in-game player** (section 3). One model from the
    skeleton, the body and limb parts and the face-pack head, so the
    model work gives a usable result.
@@ -83,7 +84,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `pwkTeam_ChangePop_Year`) changes anything
       (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`)
 - [ ] National team leftovers: what `_getNationalTeamPoint` (`0x227200`)
-      scores, team 465 and `PlPinfo +0x20c` flag `0x300` in the call-up
+      scores, team 465 (the Netherlands national team, `PLRESOURCECOMMON` 3.3) and
+      `PlPinfo +0x20c` flag `0x300` in the call-up
       filter, and which clubs teams 442-459 are
       (`DOC/PBDATA_FORMAT.md#national-team-call-ups`)
 - [ ] Test in PCSX2: a renamed fixed national player (26,046 as
@@ -91,10 +93,14 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       call-up of England; the club Terry should
 - [ ] Test in PCSX2: a main-position change with `pbdata.py --sles` on its
       own (rank edits are tested; position goes through the same table)
-- [ ] The packs: `PLRESOURCECOMMON.PAC` (readers listed in `PARAM_DIR.md`,
-      layouts not decoded). `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript
-      scripts, decoded in `DOC/SQB_FORMAT.md`; what each one computes is
-      still open (section 7)
+- [ ] `PLRESOURCECOMMON.PAC` leftovers (`DOC/PLRESOURCECOMMON_FORMAT.md`):
+      the first words of each facility record and the code that charges
+      the build cost, the rest of the stadium record, the values in
+      entries 1 (formations), 2 (hexagon) and 4 (combination growth, cup
+      ids), and which messages name the facilities
+- [ ] The packs `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript scripts,
+      decoded in `DOC/SQB_FORMAT.md`; what each one computes is still open
+      (section 7)
 - [ ] `0SYSTEM` leftovers: what the `DETAILFLAG` flags switch (only the
       first 99 of 528 bytes are read), which UI element uses each colour,
       who the `V001`-`V032` crests are, and whether `SPONSOR_TEXTURE_M`
