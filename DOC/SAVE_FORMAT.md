@@ -401,15 +401,34 @@ the game sorted the other way (2, 4, 2 and 0 clubs; `qsort` doesn't keep
 ties in order). The 57 clubs outside nations 1–52 keep their starting
 rank in all five saves.
 
-**Your club and the rival.** Neither is changed by this ranking. Your
-club's rank (PlTeamData `+0x41f8`, block 1 `+0x46ac`) equals
-`min(status ÷ 2,047, 31)` in all five saves (**empirical**). The status
-is the u16 at block 1 `+0x1126a` (`pwkTeam_Status`, `0x26e2f0`), and
-`pwkTeam_GetMyClubRank` (`0x259b60`) divides it by 2,047. What writes
-`+0x41f8` isn't found: outside the save loader, the only store is the
-setter at `SIMPRG.REL 0x151ff8`, which skips teams 1 and 2. The rival's
-rank rises too (11, 12, 22, 31, 31 in the five saves) without that
-setter. That part isn't traced either.
+**Your club and the rival.** Neither is changed by this ranking. Both
+follow your club's status instead. **Confirmed from the game code:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x26e2f0` | `pwkTeam_Status` | the club status is the u16 at block 1 `+0x1126a` |
+| `0x26dbb8` | `pwkTeam_StatusChange` | adds a change to the status and keeps it within 0 and a cap: the u16 at `0x555150` + 2 × the status rank (s32 at block 1 `+0x11264`, 0–8) |
+| `0x26dc50` | `pwkTeam_StatusChangeRank` | only ever lowers the status rank. `pwkTeam_MatchGameCheck` and `pwkTeam_YearEndCheck` call it; `0x26dcc8` maps competitions `0x22`, `0x23` and `0x24` to ranks 0, 2 and 3 |
+| `0x26e328` | `pwkTeam_StatusInit` | a new career starts at status rank 7, your club rank 0 and the rival's 7 |
+| `0x26dd40` | (no symbol) | sets your club rank (PlTeamData `+0x41f8`, block 1 `+0x46ac`) to status >> 11, capped at 31, and the rival's (`+0xa0` of record 0) to the byte at `0x555168` + your club rank |
+| `0x26df74`, `0x26e274`, `0x26e2d4` | `pwkTeam_GameCheck`, `MatchGameCheck`, `YearEndCheck` | call `0x26dd40` after the status change, so both ranks catch up after each match and at year end |
+
+The caps by status rank 0–8 are 65,535, 60,000, 55,000, 40,000, 30,000,
+25,000, 10,000, 7,000 and 7,000. The rival's rank for your rank 0–31 is
+12, 15, 17, 18, 20, 21, 22, 23, 24, 25, 26, 26, 26, 27, 27, 27, 28, 28,
+28, 29, 29, 29, 30, 30, 30, then 31 from your rank 25 on.
+`pwkTeam_GetMyClubRank` (`0x259b60`) divides the status by 2,047
+instead, for transfer prices, coach salaries, the audience and youth
+promotion. **Empirical:** in all
+five saves the status is within its cap and your club rank is status >>
+11. The rival's rank matches the table in four of the five; the
+exception is the 2005 save (rank 11, table 12), made before the first
+match check.
+
+`save.py show` prints the status, status rank, cap and both ranks.
+`save.py set ... status=N status_rank=N` writes them and sets both club
+ranks as `0x26dd40` would. A status above the cap is refused, because
+the game would cut it back to the cap at the next change.
 
 **The community account.** A community write-up (overthetop2, "Club
 reputation and AI club strength", March 2024) says an AI club's level
@@ -418,9 +437,10 @@ number of top-level clubs set by its Euro coefficient. The code agrees,
 with corrections: the order is by world rank points, a Euro6 club is
 ranked within its division, and a club past the row's last place keeps
 its old rank. The write-up says your club's level comes from the world
-ranking alone (World famous in the top 30). In the saves it follows the
-club status instead. That the rival gets boosts fits its rank rising
-outside this code. The write-up also says the level limits the players
+ranking alone (World famous in the top 30). The code ties it to the
+club status instead. The rival "gets boosts" in that its rank comes from
+yours through a table that puts it well above you early on (12 when you
+are at 0). The write-up also says the level limits the players
 an AI club signs; that isn't checked.
 
 Bytes `+0x9b`, `+0xa1` and `+0xa6`–`+0xa7` aren't traced. `save.py
@@ -560,6 +580,7 @@ python SRC/save.py roundtrip <card>/BESLES-54151-G00*
 python SRC/save.py show  <card>/BESLES-54151-G003
 python SRC/save.py combi <card>/BESLES-54151-G000 6
 python SRC/save.py clubs <card>/BESLES-54151-G000 167 54 432
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x26dd40 38
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x288a24 60
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 151938 60 --sles ISO/SLES_541.51
 python SRC/tbb.py dump DAT/PARAM/CLUB_RANK_SYSTEM.TBB 3

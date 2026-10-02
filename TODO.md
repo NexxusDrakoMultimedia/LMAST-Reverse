@@ -248,14 +248,17 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - [ ] Map more of the blocks through their accessors (youth, other
       clubs, finances), and name the fields an editor should offer. Other clubs: the
       untraced record bytes (`+0x9b`, `+0xa1`, `+0xa6`-`+0xa7`) and the
-      non-resident clubs (442 on). Club rank leftovers: what writes your
-      club's rank (it follows the status ÷ 2,047 in every save) and the
-      rival's, when in the season the ranking runs, the three weighted
+      non-resident clubs (442 on). Club rank leftovers: when in the season
+      the ranking runs, which competitions `0x22`-`0x24` lower the status
+      rank, what changes the status after a match (`0x26ddd8`), the three weighted
       values behind the world rank points (`SIMPRG.REL 0x151568`), and
       whether the reputation limits the players an AI club signs (the
       community account). Staff
       leftovers: the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`,
       and how far the manager's popularity goes in play (0 in every save)
+- [ ] Test in PCSX2: `save.py set ... status=30000` on save G000 should
+      make your club a "Promising club in ..." (club rank 14) and the
+      rival a "World-class club" (27) on their Information screens
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0-3
       (kind 4 shows "Won't tolerate club's facilities."), to confirm their
       names. A save edit per kind would show each one

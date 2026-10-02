@@ -46,6 +46,7 @@ Usage:
     python save.py player    <save> <slot>                # one player in full (youth: y<slot>)
     python save.py staff     <save>                       # manager, youth manager, coaches, scouts
     python save.py set       <save> <out> money=N         # edit into a new main file
+    python save.py set       <save> <out> status=30000 status_rank=4  # your club's standing
     python save.py set       <save> <out> 3:all=99 3:15=80  #  slot:ability=level (0-99)
     python save.py set       <save> <out> 3:fatigue=0 3:condition=65535  #  slot:field=value
                                    (fields: fatigue, condition, motivation, power, form,
@@ -730,6 +731,16 @@ DATE_OFF = 0x88
 # (pwkTeam_GetForeignCitizenNumber 0x266450 walks them).
 TEAM_OFF = 0x4b4
 SQUAD_OFF, SQUAD_SLOTS, PINFO_SIZE = 0x20, 25, 0x2a0
+# Block 1 +0x11264: s32 status rank 0-8, lower is better (titles lower it,
+# pwkTeam_StatusChangeRank 0x26dc50); +0x1126a: u16 club status
+# (pwkTeam_Status 0x26e2f0), which pwkTeam_StatusChange (0x26dbb8) keeps
+# within 0 and the status rank's cap (9 u16 at 0x555150). After each match
+# and at year end, 0x26dd40 sets your club rank (PlTeamData +0x41f8) to
+# status >> 11 and the rival's to the byte at 0x555168 + your club rank.
+STATUS_RANK_OFF, STATUS_OFF = 0x11264, 0x1126a
+STATUS_RANK_MAX, STATUS_SHIFT = 8, 11
+STATUS_CAPS, RIVAL_RANKS = 0x555150, 0x555168
+MY_RANK_OFF = TEAM_OFF + 0x41f8
 # PlPinfo: +0 s16 database id (negative = empty slot, 0x2664d0);
 # +0xa 64 x {u16 exp, u16 limit, u16 cap} abilities (plPinfo_ConvAbilLv 0x216c90;
 # pwkGUtl_AddExp 0x246028 clamps exp to the limit on every gain).
@@ -871,6 +882,14 @@ def reputation_table(sles_path=SLES):
     return struct.unpack_from("<6i", elf.data, elf.v2f(REPUTATION_TABLE))
 
 
+def status_tables(sles_path=SLES):
+    """(status cap per status rank, rival club rank per your club rank)."""
+    elf = Elf(sles_path)
+    o = elf.v2f(RIVAL_RANKS)
+    return (struct.unpack_from("<%dH" % (STATUS_RANK_MAX + 1), elf.data, elf.v2f(STATUS_CAPS)),
+            elf.data[o:o + CLUB_RANK_MAX + 1])
+
+
 def reputation(table, rank):
     """The message id in category 203 for a club rank (0x288a9c)."""
     return sum(rank >= t for t in table)
@@ -905,6 +924,36 @@ class Save:
     @money.setter
     def money(self, v):
         struct.pack_into("<q", self.blocks, self.at(0, MONEY_OFF), v)
+
+    def status(self):
+        """(status rank 0-8, its status cap, club status, your club rank)."""
+        b = self.blocks
+        srank = struct.unpack_from("<i", b, self.at(1, STATUS_RANK_OFF))[0]
+        caps, _ = status_tables()
+        return (srank, caps[min(max(srank, 0), STATUS_RANK_MAX)],
+                struct.unpack_from("<H", b, self.at(1, STATUS_OFF))[0],
+                b[self.at(1, MY_RANK_OFF)])
+
+    def set_status(self, status=None, srank=None):
+        """Set the status rank and/or the club status, then the two club
+        ranks the way 0x26dd40 does, so the save matches what the game
+        would hold after its next match check."""
+        caps, rivals = status_tables()
+        b = self.blocks
+        if srank is not None:
+            if not 0 <= srank <= STATUS_RANK_MAX:
+                raise ValueError("status rank is 0-%d" % STATUS_RANK_MAX)
+            struct.pack_into("<i", b, self.at(1, STATUS_RANK_OFF), srank)
+        srank, cap, cur, _ = self.status()
+        if status is None:
+            status = cur
+        if not 0 <= status <= cap:
+            raise ValueError("status is 0-%d at status rank %d (lower the rank "
+                             "with status_rank=)" % (cap, srank))
+        struct.pack_into("<H", b, self.at(1, STATUS_OFF), status)
+        rank = min(status >> STATUS_SHIFT, CLUB_RANK_MAX)
+        b[self.at(1, MY_RANK_OFF)] = rank
+        b[self.club(2)["offset"] + CLUB_RANK] = rivals[rank]
 
     def date(self):
         """(season, turn of season 0-95, month 1-12, turn of month 0-7).
@@ -1204,6 +1253,7 @@ def cmd_roundtrip(game, paths):
 
 
 def cmd_show(game, path):
+    import initteam
     import pbdata
     s = Save(game, path)
     year, turn, month, week = s.date()
@@ -1211,6 +1261,11 @@ def cmd_show(game, path):
     print("  date   %d-%d Week %d %s %s. (turn %d of the season)" % (
         year, year + 1, week // 2 + 1, ("Midweek", "Weekend")[week & 1], MONTHS[month - 1], turn))
     print("  money  %d" % s.money)
+    srank, cap, status, rank = s.status()
+    rep = initteam.category_names(os.path.join("DAT", "MESSAGE", "MES.PAC"), REPUTATION_CATEGORY)
+    n = reputation(reputation_table(), rank)
+    print("  status %d (status rank %d, cap %d), club rank %d (%s), rival's club rank %d" % (
+        status, srank, cap, rank, rep.get(n, "203:%d" % n), s.club(2)["rank"]))
     print("  squad (youth team slots start with y)")
     for slot, o in s.squad():
         p = s.pinfo(o)
@@ -1343,19 +1398,23 @@ def cmd_clubs(game, path, teams):
 
 
 def cmd_set(game, path, out, assigns):
-    """money=N; for a squad player slot:ability=level, slot:all=level, or
-    slot:field=value for the settable PINFO_FIELDS (fatigue, condition, ...);
-    combi:a:b=value for a pair of squad slots, combi:a:all=value for all of
-    a slot's pairs."""
+    """money=N; status=N and status_rank=N (your club's standing); for a
+    squad player slot:ability=level, slot:all=level, or slot:field=value
+    for the settable PINFO_FIELDS (fatigue, condition, ...); combi:a:b=value
+    for a pair of squad slots, combi:a:all=value for all of a slot's pairs."""
     s = Save(game, path)
     squad = dict(s.squad())
     filled = [int(i) for i in squad if i.isdigit()]
+    status_edits = {}
     for a in assigns:
         key, _, val = a.partition("=")
         if not val:
             raise SystemExit("expected field=value, got %r" % a)
         if key == "money":
             s.money = int(val, 0)
+            continue
+        if key in ("status", "status_rank"):
+            status_edits[key] = int(val, 0)
             continue
         if key.startswith("combi:"):
             _, x, y = (key.split(":") + [""])[:3]
@@ -1399,6 +1458,11 @@ def cmd_set(game, path, out, assigns):
             if not 0 <= k < ABIL_COUNT:
                 raise SystemExit("ability must be 0-%d" % (ABIL_COUNT - 1))
             s.set_ability(o, k, int(val))
+    if status_edits:
+        try:
+            s.set_status(status_edits.get("status"), status_edits.get("status_rank"))
+        except ValueError as e:
+            raise SystemExit("status: %s" % e)
     data = s.encode()
     with open(out, "wb") as f:
         f.write(data)
