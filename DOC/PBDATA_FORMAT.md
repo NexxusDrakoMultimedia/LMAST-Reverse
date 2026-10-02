@@ -850,6 +850,17 @@ it gives back entries 2 and 3 and the executable's table exactly. An
 emulation of `getPinfoRank` and `getPinfoApos0` on the result agrees
 with the records for all 25,591 players, before and after an edit.
 
+**Tested in PCSX2:** free agent A.Rankin (12,804, goalkeeper, stored
+rank 9) was lowered to rank 5 with `--sles` and renamed
+`RANKFIX.Rankin`, and put in free-agent slot 627 (the slot where rank-5
+players showed before, with slot 50 given a rank-14 player so the same
+slots pass the filter). In a new career he showed on the new club's
+Transfer List in 2006–07 (GK, 22, ENG, no team), which a rank-9 free
+agent can't
+([`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#which-free-agents-the-transfer-list-shows)),
+and his detail page opened normally. A main-position change goes through
+the same table but wasn't tested on its own.
+
 ## National team call-ups
 
 **Confirmed, `SIMPRG.REL` and `SLES_541.51`.** In a career a national

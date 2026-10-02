@@ -18,10 +18,6 @@ item in its section below.
    and 7). This is the largest piece of starting-season data still undecoded.
 3. **Size changes on the disc** (section 9). Until files can move, an edit
    can only grow to the end of its last sector, which limits every writer.
-4. **Make rank, main position and nationality edits work** (section 2).
-   The game takes club players' rank and main position from entries 2
-   and 3, so `pbdata.py` must re-sort them and patch the group table at
-   SLES `0x52fbf8` before an editor can change these fields.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -80,12 +76,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [ ] Test in PCSX2: a renamed fixed national player (26,046 as
       `NT.Terry.VS`, disc `LMAST-nt-test.iso`) should not show in a career
       call-up of England; the club Terry should
-- [ ] Test in PCSX2: rank edits for players below 25,591 with
-      `pbdata.py --sles` (written; entries 2 and 3 re-sorted, SLES group
-      table `0x52fbf8` patched). Disc `LMAST-rank-test.iso`: A.Rankin
-      (12,804, rank 9 -> 5, renamed RANKFIX.Rankin) in free-agent slot 627
-      should show on a new club's Transfer List
-      (`DOC/PBDATA_FORMAT.md#entries-2-and-3`)
+- [ ] Test in PCSX2: a main-position change with `pbdata.py --sles` on its
+      own (rank edits are tested; position goes through the same table)
 - [ ] The packs: `PLRESOURCECOMMON.PAC` (readers listed in `PARAM_DIR.md`,
       layouts not decoded). `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript
       scripts, decoded in `DOC/SQB_FORMAT.md`; what each one computes is

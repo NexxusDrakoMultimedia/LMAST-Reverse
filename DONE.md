@@ -216,6 +216,13 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Tested in PCSX2: VS mode uses the fixed national squads. With
       26,046 renamed `NT.Terry.VS`, England's VS starters listed DF 6
       NT.Terry.VS (`DOC/PBDATA_FORMAT.md#player-id-blocks`)
+- [x] Rank, main position and nationality edits for players below 25,591:
+      `pbdata.py set`/`import --sles` re-sort entries 2 and 3 and patch the
+      group table at SLES `0x52fbf8` (the rank ranges at `0x5eac08` are
+      built from it). `roundtrip --sles` rebuilds the disc's ranking
+      exactly. Tested in PCSX2: free agent A.Rankin lowered from rank 9
+      to 5 showed on a new club's Transfer List
+      (`DOC/PBDATA_FORMAT.md#entries-2-and-3`)
 
 ## 3. Ninja 3D models and motions
 
