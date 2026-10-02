@@ -313,6 +313,15 @@ scheme.
 - **Licensed number colour.** AC Milan, a "licence team"
   (`ライセンスチーム`), as described above: the executable's copy of the
   descriptor sets the colour of the shirt number.
+- **Keeper kit from `UNIFORM_GK`.** With `uniform.py setgk` setting bytes
+  1, 2, 3, 4, 5, 6 and 7 (kit fields 2, 3, 6, 7, 8, 10, 11) of every
+  scheme of keeper designs 20–37 to L4 (pink), and shirt colour 1 left
+  alone, patched with `--copies` into `UNIFORM_GK.TBB` and its 7 copies in
+  `PRELOAD/SIMFILE0`–`6.PAC` (disc `LMAST-gk-test.iso`), a new career's
+  keeper (Dunstable Utd) wore pink sleeves, shorts and socks.
+- **User report:** the club editor only lets you choose your outfield
+  kits. The keeper kit is never chosen, so `UNIFORM_GK` is the only place
+  it comes from.
 
 ## Still unknown
 
@@ -320,9 +329,9 @@ scheme.
 - Descriptor bytes 14 and 15, and what the pack's copy of the descriptor
   is used for.
 - What the 121 rows with team id 0 are.
-- Whether the game shows a `UNIFORM_GK` edit (not yet tested in PCSX2),
-  and whether the club editor lets you choose your own keeper kit, which
-  `CUniformBuilder::Init` would then overwrite.
+- What the keeper kit stored with your club holds, and whether screens
+  outside a match show it rather than the `UNIFORM_GK` kit (the code says
+  they should; not checked).
 
 ## Tool
 

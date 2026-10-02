@@ -127,9 +127,8 @@ contents and three tables are still undecoded.
       descriptor bytes 14-15 (kit fields 4 = collar, 12/13 = number
       colours, 14 = captain mark and side fields 3/4 = front number,
       shorts number position are now named)
-- [ ] Test in PCSX2: a `UNIFORM_GK` edit (`uniform.py setgk`) should change
-      your own club's keeper kit in a match, but not on other screens.
-      Also: does the club editor let you pick your keeper's kit?
+- [ ] `UNIFORM_GK` leftover: whether screens outside a match show your
+      club's stored keeper kit rather than the `UNIFORM_GK` one
 
 ## 5. Music and sound effects
 

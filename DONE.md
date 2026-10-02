@@ -276,7 +276,10 @@ files. Each item keeps what was found, where, and how it was tested.
       design (`UniformList_GetGKUniformData` `0x2d3608`): table 0 maps 209
       outfield shirts to keeper designs, table 1 gives each of 38 keeper
       designs 6 colour schemes, the first that doesn't clash is used.
-      `uniform.py gk`, `setgk`, and a check in `info` (in `regress.py`)
+      `uniform.py gk`, `setgk`, and a check in `info` (in `regress.py`).
+      Tested in PCSX2: pink scheme colours gave a new career's keeper pink
+      sleeves, shorts and socks. User report: the club editor only offers
+      outfield kits
 
 ## 5. Music and sound effects
 
