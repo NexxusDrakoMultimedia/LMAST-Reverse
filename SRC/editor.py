@@ -46,7 +46,7 @@ import initteam
 import pbdata
 
 SLES = "SLES_541.51"
-WINDOW = (1960, 1000)
+WINDOW = (1280, 720)
 LIST_MIN = 360            # the narrowest the list gets when a page needs room
 BARS_PER_LINE = 8
 
@@ -92,29 +92,49 @@ def quote(arg):
 # --- widgets -----------------------------------------------------------------
 
 class Scrolled:
-    """A frame inside a canvas with a vertical scroll bar."""
+    """A frame inside a canvas with scroll bars. The frame fills the canvas's
+    width, or keeps its own when it is wider; then the horizontal bar
+    scrolls it (or Shift and the mouse wheel)."""
     def __init__(self, parent):
         self.outer = ttk.Frame(parent)
         self.canvas = tk.Canvas(self.outer, highlightthickness=0)
-        bar = ttk.Scrollbar(self.outer, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(yscrollcommand=bar.set)
-        bar.pack(side="right", fill="y")
-        self.canvas.pack(side="left", fill="both", expand=True)
+        vbar = ttk.Scrollbar(self.outer, orient="vertical", command=self.canvas.yview)
+        hbar = ttk.Scrollbar(self.outer, orient="horizontal", command=self.canvas.xview)
+        self.canvas.configure(yscrollcommand=vbar.set, xscrollcommand=hbar.set)
+        self.outer.rowconfigure(0, weight=1)
+        self.outer.columnconfigure(0, weight=1)
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        vbar.grid(row=0, column=1, sticky="ns")
+        hbar.grid(row=1, column=0, sticky="ew")
         self.inner = ttk.Frame(self.canvas)
         self.window = self.canvas.create_window(0, 0, window=self.inner, anchor="nw")
-        self.inner.bind("<Configure>", lambda e: self.canvas.configure(
-            scrollregion=self.canvas.bbox("all")))
-        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfigure(
-            self.window, width=e.width))
-        self.canvas.bind("<Enter>", lambda e: self.canvas.bind_all("<MouseWheel>", self._wheel))
-        self.canvas.bind("<Leave>", lambda e: self.canvas.unbind_all("<MouseWheel>"))
+        self.inner.bind("<Configure>", lambda e: self._fit())
+        self.canvas.bind("<Configure>", lambda e: self._fit())
+        self.canvas.bind("<Enter>", lambda e: self._bind_wheel(True))
+        self.canvas.bind("<Leave>", lambda e: self._bind_wheel(False))
+
+    def _fit(self):
+        width = max(self.canvas.winfo_width(), self.inner.winfo_reqwidth())
+        self.canvas.itemconfigure(self.window, width=width)
+        self.canvas.configure(scrollregion=(0, 0, width, self.inner.winfo_reqheight()))
+
+    def _bind_wheel(self, on):
+        for seq, fn in (("<MouseWheel>", self._wheel), ("<Shift-MouseWheel>", self._hwheel)):
+            if on:
+                self.canvas.bind_all(seq, fn)
+            else:
+                self.canvas.unbind_all(seq)
 
     def _wheel(self, event):
         self.canvas.yview_scroll(-event.delta // 120, "units")
 
+    def _hwheel(self, event):
+        self.canvas.xview_scroll(-event.delta // 120, "units")
+
     def clear(self):
         for w in self.inner.winfo_children():
             w.destroy()
+        self.canvas.xview_moveto(0)
         self.canvas.yview_moveto(0)
 
 
@@ -697,8 +717,8 @@ class App:
         self.root = tk.Tk()
         self.title_font = tkfont.nametofont("TkDefaultFont").copy()
         self.title_font.configure(size=12, weight="bold")
-        # Wide enough for the list and a page of four ability columns
-        # (about 1,900 pixels), or the screen less a margin.
+        # 1280x720, or the screen less a margin. A page wider than its pane
+        # scrolls sideways.
         w = min(WINDOW[0], self.root.winfo_screenwidth() - 80)
         h = min(WINDOW[1], self.root.winfo_screenheight() - 120)
         self.root.geometry("%dx%d+%d+%d" % (w, h, (self.root.winfo_screenwidth() - w) // 2,

@@ -12,9 +12,8 @@ What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
 1. **The editor GUI** (section 11). `SRC/editor.py` has its People tab
-   (the player database). Next: a PCSX2 test of an edit made only in the
-   editor, then `initteam.py roundtrip` (section 8) and a Squads and clubs
-   tab on it.
+   (the player database), tested in PCSX2. Next: `initteam.py roundtrip`
+   (section 8) and a Squads and clubs tab on it.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -309,10 +308,3 @@ and every GUI edit must also be possible as a `python SRC/...` command.
 - [ ] Build a modded disc from the GUI: collect the edited files, run
       `patch_disc.py` with `--copies`, and optionally make an xdelta
       patch with `vcdiff.py`
-- [ ] Test in PCSX2: an edit made only through the GUI shows in game
-      (for example a player's name, height and an ability in the People
-      tab, put on a disc with `patch_disc.py`). Disc `LMAST-editor-test.iso`
-      (with `--skip-tutorial`): Van der Sar (250, Manchester) at 255 cm,
-      45 kg, two-footed, every ability 99, potential 31, long sleeves, GK
-      long pants, gloves 3, boots 3. His age and shirt should stay 36 and 19
-      (from `OTEAMMEMBER.TBB`), not the edited 16 and 69

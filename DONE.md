@@ -633,3 +633,11 @@ files. Each item keeps what was found, where, and how it was tested.
       equals the logged `pbdata.py set --sles` output byte for byte, a
       second session builds on the mod's copies, and `pbdata.py roundtrip
       --sles` finds the mod's pack and executable consistent
+- [x] Tested in PCSX2: an edit made only in the editor shows in game. Van
+      der Sar (250, Manchester) edited in the People tab and put on a disc
+      with `patch_disc.py --copies --skip-tutorial`: his detail screen
+      shows 8 ft 4 in (255 cm), 7 st 1 lb (45 kg), LEFT (leg 2), full bars
+      and every position cell lit. Age 36 and shirt 19 came from
+      `OTEAMMEMBER.TBB`, not the edited 16 and 69, as the editor's note
+      says. The kit style (long sleeves, GK pants, gloves, boots) wasn't
+      checked in a match
