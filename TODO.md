@@ -16,13 +16,10 @@ item in its section below.
    [`GOALS.md`](GOALS.md)).
 2. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
    and 7). This is the largest piece of starting-season data still undecoded.
-3. **Message variables** (section 1). Which game value fills each
-   variable id in the message text, so text edits can move or reuse
-   them safely.
-4. **Export a complete in-game player** (section 3). One model from the
+3. **Export a complete in-game player** (section 3). One model from the
    skeleton, the body and limb parts and the face-pack head, so the
    model work gives a usable result.
-5. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
+4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc.
 
@@ -32,7 +29,9 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 `SRC/mbb.py`. All 3,738 files and 66,102 messages parse, in 7 language slots.
 
 - [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`
-- [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)
+- [ ] Message variable leftovers: which player, team or number the
+      screen-set global variables (1100-1104, the 3000s) hold on each
+      screen, and how variables 35 and 0 outside category 1 are filled
 - [ ] Check whether raw `0x0A`/`0x0D` bytes affect display
 
 ## 2. Starting season and parameter tables (`PARAM/`, `0SYSTEM/`)

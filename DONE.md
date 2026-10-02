@@ -65,6 +65,13 @@ files. Each item keeps what was found, where, and how it was tested.
       scripts run the Event module for (`m4[3]`, confirmed through
       `SIMPRG.REL 0x6a50`/`0x129f14`), e.g. 0 year start, 4 turn start,
       16 before the Sponsor screen (`DOC/GAME_FLOW.md#event-timings`)
+- [x] Message variables: the game's table of the 880 global variables
+      (`SIMPRG.REL 0x1dae50`, searched by `Msg::SearchGlobalVarHeader`):
+      each one's kind (the wildcard converter: player name, team name,
+      number, ...) and the code behind it, including the 50 text slots
+      and their writers. Variables in other categories are wildcard ids
+      (1,172 of 1,187 uses). `mbb.py vars` lists both, checked by
+      `regress.py` as `mbb_vars`
 
 ## 2. Starting season and parameter tables (`PARAM/`, `0SYSTEM/`)
 

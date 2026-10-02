@@ -29,6 +29,11 @@ Usage:
     python mbb.py roundtrip <MES.PAC>                        # text -> bytes -> pack must give the same bytes
     python mbb.py set    <MES.PAC> <out.PAC> <cat> <id> <lang> "<text>" [--copy N]
     python mbb.py import <MES.PAC> <edits.csv> <out.PAC>     # apply a CSV in `csv` format
+    python mbb.py vars [MES.PAC]                             # what fills each global {var:1:N}
+
+`vars` reads ISO/SLES_541.51 and ISO/DLL/SIMPRG.REL: the game's table of
+global variables (category 1) and the code behind each one (see
+DOC/MBB_FORMAT.md#global-variables).
 
 Writing: text uses the same {tags} as dump and csv (a literal '{' is '{{').
 In `set`, \\n in the text is a line break. `import` takes a CSV made by
@@ -546,6 +551,191 @@ def cmd_import(pac_path, csv_path, out_path):
     apply_edits(pac_path, out_path, edits)
 
 
+# --- global variables (category 1) -------------------------------------------
+
+# SIMPRG.REL: Msg::SearchGlobalVarHeader (0x171ff0) searches 0x370 records
+# of {u16 index, u16 variable id, u32 source, u32 type, s32} at 0x1dae50.
+# Type 0/1: Msg::GetGlobalVarString (0x16dc50) runs case `source` of the
+# switch at 0x16d458 (53 cases, table 0x243190) for the text. Type >= 2:
+# Msg::GetGlobalVarIndex (0x171f88) runs case `source` of 0x1706d8 (441
+# cases, table 0x243360) for a number, and CMsgWildCard::getString
+# (SLES 0x201c28) turns it into text with converter `type` (0x10a records of
+# {u32, u32 function, u32 id, u32 arg} at SLES 0x38f4b0).
+GLOBAL_VARS, GLOBAL_VAR_COUNT = 0x1dae50, 0x370
+STRING_CASES, STRING_CASE_COUNT = 0x243190, 0x35
+NUMBER_CASES, NUMBER_CASE_COUNT = 0x243360, 0x1b9
+WILDCARDS, WILDCARD_COUNT = 0x38f4b0, 0x10a
+# Msg::SetVariableBuffer (0x11e570) and 0x11e6c0 fill the 50 text slots that
+# Msg::GetVariableBuffer (0x11e638) returns; the slot is $a0.
+VARBUF_SETTERS = (0x11e570, 0x11e6c0)
+JAL, JR_RA, R_MIPS_HI16, R_MIPS_LO16 = 3, 0x03e00008, 5, 6
+SKIP_CALLS = {"plPwork_GetPwork", "get", "sprintf", "snprintf", "strncpy", "strcpy",
+              "strcat", "GetString", "ConvertHanToZen", "GetVariableBuffer"}
+
+
+def _short(name):
+    return name.split("__")[0] if name else name
+
+
+def _li(words, i, reg):
+    """The constant loaded into `reg` just before (or in the delay slot of)
+    the call at word i, or None."""
+    for j in [i + 1] + list(range(i - 1, max(i - 12, -1), -1)):
+        x = words[j]
+        if x >> 26 in (9, 13) and (x >> 16) & 31 == reg and (x >> 21) & 31 == 0:
+            return x & 0xffff
+        if x == (0x2d | reg << 11):       # move reg, $zero
+            return 0
+    return None
+
+
+def global_vars(sles_path, simprg_path):
+    """[{id, string, slot, converter, sources}] for the global variables."""
+    import snr2
+    import sles_disasm
+    elf = sles_disasm.Elf(sles_path)
+    by_addr = {a: n for n, a in sles_disasm.recover_symbols(elf).items()}
+    o = elf.v2f(WILDCARDS)
+    converters = [_short(by_addr.get(struct.unpack_from("<4I", elf.data, o + 16 * i)[1], ""))
+                  for i in range(WILDCARD_COUNT)]
+    m = snr2.Snr2(simprg_path)
+    d, ext = m.data, m.ext_by_site()
+    words = struct.unpack_from("<%dI" % (m.h["ext_rel_off"] // 4), d, 0)
+
+    def calls(addr, depth, seen):
+        """Import and data names reached from the function at addr, and the
+        slot it passes to GetVariableBuffer."""
+        if addr in seen or depth < 0 or addr // 4 >= len(words):
+            return [], None
+        seen.add(addr)
+        out, slot = [], None
+        for i in range(addr // 4, min(addr // 4 + 400, len(words))):
+            x, e = words[i], ext.get(4 * i)
+            if e and e[0] in (R_MIPS_HI16, R_MIPS_LO16):
+                out.append("&" + _short(m.syms[e[1]][0]))
+            if x >> 26 == JAL:
+                if e:
+                    name = _short(m.syms[e[1]][0])
+                    out.append(name)
+                    if name == "GetVariableBuffer" and slot is None:
+                        slot = _li(words, i, 4)
+                else:
+                    more, s = calls((x & 0x3ffffff) << 2, depth - 1, seen)
+                    out += more
+                    slot = slot if slot is not None else s
+            if x == JR_RA:
+                break
+        return out, slot
+
+    def case(table, count, n):
+        if n >= count:
+            return [], None
+        start = struct.unpack_from("<I", d, table + 4 * n)[0] // 4
+        out, slot = [], None
+        for i in range(start, start + 12):
+            x = words[i]
+            if x >> 26 == JAL:
+                e = ext.get(4 * i)
+                if e:
+                    out.append(_short(m.syms[e[1]][0]))
+                else:
+                    more, slot = calls((x & 0x3ffffff) << 2, 2, set())
+                    out += more
+            if x >> 26 == 4 and (x >> 16) & 0x3ff == 0:   # b: the end of the case
+                break
+        return out, slot
+
+    out = []
+    for k in range(GLOBAL_VAR_COUNT):
+        _, var, source, kind, _ = struct.unpack_from("<HHIIi", d, GLOBAL_VARS + 16 * k)
+        if k and not var:
+            continue
+        string = kind < 2
+        names, slot = (case(STRING_CASES, STRING_CASE_COUNT, source) if string
+                       else case(NUMBER_CASES, NUMBER_CASE_COUNT, source))
+        out.append({"id": var, "string": string, "slot": slot,
+                    "converter": None if string else (
+                        converters[kind] if kind < WILDCARD_COUNT else "?"),
+                    "sources": [n for n in dict.fromkeys(names) if n not in SKIP_CALLS]})
+    return out
+
+
+def varbuf_writers(sles_path):
+    """{slot: {function names}} for the calls that fill the text slots."""
+    import sles_disasm
+    elf = sles_disasm.Elf(sles_path)
+    syms = sles_disasm.recover_symbols(elf)
+    funcs = sorted((a, n) for n, a in syms.items())
+    starts = [a for a, _ in funcs]
+    lo, size = elf.sections[".text"]
+    words = struct.unpack_from("<%dI" % (size // 4), elf.data, elf.v2f(lo))
+    out = {}
+    for i, x in enumerate(words):
+        if x >> 26 == JAL and (x & 0x3ffffff) << 2 in VARBUF_SETTERS:
+            name = _short(funcs[bisect.bisect_right(starts, lo + 4 * i) - 1][1])
+            out.setdefault(_li(words, i, 4), set()).add(name)
+    return out
+
+
+def cmd_vars(pac_path, sles_path, simprg_path):
+    import collections
+    import re
+    uses = collections.Counter()
+    if os.path.exists(pac_path):
+        for _, m in iter_files([pac_path]):
+            if m.lang == 1:
+                for _, s in m.records:
+                    uses.update(int(v) for v in re.findall(r"\{var:1:(\d+)\}", decode(s, 1)))
+    writers = varbuf_writers(sles_path)
+    rows = global_vars(sles_path, simprg_path)
+    print("%d global variables; %d used in the English text (%d uses)" % (
+        len(rows), len(uses), sum(uses.values())))
+    known = {r["id"] for r in rows}
+    for r in rows:
+        if r["string"]:
+            what = "text"
+            if r["slot"] is not None:
+                what += ", slot %d (%s)" % (r["slot"], ", ".join(
+                    sorted(writers.get(r["slot"], ["?"]))))
+        else:
+            what = r["converter"]
+        print("%5d  %5d use%s  %-32s %s" % (
+            r["id"], uses[r["id"]], " " if uses[r["id"]] == 1 else "s", what,
+            ", ".join(r["sources"][:4])))
+    for v in sorted(set(uses) - known):
+        print("%5d  %5d uses  !! used in the text but not in the game's table" % (v, uses[v]))
+    # Other categories' variables are wildcard ids: a screen fills them with
+    # CMsgWildCard::set (0x201ba8) and getString converts them by the table.
+    local = collections.defaultdict(collections.Counter)
+    if os.path.exists(pac_path):
+        for _, m in iter_files([pac_path]):
+            if m.lang == 1:
+                for _, s in m.records:
+                    for c, v in re.findall(r"\{var:(\d+):(\d+)\}", decode(s, 1)):
+                        if c != "1":
+                            local[int(v)][int(c)] += 1
+    ids = wildcard_ids(sles_path)
+    print("\nother categories: %d variable ids, %d uses" % (
+        len(local), sum(sum(c.values()) for c in local.values())))
+    for v in sorted(local):
+        print("%5d  %5d uses in %3d categor%s  %s" % (
+            v, sum(local[v].values()), len(local[v]), "y  " if len(local[v]) == 1 else "ies",
+            ids.get(v, "not a wildcard id")))
+
+
+def wildcard_ids(sles_path):
+    """{wildcard id: converter name} from the table at SLES 0x38f4b0."""
+    import sles_disasm
+    elf = sles_disasm.Elf(sles_path)
+    by_addr = {a: n for n, a in sles_disasm.recover_symbols(elf).items()}
+    o, out = elf.v2f(WILDCARDS), {}
+    for i in range(WILDCARD_COUNT):
+        _, func, wid, _ = struct.unpack_from("<4I", elf.data, o + 16 * i)
+        if func:
+            out.setdefault(wid, _short(by_addr.get(func, "?")))
+    return out
+
+
 def _opt(args, flag):
     if flag in args:
         k = args.index(flag)
@@ -558,7 +748,7 @@ def _opt(args, flag):
 def main(argv):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
-    if len(argv) < 3:
+    if len(argv) < 3 and argv[1:] != ["vars"]:
         print(__doc__)
         return 1
     cmd, args = argv[1], list(argv[2:])
@@ -583,6 +773,9 @@ def main(argv):
                 args[5].replace("\\n", "\n"), copy)
     elif cmd == "import" and len(args) == 3:
         cmd_import(*args)
+    elif cmd == "vars" and len(args) <= 1:
+        cmd_vars(args[0] if args else os.path.join("DAT", "MESSAGE", "MES.PAC"),
+                 os.path.join("ISO", "SLES_541.51"), os.path.join("ISO", "DLL", "SIMPRG.REL"))
     else:
         print(__doc__)
         return 1

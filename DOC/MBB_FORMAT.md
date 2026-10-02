@@ -100,10 +100,64 @@ Every escape in the archive follows this shape.
 | `0xC3` | 2 | u16 reaction | the speaker's body reaction (motion), see below | `{react:N}` | 15,297 |
 
 A variable's category is a message category (`1` is the global one, set up by
-`fcEuroRootTask_SetupGlobalMessageCategory`), and the game fills in its
-variables at runtime with `CMsgCategory::SetVariable`. For example,
-`{var:1:7}` is the player's name in the salesman dialogue. The variable ids
-are not message ids.
+`fcEuroRootTask_SetupGlobalMessageCategory`). The variable ids are not
+message ids. Category 1's variables come from a table in the game code,
+and every other category's from the wildcard table (both below). For
+example, `{var:1:7}` is the name you typed for yourself at the start.
+
+### Global variables
+
+**Confirmed from the game code:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x11e288` | `Msg::CMsgNotifyVariableGetFcEuro::Evaluate` | a category-1 variable goes to `Msg::SearchGlobalVarHeader`, then `GetGlobalVarString` or the wildcard conversion; other categories go to `CMsgDecoder::GetVariable` |
+| `SIMPRG.REL 0x171ff0` | `Msg::SearchGlobalVarHeader` | searches 0x370 records of 16 bytes at `SIMPRG.REL 0x1dae50`: u16 index, u16 variable id, u32 source, u32 type, s32 |
+| `SIMPRG.REL 0x16dc50` | `Msg::GetGlobalVarString` | type 0 or 1: runs case *source* of the switch at `0x16d458` (53 cases, table `0x243190`) for the text |
+| `SIMPRG.REL 0x171f88` | `Msg::GetGlobalVarIndex` | type 2 and up: runs case *source* of the switch at `0x1706d8` (441 cases, table `0x243360`) for a number |
+| `0x201c28` | `MSG_UTIL::CMsgWildCard::getString` | turns that number into text with entry *type* of the 266 records at `0x38f4b0`: {u32, u32 converter, u32 wildcard id, u32} |
+| `0x11e570`, `0x11e6c0`, `0x11e638` | `Msg::SetVariableBuffer`, (no symbol), `GetVariableBuffer` | 50 text slots of 0x28 bytes. The string cases read a slot, and the `VarBuf_*` and `Set*` functions fill them |
+
+The converters are named in the executable: `getPlayerName`,
+`getTeamName`, `getNumber`, `getMoney`, `getCompeName`, `getNational`,
+`getSponsorName`, `getEval`, `getPosition`, `getRegion`, `getDate` and so
+on. So each variable's type says what kind of value it is, and its
+source case says where the value comes from. `python SRC/mbb.py vars`
+lists all 880 with both and counts their uses. All 323 global variables
+used in the English text (7,189 uses) are in the table. The most used:
+
+| Variable | Uses | Kind | Source |
+|---|---|---|---|
+| 1100 | 1,113 | player name | an s16 the calling screen sets (`SIMPRG.REL 0x249990`) |
+| 1101 | 536 | team name | the same kind of slot |
+| 1 | 454 | text | slot 1: your club's name (`VarBuf_MakeMyTeamName`, `SetTeamNameInput_ClubEditModule`) |
+| 1103 | 372 | evaluation word (`getEval`) | a screen-set slot |
+| 7 | 362 | text | slot 0: the name you typed for yourself (`SetOwnerName_Keyboard`) |
+| 2030, 2031 | 275, 196 | competition name | your nation's leagues (`pwkLg_GetMyNati`, `plCompeData_getScheCompe_FromNationDiv`) |
+| 2 | 253 | text | slot 2: the rival club's name (`VarBuf_MakeRivalTeamName`) |
+| 2058, 2076, 2079 | 238, 156, 152 | player, team, nation | the current event (`EVS::EvsWork`) |
+| 1102, 1104 | 172, 75 | number | screen-set slots |
+| 1000 | 146 | competition name | a competition of your club's, from the schedule (`GetScheEuro`, `getScheCompe` with your team data) |
+| 3, 5 / 4, 6 | | text | your / the rival's hometown (slots 11, 5 / 12, 6, `VarBuf_MakeMyHometown`, `VarBuf_MakeRivalHometown`) |
+| 11 | 31 | nation | your club's nation (`pwkLg_GetMyNati`) |
+| 101, 102 | 2, 18 | secretary's name | `pwkTeam_GetSecretary`, `GetSecretaryBefore` |
+| 106 | 58 | manager's name | your team data |
+| 1001, 1002 | 0 | text | slots 9, 10: your / the rival's stadium |
+
+Ids 10000 and up repeat the low ones (10001 is slot 1 again, and so on).
+Many sources, like 1100–1104 and the 3000s, read a value that the screen
+showing the message sets first, so the table gives the kind of value but
+not which player or team; that depends on the screen.
+
+**Other categories.** A variable in any other category is a wildcard id:
+the screen fills it with `CMsgWildCard::set` (`0x201ba8`, as in the club
+reputation text, which sets id 310 to the club's region), and
+`getString` converts it with the record whose wildcard id matches.
+**Empirical:** 1,172 of the 1,187 such uses in the English text are ids
+in the table: 1–11 player names, 30–31 money, 40 a schedule group, 50–60
+team names, 70–101 numbers, 130–139 text passed through
+(`getDoNothing`), 190 a nation, 220–224 sponsors, and so on. Ids 35 (12
+uses) and 0 (3) aren't in the table.
 
 Speaker names 100–106 match the symbolic names in category 2 (`100`
 RIVAL_OWNER_NAME, `101` SECRETARY, `103` REPORTER, ...). The other ids used
@@ -368,6 +422,7 @@ only happens in slots that end with a whole spare sector.
 
 - What the extra step in `setReaction` does for reactions 2 and 4 (a
   message to the second scene object at `+0x588`).
-- Which variable ids each category defines, and how they're filled (the
-  `Msg::VarBuf_*` functions at `0x11e7f0`… cover the global ones).
+- Which player, team or number the screen-set global variables (1100–1104,
+  most of the 3000s) hold on each screen, and how variables 35 and 0
+  outside category 1 are filled.
 - Which screens use the `1000xx` variant categories instead of the originals.

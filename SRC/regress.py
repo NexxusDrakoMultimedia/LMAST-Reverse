@@ -106,6 +106,9 @@ def checks():
         ("ninja", ["ninja.py", "info", "DAT"], ["DAT"]),
         ("mbb", ["mbb.py", "info", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
         ("mbb_roundtrip", ["mbb.py", "roundtrip", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
+        # The global variable table and the wildcard ids, read from the code.
+        ("mbb_vars", ["mbb.py", "vars", "DAT/MESSAGE/MES.PAC"],
+         ["DAT/MESSAGE/MES.PAC", "ISO/SLES_541.51", "ISO/DLL/SIMPRG.REL"]),
         ("sounddat", ["sounddat.py", "info", "DAT/GAME/SOUNDDAT.PAC"], ["DAT/GAME/SOUNDDAT.PAC"]),
         ("afs", ["afs.py", "info", "ISO/AUDIO"], ["ISO/AUDIO"]),
         ("sounddat_songs", ["sounddat.py", "songs", "DAT/SOUND", "DAT/GAME/SOUNDDAT.PAC"],

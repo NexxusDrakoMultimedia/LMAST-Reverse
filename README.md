@@ -183,7 +183,7 @@ markers. The banks' own instruments aren't mapped to them yet.
 
 | Tool | Formats | Doc |
 |---|---|---|
-| [`mbb.py`](SRC/mbb.py) | `MESSAGE/MES.PAC` and its `MBB1` message files, all 7 language slots | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) |
+| [`mbb.py`](SRC/mbb.py) | `MESSAGE/MES.PAC` and its `MBB1` message files, all 7 language slots; `vars` reads what fills each variable from `SLES_541.51` and `SIMPRG.REL` | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) |
 
 ```bash
 python SRC/mbb.py info DAT/MESSAGE/MES.PAC
