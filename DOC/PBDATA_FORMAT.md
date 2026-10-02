@@ -735,6 +735,14 @@ bonuses at `0x550510`, 0x98 bytes each), clamped to 0–4. The bonus to
 parameters 128–138 ([above](#the-match-engines-player-parameters)), but
 what reads them there isn't found.
 
+They are not the tactics screen's combination lines. Those are per pair
+of players: `CTacticsTeam::calculateCombinationLevel` (`0x2e6fb0`) reads
+each pair through `plCombi_Get` (`0x20f638`, team data `+0x4354`) and
+buckets it into levels 1–5 with the thresholds at `0x55b850`. How fast a
+pair grows (`plCombi_GetCombinationGrow`, `0x20fb90`) depends on both
+players' `PlPinfo +0x1ea`, through an 8 × 8 table at `0x390698`, not on
+`+0x66`.
+
 ```bash
 python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 4408     # +0x57-+0x5d by name
 python SRC/sles_disasm.py ISO/SLES_541.51 dis set_player_uniform_style_info set_hand__Q2 setup_player_uniform_style__Q2
