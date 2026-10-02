@@ -51,11 +51,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [ ] Name the rest of the player fields: money band (lead: BPINFO CHECK
       calls band value 10,000 "1mil"), entry 2, the bit fields `+0x30`
       to `+0x5d` and `+0x66`, abilities 27, 32, 54 and 59–63, and what
-      the skills and play styles do in a match. Still open after the
-      Taylor and Rooney VPF screenshots: which of 19/20 is pace and of
-      57/58 pressing (equal VPF values in both), and whether 54/55 are
-      the left and right flanks. A VPF player with a clear left/right
-      bias or pace/acceleration gap would settle them
+      the skills and play styles do in a match. (The VPF screenshots of
+      Taylor, Rooney, Beckham and Lucio named the rest.)
 - [ ] User check (PCSX2): give a player play styles with `pbdata.py set`
       (`style.0=7`) and see the detail screen's Play Style plate show
       "Play maker"

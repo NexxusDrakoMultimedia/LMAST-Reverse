@@ -206,7 +206,8 @@ def style_names(styles):
 # 21-23), the position aptitudes (33-44) and the systems (45-52, by match
 # growth at 0x246884) come from the game code. The rest follow Virtua Pro
 # Football's edit screen, which runs on the same engine: same order, and
-# Maik Taylor's and Wayne Rooney's values there match their records here.
+# the values of the four players checked (Taylor, Rooney, Beckham, Lucio)
+# match their records here.
 # None means unnamed.
 # DOC/PBDATA_FORMAT.md#ability-names says which is which.
 SYSTEMS = ("3-4-3", "3-5-2", "3-6-1", "4-3-3", "4-4-2", "4-5-1", "5-3-2", "5-4-1")
