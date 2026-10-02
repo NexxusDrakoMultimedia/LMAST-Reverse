@@ -176,6 +176,9 @@ files. Each item keeps what was found, where, and how it was tested.
       Virtua Pro Football's Player Edit screen (user screenshots of Maik
       Taylor, player 0). `pbdata.py show` prints the names
       (`DOC/PBDATA_FORMAT.md#ability-names`)
+- [x] Play style edit tested in PCSX2: Terry with `style.0=7` shows
+      "Play maker" on his detail screen's STYLE line, on a
+      `--skip-tutorial` disc (`DOC/PBDATA_FORMAT.md#play-styles`)
 
 ## 3. Ninja 3D models and motions
 

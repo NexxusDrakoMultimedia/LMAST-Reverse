@@ -358,9 +358,15 @@ each with a rating. This game stores only which styles a player has.
 Beckham's three styles here (14, 13, 7) are his three best in VPF (Side
 Attacker 80, Central Midfielder 70, Playmaker 92); Rooney's 2 and 5 are
 his two best (Moving 87, Second Attacker 85), but his 9 (Attacker) is 48
-there. The
-style names were already checked in game through a save
+there. The style names were already checked in game through a save
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md)).
+
+**Tested in PCSX2:** John Terry (101) has styles 20, 19, 18 (CB,
+Stopper, Defensive Sweeper). `pbdata.py set ... 101 style.0=7` makes them
+7, 19, 18. On a disc patched with `patch_disc.py` (with
+`--skip-tutorial`), his detail screen in a new career showed "Play maker"
+on its STYLE line, with three style icons. So the first stored style is
+the one shown, and the database value reaches the game unchanged.
 
 ## Positions and aptitude
 
