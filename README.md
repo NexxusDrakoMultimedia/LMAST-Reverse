@@ -33,7 +33,8 @@ far-right techbro chud, this project is ALSO not for you.
 ## Requirements
 
 - Python 3, standard library only for most commands
-- `pip install pillow` for the PNG commands (`svr`, `csp`, `zbf`)
+- `pip install pillow` for the PNG commands (`svr`, `csp`, `zbf`) and the
+  textures in `ninja.py`'s exports
 - `pip install capstone` for disassembly (`sles_disasm`, `snr2 dis`)
 
 ## Setup
@@ -180,7 +181,7 @@ python SRC/afs.py wav ISO/AUDIO/BGM.AFS out/bgm
 ```
 
 The MIDI files carry the note data only, with `loopStart`/`loopEnd`
-markers. The banks' own instruments aren't mapped to them yet.
+markers. `wav` renders the songs with the banks' own instruments instead.
 
 ### Text
 
@@ -244,8 +245,10 @@ whenever the pack is loaded, so an edit must reach both (`--copies`). See
 
 Only the table of contents of `DATA.CVM` is encrypted, so a file that keeps
 its size can be written over the original without re-encrypting anything.
-A file can grow only to the end of its last sector. Moving files to make
-more room isn't supported yet. See [`REBUILD.md`](DOC/REBUILD.md).
+A file can grow to the end of its last sector in place. One that needs more
+sectors is moved to the end of `DATA.ISO`, and the disc image grows if it
+has to. Repacking archives other than `PRELOAD` packs isn't supported yet.
+See [`REBUILD.md`](DOC/REBUILD.md).
 
 | Tool | Reads | Does |
 |---|---|---|
@@ -280,17 +283,18 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - `packdata.py` uses `pac.py` to find KC@P entries and expand PRSH.
 - `ninja.py` uses `pac.py` to check the Ninja entries inside `.PAC`/`.MRG`/
   `.HED` archives.
-- `teaminit.py` uses `tbb.py`, and `pbdata.py` for names; `plrsim.py`
-  uses `pac.py`, `tbb.py` and `pbdata.py`.
+- `teaminit.py` uses `tbb.py`, and `pbdata.py` for names; `plrsim.py` and
+  `plrcommon.py` use `pac.py`, `tbb.py` and `pbdata.py`.
 - `mbb.py` uses `pac.py` for `MES.PAC`; `pbdata.py`, `initteam.py`,
   `schedule.py`, `stadium.py` and `system.py` use `pac.py` and `tbb.py`;
-  `sqb.py` uses `pac.py`.
+  `sqb.py` uses `pac.py`, and `packdata.py` for `COMBINATION2.CSB`.
 - `evsdatabin.py --text` uses `mbb.py`.
 - `uniform.py` uses `pac.py`, `packdata.py` and `svr.py` for the licensed
   kits, `sles_disasm.py` for the executable's copy, and `initteam.py` for
   club names.
 - `save.py` loads the game's serializers with `sles_disasm.py` and
-  `snr2.py`.
+  `snr2.py`, and takes field layouts, names and tables from `pbdata.py`,
+  `initteam.py` and `tbb.py`.
 - `patch_disc.py` uses `extract_disc.py` and `rofs_decrypt.py` to find files
   in the image and rewrite directory records, `pac.py` to rebuild
   `PRELOAD` packs, and `sqb.py` for `--skip-tutorial`.

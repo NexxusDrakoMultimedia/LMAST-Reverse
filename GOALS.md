@@ -49,9 +49,10 @@ Each stage depends on the one before it.
    runs over every file on the disc before any edit is trusted, and goes into
    `regress.py`. *Started:* `tbb.py` (all 70 tables), `pbdata.py` (the
    player database), `mbb.py` (message text), `teaminit.py` (the player's
-   new club), `uniform.py` (club kits), `sqb.py` (sequencer scripts) and
-   `pac.py` (BINPACs) write and round-trip every file. `initteam.py` edits
-   squads and club records, and `save.py` edits saved games. Edits to the
+   new club), `uniform.py` (club kits), `sqb.py` (the 41 sequencer scripts
+   that decode) and `pac.py` (BINPACs) write and round-trip every file.
+   `initteam.py` edits squads and club records (no `roundtrip` check yet),
+   and `save.py` edits saved games. Edits to the
    player database, text, the new club's squad, kits, free agents and saves
    have been tested in PCSX2.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
@@ -107,8 +108,8 @@ The "Still open" column is a summary. The full items are in
 | `BG/` | pre-rendered rooms: archives, textures, Z buffers, models | most files | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md), `zbf.py`, `ninja.py`; no folder doc | `HUMANID.BIN` |
 | `CSE/` | 2D screen layouts | done | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md), `csp.py` | |
 | `EMBLEM/` | the club editor's crest and flag parts | most files | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md), `emblem.py` | preset and crest records, `EDIT_PLAYER.TBB` |
-| `EVENT/` | the event, news and mail tables | done | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md), `evsdatabin.py` | three NEWS columns, the EVENT timing enum |
-| `GAME/` | match data: commentary, sound, models, tactics AI | partly | [`GAME_DIR.md`](DOC/GAME_DIR.md), `sounddat.py`, `ninja.py`, `bpb.py`, `gamedata.py` | the `.CBB` fields and combination commands, what the play books' paths mean, what a `GAMEDATA.BIN` record is, whether `AI_PARAM.BIN` is used, `CUTINPACK` blocks, the `RBD0` trailer |
+| `EVENT/` | the event, news and mail tables | done | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md), `evsdatabin.py` | three NEWS columns |
+| `GAME/` | match data: commentary, sound, models, tactics AI | partly | [`GAME_DIR.md`](DOC/GAME_DIR.md), `sounddat.py`, `ninja.py`, `bpb.py`, `gamedata.py` | the `.CBB` fields and combination commands, what the play books' paths mean, what a `GAMEDATA.BIN` record is, whether `AI_PARAM.BIN` is used, `CUTINPACK` blocks, the `RBD0` trailer, the `SHADOWCOLLI`/`WALLCOLLI` entries, `TEAM.TMB` |
 | `MESSAGE/` | all message text | done, with a writer | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md), `mbb.py` | which value the screen-set variables hold |
 | `NEWS/` | newspaper pictures and ranking months | done | [`NEWS_DIR.md`](DOC/NEWS_DIR.md), `news.py` | where ads and cartoons go on the page |
 | `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `plrsim.py`, `plrcommon.py` | the values in `PLRESOURCECOMMON.PAC` entries 1, 2 and 4, a few schedule tables, some player fields |

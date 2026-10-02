@@ -11,23 +11,27 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **Name the rest of the player fields** (section 2). The editor can only
+1. **A first editor GUI** (section 11). The writers for players, squads,
+   kits and text work and are tested in game, and the disc rebuild works,
+   so stage 5 in [`GOALS.md`](GOALS.md) can start: a player editor on
+   `pbdata.py`, then the other writers.
+2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
-2. **What each PwkScript computes** (sections 2 and 7). The formulas
+3. **What each PwkScript computes** (sections 2 and 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
-3. **Export a complete in-game player** (section 3). One model from the
+4. **Export a complete in-game player** (section 3). One model from the
    skeleton, the body and limb parts and the face-pack head, so the
    model work gives a usable result.
-4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
+5. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc.
-5. **The `GAME/` tactics AI files** (section 6). The play books, the
+6. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
-   records. These are still the lead for the player fields in #1.
+   records. These are still the lead for the player fields in #2.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -105,8 +109,9 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       (section 7)
 - [ ] `0SYSTEM` leftovers: what the `DETAILFLAG` flags switch (only the
       first 99 of 528 bytes are read), which UI element uses each colour,
-      who the `V001`-`V032` crests are, and whether `SPONSOR_TEXTURE_M`
-      (type 6) is used at all
+      who the `V001`-`V032` crests are, whether `SPONSOR_TEXTURE_M`
+      (type 6) is used at all, and what `CDetailTeamFlag` (the only
+      `FLAG_TEXTURE` request) draws; probably nationality flags
 
 ## 3. Ninja 3D models and motions
 
@@ -181,7 +186,11 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
 - [ ] `TEST3D/SHADOWCOLLI.LBI` and `BG/HUMANID.BIN`. The `.LBI` starts
       like the 27 entries of `GAME/SHADOWCOLLI.PAC` but matches none and
       isn't named in the code (`DOC/TEST3D_DIR.md`); decode the format
-      with the `GAME/` pack
+      with the `GAME/` pack, and `GAME/WALLCOLLI.PAC`'s entries with it
+      (both loaded into `CStadiumCollision`, `DOC/STADIUM_DIR.md`)
+- [ ] `GAME/TEAM.TMB` (`TMB1`: team names, codes, stadiums; dated March
+      2005 and not named in the code, `DOC/GAME_DIR.md`): parse it and
+      confirm nothing reads it
 - [ ] `EMBLEM/` leftovers: the preset records (`EDIT_EMBLEM` t4–t6), the
       110-byte crests (t7–t9, `Param::PlEmblem`?), the layer records and
       their key, `EDIT_FLAG` t1 variants and t2 bytes, all of
@@ -218,6 +227,8 @@ The event tables, the procedures and the overlay loader are documented in
       `DOC/SQB_FORMAT.md#the-developer-launcher`)
 - [ ] Why the blank test modules show nothing: missing data, or waiting
       for input or arguments from the launcher
+- [ ] Try the launcher entries not yet recorded: YAMAZAKI TEST, Talk and
+      BG LIGHT TEST (`DOC/SQB_FORMAT.md#the-developer-launcher`)
 - [ ] Sequencer leftovers: Base 35, RootEvent `Root9`/`Root13`, Param 7,
       8, 21, 25, 29, the `SQT1` flag and 2-D indexing, `BranchIf` vs
       `JumpIf`; the command sets of `INFORMATION.SQB`/`CHECKCLUBEDIT.SQB`;
@@ -236,6 +247,8 @@ The event tables, the procedures and the overlay loader are documented in
 
 - [ ] Decode the `RBD0` trailer in `GAME/ROUTEBOX_*.BCR` (copied as-is by
       the writer)
+- [ ] `initteam.py roundtrip`: it writes (`set`, `setteam`) but has no
+      round-trip check in `regress.py`, unlike the other writers
 
 ## 9. Rebuild
 
@@ -281,3 +294,27 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       names. A save edit per kind would show each one
 - [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same
       key, layout CRC `0x8ffb`)
+
+## 11. Editor GUI
+
+Stage 5 of [`GOALS.md`](GOALS.md): GUI tools on top of the writers,
+organised by what a player of the game recognises (a player, a club, a
+season) rather than by file. `tkinter` only, as the principles there say,
+and every GUI edit must also be possible as a `python SRC/...` command.
+
+- [ ] Decide the shape: one `SRC/editor.py` with a tab per kind of data,
+      or one small GUI script per writer; and how a GUI reuses each
+      writer's field names and ranges instead of keeping its own copy
+- [ ] Player editor on `pbdata.py`: search by name, id, club or
+      nationality; show the named fields with their ranges (unknown
+      fields read-only); refuse out-of-range values; write a new
+      `PBDATA_EU.PAC` (never over the input), with `--sles` when rank,
+      position or nationality changed
+- [ ] Squad and club editor on `initteam.py` (needs `initteam.py
+      roundtrip` first, section 8), named from the player database
+- [ ] The player's new club (`teaminit.py`), kits (`uniform.py`), message
+      text (`mbb.py`)
+- [ ] Build a modded disc from the GUI: collect the edited files, run
+      `patch_disc.py` with `--copies`, and optionally make an xdelta
+      patch with `vcdiff.py`
+- [ ] Test in PCSX2: an edit made only through the GUI shows in game
