@@ -531,3 +531,9 @@ files. Each item keeps what was found, where, and how it was tested.
       `save.py combi` and `set ... combi:a:b=value`. Checked against the
       game: all 22 icons on one tactics screen match. Tested in PCSX2:
       an edited pair showed a big red heart, another a skull
+- [x] Staff in saves: the manager's dissatisfaction (PlMinfo `+0xa4`, five
+      kinds, `pwkDissatis_MAddComp`; 65,535 in any kind "explodes",
+      `CheckExplosionM`), popularity (`+0xae`, `+0xb0`) and salary discount
+      (`+0xb6`). `save.py staff` shows them; `set` edits staff abilities,
+      dissatisfaction and popularity. Fixed `save.py staff`, which broke
+      when `pbdata.JOB_NAMES` became a tuple

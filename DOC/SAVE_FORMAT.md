@@ -219,6 +219,38 @@ abilities at `+0x6a` (48) or `+0x31` (45).
 offered, from the age at `+0x26`. `save.py staff` lists everyone with
 their bars (`pbdata.py`'s staff formulas).
 
+More of the PlMinfo (**confirmed**):
+
+| Offset | Type | What | Source |
+|---|---|---|---|
+| `0xa4` | 5 × u16 | the manager's dissatisfaction, one value per `PlMCompKind` | `pwkDissatis_MAddComp` (`0x237090`) adds to `+0xa4 + 2 × kind` and clamps to 0–65,535. `pwkDissatis_CheckExplosionM` (`0x23a4d0`) returns 1 when any of the five is 65,535. `CDetailManager::ConvertManager` (`0x286ff0`) sorts them for the manager's detail screen |
+| `0xae` | u16 | popularity with the supporters | `plMinfo_ChangePop_Supporter` (`0x21c6a0`), clamped to 0–65,535 |
+| `0xb0` | u16 | popularity with the players | `plMinfo_ChangePop_Player` (`0x21c6f8`) |
+| `0xb6` | bit 0 | salary discount | `plMinfo_GetManagerSalary` (`0x218838`) multiplies by 0.8 when set; `SetManagerDiscount` (`0x218898`), `pwkTeam_SetWithdrawPenaltyTermManager` (`0x267868`) |
+
+The five kinds are named after the functions that add to them
+(**empirical**: no names were found in the game):
+
+| Kind | Name | Added by |
+|---|---|---|
+| 0 | players and staff | `pwkDissatis_Player`, `_Staff`, `_PlayerResign`, `_StaffResign`, `_MplayerMatch` |
+| 1 | signings | `pwkDissatis_PlayerSign`, `_PlayerResignAfter`, `_MplayerMatch` |
+| 2 | policy | `pwkDissatis_MPolicy` |
+| 3 | results | `pwkDissatis_Club`, `_CompeEnd`, `_MplayerMatch` |
+| 4 | facilities | `pwkDissatis_MFacility`, `_NewFacilityClub`/`Ac`/`Site`/`Stadium` |
+
+**Empirical**, all 5 saves: only the hired manager has non-zero
+dissatisfaction (for example 33,203 for players and staff and 6,553 for
+results). The two popularity values are 0 in every record, so their
+range in play is unknown. The first u32 of a PlMinfo or PlSinfo is a
+small number (0–4) that isn't traced.
+
+`save.py set` edits staff by label (`manager`, `ymanager`, `coach0`–`3`,
+`scout0`–`2`): `manager:dissat.<kind>=` and `pop_supporters=` /
+`pop_players=` (0–65,535, managers and coaches only), and
+`<label>:abil.<n>=` or `abil.all=` for abilities. The abilities are
+stored on the database's 38–99 scale, which `set` keeps to.
+
 **Pair combinations** (the tactics screen's lines and heart icons). Block
 1 `+0x4808` is `PlTeamData +0x4354`: a 25 × 25 matrix of u16 by squad
 slot, 0x32 bytes a row. **Confirmed:**

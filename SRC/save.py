@@ -50,6 +50,10 @@ Usage:
     python save.py set       <save> <out> 3:fatigue=0 3:condition=65535  #  slot:field=value
                                    (fields: fatigue, condition, motivation, power, form,
                                     policy_counter, policy_organisation)
+    python save.py set       <save> <out> manager:dissat.4=0 coach1:abil.3=90 scout0:abil.all=80
+                                   (staff: manager, ymanager, coach0-3, scout0-2; fields
+                                    dissat.0-4 and pop_supporters/pop_players 0-65535 for
+                                    managers and coaches, abil.<n>|all 38-99 for all)
     python save.py combi     <save> [slot ...]            # pair combinations (tactics screen hearts)
     python save.py set       <save> <out> combi:3:7=60000 combi:5:all=60000  # 0-65535
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
@@ -780,6 +784,21 @@ STAFF = (("manager", TEAM_OFF + 0x4854, 1, "M"), ("youth manager", 0x8e00, 1, "M
 # job (PlMinfo +0xa0), abilities offset, ability count)
 STAFF_KIND = {"M": (0xbc, 0x9c, 0x9e, 0xb8, 0xa0, 4 + 0x66, 48),
               "S": (0x94, 0x60, 0x62, 0x90, None, 4 + 0x2d, 45)}
+# More of PlMinfo: +0xa4 one u16 per PlMCompKind, the manager's
+# dissatisfaction (pwkDissatis_MAddComp 0x237090 adds to +0xa4 + 2 * kind and
+# clamps to 0-65535). The kinds are named after the functions that add to
+# them (empirical). +0xae and +0xb0 his popularity with the supporters and
+# the players (plMinfo_ChangePop_Supporter / _Player 0x21c6a0 / 0x21c6f8,
+# clamped to 0-65535); bit 0 of +0xb6 a salary discount (GetManagerSalary
+# 0x218838 multiplies by 0.8, SetManagerDiscount 0x218898).
+M_DISSAT, M_DISSAT_KINDS = 0xa4, (
+    "players and staff",    # pwkDissatis_Player, _Staff, _PlayerResign, _StaffResign
+    "signings",             # pwkDissatis_PlayerSign, _PlayerResignAfter
+    "policy",               # pwkDissatis_MPolicy
+    "results",              # pwkDissatis_Club, _CompeEnd, _MplayerMatch
+    "facilities")           # pwkDissatis_MFacility, _NewFacility*
+M_POP_SUPPORTERS, M_POP_PLAYERS, M_DISCOUNT = 0xae, 0xb0, 0xb6
+STAFF_ABIL_RANGE = (38, 99)     # the database's ability scale (pbdata.ABILITY)
 # Play styles: +0x278 the current one, +0x27c five u32 (the style path),
 # +0x290 how many of them are learned. ConvertPlayer_PlayStyle (0x285238)
 # draws the current style and the learned ones, skipping repeats and 0;
@@ -908,14 +927,61 @@ class Save:
                 sid = struct.unpack_from("<h", b, o + id_off)[0]
                 if sid < 0:
                     continue
-                out.append((role, i, {
-                    "id": sid, "offset": o,
+                st = {
+                    "id": sid, "offset": o, "kind": kind,
                     "name": b[o + 4:o + 4 + NAME_LEN].split(b"\0")[0].decode("cp850"),
                     "contract_years": b[o + con_off],
                     "salary": struct.unpack_from("<I", b, o + sal_off)[0],
                     "job": struct.unpack_from("<I", b, o + job_off)[0] if job_off else None,
-                    "abil": list(b[o + ab_off:o + ab_off + ab_n])}))
+                    "abil": list(b[o + ab_off:o + ab_off + ab_n])}
+                if kind == "M":
+                    st["dissat"] = list(struct.unpack_from("<5H", b, o + M_DISSAT))
+                    st["pop_supporters"], st["pop_players"] = struct.unpack_from(
+                        "<2H", b, o + M_POP_SUPPORTERS)
+                    st["discount"] = b[o + M_DISCOUNT] & 1
+                out.append((role, i, st))
         return out
+
+    def set_staff(self, label, field, value):
+        """Edit a staff member: label is manager, ymanager, coach0-3 or
+        scout0-2; field is dissat.<kind>, pop_supporters, pop_players,
+        abil.<n> or abil.all."""
+        counts = {role: count for role, _, count, _ in STAFF}
+        labels = {}
+        for role, i, st in self.staff():
+            key = "ymanager" if role == "youth manager" else role
+            labels[key + (str(i) if counts[role] > 1 else "")] = st
+        st = labels.get(label)
+        if st is None:
+            raise ValueError("no staff member %r (filled: %s)" % (label, ", ".join(labels)))
+        o = st["offset"]
+        name, _, which = field.partition(".")
+        if name == "abil":
+            lo, hi = STAFF_ABIL_RANGE
+            if not lo <= value <= hi:
+                raise ValueError("staff abilities are %d-%d" % (lo, hi))
+            n = len(st["abil"])
+            ks = range(n) if which == "all" else [int(which)]
+            ab_off = STAFF_KIND[st["kind"]][5]
+            for k in ks:
+                if not 0 <= k < n:
+                    raise ValueError("ability must be 0-%d" % (n - 1))
+                self.blocks[o + ab_off + k] = value
+            return
+        if st["kind"] != "M":
+            raise ValueError("%s is a scout: only abil.<n> can be set" % label)
+        if not 0 <= value <= 0xffff:
+            raise ValueError("%s is 0-65535" % field)
+        if name == "dissat":
+            k = int(which)
+            if not 0 <= k < len(M_DISSAT_KINDS):
+                raise ValueError("dissatisfaction kinds are 0-%d" % (len(M_DISSAT_KINDS) - 1))
+            struct.pack_into("<H", self.blocks, o + M_DISSAT + 2 * k, value)
+        elif name in ("pop_supporters", "pop_players"):
+            off = M_POP_SUPPORTERS if name == "pop_supporters" else M_POP_PLAYERS
+            struct.pack_into("<H", self.blocks, o + off, value)
+        else:
+            raise ValueError("unknown staff field %r" % field)
 
     def stats(self, slot):
         """{table: [(goals, assists, games, games2, mom, points x 100, red,
@@ -1140,11 +1206,18 @@ def cmd_staff(game, path):
     s = Save(game, path)
     print(s.path)
     for role, i, st in s.staff():
-        job = "" if st["job"] is None else "%d %s" % (st["job"], pbdata.JOB_NAMES.get(st["job"], "?"))
+        job = st["job"]
+        job = "" if job is None else "%d %s" % (
+            job, pbdata.JOB_NAMES[job] if job < len(pbdata.JOB_NAMES) else "?")
         print("  %-13s %d  id %5d  %-18s %-19s %d year%s left, GBP %d a year" % (
             role, i, st["id"], st["name"], job,
             st["contract_years"], "" if st["contract_years"] == 1 else "s",
             st["salary"] * 100 // 6))
+        if st["kind"] == "M":
+            print("      dissatisfaction %s; popularity: supporters %d, players %d%s" % (
+                ", ".join("%s %d" % kv for kv in zip(M_DISSAT_KINDS, st["dissat"])),
+                st["pop_supporters"], st["pop_players"],
+                "; salary discount" if st["discount"] else ""))
         if st["job"] is None:
             bars = pbdata.average_bars(st["abil"], pbdata.SCOUT_BARS)
         else:
@@ -1200,6 +1273,12 @@ def cmd_set(game, path, out, assigns):
                 raise SystemExit("%s: %s" % (a, e))
             continue
         slot, _, which = key.partition(":")
+        if slot.rstrip("0123456789") in ("manager", "ymanager", "coach", "scout"):
+            try:
+                s.set_staff(slot, which, int(val, 0))
+            except ValueError as e:
+                raise SystemExit("%s: %s" % (a, e))
+            continue
         if slot not in squad or not which:
             raise SystemExit("%r: use money=N, <slot>:<ability>=level, <slot>:all=level or "
                              "<slot>:<field>=value (slot = a filled squad slot, see `show`)" % a)

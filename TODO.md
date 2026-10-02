@@ -244,7 +244,13 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       game; 400 presumably the yen (the option screen's code)
 - [ ] Stats table 1, PlPinfo flags at `0x20c`, dissatisfaction, style
       icons, and what the 3 records at block 1 `+0xe290` are
-- [ ] Map more of the blocks through their accessors (staff, youth, other
-      clubs, finances), and name the fields an editor should offer
+- [ ] Map more of the blocks through their accessors (youth, other
+      clubs, finances), and name the fields an editor should offer. Staff
+      leftovers: the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`,
+      and how far the manager's popularity goes in play (0 in every save)
+- [ ] Test in PCSX2: `Hax.ps2` slot G000 now has C.Collin's dissatisfaction
+      set to facilities 60,000 and the rest 0, and coach D.Walshe's
+      abilities all 99. The manager's detail screen should put facilities
+      first; Walshe's bars should be full
 - [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same
       key, layout CRC `0x8ffb`)
