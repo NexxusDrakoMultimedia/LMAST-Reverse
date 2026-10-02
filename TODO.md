@@ -246,9 +246,5 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       icons, and what the 3 records at block 1 `+0xe290` are
 - [ ] Map more of the blocks through their accessors (staff, youth, other
       clubs, finances), and name the fields an editor should offer
-- [ ] Test in PCSX2: `Hax.ps2` slot G000 is save G000 with J.Hartman's
-      pairs edited (Galletti 60,000, Litmanen 0). On the tactics screen
-      with Hartman selected, Galletti should show a big red heart and
-      Litmanen a skull
 - [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same
       key, layout CRC `0x8ffb`)

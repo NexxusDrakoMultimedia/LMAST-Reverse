@@ -247,6 +247,11 @@ combi:a:b=value` edits one (`combi:a:all=value` all of a slot's pairs).
 It raises the cap to the value if needed, because `plCombi_Set` ignores
 any value at or above the cap.
 
+**Tested in PCSX2:** save G000 with `combi:6:20=60000 combi:6:23=0`
+(J.Hartman with Galletti and with Litmanen), loaded from a test card.
+With Hartman selected, Galletti's skull became a big red heart and
+Litmanen's "…" a skull.
+
 **Match statistics.** For squad slot `s`, the stats start at block 1
 `+0xec8e + s × 0x11e`: four tables of five rows (pre-season, domestic
 league, overseas league, Euro, international), then 6 bytes not traced.

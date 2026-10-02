@@ -529,4 +529,5 @@ files. Each item keeps what was found, where, and how it was tested.
       block 1 `+0x4808`, 25 × 25 u16 (value above the diagonal, cap
       below; `plCombi_Get`/`Set`), levels 1–5 at fifths of 65,535.
       `save.py combi` and `set ... combi:a:b=value`. Checked against the
-      game: all 22 icons on one tactics screen match
+      game: all 22 icons on one tactics screen match. Tested in PCSX2:
+      an edited pair showed a big red heart, another a skull
