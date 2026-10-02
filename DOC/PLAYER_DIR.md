@@ -39,7 +39,7 @@ game code. Everything else here (what the names mean, counts) is
 | `NUMBER_00`–`_07{,_PRESS}.PAC/.HED`, `NUMBER_CLUT{,_PRESS}` | BINPAC v3 | 8 shirt-number fonts × 100 numbers (`num_00_00.svr` ... `num_00_99.svr`), 96 palettes |
 | `COLOR_TBL.TBB` | TBB, 96 × 96 bytes | the kit colour clash table (`UniformList_CheckColor`). See [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md) |
 | `UNIFORM_LIST.TBB` | TBB, 661 × 64 bytes | every club's home and away kits (designs and colours), bit-packed, read by `UniformList_*` (`0x2d2b68`–`0x2d3608`). See [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md) |
-| `UNIFORM_GK.TBB` | TBB, 209 × 3 and 38 × 66 bytes | 209 and 38 match the `ORG_SHT` and `GK_SHT` entry counts. Unknown |
+| `UNIFORM_GK.TBB` | TBB, 209 × 3 and 38 × 66 bytes | keeper kits of your club, the rival and the VS teams, chosen by outfield shirt design, with 6 colour schemes per keeper design ([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#uniform_gktbb-keeper-kits-made-from-the-outfield-kit)) |
 | `*.SNO`, `*.SNM`, `*.SNP` | Ninja | loose models (`HUMAN_1200.SNO`, `L/M/S_PLAYER.SNO`), motions, one node tree |
 | `*.SVR`, `*.SVM` | textures | `ACCE_CAP`, `HUM1200_H`, `REF_000_*` (referee kit) ... |
 | `CVS/` | CVS metadata | original mixed-case names and revision numbers |
@@ -217,8 +217,6 @@ python SRC/svr.py info out/face                                 # the texture bl
   [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#licensed-kits)), and what the
   pack's copy is used for, since the viewer draws numbers from the
   executable's copy.
-- `UNIFORM_GK.TBB`'s layout. (`COLOR_TBL.TBB` and `UNIFORM_LIST.TBB` are
-  decoded in [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md).)
 - Which models in `PLAYER_MODEL*.PAC` are which. Their names were cut to
   the extension, so the game must address them by index.
 - Where `Param::PlPinfo+0x1ca` (the face index) is filled from.

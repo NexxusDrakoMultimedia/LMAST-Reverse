@@ -120,7 +120,7 @@ disassemble as unrelated MIPS instructions.
 | [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
 | [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
 | [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command and module names, re-encodes every script byte for byte (`roundtrip`) and patches a command (`setcmd`); `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
-| [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, and the 116 licensed kits' descriptors (`PLPACK` and the executable's copy); edits kits (`set`, `setlicence`, `setexe`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
+| [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, the 116 licensed kits' descriptors (`PLPACK` and the executable's copy), and the keeper kit table `UNIFORM_GK.TBB`; edits kits (`set`, `setlicence`, `setexe`, `setgk`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
 | [`stadium.py`](SRC/stadium.py) | `DAT/STADIUM`: `.PRI` draw priorities, `BUILD_STADIUM.TBB` (which model each of the 119 stadiums uses), packs per model | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) |
 | [`system.py`](SRC/system.py) | `DAT/0SYSTEM`: the 77 UI colours, `DETAILFLAG`, the 8 crest, badge and sponsor texture packs (which entry a team id picks), icons | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) |
 | [`emblem.py`](SRC/emblem.py) | `DAT/EMBLEM`: the club editor's 96-colour palette and its 32/16-colour maps, crest masks, patterns and accessories, flag parts, and how the tables and packs line up | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) |
@@ -336,7 +336,7 @@ workflow is:
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
 | [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md) | `ISO/AUDIO`: the AFS archives (music, commentary, chants, ambience), AFS and ADX layouts, `0FLIST.DIR` |
 | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
-| [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) | club kits: `UNIFORM_LIST` bit layout, kit designs and colours, the 96 colours, the `COLOR_TBL` clash table |
+| [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) | club kits: `UNIFORM_LIST` bit layout, kit designs and colours, the 96 colours, the `COLOR_TBL` clash table, `UNIFORM_GK` keeper kits |
 | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) | `DAT/0SYSTEM`: UI colours, crest/badge/sponsor texture packs and how an id picks an entry, fonts by language, icons, leftovers |
 | [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md) | `DAT/PRELOAD`: the bulk-load packs, the load lists and folder ids, and which copy of a file the game reads, and rebuilding a pack |
 | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) | `DAT/STADIUM`: the 10 stadium models, `.PRI` draw priorities, crowds, adverts, `BUILD_STADIUM` |

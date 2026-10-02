@@ -1,4 +1,4 @@
-# Club kits: `UNIFORM_LIST`, `COLOR_TBL` and the licensed kits
+# Club kits: `UNIFORM_LIST`, `UNIFORM_GK`, `COLOR_TBL` and the licensed kits
 
 Every club's kit comes from one of two places:
 
@@ -9,11 +9,14 @@ Every club's kit comes from one of two places:
   `DAT/PLAYER/UNIFORM_LIST.TBB`: designs for shirt, shorts and socks, their
   colours, and the same number, collar and captain-mark settings.
 
-`DAT/PLAYER/COLOR_TBL.TBB` says which colours clash.
+`DAT/PLAYER/COLOR_TBL.TBB` says which colours clash. Your club, the rival
+and the VS teams get their keeper kit in a match from
+`DAT/PLAYER/UNIFORM_GK.TBB`, which picks it from their outfield shirt.
 
 `python SRC/uniform.py info DAT/PLAYER ISO/SLES_541.51` checks all of it,
-`show` prints a club's kits, `licensed` lists the licensed kits, and `set`,
-`setlicence` and `setexe` edit them.
+`show` prints a club's kits, `licensed` lists the licensed kits, `gk` lists
+the keeper kit table, and `set`, `setlicence`, `setexe` and `setgk` edit
+them.
 
 The layout is **confirmed** from the readers in `SLES_541.51` (addresses
 below). The field names come from the developer Uniform Viewer
@@ -208,6 +211,96 @@ the diagonal: 2,089 clashing pairs. White (A8) clashes with 22 other
 colours, mostly the lightest shade of each hue.
 `python SRC/uniform.py clash DAT/PLAYER A8` lists them.
 
+## `UNIFORM_GK.TBB`: keeper kits made from the outfield kit
+
+Your club, the rival and the VS teams have kits that are made at runtime,
+not taken from `UNIFORM_LIST`. For these teams the game builds the keeper
+kit from the outfield kit with `UNIFORM_GK.TBB`. Every other club uses the
+keeper kit in its `UNIFORM_LIST` row (or its licensed kit).
+
+`python SRC/uniform.py gk DAT/PLAYER` lists the table, and `setgk` edits
+it.
+
+### Who uses it
+
+**Confirmed.** `UniformList_GetGKUniformData` (`0x2d3608`) is the only
+reader: it builds the name `uniform_gk.tbb` (`0x55a888`) and reads the
+file's two tables. It has two callers, and both call it only for teams 1
+and 2 (your club and the rival) and teams `0x21f`–`0x22e` (543–558, the VS
+teams; see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)):
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x2c4ab0`–`0x2c4ad4` | `CUniformBuilder::Init` | tests the team id (`+0x10c`) for 1–2 or `0x21f`–`0x22e` |
+| `0x2c4b68`–`0x2c4bcc` | `CUniformBuilder::Init` | calls it with the team's outfield kit and no opponent, and takes only the result's collar (field 4) and captain mark (field 14) into the kit-style bytes at `+0x3b80` (`0x2c4c88`) in place of the stored keeper kit's |
+| `0x113cd0`–`0x113ce8` | `ScheCallbackCommand_MatchBranch` | the same team-id test, for both teams of a match |
+| `0x113d2c` | `ScheCallbackCommand_MatchBranch` | calls it with the team's outfield kit and the opponent's outfield and keeper kits, for the sides chosen for the match |
+| `0x113d48`–`0x113d7c` | `ScheCallbackCommand_MatchBranch` | copies all 15 bytes of the result into the team's keeper kit (`PlUnif` side `+6`) before `PlGiTask::SetUni` |
+
+So the keeper's designs and colours come from this table in a match. Screens
+outside a match draw the keeper kit stored with the team.
+
+### Layout
+
+A `TBB1` container with two tables. **Confirmed** from
+`UniformList_GetGKUniformData`:
+
+| Table | Rows × size | Indexed by | Contents |
+|---|---|---|---|
+| 0 | 209 × 3 | outfield shirt design (`< 0xd1`, `0x2d379c`) | keeper shirt design, keeper shorts design, socks design |
+| 1 | 38 × 66 | keeper shirt design (`× 0x42`, `0x2d3728`) | 6 colour schemes of 11 bytes |
+
+The 209 and 38 rows are the sizes of `EDIT_UNIFORM_ORG_SHT` and
+`EDIT_UNIFORM_GK_SHT`.
+
+A scheme's 11 bytes go into these kit fields (`0x2d3a44`–`0x2d3a98`):
+
+| Byte | 0, 1, 2 | 3, 4, 5 | 6, 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|
+| Kit field | 1–3 shirt colours | 6–8 shorts colours | 10–11 socks colours | 12 shirt number colour | 13 shorts number colour | 14 captain mark |
+
+The table has no collar (kit field 4), so it stays 0. `Init` and
+`MatchBranch` both start from a zeroed kit.
+
+### How a scheme is chosen
+
+**Confirmed**, from `0x2d3718`–`0x2d3aac`:
+
+1. Table 0's row for the outfield shirt design gives the three keeper
+   designs. Each must be in range (keeper shirt and shorts `< 0x26`, socks
+   `< 0x12`, `0x2d37bc`–`0x2d37dc`). Otherwise the function returns 0.
+2. The 6 schemes of that keeper shirt design are tried in order (`0x2d3924`,
+   `0x2d3aa0`). A scheme is skipped when its byte 0 (shirt colour 1)
+   clashes in `COLOR_TBL` with the own outfield shirt colour 1 (kit field
+   1). In a match, it is also skipped when it clashes with the opponent's
+   outfield shirt colour 1 or keeper shirt colour 1.
+3. The first scheme left is checked: bytes 0–9 must be `< 0x60` (96) and
+   byte 10 `< 5` (`0x2d3970`–`0x2d3a38`). If it passes, it is copied into
+   the kit and the function returns 1.
+
+If every scheme clashes, or a check fails, the function returns 0. Both
+callers ignore the return value and use the kit as it is. It then holds
+what was written before the search: the designs from step 1, and colours
+from table 0 row 0's keeper design (scheme 0, bytes 0–9) plus byte 10 of
+the new design's scheme 0 (`0x2d3718`–`0x2d387c`). With the disc's data,
+row 0 points at keeper design 35.
+
+### The data
+
+**Empirical**, from `uniform.py info` and `gk`:
+
+- All 209 rows of table 0 are in range. They use 18 keeper designs,
+  20–37, and the shorts design always equals the shirt design. Keeper
+  design 35 serves 54 outfield shirts (0–37 and some others). Socks use 7
+  designs.
+- Keeper designs 0–19 are never chosen, and their 6 schemes are all zero.
+- All 228 schemes are in range. In each of the 18 used designs, the 6
+  schemes have 6 different shirt colours 1, so a clash always moves to a
+  different colour.
+
+`setgk` refuses a value that would make the game drop the row or the
+scheme.
+
 ## Tested in PCSX2
 
 - **Unlicensed kit colour.** With `uniform.py set ... 3
@@ -227,8 +320,9 @@ colours, mostly the lightest shade of each hue.
 - Descriptor bytes 14 and 15, and what the pack's copy of the descriptor
   is used for.
 - What the 121 rows with team id 0 are.
-- `UNIFORM_GK.TBB` (209 × 3 and 38 × 66 bytes, matching the `ORG_SHT` and
-  `GK_SHT` counts).
+- Whether the game shows a `UNIFORM_GK` edit (not yet tested in PCSX2),
+  and whether the club editor lets you choose your own keeper kit, which
+  `CUniformBuilder::Init` would then overwrite.
 
 ## Tool
 
@@ -240,6 +334,9 @@ python SRC/uniform.py clash     DAT/PLAYER A8                # colours that clas
 python SRC/uniform.py roundtrip DAT/PLAYER/UNIFORM_LIST.TBB  # re-pack all 661 rows
 python SRC/uniform.py set DAT/PLAYER/UNIFORM_LIST.TBB out/UNIFORM_LIST.TBB 3 home.outfield.1=A4
 python SRC/uniform.py setexe ISO/SLES_541.51 out/SLES_541.51 home 0 outfield.backnumber=A8
+python SRC/uniform.py gk        DAT/PLAYER 35                # keeper design 35 and its schemes
+python SRC/uniform.py setgk DAT/PLAYER/UNIFORM_GK.TBB out/UNIFORM_GK.TBB keeper.35.0.1=A8
+python SRC/tbb.py roundtrip     DAT/PLAYER/UNIFORM_GK.TBB    # the container re-writes
 ```
 
 `setexe`'s output is patched onto a disc image with

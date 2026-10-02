@@ -271,6 +271,12 @@ files. Each item keeps what was found, where, and how it was tested.
       `show`, `clash`, `set`, `roundtrip`; in `regress.py`). Tested in
       PCSX2: Birmingham's shirt edited from blue to red shows in the
       Uniform Viewer
+- [x] `UNIFORM_GK.TBB`: the keeper kits of your club, the rival and the VS
+      teams (ids 1, 2, 543-558), built in a match from the outfield shirt
+      design (`UniformList_GetGKUniformData` `0x2d3608`): table 0 maps 209
+      outfield shirts to keeper designs, table 1 gives each of 38 keeper
+      designs 6 colour schemes, the first that doesn't clash is used.
+      `uniform.py gk`, `setgk`, and a check in `info` (in `regress.py`)
 
 ## 5. Music and sound effects
 

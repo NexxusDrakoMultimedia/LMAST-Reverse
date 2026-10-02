@@ -91,6 +91,7 @@ def checks():
          ["DAT/PLAYER", "ISO/SLES_541.51", "DAT/MESSAGE/MES.PAC"]),
         ("uniform_roundtrip", ["uniform.py", "roundtrip", "DAT/PLAYER/UNIFORM_LIST.TBB"],
          ["DAT/PLAYER/UNIFORM_LIST.TBB"]),
+        ("uniform_gk", ["uniform.py", "gk", "DAT/PLAYER"], ["DAT/PLAYER/UNIFORM_GK.TBB"]),
         ("schedule", ["schedule.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("stadium", ["stadium.py", "info", "DAT/STADIUM", "DAT/PARAM"],
          ["DAT/STADIUM", "DAT/PARAM"]),

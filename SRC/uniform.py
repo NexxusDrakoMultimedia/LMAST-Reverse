@@ -38,6 +38,17 @@ See DOC/UNIFORM_FORMAT.md.
            UniformList_GetUseUniformSide (0x2d3510) compares outfield
            shirt colour 1 of the two teams (PlUnif +0x1c, +0x40) to pick
            home or away kits.
+  keeper   DAT/PLAYER/UNIFORM_GK.TBB builds the keeper kit of your club,
+           the rival and the VS teams (ids 1, 2, 0x21f-0x22e) from their
+           outfield kit (UniformList_GetGKUniformData 0x2d3608, called from
+           CUniformBuilder::Init 0x2c4b68 and MatchBranch 0x113d2c).
+           Table 0: 209 x 3 bytes, by outfield shirt design: keeper shirt
+           < 38, shorts < 38, socks < 18. Table 1: 38 x 66 bytes, by keeper
+           shirt design (x 0x42 at 0x2d3728): 6 colour schemes of 11 bytes,
+           kit fields 1-3, 6-8, 10-14. The first scheme whose colour 1
+           doesn't clash with your outfield shirt colour 1 (and in a match
+           the opponent's outfield and keeper shirt colour 1) is used, if
+           colours 1-13 are < 96 and the captain mark < 5 (0x2d3970).
 
 `info` checks the row ids, every design and colour against its pack's size
 (`!!` on a value the game would clamp), COLOR_TBL's shape, and the PLPACK
@@ -52,6 +63,13 @@ may be given by name (I3, A8). Only the field's own bits change; the unused
 bits between fields are kept. `roundtrip` re-packs every row from its
 fields and marks any difference with `!!`.
 
+`gk` lists UNIFORM_GK: which outfield shirt designs get each keeper design,
+and its 6 schemes. `setgk` writes an edited copy. A field is named
+outfield.<design>.<shirt|shorts|socks> (table 0) or keeper.<design>.
+<scheme>.<n> (table 1; n a kit field 1-3, 6-8, 10-14). Values the game
+would reject are refused. Both tables are plain bytes, so `tbb.py
+roundtrip` covers re-writing the file.
+
 Usage:
     python uniform.py info      <DAT/PLAYER> [SLES_541.51]   # check the tables
     python uniform.py show      <DAT/PLAYER> <team> ...      # a club's kits
@@ -60,6 +78,9 @@ Usage:
     python uniform.py roundtrip <UNIFORM_LIST.TBB>
     python uniform.py set       <in.TBB> <out.TBB> <team> <field>=<value> ...
         e.g. set UNIFORM_LIST.TBB out.TBB 3 home.outfield.1=A4 home.outfield.3=A4
+    python uniform.py gk        <DAT/PLAYER> [keeper design ...]  # the keeper kit table
+    python uniform.py setgk     <in.TBB> <out.TBB> <field>=<value> ...
+        e.g. setgk UNIFORM_GK.TBB out.TBB outfield.0.shirt=20 keeper.35.0.1=A8
     python uniform.py setlicence <PLPACK_HOME.HED> <out.PAC> <licence> <field>=<value> ...
         e.g. setlicence PLPACK_HOME.HED out.PAC 0 outfield.backnumber=A8
         (edits the pack's copy of the descriptor only, not the executable's)
@@ -300,6 +321,71 @@ def fmt_descriptor(desc):
     return "  ".join(parts)
 
 
+# --- keeper kits (UNIFORM_GK) ---------------------------------------------------
+
+UNIFORM_GK = "UNIFORM_GK.TBB"
+OUTFIELD_SHIRTS = 209           # table 0 rows; 0x2d379c: outfield shirt < 0xd1
+GK_ROW = 3                      # keeper shirt, keeper shorts, socks
+GK_ROW_FIELDS = (("shirt", 0, 38), ("shorts", 5, 38), ("socks", 9, 18))  # 0x2d37bc-0x2d37dc
+GK_SHIRTS = 38                  # table 1 rows, indexed by keeper shirt (x 0x42, 0x2d3728)
+SCHEMES = 6                     # the scheme search loops 6 times (0x2d3924)
+SCHEME_SIZE = 11
+SCHEME_FIELDS = (1, 2, 3, 6, 7, 8, 10, 11, 12, 13, 14)     # kit field of each byte
+CAPTAIN_MARKS = 5               # 0x2d3a38: byte 10 < 5; bytes 0-9 < 0x60
+
+
+def load_gk(path):
+    """(table 0 bytes, table 1 bytes) of UNIFORM_GK.TBB, shapes checked."""
+    import tbb
+    _, tables = tbb.load(path)
+    shapes = [(t.line_size, t.row_count) for t in tables]
+    if shapes[:2] != [(GK_ROW, OUTFIELD_SHIRTS), (SCHEMES * SCHEME_SIZE, GK_SHIRTS)]:
+        raise ValueError("%s: tables are %s" % (path, shapes))
+    return tables[0], tables[1]
+
+
+def scheme(t1, design, n):
+    off = (design * SCHEMES + n) * SCHEME_SIZE
+    return t1.data[off:off + SCHEME_SIZE]
+
+
+def scheme_problems(s):
+    out = ["colour %d = %d >= %d" % (f, v, COLOURS)
+           for f, v in zip(SCHEME_FIELDS[:-1], s) if v >= COLOURS]
+    if s[-1] >= CAPTAIN_MARKS:
+        out.append("captain mark %d >= %d" % (s[-1], CAPTAIN_MARKS))
+    return out
+
+
+def fmt_scheme(s):
+    c = [colour_name(v) for v in s[:-1]]
+    return "shirt %s/%s/%s  shorts %s/%s/%s  socks %s/%s  numbers %s shorts %s  captain %d" % (
+        *c, s[-1])
+
+
+def check_gk(dat):
+    path = os.path.join(dat, UNIFORM_GK)
+    t0, t1 = load_gk(path)
+    bad = 0
+    for i in range(OUTFIELD_SHIRTS):
+        row = t0.data[i * GK_ROW:(i + 1) * GK_ROW]
+        p = ["%s %d >= %d" % (name, v, limit)
+             for (name, _, limit), v in zip(GK_ROW_FIELDS, row) if v >= limit]
+        if p:
+            bad += 1
+            print("  outfield shirt %d  !! %s" % (i, "; ".join(p)))
+    used = sorted({t0.data[i * GK_ROW] for i in range(OUTFIELD_SHIRTS)})
+    for d in range(GK_SHIRTS):
+        for n in range(SCHEMES):
+            p = scheme_problems(scheme(t1, d, n))
+            if p:
+                bad += 1
+                print("  keeper design %d scheme %d  !! %s" % (d, n, "; ".join(p)))
+    print("%s  %d outfield shirts -> %d keeper designs (%d-%d), %d x %d schemes, %d problems"
+          % (UNIFORM_GK, OUTFIELD_SHIRTS, len(used), used[0], used[-1],
+             GK_SHIRTS, SCHEMES, bad))
+
+
 # --- commands ----------------------------------------------------------------
 
 def cmd_info(dat, sles_path=None):
@@ -337,6 +423,8 @@ def cmd_info(dat, sles_path=None):
     print("%s  %d x %d clash table, %d clashing pairs%s"
           % (COLOR_TBL, rows, line, (sum(data) - rows) // 2,
              "  !! " + "; ".join(problems) if problems else ""))
+
+    check_gk(dat)
 
     descs = plpack_descriptors(dat)
     exe = None
@@ -495,6 +583,71 @@ def cmd_set(src, dst, team, edits):
         f.write(out)
 
 
+def cmd_gk(dat, designs):
+    t0, t1 = load_gk(os.path.join(dat, UNIFORM_GK))
+    by_design = {}
+    for i in range(OUTFIELD_SHIRTS):
+        by_design.setdefault(tuple(t0.data[i * GK_ROW:(i + 1) * GK_ROW]), []).append(i)
+    for d in designs or range(GK_SHIRTS):
+        rows = [(k, v) for k, v in sorted(by_design.items()) if k[0] == d]
+        if not rows and not designs:
+            continue                # never chosen (designs 0-19 are all zero)
+        print("keeper design %d" % d)
+        for (shirt, shorts, socks), outfield in rows:
+            print("  shorts %d socks %d  for outfield shirts %s"
+                  % (shorts, socks, " ".join(map(str, outfield))))
+        if not rows:
+            print("  not used by any outfield shirt")
+        for n in range(SCHEMES):
+            print("  scheme %d  %s" % (n, fmt_scheme(scheme(t1, d, n))))
+
+
+def cmd_setgk(src, dst, edits):
+    import tbb
+    blob = bytearray(open(src, "rb").read())
+    t0, t1 = load_gk(src)
+    row_fields = {name: (k, limit) for k, (name, _, limit) in enumerate(GK_ROW_FIELDS)}
+    for edit in edits:
+        name, _, text = edit.partition("=")
+        parts = name.split(".")
+        value = parse_value(text)
+        if parts[0] == "outfield" and len(parts) == 3 and parts[2] in row_fields:
+            i = int(parts[1], 0)
+            k, limit = row_fields[parts[2]]
+            if not 0 <= i < OUTFIELD_SHIRTS:
+                raise ValueError("%s: outfield shirt designs are 0-%d" % (name, OUTFIELD_SHIRTS - 1))
+            off = t0.offset + t0.data_offset + i * GK_ROW + k
+        elif parts[0] == "keeper" and len(parts) == 4:
+            d, n, f = (int(p, 0) for p in parts[1:])
+            if not (0 <= d < GK_SHIRTS and 0 <= n < SCHEMES and f in SCHEME_FIELDS):
+                raise ValueError("%s: keeper designs are 0-%d, schemes 0-%d, fields %s"
+                                 % (name, GK_SHIRTS - 1, SCHEMES - 1,
+                                    ",".join(map(str, SCHEME_FIELDS))))
+            limit = CAPTAIN_MARKS if f == 14 else COLOURS
+            off = (t1.offset + t1.data_offset + (d * SCHEMES + n) * SCHEME_SIZE
+                   + SCHEME_FIELDS.index(f))
+        else:
+            raise ValueError("no field %r (outfield.<design>.<shirt|shorts|socks> "
+                             "or keeper.<design>.<scheme>.<field>)" % name)
+        # 0x2d37bc-0x2d37dc and 0x2d3970-0x2d3a38 drop the whole kit or
+        # scheme on a value past these limits, so refuse it here.
+        if not 0 <= value < limit:
+            raise ValueError("%s: %d is out of range (the game accepts 0-%d)"
+                             % (name, value, limit - 1))
+        print("%s: %d -> %d" % (name, blob[off], value))
+        blob[off] = value
+    # Read the result back: only bytes inside the two tables may differ.
+    new = tbb.parse(bytes(blob))[1]
+    outside = bytearray(blob)
+    for t in (t0, t1):
+        start = t.offset + t.data_offset
+        outside[start:start + len(t.data)] = t.data
+    if outside != open(src, "rb").read() or [t.data for t in new[2:]]:
+        raise ValueError("edit reached outside UNIFORM_GK's two tables")
+    with open(dst, "wb") as f:
+        f.write(blob)
+
+
 def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
@@ -512,6 +665,10 @@ def main(argv):
         cmd_setexe(args[0], args[1], args[2], int(args[3], 0), args[4:])
     elif cmd == "show" and len(args) >= 2:
         cmd_show(args[0], [int(a, 0) for a in args[1:]])
+    elif cmd == "gk" and len(args) >= 1:
+        cmd_gk(args[0], [int(a, 0) for a in args[1:]])
+    elif cmd == "setgk" and len(args) >= 3:
+        cmd_setgk(args[0], args[1], args[2:])
     elif cmd == "clash" and len(args) == 2:
         cmd_clash(args[0], args[1])
     else:

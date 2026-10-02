@@ -20,10 +20,7 @@ item in its section below.
    only takes effect in a new career; mapping the staff, youth, other
    clubs' and finance blocks would let an editor change a career in
    progress.
-4. **Goalkeeper kits, `UNIFORM_GK`** (section 4). Outfield kits are
-   decoded and editable (`uniform.py`); the keepers' aren't, and the
-   result is easy to check on a keeper in a match.
-5. **Message variables** (section 1). Which game value fills each
+4. **Message variables** (section 1). Which game value fills each
    variable id in the message text, so text edits can move or reuse
    them safely.
 
@@ -126,10 +123,13 @@ contents and three tables are still undecoded.
 - [ ] `GAME/CUTINPACK.BIN` entries are `PackData` too (block types 19–24);
       reconcile with `GAME_DIR.md`'s "109 are empty" and document the blocks
 - [ ] Decode the face block-4 header
-- [ ] Still open in the kit tables: `UNIFORM_GK`, side fields 0/1/2/5, the
-      3-bit flag, descriptor bytes 14-15 (kit fields 4 = collar, 12/13 =
-      number colours, 14 = captain mark and side fields 3/4 = front number,
+- [ ] Still open in the kit tables: side fields 0/1/2/5, the 3-bit flag,
+      descriptor bytes 14-15 (kit fields 4 = collar, 12/13 = number
+      colours, 14 = captain mark and side fields 3/4 = front number,
       shorts number position are now named)
+- [ ] Test in PCSX2: a `UNIFORM_GK` edit (`uniform.py setgk`) should change
+      your own club's keeper kit in a match, but not on other screens.
+      Also: does the club editor let you pick your keeper's kit?
 
 ## 5. Music and sound effects
 
