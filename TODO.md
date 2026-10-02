@@ -256,9 +256,6 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       community account). Staff
       leftovers: the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`,
       and how far the manager's popularity goes in play (0 in every save)
-- [ ] Test in PCSX2: `save.py set ... status=30000` on save G000 should
-      make your club a "Promising club in ..." (club rank 14) and the
-      rival a "World-class club" (27) on their Information screens
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0-3
       (kind 4 shows "Won't tolerate club's facilities."), to confirm their
       names. A save edit per kind would show each one

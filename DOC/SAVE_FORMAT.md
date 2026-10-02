@@ -430,6 +430,12 @@ match check.
 ranks as `0x26dd40` would. A status above the cap is refused, because
 the game would cut it back to the cap at the next change.
 
+**Tested in PCSX2** (save G000 on a test card): with `status=30000`
+(65,535 before), your club's Information screen said "Promising club in
+Europe" (club rank 14; "World famous club" before) and the rival's
+"World-class club" (rank 27; "World famous club" before). Variable 310
+shows as "Europe" for a Spanish club.
+
 **The community account.** A community write-up (overthetop2, "Club
 reputation and AI club strength", March 2024) says an AI club's level
 comes from its world ranking within its country, with each country's

@@ -558,3 +558,10 @@ files. Each item keeps what was found, where, and how it was tested.
       club:<team>:rank=` edits the rank. Tested in PCSX2: rank 31 made
       Pirouzi a "World famous club" and rank 0 made Marseille a "Local
       club"
+- [x] Your club's status and the rival's rank: `0x26dd40` sets your club
+      rank to status >> 11 and the rival's from the table at `0x555168`,
+      after each match check and at year end; the status is capped by the
+      status rank (`0x555150`), which titles lower. `save.py show` prints
+      them, `set ... status=N status_rank=N` edits them. Tested in PCSX2:
+      status 30,000 made your club a "Promising club in Europe" and the
+      rival a "World-class club"
