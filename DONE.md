@@ -542,4 +542,6 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Other clubs in saves (block 2): 440 records of 0xa8 bytes, team − 2
       (rival = 0), each a 25-player squad (id, age, shirt, contract years,
       flags), friendship with your club (`+0x9a`, 0-100), club rank and
-      world club rank. `save.py clubs`, `set ... club:<team>:friendship=`
+      world club rank. `save.py clubs`, `set ... club:<team>:friendship=`. Tested in
+      PCSX2: the edits show on the FRIENDLY bar (full and empty), and the
+      world ranks match the Information screen

@@ -323,9 +323,16 @@ new young players, so "John Terry" at Chelsea is 17 in the 2019–20 save.
 **Empirical**, all 5 saves: friendship 0–82, club rank 0–31, world rank
 1–441 (0 in the 2005 save, before the first ranking), 22–25 players per
 club. The world rank matches the club Information screen's World
-Ranking (F.C. Barcelona, 28, save G000). Bytes `+0x9b`–`+0x9f`, `+0xa1`–`+0xa3` and `+0xa6`–`+0xa7` aren't
+Ranking (F.C. Barcelona 28 and Marseille 53, save G000). The club rank
+isn't the League Ranking shown there (26 and 24 against 7 and 5); it is
+the rank `pwkOteam_GetRank` returns, which isn't traced further. Bytes
+`+0x9b`–`+0x9f`, `+0xa1`–`+0xa3` and `+0xa6`–`+0xa7` aren't
 traced. `save.py clubs` lists the clubs (with their squads for the teams
 named), and `save.py set ... club:<team>:friendship=` edits friendship.
+
+**Tested in PCSX2** (save G000 on a test card): with
+`club:167:friendship=100 club:54:friendship=0`, F.C. Barcelona's FRIENDLY
+bar was full and Marseille's empty (82 before).
 
 **Match statistics.** For squad slot `s`, the stats start at block 1
 `+0xec8e + s × 0x11e`: four tables of five rows (pre-season, domestic
