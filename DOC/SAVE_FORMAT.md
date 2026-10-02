@@ -93,6 +93,8 @@ All **confirmed** by the accessor named. Offsets are within the block.
 | 1 | `0x8e00` | PlMinfo | `pwkTeam_GetYManager` (`0x26bdd8`): `pwkTeam_GetYteamData` (`+0x4f00`) `+0x3f00` | the youth manager |
 | 1 | `0x9148` | 4 × PlMinfo | `pwkTeam_GetCoaches` (`0x26a7b8`) | the coaches, 0xbc bytes each |
 | 1 | `0x8f8c` | 3 × PlSinfo | `pwkTeam_GetScouts` (`0x26d098`) | the scouts, 0x94 bytes each |
+| 1 | `0x12470` | | `pwkUnkei_GetWork` (`0x271cf8`) | the season plan: ad budget, ticket prices, season tickets (below) |
+| 5 | `0x0` | 2 × (12 + 23) s64 | `pwkRec_AddMonthlyIncome` (`0x252d88`), `AddMonthlyPayment` (`0x252de0`), `GetMonthlyReport` (`0x252e38`), `GetAnnualReport` (`0x253090`) | the accounts for this month (`+0x0`) and this season (`+0x130`) (below) |
 
 **Money** is stored in the game's own unit. `plMisc_MoneyRate`
 (`0x215660`) converts between currencies as `value × rate[to] ÷
@@ -103,6 +105,73 @@ unit is rate 12 and the pound is rate 2 (**empirical**: a save edited to
 euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
 400 is the yen is still a guess from 2005 exchange rates (€1 ≈ ¥133,
 £1 ≈ ¥200). The stored unit isn't the yen.
+
+**Finances.** Money moves through `pwkGen_Income` (`0x244570`) and
+`pwkGen_Pay` (`0x2445f8`). Both change the s64 at block 0 `+0x0` and
+book the amount under a type in the month's accounts. On overflow,
+`pwkGen_Income` sets the money to 0x7fffffff. **Confirmed from the game
+code:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x252d88`, `0x252de0` | `pwkRec_AddMonthlyIncome`, `AddMonthlyPayment` | block 5 `+0x0` + 8 × type is this month's s64 for income type 0–11, `+0x60` + 8 × type for payment type 0–22 |
+| `0x252c98` | `pwkRec_AfterMonthlyReport` | adds the month into the season's copy at `+0x130`/`+0x190`, then clears the month |
+| `0x253020` | `pwkRec_AfterAnnualReport` | clears the season's incomes and payments |
+| `0x252e38`, `0x253090` | `GetMonthlyReport`, `GetAnnualReport` | a report is the 0x130 bytes at `+0x0` or `+0x130`: the 12 incomes, the 23 payments and 3 s64. `pwkRec_GetSikinChange` (`0x252fc0`) treats the first of those (`+0x118`) as the money at the start of the month |
+| `0x253118` | `pwkRec_GetBalanceFromReport` | the balance is the sum of the incomes minus the sum of the payments |
+| `0x252be0` | `pwkRec_InMonthlyReport` | at the report, applies income 7 and payments 7–13, 17 and 19 to the money (flags at `0x3991e8`/`0x3991f8`); the other types were applied when they happened |
+| `0x21e390`, `0x21e3c0` | `plRec_GetIncomer`, `GetPaymentr` | the report screen (`SIMPRG.REL 0x997c8`) shows 7 income groups: types 0, 1–2, 3–4, 5–6, 7–8, 9–10 and 11; and 5 payment groups: 0–7, 8–16, 17, 18–19 and 20–22 (lists at `0x3909b0`, `0x3909d0`) |
+
+The types named so far, from the code that books them:
+
+| Type | What | Source |
+|---|---|---|
+| income 4 | gate receipts | `pwkUnkei_BeforeReport` (`0x272ef8`) after a home match: the match's ticket money (`pwkUnkei_GetMatchIncome` `0x273008`, `+0x8`) |
+| income 7 | merchandise | `pwkRec_BeforeAcount` (`0x252b20`): `pwkGd_GoodsMonthlySales` |
+| income 8 | match-day shop | `pwkUnkei_BeforeReport`: `pwkUnkei_GetShopIncome` |
+| income 5, 11 | other match money | `pwkUnkei_BeforeReport` books the match record's `+0xc` as 5 and `+0x14` × 2 plus `+0x1c` as 11; what those are isn't traced |
+| payment 7 | facilities | `0x2528c0` (the monthly fixed costs): `payment_Equip` (`0x251fb8`) |
+| payment 8 | youth team wages | `0x2528c0`: `0x2523c8` walks `pwkTeam_GetYpinfo` |
+| payment 9 | player wages | `0x2528c0`: `0x252548` walks the squad (`plPinfo_IsHired`) |
+| payment 10 | the manager's wage | `0x2528c0`: `0x252610` reads your team data (the manager's PlMinfo is in it) |
+| payment 11 | coaches' wages | `0x2528c0`: `0x252680` walks `pwkTeam_GetCoaches`. `pwkTeam_SignCoach` also pays type 11 |
+| payment 12 | the youth manager's wage | `0x2528c0`: `0x252710` reads `pwkTeam_GetYManager` |
+| payment 13 | scouts' wages | `0x2528c0`: `0x252780` walks `pwkTeam_GetScouts` |
+| payment 16 | match bonuses | `pwkUnkei_BeforeReport`: `pwkPromise_MatchBounus` |
+| payment 17 | advertising | `0x2528c0`: `0x251f38` reads `pwkUnkei_GetPR`, the season's ad budget. **Empirical:** 7,500,000 after three months of a 30,000,000 budget (save G000) |
+| payment 19 | overseas branches | `0x2528c0`: `pwkRec_GetPayOverSea` summed over 13 regions |
+| payment 20 | match-day costs | `pwkUnkei_BeforeReport`: the match record's `+0x18`, partly random |
+
+Income 0–3, 6, 9 and 10 and payments 0–6, 14, 15, 18, 21 and 22 are
+booked from `SIMPRG.REL` and not named yet. **Empirical:** in all five
+saves the three s64 after each report's payments, and the two records
+`pwkGen_GetPastYearBalance` and `GetPastMonthBalance` point to (block 0
+`+0x8` and `+0x28`), are zero.
+
+**The season plan** (block 1 `+0x12470`, `pwkUnkei_GetWork`). The
+accessors are `pwkUnkei_Get`/`Set` `PR`, `Ticket`, `SeatRate`,
+`SeatPrice`, `SeatNum` and `OtherTicket`. `pwkUnkei_Init` (`0x271be0`)
+gives a new career's values. **Confirmed:**
+
+| Offset | Type | What | New career |
+|---|---|---|---|
+| `0x0` | u32 | ad budget per season (`GetPR`) | 3,000,000 |
+| `0x4` | u32 | league ticket price (`GetTicket`) | 60 |
+| `0x8` | u32 | season-ticket rate (`GetSeatRate`) | 100 |
+| `0xc` | u32 | season-ticket price (`GetSeatPrice`) | 0 |
+| `0x10` | u32 | season tickets on sale (`GetSeatNum`) | 0 |
+| `0x14` | u8 | not traced | 0 |
+| `0x16` | u16 | not traced | 7,000 |
+| `0x18` | 8 × u32 | ticket prices for other competitions (`GetOtherTicket`) | 0 |
+| `0x38` | 8 × u16 | their competition ids, `0xffff` for none | `0xffff` |
+
+**Empirical**, all five saves: the rate is always 100 and the
+season-ticket price equals the ticket price, so the rate looks like the
+price as a percentage. `+0x14` holds 83–100 and `+0x16` 7,000. One
+competition has its own ticket price in each later save (`0x2b`, `0x3d`
+or `0x3f`), at the league price. The limits the plan screen puts on
+these values aren't traced, so `save.py` doesn't edit them yet.
+`save.py finances` prints the plan and both sets of accounts.
 
 **PlDate** (`plMisc_SetTurn2Date` `0x214698`, `plMisc_PlDate2TotalTurn`
 `0x214d08`):
@@ -586,6 +655,7 @@ python SRC/save.py roundtrip <card>/BESLES-54151-G00*
 python SRC/save.py show  <card>/BESLES-54151-G003
 python SRC/save.py combi <card>/BESLES-54151-G000 6
 python SRC/save.py clubs <card>/BESLES-54151-G000 167 54 432
+python SRC/save.py finances <card>/BESLES-54151-G000
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x26dd40 38
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x288a24 60
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 151938 60 --sles ISO/SLES_541.51

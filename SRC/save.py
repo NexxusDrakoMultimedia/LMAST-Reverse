@@ -45,6 +45,7 @@ Usage:
     python save.py show      <save>                       # date, money, squad
     python save.py player    <save> <slot>                # one player in full (youth: y<slot>)
     python save.py staff     <save>                       # manager, youth manager, coaches, scouts
+    python save.py finances  <save>                       # season plan, accounts by income/payment type
     python save.py set       <save> <out> money=N         # edit into a new main file
     python save.py set       <save> <out> status=30000 status_rank=4  # your club's standing
     python save.py set       <save> <out> 3:all=99 3:15=80  #  slot:ability=level (0-99)
@@ -741,6 +742,31 @@ STATUS_RANK_OFF, STATUS_OFF = 0x11264, 0x1126a
 STATUS_RANK_MAX, STATUS_SHIFT = 8, 11
 STATUS_CAPS, RIVAL_RANKS = 0x555150, 0x555168
 MY_RANK_OFF = TEAM_OFF + 0x41f8
+# Block 1 +0x12470: the season plan (pwkUnkei_GetWork 0x271cf8; pwkUnkei_Init
+# 0x271be0 gives the new-career values). u32 ad budget per season (+0x0,
+# GetPR; paid as payment 17 each month), u32 league ticket price (+0x4),
+# u32 season-ticket rate (+0x8, GetSeatRate), u32 season-ticket price
+# (+0xc), u32 season tickets (+0x10), u8 +0x14, u16 +0x16 (7000 at the
+# start), then 8 u32 ticket prices for other competitions (+0x18,
+# GetOtherTicket) and their 8 u16 competition ids (+0x38, 0xffff = none).
+PLAN_OFF = 0x12470
+PLAN_FIELDS = (("ad budget", 0x0), ("ticket price", 0x4), ("season-ticket rate", 0x8),
+               ("season-ticket price", 0xc), ("season tickets", 0x10))
+PLAN_OTHER, PLAN_OTHER_IDS, PLAN_OTHERS = 0x18, 0x38, 8
+# Block 5: the accounts. s64 per income type (12) at +0x0 and per payment
+# type (23) at +0x60 for this month (pwkRec_AddMonthlyIncome 0x252d88,
+# AddMonthlyPayment 0x252de0); the same at +0x130/+0x190 for the season
+# (pwkRec_AfterMonthlyReport 0x252c98 adds the month in and clears it;
+# AfterAnnualReport 0x253020 clears the season). A balance is the incomes
+# minus the payments (pwkRec_GetBalanceFromReport 0x253118).
+INCOME_TYPES, PAYMENT_TYPES = 12, 23
+MONTH_OFF, SEASON_OFF, PAYMENTS_OFF = 0x0, 0x130, 0x60
+# Names traced from the code that books each type (DOC/SAVE_FORMAT.md).
+INCOME_NAMES = {4: "gate receipts", 7: "merchandise", 8: "match-day shop"}
+PAYMENT_NAMES = {7: "facilities", 8: "youth team wages", 9: "player wages",
+                 10: "manager's wage", 11: "coaches' wages", 12: "youth manager's wage",
+                 13: "scouts' wages", 16: "match bonuses", 17: "advertising",
+                 19: "overseas branches"}
 # PlPinfo: +0 s16 database id (negative = empty slot, 0x2664d0);
 # +0xa 64 x {u16 exp, u16 limit, u16 cap} abilities (plPinfo_ConvAbilLv 0x216c90;
 # pwkGUtl_AddExp 0x246028 clamps exp to the limit on every gain).
@@ -1349,6 +1375,32 @@ def cmd_staff(game, path):
         print("      " + "  ".join("%s %d" % b for b in bars))
 
 
+def cmd_finances(game, path):
+    """The season plan and the accounts for this month and this season."""
+    s = Save(game, path)
+    b = s.blocks
+    print("%s" % s.path)
+    print("  money  %d" % s.money)
+    o = s.at(1, PLAN_OFF)
+    print("  season plan: %s" % ", ".join(
+        "%s %d" % (name, struct.unpack_from("<I", b, o + off)[0]) for name, off in PLAN_FIELDS))
+    others = ["competition %#x: %d" % (struct.unpack_from("<H", b, o + PLAN_OTHER_IDS + 2 * i)[0],
+                                       struct.unpack_from("<I", b, o + PLAN_OTHER + 4 * i)[0])
+              for i in range(PLAN_OTHERS)
+              if struct.unpack_from("<H", b, o + PLAN_OTHER_IDS + 2 * i)[0] != 0xffff]
+    print("  other ticket prices: %s" % (", ".join(others) or "none"))
+    for label, base in (("this month", MONTH_OFF), ("this season", SEASON_OFF)):
+        o = s.at(5, base)
+        inc = struct.unpack_from("<%dq" % INCOME_TYPES, b, o)
+        pay = struct.unpack_from("<%dq" % PAYMENT_TYPES, b, o + PAYMENTS_OFF)
+        print("  %s: income %d, payments %d, balance %d" % (
+            label, sum(inc), sum(pay), sum(inc) - sum(pay)))
+        for kind, values, names in (("income", inc, INCOME_NAMES), ("payment", pay, PAYMENT_NAMES)):
+            for i, v in enumerate(values):
+                if v:
+                    print("    %-7s %2d  %-22s %14d" % (kind, i, names.get(i, ""), v))
+
+
 def cmd_combi(game, path, slots):
     """Each filled squad slot's pairs (or only the given slots'), with the
     value, cap and the tactics screen's level and icon."""
@@ -1598,6 +1650,8 @@ def main(argv):
         cmd_encode(game, *args)
     elif cmd == "roundtrip" and args:
         return cmd_roundtrip(game, args)
+    elif cmd == "finances" and len(args) == 1:
+        cmd_finances(game, args[0])
     elif cmd == "show" and len(args) == 1:
         cmd_show(game, args[0])
     elif cmd == "staff" and len(args) == 1:

@@ -245,8 +245,14 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       game; 400 presumably the yen (the option screen's code)
 - [ ] Stats table 1, PlPinfo flags at `0x20c`, dissatisfaction, style
       icons, and what the 3 records at block 1 `+0xe290` are
+- [ ] Finance leftovers: name income types 0-3, 6, 9, 10 and payment
+      types 0-6, 14, 15, 18, 21, 22 (booked from `SIMPRG.REL`); the
+      report screen's group labels (a screenshot of a report from save
+      G000 would match them to the groups); the season plan's `+0x14`,
+      `+0x16` and the limits the plan screen sets, before `save.py` edits
+      the plan (`SAVE_FORMAT.md`, "Finances")
 - [ ] Map more of the blocks through their accessors (youth, other
-      clubs, finances), and name the fields an editor should offer. Other clubs: the
+      clubs), and name the fields an editor should offer. Other clubs: the
       untraced record bytes (`+0x9b`, `+0xa1`, `+0xa6`-`+0xa7`) and the
       non-resident clubs (442 on). Club rank leftovers: when in the season
       the ranking runs, which competitions `0x22`-`0x24` lower the status
