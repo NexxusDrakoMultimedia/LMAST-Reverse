@@ -302,8 +302,9 @@ and not in this block. **Confirmed:**
 | `0x0` | u32 | team id | empirical: all 440 records in all 5 saves hold the team their position gives |
 | `0x4` | 25 × 6 bytes | the squad (`PlOpinfo`, `pwkOteam_GetOpinfoPointer` `0x24b920`) | the loop at `0x24b520` steps 6 bytes 25 times |
 | `0x9a` | u8 | friendship with your club, 0–100 | the `pwkOteam_ChangeFS_*` functions (matches, players moving to or from your club, overseas branches) all go through `0x24a760`, which caps it at 20 for the rival, at 70 for a club in your city or abroad without your branch, and at 100 otherwise. Shown as the FRIENDLY bar under the crest on a club's Information screen (user report; F.C. Barcelona's bar is about a third full at 34) |
-| `0xa0` | u8 | club rank | `pwkOteam_GetRank` (`0x24bec8`) |
-| `0xa4` | u16 | world club rank | `pwkOteam_GetWorldClubRank` (`0x24bf70`) |
+| `0xa0` | u8 | club rank, 0–31 | `pwkOteam_GetRank` (`0x24bec8`); `pwkOteam_Init2` starts it from the club record's rank ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)) |
+| `0xa2` | u16 | world rank points | `pwkOteam_Init2` starts it from the club record's points (0–1,020) |
+| `0xa4` | u16 | world club rank (the position) | `pwkOteam_GetWorldClubRank` (`0x24bf70`) |
 
 A squad entry, as the expander at `0x24b1e8` turns it into a PlPinfo:
 
@@ -335,11 +336,8 @@ report). The club rank is what `pwkOteam_GetRank` returns. **Empirical:** it run
 29–31 for the clubs at the top of the world ranking and 0–5 at the
 bottom, and the Information screen calls F.C. Barcelona (26) and
 Marseille (24) a "World-class club" and Pirouzi (5) a "Local club", so
-it looks like the club's status, as in the starting club records
-([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)). Which text goes with which
-rank isn't traced. Bytes
-`+0x9b`–`+0x9f`, `+0xa1`–`+0xa3` and `+0xa6`–`+0xa7` aren't
-traced. `save.py clubs` lists the clubs (with their squads for the teams
+it is the club's status. Which text goes with which rank isn't traced. Bytes
+`+0x9b`–`+0x9f`, `+0xa1` and `+0xa6`–`+0xa7` aren't traced. `save.py clubs` lists the clubs (with their squads for the teams
 named), and `save.py set ... club:<team>:friendship=` edits friendship.
 
 **Tested in PCSX2** (save G000 on a test card): with

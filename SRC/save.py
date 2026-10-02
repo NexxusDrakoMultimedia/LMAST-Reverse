@@ -838,11 +838,12 @@ COMBI_ICONS = ("skull", "...", "blue heart", "red heart", "big red heart")  # le
 # +0x21d), u8 flags (-> +0x20c). +0x9a u8 friendship with your club, 0-100,
 # capped at 20 for the rival and 70 for a club in your city or abroad
 # without your branch (0x24a760, the pwkOteam_ChangeFS_* functions);
-# +0xa0 u8 club rank (pwkOteam_GetRank 0x24bec8); +0xa4 u16 world club
-# rank (pwkOteam_GetWorldClubRank 0x24bf70).
+# +0xa0 u8 club rank 0-31 (pwkOteam_GetRank 0x24bec8), +0xa2 u16 world rank
+# points (both started by pwkOteam_Init2 from the club records), +0xa4
+# u16 world club rank, the position (pwkOteam_GetWorldClubRank 0x24bf70).
 CLUBS_OFF, CLUB_SIZE, CLUBS = 0x0, 0xa8, 440
 CLUB_PLAYERS, CLUB_PLAYER = 4, "<hBbBB"
-CLUB_FRIENDSHIP, CLUB_RANK, CLUB_WORLD_RANK = 0x9a, 0xa0, 0xa4
+CLUB_FRIENDSHIP, CLUB_RANK, CLUB_POINTS, CLUB_WORLD_RANK = 0x9a, 0xa0, 0xa2, 0xa4
 STATS_TABLES = ("table 1 (unknown)", "season", "table 3 (last season?)", "career")
 COMPETITIONS = ("pre-season", "domestic league", "overseas league", "Euro", "international")
 STATS_ROW = "<6H2B"     # goals, assists, games, games2, mom, points x 100, red, yellow
@@ -1072,6 +1073,7 @@ class Save:
                 players.append((k,) + p)
         return {"team": struct.unpack_from("<I", b, o)[0], "offset": o,
                 "friendship": b[o + CLUB_FRIENDSHIP], "rank": b[o + CLUB_RANK],
+                "points": struct.unpack_from("<H", b, o + CLUB_POINTS)[0],
                 "world_rank": struct.unpack_from("<H", b, o + CLUB_WORLD_RANK)[0],
                 "players": players}
 
@@ -1301,9 +1303,9 @@ def cmd_clubs(game, path, teams):
         if c["team"] != team:
             print("%3d  !! record holds team %d" % (team, c["team"]))
             continue
-        print("%s  friendship %d, rank %d, world rank %d, %d players" % (
+        print("%s  friendship %d, rank %d, world rank %d (%d points), %d players" % (
             initteam.label(names, team), c["friendship"], c["rank"], c["world_rank"],
-            len(c["players"])))
+            c["points"], len(c["players"])))
         if teams:
             for k, pid, age, shirt, years, flags in c["players"]:
                 print("    %2d  id %5d  %-20s age %2d  shirt %3s  %d year%s%s" % (
