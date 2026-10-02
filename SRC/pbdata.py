@@ -46,9 +46,9 @@ Usage:
     python pbdata.py list <PBDATA.PAC> [players|managers|scouts] [--find TEXT] [--mes MES.PAC]
     python pbdata.py show <PBDATA.PAC> <id> ... [--mes MES.PAC]      # every field of some records
     python pbdata.py csv  <PBDATA.PAC> <players|managers|scouts> <out.csv>
-    python pbdata.py roundtrip <PBDATA_*.PAC> ...                    # re-encode everything, !! if not identical
-    python pbdata.py set    <in.PAC> <out.PAC> <id> <field>=<value> ... [<id> <field>=<value> ...]
-    python pbdata.py import <in.PAC> <out.PAC> <players|managers|scouts> <edited.csv>
+    python pbdata.py roundtrip <PBDATA_*.PAC> ... [--sles SLES_541.51]  # re-encode everything, !! if not identical
+    python pbdata.py set    <in.PAC> <out.PAC> <id> <field>=<value> ... [<id> <field>=<value> ...] [--sles <SLES> <out SLES>]
+    python pbdata.py import <in.PAC> <out.PAC> <players|managers|scouts> <edited.csv> [--sles <SLES> <out SLES>]
 
 Writing: records are re-encoded bit for bit (every record on the disc
 round-trips) and entry 1 is patched in a copy of the pack; nothing else
@@ -56,6 +56,13 @@ moves. Values are given as shown (age=30, height=185, ability.15=99,
 req_status=15000, position.0=3), names up to 18 characters (name=J.Smith).
 `import` takes a CSV from `csv`, edited in a spreadsheet, and writes only
 the values that changed; the bar columns are derived and ignored.
+
+Rank, main position (position.0) and nationality of players 0-25,590 only
+take effect with --sles: it re-sorts entries 2 and 3 and writes a copy of
+the executable with the group table at 0x52fbf8 to match (the input must be
+the executable that goes with the input pack). Put both files on the disc
+together. roundtrip --sles checks that rebuilding the ranking from the
+unedited records gives back entries 2, 3 and the executable's table.
 
 <id> is a database id (players 0-27,949, managers 27,950-30,949, scouts
 30,950-31,949), or kind:index such as m:0. Nationality
@@ -107,6 +114,45 @@ def ranking_breaks(entry2, players):
     """Places where entry 2 is out of (rank, position, nation) order."""
     keys = [ranking_key(players[i]) for i in entry2[:RANKED]]
     return sum(1 for k in range(RANKED - 1) if keys[k] > keys[k + 1])
+
+
+# The group table: 16 x 13 s32 at SLES 0x52fbf8, row 15 - rank and column
+# = main position, each the first place of that group in entry 2 (-1 if
+# empty). It is fixed in the executable. PlBpinfoTask's set-up (0x20c4a8)
+# builds getPinfoRank's 16 rank ranges at 0x5eac08 from it at load, and
+# serchPinfo ends a group where the next non-empty one starts (or at 0x63f7).
+GROUP_TABLE = 0x52fbf8
+GROUP_ROWS, GROUP_COLS = 16, 13
+
+
+def build_ranking(players, entry2):
+    """Entries 2 and 3 and the group table for these records. Players keep
+    their order within a group: entry 2 has no other order inside one."""
+    for i in range(RANKED):
+        f = players[i].fields
+        if not 0 <= f["rank"] < GROUP_ROWS or not 0 <= f["position"][0] < GROUP_COLS:
+            raise ValueError("player %d (%s): rank %d / main position %d can't be ranked "
+                             "(0-15 / 0-12)" % (i, players[i].name, f["rank"], f["position"][0]))
+    order = sorted(entry2[:RANKED], key=lambda i: ranking_key(players[i]))  # stable
+    order += range(RANKED, len(entry2))
+    inverse = [0] * len(order)
+    for place, i in enumerate(order):
+        inverse[i] = place
+    table = [-1] * (GROUP_ROWS * GROUP_COLS)
+    for place in range(RANKED - 1, -1, -1):
+        f = players[order[place]].fields
+        table[(GROUP_ROWS - 1 - f["rank"]) * GROUP_COLS + f["position"][0]] = place
+    return order, inverse, table
+
+
+def sles_group_table(sles):
+    """(file offset, the 208 values) of the group table in an executable."""
+    import sles_disasm
+    off = sles_disasm.Elf(sles).v2f(GROUP_TABLE)
+    with open(sles, "rb") as f:
+        f.seek(off)
+        return off, list(struct.unpack("<%di" % (GROUP_ROWS * GROUP_COLS),
+                                       f.read(4 * GROUP_ROWS * GROUP_COLS)))
 
 
 # plBits_* post-processing tables in SLES_541.51.
@@ -672,6 +718,7 @@ class Record:
 
 class PbData:
     def __init__(self, path):
+        self.path = path
         h = pac.load_header(path)
         if not isinstance(h, pac.BinPac):
             raise ValueError("not a BINPAC")
@@ -727,13 +774,20 @@ def encode_records(records):
     return b"".join(r.encode() for kind in KINDS for r in records[kind])
 
 
-def rebuild(db, entry1):
-    """The whole pack with entry 1 replaced. Records are fixed-size, so the
-    entry keeps its offset and size and nothing else moves."""
-    off, size = db.entry_spans[1]
-    if len(entry1) != size:
-        raise ValueError("records are %d bytes, the entry is %d" % (len(entry1), size))
-    return db.file[:off] + entry1 + db.file[off + size:]
+def rebuild(db, entry1, entry2=None, entry3=None):
+    """The whole pack with entry 1 (and entries 2 and 3, given as lists of
+    ids) replaced. Every entry keeps its size, so nothing moves."""
+    out = bytearray(db.file)
+    for n, data in ((1, entry1), (2, entry2), (3, entry3)):
+        if data is None:
+            continue
+        if n > 1:
+            data = struct.pack("<%dH" % len(data), *data)
+        off, size = db.entry_spans[n]
+        if len(data) != size:
+            raise ValueError("entry %d would be %d bytes, it is %d" % (n, len(data), size))
+        out[off:off + size] = data
+    return bytes(out)
 
 
 def parse_id(text):
@@ -966,7 +1020,7 @@ def cmd_csv(path, kind, out_path):
     print("%s: %d %s" % (out_path, n, kind))
 
 
-def cmd_roundtrip(paths):
+def cmd_roundtrip(paths, sles=None):
     for path in paths:
         try:
             db = PbData(path)
@@ -989,6 +1043,17 @@ def cmd_roundtrip(paths):
             path, sum(len(v) for v in records.values()), len(bad),
             "identical" if out == db.file else "differs",
             "  !! " + "; ".join(probs) if probs else ""))
+        if sles:
+            # Re-sorting the unedited records must give back entries 2 and 3
+            # and the executable's group table exactly.
+            entry2, entry3, table = build_ranking(records["players"], db.entry2)
+            _, held = sles_group_table(sles)
+            p = [name for name, a, b in (("entry 2", entry2, db.entry2),
+                                         ("entry 3", entry3, db.rank_values),
+                                         ("group table", table, held)) if list(a) != list(b)]
+            print("%s  ranking rebuilt: entries 2 and 3, %s group table at %#x %s%s" % (
+                path, sles, GROUP_TABLE, "differ" if p else "identical",
+                "  !! %s differ" % ", ".join(p) if p else ""))
 
 
 def _parse_assign(text):
@@ -1020,25 +1085,52 @@ def _load_for_edit(src, out_path):
     return db, {k: list(db.records(k)) for k in KINDS}
 
 
-def _write_pack(out_path, db, records):
-    # Entries 2 and 3 are written as they were. The group table they pair
-    # with is in the executable, so re-sorting them would not help.
-    breaks = ranking_breaks(db.entry2, records["players"])
-    if breaks:
-        print("note: the edits put entry 2's ranking out of (rank, main position,\n"
-              "      nationality) order in %s. The game takes these players' rank from\n"
-              "      their old place and finds national squads by it, so it still treats\n"
-              "      them as before (DOC/PBDATA_FORMAT.md#entries-2-and-3)."
-              % _plural(breaks, "place"))
+def _write_pack(out_path, db, records, sles=None):
+    """Write the edited pack. With sles = (in, out), also re-sort entries 2
+    and 3 and write a copy of the executable with the matching group table;
+    without it, entries 2 and 3 stay as they were."""
+    players = records["players"]
+    entry2 = entry3 = None
+    if sles:
+        sles_in, sles_out = sles
+        if os.path.abspath(sles_out) == os.path.abspath(sles_in):
+            raise SystemExit("refusing to overwrite the input executable; write to a new file")
+        off, held = sles_group_table(sles_in)
+        _, _, before = build_ranking(list(db.records("players")), db.entry2)
+        if held != before:
+            raise SystemExit("%s: the group table at %#x doesn't match %s's ranking; give the "
+                             "executable that goes with this pack" % (sles_in, GROUP_TABLE, db.path))
+        try:
+            entry2, entry3, table = build_ranking(players, db.entry2)
+        except ValueError as e:
+            raise SystemExit(str(e))
+        with open(sles_in, "rb") as f:
+            exe = bytearray(f.read())
+        exe[off:off + 4 * len(table)] = struct.pack("<%di" % len(table), *table)
+        with open(sles_out, "wb") as f:
+            f.write(exe)
+        moved = sum(1 for a, b in zip(entry2, db.entry2) if a != b)
+        print("%s: group table at %#x, %d of %d starts changed; entries 2 and 3 re-sorted, "
+              "%s" % (sles_out, GROUP_TABLE, sum(1 for a, b in zip(table, held) if a != b),
+                      len(table), _plural(moved, "place") + " changed"))
+    else:
+        breaks = ranking_breaks(db.entry2, players)
+        if breaks:
+            print("note: the edits put entry 2's ranking out of (rank, main position,\n"
+                  "      nationality) order in %s. The game takes these players' rank and\n"
+                  "      main position from their old place, so it still treats them as\n"
+                  "      before. Add --sles <SLES_541.51> <out SLES> to re-sort the ranking\n"
+                  "      and write the executable that goes with it\n"
+                  "      (DOC/PBDATA_FORMAT.md#entries-2-and-3)." % _plural(breaks, "place"))
     with open(out_path, "wb") as f:
-        f.write(rebuild(db, encode_records(records)))
+        f.write(rebuild(db, encode_records(records), entry2, entry3))
 
 
 def _plural(n, word):
     return "%d %s%s" % (n, word, "" if n == 1 else "s")
 
 
-def cmd_set(src, out_path, args):
+def cmd_set(src, out_path, args, sles=None):
     db, records = _load_for_edit(src, out_path)
     r, changes = None, 0
     for a in args:
@@ -1058,11 +1150,11 @@ def cmd_set(src, out_path, args):
         label = fname if index is None else "%s.%d" % (fname, index)
         print("%5d  %-19s %s: %s -> %s" % (r.db_id, r.name, label, old, new))
         changes += 1
-    _write_pack(out_path, db, records)
+    _write_pack(out_path, db, records, sles)
     print("%s: %s" % (out_path, _plural(changes, "change")))
 
 
-def cmd_import(src, out_path, kind, csv_path):
+def cmd_import(src, out_path, kind, csv_path, sles=None):
     """Apply a CSV written by `csv`, possibly edited. Only values that differ
     from the pack are written. Other columns (the bars, entry2/entry3) are
     derived and ignored."""
@@ -1098,9 +1190,21 @@ def cmd_import(src, out_path, kind, csv_path):
                 changes += 1
                 touched = True
             changed_records += touched
-    _write_pack(out_path, db, records)
+    _write_pack(out_path, db, records, sles)
     print("%s: %s in %s" % (out_path, _plural(changes, "change"),
                             _plural(changed_records, "record")))
+
+
+def _opt2(args, flag):
+    """A flag with two values (--sles IN OUT), as a tuple, or None."""
+    if flag in args:
+        i = args.index(flag)
+        if len(args) < i + 3:
+            raise SystemExit("%s needs two paths" % flag)
+        value = (args[i + 1], args[i + 2])
+        del args[i:i + 3]
+        return value
+    return None
 
 
 def _opt(args, flag, default=None):
@@ -1117,6 +1221,9 @@ def main(argv):
     cmd = argv[1] if len(argv) > 1 else ""
     find = _opt(args, "--find")
     mes = _opt(args, "--mes")
+    # --sles takes the executable to check against (roundtrip), or the
+    # executable and where to write the patched copy (set, import).
+    sles = _opt(args, "--sles") if cmd == "roundtrip" else _opt2(args, "--sles")
     if cmd == "info" and args:
         cmd_info(args)
         return 0
@@ -1135,13 +1242,13 @@ def main(argv):
         cmd_csv(args[0], args[1], args[2])
         return 0
     if cmd == "roundtrip" and args:
-        cmd_roundtrip(args)
+        cmd_roundtrip(args, sles)
         return 0
     if cmd == "set" and len(args) >= 4:
-        cmd_set(args[0], args[1], args[2:])
+        cmd_set(args[0], args[1], args[2:], sles)
         return 0
     if cmd == "import" and len(args) == 4 and args[2] in KINDS:
-        cmd_import(args[0], args[1], args[2], args[3])
+        cmd_import(args[0], args[1], args[2], args[3], sles)
         return 0
     print(__doc__)
     return 1

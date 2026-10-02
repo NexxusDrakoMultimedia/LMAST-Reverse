@@ -827,13 +827,28 @@ Transfer List bands
 ([`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md)), national
 call-ups and popularity changes.
 
-For editing: changing the rank or main position in a record has no
-effect in the game for ids below 25,591, and changing the nationality
-moves the player out of his nation's call-up search. Moving a player
-properly would mean re-sorting entries 2 and 3 and changing the group
-starts in the executable (`0x52fbf8`, and the run-time ranges at
-`0x5eac08` if they are built from it). `pbdata.py set` and `import` say
-when an edit leaves the ranking out of order; they don't re-sort it.
+**Confirmed:** the run-time rank ranges at `0x5eac08` are built from the
+group table when the database is set up (`0x20c4a8`, after
+`initPlCoreInfoSub`): each row runs from its first group's start to one
+before the next row's first start, the last to `0x63f6`. Entries 2 and 3
+are read only through `getPlno` (`0x20c2b8`), `checkPlno` (`0x20c2f0`),
+`serchPinfo`, `getPinfoRank` and `getPinfoApos0`, and the group table
+exists once on the disc. Inside a group there is no order by id or by
+ability (**empirical**: about half of the 18,920 neighbouring pairs go
+each way).
+
+For editing: changing the rank or main position in a record alone has
+no effect in the game for ids below 25,591, and changing the nationality
+alone moves the player out of his nation's call-up search. `pbdata.py
+set` and `import` with `--sles <SLES_541.51> <out SLES>` re-sort entries 2
+and 3 (keeping each group's order, so only moved players change place)
+and write a copy of the executable with the group table to match. They
+check first that the input executable's table belongs to the input pack.
+Without `--sles` they say when an edit leaves the ranking out of order.
+`pbdata.py roundtrip --sles` checks the rebuild: from the disc's records
+it gives back entries 2 and 3 and the executable's table exactly. An
+emulation of `getPinfoRank` and `getPinfoApos0` on the result agrees
+with the records for all 25,591 players, before and after an edit.
 
 ## National team call-ups
 
@@ -906,6 +921,9 @@ led to the byte limit above. A second test with 255 cm showed 255 cm.
 python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out.PAC 101 age=30 ability.13=99 name=J.Terry
 python SRC/pbdata.py csv DAT/PARAM/PBDATA_EU.PAC players players.csv   # edit in a spreadsheet
 python SRC/pbdata.py import DAT/PARAM/PBDATA_EU.PAC out.PAC players players.csv
+# rank, main position or nationality: re-sort the ranking, patch the executable
+python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out.PAC 101 rank=14 position.0=12 --sles ISO/SLES_541.51 out_SLES_541.51
+python SRC/patch_disc.py patch game.iso out.iso PARAM/PBDATA_EU.PAC=out.PAC disc:SLES_541.51=out_SLES_541.51 --copies --dat DAT
 ```
 
 `import` writes only the values that differ from the pack, so an unedited

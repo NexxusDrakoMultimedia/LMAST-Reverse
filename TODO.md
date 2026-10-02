@@ -80,9 +80,11 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [ ] Test in PCSX2: a renamed fixed national player (26,046 as
       `NT.Terry.VS`, disc `LMAST-nt-test.iso`) should not show in a career
       call-up of England; the club Terry should
-- [ ] Editing rank, main position or nationality for players below 25,591:
-      re-sort entries 2 and 3 and patch the group table at SLES
-      `0x52fbf8`, so the game sees the change
+- [ ] Test in PCSX2: rank edits for players below 25,591 with
+      `pbdata.py --sles` (written; entries 2 and 3 re-sorted, SLES group
+      table `0x52fbf8` patched). Disc `LMAST-rank-test.iso`: A.Rankin
+      (12,804, rank 9 -> 5, renamed RANKFIX.Rankin) in free-agent slot 627
+      should show on a new club's Transfer List
       (`DOC/PBDATA_FORMAT.md#entries-2-and-3`)
 - [ ] The packs: `PLRESOURCECOMMON.PAC` (readers listed in `PARAM_DIR.md`,
       layouts not decoded). `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript

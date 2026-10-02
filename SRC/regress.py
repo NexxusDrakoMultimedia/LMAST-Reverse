@@ -53,10 +53,11 @@ def checks():
         ("initteam", ["initteam.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("pbdata", ["pbdata.py", "info", "DAT/PARAM/PBDATA_EU.PAC", "DAT/PARAM/PBDATA_JP.PAC"],
          ["DAT/PARAM/PBDATA_EU.PAC", "DAT/PARAM/PBDATA_JP.PAC"]),
-        # Re-encode all 31,950 records and rebuild the pack byte for byte.
+        # Re-encode all 31,950 records and rebuild the pack byte for byte,
+        # and rebuild the ranking (entries 2, 3 and the SLES group table).
         ("pbdata_roundtrip", ["pbdata.py", "roundtrip", "DAT/PARAM/PBDATA_EU.PAC",
-                              "DAT/PARAM/PBDATA_JP.PAC"],
-         ["DAT/PARAM/PBDATA_EU.PAC", "DAT/PARAM/PBDATA_JP.PAC"]),
+                              "DAT/PARAM/PBDATA_JP.PAC", "--sles", "ISO/SLES_541.51"],
+         ["DAT/PARAM/PBDATA_EU.PAC", "DAT/PARAM/PBDATA_JP.PAC", "ISO/SLES_541.51"]),
         # Every field of the first and last record of each kind.
         ("pbdata_show", ["pbdata.py", "show", "DAT/PARAM/PBDATA_EU.PAC",
                          "0", "p:27949", "m:0", "m:2999", "s:0", "s:999"],
