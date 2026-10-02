@@ -761,12 +761,14 @@ PLAN_OTHER, PLAN_OTHER_IDS, PLAN_OTHERS = 0x18, 0x38, 8
 # minus the payments (pwkRec_GetBalanceFromReport 0x253118).
 INCOME_TYPES, PAYMENT_TYPES = 12, 23
 MONTH_OFF, SEASON_OFF, PAYMENTS_OFF = 0x0, 0x130, 0x60
-# Names traced from the code that books each type (DOC/SAVE_FORMAT.md).
-INCOME_NAMES = {4: "gate receipts", 7: "merchandise", 8: "match-day shop"}
-PAYMENT_NAMES = {7: "facilities", 8: "youth team wages", 9: "player wages",
-                 10: "manager's wage", 11: "coaches' wages", 12: "youth manager's wage",
-                 13: "scouts' wages", 16: "match bonuses", 17: "advertising",
-                 19: "overseas branches"}
+# The report screen (SIMPRG.REL 0x997c8) shows 7 income and 5 payment lines,
+# each the sum of these types (plRec_GetIncomer/GetPaymentr 0x21e390/0x21e3c0,
+# lists at 0x3909b0/0x3909d0), labelled with messages 204 + line of category
+# 550 (the loop at SIMPRG.REL 0x98818). Messages 217 + type and 229 + type
+# name the single types (empirical: they match every type traced in code).
+INCOME_GROUPS = ((0,), (1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11,))
+PAYMENT_GROUPS = (tuple(range(8)), tuple(range(8, 17)), (17,), (18, 19), (20, 21, 22))
+REPORT_CATEGORY, REPORT_LINES, INCOME_NAME, PAYMENT_NAME = 550, 204, 217, 229
 # PlPinfo: +0 s16 database id (negative = empty slot, 0x2664d0);
 # +0xa 64 x {u16 exp, u16 limit, u16 cap} abilities (plPinfo_ConvAbilLv 0x216c90;
 # pwkGUtl_AddExp 0x246028 clamps exp to the limit on every gain).
@@ -1380,7 +1382,7 @@ def cmd_finances(game, path):
     s = Save(game, path)
     b = s.blocks
     print("%s" % s.path)
-    print("  money  %d" % s.money)
+    print("  money  %d (amounts are in the stored unit; euros are 1/4 of it)" % s.money)
     o = s.at(1, PLAN_OFF)
     print("  season plan: %s" % ", ".join(
         "%s %d" % (name, struct.unpack_from("<I", b, o + off)[0]) for name, off in PLAN_FIELDS))
@@ -1389,16 +1391,25 @@ def cmd_finances(game, path):
               for i in range(PLAN_OTHERS)
               if struct.unpack_from("<H", b, o + PLAN_OTHER_IDS + 2 * i)[0] != 0xffff]
     print("  other ticket prices: %s" % (", ".join(others) or "none"))
+    import initteam
+    msg = initteam.category_names(os.path.join("DAT", "MESSAGE", "MES.PAC"), REPORT_CATEGORY)
     for label, base in (("this month", MONTH_OFF), ("this season", SEASON_OFF)):
         o = s.at(5, base)
         inc = struct.unpack_from("<%dq" % INCOME_TYPES, b, o)
         pay = struct.unpack_from("<%dq" % PAYMENT_TYPES, b, o + PAYMENTS_OFF)
         print("  %s: income %d, payments %d, balance %d" % (
             label, sum(inc), sum(pay), sum(inc) - sum(pay)))
-        for kind, values, names in (("income", inc, INCOME_NAMES), ("payment", pay, PAYMENT_NAMES)):
-            for i, v in enumerate(values):
-                if v:
-                    print("    %-7s %2d  %-22s %14d" % (kind, i, names.get(i, ""), v))
+        line = REPORT_LINES
+        for kind, values, groups, first in (("income", inc, INCOME_GROUPS, INCOME_NAME),
+                                            ("payment", pay, PAYMENT_GROUPS, PAYMENT_NAME)):
+            for group in groups:
+                print("    %-28s %14d" % (msg.get(line, "line %d" % line).strip(),
+                                          sum(values[i] for i in group)))
+                line += 1
+                for i in group:
+                    if values[i]:
+                        print("      %-7s %2d  %-26s %14d" % (
+                            kind, i, msg.get(first + i, "").strip(), values[i]))
 
 
 def cmd_combi(game, path, slots):

@@ -122,31 +122,70 @@ code:**
 | `0x252be0` | `pwkRec_InMonthlyReport` | at the report, applies income 7 and payments 7–13, 17 and 19 to the money (flags at `0x3991e8`/`0x3991f8`); the other types were applied when they happened |
 | `0x21e390`, `0x21e3c0` | `plRec_GetIncomer`, `GetPaymentr` | the report screen (`SIMPRG.REL 0x997c8`) shows 7 income groups: types 0, 1–2, 3–4, 5–6, 7–8, 9–10 and 11; and 5 payment groups: 0–7, 8–16, 17, 18–19 and 20–22 (lists at `0x3909b0`, `0x3909d0`) |
 
-The types named so far, from the code that books them:
+**The names.** The report screen's text is message category 550. Its
+loop at `SIMPRG.REL 0x98818` labels the 12 lines with messages 204 +
+*line* (**confirmed**): Sponsor fee, Media licensing fee, Admission fee,
+Winnings, Facilities, Transfer fees and Other for the 7 income lines;
+Facilities, Staff costs, Advertising costs, Overseas investment and Other
+expenditure for the 5 payment lines. Messages 217 + *type* name the 12
+income types and 229 + *type* the 23 payment types. The code that reads
+those isn't found, so the type names are **empirical**: the counts are
+exactly 12 and 23, and every type traced from the code below matches its
+name.
 
-| Type | What | Source |
-|---|---|---|
-| income 4 | gate receipts | `pwkUnkei_BeforeReport` (`0x272ef8`) after a home match: the match's ticket money (`pwkUnkei_GetMatchIncome` `0x273008`, `+0x8`) |
-| income 7 | merchandise | `pwkRec_BeforeAcount` (`0x252b20`): `pwkGd_GoodsMonthlySales` |
-| income 8 | match-day shop | `pwkUnkei_BeforeReport`: `pwkUnkei_GetShopIncome` |
-| income 5, 11 | other match money | `pwkUnkei_BeforeReport` books the match record's `+0xc` as 5 and `+0x14` × 2 plus `+0x1c` as 11; what those are isn't traced |
-| payment 7 | facilities | `0x2528c0` (the monthly fixed costs): `payment_Equip` (`0x251fb8`) |
-| payment 8 | youth team wages | `0x2528c0`: `0x2523c8` walks `pwkTeam_GetYpinfo` |
-| payment 9 | player wages | `0x2528c0`: `0x252548` walks the squad (`plPinfo_IsHired`) |
-| payment 10 | the manager's wage | `0x2528c0`: `0x252610` reads your team data (the manager's PlMinfo is in it) |
-| payment 11 | coaches' wages | `0x2528c0`: `0x252680` walks `pwkTeam_GetCoaches`. `pwkTeam_SignCoach` also pays type 11 |
-| payment 12 | the youth manager's wage | `0x2528c0`: `0x252710` reads `pwkTeam_GetYManager` |
-| payment 13 | scouts' wages | `0x2528c0`: `0x252780` walks `pwkTeam_GetScouts` |
-| payment 16 | match bonuses | `pwkUnkei_BeforeReport`: `pwkPromise_MatchBounus` |
-| payment 17 | advertising | `0x2528c0`: `0x251f38` reads `pwkUnkei_GetPR`, the season's ad budget. **Empirical:** 7,500,000 after three months of a 30,000,000 budget (save G000) |
-| payment 19 | overseas branches | `0x2528c0`: `pwkRec_GetPayOverSea` summed over 13 regions |
-| payment 20 | match-day costs | `pwkUnkei_BeforeReport`: the match record's `+0x18`, partly random |
+| Income | Name (550:217 + type) | Payment | Name (550:229 + type) |
+|---|---|---|---|
+| 0 | Sponsor fee | 0 | Stadium purchase & rebuild |
+| 1 | League contract | 1 | Stadium facilities |
+| 2 | Individual contract | 2 | Club house extension |
+| 3 | Season ticket sales | 3 | Club house facilities |
+| 4 | Ticket price | 4 | Practice ground expansion |
+| 5 | Win bonus | 5 | Practice ground facilities |
+| 6 | Position prize money | 6 | Practice ground maintenance |
+| 7 | Merchandise | 7 | Facilities maintenance |
+| 8 | Stadium facilities | 8 | Youth Management costs |
+| 9 | Player Transfer Fee | 9 | Player Annual Salary |
+| 10 | Rental Fee | 10 | Supervisor Annual Salary |
+| 11 | Other income | 11 | Coach Annual Salary |
+| | | 12 | Youth Supervisor Salary |
+| | | 13 | Scout Salary |
+| | | 14 | Player Transfer Fee |
+| | | 15 | Loan fees |
+| | | 16 | Pay for the Job |
+| | | 17 | Advertising Costs |
+| | | 18 | Overseas Investment |
+| | | 19 | Overseas club bases |
+| | | 20 | Match management |
+| | | 21 | Camp Tour |
+| | | 22 | Casual income (an expense: a translation slip) |
 
-Income 0–3, 6, 9 and 10 and payments 0–6, 14, 15, 18, 21 and 22 are
-booked from `SIMPRG.REL` and not named yet. **Empirical:** in all five
-saves the three s64 after each report's payments, and the two records
-`pwkGen_GetPastYearBalance` and `GetPastMonthBalance` point to (block 0
-`+0x8` and `+0x28`), are zero.
+Media licensing fee is income 1–2 (league and individual TV contracts),
+Admission fee 3–4 (season tickets and tickets) and Winnings 5–6.
+Supervisor is the manager. The types traced from the code that books
+them:
+
+| Type | Source |
+|---|---|
+| income 4 | `pwkUnkei_BeforeReport` (`0x272ef8`) after a home match: the match's ticket money (`pwkUnkei_GetMatchIncome` `0x273008`, `+0x8`) |
+| income 5 | `pwkUnkei_BeforeReport`: the match record's `+0xc`. The manual's post-match Earnings Report shows "a winning bonus for a win" |
+| income 7 | `pwkRec_BeforeAcount` (`0x252b20`): `pwkGd_GoodsMonthlySales` |
+| income 8 | `pwkUnkei_BeforeReport`: `pwkUnkei_GetShopIncome` |
+| income 11 | `pwkUnkei_BeforeReport`: the match record's `+0x14` × 2 plus `+0x1c` |
+| payment 7 | `0x2528c0` (the monthly fixed costs): `payment_Equip` (`0x251fb8`) |
+| payment 8 | `0x2528c0`: `0x2523c8` walks `pwkTeam_GetYpinfo` |
+| payment 9 | `0x2528c0`: `0x252548` walks the squad (`plPinfo_IsHired`) |
+| payment 10 | `0x2528c0`: `0x252610` reads your team data (the manager's PlMinfo is in it) |
+| payment 11 | `0x2528c0`: `0x252680` walks `pwkTeam_GetCoaches`. `pwkTeam_SignCoach` also pays type 11 |
+| payment 12 | `0x2528c0`: `0x252710` reads `pwkTeam_GetYManager` |
+| payment 13 | `0x2528c0`: `0x252780` walks `pwkTeam_GetScouts` |
+| payment 16 | `pwkUnkei_BeforeReport`: `pwkPromise_MatchBounus` |
+| payment 17 | `0x2528c0`: `0x251f38` reads `pwkUnkei_GetPR`, the season's ad budget. **Empirical:** 7,500,000 after three months of a 30,000,000 budget (save G000) |
+| payment 19 | `0x2528c0`: `pwkRec_GetPayOverSea` summed over 13 regions |
+| payment 20 | `pwkUnkei_BeforeReport`: the match record's `+0x18`, partly random |
+
+**Empirical:** in all five saves the three s64 after each report's
+payments, and the two records `pwkGen_GetPastYearBalance` and
+`GetPastMonthBalance` point to (block 0 `+0x8` and `+0x28`), are zero.
 
 **The season plan** (block 1 `+0x12470`, `pwkUnkei_GetWork`). The
 accessors are `pwkUnkei_Get`/`Set` `PR`, `Ticket`, `SeatRate`,

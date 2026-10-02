@@ -568,5 +568,6 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Finances: the accounts in block 5 (12 income and 23 payment types,
       this month at `+0x0` and this season at `+0x130`, the report screen's
       7 + 5 groups) and the season plan at block 1 `+0x12470` (ad budget,
-      ticket prices, season tickets). 13 of the 35 types named from the
-      code that books them. `save.py finances` prints both
+      ticket prices, season tickets). All 35 types and the 12 report
+      lines named from the report screen's text (category 550), matching
+      the 16 types traced in the code. `save.py finances` prints both
