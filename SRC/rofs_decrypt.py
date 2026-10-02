@@ -6,16 +6,18 @@ Reimplements roxfan's CRI ROFS decryption algorithm (see
 DOC/LMAST_DATA_CVM_INFO.md) in pure Python so no C++ toolchain is
 needed. Parses the CVMH/ZONE chunk header written by Konami's
 "ROFSBLD" tool, decrypts the encrypted ISO9660 table-of-contents
-(the primary volume descriptor and directory records) using the
-8-byte ROFS key recovered from the running game in PCSX2, and writes
-out a plain, mountable DATA.ISO. File contents themselves are not
+(the primary volume descriptor and directory records) with the 8-byte
+ROFS key, and writes out a plain, mountable DATA.ISO. The key was first
+recovered from the running game in PCSX2; header_key() derives it from
+the CVMH header the way the game does, so a rebuilt DATA.CVM of another
+size (which has another key) decrypts too. File contents themselves are not
 encrypted by this format, so they are copied through unchanged.
 
 Usage:
     python rofs_decrypt.py <input.cvm> <output.iso> [hex_key]
 
-Default key is the one recovered for this game:
-    5AFB657D4A575FD5
+Without hex_key the key comes from the header (header_key); for the
+original DATA.CVM that is 5AFB657D4A575FD5.
 """
 import struct
 import sys
@@ -227,6 +229,23 @@ def decrypt_sectors(data, start_sec, sec_size, key):
     return bytes(out)
 
 
+def header_key(cvm_head):
+    """The ROFS key the game derives from DATA.CVM's first sector, or None
+    if the CVMH flags (+0x30) don't have bit 0x10. Confirmed from
+    SLES_541.51: the mount code passes the CVMH sector to
+    RSU_GenerateFixedKey (0x1e7550; called at 0x1e1328), which with no
+    password string builds 8 bytes from 0x1e6f50/0x1e6fb8 by interleaving
+    header +0x25..+0x28 with +0x20..+0x23, then (0x1e7018) replaces each
+    byte pair with the big-endian 16-bit hash _calc_one_val(pair, 18973).
+    Header +0x20..+0x23 are the low 32 bits of the CVM's size (CVMH +0x1c),
+    so the key changes whenever DATA.CVM changes size. For this disc it
+    gives DEFAULT_KEY."""
+    if not struct.unpack_from(">I", cvm_head, 0x30)[0] & 0x10:
+        return None
+    return b"".join(_calc_one_val(bytes([cvm_head[0x25 + k], cvm_head[0x20 + k]]), 18973)
+                    .to_bytes(2, "big") for k in range(4))
+
+
 # --- CVMH/ZONE header parsing -----------------------------------------
 
 def read_cvm_header(f):
@@ -311,9 +330,12 @@ def find_toc_end_sector(f, hdr, key):
 
 # --- top-level extraction -----------------------------------------------
 
-def cvm_to_iso(cvm_path, iso_path, key=DEFAULT_KEY, verbose=True):
+def cvm_to_iso(cvm_path, iso_path, key=None, verbose=True):
     with open(cvm_path, "rb") as f:
         hdr = read_cvm_header(f)
+        if key is None:
+            f.seek(0)
+            key = header_key(f.read(SECTOR)) or DEFAULT_KEY
         if verbose:
             print(f"ISO start sector: {hdr['iso_start_sector']}")
             print(f"ISO zone sector:  {hdr['iso_zone_sector']}")
@@ -364,5 +386,5 @@ if __name__ == "__main__":
         sys.exit(1)
     in_path = sys.argv[1]
     out_path = sys.argv[2]
-    key = bytes.fromhex(sys.argv[3]) if len(sys.argv) > 3 else DEFAULT_KEY
+    key = bytes.fromhex(sys.argv[3]) if len(sys.argv) > 3 else None
     cvm_to_iso(in_path, out_path, key)

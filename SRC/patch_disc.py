@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """Patch edited game files into the disc image, DATA.CVM or DATA.ISO, for
-Let's Make a Soccer Team! (PS2). Files keep their sectors: a file may
-change size only inside its last sector.
+Let's Make a Soccer Team! (PS2). A file keeps its sectors if it fits in
+them; one that needs more is moved to the end of DATA.ISO.
 
 DATA.CVM is a ROFSBLD container: a CVMH/ZONE header, then an ISO9660 image
 whose table of contents (the volume descriptor and directory sectors) is
@@ -47,9 +47,21 @@ files back.
 Size changes: the game reads a whole file as (size + 0x7ff) >> 11 sectors
 (ADXF_GetFsizeSct, used at 0x307f24), so a file may grow or shrink inside
 its last sector. `patch` then also rewrites the size in the file's
-directory record, decrypting and re-encrypting that one sector. A file
-that needs more sectors is refused (that needs files moved, which isn't
-supported yet). Files outside DATA.CVM keep their size.
+directory record, decrypting and re-encrypting that one sector.
+
+Moving files: a file (or rebuilt PRELOAD pack) that needs more sectors is
+written after DATA.ISO's last sector and its directory record pointed
+there; its old sectors are left as they are. DATA.ISO has no free sectors
+between files, and DATA.CVM is the disc's last file, followed by 10,247
+zero sectors before the UDF anchor in the last sector, so DATA.CVM grows
+into those (about 20 MB). That changes the ISO's volume size (PVD), the
+CVMH/ZONE lengths, DATA.CVM's ISO9660 record and UDF File Entry, and the
+ROFS key: the game derives it from the CVMH header, whose +0x20..+0x23
+are the low bytes of the CVM's size (rofs_decrypt.header_key, from
+RSU_GenerateFixedKey 0x1e7550), so the whole table of contents is
+encrypted again with the new key. A file already moved to the end grows
+in place on a later run. Growing the disc itself isn't supported. Files
+outside DATA.CVM keep their size.
 
 --skip-tutorial (test discs; whole disc image only) skips the opening
 playoffs of a new career, the tutorial, with the developers' own switch:
@@ -127,20 +139,25 @@ class Image:
     """Finds every DATA.CVM file's byte range in a disc image, DATA.CVM or
     DATA.ISO."""
 
-    def __init__(self, path, key=rofs_decrypt.DEFAULT_KEY):
+    def __init__(self, path, key=None):
         self.path = path
         with open(path, "rb") as f:
             head = f.read(4)
             f.seek(PVD_SECTOR * SECTOR + 1)
             iso = f.read(5) == ISO_MAGIC
+            self.cvm_base = self.cvm_size = None
             if head == CVM_MAGIC:
                 self.kind, cvm_base = "DATA.CVM", 0
+                self.cvm_size = os.path.getsize(path)
             elif iso:
                 outer = {e.path.upper(): e for e in walk_iso(SectorView(f, 0))}
                 if CVM_NAME in outer:
                     self.kind = "disc image"
                     cvm_base = outer[CVM_NAME].extent * SECTOR
                     self.cvm_range = (cvm_base, outer[CVM_NAME].size)
+                    self.cvm_size = outer[CVM_NAME].size
+                    f.seek(PVD_SECTOR * SECTOR + 80)
+                    self.disc_sectors = struct.unpack("<I", f.read(4))[0]
                 else:
                     self.kind, cvm_base = "DATA.ISO", None
             else:
@@ -154,10 +171,19 @@ class Image:
                     raise ValueError("%s: DATA.CVM does not start with CVMH" % path)
                 # read_cvm_header seeks to 0, so give it a view of the CVM.
                 hdr = rofs_decrypt.read_cvm_header(_Offset(f, cvm_base))
+                if key is None:
+                    # The game derives the key from the CVMH sector, so a
+                    # resized DATA.CVM has its own (rofs_decrypt.header_key).
+                    f.seek(cvm_base)
+                    key = rofs_decrypt.header_key(f.read(SECTOR)) or rofs_decrypt.DEFAULT_KEY
                 base = cvm_base + hdr["iso_start_sector"] * SECTOR
                 shift = hdr["iso_zone_sector"] - hdr["iso_start_sector"]
                 view = SectorView(f, base, key if hdr["encrypted"] else None, shift)
+                self.cvm_base, self.iso_start = cvm_base, hdr["iso_start_sector"]
             self.iso_base, self.key, self.zone_shift = view.base, view.key, view.zone_shift
+            # The ISO's volume space size (PVD +80): where moved files go.
+            view.seek(PVD_SECTOR * SECTOR)
+            self.iso_sectors = struct.unpack_from("<I", view.read(SECTOR), 80)[0]
             try:
                 self.files = {e.path.upper(): e for e in walk_iso(view) if not e.is_dir}
             except ValueError as e:
@@ -467,46 +493,292 @@ def to_sector_end(data):
     return data + bytes(-len(data) % SECTOR)
 
 
-def plan_resize(f, img, path, new_size):
-    """Job rewriting a DATA.CVM file's size in its directory record. Only
-    a size inside the file's last sector is allowed: the game reads a
-    whole file as (size + 0x7ff) >> 11 sectors (ADXF_GetFsizeSct, used by
-    CFileManagerRofs::FileUpdateCore at 0x307f24), and nothing else moves.
-    The sector is decrypted, edited and encrypted again (the XOR stream is
-    its own inverse)."""
-    from extract_disc import _parse_record
-    e = img.entry(path)
-    if e.path.startswith(DISC):
-        raise ValueError("%s: files outside DATA.CVM can't change size" % path)
-    if sectors(new_size) != sectors(e.size):
-        raise ValueError("%s: %d bytes need %d sectors, but the file has %d; moving files "
-                         "isn't supported yet" % (path, new_size, sectors(new_size), sectors(e.size)))
-    view = img.toc(f)
-    parent = e.path.rpartition("/")[0].upper()
-    if parent:
-        d = next(x for x in walk_iso(img.toc(f)) if x.is_dir and x.path.upper() == parent)
-        dext, dsize = d.extent, d.size
-    else:
+class TocEdits:
+    """Edits to DATA.ISO's table of contents: new sizes and first sectors
+    in files' directory records, and the volume size in the PVD. The
+    sectors are kept decrypted until jobs(), which encrypts each changed
+    one once. A size inside the file's last sector needs nothing else: the
+    game reads a whole file as (size + 0x7ff) >> 11 sectors
+    (ADXF_GetFsizeSct, used by CFileManagerRofs::FileUpdateCore at
+    0x307f24). A file that needs more sectors is moved first (Moves).
+
+    The key comes from the CVMH header and changes with DATA.CVM's size
+    (rofs_decrypt.header_key). When plan_grow sets `new_key`, every
+    encrypted sector, the PVD through the last directory sector, is
+    encrypted again with it. The XOR stream is its own inverse."""
+
+    def __init__(self):
+        self.edits = {}
+        self.plain = {}         # ISO sector -> decrypted bytes, edited in place
+        self.new_key = None
+
+    def sector(self, f, img, sec):
+        if sec not in self.plain:
+            view = img.toc(f)
+            view.seek(sec * SECTOR)
+            self.plain[sec] = bytearray(view.read(SECTOR))
+        return self.plain[sec]
+
+    def add(self, img, path, new_size, new_extent=None):
+        e = img.entry(path)
+        if e.path.startswith(DISC):
+            raise ValueError("%s: files outside DATA.CVM can't change size or move" % path)
+        if new_extent is None and sectors(new_size) != sectors(e.size):
+            raise ValueError("%s: %d bytes need %d sectors, but the file has %d"
+                             % (path, new_size, sectors(new_size), sectors(e.size)))
+        self.edits[e.path.upper()] = (e, new_size, e.extent if new_extent is None else new_extent)
+
+    def _record(self, f, img, e):
+        """(sector, offset) of a file's directory record."""
+        from extract_disc import _parse_record
+        parent = e.path.rpartition("/")[0].upper()
+        if parent:
+            d = next(x for x in walk_iso(img.toc(f)) if x.is_dir and x.path.upper() == parent)
+            dext, dsize = d.extent, d.size
+        else:
+            _, dext, dsize, _, _, _ = _parse_record(self.sector(f, img, PVD_SECTOR), 156)
+        for sec in range(dext, dext + sectors(dsize)):
+            buf = self.sector(f, img, sec)
+            pos = 0
+            while pos < SECTOR and buf[pos]:
+                rec_len, ext, size, flags, name, _ = _parse_record(buf, pos)
+                if ext == e.extent and not flags & DIR_FLAG:
+                    if size != e.size or buf[pos + 1]:
+                        raise ValueError("%s: directory record doesn't match (%d bytes, "
+                                         "%d extended-attribute sectors)"
+                                         % (e.path, size, buf[pos + 1]))
+                    return sec, pos
+                pos += rec_len
+        raise ValueError("%s: no directory record found" % e.path)
+
+    def jobs(self, f, img):
+        changed = {}            # sector -> reasons
+        for e, new_size, new_extent in self.edits.values():
+            sec, pos = self._record(f, img, e)
+            buf = self.sector(f, img, sec)
+            # Both-endian u32s: extent at +2/+6, size at +10/+14.
+            struct.pack_into("<I", buf, pos + 2, new_extent)
+            struct.pack_into(">I", buf, pos + 6, new_extent)
+            struct.pack_into("<I", buf, pos + 10, new_size)
+            struct.pack_into(">I", buf, pos + 14, new_size)
+            changed.setdefault(sec, []).append("%s size %d -> %d%s" % (
+                e.path, e.size, new_size,
+                ", sector %d -> %d" % (e.extent, new_extent) if new_extent != e.extent else ""))
+        if PVD_SECTOR in self.plain and self.plain[PVD_SECTOR] != self.sector_original(f, img):
+            changed.setdefault(PVD_SECTOR, []).append("volume size %d -> %d sectors" % (
+                img.iso_sectors, struct.unpack_from("<I", self.plain[PVD_SECTOR], 80)[0]))
+        key = img.key
+        if self.new_key is not None and self.new_key != img.key:
+            key = self.new_key
+            hdr = rofs_decrypt.read_cvm_header(_Offset(f, img.cvm_base))
+            end = rofs_decrypt.find_toc_end_sector(_Offset(f, img.cvm_base), hdr, img.key)
+            for sec in range(PVD_SECTOR, end):
+                self.sector(f, img, sec)
+                changed.setdefault(sec, []).append("re-encrypted with key %s" % key.hex().upper())
+        jobs = []
+        for sec, why in sorted(changed.items()):
+            data = bytes(self.plain[sec])
+            if key is not None:
+                data = rofs_decrypt.decrypt_sectors(data, sec + img.zone_shift, SECTOR, key)
+            label = ("DATA.ISO volume descriptor" if sec == PVD_SECTOR else
+                     "directory sector %d" % sec)
+            jobs.append(Job(None, img.iso_base + sec * SECTOR, data, label, "; ".join(why)))
+        return jobs
+
+    def sector_original(self, f, img):
+        view = img.toc(f)
         view.seek(PVD_SECTOR * SECTOR)
-        _, dext, dsize, _, _, _ = _parse_record(view.read(SECTOR), 156)
-    for sec in range(dext, dext + sectors(dsize)):
-        view.seek(sec * SECTOR)
-        buf = bytearray(view.read(SECTOR))
-        pos = 0
-        while pos < SECTOR and buf[pos]:
+        return bytearray(view.read(SECTOR))
+
+
+# --- moving files to the end of DATA.ISO --------------------------------------
+#
+# DATA.ISO has no free sectors between its files, and DATA.CVM is the last
+# file on the disc, followed by 10,247 zero sectors and the UDF anchor in
+# the disc's last sector. A file that outgrows its sectors is written after
+# the ISO's last sector and its directory record pointed there; its old
+# sectors are left as they are. DATA.CVM grows into the zeros, so these
+# lengths follow (DOC/REBUILD.md#moving-files):
+#   ISO PVD +80/+84       volume space size, in sectors (both-endian)
+#   CVMH +0x1c            DATA.CVM size in bytes (u64 big-endian)
+#   ZONE +0x04            ZONE chunk length, the CVM size - 0x80c (u64 BE)
+#   ZONE +0x30            the ISO's length in bytes (u64 BE)
+#   disc ISO9660 record   DATA.CVM's size (both-endian u32)
+#   disc UDF File Entry   information length (+56), blocks recorded (+64)
+#                         and its one allocation descriptor's length
+CVMH_SIZE, ZONE_AT = 0x1c, 0x800
+ZONE_LENGTH, ZONE_ISO_LENGTH = 0x04, 0x30
+ZONE_REST = 0x80c           # CVM size - ZONE chunk length
+UDF_FILE_ENTRY = 261
+
+
+class Moves:
+    """Files to move to the end of DATA.ISO."""
+
+    def __init__(self):
+        self.files = {}
+
+    def add(self, file, data, label, why):
+        self.files[norm(file)] = (file, data, label, why)
+
+    def plan(self, f, img, toc):
+        if not self.files:
+            return [], []
+        if img.cvm_base is None and img.kind != "DATA.ISO":
+            raise ValueError("can't move files in %s" % img.path)
+        jobs, notes = [], []
+        end = img.iso_sectors
+        for file, data, label, why in self.files.values():
+            e = img.entry(file)
+            if e.extent + sectors(e.size) == end:
+                # Already the last file (moved by an earlier run): grow in place.
+                start = e.extent
+            else:
+                start = end
+            end = start + sectors(len(data))
+            where = ("moved to ISO sector %d" % start if start != e.extent else
+                     "grown in place at the end of DATA.ISO")
+            jobs.append(Job(None, img.iso_base + start * SECTOR, to_sector_end(data), label,
+                            "%s, %s" % (why, where)))
+            toc.add(img, file, len(data), start)
+            notes.append("note: %s needs %d sectors (had %d): %s" % (
+                e.path, sectors(len(data)), sectors(e.size),
+                "moved from ISO sector %d to %d" % (e.extent, start) if start != e.extent
+                else where))
+        jobs += plan_grow(f, img, end, toc)
+        return jobs, notes
+
+
+def _udf_cvm_entry(f, img):
+    """(disc byte offset, bytes) of DATA.CVM's UDF File Entry, or None on a
+    disc without UDF. Found through its File Identifier Descriptor, which
+    sits in the metadata before the first file, and the partition start in
+    the Partition Descriptor of the volume descriptor sequence named by the
+    anchor at sector 256."""
+    f.seek(256 * SECTOR)
+    anchor = f.read(SECTOR)
+    if struct.unpack_from("<H", anchor, 0)[0] != 2 or not udf_tag_ok(anchor, 0):
+        return None
+    vds_len, vds_loc = struct.unpack_from("<II", anchor, 16)
+    part_start = None
+    for n in range(vds_loc, vds_loc + vds_len // SECTOR):
+        f.seek(n * SECTOR)
+        d = f.read(SECTOR)
+        tag = struct.unpack_from("<H", d, 0)[0]
+        if tag == 5:
+            part_start = struct.unpack_from("<I", d, 188)[0]
+        if tag == 8 or tag == 0:
+            break
+    if part_start is None:
+        raise ValueError("%s: UDF anchor found but no partition descriptor" % img.path)
+    first = min(x.extent for x in img.files.values() if x.path.startswith(DISC))
+    f.seek(0)
+    meta = f.read(first * SECTOR)
+    hits = []
+    for pos in range(0, len(meta) - 38, 4):
+        if meta[pos:pos + 2] == UDF_FID.to_bytes(2, "little") and udf_tag_ok(meta, pos):
+            l_fi = meta[pos + 19]
+            l_iu = struct.unpack_from("<H", meta, pos + 36)[0]
+            ident = meta[pos + 38 + l_iu:pos + 38 + l_iu + l_fi]
+            if ident[1:] in (CVM_NAME.encode("utf-16-be"), CVM_NAME.encode("latin1")):
+                hits.append(struct.unpack_from("<I", meta, pos + 24)[0])
+    if len(hits) != 1:
+        raise ValueError("%s: found %d UDF entries for %s" % (img.path, len(hits), CVM_NAME))
+    off = (part_start + hits[0]) * SECTOR
+    f.seek(off)
+    fe = f.read(SECTOR)
+    if struct.unpack_from("<H", fe, 0)[0] != UDF_FILE_ENTRY or not udf_tag_ok(fe, 0):
+        raise ValueError("%s: no UDF File Entry where %s's identifier points" % (img.path, CVM_NAME))
+    return off, fe
+
+
+def plan_grow(f, img, iso_sectors, toc):
+    """Jobs setting the ISO's volume size to `iso_sectors` and, around it,
+    DATA.CVM's lengths: its header and, on a whole disc image, its ISO9660
+    record and UDF File Entry. The CVM may only grow into zero sectors."""
+    from extract_disc import _read, _parse_record
+    jobs = []
+    pvd = toc.sector(f, img, PVD_SECTOR)
+    struct.pack_into("<I", pvd, 80, iso_sectors)
+    struct.pack_into(">I", pvd, 84, iso_sectors)
+    if img.cvm_base is None:
+        return jobs
+
+    new_size = (img.iso_start + iso_sectors) * SECTOR
+    old_size = img.cvm_size
+    f.seek(img.cvm_base)
+    head = bytearray(f.read(ZONE_AT + ZONE_ISO_LENGTH + 8))
+    if struct.unpack_from(">Q", head, CVMH_SIZE)[0] != old_size or \
+            struct.unpack_from(">Q", head, ZONE_AT + ZONE_LENGTH)[0] != old_size - ZONE_REST or \
+            struct.unpack_from(">Q", head, ZONE_AT + ZONE_ISO_LENGTH)[0] != \
+            old_size - img.iso_start * SECTOR or head[ZONE_AT:ZONE_AT + 4] != b"ZONE":
+        raise ValueError("%s: the CVMH/ZONE lengths don't match DATA.CVM's size %d"
+                         % (img.path, old_size))
+    struct.pack_into(">Q", head, CVMH_SIZE, new_size)
+    struct.pack_into(">Q", head, ZONE_AT + ZONE_LENGTH, new_size - ZONE_REST)
+    struct.pack_into(">Q", head, ZONE_AT + ZONE_ISO_LENGTH, new_size - img.iso_start * SECTOR)
+    jobs.append(Job(None, img.cvm_base, bytes(head), "DATA.CVM header (CVMH/ZONE)",
+                    "size %d -> %d" % (old_size, new_size)))
+    if img.key is not None:
+        f.seek(img.cvm_base)
+        sector0 = bytearray(f.read(SECTOR))
+        sector0[:len(head)] = head
+        toc.new_key = rofs_decrypt.header_key(bytes(sector0))
+    if img.kind != "disc image" or new_size <= old_size:
+        return jobs
+
+    # The sectors DATA.CVM grows into must be unused. On this disc they are
+    # zeros up to the UDF anchor in the last sector.
+    lo, hi = sectors(img.cvm_base + old_size), sectors(img.cvm_base + new_size)
+    if hi > img.disc_sectors - 1:
+        raise ValueError("DATA.CVM would grow to %d bytes, %d sectors past the free space at "
+                         "the end of the disc; growing the disc isn't supported yet"
+                         % (new_size, hi - (img.disc_sectors - 1)))
+    f.seek(lo * SECTOR)
+    for _ in range(lo, hi):
+        if any(f.read(SECTOR)):
+            raise ValueError("DATA.CVM can't grow: sectors after it aren't empty")
+
+    # ISO9660 record in the root directory.
+    pvd = _read(SectorView(f, 0), PVD_SECTOR, SECTOR)
+    _, dext, dsize, _, _, _ = _parse_record(pvd, 156)
+    buf = _read(SectorView(f, 0), dext, dsize)
+    hits = []
+    for sec in range(0, dsize, SECTOR):
+        pos = sec
+        while pos < min(sec + SECTOR, dsize) and buf[pos]:
             rec_len, ext, size, flags, name, _ = _parse_record(buf, pos)
-            if ext == e.extent and not flags & DIR_FLAG:
-                if size != e.size:
-                    raise ValueError("%s: directory record says %d bytes" % (path, size))
-                struct.pack_into("<I", buf, pos + 10, new_size)    # both-endian u32
-                struct.pack_into(">I", buf, pos + 14, new_size)
-                data = bytes(buf)
-                if img.key is not None:
-                    data = rofs_decrypt.decrypt_sectors(data, sec + img.zone_shift, SECTOR, img.key)
-                return Job(None, img.iso_base + sec * SECTOR, data,
-                           "%s (directory record)" % e.path, "size %d -> %d" % (e.size, new_size))
+            if ext * SECTOR == img.cvm_base and name.split(b";")[0] == CVM_NAME.encode():
+                hits.append(pos)
             pos += rec_len
-    raise ValueError("%s: no directory record found" % path)
+    if len(hits) != 1:
+        raise ValueError("%s: found %d ISO9660 records for %s" % (img.path, len(hits), CVM_NAME))
+    jobs.append(Job(None, dext * SECTOR + hits[0] + 10,
+                    struct.pack("<I", new_size) + struct.pack(">I", new_size),
+                    "DATA.CVM (disc ISO9660 record)", "size %d -> %d" % (old_size, new_size)))
+
+    # UDF File Entry. Its one short allocation descriptor holds the whole
+    # 32-bit length, over the two extent-type bits, as the mastering tool
+    # wrote it (1,970,935,808 shows as 0x757a1800); kept that way.
+    udf = _udf_cvm_entry(f, img)
+    if udf is not None:
+        off, fe = udf
+        fe = bytearray(fe)
+        l_ea, l_ad = struct.unpack_from("<II", fe, 168)
+        crc_len = struct.unpack_from("<H", fe, 10)[0]
+        if struct.unpack_from("<Q", fe, 56)[0] != old_size or l_ad != 8 or fe[34] & 7 != 0 or \
+                struct.unpack_from("<I", fe, 176 + l_ea)[0] != old_size or \
+                udf_crc(fe[16:16 + crc_len]) != struct.unpack_from("<H", fe, 8)[0]:
+            raise ValueError("%s: DATA.CVM's UDF File Entry isn't the expected single extent "
+                             "of %d bytes" % (img.path, old_size))
+        struct.pack_into("<Q", fe, 56, new_size)
+        struct.pack_into("<Q", fe, 64, sectors(new_size))
+        struct.pack_into("<I", fe, 176 + l_ea, new_size)
+        struct.pack_into("<H", fe, 8, udf_crc(fe[16:16 + crc_len]))
+        fe[4] = (sum(fe[:16]) - fe[4]) & 0xFF
+        jobs.append(Job(None, off, bytes(fe[:16 + crc_len]), "DATA.CVM (disc UDF File Entry)",
+                        "size %d -> %d" % (old_size, new_size)))
+    return jobs
 
 
 # PRELOAD packs are the only archives that can be rebuilt with entries
@@ -536,7 +808,7 @@ class PackEdits:
             raise ValueError("%s gets two different new contents (%s, %s)" % (label, prev[3], why))
         pack["edits"][index] = (new, old, label, why)
 
-    def plan(self, f, img):
+    def plan(self, f, img, toc, moves):
         import pac
         jobs, notes = [], []
         for pack in self.packs.values():
@@ -561,16 +833,13 @@ class PackEdits:
                 notes.append("note: %s %d -> %d bytes (%s)" % (label, len(blobs[i]), len(new), why))
                 blobs[i] = new
             out = pac.build_binpac(cur[:h.header_size], blobs)
+            why = "rebuilt, %d -> %d bytes" % (e.size, len(out))
             if sectors(len(out)) > sectors(e.size):
-                raise ValueError(
-                    "%s: rebuilt it is %d bytes, %d over the end of its last sector (%d bytes "
-                    "free); moving files isn't supported yet" % (
-                        file, len(out), len(out) - sectors(e.size) * SECTOR,
-                        sectors(e.size) * SECTOR - e.size))
-            jobs.append(Job(file, 0, to_sector_end(out), file,
-                            "rebuilt, %d -> %d bytes" % (e.size, len(out))))
+                moves.add(file, out, file, why)     # outgrew its sectors
+                continue
+            jobs.append(Job(file, 0, to_sector_end(out), file, why))
             if len(out) != e.size:
-                jobs.append(plan_resize(f, img, file, len(out)))
+                toc.add(img, file, len(out))
         return jobs, notes
 
 
@@ -800,6 +1069,7 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
 
     # Plan everything against the unmodified image before copying it.
     jobs, notes, packs = [], [], PackEdits()
+    toc, moves = TocEdits(), Moves()
     with open(image, "rb") as f:
         for target, src, data in pairs:
             file, off, size, label = resolve_target(img, index, target)
@@ -812,17 +1082,17 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
             elif "#" not in target and not file.startswith(DISC) and \
                     sectors(len(data)) == sectors(size):
                 jobs.append(Job(file, 0, to_sector_end(data), label, src))
-                jobs.append(plan_resize(f, img, file, len(data)))
+                toc.add(img, file, len(data))
             elif "#" in target:
                 raise SystemExit(
                     "%s is %d bytes but %s is %d bytes. Only entries of PRELOAD packs can "
                     "change size; other archives keep their layout." % (
                         src, len(data), label, size))
+            elif not file.startswith(DISC):
+                moves.add(file, data, label, src)   # needs more sectors
             else:
-                raise SystemExit(
-                    "%s is %d bytes but %s is %d bytes on the disc. A file may only change "
-                    "size inside its last sector (%d bytes free here); moving files isn't "
-                    "supported yet." % (src, len(data), label, size, sectors(size) * SECTOR - size))
+                raise SystemExit("%s is %d bytes but %s is %d bytes on the disc; files outside "
+                                 "DATA.CVM keep their size" % (src, len(data), label, size))
             # Files outside DATA.CVM aren't in DAT, and nothing there copies them.
             if index is not None and not file.startswith(DISC):
                 # Changes are judged against the unmodified data in DAT, so a
@@ -844,9 +1114,16 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
         if clash:
             raise SystemExit("%s: written whole and as single entries in the same run; "
                              "patch one or the other" % ", ".join(sorted(clash)))
-        pjobs, pnotes = packs.plan(f, img)
+        pjobs, pnotes = packs.plan(f, img, toc, moves)
         jobs += pjobs
         notes += pnotes
+        clash = set(moves.files) & {norm(j.file) for j in jobs if j.file is not None}
+        if clash:
+            raise SystemExit("%s: moved, but also written in place in the same run"
+                             % ", ".join(sorted(clash)))
+        mjobs, mnotes = moves.plan(f, img, toc)
+        jobs += mjobs + toc.jobs(f, img)
+        notes += mnotes
         for r in renames:
             target, _, new = r.partition("=")
             jobs += plan_rename(f, img, target, new)
@@ -874,7 +1151,7 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
             pos = j.pos(img)
             f.seek(pos)
             old = f.read(len(j.data))
-            changed = sum(1 for a, b in zip(old, j.data) if a != b)
+            changed = sum(1 for a, b in zip(old, j.data) if a != b) + len(j.data) - len(old)
             f.seek(pos)
             f.write(j.data)
             f.flush()
@@ -885,15 +1162,18 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
                 target_path, j.label, j.why, changed, "" if changed else " (no change)"))
     for n in notes:
         print(n)
-    resized = sum(1 for j in jobs if j.label.endswith("(directory record)"))
-    toc = []
+    changed = []
+    resized = len(toc.edits) - len(moves.files)
     if resized:
-        toc.append("%d directory record%s resized" % (resized, "" if resized == 1 else "s"))
+        changed.append("%d directory record%s resized" % (resized, "" if resized == 1 else "s"))
+    if moves.files:
+        changed.append("%d file%s moved to the end of DATA.ISO" % (
+            len(moves.files), "" if len(moves.files) == 1 else "s"))
     if renames:
-        toc.append("outer directory records renamed")
-    print("%s: %d write%s in place; %s" % (
+        changed.append("outer directory records renamed")
+    print("%s: %d write%s; %s" % (
         target_path, len(jobs), "" if len(jobs) == 1 else "s",
-        ", ".join(toc) or "table of contents untouched"))
+        ", ".join(changed) or "table of contents untouched"))
 
 
 def cmd_verify(image, args):

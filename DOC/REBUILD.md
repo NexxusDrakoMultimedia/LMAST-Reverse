@@ -5,12 +5,14 @@
 
 This is stage 4 of [`GOALS.md`](../GOALS.md). Same-size patching works,
 and so does a size change that stays inside a file's last sector, which
-is enough to rebuild the `PRELOAD` packs around a grown message file.
-Moving files, and repacking archives other than `PRELOAD` packs, are
-still to do.
+is enough to rebuild the `PRELOAD` packs around a grown message file. A
+file that needs more sectors is moved to the end of `DATA.ISO`
+([Moving files](#moving-files)). Repacking archives other than `PRELOAD`
+packs is still to do.
 
 `SRC/patch_disc.py` writes edited `DAT/` files into a copy of the disc
-image (or `DATA.CVM`, or `DATA.ISO`), provided each file keeps its size.
+image (or `DATA.CVM`, or `DATA.ISO`). The sections below go from the
+simplest case, a file that keeps its size, to one that has to move.
 That covers every edit the current writers make: `pbdata.py set`/`import`
 (records are fixed-size), `tbb.py replace` when a table keeps its
 length, and `mbb.py set`/`import` (`MES.PAC` keeps its size; a message
@@ -156,8 +158,8 @@ This is used for:
   The pack's entries are located through the header it has in the image,
   so a second run works on a rebuilt pack.
 
-A file or pack that would need another sector is refused. The message
-says how many bytes it is over.
+A file or pack that would need another sector is moved
+([below](#moving-files)).
 
 **Tested** on a copy of `DATA.CVM`. A grown `3_1.mbb` (6,672 -> 6,724
 bytes) rebuilt `STATIONMES1.PAC` from 45,264 to 45,328 bytes, and its
@@ -171,6 +173,79 @@ club names (`3_1.mbb` 6,672 -> 6,720 bytes, `STATIONMES1.PAC` rebuilt to
 45,328 bytes, its later entries moved) showed both names in VS mode Team
 Selection ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)).
 
+## Moving files
+
+A file that needs more sectors than it has is moved. `patch` writes it
+after the last sector of `DATA.ISO` and points its directory record
+there. Its old sectors are left as they are, and nothing else moves. A
+`PRELOAD` pack that a rebuild makes too big is moved the same way.
+
+**Why the end of `DATA.ISO`.** The layout leaves no other room
+(**empirical**, from the disc's two tables of contents):
+
+| Where | Layout |
+|---|---|
+| `DATA.ISO` | 962,368 sectors. The 2,262 entries (files and directories) start at sector 21 and follow each other with no free sectors between them |
+| the disc | `DATA.CVM` (sector 759,893, 962,371 sectors) is the last file. After it come 10,247 zero sectors, then a UDF anchor in the disc's last sector, 1,732,511 |
+
+So `DATA.CVM` can grow by up to 10,247 sectors (about 20 MB) without the
+disc changing size. Growing the disc as well isn't supported yet.
+
+**What changes with `DATA.CVM`'s size.** Everything below is rewritten
+by `patch`, and each old value is checked before it's replaced:
+
+| Where | Field |
+|---|---|
+| `DATA.ISO` PVD `+80`/`+84` | volume space size, in sectors (both byte orders) |
+| `CVMH` `+0x1c` | the CVM's size in bytes (u64, big-endian) |
+| `ZONE` `+0x04` (CVM `+0x804`) | the `ZONE` chunk's length: the CVM's size − `0x80c` (u64 BE) |
+| `ZONE` `+0x30` (CVM `+0x830`) | the ISO's length in bytes (u64 BE) |
+| disc ISO9660 record for `DATA.CVM` | size (both byte orders) |
+| disc UDF File Entry for `DATA.CVM` (sector 318) | information length `+56`, blocks recorded `+64`, the length of its one allocation descriptor, and the tag CRC and checksum |
+| the whole table of contents | encrypted again with the new key (below) |
+
+Two details:
+- **UDF quirk.** The mastering tool wrote the full 32-bit length into
+  the allocation descriptor, over the two extent-type bits:
+  1,970,935,808 is stored as `0x757a1800`. `patch` keeps that form.
+- **CVM sector 2.** It holds a short table (`41 00 00 02 …`) with no
+  lengths in it, so it is left alone.
+
+**The key changes too (confirmed).** The game derives the ROFS key from
+the `CVMH` header, and four of the eight bytes it starts from are the low
+bytes of the CVM's size (`RSU_GenerateFixedKey`, `0x1e7550`; see
+[`DATA_CVM_EXTRACTION.md`](DATA_CVM_EXTRACTION.md)). A grown `DATA.CVM`
+therefore needs its table of contents, PVD through the last directory
+sector (16–102), encrypted with a new key. `patch` keeps the edited
+sectors decrypted until the end and encrypts all 87 again. Its first
+attempt only fixed the lengths, and the game showed a black screen at
+boot, even with nothing moved (`DATA.CVM` one sector longer). The
+unmodified disc booted in the same PCSX2.
+
+`Image`, `rofs_decrypt.py` and `extract_disc.py` all derive the key from
+the header, so they read a rebuilt disc as they read the original.
+
+**A second run.** A file that was moved to the end and needs more sectors
+again grows in place, since nothing follows it. Patching the original
+file back moves it too (or grows it in place), so a moved file can't be
+undone that way. Keep the original image.
+
+**Tested** on copies of `DATA.CVM` and of the whole disc. `PBDATA_EU.PAC`,
+grown by 3,000 bytes to 3,168,084 (1,547 sectors, one more than it had),
+moved from ISO sector 266,162 to 962,368. Afterwards:
+- all 2,229 files of the patched image matched `DAT/`, and the moved
+  file matched its new contents;
+- `rofs_decrypt.py` decrypted the patched `DATA.CVM` with the key from
+  its header (`5AFB619D4BF15FD5`), giving a 963,915-sector ISO;
+- the UDF File Entry's tag and CRC checked out, and the UDF anchor and
+  the disc's size were unchanged;
+- growing it again to 1,550 sectors grew it in place.
+
+**Confirmed in the game (PCSX2).** The whole-disc test booted. The moved
+file carried the kit test's renamed England players, and a VS match
+listed them as England's starters (GK.Pants1.Hat3.G5, ACole.LongSleeve,
+… Rooney.Plain). So the game reads the file from its new sectors.
+
 ## Usage
 
 ```bash
@@ -181,6 +256,7 @@ python SRC/patch_disc.py locate ISO/DATA.CVM PARAM/PBDATA_EU.PAC      # sector, 
 python SRC/patch_disc.py copies DAT PARAM/REGULATION.TBB              # where else these bytes are
 python SRC/patch_disc.py patch disc.iso modded.iso PARAM/REGULATION.TBB=out/REGULATION.TBB --copies
 python SRC/patch_disc.py patch disc.iso modded.iso MESSAGE/MES.PAC=out/MES.PAC --copies   # rebuilds PRELOAD packs as needed
+python SRC/patch_disc.py patch disc.iso modded.iso PARAM/X.PAC=bigger.pac   # needs more sectors: moved to the end of DATA.ISO
 python SRC/preload.py info DAT                                        # each pack's free room
 python SRC/patch_disc.py patch disc.iso test.iso PARAM/...=... --skip-tutorial   # test disc without the opening playoffs
 ```
@@ -200,10 +276,12 @@ England, since the switch names league 0. It needs the whole disc image.
 Running it again changes nothing.
 
 `patch` copies the image first (use `--in-place` to patch a copy you made
-yourself). It refuses a file that would need another sector, then
-re-reads every patched range. Several `<path>=<file>` pairs can go in
-one run. To undo a patch, patch the original `DAT/` files back, including
-any `PRELOAD` packs that `--copies` changed (the run lists them).
+yourself), plans every write against the unmodified image, then writes
+and re-reads every patched range. Several `<path>=<file>` pairs can go in
+one run. To undo a same-place patch, patch the original `DAT/` files
+back, including any `PRELOAD` packs that `--copies` changed (the run
+lists them). A moved file can't be undone that way; keep the original
+image.
 
 Files on the disc outside `DATA.CVM` take a `disc:` prefix and need the
 whole disc image, for example `disc:SLES_541.51=out/SLES_541.51` (the
@@ -276,10 +354,9 @@ patches out of the repo anyway, like everything built from the disc.
 
 ## Still to do
 
-- **Moving files.** Growth past a file's last sector: re-lay files in
-  `DATA.ISO`, rewrite their directory records (done for one record, see
-  above), fix the `CVMH`/`ZONE` lengths, and then the disc's entry for
-  `DATA.CVM`.
+- **Growing the disc.** Moved files can use the 10,247 free sectors after
+  `DATA.CVM` (about 20 MB). More would need the disc to grow: its PVD
+  volume size, the UDF partition length and the end anchor.
 - **Archive repacking** outside `PRELOAD`: `pac.py` rebuilds any
   self-describing BINPAC byte for byte, but archives with `.HED` copies of
   their header, `MES.PAC` and KC@P packs aren't rebuilt by `patch`. PRS

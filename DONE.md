@@ -456,6 +456,16 @@ files. Each item keeps what was found, where, and how it was tested.
       Delta Patcher's output matches `vcdiff.py apply` byte for byte (it
       needs the uncompressed ISO, not a CSO)
 - [x] `patch_disc.py` patches files outside `DATA.CVM` (`disc:SLES_541.51`)
+- [x] Size changes past a file's last sector: `patch_disc.py` moves the
+      file (or a rebuilt `PRELOAD` pack) to the end of `DATA.ISO` and grows
+      `DATA.CVM` into the free sectors after it, rewriting the PVD volume
+      size, the `CVMH`/`ZONE` lengths and the disc's ISO9660 and UDF
+      entries. The ROFS key is derived from the `CVMH` header, size
+      included (`RSU_GenerateFixedKey` `0x1e7550`), so the table of
+      contents is encrypted again with the new key
+      (`rofs_decrypt.header_key`). Tested in PCSX2: a moved, grown
+      `PBDATA_EU.PAC` booted and its renamed players showed in a VS match
+      (`DOC/REBUILD.md#moving-files`)
 
 ## 10. Save data
 

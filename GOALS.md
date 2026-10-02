@@ -63,8 +63,10 @@ Each stage depends on the one before it.
    the spare room of its `MES.PAC` slot. A file can change size inside its
    last sector (its directory record is rewritten and re-encrypted), and
    `PRELOAD` packs are rebuilt around grown entries with `pac.py`'s BINPAC
-   writer. Moving files, and repacking other archives on the disc, are
-   still to do.
+   writer. A file that needs more sectors is moved to the end of
+   `DATA.ISO`, which grows `DATA.CVM` and re-keys its table of contents
+   (tested in PCSX2). Growing past the disc's ~20 MB of free sectors, and
+   repacking other archives on the disc, are still to do.
 5. **Edit.** GUI tools on top of the writers, organised by what a player of
    the game would recognise (a club, a player, a season) rather than by file.
    The GUI checks values against the documented ranges and cross-references

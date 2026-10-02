@@ -16,16 +16,14 @@ item in its section below.
    [`GOALS.md`](GOALS.md)).
 2. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
    and 7). This is the largest piece of starting-season data still undecoded.
-3. **Size changes on the disc** (section 9). Until files can move, an edit
-   can only grow to the end of its last sector, which limits every writer.
-4. **Save data blocks for an editor** (section 10). Every edit so far
+3. **Save data blocks for an editor** (section 10). Every edit so far
    only takes effect in a new career; mapping the staff, youth, other
    clubs' and finance blocks would let an editor change a career in
    progress.
-5. **Goalkeeper kits, `UNIFORM_GK`** (section 4). Outfield kits are
+4. **Goalkeeper kits, `UNIFORM_GK`** (section 4). Outfield kits are
    decoded and editable (`uniform.py`); the keepers' aren't, and the
    result is easy to check on a keeper in a match.
-6. **Message variables** (section 1). Which game value fills each
+5. **Message variables** (section 1). Which game value fills each
    variable id in the message text, so text edits can move or reuse
    them safely.
 
@@ -227,9 +225,12 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
 
 - [ ] `TACTICSPITCH.PAC` is loaded through `CLoader`, not as a registering
       resource: whether its entries stand in for their originals
-- [ ] Size changes: re-lay `DATA.ISO`, rewrite directory records,
-      re-encrypt the table of contents, fix the `CVMH`/`ZONE` lengths and the
-      disc's `DATA.CVM` entry
+- [ ] Growing the disc: moved files can use the 10,247 free sectors after
+      `DATA.CVM` (about 20 MB); more needs the outer PVD volume size, the
+      UDF partition length and the end anchor moved
+      (`DOC/REBUILD.md#moving-files`)
+- [ ] Test in PCSX2: a `PRELOAD` pack that a rebuild moves (the code path
+      is the same as a moved file, but untested in game)
 - [ ] Repacking where something else holds the offsets (`.HED` copies,
       `MES.PAC`), KC@P repacking, and PRS recompression
 - [ ] Optional: let `vcdiff.py`/`patch_disc.py` read CSO (and CHD) images,
