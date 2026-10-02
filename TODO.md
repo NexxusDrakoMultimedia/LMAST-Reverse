@@ -18,6 +18,9 @@ item in its section below.
    and 7). This is the largest piece of starting-season data still undecoded.
 3. **Size changes on the disc** (section 9). Until files can move, an edit
    can only grow to the end of its last sector, which limits every writer.
+4. **How national team squads are built** (section 2). Players
+   26,041-27,949 form 83 blocks of 23, one per national team; tracing the
+   code that reads them tells an editor how to change a national squad.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
