@@ -324,8 +324,11 @@ new young players, so "John Terry" at Chelsea is 17 in the 2019–20 save.
 1–441 (0 in the 2005 save, before the first ranking), 22–25 players per
 club. The world rank matches the club Information screen's World
 Ranking (F.C. Barcelona 28 and Marseille 53, save G000). The club rank
-isn't the League Ranking shown there (26 and 24 against 7 and 5); it is
-the rank `pwkOteam_GetRank` returns, which isn't traced further. Bytes
+isn't the League Ranking shown there (26 and 24 against 7 and 5): the
+League Ranking is the club's place in its league table, and only clubs in
+the Euro6 (the six main leagues and their two divisions) have one (user
+report). The club rank is what `pwkOteam_GetRank` returns, which isn't
+traced further. Bytes
 `+0x9b`–`+0x9f`, `+0xa1`–`+0xa3` and `+0xa6`–`+0xa7` aren't
 traced. `save.py clubs` lists the clubs (with their squads for the teams
 named), and `save.py set ... club:<team>:friendship=` edits friendship.
