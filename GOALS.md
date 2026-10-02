@@ -71,7 +71,10 @@ Each stage depends on the one before it.
 5. **Edit.** GUI tools on top of the writers, organised by what a player of
    the game would recognise (a club, a player, a season) rather than by file.
    The GUI checks values against the documented ranges and cross-references
-   (for example, a message reference that no longer resolves).
+   (for example, a message reference that no longer resolves). *Started:*
+   `SRC/editor.py`, one window with a tab per kind of data, saving to a mod
+   folder laid out like `DAT/`. Its People tab edits the player database
+   through `pbdata.py`, with the allowed values from `pbdata.edit_spec`.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284) against
    the user's own unmodified disc image, never as game data or disc images.
    This matches the rule that no game data goes in the repo. xdelta is the

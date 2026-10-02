@@ -845,6 +845,105 @@ def default_mes(pac_path):
                         "MESSAGE", "MES.PAC")
 
 
+# --- editing -----------------------------------------------------------------
+# What an editor (SRC/editor.py) may offer for each field, so that it keeps
+# no copy of its own. Values are as shown, the same as `set` takes. Fields
+# with no name yet (f_30, ...) are read-only. A range here is the
+# documented one where that is narrower than the field's bits; `set`
+# itself only checks the bits.
+
+NATION_COUNT = 145          # pwkRec_GetWorldNation: nations 1-145 (INITNATIDATA)
+LEGS = ("left", "right", "left, two-footed", "right, two-footed")   # +0x2c, empirical
+SLEEVES = ("by season", "short", "long")
+GROWTH = ("physical", "skill", "mental")
+
+EDIT_RANGES = {
+    ("players", "rank"): (0, GROUP_ROWS - 1),       # build_ranking: 16 rank groups
+    ("players", "height"): (150, 255),              # unconvert: the sum is a byte
+    ("players", "shirt"): (1, 99),                  # the database's range, initteam SET_LIMITS
+    ("players", "policy"): (0, 24),                 # the 25 policies (manager +0x34)
+    ("managers", "policy"): (0, 24),
+    ("managers", "manager_drill"): (-1, DRILL_COUNT - 1),
+    ("managers", "coach_drill"): (-1, DRILL_COUNT - 1),
+}
+EDIT_RANGES.update((("managers", f), (1, 5)) for f in (
+    "attacking", "possession", "centre_side", "left_right", "press_line", "press", "offside"))
+EDIT_RANGES.update((("players", f), (0, top)) for f, top in KIT_STYLE_MAX if f != "f_5a")
+
+# Fields whose values have names: value n is names[n].
+EDIT_NAMES = {
+    ("players", "position"): POSITION_NAMES + ("none",),
+    ("players", "leg"): LEGS,
+    ("players", "style"): STYLES,
+    ("players", "sleeves"): SLEEVES,
+    ("players", "gk_pants"): ("short", "long"),
+    ("managers", "job"): JOB_NAMES,
+    ("managers", "formation"): FORMATIONS,
+    ("managers", "attack_pattern"): ATTACK_PATTERNS,
+    ("scouts", "search"): SEARCHES + ("none",),
+}
+
+# Multi-value fields whose items have names: item i is names[i].
+ITEM_NAMES = {
+    ("players", "dissatis"): DISSATIS,
+    ("players", "growth"): GROWTH,
+    ("players", "ability"): ABILITY_NAMES,
+    ("managers", "ability"): STAFF_ABILITY_NAMES,
+    ("scouts", "ability"): SCOUT_ABILITY_NAMES,
+}
+
+
+def field_spec(kind, fname):
+    """(name, offset, bits, count, conversion) of a field."""
+    spec = next((f for f in FIELDS[kind] if f[0] == fname), None)
+    if spec is None:
+        raise ValueError("%s have no field %r" % (kind, fname))
+    return spec
+
+
+def edit_spec(kind, fname):
+    """How an editor may change a field: ("choice", [values]) for a field
+    with listed or named values, ("bits", n) for a bit mask of n named bits,
+    ("range", low, high), or None for a field with no name yet."""
+    _, _, bits, _, conv = field_spec(kind, fname)
+    if fname.startswith("f_"):
+        return None
+    if fname == "skills":
+        return ("bits", len(SKILLS))
+    if conv == "status":
+        return ("choice", list(STATUS))
+    if conv in ("ability", "ability7"):
+        return ("choice", list(ABILITY))
+    if fname == "nation":
+        return ("choice", list(range(1, NATION_COUNT + 1)))
+    if (kind, fname) in EDIT_NAMES:
+        return ("choice", list(range(len(EDIT_NAMES[kind, fname]))))
+    if (kind, fname) in EDIT_RANGES:
+        return ("range",) + EDIT_RANGES[kind, fname]
+    lo, hi = convert(conv, 0, bits), convert(conv, (1 << bits) - 1, bits)
+    if conv == "signed":
+        lo, hi = -(1 << (bits - 1)), (1 << (bits - 1)) - 1
+    return ("range", lo, hi)
+
+
+def value_label(kind, fname, value, nations=None):
+    """A shown value with its name, if it has one: "3 DF-C"."""
+    if fname == "nation" and nations and value in nations:
+        return "%d %s" % (value, nations[value])
+    names = EDIT_NAMES.get((kind, fname))
+    if names and 0 <= value < len(names):
+        return "%d %s" % (value, names[value])
+    if fname in ("manager_drill", "coach_drill") and value == -1:
+        return "-1 none"
+    return str(value)
+
+
+def item_label(kind, fname, i):
+    """The name of item i of a multi-value field, or the index."""
+    names = ITEM_NAMES.get((kind, fname))
+    return names[i] if names and i < len(names) else str(i)
+
+
 # --- commands ----------------------------------------------------------------
 
 def check(db):
@@ -1106,7 +1205,7 @@ def _load_for_edit(src, out_path):
     return db, {k: list(db.records(k)) for k in KINDS}
 
 
-def _write_pack(out_path, db, records, sles=None):
+def write_pack(out_path, db, records, sles=None):
     """Write the edited pack. With sles = (in, out), also re-sort entries 2
     and 3 and write a copy of the executable with the matching group table;
     without it, entries 2 and 3 stay as they were."""
@@ -1171,7 +1270,7 @@ def cmd_set(src, out_path, args, sles=None):
         label = fname if index is None else "%s.%d" % (fname, index)
         print("%5d  %-19s %s: %s -> %s" % (r.db_id, r.name, label, old, new))
         changes += 1
-    _write_pack(out_path, db, records, sles)
+    write_pack(out_path, db, records, sles)
     print("%s: %s" % (out_path, _plural(changes, "change")))
 
 
@@ -1211,7 +1310,7 @@ def cmd_import(src, out_path, kind, csv_path, sles=None):
                 changes += 1
                 touched = True
             changed_records += touched
-    _write_pack(out_path, db, records, sles)
+    write_pack(out_path, db, records, sles)
     print("%s: %s in %s" % (out_path, _plural(changes, "change"),
                             _plural(changed_records, "record")))
 

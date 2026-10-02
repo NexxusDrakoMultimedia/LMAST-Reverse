@@ -5,3 +5,5 @@
 __pycache__/
 .regress/
 .cache/
+# The editor's default mod folder (SRC/editor.py)
+/mod/

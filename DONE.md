@@ -611,3 +611,25 @@ files. Each item keeps what was found, where, and how it was tested.
       candidate lists (players, managers, coaches, scouts) with their
       countdown. The youth join list isn't in the save and youth training
       isn't stored. `save.py candidates` lists them all with names
+
+## 11. Editor GUI
+
+- [x] The shape: one `SRC/editor.py` with a tab per kind of data, saving
+      to a mod folder laid out like `DAT/` (files from outside `DATA.CVM`
+      under `disc/`), which matches `patch_disc.py`'s targets. The editor
+      reads the mod's copy of a file when there is one. Each tab edits
+      through its writer's own functions and takes field names and allowed
+      values from the writer (`pbdata.edit_spec`, `value_label`,
+      `item_label`); every save logs the equivalent command to
+      `editor.log`
+- [x] People tab on `pbdata.py`: players, managers and scouts; search by
+      name or id, nationality and club (`OTEAMMEMBER.TBB`); every named
+      field with its documented range or named values, unnamed fields
+      read-only, refused values explained; the screen bars and position
+      grid follow the edits. It notes when a squad player's age and shirt
+      come from `OTEAMMEMBER.TBB`. A save re-sorts the ranking and writes
+      `disc/SLES_541.51` when an edit changes it. Checked: a save with six
+      edits (name, height, ability, skills, rank, a manager's leaning)
+      equals the logged `pbdata.py set --sles` output byte for byte, a
+      second session builds on the mod's copies, and `pbdata.py roundtrip
+      --sles` finds the mod's pack and executable consistent

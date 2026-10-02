@@ -32,7 +32,8 @@ far-right techbro chud, this project is ALSO not for you.
 
 ## Requirements
 
-- Python 3, standard library only for most commands
+- Python 3, standard library only for most commands (`editor.py` uses
+  `tkinter`, which ships with Python)
 - `pip install pillow` for the PNG commands (`svr`, `csp`, `zbf`) and the
   textures in `ninja.py`'s exports
 - `pip install capstone` for disassembly (`sles_disasm`, `snr2 dis`)
@@ -274,6 +275,25 @@ python SRC/patch_disc.py patch disc.iso modded.iso disc:SLES_541.51=out/PYRA_313
 
 See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 
+### Editor
+
+| Tool | Reads | Does |
+|---|---|---|
+| [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | a window with a tab per kind of data. **People** edits players, managers and scouts in the player database: search by name, id, nationality or club, every named field with its allowed values, unnamed fields read-only. It saves to a mod folder (`mod/` by default) and writes the matching `python SRC/...` command to `mod/editor.log` |
+
+```bash
+python SRC/editor.py open             # the mod folder mod/
+python SRC/editor.py open mods/terry  # another mod folder
+```
+
+Each tab edits through a writer's own functions and takes the field names
+and ranges from it (`pbdata.edit_spec`), so a file saved by the editor is
+byte for byte what the logged command gives. The mod folder keeps each file
+under its `DAT/` path, and files from outside `DATA.CVM` under `disc/`
+(`mod/disc/SLES_541.51`), which matches `patch_disc.py`'s targets. The
+editor reads the mod's copy of a file when there is one, so edits build up
+over sessions.
+
 ## How the tools fit together
 
 - `csp.py` uses `svr.py` to decode the textures inside CSP packs.
@@ -292,6 +312,8 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 - `uniform.py` uses `pac.py`, `packdata.py` and `svr.py` for the licensed
   kits, `sles_disasm.py` for the executable's copy, and `initteam.py` for
   club names.
+- `editor.py` edits through `pbdata.py`, and names clubs with
+  `initteam.py`.
 - `save.py` loads the game's serializers with `sles_disasm.py` and
   `snr2.py`, and takes field layouts, names and tables from `pbdata.py`,
   `initteam.py` and `tbb.py`.

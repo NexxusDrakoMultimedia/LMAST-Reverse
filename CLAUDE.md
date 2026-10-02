@@ -49,6 +49,12 @@ existing writers are `pac.py` (BINPACs), `tbb.py`, `pbdata.py`, `mbb.py`,
 `initteam.py` (`set`, `setteam`), `teaminit.py`, `uniform.py`, `sqb.py`
 (`setcmd`) and `save.py`.
 
+A writer can then get a tab in `editor.py` (stage 5). The tab edits through
+the writer's own `set` functions and asks the writer which values each
+field allows (as `pbdata.edit_spec` does), so the editor holds no layout of
+its own. Its saves must equal the command it logs, byte for byte. Check
+that by running the logged command and comparing the files.
+
 Some things can only be checked by a person: that an edit shows in the game
 (PCSX2), what a screen shows, or how audio sounds. Ask the user to check,
 then record the result in the doc and in `TODO.md` or `DONE.md` ("Tested

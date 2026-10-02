@@ -11,10 +11,10 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **A first editor GUI** (section 11). The writers for players, squads,
-   kits and text work and are tested in game, and the disc rebuild works,
-   so stage 5 in [`GOALS.md`](GOALS.md) can start: a player editor on
-   `pbdata.py`, then the other writers.
+1. **The editor GUI** (section 11). `SRC/editor.py` has its People tab
+   (the player database). Next: a PCSX2 test of an edit made only in the
+   editor, then `initteam.py roundtrip` (section 8) and a Squads and clubs
+   tab on it.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -302,14 +302,6 @@ organised by what a player of the game recognises (a player, a club, a
 season) rather than by file. `tkinter` only, as the principles there say,
 and every GUI edit must also be possible as a `python SRC/...` command.
 
-- [ ] Decide the shape: one `SRC/editor.py` with a tab per kind of data,
-      or one small GUI script per writer; and how a GUI reuses each
-      writer's field names and ranges instead of keeping its own copy
-- [ ] Player editor on `pbdata.py`: search by name, id, club or
-      nationality; show the named fields with their ranges (unknown
-      fields read-only); refuse out-of-range values; write a new
-      `PBDATA_EU.PAC` (never over the input), with `--sles` when rank,
-      position or nationality changed
 - [ ] Squad and club editor on `initteam.py` (needs `initteam.py
       roundtrip` first, section 8), named from the player database
 - [ ] The player's new club (`teaminit.py`), kits (`uniform.py`), message
@@ -318,3 +310,5 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       `patch_disc.py` with `--copies`, and optionally make an xdelta
       patch with `vcdiff.py`
 - [ ] Test in PCSX2: an edit made only through the GUI shows in game
+      (for example a player's name, height and an ability in the People
+      tab, put on a disc with `patch_disc.py`)
