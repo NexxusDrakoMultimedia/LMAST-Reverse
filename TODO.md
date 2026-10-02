@@ -23,6 +23,9 @@ item in its section below.
 4. **Message variables** (section 1). Which game value fills each
    variable id in the message text, so text edits can move or reuse
    them safely.
+5. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
+   KC@P packs and PRS recompression. Larger mods need these to get their
+   edits onto a disc.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
