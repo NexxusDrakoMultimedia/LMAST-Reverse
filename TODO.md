@@ -49,11 +49,11 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `+0x66`–`+0x70`), what the match engine (`GAMEPRG.REL`) does with
       `+0x3f`–`+0x5d`, abilities 53–63 and the skills and play styles,
       and which attack pattern letter (59–63) is which
-- [ ] Name the manager and scout fields from the developers' staff
-      editors in `DEBUGPRG.REL` (`MinfoEditorTask`, `SinfoEditorTask`):
-      their labels (coach type, club attachment, motivation type, the
-      scouts' search abilities and regions) are drawn next to the field
-      reads, as for players (`DOC/PBDATA_FORMAT.md#the-developers-player-editor`)
+- [ ] Staff fields neither developers' editor labels: manager `+0x18`,
+      `+0x20` (a serial number), `+0x26`, `+0x2a`-`+0x2e`; scout `+0x1c`,
+      `+0x20`, `+0x24`; and what the 25 manager policies (`+0x34`), the
+      policy ranges and the 1-5 tactical leanings do
+      (`DOC/PBDATA_FORMAT.md#the-developers-staff-editors`)
 - [ ] What sets job 5 when a manager is hired, and how coaches and former
       players become managers (`pwkTeam_*CoachJobChangeWork`, PlPinfo
       `+0x210`). (The "Assistant Coach" title and the forwards/defence
@@ -169,9 +169,9 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] Request fields `+0x0C` (always 4 for procedure steps) and the
       `0x12c058` argument (1, 6, 7, 8, 21)
 - [ ] How `0x260590` decides a player is available for loan
-- [ ] Which instruction-age byte is which, which tactical approach is which
-      half of the manager-style grid, and what the 25 manager styles
-      (`+0x34`) and coach kinds 5 and 6 are
+- [ ] How the instruction-age screen rows map to values 1-4 (the editor's
+      labels suggest 1 = 16-22 ... 4 = youth), and which tactical approach
+      is which half of the manager-policy grid
 - [ ] Which screens start procedures 9, 14/16/18, 22 and 28, and how
       procedure 9 chooses between 10 and 12
 - [ ] Where the overlay index passed to `0x10babc` comes from, and what SNR2

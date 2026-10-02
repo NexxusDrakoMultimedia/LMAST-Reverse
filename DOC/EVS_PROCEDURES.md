@@ -200,17 +200,24 @@ int*)` (`0x261500`), over the same 3,000 staff records:
 | `+0x0a` | `+0x18` | instruction age (590:850–854), as for coaches (table `0x3995f0`, the same 7, 8, 9, 6) |
 | `+0x14` | `+0x20` | salary limit (590:156) |
 
-Which of block `+0x0e` and `+0x10` is tactics and which is formation is
-taken from the screen order (Team Policy, Preferred Tactics, Preferred
-System, then age and salary, 590:6–10), not from the code. Both readings
-give byte ranges that don't overlap.
-
 So a manager's record holds a style at `+0x34`, formation ratings at
 `+0x85`–`+0x8c`, tactic ratings at `+0x8d`–`+0x92` and age ratings at
-`+0x6c`–`+0x6f`, and 70 is the "good at it" threshold. Which age byte
-belongs to which option isn't settled. If the values follow the player
-search (1 16–22, 2 23–29, 3 over 30, 4 youth), youth is `+0x6c` and the
-three age groups are `+0x6d`–`+0x6f` in order.
+`+0x6c`–`+0x6f`, and 70 is the "good at it" threshold. These bytes are
+manager abilities (`PlMbase +0x66` is ability 0), and the developers'
+manager editor names them (**confirmed**,
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors)):
+`+0x34` is the manager's ポリシー "policy", abilities 31–38 are the eight
+systems in the order above, 39–44 are counter attack, possession, side
+attack, centre attack, offside and pressing, and 6–9 are youth, young,
+mid-career and veteran players. So block `+0x0e` is the tactics and
+`+0x10` the formation, as the screen order (Team Policy, Preferred
+Tactics, Preferred System, then age and salary, 590:6–10) suggested.
+
+For the age, the lookup (7, 8, 9, 6) fits the labels if the values follow
+the player search (1 16–22, 2 23–29, 3 over 30, 4 youth): youth is
+ability 6 (`+0x6c`) and the three age groups are 7–9 in order. The
+messages list youth first (851–854), so the screen must map its rows to
+these values; that mapping isn't traced.
 
 The tactical-approach table's first rows are masks over the 25 styles laid
 out as a 5 × 5 grid (style = 5 × row + column): 0 accepts all, 1 the top
@@ -320,9 +327,11 @@ happen. The offers they react to come from `Param` code.
 - What `+0x0C` (always 4 for procedure steps) and the `0x12c058` argument
   (1, 6, 7, 8, 21) mean.
 - How `0x260590` decides that a player is available for loan.
-- Which instruction-age byte is which, which tactical approach is which
-  grid half, and what the manager styles (`+0x34`) and coach kinds 5 and 6
-  are.
+- How the instruction-age screen rows map to values 1–4 (the labels
+  suggest 1 16–22 … 4 youth), which tactical approach is which grid half,
+  and what each of the 25 manager policies (`+0x34`) is. Coach kinds 5
+  and 6 are the manager and the youth manager (the manager editor's coach
+  types).
 - Which screens own the start functions for 9 (`0x9e7d0`), 14/16/18
   (`0x6b5f8`), 22 and 28. They're `WS::CPlateWindow` dialogs created through
   tables, so the usual symbol and caller searches don't name them.

@@ -25,8 +25,9 @@ plBits_DecPlPbaseEx/MbaseEx/SbaseEx (0x2e8568, 0x2e8a70, 0x2e8ec8) give
 every field's width, order and adjustment. Field names come from the
 functions that read them (plPinfo_IsForeigner, plPinfo_IsEU,
 plPinfo_IsSkill, getPinfoRank, getPinfoApos0, pwkTeam_SetUnumberOpinfo)
-and from the developers' player editor in DEBUGPRG.REL, which labels the
-64 abilities ({label, number} table at 0x11128) and most player fields;
+and from the developers' player, manager and scout editors in DEBUGPRG.REL,
+which label the 64 player abilities ({label, number} table at 0x11128),
+the 48 manager and 45 scout abilities (0x103d8, 0x13240) and most fields;
 fields with neither keep their offset as a name (f_30, ...).
 
 The player detail screen's 14 bars (SPEED ... MARK, or SAVIN ... JUMP for
@@ -34,7 +35,9 @@ goalkeepers) are averages of the first 33 abilities (ConvertPlayer_Bar,
 0x285380); `show` and `csv` compute them from the database values. `show`
 also names the play styles (+0x5e, message 1:150 + style, AddPlate_
 PLAYSTYLE 0x289e50) and the 64 abilities. Most ability names come from
-Virtua Pro Football, which uses the same engine; the doc says which.
+Virtua Pro Football, which uses the same engine; the doc says which. For
+staff it names the job, abilities, attack patterns, formations and the
+scouts' special searches.
 
 Usage:
     python pbdata.py info <PBDATA_*.PAC> ...                         # layout checks + counts
@@ -141,16 +144,30 @@ MANAGER_FIELDS = (
     ("req_status", 0x24, 16, 1, "status"),
     ("f_26", 0x26, 4, 4, None),
     ("f_2a", 0x2a, 2, 5, None),
-    ("f_2f", 0x2f, 3, 4, None),
-    ("f_33", 0x33, 2, 1, None),
-    ("f_34", 0x34, 6, 1, None),
-    ("f_35", 0x35, 3, 8, None),
-    ("f_3d", 0x3d, 8, 3, None),
-    ("f_40", 0x40, 3, 7, None),
-    ("f_47", 0x47, 5, 5, None),
-    ("f_4c", 0x4c, 9, 2, "signed"),      # sign-extended from bit 8, stored as s32
-    ("f_54", 0x54, 9, 4, "signed"),
-    ("f_64", 0x64, 1, 2, None),
+    # From moti_type on, names come from the developers' manager editor
+    # (MinfoEditorTask, DEBUGPRG.REL 0x1c98-0x21f0), which reads each
+    # field after drawing its label.
+    ("moti_type", 0x2f, 3, 1, None),     # also the affinity column (pwkDissatis_GetAffintyType)
+    ("select_policy", 0x30, 3, 1, None),  # player selection
+    ("match_policy", 0x31, 3, 1, None),
+    ("training_policy", 0x32, 3, 1, None),
+    ("rest_policy", 0x33, 2, 1, None),
+    ("policy", 0x34, 6, 1, None),        # 0-24
+    ("policy_range", 0x35, 3, 4, None),  # 許容範囲, the policies he accepts
+    ("policy_best", 0x39, 3, 4, None),   # 得意範囲, the ones he is best at
+    ("formation", 0x3d, 8, 3, None),     # FORMATIONS
+    ("attacking", 0x40, 3, 1, None),     # the 7 tactical leanings, 1-5
+    ("possession", 0x41, 3, 1, None),
+    ("centre_side", 0x42, 3, 1, None),   # attack through the centre or the sides
+    ("left_right", 0x43, 3, 1, None),
+    ("press_line", 0x44, 3, 1, None),    # where pressing starts
+    ("press", 0x45, 3, 1, None),         # pressing strength
+    ("offside", 0x46, 3, 1, None),       # offside trap strength
+    ("attack_pattern", 0x47, 5, 5, None),  # ATTACK_PATTERNS, 0 = none
+    ("manager_drill", 0x4c, 9, 2, "signed"),  # DRILLS, -1 = none; sign-extended from bit 8
+    ("coach_drill", 0x54, 9, 4, "signed"),
+    ("real_name", 0x64, 1, 1, None),
+    ("model_pattern", 0x65, 1, 1, None),
     ("ability", 0x66, 5, 48, "ability"),
 )
 SCOUT_FIELDS = (
@@ -160,8 +177,10 @@ SCOUT_FIELDS = (
     ("f_20", 0x20, 16, 1, None),
     ("req_status", 0x22, 16, 1, "status"),
     ("f_24", 0x24, 4, 4, None),
-    ("f_28", 0x28, 1, 1, None),
-    ("f_29", 0x29, 7, 4, None),
+    # Names from the developers' scout editor (SinfoEditorTask, DEBUGPRG.REL
+    # 0x97a0-0x98b0).
+    ("real_name", 0x28, 1, 1, None),
+    ("search", 0x29, 7, 4, None),        # special searches, SEARCHES; 36 = none
     ("ability", 0x2d, 7, 45, "ability7"),  # 7-bit, clamped to 31 before the table
 )
 FIELDS = dict(zip(KINDS, (PLAYER_FIELDS, MANAGER_FIELDS, SCOUT_FIELDS)))
@@ -302,14 +321,83 @@ JOB_BARS = {
     "manager": (("FASTB", (39,)), ("SLOWB", (40,)), ("WINGP", (41,)), ("DIREC", (42,)),
                 ("OFFSI", (43,)), ("CLOSD", (44,))),                    # job 5 and up
 }
-# Jobs (empirical, from each job's average bars): 0 a manager, 1 an
-# attacking coach, 2 a defensive coach. The game titles all three
-# "Assistant Coach" and shows them the same coaching bars. Hired staff get
-# 5 (manager) or 6 (youth manager, pwkTeam_SetYManager 0x26bd28). Coaches
-# and former players can become managers too.
+# Jobs, named by the developers' manager editor ("coach type", list at
+# DEBUGPRG.REL 0x10940): 0 balanced, 1 attacking and 2 defensive
+# assistant, 3 physical coach, 4 GK coach, 5 manager, 6 youth manager. The
+# game titles 0-2 "Assistant Coach" and shows them the same coaching bars.
+# The database holds 0-4 only; hired staff get 5 or 6 (pwkTeam_SetYManager
+# 0x26bd28). Balanced assistants (and others) can become managers.
 JOB_ROLE = {0: "coach", 1: "coach", 2: "coach", 3: "physical coach", 4: "GK coach"}
-JOB_NAMES = {0: "manager", 1: "attacking coach", 2: "defensive coach",
-             3: "physical coach", 4: "GK coach", 5: "manager", 6: "youth manager"}
+JOB_NAMES = ("balanced assistant", "attacking assistant", "defensive assistant",
+             "physical coach", "GK coach", "manager", "youth manager")
+
+# The 48 manager and coach abilities, from the manager editor's {label,
+# number} table (DEBUGPRG.REL 0x103d8). Most are "<x> coaching" (指導力).
+STAFF_ABILITY_NAMES = (
+    "motivation care", "physical care", "respect", "dissatisfaction care",
+    "judging players", "ability development", "youth coaching",
+    "young player coaching", "mid-career coaching", "veteran coaching",
+    "dribble", "shot", "pass", "heading", "intercept", "marking", "saving",
+    "rushing out", "speed", "stamina", "physical", "mental",
+    "attack/defence awareness", "GK", "DF", "DM", "OM", "FW",
+    "centre aptitude", "left side aptitude", "right side aptitude") + tuple(
+    s + " system" for s in ("3-4-3", "3-5-2", "3-6-1", "4-3-3", "4-4-2",
+                            "4-5-1", "5-3-2", "5-4-1")) + (
+    "counter attack", "possession", "side attack", "centre attack",
+    "offside", "pressing", "attack patterns", "teamwork", "set plays")
+assert len(STAFF_ABILITY_NAMES) == 48
+
+# The 45 scout abilities, from the scout editor's table (DEBUGPRG.REL
+# 0x13240), which numbers them 4-48: they are values 4-48 of the 49 at +0x29.
+SCOUT_ABILITY_NAMES = (
+    "club negotiation", "player negotiation", "money negotiation",
+    "search: professionals", "search: youth", "search: newcomers",
+    "search: mid-career", "search: veterans",
+    "GK", "LSB", "RSB", "CB", "LWB", "RWB", "DM", "LSM", "RSM", "OM", "LWG",
+    "RWG", "FW", "managers", "assistant coaches", "physical coaches",
+    "GK coaches", "youth managers",
+    "England", "France", "Germany", "Italy", "Spain", "Netherlands",
+    "Western Europe", "Central Europe", "Eastern Europe", "Northern Europe",
+    "South America A", "South America B", "North Africa", "West Africa",
+    "East and South Africa", "North/Central America", "East Asia",
+    "South Asia and Middle East", "Oceania")
+assert len(SCOUT_ABILITY_NAMES) == 45
+
+# Scout +0x29: up to 4 special searches, each a play-style type from the
+# scout editor's list (DEBUGPRG.REL 0x13428); 36 and up is none.
+SEARCHES = (
+    "Centre Forward", "Moving", "Post Player", "Attacker", "Dynamo",
+    "Crusher", "Covering", "Central MF", "Side Attacker", "Cut-in",
+    "Defensive Side", "Sweeper", "Libero", "Stopper", "Centre Back",
+    "Orthodox", "Libero GK", "Playmaker", "Second Striker", "Operaio",
+    "Shadow Striker", "Wing", "Estremo", "Dash Out", "Last Fort",
+    "High Tower", "Attacking GK", "Ace Striker", "Crosser", "Speed Star",
+    "Line Conductor", "All-rounder", "Ace Killer", "Wall", "Super Dribbler",
+    "Regista")
+
+# Manager +0x47: the attack patterns, list at DEBUGPRG.REL 0x107e8 (0 =
+# none). The letters are the tactics screen's five kinds: left flank,
+# right flank, centre, counter attack, possession.
+ATTACK_PATTERNS = ("none",) + tuple("%s%02d" % (k, n) for k in ("LS", "RS", "CT", "CA", "PO")
+                                    for n in range(6))
+# Manager +0x3d: formations, list at DEBUGPRG.REL 0x10868, as labelled there
+# (34 repeats 31's label).
+FORMATIONS = (
+    "3-4-3 1v 1", "3-4-3 1v 1", "3-4-3 dv 2", "3-4-3 dv 2", "3-4-3 tv 1",
+    "3-4-3 tv 2", "3-5-2 1v 1", "3-5-2 1v 2", "3-5-2 dv 1", "3-5-2 dv 2",
+    "3-5-2 tv 1", "3-6-1 1v 1", "3-6-1 dv 1", "3-6-1 dv 2", "3-6-1 tv 1",
+    "3-6-1 tv 2", "4-3-3 1v 1", "4-3-3 dv 1", "4-3-3 tv 1", "4-4-2 1v 1",
+    "4-4-2 dv 1", "4-4-2 dv 2", "4-4-2 dv 3", "4-4-2 tv 1", "4-5-1 1v 1",
+    "4-5-1 1v 2", "4-5-1 dv 1", "4-5-1 tv 1", "4-5-1 tv 2", "5-3-2 1v 1",
+    "5-3-2 dv 1", "5-3-2 tv 1", "5-4-1 1v 1", "5-4-1 dv 1", "5-3-2 tv 1")
+# Manager +0x4c/+0x54: the drills he can teach, indices into the editor's
+# list of 139 training menu items (DEBUGPRG.REL 0x105b8). 52-73 are play
+# styles and 74-138 individual drills; the database's coaches use 52-138.
+DRILL_COUNT = 139
+
+
+def listed(names, v):
+    return names[v] if 0 <= v < len(names) else str(v)
 
 # Scout bars, WP::CDetailManager::ConvertScout (0x287c60): single abilities.
 # PlSinfo is 4 bytes and then the PlSbase. A 12th value (ability 25) is
@@ -757,13 +845,29 @@ def cmd_show(path, ids, nations):
             print("    +%#04x %-15s %2d bit%s  %s" % (off, fname, bits,
                                                    " x%-2d" % count if count > 1 else "    ", shown))
         if kind == "managers":
-            role = JOB_ROLE.get(r.fields["job"], "manager")
-            print("    as %-14s %s" % (role, "  ".join("%s %d" % lv for lv in staff_bars(r.fields["ability"], role))))
+            f = r.fields
+            print("    job       %s" % listed(JOB_NAMES, f["job"]))
+            print("    patterns  %s" % ", ".join(listed(ATTACK_PATTERNS, p) for p in f["attack_pattern"]))
+            print("    formation %s" % ", ".join(listed(FORMATIONS, p) for p in f["formation"]))
+            print("    drills    manager %s, coach %s  (training menu items)" % tuple(
+                " ".join(str(d) for d in f[k] if d >= 0) or "none" for k in ("manager_drill", "coach_drill")))
+            ab = f["ability"]
+            for row in range(0, 48, 4):
+                print("    " + "  ".join("%2d %-26s %2d" % (n, STAFF_ABILITY_NAMES[n], ab[n])
+                                         for n in range(row, row + 4)))
+            role = JOB_ROLE.get(f["job"], "manager")
+            print("    as %-14s %s" % (role, "  ".join("%s %d" % lv for lv in staff_bars(ab, role))))
             if role != "manager":
                 print("    as manager        %s" % "  ".join(
-                    "%s %d" % lv for lv in average_bars(r.fields["ability"], JOB_BARS["manager"])))
+                    "%s %d" % lv for lv in average_bars(ab, JOB_BARS["manager"])))
         if kind == "scouts":
-            print("    screen    %s" % "  ".join("%s %d" % lv for lv in average_bars(r.fields["ability"], SCOUT_BARS)))
+            print("    searches  %s" % (", ".join(listed(SEARCHES, s) for s in r.fields["search"]
+                                               if s < len(SEARCHES)) or "none"))
+            ab = r.fields["ability"]
+            for row in range(0, 45, 3):
+                print("    " + "  ".join("%2d %-26s %2d" % (n, SCOUT_ABILITY_NAMES[n], ab[n])
+                                         for n in range(row, row + 3)))
+            print("    screen    %s" % "  ".join("%s %d" % lv for lv in average_bars(ab, SCOUT_BARS)))
         if kind == "players":
             gk = r.fields["position"][0] == 0
             print("    skills    %s" % (", ".join(skill_names(r.fields["skills"])) or "none"))

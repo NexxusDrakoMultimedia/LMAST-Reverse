@@ -194,6 +194,15 @@ files. Each item keeps what was found, where, and how it was tested.
       `--skip-tutorial` now also calls it from the skip command (28 bytes).
       Tested in PCSX2: status 500 and Egamucho at the first Sponsor screen
       (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`)
+- [x] Manager and scout fields named from the developers' staff editors
+      in `DEBUGPRG.REL` (`MinfoEditorTask`, `SinfoEditorTask`): all 48
+      manager and 45 scout abilities ({label, number} tables at `0x103d8`
+      and `0x13240`), the coach types 0-6, the manager's four policies,
+      policy and ranges, formations, seven tactical leanings, attack
+      pattern set, teachable drills, real-name flag and model pattern, and
+      the scouts' four special searches. `pbdata.py show` names them.
+      Empirical check: every nationality's scouts are best at their own
+      region (`DOC/PBDATA_FORMAT.md#the-developers-staff-editors`)
 
 ## 3. Ninja 3D models and motions
 

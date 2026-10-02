@@ -142,13 +142,17 @@ table lookup), 4 ×4 `+0x26`, 2 ×5 `+0x2a`, 3 ×4 `+0x2f`, 2 `+0x33`,
 6 `+0x34`, 3 ×8 `+0x35`, 8 ×3 `+0x3d`, 3 ×7 `+0x40`, 5 ×5 `+0x47`,
 signed 9 ×2 `+0x4c`, signed 9 ×4 `+0x54`, 1 ×2 `+0x64`, and 48 abilities
 (5 bits, mapped to 38–99) at `+0x66`. The 6 bits left over are zero.
+The fields from `+0x2f` on are named in
+[The developers' staff editors](#the-developers-staff-editors).
 
 ### Scouts (71 bytes, 565 bits used)
 
 `char[19]` name, then 8 `+0x14` (nationality, *empirical*), 8 `+0x18`
 (age, see below), 5 `+0x1c`, 16 `+0x20`, 16 `+0x22` (required status), 4 ×4 `+0x24`, 1 `+0x28`,
-and 49 × 7 bits at `+0x29`. The last 45 of those are abilities, clamped
-to 31 and mapped to 38–99. The 3 bits left over are zero.
+and 49 × 7 bits at `+0x29`. The first 4 are special searches and the last
+45 are abilities, clamped to 31 and mapped to 38–99. The 3 bits left over
+are zero. See
+[The developers' staff editors](#the-developers-staff-editors).
 
 ### Staff age
 
@@ -236,6 +240,164 @@ and `+0x22` under 必要ステータス too.
 
 The editor has no label for `+0x30`, `+0x37` (shown on its dissatisfaction
 page), `+0x43`–`+0x46`, `+0x57`–`+0x5d` or `+0x66`–`+0x70`.
+
+## The developers' staff editors
+
+The manager editor (`MinfoEditorTask`, title 監督エディット) and the scout
+editor (`SinfoEditorTask`, スカウトエディット) work like the player editor:
+each page draws a label and then reads the field. Both take a `PlMinfo` or
+`PlSinfo` (`+0x910` and `+0x3ac` of the task), which is 4 bytes and then
+the record (`PlMbase` / `PlSbase`). Offsets below are record offsets.
+
+**Manager abilities (confirmed).** The table at `DEBUGPRG.REL 0x103d8`
+holds 48 pairs `{label, ability number}`, numbers 0–47 in order. Nearly
+all labels end in 指導力 "coaching ability", left out below:
+
+| Ability | Label | | Ability | Label |
+|---|---|---|---|---|
+| 0 | モチベーションケア能力 motivation care | | 24 | DF |
+| 1 | フィジカルケア能力 physical care | | 25 | DM |
+| 2 | 人望 respect | | 26 | OM |
+| 3 | 不満ケア能力 dissatisfaction care | | 27 | FW |
+| 4 | 選手目利き力 judging players | | 28 | 中央適正 centre aptitude |
+| 5 | 能力開発 ability development | | 29 | 左サイド適正 left side aptitude |
+| 6 | ユース選手 youth players | | 30 | 右サイド適正 right side aptitude |
+| 7 | 若手選手 young players | | 31–38 | 3-4-3 … 5-4-1 (the 8 systems) |
+| 8 | 中堅選手 mid-career players | | 39 | 速攻 counter attack |
+| 9 | ベテラン選手 veterans | | 40 | ポゼッション possession |
+| 10 | ドリブル dribble | | 41 | サイド攻撃 side attack |
+| 11 | シュート shot | | 42 | 中央攻撃 centre attack |
+| 12 | パス pass | | 43 | オフサイド offside |
+| 13 | ヘディング heading | | 44 | プレス pressing |
+| 14 | インターセプト intercept | | 45 | 攻撃パターン attack patterns |
+| 15 | マーキング marking | | 46 | 連携 teamwork |
+| 16 | セービング saving | | 47 | セットプレイ set plays |
+| 17 | 飛び出し rushing out | | | |
+| 18 | スピード speed | | | |
+| 19 | スタミナ stamina | | | |
+| 20 | フィジカル physical | | | |
+| 21 | メンタル mental | | | |
+| 22 | 攻守意識 attack/defence awareness | | | |
+| 23 | GK | | | |
+
+All 31 abilities behind the manager and coach bars
+([Manager, coach and scout bars](#manager-coach-and-scout-bars)) agree with
+these labels: MOTIV 0, PHYSC 1, POPUL 2, COMMU 3, ASSES 4, TRAIN 5, DRIBB
+10 … MARK 15, SAVIN 16, HND 17 (rushing out), SPEED 18 … MENTA 21, ATKDF
+22, CENTA 28, FLANK 29/30, FASTB 39 … CLOSD 44, ATTST 45, TEAMW 46, FK 47.
+
+**Coach type (confirmed).** The editor prints the job (`PlMinfo +0xa0`,
+from record `+0x1c`) under コーチタイプ "coach type", through the list at
+`0x10940`:
+
+| Job | Label |
+|---|---|
+| 0 | アシスタントバランス balanced assistant |
+| 1 | アシスタント攻撃 attacking assistant |
+| 2 | アシスタント守備 defensive assistant |
+| 3 | フィジカルコーチ physical coach |
+| 4 | GKコーチ GK coach |
+| 5 | 監督 manager |
+| 6 | ユース監督 youth manager |
+
+This matches what the game does with the jobs (5 and 6 are set at run time,
+0–2 share the coaching bars) and the job averages below.
+
+**Manager fields (confirmed).** The page drawn at `DEBUGPRG.REL
+0x1c98`–`0x1f2c` and the two after it (`0x1f30`–`0x2214`) read these
+fields. The first page (`0x1560`–`0x1c94`) shows only run-time state
+(popularity, promises, age, contract, salary):
+
+| Offset | Bits | Label | Values in the database |
+|---|---|---|---|
+| `+0x24` | 16 | 必要ステータス required status | (as before) |
+| `+0x2f` | 3 | モチベーションタイプ motivation type | 0–7 |
+| `+0x30` | 3 | 選手起用方針 player selection policy | 0–7 |
+| `+0x31` | 3 | 試合進行方針 match policy | 0–7 |
+| `+0x32` | 3 | 育成方針 training policy | 0–7 |
+| `+0x33` | 2 | 休養方針 rest policy | 0–3 |
+| `+0x34` | 6 | ポリシー policy | 0–24 |
+| `+0x35` | 3 ×4 | 許容範囲 accepted range | 1–7 |
+| `+0x39` | 3 ×4 | 得意範囲 best range | 2–7 |
+| `+0x3d` | 8 ×3 | フォーメーション formations | 0–34, list at `0x10868` |
+| `+0x40` | 3 | 攻撃志向 attacking | 1–5 |
+| `+0x41` | 3 | ポゼッション志向 possession | 1–5 |
+| `+0x42` | 3 | 攻撃展開中央サイド attack through centre or sides | 1–5 |
+| `+0x43` | 3 | 攻撃展開左右 attack left or right | 1–5 |
+| `+0x44` | 3 | プレス開始位置 where pressing starts | 1–5 |
+| `+0x45` | 3 | プレス強度 pressing strength | 1–5 |
+| `+0x46` | 3 | オフサイド強度 offside trap strength | 1–5 |
+| `+0x47` | 5 ×5 | 監督攻撃パターンセット attack pattern set | 0–30, list at `0x107e8` |
+| `+0x4c` | 9 ×2 | 監督指導可能練習 drills he can teach as manager | all −1 (none) |
+| `+0x54` | 9 ×4 | コーチ指導可能練習 drills he can teach as coach | 52–138 or −1 |
+| `+0x64` | 1 | 実名？ real name? (Yes/No) | all 0 |
+| `+0x65` | 1 | モデルパターン model pattern | 0 (1,526), 1 (1,474) |
+
+The affinity reader confirms `+0x2f` as well: `pwkDissatis_GetAffintyType`
+takes a manager's column from `PlMinfo +0x33`. The editor prints the
+accepted and best ranges as `%d %d %d %d`, so they are 4 values each; how
+they bound the policy isn't traced. The player editor's policy page draws
+カウンター～ポゼッション "counter to possession" and タレント～チーム
+"talent to team", which are probably the two axes.
+
+The lists the indices go into (**confirmed**, the editor prints the entry):
+
+- Attack patterns, `0x107e8`: 0 なし none, then 6 each of `LS00`–`LS05`,
+  `RS`, `CT`, `CA`, `PO` (labels like `LS00_00`). The letters fit the
+  tactics screen's five kinds: left flank, right flank, centre, counter
+  attack and possession. In the database, slots 0–2 are always set and 3
+  and 4 are often 0 (601 and 2,153 managers).
+- Formations, `0x10868`: 35 labels such as `4-4-2 dv 3` and `4-3-3 tv 1`,
+  grouped by system 3-4-3 … 5-4-1. Entry 34 repeats entry 31's label
+  (`5-3-2 tv 1`), probably a slip for 5-4-1.
+- Drills, `0x105b8`: 139 training menu items: 0–7 the systems, 8–28 team
+  training, 29–31 growth policies (長所を伸ばす, 平均的に, 短所を補足),
+  32–51 forward, defender, goalkeeper, physical and mental training,
+  52–73 play styles, 74–138 individual drills (シュート, 1000本セーブ, 呼吸法 …). The
+  database's coaches use only 52–138.
+
+**Scout abilities (confirmed).** The table at `0x13240` pairs 45 labels
+with numbers 4–48, the index into the 49 seven-bit values at `+0x29`. So
+scout ability *n* is value *n* + 4:
+
+| Ability | Label | Ability | Label |
+|---|---|---|---|
+| 0 | クラブ交渉能力 club negotiation | 8–20 | GK, LSB, RSB, CB, LWB, RWB, DM, LSM, RSM, OM, LWG, RWG, FW |
+| 1 | 選手交渉能力 player negotiation | 21 | MC (managers) |
+| 2 | 金銭交渉能力 money negotiation | 22 | AC (assistant coaches) |
+| 3 | 現役選手探索能力 search: professionals | 23 | PC (physical coaches) |
+| 4 | ユース探索能力 search: youth | 24 | GC (GK coaches) |
+| 5 | 新人探索能力 search: newcomers | 25 | YM (youth managers) |
+| 6 | 中堅探索能力 search: mid-career | 26–31 | England, France, Germany, Italy, Spain, Netherlands |
+| 7 | ベテラン探索能力 search: veterans | 32–44 | Western, Central, Eastern, Northern Europe, South America A, B, North, West, East and South Africa, North/Central America and Caribbean, East Asia, South Asia and Middle East, Oceania |
+
+The labels of 8–44 end in `SAbil`. The 11 scout bars agree (CLB 0 …
+VETER 7, MANAG 21 … GCOAC 24), and the 12th, unlabelled value the screen
+computes is 25, youth managers. **Empirical** check: for each of the 14
+most common nationalities, the scouts' best region on average is their
+own (England 85 against 60 for the other regions, Brazil South America A,
+Argentina South America B, Japan East Asia, Scotland, Belgium and
+Portugal Western Europe).
+
+**Scout fields (confirmed).** The editor (`0x97a0`–`0x98b0`) reads 実名？
+real name? at `+0x28` (all 0 in the database) and 必要ステータス at
+`+0x22`. Under 特殊検索 "special search" it loops over `+0x29`–`+0x2c`
+and prints each value below 36 from the list at `0x13428`, or なし. These
+36 are play-style types: Centre Forward, Moving, Post Player, Attacker,
+Dynamo, Crusher, Covering, Central MF, Side Attacker, Cut-in, Defensive
+Side, Sweeper, Libero, Stopper, Centre Back, Orthodox, Libero GK,
+Playmaker, Second Striker, Operaio, Shadow Striker, Wing, Estremo, Dash
+Out, Last Fort, High Tower, Attacking GK, Ace Striker, Crosser, Speed
+Star, Line Conductor, All-rounder, Ace Killer, Wall, Super Dribbler,
+Regista. In the database the first search is always set (0–35), and 322,
+579 and 816 scouts have none (36) in the other three.
+
+**Not labelled by either editor:** manager `+0x18` (0–15), `+0x20`,
+`+0x26` (always 0) and `+0x2a`–`+0x2e` (0–3 each), and scout `+0x1c`
+(0–15), `+0x20` and `+0x24` (always 0). **Empirical:** `+0x20` is a serial
+number, 17,173–20,172 for the 3,000 managers in order and 20,173–21,172
+for the 1,000 scouts, as if it continued a count that starts below them.
+The players' `+0x30` is 0 in every record.
 
 ## Personality and condition fields
 
@@ -564,12 +726,16 @@ database) shows the manager bars, and they match abilities 39–44. So the
 job is changed at run time. The shared bars for Collin and M. Boismortier
 match their detail screens exactly.
 
-**What the jobs are.** Averaging the coaching bars over each job in the
-database (**empirical**) separates 0–2:
+**What the jobs are.** The developers' manager editor names them
+(**confirmed**, see
+[The developers' staff editors](#the-developers-staff-editors)): 0
+balanced, 1 attacking and 2 defensive assistant, 3 physical coach, 4 GK
+coach, 5 manager, 6 youth manager. Averaging the coaching bars over each
+job in the database (**empirical**) agrees:
 
 | Job | Count | Coaching bars (DRIBB SHOT PASS HEAD INTER MARK) | Is |
 |---|---|---|---|
-| 0 | 439 | 68 68 68 60 68 68 | the database's managers: all even. Hired as manager it becomes 5, as youth manager 6 |
+| 0 | 439 | 68 68 68 60 68 68 | a balanced assistant: all even. Hired as manager it becomes 5, as youth manager 6 |
 | 1 | 786 | 80 80 80 68 55 55 | an attacking coach |
 | 2 | 714 | 68 55 61 76 80 80 | a defensive coach |
 | 3 | 678 | physical bars | physical coach |
@@ -688,9 +854,13 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 - What the play styles do in a match, beyond which abilities grow.
 - The code that turns the leg field into `PlPinfo +0x1c4`.
 - What sets job 5 when a manager is hired.
-- Staff abilities other than the ones the bars name (6–9, 23–27, 31–38),
-  and scout abilities 2, 8–20 and 26–44 (the preferred areas and search
-  types on the scout screen probably come from some of them).
+- The staff fields neither editor labels (manager `+0x18`, `+0x20`,
+  `+0x26`, `+0x2a`–`+0x2e`; scout `+0x1c`, `+0x20`, `+0x24`), what the
+  manager's 25 policies (`+0x34`) and the policy ranges mean, and what
+  the 1–5 tactical values and the model pattern do in a match.
+- Which game code reads the staff abilities that no bar shows (6–9,
+  23–27, 31–38; scouts 2, 8–20, 26–44). The labels name them, but their
+  effects aren't traced.
 - Entry 2, header `+0x14`, `+0x24` and the last 8 header bytes.
 - How entry 3's value becomes a rank: the threshold table at `0x5eac08` is
   filled at run time.
@@ -701,6 +871,8 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 python SRC/pbdata.py info DAT/PARAM/PBDATA_EU.PAC DAT/PARAM/PBDATA_JP.PAC
 python SRC/pbdata.py list DAT/PARAM/PBDATA_EU.PAC --find terry
 python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 100 m:0 s:0     # every field
+python SRC/snr2.py dis ISO/DLL/DEBUGPRG.REL 0x1c98 340 --sles ISO/SLES_541.51   # manager editor pages
+python SRC/snr2.py dis ISO/DLL/DEBUGPRG.REL 0x97a0 70 --sles ISO/SLES_541.51    # scout editor, special searches
 python SRC/pbdata.py csv DAT/PARAM/PBDATA_EU.PAC players players.csv
 python SRC/initteam.py squads DAT/PARAM 7                          # Chelsea, with names
 python SRC/sles_disasm.py ISO/SLES_541.51 dis initBpmaster getPbase readBits__Q25Param11PlBitsClassi
