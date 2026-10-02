@@ -536,4 +536,6 @@ files. Each item keeps what was found, where, and how it was tested.
       `CheckExplosionM`), popularity (`+0xae`, `+0xb0`) and salary discount
       (`+0xb6`). `save.py staff` shows them; `set` edits staff abilities,
       dissatisfaction and popularity. Fixed `save.py staff`, which broke
-      when `pbdata.JOB_NAMES` became a tuple
+      when `pbdata.JOB_NAMES` became a tuple. Tested in PCSX2: facilities
+      dissatisfaction shows as "Won't tolerate club's facilities.", and a
+      coach with all abilities 99 has full bars

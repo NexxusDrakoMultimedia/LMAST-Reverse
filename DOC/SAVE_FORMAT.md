@@ -229,7 +229,7 @@ More of the PlMinfo (**confirmed**):
 | `0xb6` | bit 0 | salary discount | `plMinfo_GetManagerSalary` (`0x218838`) multiplies by 0.8 when set; `SetManagerDiscount` (`0x218898`), `pwkTeam_SetWithdrawPenaltyTermManager` (`0x267868`) |
 
 The five kinds are named after the functions that add to them
-(**empirical**: no names were found in the game):
+(**empirical**; kind 4 is also confirmed in game, below):
 
 | Kind | Name | Added by |
 |---|---|---|
@@ -250,6 +250,12 @@ small number (0–4) that isn't traced.
 `pop_players=` (0–65,535, managers and coaches only), and
 `<label>:abil.<n>=` or `abil.all=` for abilities. The abilities are
 stored on the database's 38–99 scale, which `set` keeps to.
+
+**Tested in PCSX2** (save G000 on a test card): with C.Collin's
+dissatisfaction set to facilities 60,000 and the other four kinds 0, his
+second page lists "Won't tolerate club's facilities." under Special
+Mention, which confirms kind 4. With coach D.Walshe's abilities all 99,
+every bar on his page is full.
 
 **Pair combinations** (the tactics screen's lines and heart icons). Block
 1 `+0x4808` is `PlTeamData +0x4354`: a 25 × 25 matrix of u16 by squad

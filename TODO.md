@@ -248,9 +248,8 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       clubs, finances), and name the fields an editor should offer. Staff
       leftovers: the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`,
       and how far the manager's popularity goes in play (0 in every save)
-- [ ] Test in PCSX2: `Hax.ps2` slot G000 now has C.Collin's dissatisfaction
-      set to facilities 60,000 and the rest 0, and coach D.Walshe's
-      abilities all 99. The manager's detail screen should put facilities
-      first; Walshe's bars should be full
+- [ ] The manager's Special Mention texts for dissatisfaction kinds 0-3
+      (kind 4 shows "Won't tolerate club's facilities."), to confirm their
+      names. A save edit per kind would show each one
 - [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same
       key, layout CRC `0x8ffb`)
