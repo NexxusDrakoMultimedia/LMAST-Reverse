@@ -18,6 +18,10 @@ item in its section below.
    and 7). This is the largest piece of starting-season data still undecoded.
 3. **Size changes on the disc** (section 9). Until files can move, an edit
    can only grow to the end of its last sector, which limits every writer.
+4. **Make rank, main position and nationality edits work** (section 2).
+   The game takes club players' rank and main position from entries 2
+   and 3, so `pbdata.py` must re-sort them and patch the group table at
+   SLES `0x52fbf8` before an editor can change these fields.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
