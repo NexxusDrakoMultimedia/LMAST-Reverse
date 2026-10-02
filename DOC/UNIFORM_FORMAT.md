@@ -318,7 +318,8 @@ scheme.
   scheme of keeper designs 20–37 to L4 (pink), and shirt colour 1 left
   alone, patched with `--copies` into `UNIFORM_GK.TBB` and its 7 copies in
   `PRELOAD/SIMFILE0`–`6.PAC` (disc `LMAST-gk-test.iso`), a new career's
-  keeper (Dunstable Utd) wore pink sleeves, shorts and socks.
+  keeper (Dunstable Utd) wore pink sleeves, shorts and socks in a match,
+  with the shirt's main colour unchanged.
 - **User report:** the club editor only lets you choose your outfield
   kits. The keeper kit is never chosen, so `UNIFORM_GK` is the only place
   it comes from.
