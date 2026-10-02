@@ -228,7 +228,9 @@ files. Each item keeps what was found, where, and how it was tested.
       Dressing/GK Style labels (2000:1070–1082) and the common pack's
       texture names; `GAMEPRG.REL 0x1e468` copies them to
       `SPlayerUniformStyleInfo`, clamped by `0x2cd9c8`. `pbdata.py` names
-      them and `info` marks values above the clamps
+      them and `info` marks values above the clamps. Tested in PCSX2 (VS
+      match): boots, long sleeves, wristbands, the keeper's long pants and
+      glove type show as documented
       (`DOC/PBDATA_FORMAT.md#kit-style`)
 
 ## 3. Ninja 3D models and motions

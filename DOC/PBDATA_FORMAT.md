@@ -110,7 +110,7 @@ also found.
 | 2 | 1 | `+0x57` | sleeves | 0 by season, 1 short, 2 long. **confirmed**; always 0. See [Kit style](#kit-style) |
 | 3 | 1 | `+0x58` | wristband | 0 none, 1–4 a colour. **confirmed**; 0 in 27,256 players |
 | 3 | 1 | `+0x59` | gloves | outfield gloves in cold weather: 0 none, 1–4 a glove texture. **confirmed**; 0 in 27,187 players |
-| 2 | 1 | `+0x5a` | f_5a | 0–3, probably the goalkeeper's hat (by elimination; reader not found). 1 in 46 players |
+| 2 | 1 | `+0x5a` | f_5a | 0–3. By elimination the goalkeeper's hat, but no reader was found and value 3 showed no hat in PCSX2. 1 in 46 players |
 | 3 | 1 | `+0x5b` | gk_gloves | goalkeeper's gloves, 0–5. **confirmed** |
 | 1 | 1 | `+0x5c` | gk_pants | 1: a goalkeeper wears long pants. **confirmed** |
 | 4 | 1 | `+0x5d` | boots | boot colours, 0–14. **confirmed** |
@@ -625,10 +625,26 @@ come from its `.svm` entries (`python SRC/svr.py info`).
 | `+0x57` | 0 | sleeves | 0 by season, 1 short all year, 2 long all year |
 | `+0x58` | 1 | wristband | 0 none, 1–4 a colour (shown only with short sleeves) |
 | `+0x59` | 2 | gloves | outfield players in cold weather: 0 none, 1–4 glove texture `fpglv_00`–`03` |
-| `+0x5a` | 3 | f_5a | 0–3. Probably the hat, the only GK Style item left over, but no reader of byte 3 was found. The cap texture `PLAYER/ACCE_CAP.SVR` is opened by `PlayerAssemblerBase::initialize` (`0x2c9264`) |
+| `+0x5a` | 3 | f_5a | 0–3. The GK Style page's hat is the only item left over, but no reader of byte 3 was found, and value 3 showed no hat in PCSX2. The cap texture `PLAYER/ACCE_CAP.SVR` is opened by `PlayerAssemblerBase::initialize` (`0x2c9264`) |
 | `+0x5b` | 4 | gk_gloves | goalkeeper's gloves `gkglv_00`–`05` |
 | `+0x5c` | 5 | gk_pants | goalkeeper only: 0 normal, 1 long |
 | `+0x5d` | 6 | boots | 0–14, one of 15 two-palette colourings |
+
+**Tested in PCSX2** (a VS match with England's fixed squad, records
+26,041–26,055 edited and renamed after their settings):
+
+- Boots: Gerrard (1), Joe Cole (7) and Wright-Phillips (14) each wore
+  differently coloured boots.
+- Sleeves: Ashley Cole with sleeves 2 wore long sleeves.
+- Wristband: Neville (1) and Ferdinand (4), both with short sleeves,
+  wore wristbands.
+- `f_5a` = 3 showed no hat, neither on the keeper (Robinson) nor on an
+  outfield player (Owen). So either `f_5a` isn't the hat or something
+  else must enable it.
+- Outfield gloves (Terry 4, Beckham 1) didn't show in a night match, so
+  night alone doesn't switch on `plGi +0x1f538`.
+- The keeper (`gk_pants` 1, `gk_gloves` 5) wore long pants and gloves
+  that looked unlike the usual keeper gloves.
 
 The Dressing and GK Style pages share bytes: both have a Wristband and
 Spikes item, and there is only one wristband and one boots byte.
@@ -1030,8 +1046,9 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 
 - What `+0x30` (always 0), `+0x43`–`+0x46` and the ten `+0x66` values
   other than `+0x67` mean; no reader was found for any of them.
-- Kit style: whether `+0x5a` is the goalkeeper's hat, what turns the
-  outfield gloves on (`plGi +0x1f538`), and whether the dissatisfaction
+- Kit style: what `+0x5a` is (value 3 showed no hat in a VS match), what
+  turns the outfield gloves on (`plGi +0x1f538`; not a night match),
+  and whether the dissatisfaction
   code's use of `+0x58`/`+0x59` is intended ([Kit style](#kit-style)).
 - What the match engine (`GAMEPRG.REL`) does with `+0x3f`–`+0x5d` and
   abilities 53–63, and which attack pattern letter is which.

@@ -215,7 +215,7 @@ PLAYER_FIELDS = (
     ("sleeves", 0x57, 2, 1, None),       # 0 by season, 1 short, 2 long (refresh_uniform_style)
     ("wristband", 0x58, 3, 1, None),     # 0 none, 1-4 colour of the "wristband" texture
     ("gloves", 0x59, 3, 1, None),        # outfield gloves: 0 none, 1-4 fpglv_00-03 (0x3a1dc8)
-    ("f_5a", 0x5a, 2, 1, None),          # 0-3; probably the GK Style page's hat (reader not found)
+    ("f_5a", 0x5a, 2, 1, None),          # 0-3; no reader found, and 3 showed no hat in PCSX2
     ("gk_gloves", 0x5b, 3, 1, None),     # gkglv_00-05 (0x3a1de0)
     ("gk_pants", 0x5c, 1, 1, None),      # goalkeeper only: 1 long
     ("boots", 0x5d, 4, 1, None),         # 15 palette pairs for "spk_00" (0x3a2238)
