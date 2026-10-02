@@ -23,10 +23,11 @@ item in its section below.
 4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc.
-5. **The `GAME/` tactics AI files** (section 6). The play books are
-   and the combination scripts decoded (`BPB_FORMAT.md`); `GAMEDATA.BIN`
-   and `AI_PARAM.BIN` are left, and the AI's data tables are the lead for the
-   player fields in #1.
+5. **The `GAME/` tactics AI files** (section 6). The play books, the
+   combination scripts and `GAMEDATA.BIN`'s container are decoded
+   (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
+   the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
+   records. These are still the lead for the player fields in #1.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -173,8 +174,10 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       (callbacks at `GAMEPRG.REL 0x249280`); in the play books the path
       kinds, point codes, which play is which, the `+0x20` block and
       `GetFormationData`
-- [ ] `GAME/GAMEDATA.BIN` (loaded by `GAMEPRG.REL`) and `GAME/AI_PARAM.BIN`
-      (467 f32, not referenced by name)
+- [ ] `GAME/GAMEDATA.BIN` leftovers (`DOC/GAMEDATA_FORMAT.md`): what a
+      record is (4,131 of 0x30 bytes), its fields past `+0x4`, `+0x8`,
+      `+0x14`, `+0x20`, and who calls the record functions at
+      `GAMEPRG.REL 0x13abb8`; whether anything reads `AI_PARAM.BIN`
 - [ ] `TEST3D/SHADOWCOLLI.LBI` and `BG/HUMANID.BIN`. The `.LBI` starts
       like the 27 entries of `GAME/SHADOWCOLLI.PAC` but matches none and
       isn't named in the code (`DOC/TEST3D_DIR.md`); decode the format

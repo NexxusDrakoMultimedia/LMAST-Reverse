@@ -74,6 +74,7 @@ def checks():
         ("plrsim", ["plrsim.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("plrcommon", ["plrcommon.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("bpb", ["bpb.py", "info", "DAT/GAME"], ["DAT/GAME"]),
+        ("gamedata", ["gamedata.py", "info", "DAT/GAME"], ["DAT/GAME"]),
         # Combinations and free agents by name, cities and weather.
         ("plrsim_show_combi", ["plrsim.py", "show", "DAT/PARAM", "13"],
          ["DAT/PARAM/PLRESOURCESIM.PAC", "DAT/PARAM/PBDATA_EU.PAC"]),

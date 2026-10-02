@@ -32,8 +32,8 @@ BCB3, DTPK) are **empirical**, checked against every file on the disc.
 | `PLAYBOOK.BPB`, `COMBINATION.BPB` | play books | the players' and ball's paths in each set play and move, in metres: see [`BPB_FORMAT.md`](BPB_FORMAT.md) (`Pwk::PlayBookData`) |
 | `COMBINATION2.CBB/.CSB` | 540 combination records / 540 PRS-packed `SQB1` scripts | the combinations' data and scripts: see [`BPB_FORMAT.md`](BPB_FORMAT.md#combination2cbb-and-csb) |
 | `BACK_MATCH.TBB`, `TACTICS_PLAYBOOK_EDIT.TBB` | TBB | see `TBB_FORMAT.md` |
-| `AI_PARAM.BIN` | 467 × f32 | not referenced by name in any executable |
-| `GAMEDATA.BIN` | unknown | loaded by `GAMEPRG.REL` |
+| `AI_PARAM.BIN` | 467 × f32 | no reader found, by name or by content: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md#ai_parambin) |
+| `GAMEDATA.BIN` | 4,131 records of 0x30 bytes | the match engine's table (loader slot 10); a few fields read: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md) |
 | `TEAM.TMB` | `TMB1` | team names, 3-letter codes, stadiums (`Highbury`/`LON`). Dated Mar 2005, not referenced by name. Probably stale |
 | `CVS/` | CVS metadata | original lowercase names and revision numbers |
 | `DUMMY.DAT` (0 bytes), `VBNAME.VBN` (`test0`) | junk | |

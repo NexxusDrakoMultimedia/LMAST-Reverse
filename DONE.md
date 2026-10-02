@@ -376,6 +376,10 @@ files. Each item keeps what was found, where, and how it was tested.
       commands, built by `GAMEPRG.REL` at `0x29fc90`); 539 decode with
       `sqb.py`, checked as `sqb_combi`. `COMBINATION2.CBB`: the matching
       540 size-prefixed records (container checked by `bpb.py`)
+- [x] `GAME/GAMEDATA.BIN`: 4,131 records of 0x30 bytes (loader slot 10,
+      `GAMEPRG.REL 0x13abb8`), with the angle at `+0x8` (π/32) and the range
+      at `+0x20` read by the code. `AI_PARAM.BIN`: no reader by name or by
+      content in any executable. `gamedata.py`, checked by `regress.py`
 
 ## 7. Event system and game code
 
