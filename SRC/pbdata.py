@@ -24,8 +24,10 @@ record, PlBitsClass::readBits (0x20bd28) reads MSB first, and
 plBits_DecPlPbaseEx/MbaseEx/SbaseEx (0x2e8568, 0x2e8a70, 0x2e8ec8) give
 every field's width, order and adjustment. Field names come from the
 functions that read them (plPinfo_IsForeigner, plPinfo_IsEU,
-plPinfo_IsSkill, getPinfoRank, getPinfoApos0, pwkTeam_SetUnumberOpinfo);
-fields without a known reader keep their offset as a name (f_2c, ...).
+plPinfo_IsSkill, getPinfoRank, getPinfoApos0, pwkTeam_SetUnumberOpinfo)
+and from the developers' player editor in DEBUGPRG.REL, which labels the
+64 abilities ({label, number} table at 0x11128) and most player fields;
+fields with neither keep their offset as a name (f_30, ...).
 
 The player detail screen's 14 bars (SPEED ... MARK, or SAVIN ... JUMP for
 goalkeepers) are averages of the first 33 abilities (ConvertPlayer_Bar,
@@ -46,7 +48,7 @@ Usage:
 Writing: records are re-encoded bit for bit (every record on the disc
 round-trips) and entry 1 is patched in a copy of the pack; nothing else
 moves. Values are given as shown (age=30, height=185, ability.15=99,
-money=15000, position.0=3), names up to 18 characters (name=J.Smith).
+req_status=15000, position.0=3), names up to 18 characters (name=J.Smith).
 `import` takes a CSV from `csv`, edited in a spreadsheet, and writes only
 the values that changed; the bar columns are derived and ignored.
 
@@ -71,15 +73,20 @@ RANK_FROM_ENTRY3 = 0x63f7   # getPinfoRank: ids below this use entry 3
 KINDS = ("players", "managers", "scouts")
 
 # plBits_* post-processing tables in SLES_541.51.
-MONEY = (0, 200, 1000, 3000, 5000, 7500, 10000, 15000, 20000, 25000,
-         30000, 35000, 40000, 45000, 50000, 55000)          # 0x55b970, [v & 0xf]
+# Required status: the developers' editor (DEBUGPRG.REL) labels the field
+# 必要ステータス for players, managers and scouts.
+STATUS = (0, 200, 1000, 3000, 5000, 7500, 10000, 15000, 20000, 25000,
+          30000, 35000, 40000, 45000, 50000, 55000)         # 0x55b970, [v & 0xf]
 ABILITY = tuple(range(38, 98, 2)) + (98, 99)                # 0x55b950 via 0x2e8540
 assert len(ABILITY) == 32
 
 # (name, struct offset, bits, count, conversion). The order is the order of
 # the readBits calls; the offset is where the game stores the value in its
 # PlPbase/PlMbase/PlSbase, kept so fields can be matched to game code.
-# Conversions: None, ("add", n), "money", "ability", "ability7", "signed".
+# Conversions: None, ("add", n), "status", "ability", "ability7", "signed".
+# Player field names from f_32 on come from the developers' player editor
+# in DEBUGPRG.REL, whose label for each field is followed by the read of
+# that field (DOC/PBDATA_FORMAT.md#the-developers-player-editor).
 PLAYER_FIELDS = (
     ("nation", 0x14, 8, 1, None),        # plPinfo_IsForeigner/IsEU read +0x14
     ("rank", 0x18, 5, 1, None),          # getPinfoRank (ids >= 0x63f7)
@@ -90,20 +97,30 @@ PLAYER_FIELDS = (
     ("shirt", 0x2b, 7, 1, None),         # pwkTeam_SetUnumberOpinfo's preferred number
     ("leg", 0x2c, 3, 1, None),           # bit 0: right foot, else left; bit 1: two-footed (empirical)
     ("f_30", 0x30, 16, 1, None),
-    ("f_32", 0x32, 16, 1, None),
-    ("money", 0x34, 16, 1, "money"),
-    ("f_36", 0x36, 3, 1, None),
-    ("f_37", 0x37, 2, 8, None),
-    ("f_3f", 0x3f, 4, 8, None),
-    ("f_47", 0x47, 3, 2, None),
-    ("f_49", 0x49, 5, 1, None),
-    ("f_4a", 0x4a, 4, 3, None),
-    ("f_4d", 0x4d, 3, 3, None),
-    ("f_50", 0x50, 4, 2, None),
-    ("f_52", 0x52, 5, 1, None),
-    ("f_53", 0x53, 3, 1, None),
-    ("f_54", 0x54, 4, 1, None),
-    ("f_55", 0x55, 2, 3, None),
+    ("face", 0x32, 16, 1, None),         # CDetailFace::Request (0x2869b4)
+    ("req_status", 0x34, 16, 1, "status"),  # pwkTeam_UpdatePlayerCandidates vs pwkTeam_Status
+    ("tone", 0x36, 3, 1, None),          # speech tone in events
+    ("dissatis", 0x37, 2, 8, None),      # pwkDissatis_*: x1.0-1.3 per cause (DISSATIS)
+    ("professionalism", 0x3f, 4, 1, None),  # plPinfo_InitPower's range
+    ("pressure", 0x40, 4, 1, None),      # pressure resistance
+    ("loyalty", 0x41, 4, 1, None),       # club loyalty; pwkTeam_GetYouthPromoteConyear
+    ("star", 0x42, 4, 1, None),          # star quality; popularity changes
+    ("f_43", 0x43, 4, 4, None),
+    ("moti_type", 0x47, 3, 1, None),     # plPinfo_CalcMotiYear, affinity column
+    ("cond_type", 0x48, 3, 1, None),     # condition type
+    ("potential", 0x49, 5, 1, None),
+    ("growth", 0x4a, 4, 3, None),        # physical, skill, mental (pwkGUtl_Get*GrowCoe)
+    ("travel", 0x4d, 3, 1, None),        # travel tolerance; plPinfo_CalcMatchMovePowerDecline
+    ("injury_res", 0x4e, 3, 1, None),    # injury resistance; plPinfo_CheckKega
+    ("recovery", 0x4f, 3, 1, None),      # plPinfo_CalcGTired/CalcRecover multipliers
+    ("foul_avoid", 0x50, 4, 1, None),    # foul avoidance
+    ("weak_foot", 0x51, 4, 1, None),     # weak-foot accuracy
+    ("policy", 0x52, 5, 1, None),        # pwkTeamType_PolicyInit, plCombi_*
+    ("adapt", 0x53, 3, 1, None),         # adaptability; pwkTeamType_GetFit
+    ("intelligence", 0x54, 4, 1, None),
+    ("ball_touch", 0x55, 2, 1, None),    # ball-touch type
+    ("dribble_style", 0x56, 2, 1, None),
+    ("f_57", 0x57, 2, 1, None),
     ("f_58", 0x58, 3, 2, None),
     ("f_5a", 0x5a, 2, 1, None),
     ("f_5b", 0x5b, 3, 1, None),
@@ -121,7 +138,7 @@ MANAGER_FIELDS = (
     ("job", 0x1c, 3, 1, None),           # PlMinfo +0xa0: which bars CalcManagerAbil shows
     ("f_20", 0x20, 16, 1, None),
     ("age", 0x22, 6, 1, None),           # stored as is; shown as the age (TEAM_INIT_DATA tests)
-    ("money", 0x24, 16, 1, "money"),
+    ("req_status", 0x24, 16, 1, "status"),
     ("f_26", 0x26, 4, 4, None),
     ("f_2a", 0x2a, 2, 5, None),
     ("f_2f", 0x2f, 3, 4, None),
@@ -141,7 +158,7 @@ SCOUT_FIELDS = (
     ("age", 0x18, 8, 1, None),           # stored as is; shown as the age (TEAM_INIT_DATA tests)
     ("f_1c", 0x1c, 5, 1, None),
     ("f_20", 0x20, 16, 1, None),
-    ("money", 0x22, 16, 1, "money"),
+    ("req_status", 0x22, 16, 1, "status"),
     ("f_24", 0x24, 4, 4, None),
     ("f_28", 0x28, 1, 1, None),
     ("f_29", 0x29, 7, 4, None),
@@ -198,18 +215,22 @@ STYLES = ("none", "Centre Forward", "Moving", "Postplayer", "Dash out",
           "Stopper", "CB", "GK", "Attacking GK")
 
 
+# The 8 values of +0x37, one per cause of dissatisfaction: the pwkDissatis_*
+# function for each cause multiplies it by 1.0 + 0.1 x value (e.g. Money
+# 0x237420, table 0x391150).
+DISSATIS = ("money", "players", "staff", "position", "matches", "policy",
+            "competition end", "facilities")
+
+
 def style_names(styles):
     return [STYLES[s] if s < len(STYLES) else str(s) for s in styles if s]
 
 
-# Names for the 64 player abilities. Only the bar sources (11, 13-18,
-# 21-23), the position aptitudes (33-44) and the systems (45-52, by match
-# growth at 0x246884) come from the game code. The rest follow Virtua Pro
-# Football's edit screen, which runs on the same engine: same order, and
-# the values of the four players checked (Taylor, Rooney, Beckham, Lucio)
-# match their records here.
-# None means unnamed.
-# DOC/PBDATA_FORMAT.md#ability-names says which is which.
+# Names for the 64 player abilities. The developers' player editor in
+# DEBUGPRG.REL pairs a label with each ability number ({label, n} table at
+# 0x11128); these are English renderings of those labels, using Virtua Pro
+# Football's English names where it has the same parameter.
+# DOC/PBDATA_FORMAT.md#ability-names lists the original labels.
 SYSTEMS = ("3-4-3", "3-5-2", "3-6-1", "4-3-3", "4-4-2", "4-5-1", "5-3-2", "5-4-1")
 ABILITY_NAMES = (
     "dribble pace", "dribble skill", "shot skill", "shot technique",
@@ -218,13 +239,13 @@ ABILITY_NAMES = (
     "saving", "catching", "aerial ability", "rushing out",
     "pace", "acceleration", "jump", "agility", "stamina", "kick strength",
     "contact strength",
-    "leadership", None, "attack minded", "defence minded",
-    "supportiveness", "vision", None,
-    "GK", "DF side", "DF centre", "DM side", "DM centre", "AM side",
-    "AM centre", "FW side", "FW centre", "centre", "left side", "right side",
+    "leadership", "nerve", "attack minded", "defence minded",
+    "supportiveness", "vision", "concentration",
+    "GK", "SB", "CB", "WB", "DM", "SM", "OM", "WG", "FW",
+    "centre", "left side", "right side",
 ) + tuple("system " + s for s in SYSTEMS) + (
-    "counterattack", None, "attacks down wings", "attacks through middle",
-    "line DF", "pressing", None, None, None, None, None)
+    "counterattack", "possession", "attacks down wings",
+    "attacks through middle", "line DF", "pressing") + tuple("attack pattern " + c for c in "ABCDE")
 assert len(ABILITY_NAMES) == 64
 
 
@@ -387,8 +408,8 @@ def field_bits(fields):
 def convert(conv, v, bits):
     if conv is None:
         return v
-    if conv == "money":
-        return MONEY[v & 0xf]
+    if conv == "status":
+        return STATUS[v & 0xf]
     if conv == "ability":
         return ABILITY[v]
     if conv == "ability7":
@@ -401,15 +422,15 @@ def convert(conv, v, bits):
 def unconvert(conv, value, bits, old_raw=None):
     """The stored value for `value`, the inverse of convert(). If the old
     stored value already converts to `value` it is kept, so lossy fields
-    (money uses only the low 4 bits) round-trip unchanged."""
+    (req_status uses only the low 4 bits) round-trip unchanged."""
     if old_raw is not None and convert(conv, old_raw, bits) == value:
         return old_raw
     if conv is None:
         raw = value
-    elif conv == "money":
-        if value not in MONEY:
-            raise ValueError("money must be one of %s" % ", ".join(map(str, MONEY)))
-        raw = MONEY.index(value)
+    elif conv == "status":
+        if value not in STATUS:
+            raise ValueError("req_status must be one of %s" % ", ".join(map(str, STATUS)))
+        raw = STATUS.index(value)
     elif conv in ("ability", "ability7"):
         if value not in ABILITY:
             raise ValueError("ability must be one of %s" % ", ".join(map(str, ABILITY)))
@@ -707,9 +728,9 @@ def summary(r, nations):
         return "%5d  %-19s %-16s age %2d  %3dcm %3dkg  %s  pos %-14s shirt %2d  rank %2d" % (
             r.db_id, r.name, nat, f["age"], f["height"], f["weight"], leg, pos, f["shirt"], f["rank"])
     if r.kind == "managers":
-        return "%5d  %-19s %-16s age %2d  %-14s money %5d" % (
-            r.db_id, r.name, nat, f["age"], JOB_ROLE.get(f["job"], "manager"), f["money"])
-    return "%5d  %-19s %-16s age %2d  money %5d" % (r.db_id, r.name, nat, f["age"], f["money"])
+        return "%5d  %-19s %-16s age %2d  %-14s status %5d" % (
+            r.db_id, r.name, nat, f["age"], JOB_ROLE.get(f["job"], "manager"), f["req_status"])
+    return "%5d  %-19s %-16s age %2d  status %5d" % (r.db_id, r.name, nat, f["age"], f["req_status"])
 
 
 def cmd_list(path, kind, find, nations):
@@ -733,7 +754,7 @@ def cmd_show(path, ids, nations):
             shown = " ".join(map(str, v)) if isinstance(v, list) else str(v)
             if conv not in (None, "ability", "ability7") and v != raw:
                 shown += "  (stored %s)" % (" ".join(map(str, raw)) if isinstance(raw, list) else raw)
-            print("    +%#04x %-9s %2d bit%s  %s" % (off, fname, bits,
+            print("    +%#04x %-15s %2d bit%s  %s" % (off, fname, bits,
                                                    " x%-2d" % count if count > 1 else "    ", shown))
         if kind == "managers":
             role = JOB_ROLE.get(r.fields["job"], "manager")
@@ -747,6 +768,8 @@ def cmd_show(path, ids, nations):
             gk = r.fields["position"][0] == 0
             print("    skills    %s" % (", ".join(skill_names(r.fields["skills"])) or "none"))
             print("    styles    %s" % (", ".join(style_names(r.fields["style"])) or "none"))
+            print("    dissatis  %s" % "  ".join(
+                "%s %d" % kv for kv in zip(DISSATIS, r.fields["dissatis"])))
             ab = r.fields["ability"]
             for row in range(0, 64, 4):
                 print("    " + "  ".join("%2d %-22s %2d" % (n, ability_name(n), ab[n])

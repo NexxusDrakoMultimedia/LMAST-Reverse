@@ -6,7 +6,8 @@
 `PBDATA_EU.PAC` holds every real person the game knows: 27,950 players,
 3,000 managers and coaches, and 1,000 scouts. That covers names,
 nationality, age, height, weight, positions, preferred shirt number, a
-money band, skills, and 64 ability ratings per player. The squads in
+required status, personality traits, skills, play styles and 64 ability
+ratings per player. The squads in
 `OTEAMMEMBER.TBB` ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)) refer to
 players by their index here.
 
@@ -25,11 +26,11 @@ names on the squads.
 | `0x20c9b8` | `getSbase(id)` | ids from `0x78e6`, decoded by `plBits_DecPlSbaseEx` |
 | `0x20bd28` | `PlBitsClass::readBits(n)` | reads *n* bits, most significant first. Bits are taken from each byte starting at `0x80`, and bytes in order |
 | `0x20bdc8` | `PlBitsClass::readBitsStr(buf, n)` | *n* 8-bit characters: the name |
-| `0x2e8568` | `plBits_DecPlPbaseEx` | the player fields below, in order. Afterwards it adds 16, 150 and 45 to `+0x28`, `+0x29` and `+0x2a`, replaces `+0x34` with `MONEY[v & 0xf]`, and maps each of the 64 abilities through `0x2e8540` |
+| `0x2e8568` | `plBits_DecPlPbaseEx` | the player fields below, in order. Afterwards it adds 16, 150 and 45 to `+0x28`, `+0x29` and `+0x2a`, replaces `+0x34` with `STATUS[v & 0xf]`, and maps each of the 64 abilities through `0x2e8540` |
 | `0x2e8a70` | `plBits_DecPlMbaseEx` | the manager fields. The two groups of 9-bit values are sign-extended from bit 8 into s32 at `+0x4c` and `+0x54` (pointers set up at `0x2e8b64`) |
 | `0x2e8ec8` | `plBits_DecPlSbaseEx` | the scout fields. The last 45 of its 49 seven-bit values go through `0x2e8540` |
 | `0x2e8540`, `0x55b950` | ability mapping | `ABILITY[min(v, 31)]` with `ABILITY` = 38, 40, … 96, 98, 99 |
-| `0x55b970` | money table | 0, 200, 1000, 3000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000 |
+| `0x55b970` | status table (required status) | 0, 200, 1000, 3000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000 |
 | `0x2175e0`, `0x2176a8` | `plPinfo_IsForeigner`, `plPinfo_IsEU` | player `+0x14` is the nationality (`PlNati`). Bit 1 of `+0x63` is an EU passport on top of it |
 | `0x218748` | `plPinfo_IsSkill` | `+0x64` is a bit mask, one bit per `PlPlayerSkill` |
 | `0x20d908` | `getPinfoRank` | for ids ≥ `0x63f7` the rank is `+0x18`. Below that it is worked out from entry 3's value for the player (against thresholds at `0x5eac08`) |
@@ -62,8 +63,11 @@ Each record starts with a `char[19]` name (cp850, zero-padded), followed
 by bit fields read MSB first. The widths, order and destination offsets
 are all **confirmed** from the decoders. The destination offset is where
 the game keeps the value in memory, and it is also `pbdata.py`'s name for
-a field whose meaning is unknown (`f_2c`, …). Meanings marked
-*empirical* come from the data alone.
+a field whose meaning is unknown (`f_30`, …). Meanings marked
+*empirical* come from the data alone. Player field names from `+0x34` on
+are the developers' own labels ([below](#the-developers-player-editor));
+**confirmed** on such a row means the game code that reads the field was
+also found.
 
 ### Players (98 bytes, 779 bits used)
 
@@ -76,19 +80,38 @@ a field whose meaning is unknown (`f_2c`, …). Meanings marked
 | 8 | 1 | `+0x29` | height | stored − 150, in cm (158–205). *Empirical*. The decoder stores the sum in a byte (`sb` at `0x2e8a14`), so heights above 255 wrap. Tested in game: 313 cm shows as 57 cm |
 | 7 | 1 | `+0x2a` | weight | stored − 45, in kg (48–100). *Empirical* |
 | 7 | 1 | `+0x2b` | shirt | preferred shirt number. **confirmed** |
-| 3 | 1 | `+0x2c` | leg | 0–3. Bit 0 set means right-footed, clear means left. *Empirical*: every well-known left-footer tested (Robben, Ashley Cole, Giggs, Messi, Roberto Carlos, Duff, Cech) has it clear. Bit 1 is set for famously two-footed players (Maldini, Henry, Rooney, Duff), and VPF's Player Edit screen shows Rooney (leg 3) as "Both(R)", so bit 1 is two-footed (*empirical*). The detail screen shows a message from 100–103 (LEFT, RIGHT, LEFT, RIGHT), which fits `100 + leg`, but the copy into `PlPinfo +0x1c4` hasn't been traced |
-| 16 | 1 | `+0x30` | | always 0 |
-| 16 | 1 | `+0x32` | | 0–17,172 |
-| 16 | 1 | `+0x34` | money | band 0–15, looked up in the money table. What the money is (value or wages) isn't known. A lead: the developer BPINFO CHECK screen counts 8,063 players with money between 1 and 9,999 and labels the 10,000 cutoff "1mil" ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)), so one unit may be 100 of some currency |
-| 3 | 1 | `+0x36` | | |
-| 2 | 8 | `+0x37` | | |
-| 4 | 8 | `+0x3f` | | the last 4 are usually 0 |
-| 3, 5, 4, 3, 4, 5, 3, 4 | 2, 1, 3, 3, 2, 1, 1, 1 | `+0x47`…`+0x54` | | `+0x54` is always 0 |
-| 2, 3, 2, 3, 1, 4 | 3, 2, 1, 1, 1, 1 | `+0x55`…`+0x5d` | | `+0x57` is always 0 |
+| 3 | 1 | `+0x2c` | leg | 0–3. Bit 0 set means right-footed, clear means left. *Empirical*: every well-known left-footer tested (Robben, Ashley Cole, Giggs, Messi, Roberto Carlos, Duff, Cech) has it clear. Bit 1 is set for famously two-footed players (Maldini, Henry, Rooney, Duff), and VPF's Player Edit screen shows Rooney (leg 3) as "Both(R)", so bit 1 is two-footed. The developers' editor names the four values 左, 右, 両左, 両右 (left, right, both-left, both-right). The detail screen shows a message from 100–103 (LEFT, RIGHT, LEFT, RIGHT), which fits `100 + leg`, but the copy into `PlPinfo +0x1c4` hasn't been traced |
+| 16 | 1 | `+0x30` | f_30 | always 0 |
+| 16 | 1 | `+0x32` | face | face number, 0–17,172. **confirmed**: `CDetailManager` passes it to `CDetailFace::Request` (`0x2869b4`) |
+| 16 | 1 | `+0x34` | req_status | required status: band 0–15, looked up in the status table (`0x55b970`). **confirmed**: `pwkTeam_UpdatePlayerCandidates` (`0x260cf8`) leaves a player out of a candidate list when it is above the club's `pwkTeam_Status()`. Managers (`+0x24`) and scouts (`+0x22`) have the same field. Earlier lead: the BPINFO CHECK screen labels the 10,000 cutoff "1mil" ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)) |
+| 3 | 1 | `+0x36` | tone | speech tone, 0–3. Read by the event code in `SIMPRG.REL`; what each value sounds like isn't traced |
+| 2 | 8 | `+0x37` | dissatis | sensitivity to 8 causes of dissatisfaction, 0–3. **confirmed**; see [Personality](#personality-and-condition-fields) |
+| 4 | 1 | `+0x3f` | professionalism | picks the starting power range. **confirmed** |
+| 4 | 1 | `+0x40` | pressure | pressure resistance. Read by the match engine (`GAMEPRG.REL`), not traced |
+| 4 | 1 | `+0x41` | loyalty | club loyalty; sets a promoted youth player's contract years. **confirmed** |
+| 4 | 1 | `+0x42` | star | star quality; scales popularity changes. **confirmed** |
+| 4 | 4 | `+0x43` | f_43 | no label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players) |
+| 3 | 1 | `+0x47` | moti_type | motivation type, 0–7. **confirmed** |
+| 3 | 1 | `+0x48` | cond_type | condition type, 0–7. No reader found outside the debug and save code |
+| 5 | 1 | `+0x49` | potential | 0–7; read by `plPinfo_InitEditAbil` (`0x21b2b8`) |
+| 4 | 3 | `+0x4a` | growth | physical, skill and mental growth types, 0–15. **confirmed** (`pwkGUtl_GetPhysical/Skill/MentalGrowCoe`, `0x245ef8`–`0x245f58`) |
+| 3 | 1 | `+0x4d` | travel | travel tolerance, 0–7. **confirmed** |
+| 3 | 1 | `+0x4e` | injury_res | injury resistance, 0–7. **confirmed** |
+| 3 | 1 | `+0x4f` | recovery | recovery, 0–7. **confirmed** |
+| 4 | 1 | `+0x50` | foul_avoid | foul avoidance, 0–15. Read by the match engine, not traced |
+| 4 | 1 | `+0x51` | weak_foot | weak-foot accuracy, 0–15. Read by the match engine, not traced. 163 of the 499 two-footed players have 8 or more, against 324 of the other 27,451 |
+| 5 | 1 | `+0x52` | policy | the player's policy type, 0–24. **confirmed** (`pwkTeamType_PolicyInit` `0x27033c`, also `plCombi_*` and `pwkPromise_*`) |
+| 3 | 1 | `+0x53` | adapt | adaptability, 0–6. **confirmed**: `pwkTeamType_GetFit` (`0x270624`) looks it up in a table at `0x3996d8` (30, 33, 35, 38, 40, 45, 50) |
+| 4 | 1 | `+0x54` | intelligence | always 0 |
+| 2 | 1 | `+0x55` | ball_touch | ball-touch type, 0–2 |
+| 2 | 1 | `+0x56` | dribble_style | 0–3 |
+| 2 | 1 | `+0x57` | f_57 | always 0; no label |
+| 3 | 2 | `+0x58` | f_58 | no label. Read by `pwkDissatis_PlayerResign` and `pwkDissatis_StaffResign` (`0x239a30`, `0x23a018`). 0 in 27,256 and 27,187 players |
+| 2, 3, 1, 4 | 1 each | `+0x5a`…`+0x5d` | f_5a…f_5d | no label. Mostly 0; read by the match engine |
 | 5 | 5 | `+0x5e` | style | play styles, 1–22, 0 for none. **confirmed**. See [Play styles](#play-styles) |
 | 3 | 1 | `+0x63` | flags | bit 1: EU passport. **confirmed**. Set in 19,333 players |
 | 16 | 1 | `+0x64` | skills | bit mask. **confirmed**. All 16 bits are used; see [Skills](#skills) |
-| 3 | 11 | `+0x66` | | 0–4 |
+| 3 | 11 | `+0x66` | f_66 | 0–4. No label. `+0x67` is the row of the affinity table (see [Personality](#personality-and-condition-fields)); the others aren't traced |
 | 5 | 64 | `+0x74` | ability | 64 ratings (`PlAbilNo` 0–63), each mapped to 38–99. **confirmed**. See [Abilities](#abilities-and-the-detail-screen) |
 
 The 5 bits after the last field are zero in every record.
@@ -114,7 +137,7 @@ traced. The user identified these as national-team players.
 
 `char[19]` name, then (bits × count at offset): 8 `+0x14` (nationality,
 *empirical*: same range and position as the players'), 5 `+0x18`,
-3 `+0x1c` (job, see below), 16 `+0x20`, 6 `+0x22` (age, see below), 16 `+0x24` (money band, **confirmed**
+3 `+0x1c` (job, see below), 16 `+0x20`, 6 `+0x22` (age, see below), 16 `+0x24` (required status, **confirmed**
 table lookup), 4 ×4 `+0x26`, 2 ×5 `+0x2a`, 3 ×4 `+0x2f`, 2 `+0x33`,
 6 `+0x34`, 3 ×8 `+0x35`, 8 ×3 `+0x3d`, 3 ×7 `+0x40`, 5 ×5 `+0x47`,
 signed 9 ×2 `+0x4c`, signed 9 ×4 `+0x54`, 1 ×2 `+0x64`, and 48 abilities
@@ -123,7 +146,7 @@ signed 9 ×2 `+0x4c`, signed 9 ×4 `+0x54`, 1 ×2 `+0x64`, and 48 abilities
 ### Scouts (71 bytes, 565 bits used)
 
 `char[19]` name, then 8 `+0x14` (nationality, *empirical*), 8 `+0x18`
-(age, see below), 5 `+0x1c`, 16 `+0x20`, 16 `+0x22` (money band), 4 ×4 `+0x24`, 1 `+0x28`,
+(age, see below), 5 `+0x1c`, 16 `+0x20`, 16 `+0x22` (required status), 4 ×4 `+0x24`, 1 `+0x28`,
 and 49 × 7 bits at `+0x29`. The last 45 of those are abilities, clamped
 to 31 and mapped to 38–99. The 3 bits left over are zero.
 
@@ -138,6 +161,107 @@ and 108 scout records. **Tested in PCSX2:** the game shows that value as
 the staff member's age, in the Coach and Scout Candidate Lists and for
 the club's own staff ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md)). Ages
 run 35–55 for managers and 35–58 for scouts.
+
+## The developers' player editor
+
+`DEBUGPRG.REL` holds the developers' editors for players, managers and
+scouts (`Param::PinfoEditorTask`, `MinfoEditorTask`, `SinfoEditorTask`),
+with Japanese (cp932) labels. The retail game never loads this overlay
+([`SNR2_FORMAT.md`](SNR2_FORMAT.md)), but its code and labels name most
+of the record.
+
+**Abilities (confirmed).** A table at `DEBUGPRG.REL 0x11128` holds 64
+pairs `{label, ability number}`, numbers 0–63 in order:
+
+| Ability | Label | | Ability | Label |
+|---|---|---|---|---|
+| 0 | ドリブルスピード dribble speed | | 32 | 集中力 concentration |
+| 1 | ドリブル精度 dribble accuracy | | 33 | GK適正 GK aptitude |
+| 2 | シュート精度 shot accuracy | | 34 | SB適正 |
+| 3 | シュートテクニック shot technique | | 35 | CB適正 |
+| 4 | ショートパス精度 short pass accuracy | | 36 | WB適正 |
+| 5 | ロングパス精度 long pass accuracy | | 37 | DM適正 |
+| 6 | クロスボール精度 cross accuracy | | 38 | SM適正 |
+| 7 | ヘディング精度 heading accuracy | | 39 | OM適正 |
+| 8 | トラップ trap | | 40 | WG適正 (wing) |
+| 9 | キープ力 ball keeping | | 41 | FW適正 |
+| 10 | タックル tackle | | 42 | 中央適正 centre |
+| 11 | インターセプト intercept | | 43 | 左サイド適正 left side |
+| 12 | ボール奪取 ball winning | | 44 | 右サイド適正 right side |
+| 13 | マーキング marking | | 45–52 | 3-4-3 … 5-4-1 理解度 system understanding |
+| 14 | プレイスキック精度 placekick accuracy | | 53 | 速攻理解度 counterattack |
+| 15 | セービング saving | | 54 | ポゼッション理解度 possession |
+| 16 | キャッチング catching | | 55 | サイド攻撃理解度 side attack |
+| 17 | ハイボール high balls | | 56 | 中央攻撃理解度 centre attack |
+| 18 | 飛び出し rushing out | | 57 | オフサイド理解 offside |
+| 19 | スピード speed | | 58 | プレス理解 pressing |
+| 20 | ダッシュ dash | | 59–63 | 攻撃パターンA–E理解度 attack patterns A–E |
+| 21 | ジャンプ力 jump | | | |
+| 22 | レスポンス response | | | |
+| 23 | スタミナ stamina | | | |
+| 24 | キック力 kick strength | | | |
+| 25 | 当たりの強さ contact strength | | | |
+| 26 | 統率力 leadership | | | |
+| 27 | 度胸 nerve | | | |
+| 28 | 攻撃意識 attack minded | | | |
+| 29 | 守備意識 defence minded | | | |
+| 30 | サポート意識 supportiveness | | | |
+| 31 | 視野の広さ vision | | | |
+
+This agrees with every ability the game code names (the bars, the
+position grid and the system growth) and with all four VPF players
+([Ability names](#ability-names)). The 34–41 labels name the grid cells:
+SB/CB, WB/DM, SM/OM and WG/FW are the side and centre of each row. 59–63
+are the five attack patterns the tactics screen calls Left Flank, Right
+Flank, Centre Drive, Counter Attack and Possession (messages 1:620–649);
+which pattern is which letter isn't traced.
+
+**Record fields (confirmed).** The player editor draws each field's label
+and then reads that field, a few instructions later, in record order
+(`DEBUGPRG.REL 0x5ad0`–`0x60a8`): 利き足 leg `+0x2c`, 身長 height, 体重
+weight, 基本背番号 shirt, 得意ポジション position, 必要ステータス
+required status `+0x34`, 口調 speech tone `+0x36`, プロフェッショナル意識
+professionalism `+0x3f`, プレッシャー耐性 pressure resistance `+0x40`,
+クラブ忠誠心 club loyalty `+0x41`, スター性 star quality `+0x42`,
+モチベーションタイプ motivation type `+0x47`, コンディションタイプ
+condition type `+0x48`, 将来性 potential `+0x49`, フィジカル/スキル/精神成長タイプ
+growth types `+0x4a`–`+0x4c`, 移動耐性 travel tolerance `+0x4d`,
+怪我の少なさ injury resistance `+0x4e`, 回復力 recovery `+0x4f`,
+ファールしにくさ foul avoidance `+0x50`, 逆足精度 weak-foot accuracy
+`+0x51`, ポリシー policy `+0x52`, 環境適応度 adaptability `+0x53`,
+インテリジェンス intelligence `+0x54`, ボールタッチタイプ ball-touch type
+`+0x55`, ドリブルスタイル dribble style `+0x56`, 固有プレイスタイル native
+play styles `+0x5e`. The manager and scout editors read their `+0x24`
+and `+0x22` under 必要ステータス too.
+
+The editor has no label for `+0x30`, `+0x37` (shown on its dissatisfaction
+page), `+0x43`–`+0x46`, `+0x57`–`+0x5d` or `+0x66`–`+0x70`.
+
+## Personality and condition fields
+
+**Confirmed from the readers in `SLES_541.51`** (each reads the field at
+`PlPinfo +0x198` + its record offset):
+
+| Field | Reader | What the value does |
+|---|---|---|
+| `dissatis` `+0x37`–`+0x3e` | `pwkDissatis_Money`, `_Player`, `_Staff`, `_Position`, `_Match`, `_Policy`, `_CompeEnd`, `_Facility` (`0x237420`, `0x2376a8`, `0x237af8`, `0x237fbc`, `0x238350`, `0x238558`, `0x23a930`, `0x238a84`) | each scales that cause of dissatisfaction by 1.0, 1.1, 1.2 or 1.3 (tables such as `0x391150`) |
+| `professionalism` `+0x3f` | `plPinfo_InitPower` (`0x21af98`) | power (`+0x24c`, 0–1000) starts at a random value in a range from the table at `0x532a38`: 800–900 for 0, rising to 980–1000 for 15 |
+| `loyalty` `+0x41` | `pwkTeam_GetYouthPromoteConyear` (`0x2714cc`) | value / 2 picks the row for a promoted youth player's contract years |
+| `star` `+0x42` | `plPinfo_GameCheck`, `MonthEndCheck`, `YearEndCheck`, `ClubTitleCheck`, `UpDownKeymanCaptaion` | added to the rank, capped at 30, picks the size of each popularity change (`plPinfo_ChangePop`) |
+| `moti_type` `+0x47` | `plPinfo_CalcMotiYear` (`0x21bfe4`) | yearly motivation gain from the table at `0x390860`: 3000, 4500, 1500, 4500, 1500, 1500, 3000, 4500 |
+| `moti_type`, `f_66` `+0x67` | `pwkDissatis_GetAffintyType` (`0x2370d0`) | how two people get on: an 8 × 8 table of u16 at `0x390fd0`, row = one person's `+0x67`, column = the other's `+0x47` (a manager's comes from his `PlMbase +0x2f`). Values 0–4 |
+| `travel` `+0x4d` | `plPinfo_CalcMatchMovePowerDecline` (`0x2197dc`) | with the age, the power lost to travelling for a match (the effect is read from the function's name) |
+| `injury_res` `+0x4e` | `plPinfo_CheckKega` (`0x21aa64`) | with the age, fatigue, power and motivation, the injury check |
+| `recovery` `+0x4f` | `plPinfo_CalcGTired`, `CalcPracTired`, `CalcRecover` | picks a pair of multipliers from `0x532870`: (1.1, 0.9), (1.1, 1.0), (1.0, 0.9), (1.0, 1.0), (1.0, 1.1), (0.9, 0.9), (0.9, 1.0), (0.7, 0.9) |
+
+The match engine (`GAMEPRG.REL`) reads `+0x3f`–`+0x5d` as well; that
+code isn't traced, so what pressure resistance, foul avoidance, weak-foot
+accuracy, ball-touch type and dribble style do on the pitch is open.
+
+```bash
+python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 4408     # Beckham: every field by name
+python SRC/snr2.py dis ISO/DLL/DEBUGPRG.REL 0x5ad0 400 --sles ISO/SLES_541.51
+```
 
 ## Abilities and the detail screen
 
@@ -207,6 +331,11 @@ categories ([Ability names](#ability-names)): 0's main abilities are its
 
 ### Ability names
 
+The developers' label table ([above](#the-developers-player-editor))
+names all 64 abilities. This section is the independent check that came
+first: Virtua Pro Football's English names and values. `pbdata.py` uses
+VPF's English name where VPF has the same parameter.
+
 Virtua Pro Football (VPF) runs on the same engine, and its Player Edit
 screen names its parameters on 8 pages. The user supplied screenshots of
 that screen for four players in this database: Maik Taylor (player 0, a
@@ -247,21 +376,21 @@ database fit), or **VPF** (VPF's name, with the values as shown).
 | 24 | kick strength | 74/73, 88/88, 86/86 | VPF + data (SHOT and DISTR bars) |
 | 25 | contact strength | 80/80, 90/91, 80/80 | VPF + data (PHYSI and HEAD bars) |
 | 26 | leadership | 40/40, 70/70, 90/90 | VPF + data (MENTA bar) |
-| 27 | unknown, "consistency" by VPF's order | 40/51, 94/45, 94/66 | the values don't fit (MENTA bar) |
+| 27 | nerve | 40/51, 94/45, 94/66 | developer label 度胸. VPF's "consistency" sits in this slot, but the values don't fit (MENTA bar) |
 | 28 | attack minded | 52/51, 96/96, 94/93 | VPF + data: averages 45 for goalkeepers, 80 for forwards |
 | 29 | defence minded | 84/84, 54/70, 72/72 | VPF + data: averages 80 for goalkeepers, 45 for forwards |
 | 30 | supportiveness | 40/40, 88/79, 90/89 | VPF + data (SUPPO bar) |
 | 31 | vision | 60/59, 76/75, 99/99 | VPF + data (SUPPO bar) |
-| 32 | unknown (Attitude hexagon) | T 78, R 72, B 86 | no VPF counterpart |
+| 32 | concentration | T 78, R 72, B 86 | developer label 集中力; no VPF counterpart (Attitude hexagon) |
 | 33–44 | position aptitudes | see below | code ([Positions](#positions-and-aptitude)) |
 | 45–52 | fit with systems 3-4-3, 3-5-2, 3-6-1, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1 | | code for "system *k*" (match growth); the order of the systems is empirical: the formation names (messages 801:0–7, 1:530–537) and their descriptions (700:270–293) are listed in this order |
 | 53 | counterattack | 82/82, 88/87, 82/81 | VPF + data |
-| 54 | unknown (Teamwork hexagon) | T 42, R 88, B 46 | no VPF counterpart |
+| 54 | possession | T 42, R 88, B 46 | developer label ポゼッション理解度; no VPF counterpart (Teamwork hexagon) |
 | 55 | attacks down wings | 80/79, 62/78, 40/39 | VPF + data (Rooney is the one outlier) |
 | 56 | attacks through middle | 38/34, 86/86, 56/55 | VPF + data |
 | 57 | line DF | 64/64, 58/57, 64/63 | VPF + data. Beckham settles the pair (line DF 63, pressing 59) |
 | 58 | pressing | 68/68, 58/57, 60/59 | VPF + data |
-| 59–63 | unknown | | 60 is in the Teamwork hexagon |
+| 59–63 | attack patterns A–E | | developer labels 攻撃パターンA–E理解度; 60 is in the Teamwork hexagon |
 
 VPF's aptitude page names the position cells. Rooney and Beckham agree
 on 39 = OM (86/85, 72/70), 42 = centre (94/93, 88/87), 43 = left (82/82,
@@ -513,7 +642,7 @@ Edits are given as the values `show` prints, and are converted back:
 
 - `add` fields subtract their offset (age 30 is stored as 14).
 - Abilities must be one of the 32 table values, 38–99.
-- `money` must be one of the 16 table values, stored as its index. The
+- `req_status` must be one of the 16 table values, stored as its index. The
   game reads only the low 4 bits of the 16-bit field, so an unchanged
   value keeps its stored bits.
 - Signed manager fields must fit 9 bits.
@@ -546,10 +675,13 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 
 ## Still unknown
 
-- The meaning of most fields between `+0x30` and `+0x5d`, and `+0x66`.
-- Abilities 27, 32, 54 and 59–63, which have no VPF counterpart that
-  fits. The game code that reads 53–63 hasn't been found (the match
-  engine, `GAMEPRG.REL`, is the likely reader).
+- The fields the developers' editor doesn't label: `+0x30`, `+0x43`–`+0x46`,
+  `+0x57`–`+0x5d` and `+0x66`–`+0x70` (except `+0x67`'s use as the
+  affinity row).
+- What the match engine (`GAMEPRG.REL`) does with `+0x3f`–`+0x5d` and
+  abilities 53–63, and which attack pattern letter is which.
+- What each speech tone, condition type, ball-touch type and dribble
+  style value is.
 - The hexagon labels are matched to indices from the data and VPF's
   pages. The label order in `GP::CHexWindowBase::DrawString` (`0x27c700`)
   comes from a screen layout and hasn't been traced.

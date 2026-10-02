@@ -48,11 +48,16 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `MAPTEAM_LIST`, and `PLRRSRC_INITTEAMDATA` table 2's negative values
 - [ ] `TEAM_INIT_DATA` leftovers: the candidate lists' "List criteria"
       (7 Training cycle) and H.Dale's salary showing 80,000 not 75,000
-- [ ] Name the rest of the player fields: money band (lead: BPINFO CHECK
-      calls band value 10,000 "1mil"), entry 2, the bit fields `+0x30`
-      to `+0x5d` and `+0x66`, abilities 27, 32, 54 and 59–63, and what
-      the skills and play styles do in a match. (The VPF screenshots of
-      Taylor, Rooney, Beckham and Lucio named the rest.)
+- [ ] Player fields still open: entry 2, the fields the developers'
+      editor doesn't label (`+0x30`, `+0x43`–`+0x46`, `+0x57`–`+0x5d`,
+      `+0x66`–`+0x70`), what the match engine (`GAMEPRG.REL`) does with
+      `+0x3f`–`+0x5d`, abilities 53–63 and the skills and play styles,
+      and which attack pattern letter (59–63) is which
+- [ ] Name the manager and scout fields from the developers' staff
+      editors in `DEBUGPRG.REL` (`MinfoEditorTask`, `SinfoEditorTask`):
+      their labels (coach type, club attachment, motivation type, the
+      scouts' search abilities and regions) are drawn next to the field
+      reads, as for players (`DOC/PBDATA_FORMAT.md#the-developers-player-editor`)
 - [ ] What sets job 5 when a manager is hired, and how coaches and former
       players become managers (`pwkTeam_*CoachJobChangeWork`, PlPinfo
       `+0x210`). (The "Assistant Coach" title and the forwards/defence

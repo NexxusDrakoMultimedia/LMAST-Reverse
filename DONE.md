@@ -179,6 +179,15 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Play style edit tested in PCSX2: Terry with `style.0=7` shows
       "Play maker" on his detail screen's STYLE line, on a
       `--skip-tutorial` disc (`DOC/PBDATA_FORMAT.md#play-styles`)
+- [x] Player fields named from the developers' player editor in
+      `DEBUGPRG.REL`: all 64 abilities ({label, number} table at
+      `0x11128`), and required status (was "money"), speech tone,
+      dissatisfaction sensitivities, professionalism, pressure, loyalty,
+      star quality, motivation/condition type, potential, travel, injury
+      resistance, recovery, foul avoidance, weak foot, policy,
+      adaptability, intelligence, ball touch, dribble style. Readers
+      traced in SLES for most; `+0x32` is the face number
+      (`DOC/PBDATA_FORMAT.md#personality-and-condition-fields`)
 
 ## 3. Ninja 3D models and motions
 
