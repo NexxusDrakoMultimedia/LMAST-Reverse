@@ -140,6 +140,12 @@ England's. The two can differ (that Terry's height, abilities and age
 aren't the club Terry's). The user identified these as national-team
 players.
 
+**Tested in PCSX2:** with record 26,046 (England's Terry) renamed
+`NT.Terry.VS`, England's starters in a VS match listed DF 6 NT.Terry.VS,
+in a 4-4-2 with the rest of the block's names (Robinson, A. Cole,
+G. Neville, Ferdinand, Beckham, Gerrard, J. Cole, Wright-Phillips, Owen,
+Rooney).
+
 In a career the fixed squads aren't loaded: mode 3 (`0x24d4b0`) only
 sets the 83 team numbers, and squads are called up from the club players
 ([National team call-ups](#national-team-call-ups)). Mode 1 (`0x24d4d8`,
@@ -926,8 +932,8 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 - Header `+0x14`, `+0x24` and the last 8 header bytes.
 - What fills the rank ranges at `0x5eac08` (probably the group table at
   `0x52fbf8`), and what `_getNationalTeamPoint` scores.
-- Which clubs teams 442–459 are, and a PCSX2 check that VS mode shows a
-  renamed fixed national player while a career call-up doesn't.
+- Which clubs teams 442–459 are, and a PCSX2 check that a career
+  call-up doesn't show a renamed fixed national player (VS mode does).
 
 ## Checking the claims
 

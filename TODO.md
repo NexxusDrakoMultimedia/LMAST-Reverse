@@ -77,8 +77,9 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       scores, team 465 and `PlPinfo +0x20c` flag `0x300` in the call-up
       filter, which clubs teams 442-459 are, and what fills the rank
       ranges at `0x5eac08` (`DOC/PBDATA_FORMAT.md#national-team-call-ups`)
-- [ ] Test in PCSX2: rename a fixed national player (e.g. 26,046, England's
-      Terry); he should show in VS mode but not in a career call-up
+- [ ] Test in PCSX2: a renamed fixed national player (26,046 as
+      `NT.Terry.VS`, disc `LMAST-nt-test.iso`) should not show in a career
+      call-up of England; the club Terry should
 - [ ] Editing rank, main position or nationality for players below 25,591:
       re-sort entries 2 and 3 and patch the group table at SLES
       `0x52fbf8`, so the game sees the change

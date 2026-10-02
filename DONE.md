@@ -213,6 +213,9 @@ files. Each item keeps what was found, where, and how it was tested.
       ranking of players 0-25,590 by rank, position and nation, with entry
       3 its inverse, which decides those players' rank and main position
       (`DOC/PBDATA_FORMAT.md#national-team-call-ups`)
+- [x] Tested in PCSX2: VS mode uses the fixed national squads. With
+      26,046 renamed `NT.Terry.VS`, England's VS starters listed DF 6
+      NT.Terry.VS (`DOC/PBDATA_FORMAT.md#player-id-blocks`)
 
 ## 3. Ninja 3D models and motions
 
