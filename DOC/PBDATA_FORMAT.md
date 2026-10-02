@@ -747,8 +747,8 @@ the level of its pair with the selected player, through
 
 The five icons, from the weakest pair to the strongest, are a skull, "…",
 a blue heart, a red heart and a bigger red heart (user report for the
-three hearts; the skull and "…" at the bottom are inferred from
-screenshots). The lines follow the same levels: in one screenshot the
+three hearts; the skull and "…" are confirmed by `save.py combi`, see
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md)). The lines follow the same levels: in one screenshot the
 only red line joined the selected player to the one player with the big
 red heart, and a substitute who had just come on had only "…" icons and
 white lines. Which colour (white, yellow, orange, red) is which level is

@@ -84,6 +84,7 @@ All **confirmed** by the accessor named. Offsets are within the block.
 | 0 | `0x1344` | | `pwkGen_GetDifficultyPointer` (`0x244c78`) | difficulty settings (not decoded) |
 | 1 | `0x4b4` | PlTeamData | `pwkTeam_GetMyTeamData` (`0x259898`) | your club |
 | 1 | `0x4b4 + 0x20` | 25 × PlPinfo | `pwkTeam_GetForeignCitizenNumber` (`0x266450`) | the squad, 0x2a0 bytes per player |
+| 1 | `0x4808` | 25 × 25 u16 | `plCombi_Get` (`0x20f638`): PlTeamData `+0x4354` | pair combinations: value above the diagonal, cap below (below) |
 | 1 | `0xec8e` | 25 × 0x11e | `pwkTeam_GetPlayerStats` (`0x265810`, indexes `0xec90 + slot × 0x11e`) | each squad slot's match statistics (below) |
 | 1 | `0x4f00` | 24 × PlPinfo | `pwkTeam_GetYteamData` (`0x270c18`); `pwkTeamType_FitCalc` (`0x270b58`) walks them up to `+0x3f00` | the youth team (21 players in the save checked, 3-year contracts, no salary) |
 | 1 | `0xe290` | 3 × 0x2a0 | `0x266600` | read like PlPinfo by one foreign-player count, but the save holds ids of 0 and no players there; not identified |
@@ -218,6 +219,34 @@ abilities at `+0x6a` (48) or `+0x31` (45).
 offered, from the age at `+0x26`. `save.py staff` lists everyone with
 their bars (`pbdata.py`'s staff formulas).
 
+**Pair combinations** (the tactics screen's lines and heart icons). Block
+1 `+0x4808` is `PlTeamData +0x4354`: a 25 × 25 matrix of u16 by squad
+slot, 0x32 bytes a row. **Confirmed:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x20f638`, `0x20ed98` | `plCombi_Get` | for slots *i* < *j*, `[i][j]` is the pair's value and `[j][i]` its cap. If the byte at `+0x4e2` is 0, a pair whose bytes at `+0x4e5` + slot differ reads as 20 |
+| `0x20f6b0` | `plCombi_Set` | stores a new value only when it is below the cap |
+| `0x20f1b0` | `plCombi_SetInit` | starts each pair from a table at `0x530bb0` (26 u16 a row), indexed by both players' `PlPinfo +0x1ea` (the database record's `+0x52`, the policy type), with a random spread |
+| `0x2e6fb0` | `CTacticsTeam::calculateCombinationLevel` | level 1 up to 13,107, then 2, 3, 4 and 5 above 52,430 (thresholds at `0x55b850`: fifths of 65,535) |
+| `0x2a5518` | `CTacticsBase::refreshCombinationLevel` | each player's icon shows the level of his pair with the selected player (`GP::SetCooperationIcon`) |
+
+The levels' icons are a skull, "…", a blue heart, a red heart and a
+bigger red heart. **Checked in game:** in save G000 (2024–25), all 22
+icons shown with J.Hartman selected match `save.py combi` (Galletti's
+skull, the four "…", and the blue, red and big red hearts). The line
+colours follow the same levels (see
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#f_43-and-f_66)).
+
+**Empirical**, all 5 saves: the value never exceeds the cap (1,329
+pairs), the diagonal is 0, and the caps are 0 or 7,000 + 7,300 × *k* for
+*k* = 0–7 (7,000 to 58,100). The byte at `+0x4e2` and the 25 bytes at
+`+0x4e5` are 255 in every save, so the "20" rule never applies to your
+club. `save.py combi` lists the pairs, and `save.py set ...
+combi:a:b=value` edits one (`combi:a:all=value` all of a slot's pairs).
+It raises the cap to the value if needed, because `plCombi_Set` ignores
+any value at or above the cap.
+
 **Match statistics.** For squad slot `s`, the stats start at block 1
 `+0xec8e + s × 0x11e`: four tables of five rows (pre-season, domestic
 league, overseas league, Euro, international), then 6 bytes not traced.
@@ -337,6 +366,7 @@ python SRC/save.py blocks
 python SRC/save.py info  <card>/BESLES-54151-G003
 python SRC/save.py roundtrip <card>/BESLES-54151-G00*
 python SRC/save.py show  <card>/BESLES-54151-G003
+python SRC/save.py combi <card>/BESLES-54151-G000 6
 python SRC/save.py set   <card>/BESLES-54151-G003 edited.bin money=2000000000 0:all=99
 python SRC/snr2.py dis ISO/DLL/SAVEPRG.REL 0x33140 160 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 dis initialize__Q22MC9CFcEuroIF pwkGen_GetSikin plMisc_AbilExp2Lv

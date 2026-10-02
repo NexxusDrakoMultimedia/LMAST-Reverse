@@ -525,3 +525,8 @@ files. Each item keeps what was found, where, and how it was tested.
       recorded once, cached in `.cache/`, and replayed (about a second a
       save); `save.py fields` checks it against the interpreter on random
       data
+- [x] Pair combinations (the tactics screen's lines and heart icons):
+      block 1 `+0x4808`, 25 × 25 u16 (value above the diagonal, cap
+      below; `plCombi_Get`/`Set`), levels 1–5 at fifths of 65,535.
+      `save.py combi` and `set ... combi:a:b=value`. Checked against the
+      game: all 22 icons on one tactics screen match

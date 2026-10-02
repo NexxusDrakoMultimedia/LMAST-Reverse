@@ -34,6 +34,9 @@ Confirmed from the game code:
   SAVEPRG.REL 0x32ce0   layout CRC over getSize(0..9); CRC-16 at 0x31470, table 0x53408
   SAVEPRG.REL 0x32d50   per-block loop: read 0x2b9b0 (table 0x4bd28), write 0x2ba08 (table 0x4bd50)
   0x21d908              PlPworkTask::getSize(i) = table 0x533ac8[i] - 8
+  0x20f638, 0x20f6b0    plCombi_Get/Set: pair combinations, 25 x 25 u16 at
+                        PlTeamData +0x4354 (value above the diagonal, cap below)
+  0x2e6fb0              calculateCombinationLevel: levels 1-5 at 0x55b850
 
 See DOC/SAVE_FORMAT.md.
 
@@ -47,6 +50,8 @@ Usage:
     python save.py set       <save> <out> 3:fatigue=0 3:condition=65535  #  slot:field=value
                                    (fields: fatigue, condition, motivation, power, form,
                                     policy_counter, policy_organisation)
+    python save.py combi     <save> [slot ...]            # pair combinations (tactics screen hearts)
+    python save.py set       <save> <out> combi:3:7=60000 combi:5:all=60000  # 0-65535
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
     python save.py roundtrip <save> ...                   # decode + encode, compare
@@ -793,6 +798,15 @@ STATS_OFF, STATS_SIZE = 0xec8e, 0x11e
 # pwkTeamType_FitCalc (0x270b58) walks its PlPinfo up to +0x3f00, where the
 # youth manager is (pwkTeam_GetYManager): 24 slots.
 YOUTH_OFF, YOUTH_SLOTS = 0x4f00, 0x3f00 // PINFO_SIZE
+# Pair combinations, PlTeamData +0x4354: 25 x 25 u16 by squad slot, rows
+# 0x32 bytes apart. For slots i < j, plCombi_Get (0x20f638, through
+# 0x20ed98) reads [i][j] as the pair's value and [j][i] as its cap;
+# plCombi_Set (0x20f6b0) only stores a new value below the cap.
+# CTacticsTeam::calculateCombinationLevel (0x2e6fb0) turns a value into the
+# tactics screen's level 1-5 with the thresholds at SLES 0x55b850.
+COMBI_OFF = TEAM_OFF + 0x4354
+COMBI_THRESHOLDS = (13107, 26214, 39322, 52430)
+COMBI_ICONS = ("skull", "...", "blue heart", "red heart", "big red heart")  # levels 1-5
 STATS_TABLES = ("table 1 (unknown)", "season", "table 3 (last season?)", "career")
 COMPETITIONS = ("pre-season", "domestic league", "overseas league", "Euro", "international")
 STATS_ROW = "<6H2B"     # goals, assists, games, games2, mom, points x 100, red, yellow
@@ -937,8 +951,36 @@ class Save:
         cur, limit, cap = struct.unpack_from("<3H", self.blocks, a)
         struct.pack_into("<3H", self.blocks, a, exp, max(limit, exp), max(cap, exp))
 
+    def _combi_offsets(self, a, b):
+        """Offsets of a pair's value and cap: [min][max] and [max][min]."""
+        i, j = sorted((a, b))
+        if i == j or not 0 <= i < SQUAD_SLOTS or not 0 <= j < SQUAD_SLOTS:
+            raise ValueError("a pair needs two different squad slots 0-%d" % (SQUAD_SLOTS - 1))
+        base = self.at(1, COMBI_OFF)
+        return base + i * 2 * SQUAD_SLOTS + j * 2, base + j * 2 * SQUAD_SLOTS + i * 2
+
+    def combi(self, a, b):
+        """(value, cap) of the pair of squad slots a and b."""
+        v, c = self._combi_offsets(a, b)
+        return struct.unpack_from("<H", self.blocks, v)[0], struct.unpack_from("<H", self.blocks, c)[0]
+
+    def set_combi(self, a, b, value):
+        """Set a pair's value; the cap is raised to match if it was lower,
+        since plCombi_Set (0x20f6b0) ignores any later value at or above it."""
+        if not 0 <= value <= 0xffff:
+            raise ValueError("a combination value is 0-65535")
+        v, c = self._combi_offsets(a, b)
+        cap = struct.unpack_from("<H", self.blocks, c)[0]
+        struct.pack_into("<H", self.blocks, v, value)
+        struct.pack_into("<H", self.blocks, c, max(cap, value))
+
     def encode(self):
         return build(self.game, bytes(self.blocks), self.file)[0]
+
+
+def combi_level(value):
+    """calculateCombinationLevel (0x2e6fb0): 1 up to the first threshold, ... 5."""
+    return 1 + sum(value > t for t in COMBI_THRESHOLDS)
 
 
 def save_path(p):
@@ -1110,17 +1152,52 @@ def cmd_staff(game, path):
         print("      " + "  ".join("%s %d" % b for b in bars))
 
 
+def cmd_combi(game, path, slots):
+    """Each filled squad slot's pairs (or only the given slots'), with the
+    value, cap and the tactics screen's level and icon."""
+    s = Save(game, path)
+    filled = [(int(i), s.pinfo(o)["name"]) for i, o in s.squad() if i.isdigit()]
+    names = dict(filled)
+    for a in slots or [i for i, _ in filled]:
+        if a not in names:
+            raise SystemExit("squad slot %d is empty (see `show`)" % a)
+        print("%2d %s" % (a, names[a]))
+        for b, name in filled:
+            if b == a:
+                continue
+            value, cap = s.combi(a, b)
+            lv = combi_level(value)
+            print("     %2d %-18s %5d / cap %5d  level %d %s" % (
+                b, name, value, cap, lv, COMBI_ICONS[lv - 1]))
+
+
 def cmd_set(game, path, out, assigns):
     """money=N; for a squad player slot:ability=level, slot:all=level, or
-    slot:field=value for the settable PINFO_FIELDS (fatigue, condition, ...)."""
+    slot:field=value for the settable PINFO_FIELDS (fatigue, condition, ...);
+    combi:a:b=value for a pair of squad slots, combi:a:all=value for all of
+    a slot's pairs."""
     s = Save(game, path)
     squad = dict(s.squad())
+    filled = [int(i) for i in squad if i.isdigit()]
     for a in assigns:
         key, _, val = a.partition("=")
         if not val:
             raise SystemExit("expected field=value, got %r" % a)
         if key == "money":
             s.money = int(val, 0)
+            continue
+        if key.startswith("combi:"):
+            _, x, y = (key.split(":") + [""])[:3]
+            if not x.isdigit() or int(x) not in filled or (y != "all" and (
+                    not y.isdigit() or int(y) not in filled)):
+                raise SystemExit("%r: use combi:<slot>:<slot>=value or combi:<slot>:all=value "
+                                 "(filled squad slots, see `show`)" % a)
+            others = [b for b in filled if b != int(x)] if y == "all" else [int(y)]
+            try:
+                for b in others:
+                    s.set_combi(int(x), b, int(val, 0))
+            except ValueError as e:
+                raise SystemExit("%s: %s" % (a, e))
             continue
         slot, _, which = key.partition(":")
         if slot not in squad or not which:
@@ -1276,6 +1353,8 @@ def main(argv):
         cmd_show(game, args[0])
     elif cmd == "staff" and len(args) == 1:
         cmd_staff(game, args[0])
+    elif cmd == "combi" and len(args) >= 1:
+        cmd_combi(game, args[0], [int(a) for a in args[1:]])
     elif cmd == "player" and len(args) == 2:
         cmd_player(game, args[0], args[1])
     elif cmd == "set" and len(args) >= 3:
