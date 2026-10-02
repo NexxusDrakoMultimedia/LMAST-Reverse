@@ -371,6 +371,11 @@ files. Each item keeps what was found, where, and how it was tested.
       metres (x across, y along the pitch), the ball's route, play ids
       (`Pwk::PlayBookData::CPlayBookDataBase`). `bpb.py` (`info`, `dump`),
       checked by `regress.py`
+- [x] `GAME/COMBINATION2.CSB`: 540 PRS-packed `SQB1` scripts in an
+      `etc::PackData`, run with a third command set (Base + 29 combination
+      commands, built by `GAMEPRG.REL` at `0x29fc90`); 539 decode with
+      `sqb.py`, checked as `sqb_combi`. `COMBINATION2.CBB`: the matching
+      540 size-prefixed records (container checked by `bpb.py`)
 
 ## 7. Event system and game code
 

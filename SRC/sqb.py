@@ -38,7 +38,7 @@ neither set is a problem (`!!`); so is a missing or repeated label.
 
 Usage:
     python sqb.py info    <file | dir> ...        # check every script
-    python sqb.py dis     <file.SQB | pack.PAC#entry.sqb> [root|pwk]
+    python sqb.py dis     <file.SQB | pack.PAC#entry.sqb | file.CSB#n> [root|pwk|combi]
     python sqb.py names   <SQBFILENAME.TBB>       # script id -> file
     python sqb.py globals <GLOBALMEMORY.TBB>      # {type, value, min, max}
     python sqb.py roundtrip <file | dir> ...      # re-encode every script, !! if not identical
@@ -154,9 +154,18 @@ PARAM = list(zip((
     (3, 4, 2, 2, 3, 3, 4, 3, 3, 2, 3, 2, 3, 2, 3, 3, 4, 3, 4, 1, 1, 1, 2, 2,
      3, 2, 2, 2, 3, 2)))
 
+# Table 4 of the combination set (GAME/COMBINATION2.CSB): GAMEPRG.REL builds
+# the set at 0x29fc90 (code at 0xc5fc8): table 0 is Base (0x274770), tables
+# 1-3 empty, table 4 the entry at 0x274780: argc 0x274790, callbacks
+# 0x249280, count 29. No symbols; numbered.
+COMBI = [("Combi%d" % i, n) for i, n in enumerate(
+    (2, 3, 2, 2, 3, 4, 4, 4, 2, 3, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1,
+     2, 3, 4, 5))]
+
 SETS = {
     "root": {0: BASE, 1: SCENE, 4: ROOT_EVENT},
     "pwk": {0: BASE, 4: PARAM},
+    "combi": {0: BASE, 4: COMBI},
 }
 
 
@@ -323,15 +332,20 @@ def check(cmds):
 
 def fit(blob):
     """(set name, [(offset, commands)]) for the first set that decodes every
-    table, or (None, error) if none does."""
+    table with no argument or label problems, else the first set that
+    decodes at all, or (None, error) if none does."""
     tables = sqb_tables(blob)
-    errors = []
+    errors, fallback = [], None
     for name in SETS:
         try:
-            return name, [(o, decode(s, name)) for o, s in tables]
+            decoded = [(o, decode(s, name)) for o, s in tables]
         except ValueError as e:
             errors.append("%s: %s" % (name, e))
-    return None, "; ".join(errors)
+            continue
+        if not any(check(cmds)[1] for _, cmds in decoded):
+            return name, decoded
+        fallback = fallback or (name, decoded)
+    return fallback or (None, "; ".join(errors))
 
 
 def fmt_arg(t, v):
@@ -370,12 +384,24 @@ def is_script_name(name):
     return name.lower().endswith(".sqb")
 
 
+def csb_scripts(data):
+    """The scripts of a .CSB (GAME/COMBINATION2.CSB): an etc::PackData whose
+    blocks are PRS streams, each a TBB holding one SQB1 script (GAMEPRG.REL
+    0xc77c4: GetPackBlock, then Press::Expand into a 0x800-byte buffer)."""
+    import packdata
+    pack = packdata.PackData(data)
+    return [pac.prs_decompress(data[o:o + size]) for _, size, o in pack.blocks]
+
+
 def load(spec):
-    """Bytes of a script: a file, or `pack.PAC#entry` for a BINPAC entry."""
+    """Bytes of a script: a file, `pack.PAC#entry` for a BINPAC entry, or
+    `file.CSB#n` for script n of a .CSB."""
     path, _, entry = spec.partition("#")
     data = open(path, "rb").read()
     if not entry:
         return data
+    if path.upper().endswith(".CSB"):
+        return csb_scripts(data)[int(entry, 0)]
     hdr = pac.load_header(path)
     for off, size, name, _ in hdr.entries:
         if name == entry:
@@ -389,6 +415,10 @@ def scripts(paths):
     for path in pac._walk(paths):
         if path.upper().endswith(".SQB"):
             yield path, open(path, "rb").read()
+            continue
+        if path.upper().endswith(".CSB"):
+            for i, blob in enumerate(csb_scripts(open(path, "rb").read())):
+                yield "%s#%d" % (path, i), blob
             continue
         if not path.upper().endswith(".PAC"):
             continue

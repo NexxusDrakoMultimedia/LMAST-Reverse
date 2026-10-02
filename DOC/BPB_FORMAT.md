@@ -69,6 +69,35 @@ of 4–5 paths, 528 points, a 0x1c-byte header, path kinds all 0 and no
 ball route. Its reader (`fb::Combination` per [`GAME_DIR.md`](GAME_DIR.md))
 isn't traced, so the layout match is empirical.
 
+## `COMBINATION2.CBB` and `.CSB`
+
+`GAMEPRG.REL` loads `combination2.csb` into loader slot 5 and
+`combination2.cbb` into slot 6 (`0x5120`, `0x5170`). The two files hold
+540 combinations each. **Confirmed from the game code:**
+
+| Address (`GAMEPRG.REL`) | What it shows |
+|---|---|
+| `0xc7e84` | the `.CBB` is a u32 count, then records that each start with their u16 size; the code keeps a pointer to each, like `makeBookTop` |
+| `0xc77c4` | combination *n*'s script is block *n* of the `.CSB`, an `etc::PackData` ([`PLAYER_DIR.md`](PLAYER_DIR.md)); the block is PRS-compressed and `Press::Expand` unpacks it into a 0x800-byte buffer |
+| `0xc5fc8`–`0xc610c` | the scripts' command set, built at `0x29fc90`: table 0 is the shared Base table, tables 1–3 are empty, and table 4 has 29 commands (argument counts at `0x274790`, callbacks at `0x249280`) |
+
+**Empirical:** every `.CSB` block (type 17) unpacks as plain PRS into a
+TBB holding one `SQB1` script ([`SQB_FORMAT.md`](SQB_FORMAT.md)), 160–960
+bytes. 539 of the 540 decode with the combination set; script 382 has
+three stray words after its `End`. The scripts wait in loops on
+conditions (`Combi14`, `JumpIfZero`) and step through the move, so they
+look like the timing of each combination. The 29 commands have no
+symbols and are named `Combi0`–`Combi28`. `python SRC/sqb.py dis
+"DAT/GAME/COMBINATION2.CSB#2"` prints one.
+
+The `.CBB`'s 540 records end exactly at the end of the file and are 52,
+56, 60 or 68 bytes. Each starts `{u16 size, u16 4, bytes 3, 8, 12, 16,
+40, 48}` (the same in every record), and the rest is full of `0xcd`,
+`0xbb`, `0xaa` and `0x97` bytes, the fill patterns of uninitialised
+memory, so the records are C structs written with their padding. The
+code at `0xc7f00` reads small items as a type byte and s8 values × 10.0
+(positions in units of 10?). The fields aren't decoded.
+
 ## Still unknown
 
 - The block at `+0x20` (before the first array) and `+0x10`, `+0x14`,
@@ -76,7 +105,8 @@ isn't traced, so the layout match is empirical.
 - What the path kinds and point codes mean, and which play is which
   (the id ranges, and `TACTICS_PLAYBOOK_EDIT.TBB`'s link to them).
 - `CPlayBookDataBase::GetFormationData` (`0x2e7d88`, `IFORM`).
-- `COMBINATION2.CBB` / `.CSB`, which aren't this format.
+- The fields of the `.CBB` records, and what the 29 combination commands
+  do (their callbacks at `GAMEPRG.REL 0x249280` have no symbols).
 
 ## Checking
 

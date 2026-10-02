@@ -100,6 +100,9 @@ def checks():
         # SEQ/*.SQB and the PSC*.PAC scripts; the main script's listing
         # catches renamed commands and changed label handling.
         ("sqb", ["sqb.py", "info", "DAT/SEQ", "DAT/PARAM"], ["DAT/SEQ", "DAT/PARAM"]),
+        # The 540 combination scripts in GAME/COMBINATION2.CSB (PRS blocks).
+        ("sqb_combi", ["sqb.py", "info", "DAT/GAME/COMBINATION2.CSB"],
+         ["DAT/GAME/COMBINATION2.CSB"]),
         ("sqb_dis", ["sqb.py", "dis", "DAT/SEQ/ROOTMAINSEQ.SQB"], ["DAT/SEQ"]),
         ("sqb_roundtrip", ["sqb.py", "roundtrip", "DAT/SEQ", "DAT/PARAM"], ["DAT/SEQ", "DAT/PARAM"]),
         ("svr", ["svr.py", "info", "DAT"], ["DAT"]),

@@ -21,8 +21,12 @@ Confirmed from Pwk::PlayBookData::CPlayBookDataBase in SLES_541.51:
           ((id - 0x4000) >> 12) * 20 + 196 + (id & 0xff); 0x7000 on the
           index itself
 
+COMBINATION2.CBB has the same container (u32 count, size-prefixed records,
+GAMEPRG.REL 0xc7e84): 540 records, one per combination; its scripts are the
+540 SQB1 scripts in COMBINATION2.CSB (sqb.py). `info` checks its container.
+
 Usage:
-    python bpb.py info <file.BPB | dir> ...
+    python bpb.py info <file.BPB | file.CBB | dir> ...
     python bpb.py dump <file.BPB> <record>
 """
 import os
@@ -94,12 +98,31 @@ def parse(data):
     return plays
 
 
+def cbb_records(data):
+    """[bytes] of a .CBB (GAME/COMBINATION2.CBB): a u32 count, then records
+    that start with their u16 size (GAMEPRG.REL 0xc7e84 builds a pointer
+    to each the same way makeBookTop does)."""
+    (n,) = struct.unpack_from("<I", data, 0)
+    out, o = [], 4
+    for i in range(n):
+        if o + 2 > len(data):
+            raise ValueError("record %d starts past the end" % i)
+        (size,) = struct.unpack_from("<H", data, o)
+        if not size or o + size > len(data):
+            raise ValueError("record %d (size %d) runs past the end" % (i, size))
+        out.append(data[o:o + size])
+        o += size
+    if o != len(data):
+        raise ValueError("%d records end at 0x%x, file is 0x%x" % (n, o, len(data)))
+    return out
+
+
 def files(paths):
     for p in paths:
         if os.path.isdir(p):
             for root, _, names in sorted(os.walk(p)):
                 for name in sorted(names):
-                    if name.upper().endswith(".BPB"):
+                    if name.upper().endswith((".BPB", ".CBB")):
                         yield os.path.join(root, name)
         else:
             yield p
@@ -109,6 +132,16 @@ def cmd_info(paths):
     for path in files(paths):
         with open(path, "rb") as f:
             data = f.read()
+        if path.upper().endswith(".CBB"):
+            try:
+                recs = cbb_records(data)
+            except (ValueError, struct.error) as e:
+                print("%s  !! %s" % (path, e))
+                continue
+            sizes = sorted(set(len(r) for r in recs))
+            print("%s  %d combination records, sizes %s" % (
+                path, len(recs), ", ".join("%d" % s for s in sizes)))
+            continue
         try:
             plays = parse(data)
         except (ValueError, struct.error) as e:

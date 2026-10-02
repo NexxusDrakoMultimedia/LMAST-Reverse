@@ -319,6 +319,15 @@ listed in `SQBFILENAME.TBB` or named in the code:
 | PwkScript set | 25 (24 pack entries, `SEQ/PINFOPOINT.SQB`) | 982 | 67 |
 | neither | 2 | | |
 
+A third set runs the 540 combination scripts in `GAME/COMBINATION2.CSB`
+(PRS blocks of an `etc::PackData`; `GAMEPRG.REL` builds the set at
+`0x29fc90`): the Base table and a table 4 of 29 commands, `Combi0`–`Combi28`
+(argument counts at `GAMEPRG.REL 0x274790`, no symbols). See
+[`BPB_FORMAT.md`](BPB_FORMAT.md#combination2cbb-and-csb).
+`python SRC/sqb.py info DAT/GAME/COMBINATION2.CSB` decodes 539 of them.
+`sqb.py` now prefers a set that decodes with no argument or label
+problems, and falls back to the first that decodes at all.
+
 The 25 PwkScript files hold 68 `SQT1` tables. Every one of the 41 scripts
 that decodes ends exactly at the end of its table. Every argument has a
 valid type and index, and every label is defined once. `A001` uses only
