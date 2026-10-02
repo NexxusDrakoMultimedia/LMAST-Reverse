@@ -821,6 +821,12 @@ at 25,585 (row 15, column 12). The readers:
   `0x63f7`, **the game's rank and main position come from the place**,
   not from `+0x18`/`+0x1c`.
 
+User report: the game never shows a player's rank (no number, class or
+stars), so an edit to it can only be seen through what it controls: the
+Transfer List bands
+([`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md)), national
+call-ups and popularity changes.
+
 For editing: changing the rank or main position in a record has no
 effect in the game for ids below 25,591, and changing the nationality
 moves the player out of his nation's call-up search. Moving a player
