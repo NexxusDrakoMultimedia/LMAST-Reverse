@@ -9,9 +9,11 @@ A BINPAC of 4 entries (see DOC/PBDATA_FORMAT.md):
      coaches, 1,000 scouts) and record sizes (98, 81, 71 bytes)
   1  the records, players then managers then scouts. Each record is a
      fixed-size, MSB-first bit stream: a char[19] name, then bit fields
-  2  27,950 u16, one per player (use not traced)
-  3  27,950 u16, one per player: the value the game ranks players below
-     id 0x63f7 by (getPinfoRank)
+  2  27,950 u16: the player ids, players 0-25,590 sorted by rank (highest
+     first), main position and nationality, then the rest in order.
+     serchPinfo (0x20d470) searches it, e.g. for national call-ups
+  3  27,950 u16, entry 2's inverse: each player's place in that ranking,
+     which getPinfoRank uses as the rank for players below id 0x63f7
 
 Database ids: players 0-27,949, managers from 0x6d2e (27,950), scouts from
 0x78e6 (30,950). Ids from 0x7cce (31,950) are edit-mode players.
@@ -74,6 +76,38 @@ FIRST_MANAGER = 0x6d2e      # getMbase: id - 0x6d2e
 FIRST_SCOUT = 0x78e6        # getSbase: id - 0x78e6
 RANK_FROM_ENTRY3 = 0x63f7   # getPinfoRank: ids below this use entry 3
 KINDS = ("players", "managers", "scouts")
+
+# Entry 2 is a ranking of players 0 to 0x63f6: sorted by rank (highest
+# first), then main position, then nationality. Ids from 0x63f7 follow it
+# unsorted, in id order. Entry 3 is its inverse (each player's place).
+# serchPinfo (0x20d470) finds a rank and position group through the start
+# table at 0x52fbf8 (16 ranks x 13 positions), which is fixed in the
+# executable, so the groups' sizes must not change.
+RANKED = 0x63f7
+
+
+def ranking_key(r):
+    return (-r.fields["rank"], r.fields["position"][0], r.fields["nation"])
+
+
+def ranking_problems(db):
+    """Ways entries 2 and 3 fail to be a ranking and its inverse."""
+    e2, e3 = db.entry2, db.rank_values
+    if sorted(e2) != list(range(len(e2))):
+        return ["entry 2 is not a permutation of the player ids"]
+    p = []
+    if any(e3[e2[k]] != k for k in range(len(e2))):
+        p.append("entry 3 is not the inverse of entry 2")
+    if list(e2[RANKED:]) != list(range(RANKED, len(e2))):
+        p.append("entry 2 doesn't list ids from %d in order" % RANKED)
+    return p
+
+
+def ranking_breaks(entry2, players):
+    """Places where entry 2 is out of (rank, position, nation) order."""
+    keys = [ranking_key(players[i]) for i in entry2[:RANKED]]
+    return sum(1 for k in range(RANKED - 1) if keys[k] > keys[k + 1])
+
 
 # plBits_* post-processing tables in SLES_541.51.
 # Required status: the developers' editor (DEBUGPRG.REL) labels the field
@@ -757,6 +791,8 @@ def check(db):
     for name, arr in (("entry 2", db.entry2), ("entry 3", db.rank_values)):
         if len(arr) != db.counts[0]:
             probs.append("%s has %d values for %d players" % (name, len(arr), db.counts[0]))
+    if len(db.entry2) == len(db.rank_values) == db.counts[0]:
+        probs += ranking_problems(db)
     return probs
 
 
@@ -797,6 +833,9 @@ def cmd_info(paths):
                     p.append("play style above %d" % (len(STYLES) - 1))
             print(line + ("  !! " + "; ".join(p) if p else ""))
         players = list(db.records("players"))
+        breaks = ranking_breaks(db.entry2, players)
+        print("  entry 2 ranks players 0-%d by rank, position, nation%s" % (
+            RANKED - 1, "  !! %d places out of order" % breaks if breaks else ""))
         for fname in ("age", "height", "weight", "shirt", "rank"):
             vals = [r.fields[fname] for r in players]
             print("  players %-7s %d-%d" % (fname, min(vals), max(vals)))
@@ -982,6 +1021,15 @@ def _load_for_edit(src, out_path):
 
 
 def _write_pack(out_path, db, records):
+    # Entries 2 and 3 are written as they were. The group table they pair
+    # with is in the executable, so re-sorting them would not help.
+    breaks = ranking_breaks(db.entry2, records["players"])
+    if breaks:
+        print("note: the edits put entry 2's ranking out of (rank, main position,\n"
+              "      nationality) order in %s. The game takes these players' rank from\n"
+              "      their old place and finds national squads by it, so it still treats\n"
+              "      them as before (DOC/PBDATA_FORMAT.md#entries-2-and-3)."
+              % _plural(breaks, "place"))
     with open(out_path, "wb") as f:
         f.write(rebuild(db, encode_records(records)))
 

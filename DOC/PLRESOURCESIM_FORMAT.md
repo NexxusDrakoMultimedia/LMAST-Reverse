@@ -227,7 +227,7 @@ and [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md).
 
 **Tested in PCSX2.** J.Galvan (slot 627) was replaced by Gianluigi
 Buffon, using Italy's national-team record 26,110
-([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#player-id-blocks-empirical)). In a
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#player-id-blocks)). In a
 new career J.Galvan was gone from the in-game Transfer List, so the
 game's free agents come from this entry. Buffon didn't appear there
 either. `pwkDb_addFreePlayer` (`0x235f08`) refuses only edit players

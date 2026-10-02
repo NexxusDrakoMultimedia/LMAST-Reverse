@@ -18,9 +18,6 @@ item in its section below.
    and 7). This is the largest piece of starting-season data still undecoded.
 3. **Size changes on the disc** (section 9). Until files can move, an edit
    can only grow to the end of its last sector, which limits every writer.
-4. **How national team squads are built** (section 2). Players
-   26,041-27,949 form 83 blocks of 23, one per national team; tracing the
-   code that reads them tells an editor how to change a national squad.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -72,9 +69,16 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`)
 - [ ] Test in PCSX2: a free agent lowered to rank 5 or less shows on a
       new club's Transfer List (`DOC/PLRESOURCESIM_FORMAT.md`)
-- [ ] Trace which code builds a national team's squad from players
-      26,041-27,949 (83 blocks of 23, one per national team; empirical,
-      `DOC/PBDATA_FORMAT.md#player-id-blocks-empirical`)
+- [ ] National team leftovers: what `_getNationalTeamPoint` (`0x227200`)
+      scores, team 465 and `PlPinfo +0x20c` flag `0x300` in the call-up
+      filter, which clubs teams 442-459 are, and what fills the rank
+      ranges at `0x5eac08` (`DOC/PBDATA_FORMAT.md#national-team-call-ups`)
+- [ ] Test in PCSX2: rename a fixed national player (e.g. 26,046, England's
+      Terry); he should show in VS mode but not in a career call-up
+- [ ] Editing rank, main position or nationality for players below 25,591:
+      re-sort entries 2 and 3 and patch the group table at SLES
+      `0x52fbf8`, so the game sees the change
+      (`DOC/PBDATA_FORMAT.md#entries-2-and-3`)
 - [ ] The packs: `PLRESOURCECOMMON.PAC` (readers listed in `PARAM_DIR.md`,
       layouts not decoded). `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript
       scripts, decoded in `DOC/SQB_FORMAT.md`; what each one computes is

@@ -203,6 +203,16 @@ files. Each item keeps what was found, where, and how it was tested.
       the scouts' four special searches. `pbdata.py show` names them.
       Empirical check: every nationality's scouts are best at their own
       region (`DOC/PBDATA_FORMAT.md#the-developers-staff-editors`)
+- [x] National team squads: in a career they are called up from the club
+      players on convene days (`jmNT_CallCheck`, `plTeam_CreateNationTeam`
+      `0x227470`), by the national manager's formations, best ranked
+      first, at most 3 per club and position (1 goalkeeper). The fixed
+      blocks 26,041-27,949 are loaded only for VS mode
+      (`pwkOteam_InitNonresident` mode 2 from `VS_Start`); 25,591-26,040
+      are the squads of clubs 442-459. Entry 2 is decoded on the way: a
+      ranking of players 0-25,590 by rank, position and nation, with entry
+      3 its inverse, which decides those players' rank and main position
+      (`DOC/PBDATA_FORMAT.md#national-team-call-ups`)
 
 ## 3. Ninja 3D models and motions
 

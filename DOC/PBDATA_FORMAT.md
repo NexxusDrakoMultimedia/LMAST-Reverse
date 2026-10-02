@@ -33,8 +33,10 @@ names on the squads.
 | `0x55b970` | status table (required status) | 0, 200, 1000, 3000, 5000, 7500, 10000, 15000, 20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000 |
 | `0x2175e0`, `0x2176a8` | `plPinfo_IsForeigner`, `plPinfo_IsEU` | player `+0x14` is the nationality (`PlNati`). Bit 1 of `+0x63` is an EU passport on top of it |
 | `0x218748` | `plPinfo_IsSkill` | `+0x64` is a bit mask, one bit per `PlPlayerSkill` |
-| `0x20d908` | `getPinfoRank` | for ids ≥ `0x63f7` the rank is `+0x18`. Below that it is worked out from entry 3's value for the player (against thresholds at `0x5eac08`) |
-| `0x20d9a0` | `getPinfoApos0` | the main position is `+0x1c` (for ids below `0x63f7`, it is derived from the rank again) |
+| `0x20d908` | `getPinfoRank` | for ids ≥ `0x63f7` the rank is `+0x18`. Below that it is 15 − the row of 16 `{first, last}` ranges at `0x5eac08` (filled at run time) that holds entry 3's value for the player |
+| `0x20d9a0` | `getPinfoApos0` | the main position is `+0x1c`. For ids below `0x63f7` it is the column of the group table at `0x52fbf8` (row 15 − rank) whose range holds entry 3's value ([Entries 2 and 3](#entries-2-and-3)) |
+| `0x20d470` | `PlBpinfoTask::serchPinfo` | searches the ranking: entry 2 (`0x390670`) through the group table at `0x52fbf8` |
+| `0x24d450`, `0x24d480`, `0x33c5d8` | `pwkOteam_InitNonresident` modes 0 and 2, `_InitCommon` | the fixed squads of the id blocks ([Player id blocks](#player-id-blocks)) |
 | `0x2734c8` | `pwkTeam_SetUnumberOpinfo` | `+0x2b` is the player's preferred shirt number, 1–99 |
 | `0x218728` | `plPinfo_IsSkill` (PlPinfo overload) | reads the skills at `PlPinfo +0x1fc`, so the game's copy of the record starts at `PlPinfo +0x198` |
 | `0x24d8a8` | `pwkPlayStyle_Init` | `PlPinfo +0x1f6` (record `+0x5e`) holds 5 play styles: it copies the non-zero ones into the style list at `+0x27c`, then adds random styles 1–22 (`slti 0x17`) for the player's position. The first stored style becomes the current one (`+0x278`) |
@@ -116,22 +118,32 @@ also found.
 
 The 5 bits after the last field are zero in every record.
 
-### Player id blocks (empirical)
+### Player id blocks
 
 The last 2,359 player records (25,591–27,949) aren't in any club's
-starting squad (`OTEAMMEMBER.TBB`):
+starting squad (`OTEAMMEMBER.TBB`, teams 3–441). **Confirmed:**
+`pwkOteam_InitNonresident` (`0x24d568`) gives them to teams through
+`_InitCommon(record, first team, last team, first player, last player,
+per team)` (`0x33c5d8`). It hands out the ids in order and takes each
+player's shirt number from `+0x2b` (or his place in the block if that
+is 0):
 
-| Ids | Blocks | What |
-|---|---|---|
-| 25,591–26,040 | 6 × 75, nations 1–6 (England, France, Germany, Italy, Spain, Netherlands) | made-up players. England's first 18 and 16 from 25,623 are the built-in default club ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#without-the-file)) |
-| 26,041–27,949 | 83 × 23, one nation each | national-team squads: 83 blocks for the 83 national teams (`PlTeam` 460–542), and 26,041 + 83 × 23 = 27,950 |
+| Ids | Called from | Teams | What |
+|---|---|---|---|
+| 25,591–26,040 | mode 0, `0x24d450`, at new-game setup (`0x110ae4`) | 442–459, 25 each | made-up players for the 18 clubs without an `OTEAMMEMBER` squad, three per league nation: England, France, Germany, Italy, Spain, Netherlands (**empirical**: each block of 25 has one nationality). England's first 18 and 16 from 25,623 are the built-in default club ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#without-the-file)) |
+| 26,041–27,949 | mode 2, `0x24d480`, from `PwkCallbackCommand_VS_Start` (`0x111478`) | 460–542, 23 each | the national teams' fixed squads, used in **VS mode**. Every block has one nationality |
 
 A national-team record repeats a club player under the same name, as a
 separate record: Gianluigi Buffon is 3,175 at Juventus and 26,110 (shirt
 1) in Italy's block, John Terry 101 at Chelsea and 26,046 (shirt 6) in
 England's. The two can differ (that Terry's height, abilities and age
-aren't the club Terry's). Which code picks a nation's 23 hasn't been
-traced. The user identified these as national-team players.
+aren't the club Terry's). The user identified these as national-team
+players.
+
+In a career the fixed squads aren't loaded: mode 3 (`0x24d4b0`) only
+sets the 83 team numbers, and squads are called up from the club players
+([National team call-ups](#national-team-call-ups)). Mode 1 (`0x24d4d8`,
+from `PwkCallbackCommand_PromotionEnd`) isn't traced.
 
 ### Managers and coaches (81 bytes, 642 bits used)
 
@@ -781,11 +793,61 @@ them as columns.
 
 ## Entries 2 and 3
 
-Each is 27,950 u16, one per player. Entry 3 is the value `getPinfoRank`
-compares against its thresholds for players below `0x63f7`, so for most
-players it decides the rank and main position that the game uses instead
-of `+0x18`/`+0x1c`. Entry 2 is kept at `0x390670`, and what reads it
-hasn't been traced. The two entries differ from each other.
+Each is 27,950 u16. **Entry 2 is a ranking** of the player ids: players
+0–25,590 sorted by rank (highest first), then main position, then
+nationality, followed by ids 25,591–27,949 in order. **Entry 3 is its
+inverse**, each player's place in the ranking. Both hold for all 27,950
+players (**empirical**, sorted by the stored `+0x18`, `+0x1c` and
+`+0x14`; `pbdata.py info` checks it).
+
+**Confirmed from the code.** A table of 16 × 13 s32 at `0x52fbf8`, fixed
+in the executable, gives the first place of each group: row 15 − rank,
+column = main position, −1 for an empty group. Row 0 has two groups
+(place 0 in column 9, places 1–2 in column 12), and the last group starts
+at 25,585 (row 15, column 12). The readers:
+
+- `serchPinfo` (`0x20d470`) finds a group's range of places and reads
+  the players through entry 2 (`0x390670`). The last range ends at
+  `0x63f7`. Given a nation, it narrows the range to that nationality,
+  which is why each group is sorted by it.
+- `getPinfoRank` (`0x20d908`) and `getPinfoApos0` (`0x20d9a0`) find the
+  row and column that hold a player's entry-3 place. So for players below
+  `0x63f7`, **the game's rank and main position come from the place**,
+  not from `+0x18`/`+0x1c`.
+
+For editing: changing the rank or main position in a record has no
+effect in the game for ids below 25,591, and changing the nationality
+moves the player out of his nation's call-up search. Moving a player
+properly would mean re-sorting entries 2 and 3 and changing the group
+starts in the executable (`0x52fbf8`, and the run-time ranges at
+`0x5eac08` if they are built from it). `pbdata.py set` and `import` say
+when an edit leaves the ranking out of order; they don't re-sort it.
+
+## National team call-ups
+
+**Confirmed, `SIMPRG.REL` and `SLES_541.51`.** In a career a national
+squad is picked from the club players when it is called up:
+
+| Address | Symbol | What it does |
+|---|---|---|
+| `SIMPRG.REL 0x160b68` | `jmNT_CallCheck` | on a day where `pwkSche_IsNationalConvene` is true, calls up every squad (`jmNT_CallAll`) and sets event flags `0x13f`–`0x141` |
+| `SIMPRG.REL 0x1603c8`, `0x160210` | `jmNT_CallAll`, `jmNT_makeNationList` | lists the nations with an international competition on the schedule and runs `plTeam_CreateNationTeam(team, squad, 23)` for each |
+| `SIMPRG.REL 0x15fbe8` | `jmNT_NewCall(team)` | the same for one team |
+| `0x226338` | (unnamed) | the squad's shape: counts the positions in the national manager's three formations (`PlMbase +0x3d`, see [the staff editors](#the-developers-staff-editors)) and scales them to 25 places over the 13 positions |
+| `0x227470` | `plTeam_CreateNationTeam` | for each position, walks the ranking best first (`serchPinfo` with rank, position and the team's nation) and fills a pool of up to 38 |
+| `0x534148` | per-position limit | at most 1 goalkeeper and 3 players per other position from one club |
+| `0x2272f8`, `0x227200` | `_sortBaseListFromNationalTeamPoint`, `_getNationalTeamPoint` | sort the pool by a national-team score before the squad is kept |
+
+`plTeam_CreateNationTeam` takes only players whose current team (bits 22
+and up of the run-time core info) is the user's club (1), another club
+(2–459) or team 465. From the user's club it takes at most 8, and none
+with flag `0x300` in `PlPinfo +0x20c`. The search stops at `0x63f7`, so
+the fixed national records (26,041+) are never called up.
+
+So to change who plays for a country in a career, edit the club players
+(their nationality and their place in the ranking, see above). The fixed
+blocks only change VS mode. What `_getNationalTeamPoint` scores, what
+team 465 is, and what flag `0x300` means aren't traced.
 
 ## `PBDATA_JP.PAC`
 
@@ -861,9 +923,11 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
 - Which game code reads the staff abilities that no bar shows (6–9,
   23–27, 31–38; scouts 2, 8–20, 26–44). The labels name them, but their
   effects aren't traced.
-- Entry 2, header `+0x14`, `+0x24` and the last 8 header bytes.
-- How entry 3's value becomes a rank: the threshold table at `0x5eac08` is
-  filled at run time.
+- Header `+0x14`, `+0x24` and the last 8 header bytes.
+- What fills the rank ranges at `0x5eac08` (probably the group table at
+  `0x52fbf8`), and what `_getNationalTeamPoint` scores.
+- Which clubs teams 442–459 are, and a PCSX2 check that VS mode shows a
+  renamed fixed national player while a career call-up doesn't.
 
 ## Checking the claims
 
