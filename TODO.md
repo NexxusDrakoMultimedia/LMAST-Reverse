@@ -256,9 +256,6 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       community account). Staff
       leftovers: the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`,
       and how far the manager's popularity goes in play (0 in every save)
-- [ ] Test in PCSX2: a club rank edit (`save.py set ... club:432:rank=31`)
-      should change Pirouzi's Information screen text from "Local club" to
-      "World famous club"
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0-3
       (kind 4 shows "Won't tolerate club's facilities."), to confirm their
       names. A save edit per kind would show each one

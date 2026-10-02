@@ -555,4 +555,6 @@ files. Each item keeps what was found, where, and how it was tested.
       except tied pairs. The community account is right in outline
       (corrections in `SAVE_FORMAT.md`). Also named: `+0x9c`, the main
       league. `save.py clubs` shows the text and league, and `set ...
-      club:<team>:rank=` edits the rank
+      club:<team>:rank=` edits the rank. Tested in PCSX2: rank 31 made
+      Pirouzi a "World famous club" and rank 0 made Marseille a "Local
+      club"

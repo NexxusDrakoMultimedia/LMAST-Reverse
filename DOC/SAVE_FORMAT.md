@@ -432,6 +432,13 @@ and `club:<team>:rank=` (0–31) edit them.
 `club:167:friendship=100 club:54:friendship=0`, F.C. Barcelona's FRIENDLY
 bar was full and Marseille's empty (82 before).
 
+**Tested in PCSX2** (save G000 on a test card): with
+`club:432:rank=31 club:54:rank=0`, Pirouzi's Information screen said
+"World famous club" (rank 5, "Local club", before) and Marseille's "Local
+club" (rank 24, "World-class club", before). The style line under it
+stayed as the code picks it ("Fairly defence-minded", "Not very
+attack-minded"), and the world rankings (438, 53) didn't change.
+
 **Match statistics.** For squad slot `s`, the stats start at block 1
 `+0xec8e + s × 0x11e`: four tables of five rows (pre-season, domestic
 league, overseas league, Euro, international), then 6 bytes not traced.
