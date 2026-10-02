@@ -384,9 +384,10 @@ the year start). So setting `0x34d430` alone would skip the playoffs
 without promoting the club, and setting `0x34d434` alone would also skip
 club creation and every year start.
 
-**The patch** (four bytes, plus the six sponsor bytes described
-[below](#why-the-playoff-sponsors-stayed); `python SRC/patch_disc.py patch
-<disc> <out> ... --skip-tutorial` writes it, on a whole disc image):
+**The patch** (four bytes, plus the six sponsor bytes and the status
+call described [below](#why-the-playoff-sponsors-stayed); `python
+SRC/patch_disc.py patch <disc> <out> ... --skip-tutorial` writes it, on a
+whole disc image):
 
 | File | Change |
 |---|---|
@@ -459,21 +460,51 @@ the supplier is chosen, not left over. The Sponsor module's setup
 (`SIMPRG.REL 0xc49c0`) signs an offer by itself when `pwkGen_Keika` is 0
 or less (`0xc49e0`–`0xc49f0`).
 
-The sponsor database is 213 records of `0x48` bytes at `SIMPRG.REL
-0x23d978`, indexed by sponsor id (`plSponsor_GetDb`, `0x160dc0`). Ids
-206–212 have kind 3 at `+4`, the suppliers. Egamucho (211) and Doclla
-(212) are both tier 6 (`+8`) with no fee, and differ in one condition
-(empirical: the field's meaning isn't traced): Egamucho has type `0x18`
-with value 500 at `+0x16`/`+0x18`, Doclla type `0x17` with value 0.
-Lead: the playoffs raise something to 500 that Egamucho requires, and a
-skipped club falls back to Doclla. The code that tests these conditions
-hasn't been read.
-
 **User report:** in a normal career Egamucho is the supplier at the first
 Sponsor screen, so Doclla is replaced in year 1. (EVENT 338, timing 16 in
 season 2, has Jane say the supplier contract "ends soon", and the manual
 says other suppliers become available after the first year; neither
 contradicts this.)
+
+### The supplier and the club's status
+
+A sponsor qualifies by conditions in its record. The sponsor database is
+213 records of `0x48` bytes at `SIMPRG.REL 0x23d978`, indexed by sponsor
+id (`plSponsor_GetDb`, `0x160dc0`); ids 206–212 have kind 3 at `+4`, the
+suppliers. **Confirmed** from the code:
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `SIMPRG.REL 0x169818` | (candidate filter) | a condition is `{u8 kind, u16 threshold, u16 argument}` at `+0x1c`/`+0x1e`/`+0x20` (a second at `+0x22`, more from `+0x28`). The kind picks a function from the table at `0x1da458`; it writes a value to `0x2494a0`, and the condition holds when value ≥ threshold (≤ for kinds `0x11`, `0x1a`, `0x1b`). The supplier list (second argument 1) takes only kinds `0x17` and up |
+| `SIMPRG.REL 0x161c28` | (kind `0x18`) | the value is `pwkTeam_Status()` |
+| `SIMPRG.REL 0x162090` | (kinds `0x16`, `0x17`) | the value is 1: always holds |
+| `0x26e2f0` | `pwkTeam_Status` | the club's status, u16 at `+0x1126a` in pwork task 1 |
+| `0x26dbb8` | `pwkTeam_StatusChange` | adds to the status, capped by the status rank (`+0x11264`, table at `0x555150`) |
+| `0x26e2a0` | `pwkTeam_YearEndCheck` (from `Sche.YearEnd`) | raises the status rank on a division change, then adds 500 (`0x26e2c4`: 500.0 to `0x26dd18`, which calls `pwkTeam_StatusChange`) |
+
+Egamucho (211) has condition kind `0x18`, threshold 500: status ≥ 500.
+Doclla (212) has kind `0x17`, which always holds, so it is the fallback.
+Both are tier 6 (`+8`) with no fee.
+
+**Tested in PCSX2** (England, status read over PINE): with the original
+disc, status was 0 through the playoffs (dated June 2005) and became 500
+at their end, just before the date moved to July 2006: that is the
+playoffs' `Sche.YearEnd` (`RootClubEditSeq` `L8`). At the first Sponsor
+screen: status 500, status rank 7, supplier Egamucho. With the skip disc,
+status stayed 0 and the supplier stayed Doclla (shown as 2/2 years: the
+playoffs' extra year start counts as its first year).
+
+**The fix:** `--skip-tutorial` also rewrites `Dummy.CheckClubEditSkip`
+(9 words at `0x108dac`). The flag test goes (a skip disc always passes
+it), which leaves room to save `$ra` first and call, in the normal
+route's order, `pwkLg_Init(0)`, `ScheCallback_ProcPromotion` and then
+`pwkTeam_YearEndCheck`. **Tested in PCSX2:** status became 500 right
+after club creation, and the first Sponsor screen had Egamucho as
+supplier (on a 1-year contract; the term is random).
+
+The rest of the playoffs' `Sche.YearEnd` (club-rank year end,
+`pwkTeam_ChangePop_Year`) and `Sche.MonthEnd` still don't run on a skip
+disc. Nothing has shown a difference from them yet.
 
 ## The developer launcher
 

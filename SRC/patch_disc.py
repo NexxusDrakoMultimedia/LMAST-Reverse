@@ -58,8 +58,11 @@ promotes the club) and swaps commands 88/89 in RootClubEditSeq.sqb,
 RootMainSeq.sqb and RootYearStartSeq.sqb, 4 bytes in all. It also starts
 the six playoff-period sponsors one year into their contracts (SLES
 0x3994a8, 6 bytes), so they end on time: the playoffs run one extra
-Sche.YearStart, which is what ends them. The club must be in England
-(the switch calls pwkLg_Init(0)). See DOC/SQB_FORMAT.md.
+Sche.YearStart, which is what ends them. And it makes the skip command
+also call pwkTeam_YearEndCheck (SLES 0x108dac, 9 words), the playoffs'
+year end, which gives the club its first 500 status (needed for the
+supplier Egamucho). The club must be in England (the switch calls
+pwkLg_Init(0)). See DOC/SQB_FORMAT.md.
 
 Copies: the same data is often on the disc more than once. PRELOAD/*.PAC
 bundles hold copies of loose files (REGULATION.TBB is in all seven
@@ -586,6 +589,15 @@ SKIP_SCRIPTS = (                                # (file, offset, old command, ne
 # starts them one year in.
 SKIP_SPONSORS = (DISC + "SLES_541.51", 0x29a4a8)  # SLES 0x3994a8
 SKIP_SPONSOR_COUNT, SKIP_SPONSOR_SIZE = 6, 0x14
+# Dummy.CheckClubEditSkip (SLES 0x108d98) promotes the club but skips the
+# playoffs' Sche.YearEnd, whose pwkTeam_YearEndCheck (0x26e2a0) adds the
+# club's first 500 status (0x26e2c4). Drop the flag test, which a skip disc
+# always passes, to make room: save $ra first, then pwkLg_Init(0),
+# ScheCallback_ProcPromotion, pwkTeam_YearEndCheck, the normal route's order.
+SKIP_CODE = (DISC + "SLES_541.51", 0x9dac, bytes.fromhex(   # SLES 0x108dac
+    "34d4438c2d888000010002240f0062140000bfff8618090c2d200000724c040c00000000"),
+    bytes.fromhex(
+    "0000bfff2d8880008618090c2d200000724c040c00000000a8b8090c0000000000000000"))
 
 
 def plan_skip_tutorial(f, img):
@@ -633,6 +645,16 @@ def plan_skip_tutorial(f, img):
         else:
             raise ValueError("%s: starting sponsor %d has %d years served, not 0 or 1"
                              % (file, i, rec[4]))
+    file, off, old, new = SKIP_CODE
+    held = read_at(f, img, file, off, len(old))
+    if held == old:
+        jobs.append(Job(file, off, new, "%s (0x108dac)" % file,
+                        "--skip-tutorial: Dummy.CheckClubEditSkip also runs pwkTeam_YearEndCheck"))
+    elif held == new:
+        notes.append("note: %s 0x108dac already calls pwkTeam_YearEndCheck" % file)
+    else:
+        raise ValueError("%s 0x108dac doesn't hold Dummy.CheckClubEditSkip's code; "
+                         "not the retail executable?" % file)
     notes.append("note: --skip-tutorial: start the career in England")
     return jobs, notes
 

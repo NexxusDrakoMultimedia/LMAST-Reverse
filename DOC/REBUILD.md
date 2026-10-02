@@ -190,12 +190,14 @@ new career (5–10 minutes) with the developers' own switch, 4 bytes in
 the executable and three sequencer scripts
 ([`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs)),
 and starts the playoff-period sponsors one year into their contracts (6
-more bytes in the executable) so they end on time.
+more bytes in the executable) so they end on time. It also makes the
+skip command run the playoffs' year-end status gain (`pwkTeam_YearEndCheck`,
+28 bytes of code), so the club starts with status 500.
 Tested in PCSX2: the career goes from club creation to the 2006–07 season,
-and the first Sponsor screen offers the main and sub-sponsor slots.
-Side effects: the supplier stays Doclla instead of becoming Egamucho; and
-start the career in England, since the switch names league 0. It needs the
-whole disc image. Running it again changes nothing.
+and the first Sponsor screen offers the main and sub-sponsor slots with
+Egamucho as supplier, as in a normal career. Start the career in
+England, since the switch names league 0. It needs the whole disc image.
+Running it again changes nothing.
 
 `patch` copies the image first (use `--in-place` to patch a copy you made
 yourself). It refuses a file that would need another sector, then

@@ -188,6 +188,12 @@ files. Each item keeps what was found, where, and how it was tested.
       adaptability, intelligence, ball touch, dribble style. Readers
       traced in SLES for most; `+0x32` is the face number
       (`DOC/PBDATA_FORMAT.md#personality-and-condition-fields`)
+- [x] Tutorial skip, supplier: Egamucho needs club status >= 500
+      (condition kind `0x18`, `SIMPRG.REL 0x169818`); the playoffs'
+      `Sche.YearEnd` adds 500 (`pwkTeam_YearEndCheck`). Measured over PINE.
+      `--skip-tutorial` now also calls it from the skip command (28 bytes).
+      Tested in PCSX2: status 500 and Egamucho at the first Sponsor screen
+      (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`)
 
 ## 3. Ninja 3D models and motions
 

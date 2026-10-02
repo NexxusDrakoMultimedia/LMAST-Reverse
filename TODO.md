@@ -18,10 +18,6 @@ item in its section below.
    and 7). This is the largest piece of starting-season data still undecoded.
 3. **Size changes on the disc** (section 9). Until files can move, an edit
    can only grow to the end of its last sector, which limits every writer.
-4. **The tutorial skip's supplier** (section 2). Find the condition that
-   gives a normal career Egamucho instead of Doclla, so the skip disc
-   matches a played-through start (user report: Egamucho at the first
-   Sponsor screen).
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -66,14 +62,11 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       nation, entry 7's groups and counter, entry 6 in full; writers for
       the streams (5, 11-14). User reports: weathers are sunny, overcast,
       rain, snow; combinations are hidden in game
-- [ ] Tutorial skip leftovers: the supplier stays Doclla instead of
-      Egamucho, even when Doclla's contract ends (Tested in PCSX2). Lead:
-      Egamucho's record has condition `0x18` = 500 that the playoffs may
-      provide (`DOC/SQB_FORMAT.md#why-the-playoff-sponsors-stayed`). User
-      report: in a normal career Egamucho is already the supplier at the
-      first Sponsor screen, so Doclla is wrong there (despite EVENT 338 and
-      the manual hinting at a season-2 supplier change). Also check other
-      leagues (the switch calls `pwkLg_Init(0)`)
+- [ ] Tutorial skip leftovers: check other leagues (the switch calls
+      `pwkLg_Init(0)`), and whether the rest of the playoffs' skipped
+      `Sche.YearEnd`/`Sche.MonthEnd` (club-rank year end,
+      `pwkTeam_ChangePop_Year`) changes anything
+      (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`)
 - [ ] Test in PCSX2: a free agent lowered to rank 5 or less shows on a
       new club's Transfer List (`DOC/PLRESOURCESIM_FORMAT.md`)
 - [ ] Trace which code builds a national team's squad from players
