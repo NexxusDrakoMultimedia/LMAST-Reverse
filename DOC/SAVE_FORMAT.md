@@ -244,6 +244,13 @@ sets of accounts. `save.py set ... plan:ad_budget=`, `plan:ticket_price=`,
 these ranges (not the money steps, which depend on the currency) and set
 the season-ticket price as the screen does.
 
+**Tested in PCSX2** (save G000 on a test card): with
+`plan:ad_budget=8000000 plan:ticket_price=120 plan:season_ticket_rate=80
+plan:season_tickets=50000`, the Accounting Dept.'s Administrative Plan
+showed Annual Ad Costs €2,000,000, Ticket Price €30, Discount Rate 80 and
+Season Ticket Sales 50,000 (€7,500,000, €55, 100 and 39,000 before), with
+"Stadium Capacity: 110000", the capacity `save.py` computes.
+
 **PlDate** (`plMisc_SetTurn2Date` `0x214698`, `plMisc_PlDate2TotalTurn`
 `0x214d08`):
 
@@ -751,6 +758,11 @@ and `_pcsx2_index` for folder memory cards.
   hasn't been traced (the VS load is at `SAVEPRG.REL 0x33868`).
 
 ## Checking
+
+The figures quoted from save G000 in this document are from its state at
+2024–25, Week 1 Midweek October (turn 24). The same slot has since been
+saved further on in play, so a newer G000 won't match them.
+
 
 ```bash
 python SRC/save.py blocks

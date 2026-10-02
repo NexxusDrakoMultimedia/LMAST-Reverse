@@ -576,7 +576,9 @@ files. Each item keeps what was found, where, and how it was tested.
       limits (user report; the same ranges in pounds and euros in the
       stored unit), with season tickets capped at 80% of the stadium's
       capacity (block 1 `+0x4e99`, `pwkUnkei_GetStandAllCapacity`) and the
-      season-ticket price set as the screen does
+      season-ticket price set as the screen does. Tested in PCSX2: the
+      Administrative Plan showed €2,000,000, €30, 80 and 50,000 as set, and
+      the stadium capacity (110000) that save.py computes
 - [x] The youth block: the youth candidates (block 1 `+0x97f8`, 30 × 12
       bytes: id, main position, age, turns left) and the four other
       candidate lists (players, managers, coaches, scouts) with their
