@@ -469,6 +469,12 @@ Lead: the playoffs raise something to 500 that Egamucho requires, and a
 skipped club falls back to Doclla. The code that tests these conditions
 hasn't been read.
 
+**User report:** in a normal career Egamucho is the supplier at the first
+Sponsor screen, so Doclla is replaced in year 1. (EVENT 338, timing 16 in
+season 2, has Jane say the supplier contract "ends soon", and the manual
+says other suppliers become available after the first year; neither
+contradicts this.)
+
 ## The developer launcher
 
 **Confirmed** from the code: `Dummy.CheckLauncher` (`0x109270`) always

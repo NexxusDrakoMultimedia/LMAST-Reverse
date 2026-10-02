@@ -88,7 +88,7 @@ Checked in this order; any failure means the event can't fire.
 
 | Offset | Type | Field | Check |
 |---|---|---|---|
-| `0x68` | s32 | timing | must equal the timing the scan runs for (`0x12df08`'s 2nd arg). −1 never matches. Enum names not yet traced (0–21) |
+| `0x68` | s32 | timing | must equal the timing the scan runs for (`0x12df08`'s 2nd arg). −1 never matches. The values are the moments the root scripts run the Event module for (**confirmed**, [`GAME_FLOW.md`](GAME_FLOW.md#event-timings)): 0 year start, 4 turn start, 5/6 before/after a match, 8 end of the main menu, 9 turn end, 16 before the Sponsor screen, ... |
 | `0x7c` | u32 | earliest season | 0 = any, else `year − 2005 >= value` (`0x12e3b8`) |
 | `0x80` | u32 | season pattern | 0 = any, else `pattern[value][year − 2005]` (`0x12e3e0`) |
 | `0x84` | u32 | date pattern A | 0 = any, else `pattern[value][date[3]]` (`0x12e450`) |

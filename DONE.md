@@ -61,6 +61,10 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Load a rebuilt pack in PCSX2: two lengthened club names
       (`STATIONMES1.PAC` 45,264 -> 45,328 bytes, entries 3-9 moved,
       directory record changed) showed in VS mode Team Selection
+- [x] The EVENT `+0x68` timing enum: each value is a moment the root
+      scripts run the Event module for (`m4[3]`, confirmed through
+      `SIMPRG.REL 0x6a50`/`0x129f14`), e.g. 0 year start, 4 turn start,
+      16 before the Sponsor screen (`DOC/GAME_FLOW.md#event-timings`)
 
 ## 2. Starting season and parameter tables (`PARAM/`, `0SYSTEM/`)
 
@@ -333,6 +337,11 @@ files. Each item keeps what was found, where, and how it was tested.
       and `GLOBALMEMORY` records. `DOC/SQB_FORMAT.md`, `SRC/sqb.py`
       (`info`, `dis`; in `regress.py`). 41 of 43 scripts decode, every
       label resolves
+- [x] Read the root scripts as the game's flow chart
+      (`DOC/GAME_FLOW.md`): boot and title routes, the new game, what each
+      Load result resumes, the season loop, the year start's order, the
+      main menu's 13 screens, a match day, the four game-over checks and
+      the event timings. Scripts 9-11 are never started
 
 ## 8. Housekeeping
 

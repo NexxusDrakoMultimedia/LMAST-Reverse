@@ -20,18 +20,15 @@ item in its section below.
    can only grow to the end of its last sector, which limits every writer.
 4. **The tutorial skip's supplier** (section 2). Find the condition that
    gives a normal career Egamucho instead of Doclla, so the skip disc
-   matches a played-through start.
-5. **Read the root scripts as the game's flow chart** (section 7). Knowing
-   which `Root*Seq` runs what, and in which order, would have found the
-   sponsor bug in minutes.
+   matches a played-through start (user report: Egamucho at the first
+   Sponsor screen).
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
 The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
 `SRC/mbb.py`. All 3,738 files and 66,102 messages parse, in 7 language slots.
 
-- [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`,
-      and the EVENT `+0x68` timing enum (values 0–21, scan at `0x12df08`)
+- [ ] Name the remaining EvsDataBin columns: NEWS `+0x20`, `+0x60`, `+0x70`
 - [ ] Map variable ids to what fills them (`Msg::VarBuf_*`, `SetVariable` callers)
 - [ ] Check whether raw `0x0A`/`0x0D` bytes affect display
 
@@ -73,8 +70,11 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [ ] Tutorial skip leftovers: the supplier stays Doclla instead of
       Egamucho, even when Doclla's contract ends (Tested in PCSX2). Lead:
       Egamucho's record has condition `0x18` = 500 that the playoffs may
-      provide (`DOC/SQB_FORMAT.md#why-the-playoff-sponsors-stayed`). Also
-      check other leagues (the switch calls `pwkLg_Init(0)`)
+      provide (`DOC/SQB_FORMAT.md#why-the-playoff-sponsors-stayed`). User
+      report: in a normal career Egamucho is already the supplier at the
+      first Sponsor screen, so Doclla is wrong there (despite EVENT 338 and
+      the manual hinting at a season-2 supplier change). Also check other
+      leagues (the switch calls `pwkLg_Init(0)`)
 - [ ] Test in PCSX2: a free agent lowered to rank 5 or less shows on a
       new club's Transfer List (`DOC/PLRESOURCESIM_FORMAT.md`)
 - [ ] Trace which code builds a national team's squad from players
@@ -196,9 +196,11 @@ The event tables, the procedures and the overlay loader are documented in
       8, 21, 25, 29, the `SQT1` flag and 2-D indexing, `BranchIf` vs
       `JumpIf`; the command sets of `INFORMATION.SQB`/`CHECKCLUBEDIT.SQB`;
       `INFORMATION.WPX`
-- [ ] Read the root scripts as the game's flow chart: which modules each
-      `Root*Seq` starts, in which order, and on which branch results
-      (`python SRC/sqb.py dis`)
+- [ ] Game-flow leftovers (`DOC/GAME_FLOW.md`): which `Sche.YearEnd`
+      value is which ending or game over, how PlayAcrobata maps its
+      argument (3, 4, 5, 7–10, 13–17) to a scene, the Dummy module with
+      argument 15 at turn start, and whether the Option module's save is
+      the one that loads as result 1
 - [ ] What each PwkScript computes (`PinfoInit`, `PinfoPoint`,
       `seasonticket`, `spectator*`, `Plpop*`, the `*_syousai_nouryokuMS`
       detail-screen scripts): name the `pwkEdit` value ids they read and

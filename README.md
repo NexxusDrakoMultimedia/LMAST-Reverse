@@ -326,6 +326,7 @@ workflow is:
 | [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | ROFS key recovery in PCSX2 |
 | [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format, the SN DLL loader, `SLES_541.51`'s imports, which overlay each sequencer module lives in, the wild-card module |
 | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) | `SEQ/*.SQB` and `PSC*.PAC` sequencer scripts: command encoding, argument types, labels, the root and PwkScript command sets, global memory |
+| [`GAME_FLOW.md`](DOC/GAME_FLOW.md) | the root scripts as a flow chart: title routes, new game, loading, the season loop, year start, main menu, match day, game over, the event timings |
 | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH, and how the packer laid BINPACs out (the writer) |
 | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) | TBB1/TBL1 tables, symbol recovery from `SLES_541.51` |
 | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) | textures and GS swizzling |
