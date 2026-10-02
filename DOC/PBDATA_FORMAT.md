@@ -735,10 +735,15 @@ bonuses at `0x550510`, 0x98 bytes each), clamped to 0–4. The bonus to
 parameters 128–138 ([above](#the-match-engines-player-parameters)), but
 what reads them there isn't found.
 
-They are not the tactics screen's combination lines. Those are per pair
-of players: `CTacticsTeam::calculateCombinationLevel` (`0x2e6fb0`) reads
-each pair through `plCombi_Get` (`0x20f638`, team data `+0x4354`) and
-buckets it into levels 1–5 with the thresholds at `0x55b850`. How fast a
+They are not the tactics screen's combination lines, nor the heart, "…"
+and skull icons it shows next to each player when one is selected. Both
+are per pair of players: `CTacticsTeam::calculateCombinationLevel`
+(`0x2e6fb0`) reads each pair through `plCombi_Get` (`0x20f638`, team data
+`+0x4354`) and buckets it into levels 1–5 with the thresholds at
+`0x55b850` (13,107, 26,214, 39,322 and 52,430: fifths of 65,535).
+`CTacticsBase::refreshCombinationLevel` (`0x2a5518`) gives every icon
+the level of its pair with the selected player, through
+`CTacticsPlayerIcon::setCombinationLevel` and `GP::SetCooperationIcon`. How fast a
 pair grows (`plCombi_GetCombinationGrow`, `0x20fb90`) depends on both
 players' `PlPinfo +0x1ea`, through an 8 × 8 table at `0x390698`, not on
 `+0x66`.
