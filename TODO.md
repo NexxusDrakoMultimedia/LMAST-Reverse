@@ -16,10 +16,10 @@ item in its section below.
    [`GOALS.md`](GOALS.md)).
 2. **`PLRESOURCECOMMON.PAC` and what each PwkScript computes** (sections 2
    and 7). This is the largest piece of starting-season data still undecoded.
-3. **Save data blocks for an editor** (section 10). Every edit so far
-   only takes effect in a new career; mapping the staff, youth, other
-   clubs' and finance blocks would let an editor change a career in
-   progress.
+3. **Save data blocks for an editor** (section 10). Staff, other clubs,
+   your club's status and the finances are mapped; the youth block and
+   the season plan's limits (before plan edits) are what an editor still
+   needs to change a career in progress.
 4. **Message variables** (section 1). Which game value fills each
    variable id in the message text, so text edits can move or reuse
    them safely.
@@ -249,17 +249,20 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       (category 550 messages 217-251); the season plan's `+0x14`, `+0x16`
       and the limits the plan screen sets, before `save.py` edits the plan
       (`SAVE_FORMAT.md`, "Finances")
-- [ ] Map more of the blocks through their accessors (youth, other
-      clubs), and name the fields an editor should offer. Other clubs: the
-      untraced record bytes (`+0x9b`, `+0xa1`, `+0xa6`-`+0xa7`) and the
-      non-resident clubs (442 on). Club rank leftovers: when in the season
-      the ranking runs, which competitions `0x22`-`0x24` lower the status
-      rank, what changes the status after a match (`0x26ddd8`), the three weighted
-      values behind the world rank points (`SIMPRG.REL 0x151568`), and
-      whether the reputation limits the players an AI club signs (the
-      community account). Staff
-      leftovers: the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`,
-      and how far the manager's popularity goes in play (0 in every save)
+- [ ] The youth block: the youth team's own data beyond its players
+      (candidate lists, promotion, the youth manager's settings), through
+      `pwkTeam_GetYteamData`, `pwkTeam_UpdateYouthCandidates` and
+      `pwkTeam_GetYouthPromoteConyear`, and the fields an editor should offer
+- [ ] Other clubs and staff leftovers: the untraced club record bytes
+      (`+0x9b`, `+0xa1`, `+0xa6`-`+0xa7`), the non-resident clubs (442 on),
+      the first u32 of PlMinfo/PlSinfo, PlSinfo `+0x64`-`+0x8f`, and how
+      far the manager's popularity goes in play (0 in every save)
+- [ ] Club rank leftovers (no editor fields): when in the season the
+      ranking runs, which competitions `0x22`-`0x24` lower the status rank,
+      what changes the status after a match (`0x26ddd8`), the three
+      weighted values behind the world rank points (`SIMPRG.REL
+      0x151568`), and whether the reputation limits the players an AI club
+      signs (the community account)
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0-3
       (kind 4 shows "Won't tolerate club's facilities."), to confirm their
       names. A save edit per kind would show each one
