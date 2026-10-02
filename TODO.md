@@ -77,12 +77,10 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `Sche.YearEnd`/`Sche.MonthEnd` (club-rank year end,
       `pwkTeam_ChangePop_Year`) changes anything
       (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`)
-- [ ] Test in PCSX2: a free agent lowered to rank 5 or less shows on a
-      new club's Transfer List (`DOC/PLRESOURCESIM_FORMAT.md`)
 - [ ] National team leftovers: what `_getNationalTeamPoint` (`0x227200`)
       scores, team 465 and `PlPinfo +0x20c` flag `0x300` in the call-up
-      filter, which clubs teams 442-459 are, and what fills the rank
-      ranges at `0x5eac08` (`DOC/PBDATA_FORMAT.md#national-team-call-ups`)
+      filter, and which clubs teams 442-459 are
+      (`DOC/PBDATA_FORMAT.md#national-team-call-ups`)
 - [ ] Test in PCSX2: a renamed fixed national player (26,046 as
       `NT.Terry.VS`, disc `LMAST-nt-test.iso`) should not show in a career
       call-up of England; the club Terry should

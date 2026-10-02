@@ -965,8 +965,7 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
   23–27, 31–38; scouts 2, 8–20, 26–44). The labels name them, but their
   effects aren't traced.
 - Header `+0x14`, `+0x24` and the last 8 header bytes.
-- What fills the rank ranges at `0x5eac08` (probably the group table at
-  `0x52fbf8`), and what `_getNationalTeamPoint` scores.
+- What `_getNationalTeamPoint` scores.
 - Which clubs teams 442–459 are, and a PCSX2 check that a career
   call-up doesn't show a renamed fixed national player (VS mode does).
 
