@@ -46,6 +46,9 @@ import initteam
 import pbdata
 
 SLES = "SLES_541.51"
+WINDOW = (1960, 1000)
+LIST_MIN = 360            # the narrowest the list gets when a page needs room
+BARS_PER_LINE = 8
 
 
 # --- the mod folder ----------------------------------------------------------
@@ -184,6 +187,13 @@ LABELS = {
 POSITION_ITEMS = ("main", "2nd", "3rd")
 
 
+def bar_lines(title, bars):
+    """Detail-screen bars, BARS_PER_LINE to a line, under a 13-column title."""
+    cells = ["%-5s %2d" % b for b in bars]
+    return ["%-13s%s" % (title if i == 0 else "", "  ".join(cells[i:i + BARS_PER_LINE]))
+            for i in range(0, len(cells), BARS_PER_LINE)]
+
+
 class PeopleTab(Tab):
     title = "People"
 
@@ -225,7 +235,7 @@ class PeopleTab(Tab):
         self.count_label = ttk.Label(bar, text="")
         self.count_label.pack(side="left", padx=12)
 
-        panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
         panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
         left = ttk.Frame(panes)
         cols = ("id", "name", "nation", "age", "what", "club")
@@ -405,6 +415,17 @@ class PeopleTab(Tab):
         self.derived = ttk.Label(box, text="", justify="left", font="TkFixedFont")
         self.derived.pack(anchor="w", padx=8, pady=(4, 12))
         self.update_derived()
+        self.fit_detail()
+
+    def fit_detail(self):
+        """Move the divider left when the page is wider than its pane, down
+        to LIST_MIN for the list. Dragging it back is up to the user."""
+        self.frame.update_idletasks()
+        need = self.detail.inner.winfo_reqwidth() + 24     # and the scroll bar
+        have = self.detail.outer.winfo_width()
+        if need > have > 1:
+            pos = self.panes.sashpos(0)
+            self.panes.sashpos(0, max(LIST_MIN, pos - (need - have)))
 
     def notes(self, r):
         out = []
@@ -557,17 +578,16 @@ class PeopleTab(Tab):
         ab = r.fields["ability"]
         if r.kind == "players":
             gk = r.fields["position"][0] == 0
-            lines = ["Screen bars  " + "  ".join("%s %d" % b for b in pbdata.bars(ab, gk)),
-                     "Positions    " + pbdata.aptitude_grid(
-                         pbdata.aptitude(ab, r.fields["position"])[1]),
-                     "             (levels 0-4, forwards first, left centre right)"]
+            lines = bar_lines("Screen bars", pbdata.bars(ab, gk))
+            lines += ["Positions    " + pbdata.aptitude_grid(
+                          pbdata.aptitude(ab, r.fields["position"])[1]),
+                      "             (levels 0-4, forwards first, left centre right)"]
         elif r.kind == "managers":
             role = pbdata.JOB_ROLE.get(r.fields["job"], "manager")
-            lines = ["Screen bars as %s  " % role + "  ".join(
-                "%s %d" % b for b in pbdata.staff_bars(ab, role))]
+            lines = ["Screen bars as %s" % role] + bar_lines(
+                "", pbdata.staff_bars(ab, role))
         else:
-            lines = ["Screen bars  " + "  ".join(
-                "%s %d" % b for b in pbdata.average_bars(ab, pbdata.SCOUT_BARS))]
+            lines = bar_lines("Screen bars", pbdata.average_bars(ab, pbdata.SCOUT_BARS))
         self.derived.configure(text="\n".join(lines))
 
     # saving
@@ -677,7 +697,12 @@ class App:
         self.root = tk.Tk()
         self.title_font = tkfont.nametofont("TkDefaultFont").copy()
         self.title_font.configure(size=12, weight="bold")
-        self.root.geometry("1400x860")
+        # Wide enough for the list and a page of four ability columns
+        # (about 1,900 pixels), or the screen less a margin.
+        w = min(WINDOW[0], self.root.winfo_screenwidth() - 80)
+        h = min(WINDOW[1], self.root.winfo_screenheight() - 120)
+        self.root.geometry("%dx%d+%d+%d" % (w, h, (self.root.winfo_screenwidth() - w) // 2,
+                                            (self.root.winfo_screenheight() - h) // 3))
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
         menu = tk.Menu(self.root)
         file_menu = tk.Menu(menu, tearoff=False)

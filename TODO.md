@@ -311,4 +311,8 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       patch with `vcdiff.py`
 - [ ] Test in PCSX2: an edit made only through the GUI shows in game
       (for example a player's name, height and an ability in the People
-      tab, put on a disc with `patch_disc.py`)
+      tab, put on a disc with `patch_disc.py`). Disc `LMAST-editor-test.iso`
+      (with `--skip-tutorial`): Van der Sar (250, Manchester) at 255 cm,
+      45 kg, two-footed, every ability 99, potential 31, long sleeves, GK
+      long pants, gloves 3, boots 3. His age and shirt should stay 36 and 19
+      (from `OTEAMMEMBER.TBB`), not the edited 16 and 69
