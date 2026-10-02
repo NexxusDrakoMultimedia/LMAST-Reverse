@@ -328,7 +328,9 @@ Information screen's World Ranking (F.C. Barcelona 28, Marseille 53,
 Pirouzi 438), and all 20 clubs on the first and last pages of the All
 Clubs Ranking (AC Milan 1 to Chelsea 10, Diaconsa 432 to Venlo 441). The
 440 records hold every rank from 1 to 441 except 2, which on screen is
-your own club (kept in block 1); 6 is the rival, record 0. The club rank
+your own club (kept in block 1); 6 is the rival, record 0. The ranking
+follows the points: sorted by world rank, the points never rise (0 to
+1,023, AC Milan first with 1,023). The club rank
 isn't the League Ranking shown there (26 and 24 against 7 and 5): the
 League Ranking is the club's place in its league table, and only clubs in
 the Euro6 (the six main leagues and their two divisions) have one (user
