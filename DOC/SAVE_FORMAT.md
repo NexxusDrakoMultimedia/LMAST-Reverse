@@ -338,7 +338,22 @@ report). The club rank is what `pwkOteam_GetRank` returns. **Empirical:** it run
 29–31 for the clubs at the top of the world ranking and 0–5 at the
 bottom, and the Information screen calls F.C. Barcelona (26) and
 Marseille (24) a "World-class club" and Pirouzi (5) a "Local club", so
-it is the club's status. Which text goes with which rank isn't traced. Bytes
+it is the club's status. Which text goes with which rank isn't traced.
+
+**Club reputation.** The six texts are messages 0–5 of category 203: Local
+club, Home-grown club, Promising club in *X*, Well-known club in *X*,
+World-class club, World famous club (`mbb.py dump`). The code that picks
+one isn't found yet: `GetClubRankIndex` (`0x247010`, 8 bands at
+`0x54e050`: 2, 6, 11, 16, 21, 26, 29, 31) only feeds the transfer prices,
+and the two loads of 203 in `SIMPRG.REL` (`0x12f10`, `0x70954`) are a
+message window id. A community write-up (overthetop2, "Club reputation
+and AI club strength", March 2024) describes the same six levels as a
+band on the quality of players an AI club signs. By that account an AI
+club's level comes from its world ranking within its country, with each
+country's number of top-level clubs set by its Euro coefficient. Your
+own club's level comes from the world ranking alone (World famous in the
+top 30), and the rival gets boosts. None of this is checked against the
+code yet. Bytes
 `+0x9b`–`+0x9f`, `+0xa1` and `+0xa6`–`+0xa7` aren't traced. `save.py clubs` lists the clubs (with their squads for the teams
 named), and `save.py set ... club:<team>:friendship=` edits friendship.
 
