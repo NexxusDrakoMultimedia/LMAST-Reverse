@@ -328,8 +328,11 @@ open:
   sizes such as `0x16c0` and `0x1800`; `alloc_save_buffer` `0x2097e8`,
   type from `savectrl`). The big leagues are all type 0, which already
   holds the 26-club league (650 games), but whether the pools have room
-  for more games in total isn't traced. A test in PCSX2 would show it.
-- Nothing has been tested in PCSX2 yet.
+  for more games in total isn't traced. The 22-club test below saved
+  and reloaded without trouble, which doesn't rule out a limit for
+  bigger changes.
+- Promotion and relegation into the second season of a changed size
+  aren't tested yet.
 
 ### Where the clubs come from
 
@@ -389,6 +392,18 @@ more), Italy 20–24, Spain 18–24 and the Netherlands 16–22. The rest are
 refused for lack of free turns (a second division's own-nation version
 fills up first) or the 26-club limit of a division in table 0
 (`plLg_EntryTeamSetToDiv`).
+
+**Tested in PCSX2** (user report): England's first division at 22
+clubs (`leaguesize.py build`, patched with `--copies` and
+`--skip-tutorial`, disc `LMAST-eng22-test.iso`). In 2006–07 the Premier
+Division table had 22 clubs, Reading and Sheffield U among them with
+the promoted Sunderland and Wigan and the playoff winner West Ham. The
+Champions Division had 24, the player's club and the relegated Crystal
+Palace among them, and the player's club had 46 league fixtures: the
+last three on May week 1 weekend, May week 2 midweek and May week 2
+weekend, the last three turns `league_turns` gave UID 1. Saving and
+reloading during the season worked. Promotion and relegation at the
+end of the season are still to be checked.
 
 ### Game days for a league of another size
 

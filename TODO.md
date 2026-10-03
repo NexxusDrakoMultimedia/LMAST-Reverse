@@ -16,7 +16,8 @@ item in its section below.
    PCSX2), `schedule.py` re-encodes the schedules byte for byte and
    builds league schedules of any size (`league`) with game days on
    free turns (`turns`), and `leaguesize.py build` changes a division's
-   size. Next: testing that in PCSX2. The starting season is the first thing [`GOALS.md`](GOALS.md)
+   size: tested in PCSX2 for the first season. Next: the second
+   season's promotion and relegation (being tested). The starting season is the first thing [`GOALS.md`](GOALS.md)
    wants a mod to change.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
@@ -61,10 +62,10 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 `pbdata.py`); `0SYSTEM/` is surveyed in
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
-- [ ] Test in PCSX2: a division of another size (`leaguesize.py build`,
-      England at 22 clubs): the first season's fixtures and tables, a
-      whole season to see promotion and relegation, and whether the
-      save-buffer pools hold the larger league
+- [ ] Test in PCSX2: the second season of England at 22 clubs
+      (`LMAST-eng22-test.iso`): 3 down, 2 up plus the playoff winner, and
+      the divisions still 22 and 24 in 2007-08. The first season's
+      tables, fixtures and saves are tested
       (`DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from`)
 - [ ] Division sizes: an editor tab on `leaguesize.py`, and room for
       bigger second divisions (start the season earlier, or use cup

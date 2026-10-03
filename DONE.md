@@ -300,6 +300,10 @@ files. Each item keeps what was found, where, and how it was tested.
       renumbers the leagues' and cups' references, and writes the slots,
       records, games and game days. Built and checked at every size from
       4 below to 6 above each nation's; in `regress.py`
+- [x] Tested in PCSX2: England's first division at 22 clubs, first
+      season. The Premier Division had 22 clubs (Reading and Sheffield U
+      moved up), the Champions Division 24, the player's club 46 fixtures
+      on the built dates, and saves reloaded fine (user report)
 
 ## 3. Ninja 3D models and motions
 
