@@ -285,7 +285,10 @@ The event tables, the procedures and the overlay loader are documented in
       "two months"/"nine months" injury lines need thresholds chosen
       first. Improvement earmarked: rebuild the badly balanced league
       schedules (22 and 26 clubs, the 8-club VS league) at the same size
-      with `schedule.set_league`
+      with `schedule.set_league`. Also earmarked: a harder economy
+      (dearer facilities, a wider ticket price range, dearer advertising);
+      first trace the facility charge, the plan screen's limits and what
+      the ad budget and ticket prices do (`DOC/LMASTER_MOD.md#improvements`)
 - [ ] Japanese release leftovers (`DOC/JAPANESE_RELEASE.md`): why
       `PLRESOURCESIM.PAC` entry 0's weather tables stop partway; whether
       the player-database values above PAL's limits are Japanese features
