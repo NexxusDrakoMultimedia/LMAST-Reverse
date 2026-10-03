@@ -112,6 +112,14 @@ What a swap keeps, and why:
 A club's squad, kit, crest and record stay its own. Not tested in PCSX2
 yet.
 
+**Empirical:** each division's clubs are exactly the clubs of one read
+past record, its table last season: records 0, 1, 6, 7, 11, 12, 16, 17,
+22, 23, 27 and 28 for the 12 divisions in order (the English second
+division is also record 3). Eleven are in the division's order; the
+Italian second division's record is in another, so the records hold the
+finishing order. `InitTeamData.past_record` finds it, and the editor's
+Season tab shows each division in that order with its swaps.
+
 ## `OTEAMMEMBER.TBB`
 
 One table of 175,600 bytes = 439 teams (ids 3–441) × 25 slots × 16 bytes.

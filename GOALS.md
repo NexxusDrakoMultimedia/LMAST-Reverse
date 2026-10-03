@@ -81,10 +81,11 @@ Each stage depends on the one before it.
    takes the allowed values from it (`pbdata.edit_spec` and the like):
    People (the player database, `pbdata.py`), Clubs (club records and
    computer squads, `initteam.py`), New club (`teaminit.py`), Kits
-   (`uniform.py`) and Text (`mbb.py`). All but Text are tested in PCSX2.
+   (`uniform.py`), Text (`mbb.py`) and Season (swapping league clubs'
+   places, `initteam.py`). All but Season are tested in PCSX2.
    File > Build disc puts the mod folder on a disc image and makes the
-   xdelta patch of stage 6. Still to come: tabs for the starting season
-   and the parameters, once they have writers.
+   xdelta patch of stage 6. Still to come: the schedules (division
+   sizes) and the parameters, once they have writers.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284) against
    the user's own unmodified disc image, never as game data or disc images.
    This matches the rule that no game data goes in the repo. xdelta is the

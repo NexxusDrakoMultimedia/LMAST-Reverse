@@ -739,4 +739,10 @@ files. Each item keeps what was found, where, and how it was tested.
       tutorial skip, remembered in `build.json`. Checked: all three
       switches in one build write the expected bytes, and the dialog's
       boxes add them to the command it runs
+- [x] Season tab on `initteam.py`: each league's two starting divisions
+      in last season's finishing order (`InitTeamData.past_record`), and
+      swapping two league clubs picked from the lists or drop-downs.
+      Checked through the widgets: two swaps (one across leagues) and a
+      refused same-club swap; the save equals the logged `initteam.py
+      swap` output byte for byte
 

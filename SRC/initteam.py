@@ -140,6 +140,16 @@ class InitTeamData:
         self.tables[2].data = struct.pack("<%dh" % len(self.years), *self.years)
         return tbb.build(self.tables, self.end, trailer)
 
+    def past_record(self, division):
+        """The past record (table 1) holding exactly this division's clubs,
+        in last season's finishing order, or None. Empirical: each of the
+        12 divisions matches one read record (0, 1, 6, 7, 11, 12, 16, 17,
+        22, 23, 27, 28; the English second division also 3), and a swap
+        keeps it so."""
+        teams = set(division.teams)
+        return next((i for i, r in enumerate(self.past[:PAST_READ])
+                     if set(t for t in r if t) == teams), None)
+
     def league_clubs(self):
         """{team: (league, division)} for every club in the starting divisions."""
         return {t: (d.league, d.div) for d in self.divisions for t in d.teams}

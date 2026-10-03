@@ -45,6 +45,9 @@ Tabs:
              (TEAM_INIT_DATA.TBB, teaminit.py; DOC/TEAMINIT_FORMAT.md):
              squad, rival-only records, staff, scouts, youth team,
              candidate lists and the rival club, as pwkTeam_Init2 reads them.
+    Season   the starting divisions by league, with last season's table, and
+             swapping two league clubs' places (initteam.py swap;
+             DOC/INITTEAM_FORMAT.md#swapping-clubs).
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
@@ -2057,6 +2060,166 @@ class TextTab(Tab):
         return True
 
 
+INIT_TEAMS = "PARAM/PLRRSRC_INITTEAMDATA.TBB"
+
+
+class SeasonTab(Tab):
+    """The starting season's divisions (PLRRSRC_INITTEAMDATA.TBB), and
+    swapping two league clubs' places through initteam.InitTeamData.swap,
+    as `initteam.py swap` does."""
+    title = "Season"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.init = None
+        self.swaps = []             # [(a, b)] in order
+        self.last_pick = None
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="League").pack(side="left")
+        self.league_var = tk.StringVar(value=teaminit.LEAGUES[0])
+        box = ttk.Combobox(bar, textvariable=self.league_var, values=teaminit.LEAGUES,
+                           state="readonly", width=14)
+        box.pack(side="left", padx=(4, 20))
+        box.bind("<<ComboboxSelected>>", lambda e: self.show())
+        ttk.Label(bar, text="Swap").pack(side="left")
+        self.a_var, self.b_var = tk.StringVar(), tk.StringVar()
+        self.a_box = ttk.Combobox(bar, textvariable=self.a_var, state="readonly", width=30,
+                                  height=25)
+        self.a_box.pack(side="left", padx=4)
+        ttk.Label(bar, text="with").pack(side="left")
+        self.b_box = ttk.Combobox(bar, textvariable=self.b_var, state="readonly", width=30,
+                                  height=25)
+        self.b_box.pack(side="left", padx=4)
+        ttk.Button(bar, text="Swap", command=self.swap).pack(side="left", padx=8)
+        ttk.Label(self.frame, text="A swap exchanges two clubs' places in the starting divisions "
+                                   "and in last season's results, which decide the first "
+                                   "season's divisions after promotion and relegation, and the "
+                                   "cup places. Each club keeps its squad, kit and record. "
+                                   "Division sizes are fixed by the schedules, so clubs can only "
+                                   "be swapped, not added or removed (DOC/INITTEAM_FORMAT.md).",
+                  foreground="#555", wraplength=1100, justify="left").pack(anchor="w", padx=8)
+        self.body = ttk.Frame(self.frame)
+        self.body.pack(fill="both", expand=True, padx=6, pady=6)
+        self.trees = []
+        for div in range(initteam.DIVISIONS):
+            frame = ttk.LabelFrame(self.body, text="")
+            frame.pack(side="left", fill="both", expand=True, padx=(0, 6))
+            tree = ttk.Treeview(frame, columns=("rank", "id", "club", "note"), show="headings",
+                                selectmode="browse", height=26)
+            for c, text, width in (("rank", "Last season", 80), ("id", "Id", 50),
+                                   ("club", "Club", 200), ("note", "", 90)):
+                tree.heading(c, text=text)
+                tree.column(c, width=width, stretch=c == "club")
+            tree.tag_configure("edited", foreground="#b03000")
+            tree.pack(fill="both", expand=True)
+            tree.bind("<<TreeviewSelect>>", lambda e, t=tree: self.pick(t))
+            self.trees.append((frame, tree))
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(INIT_TEAMS)
+            self.init = initteam.InitTeamData(self.path)
+            self.teams = initteam.team_names(mod.source(MES), 1)
+        except (ValueError, struct.error, OSError) as e:
+            self.app.status("Couldn't load the starting divisions: %s" % e)
+            messagebox.showerror("Season", "Couldn't load the starting divisions:\n%s" % e)
+            return
+        self.swaps = []
+        self.show()
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def club_label(self, team):
+        lg, dv = self.init.league_clubs()[team]
+        return "%d %s (%s %d)" % (team, self.teams.get(team, ""), teaminit.LEAGUES[lg], dv + 1)
+
+    def show(self):
+        if self.init is None:
+            return
+        league = teaminit.LEAGUES.index(self.league_var.get())
+        swapped = {t for pair in self.swaps for t in pair}
+        for div, (frame, tree) in enumerate(self.trees):
+            d = self.init.divisions[league * initteam.DIVISIONS + div]
+            rec = self.init.past_record(d)
+            frame.configure(text="%s division %d: %d clubs%s" % (
+                teaminit.LEAGUES[league], div + 1, len(d.teams),
+                ", last season's table is competition %d" % rec if rec is not None else ""))
+            order = [t for t in self.init.past[rec] if t] if rec is not None else d.teams
+            tree.delete(*tree.get_children())
+            for k, team in enumerate(order):
+                tree.insert("", "end", iid=str(team),
+                            values=(k + 1 if rec is not None else "", team,
+                                    self.teams.get(team, ""), "swapped" if team in swapped else ""),
+                            tags=("edited",) if team in swapped else ())
+        labels = [self.club_label(t) for t in sorted(self.init.league_clubs())]
+        self.a_box["values"] = labels
+        self.b_box["values"] = labels
+
+    def pick(self, tree):
+        sel = tree.selection()
+        if not sel:
+            return
+        label = self.club_label(int(sel[0]))
+        # The first pick fills "Swap", the next one "with", and a pick after
+        # both starts again. Picking the same club again (or a repeated
+        # selection event) changes nothing.
+        if label == self.last_pick:
+            return
+        self.last_pick = label
+        if self.a_var.get() and not self.b_var.get():
+            self.b_var.set(label)
+        else:
+            self.a_var.set(label)
+            self.b_var.set("")
+
+    def swap(self):
+        try:
+            a, b = int(self.a_var.get().split()[0]), int(self.b_var.get().split()[0])
+            n = self.init.swap(a, b)
+        except (ValueError, IndexError) as e:
+            messagebox.showerror("Season", "Choose two different league clubs to swap. %s" % e)
+            return
+        self.swaps.append((a, b))
+        self.app.status("Swapped %d %s and %d %s (%d places)" % (
+            a, self.teams.get(a, ""), b, self.teams.get(b, ""), n))
+        self.a_var.set("")
+        self.b_var.set("")
+        self.last_pick = None
+        self.show()
+        self.app.update_title()
+
+    def dirty(self):
+        return bool(self.swaps)
+
+    def save(self):
+        if not self.swaps:
+            return True
+        mod = self.app.mod
+        out = mod.target(INIT_TEAMS)
+        temps = [(out + ".new", out)]
+        try:
+            data = self.init.encode()
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Season", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        cmd = ["python", "SRC/initteam.py", "swap", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + ["%d:%d" % p for p in self.swaps]
+        n = len(self.swaps)
+        lines = log_lines("Season: %d swaps" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d swaps" % (shown_path(out), n))
+        return True
+
+
 class LogTab(Tab):
     """The commands each save corresponds to, as written to editor.log."""
     title = "Log"
@@ -2465,7 +2628,8 @@ class App:
         self.newclub = NewClubTab(self)
         self.kits = KitsTab(self)
         self.text = TextTab(self)
-        self.tabs = [self.people, self.clubs, self.newclub, self.kits, self.text]
+        self.season = SeasonTab(self)
+        self.tabs = [self.people, self.clubs, self.newclub, self.season, self.kits, self.text]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)

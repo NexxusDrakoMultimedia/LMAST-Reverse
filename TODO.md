@@ -11,10 +11,9 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **The starting season** (section 2). `initteam.py swap` now exchanges
-   two league clubs' places; next a PCSX2 test, a Season tab in the
-   editor, and a schedule writer, which changing a division's size
-   needs. The starting season is the first thing
+1. **The starting season** (section 2). `initteam.py swap` and the editor's
+   Season tab exchange two league clubs' places; next a PCSX2 test, and a
+   schedule writer, which changing a division's size needs. The starting season is the first thing
    [`GOALS.md`](GOALS.md) wants a mod to change.
 2. **The editor's leftovers** (section 11). All five tabs are tested in
    PCSX2; left are tests of a mail text and a keeper scheme, the licensed kit descriptors, and a free-agents
@@ -58,11 +57,9 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 `pbdata.py`); `0SYSTEM/` is surveyed in
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
-- [ ] Test in PCSX2: `initteam.py swap` (two clubs from different
-      divisions, or leagues, start the first season in each other's
-      places)
-- [ ] A Season tab in the editor for `initteam.py swap`: the starting
-      divisions by league, and swapping two clubs
+- [ ] Test in PCSX2: a swap made in the editor's Season tab (two clubs
+      from different divisions, or leagues, start the first season in
+      each other's places)
 - [ ] A schedule writer (`SCHEDULE_*` packs, read by `schedule.py`), with
       a `roundtrip` check: needed to change a division's size, which the
       league schedules' entrant slots and pairings fix
