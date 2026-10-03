@@ -43,6 +43,19 @@ stay separate switches, so the restorations can be used without them.
 | Better home and away runs in the league schedules | [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-league-of-another-size): the disc has one schedule per size, and some send a club to one venue up to 7 times running (the 22-club leagues, UIDs 11, 30, 40, 48) or 9 (the 26-club English second division with your club, UID 1); the 8-club VS league (UIDs 154–155) reaches 5 | rebuild those UIDs with `schedule.set_league` at the same size: no more than 2 running, same game days and turns, team slots untouched | candidate (earmarked by the user). `python SRC/schedule.py league DAT/PARAM` compares each size |
 | A harder economy that punishes mistakes: dearer facilities, a wider ticket price range, dearer advertising, and the like | facility records in [`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md) (the u32 before the build time is the build cost, **empirical**: club houses 45,000,000 and 90,000,000, sites 60,000,000 and 120,000,000 in the stored unit; the code that charges it isn't traced); the season plan's limits in [`SAVE_FORMAT.md`](SAVE_FORMAT.md) (ad budget up to £5,000,000 a season, ticket price £10–£50, user report; where the plan screen checks them isn't traced); the salary limits at `0x5eb068` ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md)) | data edits where the values are data (facility costs), small code edits where they are limits in the code. Each a separate switch, with the new values chosen and played through a season in PCSX2 | earmarked by the user. Research first: the code that charges facility costs, the plan screen's limit checks, and what the ad budget, ticket price and season tickets do to income and popularity (the PwkScript formulas, TODO Next up 3) |
 
+Ideas for the harder economy (the user's, not decided), with what each
+would change:
+
+| Idea | Where it lives | Known |
+|---|---|---|
+| Dearer facilities and their upkeep | `PLRESOURCECOMMON.PAC` entry 0 facility records; the maintenance lines in the accounts (payments 6–8, practice ground, facilities, stadium) | the build cost is **empirical**; what charges it and the maintenance aren't traced |
+| A wider ticket price range | the season plan (`SAVE_FORMAT.md`) | the £10–£50 limits are a user report; the check isn't traced |
+| Dearer advertising | the ad budget, payment 17 (`0x2528c0` reads `pwkUnkei_GetPR`) | what the budget buys isn't traced |
+| Dearer overseas bases, investment in them and their upkeep | `PLRESOURCESIM.PAC` entry 1: set-up cost per region and level rates (`_GetOverseasBranchEstablishCapital`, `0x232d88`; [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)), payments 18–19 | **confirmed**: the maintenance uses the same two tables, so this is a data edit |
+| Merchandise: dearer to stock, bigger margins | income 7 (Merchandise) in the accounts | the sales code isn't traced |
+| Reputation harder to raise | club rank (0–31, save `+0xa0`), the world rank points (`SIMPRG.REL 0x151568`) and the status rank (`SAVE_FORMAT.md`, club rank leftovers) | what changes the rank after a match (`0x26ddd8`) and the weights behind the points aren't traced |
+| Lesser players dearer, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the player price kinds (`WithInRange_SM` `0x246d18` clamps by price kind; kind 0 is salary) | how a transfer fee is worked out isn't traced; the price limits are filled at run time |
+
 ## Not candidates
 
 - `EVENT/EVENTDATA_TURN.TBB`, `0SYSTEM/SCHEDULE.TBB` and the `CVS/`

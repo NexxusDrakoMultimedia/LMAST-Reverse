@@ -288,7 +288,9 @@ The event tables, the procedures and the overlay loader are documented in
       with `schedule.set_league`. Also earmarked: a harder economy
       (dearer facilities, a wider ticket price range, dearer advertising);
       first trace the facility charge, the plan screen's limits and what
-      the ad budget and ticket prices do (`DOC/LMASTER_MOD.md#improvements`)
+      the ad budget and ticket prices do. More ideas (overseas bases,
+      merchandise, reputation, player prices up to £250M) are listed in
+      `DOC/LMASTER_MOD.md#improvements`
 - [ ] Japanese release leftovers (`DOC/JAPANESE_RELEASE.md`): why
       `PLRESOURCESIM.PAC` entry 0's weather tables stop partway; whether
       the player-database values above PAL's limits are Japanese features
