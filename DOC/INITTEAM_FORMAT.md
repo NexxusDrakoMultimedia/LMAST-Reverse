@@ -99,7 +99,10 @@ Empirical, checked by `initteam.py info`:
   once.
 - Ages are 16–40, and contract lengths are 2–6.
 - These are the ages a computer team's players show in game, one year
-  older in a new game. Tested in PCSX2: Terry's 25 shows as 26, and after
+  older in a new game. (That year may come from the tutorial skip rather
+  than from a new game: `TEAM_INIT_DATA`'s ages show one year older on a
+  `--skip-tutorial` disc only, `TEAMINIT_FORMAT.md`. Whether these tests
+  used the skip isn't recorded.) Tested in PCSX2: Terry's 25 shows as 26, and after
   `initteam.py set 7:1 age=15` he shows as 16. The player database's own
   age field doesn't override them. Also tested through the editor's Clubs
   tab: Van der Sar (team 13, slot 0) at age 16 and shirt 69 showed 17 and

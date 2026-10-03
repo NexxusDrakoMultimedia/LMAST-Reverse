@@ -232,6 +232,15 @@ matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
   are England / Teamwork records 18, 20 and 9 of tables 1 and 2. A
   season later each was a year older, with a year less on the contract.
   So the staff `+0x0c` byte is the age the game shows.
+- Through the editor's New club tab, on a `--skip-tutorial` disc:
+  England / Counter-Attack records 0–17 set to age 16 showed as **17** in
+  the Club House squad list, in 2006–07. Without the skip, the career
+  starts in the 2005–06 playoffs and Terry showed the table's 30 (above);
+  the skip runs the playoffs' year end and starts a season later, and a
+  season later the rival's Terry was 32 for the table's 31. So the age
+  shown is the table's plus one per season played, and a
+  `--skip-tutorial` career starts one season on (*empirical*, from these
+  tests; the code that adds the year hasn't been traced).
 - Salaries show in pounds as the table's value ÷ 6, the pound rate in
   [`SAVE_FORMAT.md`](SAVE_FORMAT.md): Hodgson 900,000 showed £150,000
   and Reily 540,000 £90,000. Dale showed £80,000, not £75,000, maybe

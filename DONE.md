@@ -687,4 +687,10 @@ files. Each item keeps what was found, where, and how it was tested.
       `teaminit.py set` now writes through `set_field` and `encode_file`
       (same output as before). Checked: a save with 9 edits (3 refused)
       equals the logged `teaminit.py set` output byte for byte
+- [x] Tested in PCSX2: a New club edit shows in a new career. England /
+      Counter-Attack records 0-17 set to age 16 in the New club tab, the
+      disc built with the editor's Build disc (`--skip-tutorial`): the
+      Club House squad list shows the same players, all aged 17, in
+      2006-07. The extra year fits the skip starting a season on (noted in
+      `TEAMINIT_FORMAT.md`; a check without the skip is in TODO section 2)
 

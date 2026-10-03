@@ -13,9 +13,9 @@ item in its section below.
 
 1. **The editor GUI** (section 11). `SRC/editor.py` has People and Clubs
    tabs (both tested in PCSX2) and builds a disc and an xdelta patch from
-   the mod folder, and edits the new club (`teaminit.py`). Next: test a
-   New club edit in PCSX2, then the kits (`uniform.py`) and message text
-   (`mbb.py`) tabs.
+   the mod folder, and edits the new club (`teaminit.py`); all three
+   tabs are tested in PCSX2. Next: the kits (`uniform.py`) and message
+   text (`mbb.py`) tabs.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -89,6 +89,12 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       nation, entry 7's groups and counter, entry 6 in full; writers for
       the streams (5, 11-14). User reports: weathers are sunny, overcast,
       rain, snow; combinations are hidden in game
+- [ ] Squad ages and the tutorial skip: does `OTEAMMEMBER`'s age show one
+      year older because of a new game or because of `--skip-tutorial`?
+      Start a career without the skip and look at Van der Sar (Manchester
+      slot 0, age 16 in the mod): 16 means the skip adds the year. Then
+      document which code adds it (`DOC/INITTEAM_FORMAT.md`,
+      `DOC/TEAMINIT_FORMAT.md`)
 - [ ] Tutorial skip leftovers: check other leagues (the switch calls
       `pwkLg_Init(0)`), and whether the rest of the playoffs' skipped
       `Sche.YearEnd`/`Sche.MonthEnd` (club-rank year end,
@@ -305,6 +311,4 @@ organised by what a player of the game recognises (a player, a club, a
 season) rather than by file. `tkinter` only, as the principles there say,
 and every GUI edit must also be possible as a `python SRC/...` command.
 
-- [ ] Test in PCSX2: a New club edit (a squad record's player and age,
-      a staff salary, the youth team) shows in a new career
 - [ ] Kits (`uniform.py`) and message text (`mbb.py`) tabs
