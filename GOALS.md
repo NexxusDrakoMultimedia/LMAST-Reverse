@@ -76,7 +76,8 @@ Each stage depends on the one before it.
    folder laid out like `DAT/`. Its People tab edits the player database
    through `pbdata.py`, with the allowed values from `pbdata.edit_spec`
    (tested in PCSX2), and its Clubs tab the club records and squads
-   through `initteam.py`.
+   through `initteam.py` (tested in PCSX2). File > Build disc puts the mod
+   folder on a disc image and makes the xdelta patch of stage 6.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284) against
    the user's own unmodified disc image, never as game data or disc images.
    This matches the rule that no game data goes in the repo. xdelta is the

@@ -11,10 +11,10 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **The editor GUI** (section 11). `SRC/editor.py` has its People tab
-   (the player database, tested in PCSX2) and Clubs tab (club records and
-   squads), both tested in PCSX2. Next: the new club (`teaminit.py`),
-   kits and text tabs, and building a disc from the editor.
+1. **The editor GUI** (section 11). `SRC/editor.py` has People and Clubs
+   tabs (both tested in PCSX2) and builds a disc and an xdelta patch from
+   the mod folder. Next: the new club (`teaminit.py`), kits (`uniform.py`)
+   and message text (`mbb.py`) tabs.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -302,6 +302,3 @@ and every GUI edit must also be possible as a `python SRC/...` command.
 
 - [ ] The player's new club (`teaminit.py`), kits (`uniform.py`), message
       text (`mbb.py`)
-- [ ] Build a modded disc from the GUI: collect the edited files, run
-      `patch_disc.py` with `--copies`, and optionally make an xdelta
-      patch with `vcdiff.py`

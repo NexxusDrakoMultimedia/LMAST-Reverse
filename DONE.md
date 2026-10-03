@@ -661,4 +661,14 @@ files. Each item keeps what was found, where, and how it was tested.
       disc with the earlier People edits (`patch_disc.py --copies
       --skip-tutorial`): his detail screen shows age 17 (one year older in
       a new game) and 69 in the shirt badge, with the People edits intact
+- [x] Build a modded disc from the editor: File > Build disc runs
+      `patch_disc.py patch ... --copies` with every file in the mod folder
+      (`disc/` files as `disc:` targets), then optionally `vcdiff.py make`
+      against the original, shows their output and logs both commands.
+      Paths and options are kept in `build.json` in the mod folder. It
+      warns when the original isn't the Redump dump (by size before, and
+      by `vcdiff.py`'s SHA-1 after). Checked: a build took 15 seconds,
+      the 10,647-byte patch applied to the Redump image gives the built
+      disc byte for byte, and `patch_disc.py verify` finds both edited
+      files on it
 

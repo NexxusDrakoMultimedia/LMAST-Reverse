@@ -338,6 +338,12 @@ python SRC/vcdiff.py apply disc.iso mymod.xdelta modded.iso   # or use xdelta UI
 python SRC/vcdiff.py info  mymod.xdelta
 ```
 
+The editor's **File > Build disc** (`SRC/editor.py`) runs both steps on a
+mod folder: `patch_disc.py patch ... --copies` with every edited file, then
+`vcdiff.py make` against the original, and warns when the original isn't
+the Redump dump. Checked: the patch applied to the Redump image gives the
+built disc byte for byte.
+
 **How `make` encodes.** It reads both images in 8 MiB windows (xdelta3's
 default window size). Each window's source segment is the same range of
 the source image. Unchanged runs become COPY instructions (default code

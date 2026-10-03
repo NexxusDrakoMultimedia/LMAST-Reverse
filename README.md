@@ -286,6 +286,12 @@ python SRC/editor.py open             # the mod folder mod/
 python SRC/editor.py open mods/terry  # another mod folder
 ```
 
+**File > Build disc** (Ctrl+B) puts the mod folder's files on a copy of
+your disc image (`patch_disc.py patch ... --copies`) and can make an
+xdelta patch of it for sharing (`vcdiff.py make`), showing their output
+and logging both commands. Use the unmodified Redump image as the
+original, so the patch applies for everyone; the dialog warns if it isn't.
+
 Each tab edits through a writer's own functions and takes the field names
 and ranges from it (`pbdata.edit_spec`), so a file saved by the editor is
 byte for byte what the logged command gives. The mod folder keeps each file

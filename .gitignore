@@ -7,3 +7,5 @@ __pycache__/
 .cache/
 # The editor's default mod folder (SRC/editor.py)
 /mod/
+# xdelta patches made from the disc (SRC/vcdiff.py, the editor's Build disc)
+/*.xdelta

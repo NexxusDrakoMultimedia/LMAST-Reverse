@@ -14,6 +14,7 @@ files from outside DATA.CVM under disc/:
     mod/PARAM/PBDATA_EU.PAC     an edited DAT/PARAM/PBDATA_EU.PAC
     mod/disc/SLES_541.51        an edited ISO/SLES_541.51
     mod/editor.log              the command line equivalent of every save
+    mod/build.json              the Build disc dialog's paths and options
 
 The editor reads a file from the mod folder when it is there and from
 DAT/ (or ISO/) otherwise, so edits build up over several sessions. Each
@@ -21,6 +22,12 @@ save is written next to its target as <name>.new and then replaces it, so
 a failed save leaves the old file. The folder's layout matches
 patch_disc.py's targets: PARAM/PBDATA_EU.PAC=mod/PARAM/PBDATA_EU.PAC and
 disc:SLES_541.51=mod/disc/SLES_541.51.
+
+File > Build disc (Ctrl+B) writes a modded disc image from the mod
+folder with `patch_disc.py patch ... --copies`, and optionally an xdelta
+patch of it against the original with `vcdiff.py make`, showing their
+output and logging both commands. The original must be the Redump dump
+for a patch others can apply.
 
 Tabs:
     People   players, managers and scouts (pbdata.py; DOC/PBDATA_FORMAT.md).
@@ -52,6 +59,7 @@ import initteam
 import pbdata
 
 SLES = "SLES_541.51"
+MOD_OWN_FILES = ("editor.log", "build.json")    # the editor's files, not the game's
 WINDOW = (1280, 720)
 LIST_MIN = 360            # the narrowest the list gets when a page needs room
 BARS_PER_LINE = 8
@@ -89,6 +97,24 @@ class Mod:
         os.makedirs(self.root, exist_ok=True)
         with open(os.path.join(self.root, "editor.log"), "a", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n\n")
+
+    def targets(self):
+        """[(patch_disc.py target, file)] for every edited file in the
+        folder: <path under DAT>=file, and disc:<name>=file for disc/."""
+        out = []
+        for folder, dirs, files in os.walk(self.root):
+            dirs.sort()
+            rel_dir = os.path.relpath(folder, self.root).replace("\\", "/")
+            for name in sorted(files):
+                if (rel_dir == "." and name in MOD_OWN_FILES) or name.endswith(".new"):
+                    continue
+                rel = name if rel_dir == "." else rel_dir + "/" + name
+                path = os.path.join(folder, name)
+                if rel.startswith("disc/"):
+                    out.append(("disc:" + rel[len("disc/"):], path))
+                else:
+                    out.append((rel, path))
+        return out
 
 
 def quote(arg):
@@ -1105,6 +1131,284 @@ class LogTab(Tab):
         self.text.configure(state="disabled")
 
 
+# --- building a disc ---------------------------------------------------------
+
+SRC_DIR = os.path.dirname(os.path.abspath(__file__))
+REDUMP_NAME = "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso"
+
+
+def redump_size():
+    import extract_disc
+    return extract_disc.REDUMP["size"]
+
+
+def find_original():
+    """The Redump dump in the current folder, by its Redump name and size
+    (a disc built from it has the same size, so the name decides)."""
+    if os.path.exists(REDUMP_NAME) and os.path.getsize(REDUMP_NAME) == redump_size():
+        return REDUMP_NAME
+    return ""
+
+
+class BuildDialog:
+    """Build a disc image from the mod folder with patch_disc.py, and an
+    xdelta patch of it with vcdiff.py, running the same commands a user
+    would type and showing their output."""
+
+    def __init__(self, app):
+        self.app, self.mod = app, app.mod
+        self.proc = None
+        self.running = False
+        self.queue = []
+        self.lock = threading.Lock()
+        win = self.win = tk.Toplevel(app.root)
+        win.title("Build disc")
+        win.transient(app.root)
+        win.geometry("960x620")
+        win.protocol("WM_DELETE_WINDOW", self.close)
+        settings = self.load_settings()
+        name = os.path.basename(os.path.abspath(self.mod.root))
+        self.original = tk.StringVar(value=settings.get("original") or find_original())
+        self.output = tk.StringVar(value=settings.get("output") or name + ".iso")
+        self.make_patch = tk.IntVar(value=settings.get("make_patch", 1))
+        self.patch = tk.StringVar(value=settings.get("patch") or name + ".xdelta")
+        self.skip = tk.IntVar(value=settings.get("skip_tutorial", 0))
+
+        form = ttk.Frame(win)
+        form.pack(fill="x", padx=10, pady=10)
+        form.columnconfigure(1, weight=1)
+        rows = (("Original disc image", self.original, "open"),
+                ("Modded disc image to write", self.output, "save"),
+                ("xdelta patch to write", self.patch, "patch"))
+        for row, (text, var, kind) in enumerate(rows):
+            ttk.Label(form, text=text).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=3)
+            ttk.Entry(form, textvariable=var).grid(row=row, column=1, sticky="ew", pady=3)
+            ttk.Button(form, text="Browse...", command=lambda v=var, k=kind: self.browse(v, k)
+                       ).grid(row=row, column=2, padx=(8, 0), pady=3)
+        opts = ttk.Frame(form)
+        opts.grid(row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        ttk.Checkbutton(opts, text="Make an xdelta patch for sharing (against the original "
+                                   "image)", variable=self.make_patch).pack(anchor="w")
+        ttk.Checkbutton(opts, text="Skip the tutorial (for testing; patch_disc.py "
+                                   "--skip-tutorial)", variable=self.skip).pack(anchor="w")
+        ttk.Label(form, text="The original must be the Redump dump (redump.info/disc/12334) "
+                             "for a patch others can apply. It is only read.",
+                  foreground="#555").grid(row=4, column=0, columnspan=3, sticky="w", pady=(6, 0))
+
+        targets = self.mod.targets()
+        ttk.Label(win, text="Edited files in %s (%d):" % (shown_path(os.path.abspath(
+            self.mod.root)), len(targets))).pack(anchor="w", padx=10)
+        files = tk.Listbox(win, height=min(6, max(2, len(targets))))
+        for target, path in targets:
+            files.insert("end", "%s  <-  %s" % (target, shown_path(path)))
+        files.pack(fill="x", padx=10)
+
+        out = ttk.Frame(win)
+        out.pack(fill="both", expand=True, padx=10, pady=(8, 0))
+        self.text = tk.Text(out, wrap="word", font="TkFixedFont", height=12, state="disabled")
+        sb = ttk.Scrollbar(out, orient="vertical", command=self.text.yview)
+        self.text.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.text.pack(fill="both", expand=True)
+
+        buttons = ttk.Frame(win)
+        buttons.pack(fill="x", padx=10, pady=10)
+        self.close_button = ttk.Button(buttons, text="Close", command=self.close)
+        self.close_button.pack(side="right")
+        self.build_button = ttk.Button(buttons, text="Build", command=self.build)
+        self.build_button.pack(side="right", padx=8)
+        if not targets:
+            self.write("No edited files in the mod folder yet; save some edits first.\n")
+            self.build_button.configure(state="disabled")
+
+    # settings, kept in the mod folder
+
+    def settings_path(self):
+        return os.path.join(self.mod.root, "build.json")
+
+    def load_settings(self):
+        import json
+        try:
+            with open(self.settings_path(), encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return {}
+
+    def save_settings(self):
+        import json
+        os.makedirs(self.mod.root, exist_ok=True)
+        with open(self.settings_path(), "w", encoding="utf-8") as f:
+            json.dump({"original": self.original.get(), "output": self.output.get(),
+                       "make_patch": self.make_patch.get(), "patch": self.patch.get(),
+                       "skip_tutorial": self.skip.get()}, f, indent=2)
+
+    def browse(self, var, kind):
+        from tkinter import filedialog
+        start = os.path.dirname(os.path.abspath(var.get() or "."))
+        if kind == "open":
+            path = filedialog.askopenfilename(parent=self.win, initialdir=start,
+                                              filetypes=[("Disc images", "*.iso"), ("All", "*")])
+        elif kind == "save":
+            path = filedialog.asksaveasfilename(parent=self.win, initialdir=start,
+                                                defaultextension=".iso",
+                                                filetypes=[("Disc images", "*.iso")])
+        else:
+            path = filedialog.asksaveasfilename(parent=self.win, initialdir=start,
+                                                defaultextension=".xdelta",
+                                                filetypes=[("xdelta patches", "*.xdelta")])
+        if path:
+            var.set(shown_path(path))
+
+    # output
+
+    def write(self, text):
+        self.text.configure(state="normal")
+        self.text.insert("end", text)
+        self.text.see("end")
+        self.text.configure(state="disabled")
+
+    def poll(self):
+        with self.lock:
+            chunks, self.queue = self.queue, []
+        for c in chunks:
+            if isinstance(c, tuple):        # ("done", ok, log lines)
+                self.finished(*c[1:])
+            else:
+                self.write(c)
+        if self.running or chunks:
+            self.win.after(100, self.poll)
+
+    # building
+
+    def commands(self):
+        original, output = self.original.get(), self.output.get()
+        cmd = ["patch_disc.py", "patch", original, output]
+        cmd += ["%s=%s" % (t, shown_path(p)) for t, p in self.mod.targets()]
+        cmd += ["--copies", "--dat", shown_path(self.mod.dat)]
+        if self.skip.get():
+            cmd.append("--skip-tutorial")
+        out = [cmd]
+        if self.make_patch.get():
+            out.append(["vcdiff.py", "make", original, output, self.patch.get()])
+        return out
+
+    def check(self):
+        """Problems that stop a build, or that the user must accept."""
+        original, output = self.original.get(), self.output.get()
+        if not original or not os.path.isfile(original):
+            messagebox.showerror("Build disc", "Choose the original disc image.", parent=self.win)
+            return False
+        same = {os.path.abspath(original)}
+        for path in [output] + ([self.patch.get()] if self.make_patch.get() else []):
+            if not path:
+                messagebox.showerror("Build disc", "Choose where to write the outputs.",
+                                     parent=self.win)
+                return False
+            if os.path.abspath(path) in same:
+                messagebox.showerror("Build disc", "%s would overwrite another file of this "
+                                     "build." % path, parent=self.win)
+                return False
+            same.add(os.path.abspath(path))
+        if os.path.getsize(original) != redump_size():
+            msg = ("%s is not the size of the Redump dump, so it isn't an unmodified disc."
+                   % original)
+            if self.make_patch.get():
+                msg += " A patch made against it only applies to this exact file."
+            if not messagebox.askyesno("Build disc", msg + "\n\nBuild anyway?", parent=self.win):
+                return False
+        existing = [p for p in (output, self.patch.get() if self.make_patch.get() else "")
+                    if p and os.path.exists(p)]
+        if existing and not messagebox.askyesno(
+                "Build disc", "Overwrite %s?" % " and ".join(existing), parent=self.win):
+            return False
+        return True
+
+    def build(self):
+        if any(t.dirty() for t in self.app.tabs):
+            if not messagebox.askyesno("Build disc", "Save the unsaved edits first? The disc is "
+                                       "built from the saved files.", parent=self.win):
+                return
+            if not self.app.save():
+                return
+            # A save reloads its tab; the files it wrote are on disk now.
+        if not self.check():
+            return
+        self.save_settings()
+        commands = self.commands()
+        self.build_button.configure(state="disabled")
+        self.running = True
+        self.write("\n")
+
+        def work():
+            log = ["# %s  Build disc" % datetime.datetime.now().strftime("%Y-%m-%d %H:%M")]
+            ok = True
+            for cmd in commands:
+                shown = ["python", "SRC/" + cmd[0]] + [quote(a) for a in cmd[1:]]
+                log.append(" ".join(shown))
+                with self.lock:
+                    self.queue.append("> %s\n" % " ".join(shown))
+                try:
+                    self.proc = subprocess.Popen(
+                        [sys.executable, "-u", os.path.join(SRC_DIR, cmd[0])] + cmd[1:],
+                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                except OSError as e:
+                    with self.lock:
+                        self.queue.append("!! %s\n" % e)
+                    ok = False
+                    break
+                while True:
+                    data = self.proc.stdout.read1(4096)
+                    if not data:
+                        break
+                    with self.lock:
+                        self.queue.append(data.decode("utf-8", "replace").replace("\r\n", "\n"))
+                code = self.proc.wait()
+                if code != 0:
+                    ok = False
+                    with self.lock:
+                        self.queue.append("\n!! %s stopped with exit code %d\n" % (cmd[0], code))
+                    log.append("# stopped with exit code %d" % code)
+                    break
+            log.append("# %s" % ("built" if ok else "failed; the outputs are incomplete"))
+            with self.lock:
+                self.queue.append(("done", ok, log))
+            self.running = False
+
+        threading.Thread(target=work, daemon=True).start()
+        self.poll()
+
+    def finished(self, ok, log):
+        self.proc = None
+        self.build_button.configure(state="normal")
+        self.mod.log(log)
+        self.app.write_log(log)
+        if ok:
+            done = "Built %s" % self.output.get()
+            if self.make_patch.get():
+                done += " and %s" % self.patch.get()
+            self.write("\n%s.\n" % done)
+            self.app.status(done)
+            # vcdiff.py make names the source's SHA-1; a disc of the right
+            # size can still be an earlier modded one.
+            if self.make_patch.get() and "not the Redump image" in self.text.get("1.0", "end"):
+                messagebox.showwarning(
+                    "Build disc", "The original isn't the Redump dump (see its SHA-1 above), "
+                    "so the patch only applies to that exact file. Build from an unmodified "
+                    "disc to share it.", parent=self.win)
+        else:
+            self.write("\nThe build failed; don't use the output image or patch.\n")
+            self.app.status("Build failed")
+
+    def close(self):
+        if self.running:
+            if not messagebox.askyesno("Build disc", "Stop the build? The output it was "
+                                       "writing will be incomplete.", parent=self.win):
+                return
+            if self.proc:
+                self.proc.terminate()
+        self.win.destroy()
+
+
 # --- the window --------------------------------------------------------------
 
 class App:
@@ -1128,11 +1432,14 @@ class App:
         menu = tk.Menu(self.root)
         file_menu = tk.Menu(menu, tearoff=False)
         file_menu.add_command(label="Save", accelerator="Ctrl+S", command=self.save)
+        file_menu.add_command(label="Build disc...", accelerator="Ctrl+B",
+                              command=lambda: BuildDialog(self))
         file_menu.add_separator()
         file_menu.add_command(label="Quit", command=self.quit)
         menu.add_cascade(label="File", menu=file_menu)
         self.root.configure(menu=menu)
         self.root.bind_all("<Control-s>", lambda e: self.save())
+        self.root.bind_all("<Control-b>", lambda e: BuildDialog(self))
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True)
         self.status_var = tk.StringVar()
