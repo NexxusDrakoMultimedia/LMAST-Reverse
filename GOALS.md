@@ -82,7 +82,7 @@ Each stage depends on the one before it.
    People (the player database, `pbdata.py`), Clubs (club records and
    computer squads, `initteam.py`), New club (`teaminit.py`), Kits
    (`uniform.py`), Text (`mbb.py`) and Season (swapping league clubs'
-   places, `initteam.py`). All but Season are tested in PCSX2.
+   places, `initteam.py`). All six are tested in PCSX2.
    File > Build disc puts the mod folder on a disc image and makes the
    xdelta patch of stage 6. Still to come: the schedules (division
    sizes) and the parameters, once they have writers.
