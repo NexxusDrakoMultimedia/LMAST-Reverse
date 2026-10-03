@@ -23,10 +23,11 @@ a failed save leaves the old file. The folder's layout matches
 patch_disc.py's targets: PARAM/PBDATA_EU.PAC=mod/PARAM/PBDATA_EU.PAC and
 disc:SLES_541.51=mod/disc/SLES_541.51.
 
-File > Build disc (Ctrl+B) writes a modded disc image from the mod
-folder with `patch_disc.py patch ... --copies`, and optionally an xdelta
-patch of it against the original with `vcdiff.py make`, showing their
-output and logging both commands. The original must be the Redump dump
+File > Build disc (Ctrl+B) writes a modded disc image, an xdelta patch,
+or both: `patch_disc.py patch ... --copies` puts the mod folder on a copy
+of the original, and `vcdiff.py make` compares the two. For a patch on
+its own that image is temporary (<patch>.building.iso, removed after).
+It shows their output and logs both commands. The original must be the Redump dump
 for a patch others can apply.
 
 Tabs:
@@ -1168,7 +1169,11 @@ class BuildDialog:
         win.protocol("WM_DELETE_WINDOW", self.close)
         settings = self.load_settings()
         name = os.path.basename(os.path.abspath(self.mod.root))
-        self.original = tk.StringVar(value=settings.get("original") or find_original())
+        original = settings.get("original")
+        if not (original and os.path.isfile(original)):    # moved or deleted since
+            original = find_original()
+        self.original = tk.StringVar(value=original)
+        self.make_image = tk.IntVar(value=settings.get("make_image", 1))
         self.output = tk.StringVar(value=settings.get("output") or name + ".iso")
         self.make_patch = tk.IntVar(value=settings.get("make_patch", 1))
         self.patch = tk.StringVar(value=settings.get("patch") or name + ".xdelta")
@@ -1177,23 +1182,35 @@ class BuildDialog:
         form = ttk.Frame(win)
         form.pack(fill="x", padx=10, pady=10)
         form.columnconfigure(1, weight=1)
-        rows = (("Original disc image", self.original, "open"),
-                ("Modded disc image to write", self.output, "save"),
-                ("xdelta patch to write", self.patch, "patch"))
-        for row, (text, var, kind) in enumerate(rows):
-            ttk.Label(form, text=text).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=3)
-            ttk.Entry(form, textvariable=var).grid(row=row, column=1, sticky="ew", pady=3)
-            ttk.Button(form, text="Browse...", command=lambda v=var, k=kind: self.browse(v, k)
-                       ).grid(row=row, column=2, padx=(8, 0), pady=3)
-        opts = ttk.Frame(form)
-        opts.grid(row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
-        ttk.Checkbutton(opts, text="Make an xdelta patch for sharing (against the original "
-                                   "image)", variable=self.make_patch).pack(anchor="w")
-        ttk.Checkbutton(opts, text="Skip the tutorial (for testing; patch_disc.py "
-                                   "--skip-tutorial)", variable=self.skip).pack(anchor="w")
+        ttk.Label(form, text="Original disc image").grid(row=0, column=0, sticky="w",
+                                                         padx=(0, 8), pady=3)
+        ttk.Entry(form, textvariable=self.original).grid(row=0, column=1, sticky="ew", pady=3)
+        ttk.Button(form, text="Browse...", command=lambda: self.browse(self.original, "open")
+                   ).grid(row=0, column=2, padx=(8, 0), pady=3)
+        # What to write: a disc image, an xdelta patch, or both. A patch on
+        # its own still needs a patched image to compare with, so one is
+        # built next to the patch and removed afterwards.
+        self.entries = {}
+        for row, (text, flag, var, kind) in enumerate((
+                ("Write a modded disc image", self.make_image, self.output, "save"),
+                ("Write an xdelta patch", self.make_patch, self.patch, "patch")), 1):
+            ttk.Checkbutton(form, text=text, variable=flag, command=self.update_entries
+                            ).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=3)
+            entry = ttk.Entry(form, textvariable=var)
+            entry.grid(row=row, column=1, sticky="ew", pady=3)
+            button = ttk.Button(form, text="Browse...",
+                                command=lambda v=var, k=kind: self.browse(v, k))
+            button.grid(row=row, column=2, padx=(8, 0), pady=3)
+            self.entries[kind] = (flag, entry, button)
+        ttk.Checkbutton(form, text="Skip the tutorial (for testing; patch_disc.py "
+                                   "--skip-tutorial)", variable=self.skip
+                        ).grid(row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
         ttk.Label(form, text="The original must be the Redump dump (redump.info/disc/12334) "
-                             "for a patch others can apply. It is only read.",
-                  foreground="#555").grid(row=4, column=0, columnspan=3, sticky="w", pady=(6, 0))
+                             "for a patch others can apply. It is only read. A patch without "
+                             "the image still needs room for a temporary one while it is made.",
+                  foreground="#555", wraplength=900, justify="left"
+                  ).grid(row=4, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        self.update_entries()
 
         targets = self.mod.targets()
         ttk.Label(win, text="Edited files in %s (%d):" % (shown_path(os.path.abspath(
@@ -1238,9 +1255,23 @@ class BuildDialog:
         import json
         os.makedirs(self.mod.root, exist_ok=True)
         with open(self.settings_path(), "w", encoding="utf-8") as f:
-            json.dump({"original": self.original.get(), "output": self.output.get(),
-                       "make_patch": self.make_patch.get(), "patch": self.patch.get(),
-                       "skip_tutorial": self.skip.get()}, f, indent=2)
+            json.dump({"original": self.original.get(), "make_image": self.make_image.get(),
+                       "output": self.output.get(), "make_patch": self.make_patch.get(),
+                       "patch": self.patch.get(), "skip_tutorial": self.skip.get()}, f,
+                      indent=2)
+
+    def update_entries(self):
+        for flag, entry, button in self.entries.values():
+            state = "normal" if flag.get() else "disabled"
+            entry.configure(state=state)
+            button.configure(state=state)
+
+    def image_path(self):
+        """Where patch_disc.py writes the image: the chosen output, or a
+        temporary file next to the patch when only the patch is wanted."""
+        if self.make_image.get():
+            return self.output.get()
+        return os.path.splitext(self.patch.get())[0] + ".building.iso"
 
     def browse(self, var, kind):
         from tkinter import filedialog
@@ -1275,13 +1306,13 @@ class BuildDialog:
                 self.finished(*c[1:])
             else:
                 self.write(c)
-        if self.running or chunks:
+        if (self.running or chunks) and self.win.winfo_exists():
             self.win.after(100, self.poll)
 
     # building
 
     def commands(self):
-        original, output = self.original.get(), self.output.get()
+        original, output = self.original.get(), self.image_path()
         cmd = ["patch_disc.py", "patch", original, output]
         cmd += ["%s=%s" % (t, shown_path(p)) for t, p in self.mod.targets()]
         cmd += ["--copies", "--dat", shown_path(self.mod.dat)]
@@ -1294,9 +1325,16 @@ class BuildDialog:
 
     def check(self):
         """Problems that stop a build, or that the user must accept."""
-        original, output = self.original.get(), self.output.get()
+        original, output = self.original.get(), self.image_path()
         if not original or not os.path.isfile(original):
             messagebox.showerror("Build disc", "Choose the original disc image.", parent=self.win)
+            return False
+        if not (self.make_image.get() or self.make_patch.get()):
+            messagebox.showerror("Build disc", "Choose a disc image, a patch or both to write.",
+                                 parent=self.win)
+            return False
+        if self.make_patch.get() and not self.patch.get():
+            messagebox.showerror("Build disc", "Choose where to write the patch.", parent=self.win)
             return False
         same = {os.path.abspath(original)}
         for path in [output] + ([self.patch.get()] if self.make_patch.get() else []):
@@ -1321,6 +1359,18 @@ class BuildDialog:
         if existing and not messagebox.askyesno(
                 "Build disc", "Overwrite %s?" % " and ".join(existing), parent=self.win):
             return False
+        # The image is a full copy of the original (it can grow a little).
+        import shutil
+        folder = os.path.dirname(os.path.abspath(output))
+        free = shutil.disk_usage(folder).free + (os.path.getsize(output)
+                                                 if os.path.exists(output) else 0)
+        need = os.path.getsize(original) + (64 << 20)
+        if free < need:
+            messagebox.showerror("Build disc", "%s needs about %d MB free for the %s image; "
+                                 "there are %d MB." % (folder, need >> 20, "disc" if
+                                 self.make_image.get() else "temporary", free >> 20),
+                                 parent=self.win)
+            return False
         return True
 
     def build(self):
@@ -1335,6 +1385,7 @@ class BuildDialog:
             return
         self.save_settings()
         commands = self.commands()
+        temp = None if self.make_image.get() else self.image_path()
         self.build_button.configure(state="disabled")
         self.running = True
         self.write("\n")
@@ -1369,6 +1420,11 @@ class BuildDialog:
                         self.queue.append("\n!! %s stopped with exit code %d\n" % (cmd[0], code))
                     log.append("# stopped with exit code %d" % code)
                     break
+            if temp and os.path.exists(temp):
+                os.remove(temp)
+                log.append("# removed the temporary image %s" % shown_path(temp))
+                with self.lock:
+                    self.queue.append("Removed the temporary image %s\n" % shown_path(temp))
             log.append("# %s" % ("built" if ok else "failed; the outputs are incomplete"))
             with self.lock:
                 self.queue.append(("done", ok, log))
@@ -1383,9 +1439,9 @@ class BuildDialog:
         self.mod.log(log)
         self.app.write_log(log)
         if ok:
-            done = "Built %s" % self.output.get()
-            if self.make_patch.get():
-                done += " and %s" % self.patch.get()
+            done = "Built " + " and ".join(
+                ([self.output.get()] if self.make_image.get() else [])
+                + ([self.patch.get()] if self.make_patch.get() else []))
             self.write("\n%s.\n" % done)
             self.app.status(done)
             # vcdiff.py make names the source's SHA-1; a disc of the right

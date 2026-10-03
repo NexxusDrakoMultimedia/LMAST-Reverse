@@ -671,4 +671,10 @@ files. Each item keeps what was found, where, and how it was tested.
       the 10,647-byte patch applied to the Redump image gives the built
       disc byte for byte, and `patch_disc.py verify` finds both edited
       files on it
+- [x] Build disc writes a patch without keeping an image: the dialog
+      offers a disc image, an xdelta patch or both. For a patch alone it
+      builds `<patch>.building.iso`, makes the patch and removes the image
+      (also after a failure or a stop), and checks for the free space
+      first. Checked: a patch-only build gives the same patch byte for
+      byte (SHA-1 `2448a83d…`) as the full build, and leaves no image
 
