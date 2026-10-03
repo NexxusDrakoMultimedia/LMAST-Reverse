@@ -2,10 +2,12 @@
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """Set up ISO/ and DAT/ from a Redump-verified disc image.
 
-Automates the README's setup steps for the PAL disc (SLES-54151):
+Automates the README's setup steps for the PAL disc (SLES-54151) or the
+Japanese one (SLPM-66316):
 
-  1. verify   the image matches the Redump dump (redump.info/disc/12334/):
-              size, CRC-32, MD5 and SHA-1 of the 1-track 2048-byte image.
+  1. verify   the image matches a Redump dump (PAL redump.info/disc/12334/,
+              Japan redump.info/disc/30266/): size, CRC-32, MD5 and SHA-1
+              of the 1-track 2048-byte image.
   2. extract  the disc's ISO9660 filesystem into ISO/ (SLES_541.51, DLL/,
               AUDIO/, DATA.CVM, ...).
   3. decrypt  ISO/DATA.CVM into ISO/DATA.ISO with rofs_decrypt.py (only the
@@ -22,7 +24,8 @@ See DOC/DATA_CVM_EXTRACTION.md for the DATA.CVM format and key.
 
 Usage:
     python SRC/extract_disc.py all <disc.iso> [iso_dir] [dat_dir] [--force] [--no-verify]
-        run every step; iso_dir and dat_dir default to ISO and DAT
+        run every step; iso_dir and dat_dir default to ISO and DAT for
+        the PAL disc, ISO_JP and DAT_JP for the Japanese one
     python SRC/extract_disc.py verify <disc.iso>
         hash the image and compare it with the Redump entry
     python SRC/extract_disc.py list <image.iso>
@@ -45,14 +48,32 @@ SECTOR = 0x800
 PVD_SECTOR = 16
 CHUNK = 0x1000000  # 16 MiB copy/hash buffer
 
-# Redump "Let's Make a Soccer Team!" (Europe, Australia), SLES-54151, v1.01,
-# https://redump.info/disc/12334/ (one DVD-5 track, 1,732,512 sectors).
-REDUMP = {
-    "size": 3548184576,
-    "crc32": "1c34e97e",
-    "md5": "adadf32f4fd418b60632813b011c3388",
-    "sha1": "78771805294c924b68fe4aa01ad52f70229abb9d",
-}
+# The Redump dumps, one DVD-5 track each. The size tells them apart; the
+# default folders keep the Japanese files apart from the PAL ones.
+REDUMP = (
+    {   # "Let's Make a Soccer Team!" (Europe, Australia), v1.01, 1,732,512 sectors
+        "name": "Redump disc 12334 (SLES-54151 v1.01)",
+        "dirs": ("ISO", "DAT"),
+        "size": 3548184576,
+        "crc32": "1c34e97e",
+        "md5": "adadf32f4fd418b60632813b011c3388",
+        "sha1": "78771805294c924b68fe4aa01ad52f70229abb9d",
+    },
+    {   # "Pro Soccer Club o Tsukurou! Europe Championship" (Japan), v1.05
+        "name": "Redump disc 30266 (SLPM-66316 v1.05)",
+        "dirs": ("ISO_JP", "DAT_JP"),
+        "size": 3772416000,
+        "crc32": "c36152a8",
+        "md5": "3eb68601f49da3f915a0634836d2e68f",
+        "sha1": "b3a2636b406a93740fe9f5917453e01381298d7e",
+    },
+)
+
+
+def redump_entry(path):
+    """The Redump dump an image claims to be, by its size; the PAL one if none."""
+    size = os.path.getsize(path)
+    return next((r for r in REDUMP if r["size"] == size), REDUMP[0])
 
 DIR_FLAG = 0x02
 MULTI_EXTENT_FLAG = 0x80
@@ -79,17 +100,17 @@ def hash_image(path, verbose=True):
 
 def verify_image(path, verbose=True):
     """Hash the image and print one line per check; return True if all match."""
+    dump = redump_entry(path)
     size, crc, md5, sha1 = hash_image(path, verbose)
     ok = True
     for name, got in (("size", size), ("crc32", crc), ("md5", md5), ("sha1", sha1)):
-        want = REDUMP[name]
+        want = dump[name]
         line = f"  {name:<6} {got}"
         if got != want:
             line += f"  !! expected {want}"
             ok = False
         print(line)
-    print("Matches Redump disc 12334 (SLES-54151 v1.01)." if ok
-          else "Does not match the Redump dump.")
+    print("Matches %s." % dump["name"] if ok else "Does not match the Redump dump.")
     return ok
 
 
@@ -282,8 +303,9 @@ def main(argv):
     force = "--force" in flags
     cmd, rest = args[0], args[1:]
     if cmd == "all" and 1 <= len(rest) <= 3:
-        iso_dir = rest[1] if len(rest) > 1 else "ISO"
-        dat_dir = rest[2] if len(rest) > 2 else "DAT"
+        dirs = redump_entry(rest[0])["dirs"]
+        iso_dir = rest[1] if len(rest) > 1 else dirs[0]
+        dat_dir = rest[2] if len(rest) > 2 else dirs[1]
         return cmd_all(rest[0], iso_dir, dat_dir, force, "--no-verify" not in flags)
     if cmd == "verify" and len(rest) == 1:
         return cmd_verify(rest[0])

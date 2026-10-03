@@ -29,10 +29,11 @@ Usage:
     python mbb.py roundtrip <MES.PAC>                        # text -> bytes -> pack must give the same bytes
     python mbb.py set    <MES.PAC> <out.PAC> <cat> <id> <lang> "<text>" [<cat> <id> <lang> "<text>" ...] [--copy N]
     python mbb.py import <MES.PAC> <edits.csv> <out.PAC>     # apply a CSV in `csv` format
-    python mbb.py vars [MES.PAC]                             # what fills each global {var:1:N}
+    python mbb.py vars [MES.PAC] [ISO dir]                   # what fills each global {var:1:N}
 
-`vars` reads ISO/SLES_541.51 and ISO/DLL/SIMPRG.REL: the game's table of
-global variables (category 1) and the code behind each one (see
+`vars` reads the executable and DLL/SIMPRG.REL in the ISO dir (default
+ISO, or ISO_JP for the Japanese release): the game's table of global
+variables (category 1) and the code behind each one (see
 DOC/MBB_FORMAT.md#global-variables).
 
 Writing: text uses the same {tags} as dump and csv (a literal '{' is '{{').
@@ -186,6 +187,35 @@ def _esc_text(op, a):
     return "{esc:%02x:%s}" % (op, a.hex())
 
 
+def _decode_run(run, codec):
+    """Text bytes -> text with '{' doubled. Bytes that don't come back the
+    same from encode() become {xNN}: bytes the codec can't read (the
+    Japanese release's salesman file, 0_0.mbb, has 45 records of such
+    filler) and cp932's second codes for a character (NEC 0x8791 and
+    0x81df are both '≡'; encode writes 0x81df)."""
+    try:
+        text = run.decode(codec)
+        if text.encode(codec) == run:
+            return text.replace("{", "{{")
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        pass
+    out, i = [], 0
+    while i < len(run):
+        n = 2 if codec == "cp932" and (0x81 <= run[i] <= 0x9F or 0xE0 <= run[i] <= 0xFC)             and i + 1 < len(run) else 1
+        piece = run[i:i + n]
+        try:
+            c = piece.decode(codec)
+            ok = c.encode(codec) == piece
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            ok = False
+        if ok:
+            out.append(c.replace("{", "{{"))
+        else:
+            out.append("".join("{x%02x}" % x for x in piece))
+        i += n
+    return "".join(out)
+
+
 def decode(s, lang):
     """Render one record's bytes as text with {tags} for control codes."""
     out, run = [], bytearray()
@@ -193,7 +223,7 @@ def decode(s, lang):
 
     def flush():
         if run:
-            out.append(run.decode(codec, "replace").replace("{", "{{"))
+            out.append(_decode_run(bytes(run), codec))
             run.clear()
 
     for kind, b, args in tokens(s):
@@ -634,8 +664,18 @@ GLOBAL_VARS, GLOBAL_VAR_COUNT = 0x1dae50, 0x370
 STRING_CASES, STRING_CASE_COUNT = 0x243190, 0x35
 NUMBER_CASES, NUMBER_CASE_COUNT = 0x243360, 0x1b9
 WILDCARDS, WILDCARD_COUNT = 0x38f4b0, 0x10a
+# The PAL function that holds each count as an immediate, for gamever.imm
+# (the Japanese build has 0x1b8 variables and 0x85 converters).
+GLOBAL_VAR_COUNT_AT, WILDCARD_COUNT_AT = 0x171ff0, 0x201c28
+# A converter record is {u32, u32 function, u32 id, u32 arg} in PAL
+# (getString 0x201c50: index << 4) but has no arg in the Japanese build
+# (SLPM_663.16 0x202548: index * 12).
+WILDCARD_RECORD = {"PAL": 16, "JP": 12}
+STRING_CASE_COUNT_AT, NUMBER_CASE_COUNT_AT = 0x16d458, 0x1706d8
 # Msg::SetVariableBuffer (0x11e570) and 0x11e6c0 fill the 50 text slots that
-# Msg::GetVariableBuffer (0x11e638) returns; the slot is $a0.
+# Msg::GetVariableBuffer (0x11e638) returns; the slot is $a0. All are
+# SLES_541.51 / PAL SIMPRG.REL addresses: gamever.at finds them in another
+# build.
 VARBUF_SETTERS = (0x11e570, 0x11e6c0)
 JAL, JR_RA, R_MIPS_HI16, R_MIPS_LO16 = 3, 0x03e00008, 5, 6
 SKIP_CALLS = {"plPwork_GetPwork", "get", "sprintf", "snprintf", "strncpy", "strcpy",
@@ -664,10 +704,18 @@ def global_vars(sles_path, simprg_path):
     import sles_disasm
     elf = sles_disasm.Elf(sles_path)
     by_addr = {a: n for n, a in sles_disasm.recover_symbols(elf).items()}
-    o = elf.v2f(WILDCARDS)
-    converters = [_short(by_addr.get(struct.unpack_from("<4I", elf.data, o + 16 * i)[1], ""))
-                  for i in range(WILDCARD_COUNT)]
+    import gamever
+    o = elf.v2f(gamever.at(sles_path, WILDCARDS))
+    n_conv = gamever.imm(sles_path, WILDCARD_COUNT_AT, WILDCARD_COUNT)
+    rec = WILDCARD_RECORD[gamever.build_of(sles_path)]
+    converters = [_short(by_addr.get(struct.unpack_from("<3I", elf.data, o + rec * i)[1], ""))
+                  for i in range(n_conv)]
     m = snr2.Snr2(simprg_path)
+    global_vars_at, string_cases, number_cases = (
+        gamever.at(simprg_path, a) for a in (GLOBAL_VARS, STRING_CASES, NUMBER_CASES))
+    n_vars, n_string, n_number = (gamever.imm(simprg_path, f, v) for f, v in (
+        (GLOBAL_VAR_COUNT_AT, GLOBAL_VAR_COUNT), (STRING_CASE_COUNT_AT, STRING_CASE_COUNT),
+        (NUMBER_CASE_COUNT_AT, NUMBER_CASE_COUNT)))
     d, ext = m.data, m.ext_by_site()
     words = struct.unpack_from("<%dI" % (m.h["ext_rel_off"] // 4), d, 0)
 
@@ -715,16 +763,16 @@ def global_vars(sles_path, simprg_path):
         return out, slot
 
     out = []
-    for k in range(GLOBAL_VAR_COUNT):
-        _, var, source, kind, _ = struct.unpack_from("<HHIIi", d, GLOBAL_VARS + 16 * k)
+    for k in range(n_vars):
+        _, var, source, kind, _ = struct.unpack_from("<HHIIi", d, global_vars_at + 16 * k)
         if k and not var:
             continue
         string = kind < 2
-        names, slot = (case(STRING_CASES, STRING_CASE_COUNT, source) if string
-                       else case(NUMBER_CASES, NUMBER_CASE_COUNT, source))
+        names, slot = (case(string_cases, n_string, source) if string
+                       else case(number_cases, n_number, source))
         out.append({"id": var, "string": string, "slot": slot,
                     "converter": None if string else (
-                        converters[kind] if kind < WILDCARD_COUNT else "?"),
+                        converters[kind] if kind < n_conv else "?"),
                     "sources": [n for n in dict.fromkeys(names) if n not in SKIP_CALLS]})
     return out
 
@@ -732,6 +780,8 @@ def global_vars(sles_path, simprg_path):
 def varbuf_writers(sles_path):
     """{slot: {function names}} for the calls that fill the text slots."""
     import sles_disasm
+    import gamever
+    setters = {gamever.at(sles_path, a) for a in VARBUF_SETTERS}
     elf = sles_disasm.Elf(sles_path)
     syms = sles_disasm.recover_symbols(elf)
     funcs = sorted((a, n) for n, a in syms.items())
@@ -740,7 +790,7 @@ def varbuf_writers(sles_path):
     words = struct.unpack_from("<%dI" % (size // 4), elf.data, elf.v2f(lo))
     out = {}
     for i, x in enumerate(words):
-        if x >> 26 == JAL and (x & 0x3ffffff) << 2 in VARBUF_SETTERS:
+        if x >> 26 == JAL and (x & 0x3ffffff) << 2 in setters:
             name = _short(funcs[bisect.bisect_right(starts, lo + 4 * i) - 1][1])
             out.setdefault(_li(words, i, 4), set()).add(name)
     return out
@@ -797,9 +847,11 @@ def wildcard_ids(sles_path):
     import sles_disasm
     elf = sles_disasm.Elf(sles_path)
     by_addr = {a: n for n, a in sles_disasm.recover_symbols(elf).items()}
-    o, out = elf.v2f(WILDCARDS), {}
-    for i in range(WILDCARD_COUNT):
-        _, func, wid, _ = struct.unpack_from("<4I", elf.data, o + 16 * i)
+    import gamever
+    o, out = elf.v2f(gamever.at(sles_path, WILDCARDS)), {}
+    rec = WILDCARD_RECORD[gamever.build_of(sles_path)]
+    for i in range(gamever.imm(sles_path, WILDCARD_COUNT_AT, WILDCARD_COUNT)):
+        _, func, wid = struct.unpack_from("<3I", elf.data, o + rec * i)
         if func:
             out.setdefault(wid, _short(by_addr.get(func, "?")))
     return out
@@ -841,9 +893,11 @@ def main(argv):
         cmd_set(args[0], args[1], [args[i:i + 4] for i in range(2, len(args), 4)], copy)
     elif cmd == "import" and len(args) == 3:
         cmd_import(*args)
-    elif cmd == "vars" and len(args) <= 1:
+    elif cmd == "vars" and len(args) <= 2:
+        import gamever
+        iso = args[1] if len(args) > 1 else "ISO"
         cmd_vars(args[0] if args else os.path.join("DAT", "MESSAGE", "MES.PAC"),
-                 os.path.join("ISO", "SLES_541.51"), os.path.join("ISO", "DLL", "SIMPRG.REL"))
+                 gamever.exe_path(iso), os.path.join(iso, "DLL", "SIMPRG.REL"))
     else:
         print(__doc__)
         return 1

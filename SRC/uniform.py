@@ -338,7 +338,8 @@ def licence_table(sles_path):
     """{team id: licence number} from the executable."""
     import sles_disasm
     elf = sles_disasm.Elf(sles_path)
-    out, va = {}, LICENCE_TABLE
+    import gamever
+    out, va = {}, gamever.at(sles_path, LICENCE_TABLE)
     while True:
         team, n = struct.unpack_from("<IH", elf.data, elf.v2f(va))
         if team == 0:
@@ -509,7 +510,8 @@ def cmd_info(dat, sles_path=None):
     exe = None
     if sles_path:
         licences, elf = licence_table(sles_path)
-        base = elf.v2f(DESCRIPTOR_TABLE)
+        import gamever
+        base = elf.v2f(gamever.at(sles_path, DESCRIPTOR_TABLE))
         exe = elf.data[base:base + 2 * LICENCES * DESCRIPTOR_SIZE]
         numbers = sorted(licences.values())
         print("licence table  %d clubs (teams %d-%d)%s" % (
@@ -604,7 +606,8 @@ def cmd_setexe(sles_path, dst, side, licence, edits):
         raise ValueError("side must be home or away and licence 0-%d" % (LICENCES - 1))
     elf = sles_disasm.Elf(sles_path)
     data = bytearray(elf.data)
-    base = elf.v2f(DESCRIPTOR_TABLE) + ((side == "away") * LICENCES + licence) * DESCRIPTOR_SIZE
+    import gamever
+    base = elf.v2f(gamever.at(sles_path, DESCRIPTOR_TABLE)) + ((side == "away") * LICENCES + licence) * DESCRIPTOR_SIZE
     apply_descriptor_edits(data, base, "licence %d %s executable" % (licence, side), edits)
     with open(dst, "wb") as f:
         f.write(data)

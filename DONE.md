@@ -465,6 +465,17 @@ files. Each item keeps what was found, where, and how it was tested.
       Load result resumes, the season loop, the year start's order, the
       main menu's 13 screens, a match day, the four game-over checks and
       the event timings. Scripts 9-11 are never started
+- [x] The Japanese release (SLPM-66316, `DOC/JAPANESE_RELEASE.md`):
+      `extract_disc.py` verifies and extracts it to `ISO_JP/`/`DAT_JP/`;
+      `gamever.py` finds all 27 PAL executable and overlay addresses the
+      tools use in it (and loop bounds with `imm`); `acrobata.py`,
+      `mbb.py`, `pbdata.py`, `preload.py`, `save.py`, `sounddat.py`,
+      `uniform.py` and `plrsim.py` read either build, and `mbb.py`
+      round-trips both `MES.PAC`s byte for byte. `regress.py` runs 106
+      `jp_` checks. Found: the injury code and tables are the same in
+      both builds; the Japanese build has 0x1b8 global variables, 12-byte
+      wildcard converters, two commentary slots, no free-agent list and a
+      different save layout (CRC `0x16da`)
 
 ## 8. Housekeeping
 

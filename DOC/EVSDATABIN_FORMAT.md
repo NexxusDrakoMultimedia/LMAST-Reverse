@@ -301,7 +301,9 @@ transfer-list alert (`35640`), important-mail and off-season notices
 (`35657`, `35658`), a facilities tour (`35666`), and a squad-full warning
 (`35911`). They look like scenes cut before the PAL localisation.
 Code that builds a category arithmetically (base + offset) wouldn't show
-up in this search, so "unused" isn't confirmed. Editing their text has no
+up in this search, so "unused" isn't confirmed. The same search over the
+Japanese release (SLPM_663.16 and its overlays) finds no reference
+either, so if they were cut, it was before both releases. Editing their text has no
 known effect in game.
 
 ## Shared condition block

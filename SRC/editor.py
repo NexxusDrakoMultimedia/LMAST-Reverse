@@ -2247,7 +2247,7 @@ REDUMP_NAME = "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).is
 
 def redump_size():
     import extract_disc
-    return extract_disc.REDUMP["size"]
+    return extract_disc.REDUMP[0]["size"]   # the PAL dump; the editor builds PAL discs
 
 
 def find_original():

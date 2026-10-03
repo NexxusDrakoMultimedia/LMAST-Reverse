@@ -82,6 +82,22 @@ The decryption and key recovery are covered in
 [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) and
 [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md).
 
+### The Japanese release (optional)
+
+The tools also read the Japanese release, *Pro Soccer Club o Tsukurou!
+Europe Championship* ([disc 30266](https://redump.info/disc/30266),
+SLPM-66316 v1.05). `extract_disc.py` recognises its dump and extracts it
+to `ISO_JP/` and `DAT_JP/` (git-ignored):
+
+```bash
+python SRC/extract_disc.py all "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso"
+```
+
+Pass those folders to any tool. The PAL files in `ISO/` must be there
+too: tools give PAL addresses, and [`gamever.py`](SRC/gamever.py) finds
+them in the Japanese executable and overlays. See
+[`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md).
+
 ## Tools
 
 All tools run from the repo root as `python SRC/<tool>.py <command> ...`.
@@ -96,6 +112,7 @@ with, for example, `python SRC/tbb.py info DAT | grep '!!'`.
 |---|---|---|
 | [`sles_disasm.py`](SRC/sles_disasm.py) | `ISO/SLES_541.51` | recovers about 12,600 symbol names from the `.sndata` export table and disassembles with labels, naming the 323 sites that call or reference overlay code (`relocs`) |
 | [`snr2.py`](SRC/snr2.py) | `ISO/DLL/*.REL` | parses the SN Systems overlays: header, symbols, relocations, xrefs, annotated disassembly |
+| [`gamever.py`](SRC/gamever.py) | `ISO/`, `ISO_JP/` | tells the builds apart and finds a PAL address or constant in another build's executable or overlay; `check` lists every address the tools use |
 
 ```bash
 python SRC/sles_disasm.py ISO/SLES_541.51 dis TblData
@@ -368,6 +385,9 @@ workflow is:
 | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) | `SEQ/*.SQB` and `PSC*.PAC` sequencer scripts: command encoding, argument types, labels, the root and PwkScript command sets, global memory |
 | [`GAME_FLOW.md`](DOC/GAME_FLOW.md) | the root scripts as a flow chart: title routes, new game, loading, the season loop, year start, main menu, match day, game over, the event timings |
 | [`SPONSOR_NEGOTIATION.md`](DOC/SPONSOR_NEGOTIATION.md) | the Sponsor screen's main sponsor negotiation, switched off in PAL by a stub check, and the `patch_disc.py --sponsor-negotiation` patch that restores it |
+| [`INJURIES.md`](DOC/INJURIES.md) | how injuries are rolled (fatigue and age pick the kind), the value table, recovery, and the condition-line messages, two of which were cut |
+| [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md) | the LMASTER Mod: cut or broken content to restore, with evidence and status |
+| [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md) | the Japanese release (SLPM-66316): setting it up, how `gamever.py` finds addresses in it, and how its code and data differ from PAL |
 | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH, and how the packer laid BINPACs out (the writer) |
 | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) | TBB1/TBL1 tables, symbol recovery from `SLES_541.51` |
 | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) | textures and GS swizzling |

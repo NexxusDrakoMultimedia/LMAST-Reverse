@@ -52,6 +52,10 @@ SLOT_COUNT = 12
 SLOT_LANGS = ["JPN_TEST", "ENG", "FRA", "GER", "ITA", "SPA"]
 SLOT_CROWD = ["KANNEUT", "KANHA"]
 TBL_REGION = 0x162000
+# The Japanese release's pack has two 0x51000 slots, Japanese with each
+# crowd table, so its clip tables start at 0xa2000. It has no loose VBOX
+# files to match; the language is named after the build. See slots().
+JP_SLOT_LANGS = ["JPN"]
 
 TBB_MAGIC = b"TBB1"
 DTPK_MAGIC = b"ps2_DTPK"
@@ -87,11 +91,13 @@ def split_slot(d, base):
             end = pos + align(tbb_end(d, pos), 16)
         parts.append((kind, pos, end))
         pos = end
-    # BCV: one 3-byte record per BCB3 record in the language vbox.
+    # BCV: one 3-byte record per BCB3 record in the language vbox. The
+    # Japanese release has none: its slots are zero after the crowd vbox.
     lang_bcb = parts[1][1]
     bcb3 = lang_bcb + struct.unpack_from("<I", d, lang_bcb + 0x10)[0]
     count = struct.unpack_from("<I", d, bcb3 + 0x0C)[0]
-    parts.append(("BCV", pos, pos + count * 3))
+    end = pos + count * 3
+    parts.append(("BCV", pos, pos if not any(d[pos:pos + 12]) else end))   # records 0-3: 0, 1, 2, 3
     return parts
 
 
@@ -655,17 +661,46 @@ def load_fname(base):
 
 # --- commands ----------------------------------------------------------------
 
+def slots(d):
+    """(slot size, slot count, languages) of a SOUNDDAT.PAC. A slot holds
+    four TBB1 tables (two BCR, two BCB), so the fifth TBB1 starts slot 1;
+    the slots fill the start of the file, and the clip tables follow."""
+    tbbs, pos = [], 0
+    while len(tbbs) < 5:
+        pos = d.find(TBB_MAGIC, pos)
+        if pos < 0:
+            raise ValueError("fewer than five TBB1 tables: not a SOUNDDAT.PAC")
+        tbbs.append(pos)
+        pos += 4
+    size = tbbs[4]
+    count = 1
+    while d[count * size:count * size + 4] == TBB_MAGIC:
+        count += 1
+    if (size, count) == (SLOT_SIZE, SLOT_COUNT):
+        return size, count, SLOT_LANGS
+    if count == 2 * len(JP_SLOT_LANGS):
+        return size, count, JP_SLOT_LANGS
+    raise ValueError("%d slots of %#x bytes: an unknown SOUNDDAT.PAC layout" % (count, size))
+
+
+def tbl_region(d):
+    size, count, _ = slots(d)
+    return size * count
+
+
 def layout(d):
     """[(name, start, end)] for everything in SOUNDDAT.PAC."""
     items = []
-    for k in range(SLOT_COUNT):
-        lang, crowd = SLOT_LANGS[k // 2], SLOT_CROWD[k % 2]
+    size, count, langs = slots(d)
+    for k in range(count):
+        lang, crowd = langs[k // 2], SLOT_CROWD[k % 2]
         names = ["ROUTEBOX_EU.BCR", "VBOX_TABLE_%s.BCB" % lang, "ROUTEBOX_KAN.BCR",
                  "VBOX_%s.BCB" % crowd, "VBOX_TABLE_BCB.BCV"]
-        for name, (_, a, b) in zip(names, split_slot(d, k * SLOT_SIZE)):
+        for name, (_, a, b) in zip(names, split_slot(d, k * size)):
             items.append(("slot%02d_%s_%s/%s" % (k, lang, crowd, name), a, b))
-    first_bank = d.find(DTPK_MAGIC, TBL_REGION)
-    for i, (pos, length, _, _) in enumerate(walk_tbls(d, TBL_REGION, first_bank)):
+    region = size * count
+    first_bank = d.find(DTPK_MAGIC, region)
+    for i, (pos, length, _, _) in enumerate(walk_tbls(d, region, first_bank)):
         items.append(("tbl/%02d_%07x.TBL" % (i, pos), pos, pos + length))
     for i, bank in enumerate(find_banks(d, first_bank)):
         items.append(("dtpk/%02d_%s_%07x.DTPK" % (i, bank.kind, bank.pos), bank.pos, bank.pos + bank.size))
@@ -677,15 +712,17 @@ def cmd_info(path):
         d = f.read()
     items = layout(d)
     print("%s: %d bytes" % (path, len(d)))
-    for k in range(SLOT_COUNT):
-        parts = split_slot(d, k * SLOT_SIZE)
-        used = parts[-1][2] - k * SLOT_SIZE
-        print("  slot %2d @%#08x  %-8s %-7s  %s  (%#x of %#x used)" % (
-            k, k * SLOT_SIZE, SLOT_LANGS[k // 2], SLOT_CROWD[k % 2],
-            " ".join("%s:%#x" % (kind, b - a) for kind, a, b in parts), used, SLOT_SIZE))
+    size, count, langs = slots(d)
+    for k in range(count):
+        parts = split_slot(d, k * size)
+        used = parts[-1][2] - k * size
+        print("  slot %2d @%#08x  %-8s %-7s  %s  (%#x of %#x used)%s" % (
+            k, k * size, langs[k // 2], SLOT_CROWD[k % 2],
+            " ".join("%s:%#x" % (kind, b - a) for kind, a, b in parts), used, size,
+            "  !! runs past the slot" if used > size else ""))
     tbls = [i for i in items if i[0].startswith("tbl/")]
     print("  %d TBL clip tables @%#x-%#x" % (len(tbls), tbls[0][1], tbls[-1][2]))
-    for bank in find_banks(d, TBL_REGION):
+    for bank in find_banks(d, tbl_region(d)):
         rates = sorted(set(s[2] for s in bank.samples))
         loops = sum(1 for s in bank.samples if s[3] & DTPK_LOOP)
         print("  DTPK @%#08x %s size %#07x  %2d samples (%d looped) rates %s" % (
@@ -706,7 +743,7 @@ def cmd_extract(path, outdir, wav):
             f.write(d[a:b])
     n = 0
     if wav:
-        for i, bank in enumerate(find_banks(d, TBL_REGION)):
+        for i, bank in enumerate(find_banks(d, tbl_region(d))):
             dump_bank(bank, os.path.join(outdir, "wav", "%02d_%s" % (i, bank.kind)))
             n += len(bank.samples)
     print("%d pieces -> %s%s" % (len(items), outdir, " (%d samples decoded)" % n if wav else ""))
@@ -879,8 +916,10 @@ def read_music_tables(sles_path):
     """(banks, music): banks = [(name, tbld, vagd, [requests], f5, f6)],
     music = [(source, a, b, c, d, e)] from the executable."""
     from sles_disasm import Elf
+    import gamever
     elf = Elf(sles_path)
     d = elf.data
+    bank_table, music_table = gamever.at(sles_path, BANK_TABLE), gamever.at(sles_path, MUSIC_TABLE)
 
     def cstr(va):
         o = elf.v2f(va)
@@ -889,10 +928,10 @@ def read_music_tables(sles_path):
     banks = []
     for i in range(BANK_COUNT):
         name, tbld, vagd, req, n, f5, f6 = struct.unpack_from(
-            "<7I", d, elf.v2f(BANK_TABLE + BANK_RECORD * i))
+            "<7I", d, elf.v2f(bank_table + BANK_RECORD * i))
         reqs = list(struct.unpack_from("<%dI" % n, d, elf.v2f(req)))
         banks.append((cstr(name), tbld, vagd, reqs, f5, f6))
-    music = [struct.unpack_from("<6I", d, elf.v2f(MUSIC_TABLE + MUSIC_RECORD * i))
+    music = [struct.unpack_from("<6I", d, elf.v2f(music_table + MUSIC_RECORD * i))
              for i in range(MUSIC_COUNT)]
     return banks, music
 
@@ -905,7 +944,8 @@ def request_text(w):
 
 def cmd_music(sles_path, sound_dir):
     banks, music = read_music_tables(sles_path)
-    print("Bank table (0x%x):" % BANK_TABLE)
+    import gamever
+    print("Bank table (0x%x):" % gamever.at(sles_path, BANK_TABLE))
     for i, (name, tbld, vagd, reqs, f5, f6) in enumerate(banks):
         line = "  bank %2d  %-10s TBLD %#7x  VAGD %#8x  %2d requests  (%#x, %d)" % (
             i, name, tbld, vagd, len(reqs), f5, f6)
@@ -932,7 +972,7 @@ def cmd_music(sles_path, sound_dir):
                            {AREA_SONGS: "songs", AREA_EFFECTS: "effects"}.get(kind, hex(kind)))
                 for kind in kinds)
         print(line + ("  !! " + "; ".join(problems) if problems else ""))
-    print("Music table (0x%x):" % MUSIC_TABLE)
+    print("Music table (0x%x):" % gamever.at(sles_path, MUSIC_TABLE))
     used = set()
     for i, (src, a, b, c, d, e) in enumerate(music):
         if src == 0:

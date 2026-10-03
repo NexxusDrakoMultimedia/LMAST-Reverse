@@ -25,6 +25,9 @@ finished items.
   folder, which holds edited game files), `.regress/` (regression
   baselines, which list names and counts from the disc) and `.cache/`
   (`save.py`'s recorded field list).
+- The Japanese release (SLPM-66316) extracts to `ISO_JP/` and `DAT_JP/`,
+  also ignored (`DOC/JAPANESE_RELEASE.md`). When either is present,
+  `regress.py` runs every check over it as `jp_<name>`.
 - Put scratch output such as PNGs, CSVs and extracted files outside the repo
   or in an ignored path. Don't leave it in the working tree.
 
@@ -139,6 +142,12 @@ Commits usually add a doc and its tool together, with messages like
   tables, `svr.py` for textures, `sles_disasm.py`/`snr2.py` for the game
   code, and `extract_disc.py`/`rofs_decrypt.py` for the disc image, rather
   than reimplementing them.
+- A tool that reads the executable or an overlay keeps its PAL address
+  constants and looks each one up with `gamever.at(path, addr)` (a
+  constant held in an instruction: `gamever.imm(path, func, value)`), so
+  it works on the Japanese build too. Find the executable with
+  `gamever.exe_path(iso_dir)`, not by the name `SLES_541.51`. Add new
+  addresses to `ADDRESSES` in `gamever.py` so `check` covers them.
 - Parse with `struct` and little-endian formats (`"<I"`, `"<H"`). Name magic
   numbers and give sizes and offsets in hex.
 - Match the comment style of the surrounding code. Comments explain *why* and

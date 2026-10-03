@@ -124,9 +124,9 @@ class Blowfish:
     """Standard Blowfish; the game loads each 8-byte block as two native
     (little-endian) words, left then right."""
 
-    def __init__(self, rel, key):
-        self.P = list(struct.unpack_from("<18I", rel, BF_P))
-        S = struct.unpack_from("<1024I", rel, BF_S)
+    def __init__(self, rel, key, p=BF_P, s=BF_S):
+        self.P = list(struct.unpack_from("<18I", rel, p))
+        S = struct.unpack_from("<1024I", rel, s)
         self.S = [list(S[i * 256:(i + 1) * 256]) for i in range(4)]
         j = 0
         for i in range(18):
@@ -434,8 +434,8 @@ class Cpu:
 
 # --- save files --------------------------------------------------------------
 
-def crc16(rel, data):
-    tab = struct.unpack_from("<256H", rel, CRC_TABLE)
+def crc16(rel, data, table=CRC_TABLE):
+    tab = struct.unpack_from("<256H", rel, table)
     c = 0xFFFF
     for b in data:
         c = (c >> 8) ^ tab[(b ^ c) & 0xFF]
@@ -443,8 +443,9 @@ def crc16(rel, data):
 
 
 def block_sizes(sles_path=SLES):
+    import gamever
     elf = Elf(sles_path)
-    raw = struct.unpack_from("<%dI" % NBLOCKS, elf.data, elf.v2f(PWORK_SIZES))
+    raw = struct.unpack_from("<%dI" % NBLOCKS, elf.data, elf.v2f(gamever.at(sles_path, PWORK_SIZES)))
     return [v - 8 for v in raw]
 
 
@@ -600,10 +601,14 @@ class Game:
         with open(rel_path, "rb") as f:
             self.rel = f.read()
         self.rel_path = rel_path
-        self.key = self.rel[KEY_OFF:KEY_OFF + KEY_LEN]
-        self.bf = Blowfish(self.rel, self.key)
+        # SAVEPRG.REL addresses for this build (gamever: PAL ones as they are).
+        import gamever
+        key, p, s, crc_table, self.read_block, self.write_block = (gamever.at(rel_path, a) for a in (
+            KEY_OFF, BF_P, BF_S, CRC_TABLE, READ_BLOCK, WRITE_BLOCK))
+        self.key = self.rel[key:key + KEY_LEN]
+        self.bf = Blowfish(self.rel, self.key, p, s)
         self.sizes = block_sizes(sles_path)
-        self.crc = crc16(self.rel, struct.pack("<%dI" % NBLOCKS, *self.sizes))
+        self.crc = crc16(self.rel, struct.pack("<%dI" % NBLOCKS, *self.sizes), crc_table)
         self.offsets = [sum(self.sizes[:i]) for i in range(NBLOCKS + 1)]
         self.cache_key = hashlib.sha1(self.rel + struct.pack("<%dI" % NBLOCKS, *self.sizes)).hexdigest()[:12]
         self._fields = None
@@ -666,7 +671,7 @@ class Game:
         if trace is not None:
             cpu.on_store = on_store
         for i in range(NBLOCKS):
-            cpu.call(READ_BLOCK, 0x3F8000, base + self.offsets[i], i)
+            cpu.call(self.read_block, 0x3F8000, base + self.offsets[i], i)
         if pending:
             raise ValueError("field %d is never stored" % pending[0])
         return bytes(cpu.mem[base:base + total]), bits.pos - start
@@ -695,7 +700,7 @@ class Game:
         cpu.hooks["_plBits_BitWrite__5ParamPQ25Param11PlBitsClasslii"] = bit_write
         cpu.hooks["_plBits_BitWriteStr__5ParamPQ25Param11PlBitsClassPci"] = bit_write_str
         for i in range(NBLOCKS):
-            cpu.call(WRITE_BLOCK, 0x3F8000, base + self.offsets[i], i)
+            cpu.call(self.write_block, 0x3F8000, base + self.offsets[i], i)
         return out.data(), out.bits
 
     # The same, replayed from the recorded field list.
@@ -934,20 +939,24 @@ MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
 
 
 def exp_table(sles_path=SLES):
+    import gamever
     elf = Elf(sles_path)
-    return struct.unpack_from("<101H", elf.data, elf.v2f(ABIL_EXP))
+    return struct.unpack_from("<101H", elf.data, elf.v2f(gamever.at(sles_path, ABIL_EXP)))
 
 
 def reputation_table(sles_path=SLES):
+    import gamever
     elf = Elf(sles_path)
-    return struct.unpack_from("<6i", elf.data, elf.v2f(REPUTATION_TABLE))
+    return struct.unpack_from("<6i", elf.data, elf.v2f(gamever.at(sles_path, REPUTATION_TABLE)))
 
 
 def status_tables(sles_path=SLES):
     """(status cap per status rank, rival club rank per your club rank)."""
+    import gamever
     elf = Elf(sles_path)
-    o = elf.v2f(RIVAL_RANKS)
-    return (struct.unpack_from("<%dH" % (STATUS_RANK_MAX + 1), elf.data, elf.v2f(STATUS_CAPS)),
+    o = elf.v2f(gamever.at(sles_path, RIVAL_RANKS))
+    return (struct.unpack_from("<%dH" % (STATUS_RANK_MAX + 1), elf.data,
+                               elf.v2f(gamever.at(sles_path, STATUS_CAPS))),
             elf.data[o:o + CLUB_RANK_MAX + 1])
 
 

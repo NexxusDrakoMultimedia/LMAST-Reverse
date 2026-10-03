@@ -245,7 +245,11 @@ def _load_sites(d, base, target):
 
 
 def cmd_lists(iso):
-    bins = [("SLES_541.51", os.path.join(iso, "SLES_541.51"), 0xff000)]
+    import gamever
+    import sles_disasm
+    exe = gamever.exe_path(iso)
+    va, off, _ = sles_disasm.Elf(exe).segments[0]     # 0xff000 for both builds
+    bins = [(os.path.basename(exe), exe, va - off)]
     dll = os.path.join(iso, "DLL")
     for f in sorted(os.listdir(dll)):
         if f.upper().endswith(".REL"):

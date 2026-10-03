@@ -152,8 +152,9 @@ def build_ranking(players, entry2):
 
 def sles_group_table(sles):
     """(file offset, the 208 values) of the group table in an executable."""
+    import gamever
     import sles_disasm
-    off = sles_disasm.Elf(sles).v2f(GROUP_TABLE)
+    off = sles_disasm.Elf(sles).v2f(gamever.at(sles, GROUP_TABLE))
     with open(sles, "rb") as f:
         f.seek(off)
         return off, list(struct.unpack("<%di" % (GROUP_ROWS * GROUP_COLS),

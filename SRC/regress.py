@@ -19,6 +19,9 @@ the review starts from the problems.
 A check also fails if it exits non-zero, writes to stderr, or its input is
 missing.
 
+With the Japanese release extracted to ISO_JP/ and DAT_JP/ (extract_disc.py
+does that), every check that reads the disc also runs over it as jp_<name>.
+
 Baselines are written to .regress/ (git-ignored: they list file names and
 counts from your copy of the disc). Paths are normalised to '/' so a baseline
 made on Windows matches on other systems.
@@ -162,6 +165,9 @@ def checks():
         ("sles_syms", ["sles_disasm.py", "ISO/SLES_541.51", "syms", "CMsgSubCategory"],
          ["ISO/SLES_541.51"]),
         ("sles_relocs", ["sles_disasm.py", "ISO/SLES_541.51", "relocs"], ["ISO/SLES_541.51"]),
+        # Every executable and overlay address the tools use, found in the
+        # build (in PAL each must come out as itself).
+        ("gamever", ["gamever.py", "check", "ISO"], ["ISO/SLES_541.51", "ISO/DLL"]),
     ]
     mes = "DAT/MESSAGE/MES.PAC"
     for kind in ("EVENT", "NEWS", "MAIL"):
@@ -186,6 +192,44 @@ def checks():
         name = os.path.splitext(os.path.basename(r))[0].lower()
         p = "ISO/DLL/" + os.path.basename(r)
         out.append(("snr2_" + name, ["snr2.py", "info", p], [p]))
+    return out + jp_checks(out)
+
+
+def _jp(arg):
+    """A PAL path as the Japanese release's: ISO_JP/, DAT_JP/, SLPM_663.16."""
+    arg = arg.replace("ISO/SLES_541.51", "ISO_JP/SLPM_663.16")
+    for pal, jp in (("DAT", "DAT_JP"), ("ISO", "ISO_JP")):
+        if arg == pal or arg.startswith(pal + "/"):
+            return jp + arg[len(pal):]
+    return arg
+
+
+# The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15).
+JP_SKIP = {"plrsim_show_free"}
+
+
+def jp_checks(pal):
+    """The same checks over the Japanese release (extract_disc.py puts it in
+    ISO_JP/ and DAT_JP/), when it's there. A check whose command names no
+    path would only repeat the PAL one, so it has no Japanese version."""
+    if not all(os.path.isdir(os.path.join(ROOT, d)) for d in ("ISO_JP", "DAT_JP")):
+        return []
+    out = []
+    for name, argv, inputs in pal:
+        jp = [_jp(a) for a in argv]
+        if jp == argv or name in JP_SKIP:
+            continue
+        out.append(("jp_" + name, jp, [_jp(i) for i in inputs]))
+    # The Japanese disc has its own sound banks and overlays.
+    for kind, pattern in (("sounddat_dtpk_", "SOUND/*.DAT"), ("snr2_", "DLL/*.REL")):
+        root = "DAT_JP" if kind.startswith("sounddat") else "ISO_JP"
+        have = {c[0] for c in out}
+        for f in sorted(glob.glob(os.path.join(ROOT, root, *pattern.split("/")))):
+            name = "jp_" + kind + os.path.splitext(os.path.basename(f))[0].lower()
+            p = root + "/" + pattern.split("/")[0] + "/" + os.path.basename(f)
+            if name not in have:
+                tool = ["sounddat.py", "dtpk", p] if kind.startswith("sounddat") else ["snr2.py", "info", p]
+                out.append((name, tool, [p]))
     return out
 
 

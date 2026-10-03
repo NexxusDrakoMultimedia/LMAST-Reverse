@@ -73,7 +73,8 @@ def load(path):
     with open(path, "rb") as f:
         data = f.read()
     h, blobs = pac.binpac_blobs(data)
-    if len(blobs) != ENTRIES:
+    # The Japanese release's pack ends at entry 14: it has no free-agent list.
+    if len(blobs) not in (ENTRIES, ENTRIES - 1):
         raise ValueError("%d entries, expected %d" % (len(blobs), ENTRIES))
     return path, blobs
 
@@ -313,6 +314,9 @@ def cmd_info(path):
             if len(problems) > 3:
                 out += "; ... (%d)" % len(problems)
         print(out)
+    if len(blobs) < ENTRIES:
+        print("%2d %-22s none: the pack ends at entry %d (as in the Japanese release)" % (
+            ENTRIES - 1, NAMES[ENTRIES - 1], len(blobs) - 1))
 
 
 def pb(path, explicit):
@@ -326,6 +330,8 @@ def pb(path, explicit):
 
 def cmd_show(path, entry, pbpath):
     path, blobs = load(path)
+    if entry >= len(blobs):
+        raise SystemExit("%s has no entry %d (%s)" % (path, entry, NAMES[entry]))
     b = blobs[entry]
     db = pb(path, pbpath)
 
@@ -346,11 +352,13 @@ def cmd_show(path, entry, pbpath):
             c = struct.unpack_from("<2I4B", t[1], i * 12)
             print("  city %3d  population %8d  %s %3d  climate %2d  weather %2d  choice %d"
                   % (c[0], c[1], "state " if c[0] < STATE_CITIES else "nation", c[2], c[3], c[4], c[5]))
-        for i in range(CLIMATE_ZONES):
+        # The Japanese release's tables are shorter (44, 49 and 27 whole
+        # records); show the whole records there are.
+        for i in range(min(CLIMATE_ZONES, len(t[2]) // 13)):
             print("  climate %2d  %s" % (t[2][i * 13], " ".join("%3d" % x for x in struct.unpack_from("12b", t[2], i * 13 + 1))))
-        for i in range(CLIMATE_ZONES):
+        for i in range(min(CLIMATE_ZONES, len(t[3]) // 13)):
             print("  weather %2d  %s" % (t[3][i * 13], " ".join("%2d" % x for x in t[3][i * 13 + 1:i * 13 + 13])))
-        for i in range(CLIMATE_ZONES):
+        for i in range(min(CLIMATE_ZONES, len(t[4]) // 5)):
             print("  chances %2d  %s" % (t[4][i * 5], " ".join("%3d" % x for x in t[4][i * 5 + 1:i * 5 + 5])))
     elif entry == 4:
         t = tables(b)[0]

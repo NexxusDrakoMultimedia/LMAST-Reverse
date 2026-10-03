@@ -50,7 +50,8 @@ ABDA_VERSION = 0x77831B45           # checked at SIMPRG.REL 0x1a6a34
 WRAP_HEADER, WRAP_FLAG = 0x10, 0x80
 RESOURCES = (b"NSIF", b"GBIX", b"PVMH")
 
-# Executable tables (SLES_541.51 addresses).
+# Executable tables (SLES_541.51 addresses; gamever.at finds them in
+# another build).
 EXE_INDEX = 0x3A3B08                # LOADER::AcrobataPackFile_tbl
 EXE_SCENES, SCENE_RECORD = 0x55D7A8, 0x14
 LANGS = ["jp", "uk", "fr", "ge", "it", "sp", "du"]     # Localize_GetLanguage order
@@ -182,8 +183,11 @@ def cmd_info(d):
 def scene_names(iso):
     """{scene id: [names]} from SIMPRG.REL (one name, or one per language)."""
     import snr2
-    m = snr2.Snr2(os.path.join(iso, "DLL", "SIMPRG.REL"))
+    import gamever
+    path = os.path.join(iso, "DLL", "SIMPRG.REL")
+    m = snr2.Snr2(path)
     targets = m.targets()
+    direct, local_index, local = (gamever.at(path, a) for a in (NAME_DIRECT, NAME_LOCAL_INDEX, NAME_LOCAL))
 
     def ptr(addr):
         v = targets.get(addr)
@@ -191,29 +195,32 @@ def scene_names(iso):
 
     out = {}
     for i in range(1, SCENE_IDS):
-        n = ptr(NAME_DIRECT + 4 * i)
+        n = ptr(direct + 4 * i)
         if n:
             out[i] = [n]
             continue
-        k = struct.unpack_from("<i", m.data, NAME_LOCAL_INDEX + 4 * i)[0]
-        out[i] = [ptr(NAME_LOCAL + 4 * (7 * k + l)) for l in range(len(LANGS))] if k >= 0 else []
+        k = struct.unpack_from("<i", m.data, local_index + 4 * i)[0]
+        out[i] = [ptr(local + 4 * (7 * k + l)) for l in range(len(LANGS))] if k >= 0 else []
     return out
 
 
 def cmd_scenes(d, iso):
     from sles_disasm import Elf
-    elf = Elf(os.path.join(iso, "SLES_541.51"))
+    import gamever
+    exe = gamever.exe_path(iso)
+    index, scenes = gamever.at(exe, EXE_INDEX), gamever.at(exe, EXE_SCENES)
+    elf = Elf(exe)
     exe = elf.data
     hdr = load_header(os.path.join(d, PACK))
     names = [e[2] for e in hdr.entries]
-    o = elf.v2f(EXE_INDEX)
+    o = elf.v2f(index)
     rows = [struct.unpack_from("<4I", exe, o + 16 * i) for i in range(len(hdr.entries))]
     same = sum(1 for r, (off, size, _, x) in zip(rows, hdr.entries) if r == (off, size) + tuple(x))
     line = "executable index (0x%x): %d of %d entries match the pack header" % (
-        EXE_INDEX, same, len(hdr.entries))
+        index, same, len(hdr.entries))
     print(line + ("" if same == len(hdr.entries) else "  !! the game would read the wrong bytes"))
     acks = scene_names(iso)
-    o = elf.v2f(EXE_SCENES)
+    o = elf.v2f(scenes)
     used = collections.Counter()
     for i in range(1, SCENE_IDS):
         flag, *ent = struct.unpack_from("<I7h", exe, o + SCENE_RECORD * i)

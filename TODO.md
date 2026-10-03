@@ -275,6 +275,25 @@ The event tables, the procedures and the overlay loader are documented in
       `seasonticket`, `spectator*`, `Plpop*`, the `*_syousai_nouryokuMS`
       detail-screen scripts): name the `pwkEdit` value ids they read and
       write. A script edit could then be tested in PCSX2
+- [ ] Injury leftovers (`DOC/INJURIES.md`): how many game days an
+      injury value lasts (practice slots per week, the injured player's
+      practice number), the injury chance `0x219f90` and `PlPinfo
+      +0x1e6`, what makes the match engine report a heavy injury
+      (GAMEPRG.REL `0x19cf00`, `0x19ee80`), and how kind 8 shows
+- [ ] LMASTER Mod (`DOC/LMASTER_MOD.md`): the first restorations as
+      `patch_disc.py` switches, each tested in PCSX2. Candidates: the
+      kind-6 injury value 1600 (`0x532d70`), the injury kind row past
+      fatigue 1000, the short `EDIT_EMBLEM` tables 93/101/105. The
+      "two months"/"nine months" injury lines need thresholds chosen
+      first
+- [ ] Japanese release leftovers (`DOC/JAPANESE_RELEASE.md`): why
+      `PLRESOURCESIM.PAC` entry 0's weather tables stop partway; whether
+      the player-database values above PAL's limits are Japanese features
+      or data PAL fixed; the `BC_JPN.AFS` table; the sponsor texture
+      counts; reading a Japanese save (block 1 is 16 bytes smaller)
+- [ ] Tools still PAL-only: `patch_disc.py`'s switches (they refuse
+      other discs), `save.py`'s commands (they take no ISO folder), the
+      editor
 
 ## 8. Housekeeping
 

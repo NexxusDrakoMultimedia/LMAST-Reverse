@@ -1,5 +1,8 @@
 /ISO
 /DAT
+# The Japanese disc's files (extract_disc.py)
+/ISO_JP
+/DAT_JP
 # Disc images kept in the repo root, e.g. the Redump dump
 /*.iso
 __pycache__/
