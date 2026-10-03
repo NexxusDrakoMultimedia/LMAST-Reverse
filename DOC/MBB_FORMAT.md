@@ -164,6 +164,19 @@ RIVAL_OWNER_NAME, `101` SECRETARY, `103` REPORTER, ...). The other ids used
 (2034–3167 and 4001–4099, e.g. `4091` for a travelling salesman) aren't
 named in any message file, so they probably index a table in the code.
 
+**The rival owner's name.** Global variable 131 (73 uses) is text the
+game takes from the rival's work (`pwkTeam_GetRivalWork`, from the
+variable table that `mbb.py vars` reads). The event dialogue uses it for
+the rival club's owner, as in the reporter's line in the Big Bang
+Konzern event (`{var:1:131}, is there any truth in the rumour ...`).
+**Empirical:** category 1 messages 760–783 are 24 owner names, 4 per
+league in league order by their nationality (English 760–763, French,
+German, Italian, Spanish, Dutch 780–783), like the rival's stadium name,
+which is `league × 4 + rand(4)` ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md)).
+**Tested in PCSX2** (user report): with all 24 set to "The FRC" in the
+editor's Text tab, the reporter in an England career said "The FRC, is
+there any truth ...". Which code picks one of the four isn't traced.
+
 ### Reactions (`ESC 0xC3`)
 
 `{react:N}` makes the speaking character play body reaction N in the 3D

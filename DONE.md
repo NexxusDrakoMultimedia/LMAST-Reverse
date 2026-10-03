@@ -723,4 +723,8 @@ files. Each item keeps what was found, where, and how it was tested.
       Villa, Schalke, Sheffield W, Cardiff), built with Build disc: the
       names show in VS mode Team Selection, read from the `STATIONMES1.PAC`
       copy that `--copies` updates. All five tabs are now tested in game
+- [x] Tested in PCSX2 (user report): event dialogue edited through a
+      variable. Category 1 messages 760-783 (the rival owners' names,
+      variable 131) all set to "The FRC" in the Text tab: the reporter in
+      the Big Bang Konzern event called the rival owner "The FRC"
 

@@ -43,6 +43,10 @@ The format is decoded: see [`DOC/MBB_FORMAT.md`](DOC/MBB_FORMAT.md) and
       screen-set global variables (1100-1104, the 3000s) hold on each
       screen, and how variables 35 and 0 outside category 1 are filled
 - [ ] Check whether raw `0x0A`/`0x0D` bytes affect display
+- [ ] Which code picks the rival owner's name (variable 131, one of
+      category 1 messages 760-783, four per league) into the rival's work,
+      and whether it is `league × 4 + rand(4)` like the stadium name
+      (`DOC/MBB_FORMAT.md#global-variables`)
 
 ## 2. Starting season and parameter tables (`PARAM/`, `0SYSTEM/`)
 
@@ -334,8 +338,7 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       your club's keeper in a match)
 - [ ] Kits tab: the licensed kits' descriptors and number colours
       (`uniform.py setlicence`, `setexe`)
-- [ ] Test in PCSX2: a mail or event text edited in the Text tab (club
-      names are tested; category 1's UI words 760-783 were changed in the
-      same test but not looked at)
+- [ ] Test in PCSX2: a mail text edited in the Text tab (club names and
+      the rival owner's name in event dialogue are tested)
 - [ ] Free agents tab (`plrsim.py setfree`, `PLRESOURCESIM.PAC` entry 15),
       after `plrsim.py roundtrip` (section 8)
