@@ -11,28 +11,27 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **The editor GUI** (section 11). `SRC/editor.py` has People and Clubs
-   tabs (both tested in PCSX2) and builds a disc and an xdelta patch from
-   the mod folder, and edits the new club (`teaminit.py`); all three
-   tabs and the club kits are tested in PCSX2, and edits message text
-   (`mbb.py`). Next: test a Text edit in PCSX2.
-2. **Name the rest of the player fields** (section 2). The editor can only
+1. **Writers for the starting season** (section 2). League membership
+   (the starting divisions) and the season schedules have readers but no
+   writer, so neither a command nor the editor can change them, and they
+   are the first thing [`GOALS.md`](GOALS.md) wants a mod to change.
+2. **The editor's leftovers** (section 11). PCSX2 tests of a Text edit
+   and a keeper scheme, the licensed kit descriptors, and a free-agents
+   tab once `plrsim.py setfree` round-trips (section 8).
+3. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
-3. **What each PwkScript computes** (sections 2 and 7). The formulas
+4. **What each PwkScript computes** (sections 2 and 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
-4. **Export a complete in-game player** (section 3). One model from the
-   skeleton, the body and limb parts and the face-pack head, so the
-   model work gives a usable result.
 5. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
-   edits onto a disc.
+   edits onto a disc: a message file can only grow into its own slot.
 6. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
-   records. These are still the lead for the player fields in #2.
+   records. These are still the lead for the player fields in #3.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -54,6 +53,16 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 `pbdata.py`); `0SYSTEM/` is surveyed in
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
+- [ ] Writers for the starting season, then an editor tab for them:
+      league membership and last season's order (`PLRRSRC_INITTEAMDATA.TBB`
+      tables 0 and 1, read by `initteam.py`, which writes only squads and
+      club records) and the schedules (`SCHEDULE_*` packs, read by
+      `schedule.py`, which has no writer). Each with a `roundtrip` check
+      in `regress.py`
+- [ ] Parameter tables: name the fields of the `TBB1` tables a mod would
+      tune (`REGULATION.TBB` and the others in `DOC/PARAM_DIR.md`), so
+      they can get a field-level writer and an editor tab. `tbb.py
+      replace` only swaps a whole table
 - [ ] Still open from the schedules: `GROUP2COMPE.TBB`, `CLUB_RANK_SYSTEM.TBB`
       tables 0, 1 and 4 (tables 2 and 3 are the club ranking, `SAVE_FORMAT.md`),
       `PeriodName.tbb`, the `make_list` source functions, game bits `w0`
@@ -258,6 +267,9 @@ The event tables, the procedures and the overlay loader are documented in
 
 - [ ] Decode the `RBD0` trailer in `GAME/ROUTEBOX_*.BCR` (copied as-is by
       the writer)
+- [ ] `plrsim.py roundtrip`: `setfree` writes the free agents (entry 15)
+      but nothing checks that the pack re-encodes byte for byte, unlike the
+      other writers
 
 ## 9. Rebuild
 
@@ -317,3 +329,5 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       (`uniform.py setlicence`, `setexe`)
 - [ ] Test in PCSX2: a Text-tab edit (a club name, read from the
       `STATIONMES` copy, and a mail text) shows in game
+- [ ] Free agents tab (`plrsim.py setfree`, `PLRESOURCESIM.PAC` entry 15),
+      after `plrsim.py roundtrip` (section 8)

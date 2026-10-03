@@ -20,9 +20,11 @@ finished items.
   `save.py` runs the serializers in `ISO/SLES_541.51` and
   `ISO/DLL/SAVEPRG.REL`. `patch_disc.py` and `vcdiff.py` work on whole disc
   images.
-- Other ignored paths: `*.iso` in the repo root (the Redump dump),
-  `.regress/` (regression baselines, which list names and counts from the
-  disc) and `.cache/` (`save.py`'s recorded field list).
+- Other ignored paths: `*.iso` and `*.xdelta` in the repo root (the
+  Redump dump, built discs and patches), `mod/` (the editor's default mod
+  folder, which holds edited game files), `.regress/` (regression
+  baselines, which list names and counts from the disc) and `.cache/`
+  (`save.py`'s recorded field list).
 - Put scratch output such as PNGs, CSVs and extracted files outside the repo
   or in an ignored path. Don't leave it in the working tree.
 
@@ -47,13 +49,18 @@ a `roundtrip` command that re-encodes every file or record and marks any
 difference with `!!`. It goes into `regress.py` as `<name>_roundtrip`. The
 existing writers are `pac.py` (BINPACs), `tbb.py`, `pbdata.py`, `mbb.py`,
 `initteam.py` (`set`, `setteam`), `teaminit.py`, `uniform.py`, `sqb.py`
-(`setcmd`) and `save.py`.
+(`setcmd`) and `save.py`. `plrsim.py setfree` writes too but has no
+`roundtrip` yet.
 
 A writer can then get a tab in `editor.py` (stage 5). The tab edits through
 the writer's own `set` functions and asks the writer which values each
 field allows (as `pbdata.edit_spec` does), so the editor holds no layout of
 its own. Its saves must equal the command it logs, byte for byte. Check
-that by running the logged command and comparing the files.
+that by running the logged command and comparing the files. Test a tab
+through its widgets (choose drop-down entries, type into boxes and fire
+their events), not by calling its commit functions, and keep the test
+window off-screen (`geometry("1280x720+-4000+0")`) so nothing appears on
+the user's desktop.
 
 Some things can only be checked by a person: that an edit shows in the game
 (PCSX2), what a screen shows, or how audio sounds. Ask the user to check,
@@ -122,6 +129,8 @@ Commits usually add a doc and its tool together, with messages like
 - Writers never change their input. They take an output path
   (`set <in> <out> ...`, `import <in> <edits.csv> <out>`), and only
   `patch_disc.py patch --in-place` writes over an image, when asked to.
+  The editor replaces files in its own mod folder, by writing
+  `<file>.new` and moving it over the old one.
 - Tools reuse each other through sibling imports (`from pac import BinPac`,
   `import svr`, `import tbb`). These work because the script's directory is
   on `sys.path`. Reuse `pac.py` for BINPAC/KC@P/PRS, `tbb.py` for TBB1/TBL1

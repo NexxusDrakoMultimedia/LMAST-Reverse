@@ -51,10 +51,12 @@ Each stage depends on the one before it.
    player database), `mbb.py` (message text), `teaminit.py` (the player's
    new club), `uniform.py` (club kits), `sqb.py` (the 41 sequencer scripts
    that decode) and `pac.py` (BINPACs) write and round-trip every file.
-   `initteam.py` edits and round-trips squads and club records, and
-   `save.py` edits saved games. Edits to the
-   player database, text, the new club's squad, kits, free agents and saves
-   have been tested in PCSX2.
+   `initteam.py` edits and round-trips squads and club records,
+   `plrsim.py` edits the free agents (no round-trip check yet), and
+   `save.py` edits saved games. Edits to the player database, text, the
+   computer squads, the new club, kits, free agents and saves have been
+   tested in PCSX2. League membership, the schedules and the parameter
+   tables' fields have no writer yet.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
    `DATA.CVM`, and produce a disc image that boots. This includes repacking
    BINPAC/KC@P archives and PRS compression, and handling files that change
@@ -73,14 +75,14 @@ Each stage depends on the one before it.
    The GUI checks values against the documented ranges and cross-references
    (for example, a message reference that no longer resolves). *Started:*
    `SRC/editor.py`, one window with a tab per kind of data, saving to a mod
-   folder laid out like `DAT/`. Its People tab edits the player database
-   through `pbdata.py`, with the allowed values from `pbdata.edit_spec`
-   (tested in PCSX2), and its Clubs tab the club records and squads
-   through `initteam.py`, its New club tab the player's starting club
-   through `teaminit.py` (all three tested in PCSX2), its Kits tab the
-   club and keeper kits through `uniform.py` (tested in PCSX2), and its
-   Text tab the message text through `mbb.py`. File > Build disc puts the
-   mod folder on a disc image and makes the xdelta patch of stage 6.
+   folder laid out like `DAT/`. Each tab edits through its writer and
+   takes the allowed values from it (`pbdata.edit_spec` and the like):
+   People (the player database, `pbdata.py`), Clubs (club records and
+   computer squads, `initteam.py`), New club (`teaminit.py`), Kits
+   (`uniform.py`) and Text (`mbb.py`). All but Text are tested in PCSX2.
+   File > Build disc puts the mod folder on a disc image and makes the
+   xdelta patch of stage 6. Still to come: tabs for the starting season
+   and the parameters, once they have writers.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284) against
    the user's own unmodified disc image, never as game data or disc images.
    This matches the rule that no game data goes in the repo. xdelta is the

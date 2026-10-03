@@ -659,8 +659,10 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Tested in PCSX2: a Clubs-tab edit shows in game. Van der Sar
       (Manchester slot 0) set to age 16 and shirt 69 in the editor, on a
       disc with the earlier People edits (`patch_disc.py --copies
-      --skip-tutorial`): his detail screen shows age 17 (one year older in
-      a new game) and 69 in the shirt badge, with the People edits intact
+      --skip-tutorial`): his detail screen shows age 17 (one year more:
+      the tutorial skip starts a season on, see the ages note in
+      `TEAMINIT_FORMAT.md`) and 69 in the shirt badge, with the People
+      edits intact
 - [x] Build a modded disc from the editor: File > Build disc runs
       `patch_disc.py patch ... --copies` with every file in the mod folder
       (`disc/` files as `disc:` targets), then optionally `vcdiff.py make`
