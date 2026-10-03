@@ -693,4 +693,14 @@ files. Each item keeps what was found, where, and how it was tested.
       Club House squad list shows the same players, all aged 17, in
       2006-07. The extra year fits the skip starting a season on (noted in
       `TEAMINIT_FORMAT.md`; a check without the skip is in TODO section 2)
+- [x] Kits tab on `uniform.py`: every club's home and away outfield and
+      keeper kits (UNIFORM_LIST), with each colour named ("A4 red 4") and
+      shown as a swatch from its palette, licensed clubs marked, and the
+      keeper kit table (UNIFORM_GK) by outfield shirt design with its
+      keeper design's 6 schemes. Values the game would reset are not
+      offered (`uniform.edit_range`); unnamed fields are read-only.
+      `uniform.py set` takes several teams now, and `set`/`setgk` write
+      through `set_row_field`/`apply_gk_edit` (same output as before).
+      Checked: a save with 5 edits (4 refused) equals the logged `set` and
+      `setgk` output byte for byte
 
