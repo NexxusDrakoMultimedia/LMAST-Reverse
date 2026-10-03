@@ -40,6 +40,10 @@ Tabs:
              (DOC/INITTEAM_FORMAT.md). Refuses a player already in another
              squad, a shirt number twice in one squad, and a manager who
              already has a club, which `initteam.py info` would flag.
+    New club the player's new club by league and team style
+             (TEAM_INIT_DATA.TBB, teaminit.py; DOC/TEAMINIT_FORMAT.md):
+             squad, rival-only records, staff, scouts, youth team,
+             candidate lists and the rival club, as pwkTeam_Init2 reads them.
 
 Usage:
     python SRC/editor.py open [<mod folder>] [--dat DAT] [--iso ISO]   # default: mod
@@ -58,6 +62,7 @@ from tkinter import font as tkfont, messagebox, ttk
 
 import initteam
 import pbdata
+import teaminit
 
 SLES = "SLES_541.51"
 MOD_OWN_FILES = ("editor.log", "build.json")    # the editor's files, not the game's
@@ -1113,6 +1118,279 @@ class ClubsTab(Tab):
         return True
 
 
+TEAMINIT = "PARAM/TEAM_INIT_DATA.TBB"
+RIVAL_STYLE = (1, 0, 3, 2)      # 0x5531e0: Counter-Attack <-> Possession, Individual <-> Teamwork
+SALARY_RATE = 6                 # salaries show in pounds as value / 6 (TEAMINIT_FORMAT.md)
+
+
+class NewClubTab(Tab):
+    """The player's new club, TEAM_INIT_DATA.TBB, one page per league and
+    team style as pwkTeam_Init2 reads it, through teaminit.set_field and
+    encode_file, as `teaminit.py set` does."""
+    title = "New club"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.tables = None
+        self.changes = {}           # (table, record, field) -> value, in edit order
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="League").pack(side="left")
+        self.league_var = tk.StringVar(value=teaminit.LEAGUES[0])
+        box = ttk.Combobox(bar, textvariable=self.league_var, values=teaminit.LEAGUES,
+                           state="readonly", width=14)
+        box.pack(side="left", padx=(4, 12))
+        box.bind("<<ComboboxSelected>>", lambda e: self.show())
+        ttk.Label(bar, text="Team style").pack(side="left")
+        self.style_var = tk.StringVar(value=teaminit.STYLES[0])
+        box = ttk.Combobox(bar, textvariable=self.style_var, values=teaminit.STYLES,
+                           state="readonly", width=16)
+        box.pack(side="left", padx=(4, 12))
+        box.bind("<<ComboboxSelected>>", lambda e: self.show())
+        ttk.Label(bar, text="What a new career gets for this choice on the Club Edit screen "
+                            "(DOC/TEAMINIT_FORMAT.md).", foreground="#555").pack(side="left")
+        self.detail = Scrolled(self.frame)
+        self.detail.outer.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+
+    # loading
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(TEAMINIT)
+            self.buf, self.end, self.raw, self.tables = teaminit.load(self.path)
+            squads = initteam.OteamMembers(mod.source(OTEAM)).squads
+            self.club_of = {m.player: team for team, s in squads.items() for m in s}
+            mes = mod.source(MES)
+            self.teams = initteam.team_names(mes, 1)
+            self.stadiums = initteam.StadiumData(mod.source(STADIUMS))
+        except (ValueError, struct.error, OSError, SystemExit) as e:
+            self.app.status("Couldn't load the new club: %s" % e)
+            messagebox.showerror("New club", "Couldn't load the new club:\n%s" % e)
+            return
+        self.changes = {}
+        self.show()
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def changed(self, what):
+        if self.tables is None:
+            return
+        if what == "squads":
+            squads = initteam.OteamMembers(self.app.mod.source(OTEAM)).squads
+            self.club_of = {m.player: team for team, s in squads.items() for m in s}
+        self.show()
+
+    def people(self, kind):
+        records = self.app.people.records
+        return records[kind] if records else None
+
+    # the page
+
+    def show(self):
+        if self.tables is None:
+            return
+        league = teaminit.LEAGUES.index(self.league_var.get())
+        style = teaminit.STYLES.index(self.style_var.get())
+        t = self.tables
+        self.salary_labels = {}     # (table, record) -> refresh its pound label
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%s, %s" % (teaminit.LEAGUES[league], teaminit.STYLES[style]),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        rival = teaminit.STYLES[RIVAL_STYLE[style]]
+        squad = teaminit.group(t[0], (league, style))
+        self.section(box, "Your squad (table 0, records %d-%d): the club takes these 18 in "
+                     "order; the game picks the captain" % (squad[0], squad[teaminit.SQUAD_OWN - 1]),
+                     t[0], squad[:teaminit.SQUAD_OWN])
+        self.section(box, "Rival only (records %d-%d): a rival of this style takes all 22. "
+                     "Your rival plays %s, so it takes that style's 22" % (
+                         squad[teaminit.SQUAD_OWN], squad[-1], rival),
+                     t[0], squad[teaminit.SQUAD_OWN:])
+        self.section(box, "Staff (table 1)", t[1], teaminit.group(t[1], (league, style)))
+        self.section(box, "Scouts (table 2)", t[2], teaminit.group(t[2], (league, style)))
+        self.section(box, "Youth team (table 3): the same for every style in %s; player -1 is "
+                     "an empty slot" % teaminit.LEAGUES[league], t[3], teaminit.group(t[3], (league,)))
+        self.section(box, "Coach Candidate List (table 4, every style)", t[4],
+                     teaminit.group(t[4], (league,)))
+        self.section(box, "Scout Candidate List (table 5, every style)", t[5],
+                     teaminit.group(t[5], (league,)))
+        frame = ttk.LabelFrame(box, text="Rival club")
+        frame.pack(fill="x", padx=8, pady=6)
+        rows = ((6, 0, "manager", "manager (table 6, record 0: the game reads only this "
+                                  "record, for every league and style)"),
+                (7, teaminit.group(t[7], (league,))[0], "stadium", "stadium (table 7, %s)"
+                 % teaminit.LEAGUES[league]))
+        r8 = teaminit.group(t[8], (league, style))[0]
+        rows += tuple((8, r8, name, "%s (table 8, record %d)" % (name.replace("_", " "), r8))
+                      for name in ("foreign", "newface", "search_region"))
+        for row, (ti, ri, name, text) in enumerate(rows):
+            ttk.Label(frame, text=text).grid(row=row, column=0, sticky="w", padx=(6, 12), pady=2)
+            self.value(frame, t[ti], ri, name).grid(row=row, column=1, sticky="w", pady=2)
+        ttk.Label(box, text="Salaries show in game in pounds as the value / %d. The game keeps "
+                            "them within a range per currency that hasn't been read yet "
+                            "(TEAMINIT_FORMAT.md)." % SALARY_RATE,
+                  foreground="#555", wraplength=900, justify="left").pack(anchor="w", padx=8,
+                                                                       pady=(4, 12))
+
+    def section(self, box, title, t, records):
+        frame = ttk.LabelFrame(box, text=title)
+        frame.pack(fill="x", padx=8, pady=6)
+        fields = t.fields[2:]
+        heads = ["record", "role", fields[0], "name"] + list(fields[1:])
+        for col, text in enumerate(heads):
+            ttk.Label(frame, text=text, foreground="#555").grid(row=0, column=col, sticky="w",
+                                                               padx=(6, 8))
+        for row, ri in enumerate(records, 1):
+            pos = row - 1
+            role = t.roles[pos] if t.roles and pos < len(t.roles) else ""
+            ttk.Label(frame, text=str(ri)).grid(row=row, column=0, sticky="w", padx=(6, 8))
+            ttk.Label(frame, text=role).grid(row=row, column=1, sticky="w", padx=(0, 8))
+            name = ttk.Label(frame, text="")
+            name.grid(row=row, column=3, sticky="w", padx=(0, 8))
+
+            def describe(ri=ri, name=name):
+                name.configure(text=self.describe(t, ri))
+            describe()
+            self.value(frame, t, ri, fields[0], describe).grid(row=row, column=2, sticky="w",
+                                                               padx=(0, 8), pady=1)
+            for col, field in enumerate(fields[1:], 4):
+                cell = ttk.Frame(frame)
+                cell.grid(row=row, column=col, sticky="w", padx=(0, 8), pady=1)
+                self.value(cell, t, ri, field).pack(side="left")
+                if field == "salary":
+                    pounds = ttk.Label(cell, text="", foreground="#555")
+                    pounds.pack(side="left", padx=4)
+
+                    def show_pounds(ri=ri, k=t.fields.index("salary"), pounds=pounds):
+                        pounds.configure(text="£%s" % format(t.records[ri][k] // SALARY_RATE, ","))
+                    show_pounds()
+                    self.salary_labels[t.index, ri] = show_pounds
+
+    def describe(self, t, ri):
+        """Who a record's id is: name, positions, and a computer club the
+        player is also in."""
+        ident = t.records[ri][2]
+        if t.index == 3 and ident == teaminit.NO_PLAYER:
+            return "(empty)"
+        records = self.people(t.kind)
+        if records is None:
+            return "(names load with People)"
+        if not 0 <= ident < len(records):
+            return "?"
+        r = records[ident]
+        text = r.name
+        if t.kind == "players":
+            text += "  " + "/".join(pbdata.position_name(p) for p in r.fields["position"] if p != 13)
+            if ident in self.club_of:
+                team = self.club_of[ident]
+                text += "  (also in %s's squad)" % self.teams.get(team, team)
+        return text
+
+    def value(self, parent, t, ri, name, after=None):
+        k = t.fields.index(name)
+        lo, hi = teaminit.edit_range(t, name)
+        empty_slot = t.index == 3 and name == "player"
+        if empty_slot:
+            lo = -1
+
+        def get():
+            v = t.records[ri][k]
+            return -1 if empty_slot and v == teaminit.NO_PLAYER else v
+
+        if name == "stadium":
+            spec = ("choice", list(range(lo, hi + 1)))
+
+            def label(v):
+                if not 0 <= v < len(self.stadiums.rows):
+                    return str(v)
+                return "%d  %d seats%s" % (v, self.stadiums.capacity(v),
+                                           ", roof" if self.stadiums.rows[v][0] else "")
+        elif t.index == 6:
+            managers = self.people("managers")
+            spec = ("choice", list(range(lo, hi + 1)))
+
+            def label(v):
+                return "%d %s" % (v, managers[v].name) if managers and 0 <= v < len(managers) \
+                    else str(v)
+        else:
+            spec = ("range", lo, hi)
+            label = str
+        return value_input(parent, spec, label, get,
+                           lambda text, revert: self.commit(t, ri, name, text, revert, after))
+
+    # edits
+
+    def commit(self, t, ri, name, text, revert, after=None):
+        what = "table %d record %d" % (t.index, ri)
+        try:
+            value = int(text)
+        except ValueError:
+            return self.refuse(what, "%s must be a number" % name, revert)
+        lo, hi = teaminit.edit_range(t, name)
+        if t.index == 3 and name == "player" and value == -1:
+            value = teaminit.NO_PLAYER
+        elif not lo <= value <= hi:
+            return self.refuse(what, "%s must be %d-%d" % (name, lo, hi), revert)
+        try:
+            old = teaminit.set_field(t, ri, name, value)
+        except ValueError as e:
+            return self.refuse(what, str(e), revert)
+        self.changes.pop((t.index, ri, name), None)
+        self.changes[t.index, ri, name] = value
+        if after:
+            after()
+        if (t.index, ri) in self.salary_labels:
+            self.salary_labels[t.index, ri]()
+        self.app.status("%s: %s %s -> %s" % (what, name, teaminit.shown_value(t, old),
+                                            teaminit.shown_value(t, value)))
+        self.app.update_title()
+        return True
+
+    def refuse(self, what, message, revert):
+        revert()
+        self.app.status("%s: %s" % (what, message))
+        messagebox.showerror("New club", "%s: %s" % (what, message))
+        return False
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(TEAMINIT)
+        temps = [(out + ".new", out)]
+        try:
+            data = teaminit.encode_file(self.buf, self.end, self.raw, self.tables)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("New club", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        args, last = [], None
+        for (ti, ri, name), value in self.changes.items():
+            if (ti, ri) != last:
+                args.append("%d:%d" % (ti, ri))
+                last = (ti, ri)
+            args.append("%s=%s" % (name, teaminit.shown_value(self.tables[ti], value)))
+        cmd = ["python", "SRC/teaminit.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + args
+        n = len(self.changes)
+        lines = log_lines("New club: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
 class LogTab(Tab):
     """The commands each save corresponds to, as written to editor.log."""
     title = "Log"
@@ -1503,7 +1781,8 @@ class App:
                   ).pack(fill="x", side="bottom")
         self.people = PeopleTab(self)
         self.clubs = ClubsTab(self)
-        self.tabs = [self.people, self.clubs]
+        self.newclub = NewClubTab(self)
+        self.tabs = [self.people, self.clubs, self.newclub]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)

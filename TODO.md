@@ -13,8 +13,9 @@ item in its section below.
 
 1. **The editor GUI** (section 11). `SRC/editor.py` has People and Clubs
    tabs (both tested in PCSX2) and builds a disc and an xdelta patch from
-   the mod folder. Next: the new club (`teaminit.py`), kits (`uniform.py`)
-   and message text (`mbb.py`) tabs.
+   the mod folder, and edits the new club (`teaminit.py`). Next: test a
+   New club edit in PCSX2, then the kits (`uniform.py`) and message text
+   (`mbb.py`) tabs.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -61,6 +62,10 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `MAPTEAM_LIST`, and `PLRRSRC_INITTEAMDATA` table 2's negative values
 - [ ] `TEAM_INIT_DATA` leftovers: the candidate lists' "List criteria"
       (7 Training cycle) and H.Dale's salary showing 80,000 not 75,000
+- [ ] Salary limits: read the min/max table at `0x5eb068` (filled at run
+      time; `WithInRange_SM 0x246d18`, price kind 0, units of 100) over
+      PINE, then give the New club tab's salaries that range
+      (`DOC/TEAMINIT_FORMAT.md#still-unknown`)
 - [ ] Player fields still open: `+0x43`–`+0x46` (no reader found), what
       the match AI does with its player parameters (the map from fields
       to parameters is done; `f_66` is parameters 128–138, ball touch
@@ -300,5 +305,6 @@ organised by what a player of the game recognises (a player, a club, a
 season) rather than by file. `tkinter` only, as the principles there say,
 and every GUI edit must also be possible as a `python SRC/...` command.
 
-- [ ] The player's new club (`teaminit.py`), kits (`uniform.py`), message
-      text (`mbb.py`)
+- [ ] Test in PCSX2: a New club edit (a squad record's player and age,
+      a staff salary, the youth team) shows in a new career
+- [ ] Kits (`uniform.py`) and message text (`mbb.py`) tabs

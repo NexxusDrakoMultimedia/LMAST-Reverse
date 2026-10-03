@@ -186,6 +186,90 @@ def key_label(t, r):
     return ", ".join(parts)
 
 
+def shown_value(t, v):
+    """A value as `show` and `set` print it: "-" for an empty youth slot."""
+    return "-" if v == NO_PLAYER and t.index == 3 else str(v)
+
+
+def set_field(t, ri, name, value):
+    """Set field `name` of record `ri` of table `t`, within what the code
+    reads (ids in the database, bytes, halfwords; NO_PLAYER for an empty
+    youth slot). Returns the old value. A key change is checked when the
+    file is encoded (encode_file)."""
+    if name not in t.fields:
+        raise ValueError("table %d fields are %s" % (t.index, ", ".join(t.fields)))
+    hi = 0xff if name in BYTE_FIELDS else 0xffff if name in HALF_FIELDS else 0xffffffff
+    if t.kind and name == t.fields[2] and not (0 <= value < COUNTS[t.kind] or
+                                                (t.index == 3 and value == NO_PLAYER)):
+        raise ValueError("%s must be 0-%d%s" % (name, COUNTS[t.kind] - 1,
+                                                 " or -" if t.index == 3 else ""))
+    if not (0 <= value <= hi or value == NO_PLAYER and t.index == 3):
+        raise ValueError("%s must be 0-%d" % (name, hi))
+    k = t.fields.index(name)
+    old = t.records[ri][k]
+    t.records[ri][k] = value
+    return old
+
+
+def encode_file(buf, end, raw, tables):
+    """The whole file rebuilt from the tables, refusing one whose groups
+    a reader would not find (check), or that changes size."""
+    for t in tables:
+        problems = check(t)
+        if problems:
+            raise ValueError("table %d would not fit the layout: %s" % (
+                t.index, "; ".join(problems[:3])))
+        raw[t.index].data = t.encode()
+    out = tbb.build(raw, end, tbb.trailer(buf, raw))
+    if len(out) != len(buf):
+        raise ValueError("rebuilt file is %d bytes, not %d" % (len(out), len(buf)))
+    return out
+
+
+# What an editor (SRC/editor.py) offers, narrower than set_field allows:
+# the values on the disc and those tested in PCSX2. Ages: the players' byte
+# is PlOpinfo +2, as in OTEAMMEMBER (initteam.SQUAD_EDIT_RANGES: 15-40);
+# staff ages are the database's staff ages (managers 35-55, scouts 35-58,
+# the same byte, TEAMINIT_FORMAT.md). Contracts: 1-6 covers this file's
+# (2-4 players, 1-3 staff) and OTEAMMEMBER's 2-6.
+# Salaries keep the field's range: the game clamps them to a minimum and
+# maximum per currency (WithInRange_SM 0x246d18, price kind 0, table at
+# 0x5eb068 filled at run time), which hasn't been read yet.
+EDIT_RANGES = {
+    ("players", "age"): (15, 40),
+    ("managers", "age"): (35, 58),
+    ("scouts", "age"): (35, 58),
+    ("players", "contract"): (1, 6),
+    ("managers", "contract"): (1, 6),
+    ("scouts", "contract"): (1, 6),
+    ("rival", "foreign"): (0, 7),           # club-record limits, initteam.TEAM_EDIT_RANGES
+    ("rival", "newface"): (0, 3),
+    ("rival", "search_region"): (0, 31),
+    ("rival", "stadium"): (0, STADIUMS - 1),
+}
+
+
+def edit_range(t, name):
+    """(low, high) an editor offers for a field of table t, or None for
+    the key fields, which an editor leaves alone."""
+    if name in ("league", "style"):
+        return None
+    kind = t.kind or "rival"
+    if (kind, name) in EDIT_RANGES:
+        return EDIT_RANGES[kind, name]
+    if t.kind and name == t.fields[2]:
+        return (0, COUNTS[t.kind] - 1)
+    hi = 0xff if name in BYTE_FIELDS else 0xffff if name in HALF_FIELDS else 0xffffffff
+    return (0, hi)
+
+
+def group(t, key):
+    """The record numbers a reader takes for `key`: the first record with
+    that key and the rest of its group."""
+    first = next((i for i, r in enumerate(t.records) if t.key_of(r) == key), None)
+    return [] if first is None else list(range(first, first + t.group))
+
+
 # --- commands ----------------------------------------------------------------
 
 def cmd_info(path):
@@ -262,28 +346,16 @@ def cmd_set(path, out_path, args):
             raise SystemExit("give <table>:<record> before %r" % a)
         t, ri, label = target
         name, value = a.split("=", 1)
-        if name not in t.fields:
-            raise SystemExit("table %d fields are %s" % (t.index, ", ".join(t.fields)))
-        value = NO_PLAYER if value == "-" else int(value, 0)
-        hi = 0xff if name in BYTE_FIELDS else 0xffff if name in HALF_FIELDS else 0xffffffff
-        if t.kind and name == t.fields[2] and not (value < COUNTS[t.kind] or
-                                                    (t.index == 3 and value == NO_PLAYER)):
-            raise SystemExit("%s: %s must be 0-%d%s" % (label, name, COUNTS[t.kind] - 1,
-                                                        " or -" if t.index == 3 else ""))
-        if not (0 <= value <= hi or value == NO_PLAYER and t.index == 3):
-            raise SystemExit("%s: %s must be 0-%d" % (label, name, hi))
-        k = t.fields.index(name)
-        shown = lambda v: "-" if v == NO_PLAYER and t.index == 3 else str(v)
-        print("%s %s: %s -> %s" % (label, name, shown(t.records[ri][k]), shown(value)))
-        t.records[ri][k] = value
-    for t in tables:
-        problems = check(t)
-        if problems:
-            raise SystemExit("table %d would not fit the layout: %s" % (t.index, "; ".join(problems[:3])))
-        raw[t.index].data = t.encode()
-    out = tbb.build(raw, end, tbb.trailer(buf, raw))
-    if len(out) != len(buf):
-        raise SystemExit("rebuilt file is %d bytes, not %d" % (len(out), len(buf)))
+        try:
+            old = set_field(t, ri, name, NO_PLAYER if value == "-" else int(value, 0))
+        except ValueError as e:
+            raise SystemExit("%s: %s" % (label, e))
+        print("%s %s: %s -> %s" % (label, name, shown_value(t, old),
+                                   shown_value(t, t.records[ri][t.fields.index(name)])))
+    try:
+        out = encode_file(buf, end, raw, tables)
+    except ValueError as e:
+        raise SystemExit(str(e))
     with open(out_path, "wb") as f:
         f.write(out)
     print("wrote %s" % out_path)
@@ -295,9 +367,13 @@ def cmd_roundtrip(path):
         same = t.encode() == raw[t.index].data
         print("table %d %-10s %4d records  %s" % (t.index, t.name, len(t.records),
                                                   "identical" if same else "!! re-encoded table differs"))
-        raw[t.index].data = t.encode()
-    out = tbb.build(raw, end, tbb.trailer(buf, raw))
-    print("%s: %s" % (path, "rebuilt file identical" if out == buf else "!! rebuilt file differs"))
+    try:
+        out = encode_file(buf, end, raw, tables)        # the encoder `set` uses
+    except ValueError as e:
+        out = None
+        print("%s: !! %s" % (path, e))
+    if out is not None:
+        print("%s: %s" % (path, "rebuilt file identical" if out == buf else "!! rebuilt file differs"))
 
 
 def _opt(args, flag, default=None):

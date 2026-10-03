@@ -194,7 +194,9 @@ python SRC/patch_disc.py patch disc.iso modded.iso PARAM/TEAM_INIT_DATA.TBB=out/
 ```
 
 `<table>:<record>` numbers records from 0 within a table, as `show` prints
-them. `set` keeps the file's size, refuses ids outside the database,
+them. The editor's New club tab (`SRC/editor.py`) edits the same fields
+through the same code (`set_field`, `encode_file`), one page per league
+and team style. `set` keeps the file's size, refuses ids outside the database,
 bytes over 255 and ids over 65,535, and refuses a key change that would
 break a group. Use `-` for an empty youth slot. `teaminit.py roundtrip`
 re-encodes every table and rebuilds the file byte for byte (in
@@ -240,6 +242,12 @@ matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
 - Whether the candidate lists' "List criteria" counts down from the
   entry's last byte.
 - Why H.Dale's salary showed £80,000 rather than 450,000 ÷ 6.
+- The salary limits. Every salary goes through `SM2MoneySave_WithInRange`
+  (`0x246f90`) with price kind 0, and `WithInRange_SM` (`0x246d18`) clamps
+  it between a minimum and maximum from `getMinMaxData` (`0x246bb8`): a
+  table at `0x5eb068` indexed by the currency option (`pwkOpt_GetMoney`),
+  in units of 100. The table isn't in the executable's file, so it is
+  filled at run time and has to be read from memory (PINE).
 
 ## Checking the claims
 

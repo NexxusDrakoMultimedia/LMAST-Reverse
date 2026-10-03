@@ -677,4 +677,14 @@ files. Each item keeps what was found, where, and how it was tested.
       (also after a failure or a stop), and checks for the free space
       first. Checked: a patch-only build gives the same patch byte for
       byte (SHA-1 `2448a83d…`) as the full build, and leaves no image
+- [x] New club tab on `teaminit.py`: one page per league and team style
+      as `pwkTeam_Init2` reads `TEAM_INIT_DATA.TBB` (the 18 squad records
+      the club takes, the 4 rival-only ones, staff, scouts, the league's
+      youth team and candidate lists, and the rival's manager, stadium and
+      club bytes). Ids are named from the People tab and flagged when the
+      player is also in a computer squad; salaries show their pound value.
+      Ages and contracts get the documented ranges (`teaminit.EDIT_RANGES`).
+      `teaminit.py set` now writes through `set_field` and `encode_file`
+      (same output as before). Checked: a save with 9 edits (3 refused)
+      equals the logged `teaminit.py set` output byte for byte
 
