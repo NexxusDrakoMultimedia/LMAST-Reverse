@@ -1,0 +1,30 @@
+gametitle=Let's Make a Soccer Team! (PAL) [SLES-54151] (3CB245D5)
+
+[Widescreen 16:9]
+gsaspectratio=16:9
+author=LMAST-Reverse
+description=Hor+ 16:9 for 3D scenes (the match, and other scenes drawn through nnSetProjectionPXPlusPS2). 2D UI is left stretched.
+
+// nnSetProjectionPXPlusPS2 (0x18f8a8) copies the projection matrix to the
+// global one at 0x365ad0 with nnCopyMatrix (0x183ec0), then derives the
+// VU screen matrix and the clip planes from that copy. Redirect the copy
+// to a cave that also scales m[0][0] by 0.75 (4:3 -> 16:9, Hor+), but only
+// for perspective projections (type in $s0 == 0).
+// The stadium shadow (graphics::StadiumShadowContext, 0x1384c8) uses
+// nnSetProjection instead, so it is not touched.
+patch=1,EE,0018f900,word,0c04be6c
+
+// Cave: graphics::Graphics::print_config_parameter (0x12f9b0, 0x170
+// bytes), a debug print nothing calls.
+patch=1,EE,0012f9b0,word,03e0c82d
+patch=1,EE,0012f9b4,word,0c060fb0
+patch=1,EE,0012f9b8,word,00000000
+patch=1,EE,0012f9bc,word,16000005
+patch=1,EE,0012f9c0,word,3c013f40
+patch=1,EE,0012f9c4,word,44810800
+patch=1,EE,0012f9c8,word,c4800000
+patch=1,EE,0012f9cc,word,46010002
+patch=1,EE,0012f9d0,word,e4800000
+patch=1,EE,0012f9d4,word,03200008
+patch=1,EE,0012f9d8,word,00000000
+

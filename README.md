@@ -48,6 +48,7 @@ ISO/    the disc filesystem (SLES_541.51, DLL/, AUDIO/, DATA.CVM, ...)
 DAT/    the contents of DATA.ISO, which is what most tools read
 SRC/    tools
 DOC/    format documentation
+PNACH/  PCSX2 patches (widescreen)
 ```
 
 Put a dump of the disc that matches Redump
@@ -386,6 +387,7 @@ workflow is:
 | [`GAME_FLOW.md`](DOC/GAME_FLOW.md) | the root scripts as a flow chart: title routes, new game, loading, the season loop, year start, main menu, match day, game over, the event timings |
 | [`SPONSOR_NEGOTIATION.md`](DOC/SPONSOR_NEGOTIATION.md) | the Sponsor screen's main sponsor negotiation, switched off in PAL by a stub check, and the `patch_disc.py --sponsor-negotiation` patch that restores it |
 | [`INJURIES.md`](DOC/INJURIES.md) | how injuries are rolled (fatigue and age pick the kind), the value table, recovery, and the condition-line messages, two of which were cut |
+| [`WIDESCREEN.md`](DOC/WIDESCREEN.md) | the PCSX2 16:9 patch for the 3D (`PNACH/`), how it scales the projection, and the 2D paths found so far for the UI |
 | [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md) | the LMASTER Mod: cut or broken content to restore, with evidence and status |
 | [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md) | the Japanese release (SLPM-66316): setting it up, how `gamever.py` finds addresses in it, and how its code and data differ from PAL |
 | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH, and how the packer laid BINPACs out (the writer) |

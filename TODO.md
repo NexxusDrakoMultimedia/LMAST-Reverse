@@ -293,6 +293,11 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] Tools still PAL-only: `patch_disc.py`'s switches (they refuse
       other discs), `save.py`'s commands (they take no ISO folder), the
       editor
+- [ ] Widescreen UI (`DOC/WIDESCREEN.md#whats-still-open`): squeeze the
+      match HUD to 4:3 so it isn't stretched by the 16:9 patch. Text
+      (the Ninja 2D table) works; the scoreboard frames, squad list,
+      radar and crests use another path still to be found. Player name
+      tags come from 3D positions and must not be squeezed
 
 ## 8. Housekeeping
 

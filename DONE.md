@@ -515,6 +515,10 @@ files. Each item keeps what was found, where, and how it was tested.
       file, and flags any other upper half; all 65,501 clips pass (mono
       24 kHz, 23.4 hours, no names). `jp_afs` no longer fails with a
       MemoryError
+- [x] Widescreen 3D (`DOC/WIDESCREEN.md`): a PCSX2 pnach that scales the
+      projection in `nnSetProjectionPXPlusPS2` for Hor+ 16:9, leaving the
+      stadium shadow's projection alone. Tested in PCSX2 in a match
+      (user report)
 
 ## 8. Housekeeping
 
