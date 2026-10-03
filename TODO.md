@@ -60,10 +60,6 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 `pbdata.py`); `0SYSTEM/` is surveyed in
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
-- [ ] Test in PCSX2: the league ranking of a club swapped into another
-      nation's league, after it has played a few league games (Barcelona
-      in the Champions Division shows "-" in week 1; its fixtures there
-      work, user report)
 - [ ] Change a division's size: build a league schedule for n clubs
       (pairings, games, game days), give its UID that many turns,
       re-point the team-entry slots (more or fewer promoted and

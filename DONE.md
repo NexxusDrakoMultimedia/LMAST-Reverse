@@ -800,5 +800,5 @@ files. Each item keeps what was found, where, and how it was tested.
       (user report)
 - [x] Tested in PCSX2: a Season-tab swap across leagues. F.C. Barcelona
       in the Champions Division has fixtures there in 2006-07 and keeps
-      Spain on its Information page (user report). Its league ranking
-      after a few games is still open (TODO section 2)
+      Spain on its Information page. League Ranking is the current
+      table place, so "-" before the first league match (user report)
