@@ -703,4 +703,8 @@ files. Each item keeps what was found, where, and how it was tested.
       through `set_row_field`/`apply_gk_edit` (same output as before).
       Checked: a save with 5 edits (4 refused) equals the logged `set` and
       `setgk` output byte for byte
+- [x] Tested in PCSX2 (user report): a Kits-tab edit shows in game.
+      Birmingham's home outfield and keeper kits and away shirt colour 1
+      (21 fields, `UNIFORM_LIST.TBB`), built with Build disc without the
+      tutorial skip
 

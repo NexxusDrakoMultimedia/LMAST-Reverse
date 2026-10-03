@@ -313,6 +313,12 @@ scheme.
   the launcher's Uniform Viewer showed Birmingham in a red shirt with white
   panels and trim instead of blue. The shorts and socks were unchanged. The
   viewer lists Birmingham as an "original team" (`オリジナルチーム`).
+- **Through the editor's Kits tab** (user report): Birmingham's home
+  outfield kit set to shirt L3, shorts F3, socks B3, numbers B3/A4, the
+  home keeper kit to shirt I4, shorts D3, socks A3, numbers A3/G8, and
+  the away shirt colour 1 to B1 (21 fields), built with the editor's
+  Build disc (`--copies`, so the `SIMFILE` copies too): the changes
+  showed in game.
 - **Licensed number colour.** AC Milan, a "licence team"
   (`ライセンスチーム`), as described above: the executable's copy of the
   descriptor sets the colour of the shirt number.
