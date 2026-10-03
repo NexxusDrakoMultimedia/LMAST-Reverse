@@ -346,10 +346,8 @@ See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
       names. A save edit per kind would show each one
 - [ ] `info.bin` past the date, `dm.bin`, and the VS data (`-C`, same
       key, layout CRC `0x8ffb`)
-- [ ] Test in PCSX2: a `--mod-saves` disc saves a career to
-      `BESLES-54151-M000` and loads it again, keeps the D-pad fix (left and
-      right register), and doesn't list the original game's `-G` saves;
-      PCSX2 shows its settings as `SLES-54151_<CRC>`
+- [ ] Test in PCSX2: a `--mod-saves` disc writes its VS data to
+      `BESLES-54151-D000` (career saves to `-M` are tested)
 
 ## 11. Editor GUI
 

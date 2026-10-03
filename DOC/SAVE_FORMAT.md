@@ -740,13 +740,21 @@ command, which renamed the executable to `PYRA_313.96`; it booted as
 PYRA-31396). `BESLES-54151-M000` still contains `SLES-54151`, so the
 filter shows it. That earlier command is removed.
 
+**Tested in PCSX2** (user report, disc `LMAST-savetest.iso`,
+`--mod-saves` only). A career saved to `BESLES-54151-M000` on a folder
+memory card, beside the original game's `-C000` and `-G000`–`-G006`, and
+loaded again. The original `-G` saves weren't listed, left and right on
+the D-pad registered, and PCSX2 kept the disc's settings as
+`SLES-54151_3CB248D5`. The VS data's move to `-D` isn't tested.
+
 **The CRC.** PCSX2 also computes a CRC of the executable, the XOR of its
 32-bit words (**empirical**: `3CB245D5` for the retail `SLES_541.51`,
 the name of PCSX2's `gamesettings/SLES-54151_3CB245D5.ini` and of its
 savestates). It keys per-game settings, savestates, patches and cheats
 on serial and CRC, so any edit to the executable gives a disc its own:
-`--mod-saves` makes it `3CB248D4`, the tutorial skip alone `3CB245D4`,
-both together with other executable edits something else again.
+`--mod-saves` alone makes it `3CB248D5`, the tutorial skip alone
+`3CB245D4`, and both `3CB248D4` (the XOR adds up their changes). Other
+executable edits change it again.
 `patch_disc.py` prints the executable's CRC at the end of every patch
 of a whole disc image. The Japanese `SLPM_663.16` is `8E66FF4E`.
 

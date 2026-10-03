@@ -706,6 +706,10 @@ files. Each item keeps what was found, where, and how it was tested.
       `3CB245D5`, matching PCSX2's settings file). `save.py rename` copies
       a save between `-G/-C` and `-M/-D`; `save.py serial` (the
       PYRA-31396 path) is removed
+- [x] Tested in PCSX2: a `--mod-saves` disc saves a career to
+      `BESLES-54151-M000` and loads it again, doesn't list the original
+      `-G` saves, keeps the D-pad fix, and PCSX2 shows its settings as
+      `SLES-54151_3CB248D5` (user report)
 
 ## 11. Editor GUI
 
