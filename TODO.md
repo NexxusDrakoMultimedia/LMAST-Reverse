@@ -293,11 +293,10 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] Tools still PAL-only: `patch_disc.py`'s switches (they refuse
       other discs), `save.py`'s commands (they take no ISO folder), the
       editor
-- [ ] Widescreen UI in the menus (`DOC/WIDESCREEN.md#whats-still-open`):
-      the match HUD is fixed; the menus draw panels with CSE
-      (`cseCastFacePutTriStripParamPS2`), which still needs squeezing
-      without touching the face textures. Name tags over players drift
-      toward the centre
+- [ ] Widescreen UI leftovers (`DOC/WIDESCREEN.md#whats-still-open`): the
+      Pre-match screen's striped background stays stretched; name tags
+      over players drift toward the centre; check faces in the club
+      editor
 
 ## 8. Housekeeping
 

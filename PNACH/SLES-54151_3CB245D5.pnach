@@ -31,7 +31,7 @@ patch=1,EE,0012f9d8,word,00000000
 
 [Widescreen 16:9 UI fix (experimental)]
 author=LMAST-Reverse
-description=Use with "Widescreen 16:9". Draws the match HUD at 4:3 proportions, centred. Name tags over players drift toward the centre.
+description=Use with "Widescreen 16:9". Draws the match HUD and the menus at 4:3 proportions, centred. Name tags over players drift toward the centre; some menu backgrounds stay stretched.
 
 // Text: Ninja's 2D primitives (nnDrawPrimitive2D 0x1779d8,
 // nnuPrimitive2DSetVertex 0x167580, nnDrawPrimitiveSprite2DPS2 0x179cc0)
@@ -54,3 +54,28 @@ patch=1,EE,0012fa18,word,44810000
 patch=1,EE,0012fa1c,word,03e00008
 patch=1,EE,0012fa20,word,46006302
 patch=1,EE,0012666c,word,0c04be84
+
+// Menus: CSE layouts.
+// cseCastFacePutTriStripParamPS2 (0x1f2040) copies each cast node's 3x3
+// matrix (rows at $t1; x' = x*m00 + y*m10 + tx) into the VU1 packet in the
+// loop at 0x1f20b4. After the loop, scale the copied x column by 0.75
+// and add 64 to tx. CSE's own matrices are not changed. Cave at 0x12fa30:
+//   lui $at, 0x3f40; mtc1 $at, $f1; lwc1 $f0, -0x30($t2); mul.s $f0, $f0, $f1; swc1 $f0, -0x30($t2); lwc1 $f0, -0x20($t2); mul.s $f0, $f0, $f1; swc1 $f0, -0x20($t2); lwc1 $f0, -0x10($t2); mul.s $f0, $f0, $f1; lui $at, 0x4280; mtc1 $at, $f2; add.s $f0, $f0, $f2; swc1 $f0, -0x10($t2);
+//   j 0x1f20e4; lui $v0, 0x6404
+patch=1,EE,0012fa30,word,3c013f40
+patch=1,EE,0012fa34,word,44810800
+patch=1,EE,0012fa38,word,c540ffd0
+patch=1,EE,0012fa3c,word,46010002
+patch=1,EE,0012fa40,word,e540ffd0
+patch=1,EE,0012fa44,word,c540ffe0
+patch=1,EE,0012fa48,word,46010002
+patch=1,EE,0012fa4c,word,e540ffe0
+patch=1,EE,0012fa50,word,c540fff0
+patch=1,EE,0012fa54,word,46010002
+patch=1,EE,0012fa58,word,3c014280
+patch=1,EE,0012fa5c,word,44811000
+patch=1,EE,0012fa60,word,46020000
+patch=1,EE,0012fa64,word,e540fff0
+patch=1,EE,0012fa68,word,0807c839
+patch=1,EE,0012fa6c,word,3c026404
+patch=1,EE,001f20e0,word,0804be8c

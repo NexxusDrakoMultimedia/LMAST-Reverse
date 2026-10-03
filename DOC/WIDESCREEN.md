@@ -58,16 +58,19 @@ shadow's projection, which is why the patch works one step later.
 A second section, "Widescreen 16:9 UI fix (experimental)", draws the
 match HUD at 4:3 proportions in the middle of the 16:9 screen. Tested in
 PCSX2: in an exhibition match the scoreboard, clock, radar and their text
-line up at 4:3 proportions (user report, 2026-10-04). The menus are not
-fixed yet: their text is squeezed but their panels are not.
+line up at 4:3 proportions; in season mode the Club House and Pre-match
+menus and the pre-match intro panel line up too, and faces look normal
+(user report, 2026-10-04). On the Pre-match screen the striped
+background still runs past the 4:3 area.
 
-The match HUD draws through two paths, and both have to be squeezed the
-same way (PAL is 512 pixels wide; GS units are 1/16 pixel, centre 2048):
+The HUD and menus draw through three paths, and all have to be squeezed
+the same way (PAL is 512 pixels wide; GS units are 1/16 pixel, centre 2048):
 
 | Path | Draws | Placement | Patch |
 |---|---|---|---|
 | Ninja 2D table `0x365b98` {offX, scaleX, offY, scaleY}, filled once by `nnInitSystemPS2` (`0x18f308`–`0x18f370`); read by `nnDrawPrimitive2D` (`0x1779d8`), `nnuPrimitive2DSetVertex` (`0x167580`) and `nnDrawPrimitiveSprite2DPS2` (`0x179cc0`) | text | `offX + x·scaleX`, 28672 and 16 | 29696 and 12 (two data words) |
 | `CSpriteDirect::SetPrimData` (`0x126568`) | panels, scoreboard, clock, radar | `((x − 256) + 2048) × 16`, 256 in `$f23` | `sub.s` at `0x12666c` becomes `jal 0x12fa10`, which also multiplies by 0.75 |
+| CSE: `cseCastFacePutTriStripParamPS2` (`0x1f2040`) copies each cast node's 3×3 matrix (rows at `$t1`, `x' = x·m00 + y·m10 + tx`) into the VU1 packet in the loop at `0x1f20b4` | menu panels | the node matrix | `0x1f20e0` jumps to `0x12fa30`, which scales the copied x column by 0.75 and adds 64 to tx, then returns; CSE's own matrices are unchanged |
 
 Which functions run in a match was found by hooking each candidate with
 a stub that stored its return address (live, over PINE): `CSpriteDirect::SetPrimData`,
@@ -80,20 +83,19 @@ Ruled out:
 
 | Tried | Result |
 |---|---|
-| CSE screen (`cseSetScreen` `0x1f47d8`; context at `0x38f458`, scale `+0x80`, offset `+0xa0`) | no change in the match (CSE doesn't draw there) |
+| CSE screen (`cseSetScreen` `0x1f47d8`; context at `0x38f458`, scale `+0x80`, offset `+0xa0`) | no change in the match (CSE doesn't draw there); the per-node matrix in the VU1 packet is patched instead |
 | PX screen parameters `0x369c30` (half-width 256) | squashed the 3D, HUD unchanged |
 
 ## What's still open
 
-- The menus (VS Mode, the management overlay `SIMPRG.REL`) draw panels
-  with CSE, which builds a 3×3 matrix per cast node and hands it to VU1 in
-  `cseCastFacePutTriStripParamPS2` (`0x1f2040`, rows at `$t1`, copied by
-  the loop at `0x1f20b4`; `x' = x·m00 + y·m10 + tx`). `CEditFaceRender::Render`
-  (`0x151858`) also uses CSE, to build face textures, so a fix there must
-  leave faces alone.
+- The Pre-match screen's striped background still runs past the 4:3
+  area, so it draws through a path not found yet.
 - Name tags over players come from 3D positions but are drawn as text,
   so the text patch pulls them toward the centre.
 - The boot video-mode box uses yet another path; it stays stretched.
+- `CEditFaceRender::Render` (`0x151858`) also draws with CSE, to build
+  face textures. Faces looked normal in the test, but the club editor
+  hasn't been checked.
 
 ## Checking the claims
 
