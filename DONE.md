@@ -259,6 +259,11 @@ files. Each item keeps what was found, where, and how it was tested.
       division's size (fixed by the schedules). `roundtrip` rebuilds the
       file byte for byte (in `regress.py`). Checked: Highbury (11) and
       Cardiff (25), 8 ids, `info` has no `!!`
+- [x] Schedule encoders: `schedule.py roundtrip` re-encodes all 333
+      entries of the three schedule packs from their fields and rebuilds
+      each pack with its `.HED` byte for byte (in `regress.py`); a pack
+      and its `.HED` are written together, as the game reads offsets from
+      the `.HED` copies in `PRELOAD/STATIONFILE.PAC`
 
 ## 3. Ninja 3D models and motions
 

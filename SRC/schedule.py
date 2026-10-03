@@ -35,6 +35,12 @@ Usage:
     python schedule.py year  <DAT/PARAM>            # one line per year_schedule_data row
     python schedule.py compe <DAT/PARAM> <uid>      # header, games and pairings of one UID
     python schedule.py entry <DAT/PARAM> <uid>      # team-entry slots of one UID
+    python schedule.py roundtrip <DAT/PARAM>        # re-encode all three packs and their .HED, !! if not identical
+
+Writing: every entry re-encodes from its fields (year rows, competition
+headers, games, pairings, team-entry records), and a pack is rebuilt with
+pac.py's BINPAC writer together with its .HED, which the game reads the
+offsets from (its copies are in PRELOAD/STATIONFILE.PAC).
 """
 import os
 import struct
@@ -97,6 +103,16 @@ class YearRow:
         self.kind, self.flag = raw[6], raw[7]
         self.turns = bits(raw[8:20])
 
+    def encode(self):
+        """The 20-byte row from its fields; the mask from the turn list."""
+        mask = bytearray(12)
+        for t in self.turns:
+            if not 0 <= t < TURNS_PER_YEAR:
+                raise ValueError("turn %d out of range 0-%d" % (t, TURNS_PER_YEAR - 1))
+            mask[t >> 3] |= 1 << (t & 7)
+        return (struct.pack("<hBBbBBB", self.uid, self.start, self.end, self.compe,
+                            self.cycle, self.kind, self.flag) + bytes(mask))
+
 
 def year_uids(rows):
     """{uid: (row, continuation row or None)} as getYearSchedule pairs them."""
@@ -117,6 +133,7 @@ class System:
         names = [n for n, _ in entries]
         if names != list(self.NAMES):
             raise ValueError("unexpected entries %s" % ", ".join(names))
+        self.entries = entries
         t = [tbb.parse(buf)[1] for _, buf in entries]
         year = t[0][0].data
         if len(year) % YEAR_ROW:
@@ -132,6 +149,19 @@ class System:
         self.make_list_tables = len(t[2])
         self.savectrl = t[4][0].data
 
+    def encode(self):
+        """[(name, bytes)] of the 5 entries; year_schedule_data rebuilt from
+        its rows, the others as they are (no writer touches them yet)."""
+        out = []
+        for i, (name, buf) in enumerate(self.entries):
+            if i == 0:
+                end, t = tbb.parse(buf)
+                trailer = tbb.trailer(buf, t)
+                t[0].data = b"".join(r.encode() for r in self.year)
+                buf = tbb.build(t, end, trailer)
+            out.append((name, buf))
+        return out
+
 
 # --- SCHEDULE_COMPETITION ----------------------------------------------------
 
@@ -144,10 +174,21 @@ class Game:
         self.swap = (w1 >> 9) & 3       # home = pair[swap], away = pair[1 - swap]
         self.spare = (w0 >> 14, w1 >> 11)
 
+    def encode(self):
+        if not (0 <= self.day < 0x100 and 0 <= self.round < 0x10 and 0 <= self.pair < 0x200
+                and 0 <= self.flag < 4 and 0 <= self.swap < 4):
+            raise ValueError("game field out of range (day %d, round %d, pairing %d)"
+                             % (self.day, self.round, self.pair))
+        w0 = self.day | self.flag << 8 | self.round << 10 | self.spare[0] << 14
+        w1 = self.pair | self.swap << 9 | self.spare[1] << 11
+        return struct.pack("<HH", w0, w1)
+
 
 class Competition:
     def __init__(self, buf):
-        _, t = tbb.parse(buf)
+        self.buf = buf
+        self.end, t = tbb.parse(buf)
+        self.tbb_tables = t
         if len(t) not in (3, 4):
             raise ValueError("%d tables, expected 3 or 4" % len(t))
         h = t[0].data
@@ -167,6 +208,25 @@ class Competition:
         if len(t) == 4:
             n = t[3].data
             self.next = [(n[i], n[i + 1]) for i in range(0, len(n) - 1, PAIR_ROW)]
+        # Bytes past the last whole record, kept as they are.
+        self.tails = [g[len(self.games) * GAME_ROW:], p[len(self.pairs) * PAIR_ROW:],
+                      t[3].data[len(self.next) * PAIR_ROW:] if self.next is not None else b""]
+
+    def encode(self):
+        """The entry's bytes from the header fields, games, pairings and
+        next links, with tbb.build. The header's counts are written from
+        the fields: entrants, pairings and games."""
+        t = self.tbb_tables
+        trailer = tbb.trailer(self.buf, t)
+        head = bytearray(self.header)
+        head[4], head[5] = self.type, self.entrants
+        struct.pack_into("<HH", head, 6, self.pair_count, self.game_count)
+        t[0].data = bytes(head)
+        t[1].data = b"".join(g.encode() for g in self.games) + self.tails[0]
+        t[2].data = b"".join(bytes(pr) for pr in self.pairs) + self.tails[1]
+        if self.next is not None:
+            t[3].data = b"".join(bytes(nx) for nx in self.next) + self.tails[2]
+        return tbb.build(t, self.end, trailer)
 
     @property
     def days(self):
@@ -213,7 +273,9 @@ class TeamEntry:
     KINDS = ("last_rank", "list", "now_rank", "plteamid")
 
     def __init__(self, buf):
-        _, t = tbb.parse(buf)
+        self.buf = buf
+        self.end, t = tbb.parse(buf)
+        self.tbb_tables = t
         if len(t) not in (4, 5):
             raise ValueError("%d tables, expected 4 or 5" % len(t))
         h = t[0].data
@@ -229,6 +291,18 @@ class TeamEntry:
                 raise ValueError("%s table is not a whole number of records" % kind)
             self.records[kind] = [d[i:i + ENTRY_ROW] for i in range(0, len(d), ENTRY_ROW)]
         self.records.setdefault("plteamid", [])
+
+    def encode(self):
+        """The entry's bytes: the header with the four counts, then each
+        kind's records."""
+        t = self.tbb_tables
+        trailer = tbb.trailer(self.buf, t)
+        head = bytearray(self.header)
+        head[2:6] = bytes(self.counts[k] for k in self.KINDS)
+        t[0].data = bytes(head)
+        for kind, tab in zip(self.KINDS, t[1:]):
+            tab.data = b"".join(self.records[kind])
+        return tbb.build(t, self.end, trailer)
 
     @property
     def slots(self):
@@ -297,6 +371,23 @@ def read_pack(path):
             f.seek(off)
             out.append((name, f.read(size)))
     return out
+
+
+def build_pack(path, blobs):
+    """(new .PAC bytes, new .HED bytes) for a schedule pack holding `blobs`.
+    The game reads offsets from the .HED (a copy of the header, padded to
+    its size; the copies in PRELOAD/STATIONFILE.PAC are what it loads) and
+    the entries from the .PAC, so both must be written together."""
+    with open(path, "rb") as f:
+        data = f.read()
+    h = pac.BinPac(data[:struct.unpack_from("<I", data)[0]])
+    out = pac.build_binpac(data[:h.header_size], blobs)
+    hed_path = path[:-4] + ".HED"
+    hed_size = os.path.getsize(hed_path)
+    head = out[:h.header_size]
+    if len(head) > hed_size:
+        raise ValueError("%s: the header no longer fits its .HED" % path)
+    return out, head + bytes(hed_size - len(head))
 
 
 def find(root, name):
@@ -396,6 +487,34 @@ def cmd_info(root):
         "%s %d" % (k, used[k]) for k in TeamEntry.KINDS)))
 
 
+def cmd_roundtrip(root):
+    """Re-encode every entry of the three packs from its fields, rebuild
+    each pack and its .HED, and compare with the files; !! on a difference."""
+    for name, make in ((SYSTEM_PAC, None), (COMPE_PAC, Competition), (ENTRY_PAC, TeamEntry)):
+        path = find(root, name)
+        try:
+            entries = read_pack(path)
+            if make is None:
+                blobs = [b for _, b in System(entries).encode()]
+            else:
+                blobs = [make(b).encode() for _, b in entries]
+            bad = [i for i, ((_, old), new) in enumerate(zip(entries, blobs)) if old != new]
+            pac_bytes, hed_bytes = build_pack(path, blobs)
+            with open(path, "rb") as f:
+                same_pac = f.read() == pac_bytes
+            with open(path[:-4] + ".HED", "rb") as f:
+                same_hed = f.read() == hed_bytes
+        except (ValueError, struct.error) as e:
+            print("%s  !! %s" % (path, e))
+            continue
+        probs = (["entries differ: %s" % " ".join(map(str, bad[:10]))] if bad else []) + \
+                ([] if same_pac else ["rebuilt .PAC differs"]) + \
+                ([] if same_hed else ["rebuilt .HED differs"])
+        print("%s  %d entries re-encoded, %d differ; .PAC %s, .HED %s%s" % (
+            path, len(entries), len(bad), "identical" if same_pac else "differs",
+            "identical" if same_hed else "differs", "  !! " + "; ".join(probs) if probs else ""))
+
+
 def cmd_year(root):
     system = System(read_pack(find(root, SYSTEM_PAC)))
     print("  uid start end compe cycle kind            flag turns")
@@ -444,6 +563,8 @@ def main(argv):
         cmd_compe(args[0], int(args[1], 0))
     elif cmd == "entry" and len(args) == 2:
         cmd_entry(args[0], int(args[1], 0))
+    elif cmd == "roundtrip" and len(args) == 1:
+        cmd_roundtrip(args[0])
     else:
         print(__doc__)
         return 1

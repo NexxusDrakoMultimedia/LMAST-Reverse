@@ -242,6 +242,25 @@ ranks 25 and 26 are the two new clubs; the other-nations UID 2 has 24.
 How the game gives them those ranks isn't traced. The other leagues'
 UIDs follow their own rules, not checked here.
 
+## Writing
+
+`python SRC/schedule.py roundtrip DAT/PARAM` re-encodes every entry of the
+three packs from its fields (year rows and their turn masks, competition
+headers, games, pairings and next links, team-entry headers and records)
+and rebuilds each pack with `pac.py`'s BINPAC writer: all 333 entries and
+the three packs come out byte for byte (in `regress.py`).
+
+A rebuilt pack goes with a new `.HED`. Each `.HED` is the pack's header
+padded with zeros to its own size (4,096 or 2,048 bytes), and the game
+reads entry offsets from it: the copies it loads are
+`PRELOAD/STATIONFILE.PAC` entries 1 and 2 (whole game), while
+`SCHEDULE_COMPETITION.PAC` and `SCHEDULE_TEAM_ENTRY.PAC` are read from
+their own files, and `SCHEDULE_SYSTEM.PAC` from `STATIONFILE.PAC` entry 0
+(`python SRC/preload.py who DAT SCHEDULE_COMPETITION.HED`). So an entry
+that changes size moves the entries after it, and the pack and its
+`.HED` must be written together; `patch_disc.py --copies` then updates
+the `STATIONFILE` copies.
+
 ## Related files
 
 - `0SYSTEM/SCHEDULE.TBB` (2 tables, 76 and 23 rows of 32 bytes, with a

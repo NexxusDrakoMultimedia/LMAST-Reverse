@@ -59,9 +59,12 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 
 - [ ] Test in PCSX2: a swap across leagues in the Season tab (a club
       playing in another nation's league)
-- [ ] A schedule writer (`SCHEDULE_*` packs, read by `schedule.py`), with
-      a `roundtrip` check: needed to change a division's size, which the
-      league schedules' entrant slots and pairings fix
+- [ ] Change a division's size: build a league schedule for n clubs
+      (pairings, games, game days), give its UID that many turns,
+      re-point the team-entry slots (more or fewer promoted and
+      relegated), keep the own-nation and other-nations versions and the
+      playoffs (NOW_RANK) in step, and move clubs between the starting
+      divisions. `schedule.py roundtrip` (the encoders) is done
 - [ ] Parameter tables: name the fields of the `TBB1` tables a mod would
       tune (`REGULATION.TBB` and the others in `DOC/PARAM_DIR.md`), so
       they can get a field-level writer and an editor tab. `tbb.py

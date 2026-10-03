@@ -98,6 +98,8 @@ def checks():
          ["DAT/PLAYER/UNIFORM_LIST.TBB"]),
         ("uniform_gk", ["uniform.py", "gk", "DAT/PLAYER"], ["DAT/PLAYER/UNIFORM_GK.TBB"]),
         ("schedule", ["schedule.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        # Every schedule entry re-encoded, each pack rebuilt with its .HED.
+        ("schedule_roundtrip", ["schedule.py", "roundtrip", "DAT/PARAM"], ["DAT/PARAM"]),
         ("stadium", ["stadium.py", "info", "DAT/STADIUM", "DAT/PARAM"],
          ["DAT/STADIUM", "DAT/PARAM"]),
         # SEQ/*.SQB and the PSC*.PAC scripts; the main script's listing
