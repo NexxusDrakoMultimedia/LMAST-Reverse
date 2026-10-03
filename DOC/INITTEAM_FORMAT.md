@@ -87,9 +87,10 @@ the sign is **not traced**.
 tables 0 and 1. Each club takes the other's place in the starting
 divisions and in last season's results. The first season is built from
 those results: the league schedules fill their slots from `LAST_RANK`
-records (UID 0 takes ranks 1–20 of competition 0, UIDs 1 and 2 take its
-ranks 18–20 and the second division's places, competition 2 being
-the 3rd–6th promotion playoffs,
+records (in England UID 0 keeps ranks 1–17 of competition 0 and takes
+the second division's top two and the winner of competition 2, the
+3rd–6th promotion playoffs; UIDs 1 and 2 take ranks 18–20 of
+competition 0, the playoff losers and the rest of the second division,
 [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#what-decides-the-first-seasons-leagues)),
 and the cups take their entrants the same way. So a swapped club starts
 in the other's division and inherits its promotion, relegation and cup
