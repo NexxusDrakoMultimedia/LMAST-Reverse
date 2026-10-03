@@ -5,7 +5,9 @@ for Let's Make a Soccer Team! (PS2).
 
 AFS (little-endian):
   +0x0  "AFS\\0"
-  +0x4  u32 entry count n
+  +0x4  u16 entry count n
+  +0x6  u16 0, but 0xffff in the Japanese BC_JPN.AFS: its 65,501 entries
+        were sign-extended from 16 bits (0xffffffdd)
   +0x8  n x {u32 offset, u32 size}      entries start on 0x800 boundaries
   then  {u32 offset, u32 size} of the name table
   names n x 48 bytes: char name[32], 6 x u16 date (year, month, day, hour,
@@ -59,7 +61,9 @@ class Afs:
             head = f.read(8)
             if head[:4] != AFS_MAGIC:
                 raise ValueError("%s: not an AFS archive" % path)
-            n = struct.unpack_from("<I", head, 4)[0]
+            n, self.count_high = struct.unpack_from("<HH", head, 4)
+            if 8 + 8 * n + 8 > self.file_size:
+                raise ValueError("%s: a table of %d entries runs past the end" % (path, n))
             table = f.read(8 * n + 8)
             if len(table) < 8 * n + 8:
                 raise ValueError("%s: table runs past the end" % path)
@@ -219,6 +223,10 @@ def cmd_info(paths):
             continue
         probs, kinds, total = [], {}, 0.0
         end = 0
+        n = len(a.entries)
+        if a.count_high != (0xffff if n >= 0x8000 else 0):
+            probs.append("count word %#06x%04x is not %d sign-extended from 16 bits"
+                         % (a.count_high, n, n))
         for e in a.entries:
             if e.offset % 0x800:
                 probs.append("entry %d at %#x is not 0x800-aligned" % (e.index, e.offset))
@@ -245,7 +253,7 @@ def cmd_info(paths):
         print("%s: %d entries, %d named, ADX %s, %.0f s of audio%s" % (
             p, len(a.entries), named,
             ", ".join("%s x%d" % kv for kv in sorted(kinds.items())), total,
-            ""))
+            ", count sign-extended" if a.count_high else ""))
         for pr in probs[:20]:
             print("  !! %s" % pr)
         if len(probs) > 20:

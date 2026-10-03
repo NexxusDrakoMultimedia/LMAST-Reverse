@@ -479,6 +479,12 @@ files. Each item keeps what was found, where, and how it was tested.
       both builds; the Japanese build has 0x1b8 global variables, 12-byte
       wildcard converters, two commentary slots, no free-agent list and a
       different save layout (CRC `0x16da`)
+- [x] The `BC_JPN.AFS` table: its count word 0xffffffdd is 65,501
+      sign-extended from 16 bits (the other 25 archives have 0 in the
+      upper half). `afs.py` reads a u16 count, checks the table fits the
+      file, and flags any other upper half; all 65,501 clips pass (mono
+      24 kHz, 23.4 hours, no names). `jp_afs` no longer fails with a
+      MemoryError
 
 ## 8. Housekeeping
 

@@ -282,7 +282,8 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] Japanese release leftovers (`DOC/JAPANESE_RELEASE.md`): why
       `PLRESOURCESIM.PAC` entry 0's weather tables stop partway; whether
       the player-database values above PAL's limits are Japanese features
-      or data PAL fixed; the `BC_JPN.AFS` table; the sponsor texture
+      or data PAL fixed; how the game opens `BC_JPN.AFS` (65,501
+      unnamed clips, count sign-extended) and names its clips; the sponsor texture
       counts; reading a Japanese save (block 1 is 16 bytes smaller)
 - [ ] Tools still PAL-only: `patch_disc.py`'s switches (they refuse
       other discs), `save.py`'s commands (they take no ISO folder), the

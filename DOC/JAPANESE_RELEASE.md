@@ -80,7 +80,7 @@ can't be loaded by the other. No Japanese save has been decoded yet.
 | What | Japanese | PAL |
 |---|---|---|
 | Disc root | `HDD/` (install to the PS2 hard disk), `DRIVERS/` adds `ATAD`, `DEV9`, `HDD`, `PFS` | none |
-| Commentary | `AUDIO/BC_JPN.AFS` only (`afs.py` reports its table running past the end) | ten `BC_*.AFS` |
+| Commentary | `AUDIO/BC_JPN.AFS` only: 65,501 unnamed clips, 23.4 hours, its entry count sign-extended from 16 bits ([`AUDIO_DIR.md`](AUDIO_DIR.md#afs)) | ten `BC_*.AFS` of 12,899 named clips |
 | `DAT/` | 2,029 files | 2,229: the extra 200 are per-language copies in `CSE/`, `GAME/`, `PRELOAD/` and `STADIUM/` |
 | `MES.PAC` | 3,647 files. Slots 1–6 hold placeholders (`test`); 45 records of `0_0.mbb` (the salesman) are filler bytes, not text | 3,738 files, all languages translated |
 | `GAME/SOUNDDAT.PAC` | 2 commentary slots of 0x51000 bytes (Japanese, two crowd tables), no BCV index; 33 clip tables from 0xa2000 | 12 slots of 0x1d800, 36 clip tables from 0x162000 |
@@ -89,7 +89,8 @@ can't be loaded by the other. No Japanese save has been decoded yet.
 | `0SYSTEM/SPONSOR_TEXTURE*.PAC` | 233, 231 and 233 entries | 232 each |
 | `CSE/GP_PRACTICEICON.CSP` | the practice icons | 0 bytes; PAL loads the per-language `GP_PRACTICEICON0`–`6.CSP` instead |
 
-Each of these is a `!!` line in a `jp_` check, kept as the baseline.
+Each of these is a `!!` line in a `jp_` check, kept as the baseline,
+except the commentary, which `afs.py` reads as documented.
 
 ## Still unknown
 
@@ -97,6 +98,8 @@ Each of these is a `!!` line in a `jp_` check, kept as the baseline.
   the Japanese build, and whether its code reads fewer records.
 - Whether the player-database limits come from the Japanese code (new
   play styles, kit options) or are data PAL corrected.
-- The `BC_JPN.AFS` table, and the sponsor texture counts.
+- The sponsor texture counts, how the game opens `BC_JPN.AFS` (its
+  count reads as −35 through `ADXF_GetNumFilesFromAfs`), and which clip
+  is which with no name table.
 - A Japanese save: the block that changed size, and what `save.py` needs
   to read one.

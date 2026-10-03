@@ -48,13 +48,29 @@ Little-endian:
 | Offset | Type | What |
 |---|---|---|
 | `0x0` | char[4] | `AFS\0` |
-| `0x4` | u32 | entry count *n* |
+| `0x4` | u16 | entry count *n* |
+| `0x6` | u16 | 0, or 0xffff when *n* ≥ 0x8000 (below) |
 | `0x8` | *n* × {u32 offset, u32 size} | entries, each starting on a `0x800` boundary |
 | then | {u32 offset, u32 size} | the name table |
 
 Name table: *n* × 48 bytes: `char name[32]`, six u16 (year, month, day,
 hour, minute, second), and a u32 that holds the *previous* entry's size (a
-known quirk of CRI's AFS tool). Every archive here has one.
+known quirk of CRI's AFS tool). Every archive here has one, except the
+Japanese `BC_JPN.AFS`.
+
+**Empirical, all 26 archives of both releases:** the u16 at `0x6` is 0
+in 25. The Japanese `BC_JPN.AFS` has 65,501 entries and the count word
+0xffffffdd: 65,501 sign-extended from 16 bits, as if the tool kept the
+count in a signed 16-bit value. Read as 65,501, its table is
+consistent: every entry is on a `0x800` boundary, in order, and the last
+ends exactly at the end of the file. The name-table word after it is
+{file size, 0}, so the archive has no names. All 65,501 entries are mono
+24 kHz ADX, 84,271 s (23.4 hours) of commentary.
+
+`ADXF_GetNumFilesFromAfs` (`0x1bd908`) reads the count as all four bytes,
+so it would return −35 for this archive. How the game opens it
+(`ADXF_LoadPartitionFromAfsNw` and the partition reader at `0x1bd628`,
+which keeps per-file sizes, not the count) isn't traced.
 
 ## ADX
 
