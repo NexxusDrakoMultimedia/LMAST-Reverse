@@ -14,8 +14,8 @@ item in its section below.
 1. **The editor GUI** (section 11). `SRC/editor.py` has People and Clubs
    tabs (both tested in PCSX2) and builds a disc and an xdelta patch from
    the mod folder, and edits the new club (`teaminit.py`); all three
-   tabs and the club kits are tested in PCSX2. Next: the message text
-   tab (`mbb.py`).
+   tabs and the club kits are tested in PCSX2, and edits message text
+   (`mbb.py`). Next: test a Text edit in PCSX2.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -315,4 +315,5 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       your club's keeper in a match)
 - [ ] Kits tab: the licensed kits' descriptors and number colours
       (`uniform.py setlicence`, `setexe`)
-- [ ] Message text tab (`mbb.py`)
+- [ ] Test in PCSX2: a Text-tab edit (a club name, read from the
+      `STATIONMES` copy, and a mail text) shows in game

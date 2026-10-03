@@ -27,7 +27,7 @@ Usage:
     python mbb.py dump <MES.PAC | file.mbb | dir> ... [--lang N] [--cat N] [--raw]
     python mbb.py csv  <MES.PAC | dir> <out.csv>             # one row per (category, id), one column per language
     python mbb.py roundtrip <MES.PAC>                        # text -> bytes -> pack must give the same bytes
-    python mbb.py set    <MES.PAC> <out.PAC> <cat> <id> <lang> "<text>" [--copy N]
+    python mbb.py set    <MES.PAC> <out.PAC> <cat> <id> <lang> "<text>" [<cat> <id> <lang> "<text>" ...] [--copy N]
     python mbb.py import <MES.PAC> <edits.csv> <out.PAC>     # apply a CSV in `csv` format
     python mbb.py vars [MES.PAC]                             # what fills each global {var:1:N}
 
@@ -36,7 +36,8 @@ global variables (category 1) and the code behind each one (see
 DOC/MBB_FORMAT.md#global-variables).
 
 Writing: text uses the same {tags} as dump and csv (a literal '{' is '{{').
-In `set`, \\n in the text is a line break. `import` takes a CSV made by
+In `set`, \\n in the text is a line break, and an id may be <id>:<copy>
+for a repeated id. `import` takes a CSV made by
 `csv`, saved as UTF-8; rows and language columns may be deleted, and only
 non-empty cells that differ from the current text are applied.
 
@@ -424,8 +425,9 @@ def cmd_roundtrip(path):
     return 0 if same else 1
 
 
-def apply_edits(pac_path, out_path, edits):
-    """edits: (category, lang, id, copy, text) -> write an edited MES.PAC.
+class MesPack:
+    """MES.PAC opened for editing: every file with its slot, edits applied
+    to its records in memory, and the edited archive built from them.
 
     An edited .mbb that still fits its original size is zero-padded to it,
     so its entry, the header and any PRELOAD copies keep their sizes. A
@@ -434,65 +436,102 @@ def apply_edits(pac_path, out_path, edits):
     reads (size >> 11) + 1 sectors from the header's size (0x10cf1c), so
     only the entry's size field changes. The archive keeps its size and
     every other entry stays put. patch_disc.py --copies rebuilds the
-    PRELOAD packs holding a grown file. A file that doesn't fit its slot is
-    reported and nothing is written."""
-    if os.path.abspath(out_path) == os.path.abspath(pac_path):
-        raise SystemExit("write to a new file, not over %s" % pac_path)
-    with open(pac_path, "rb") as f:
-        buf = f.read()
-    pac = BinPac(buf)
-    # An entry's slot runs to the next entry's data, or to the end of the
-    # archive (which can't grow).
-    starts = sorted(off for off, _, _, _ in pac.entries) + [len(buf)]
-    files = {}                          # (category, lang) -> (index, off, size, slot, Mbb)
-    for i, (off, size, name, _) in enumerate(pac.entries):
-        m = Mbb(buf[off:off + size], name)
-        slot = starts[bisect.bisect_right(starts, off)] - off
-        files[(m.category, m.lang)] = (i, off, size, slot, m)
-    changed, errors = {}, []
-    for cat, lang, rid, copy, text in edits:
+    PRELOAD packs holding a grown file. A file that doesn't fit its slot
+    can't be built."""
+
+    def __init__(self, pac_path):
+        with open(pac_path, "rb") as f:
+            self.buf = f.read()
+        self.pac = BinPac(self.buf)
+        # An entry's slot runs to the next entry's data, or to the end of
+        # the archive (which can't grow).
+        starts = sorted(off for off, _, _, _ in self.pac.entries) + [len(self.buf)]
+        self.files = {}                 # (category, lang) -> (index, off, size, slot, Mbb)
+        for i, (off, size, name, _) in enumerate(self.pac.entries):
+            m = Mbb(self.buf[off:off + size], name)
+            slot = starts[bisect.bisect_right(starts, off)] - off
+            self.files[(m.category, m.lang)] = (i, off, size, slot, m)
+        self.changed = {}               # (category, lang) -> {(id, copy)}
+
+    def record(self, cat, lang, rid, copy=0):
+        """(Mbb, index in its records) of a message; ValueError if none."""
         where = "%d_%d.mbb id %d" % (cat, lang, rid)
-        if (cat, lang) not in files:
-            errors.append("%s: no such file" % where)
-            continue
-        m = files[(cat, lang)][4]
+        if (cat, lang) not in self.files:
+            raise ValueError("%s: no such file" % where)
+        m = self.files[(cat, lang)][4]
         hits = [k for k, (r, _) in enumerate(m.records) if r == rid]
         if copy >= len(hits):
-            errors.append("%s: no such message" % where if not hits else
-                          "%s: no copy %d" % (where, copy))
-            continue
+            raise ValueError("%s: no such message" % where if not hits else
+                             "%s: no copy %d" % (where, copy))
+        return m, hits[copy]
+
+    def text(self, cat, lang, rid, copy=0):
+        m, k = self.record(cat, lang, rid, copy)
+        return decode(m.records[k][1], lang)
+
+    def set(self, cat, lang, rid, copy, text):
+        """Set a message from its text ({tags} as decode writes them).
+        Returns True if its bytes changed; ValueError if the text doesn't
+        encode or there is no such message."""
+        m, k = self.record(cat, lang, rid, copy)
         try:
             new = encode(text, lang)
         except ValueError as e:
-            errors.append("%s: %s" % (where, e))
-            continue
-        k = hits[copy]
-        if new != m.records[k][1]:
-            m.records[k] = (rid, new)
-            changed.setdefault((cat, lang), set()).add((rid, copy))
-    out = bytearray(buf)
-    report, grown = [], 0
-    for key in sorted(changed):
-        i, off, size, slot, m = files[key]
+            raise ValueError("%d_%d.mbb id %d: %s" % (cat, lang, rid, e)) from None
+        if new == m.records[k][1]:
+            return False
+        m.records[k] = (rid, new)
+        self.changed.setdefault((cat, lang), set()).add((rid, copy))
+        return True
+
+    def room(self, cat, lang):
+        """(bytes the file needs now, its original size, its slot)."""
+        _, _, size, slot, m = self.files[(cat, lang)]
+        return len(m.build()), size, slot
+
+    def build(self):
+        """(archive bytes, report lines, files grown, errors). Nothing may
+        be written while there are errors."""
+        out = bytearray(self.buf)
+        report, grown, errors = [], 0, []
+        for key in sorted(self.changed):
+            i, off, size, slot, m = self.files[key]
+            try:
+                data = m.build()
+            except ValueError as e:
+                errors.append(str(e))
+                continue
+            used = HEADER_SIZE + sum(4 + len(s) for _, s in m.records)
+            if len(data) <= size:
+                out[off:off + size] = m.build(size)
+                report.append("%-16s %4d changed, %6d of %6d bytes used" % (
+                    m.name, len(self.changed[key]), used, size))
+            elif len(data) <= slot:
+                out[off:off + slot] = data + b"0" * (slot - len(data))
+                struct.pack_into("<I", out, 0x20 + i * self.pac.stride + 4, len(data))
+                grown += 1
+                report.append("%-16s %4d changed, grew %d -> %d bytes (slot %d)" % (
+                    m.name, len(self.changed[key]), size, len(data), slot))
+            else:
+                errors.append("%s: %d bytes, %d more than its slot in the archive holds (%d)" % (
+                    m.name, len(data), len(data) - slot, slot))
+        return bytes(out), report, grown, errors
+
+
+def apply_edits(pac_path, out_path, edits):
+    """edits: (category, lang, id, copy, text) -> write an edited MES.PAC
+    (MesPack). If any edit or file fails, nothing is written."""
+    if os.path.abspath(out_path) == os.path.abspath(pac_path):
+        raise SystemExit("write to a new file, not over %s" % pac_path)
+    pack = MesPack(pac_path)
+    errors = []
+    for cat, lang, rid, copy, text in edits:
         try:
-            data = m.build()
+            pack.set(cat, lang, rid, copy, text)
         except ValueError as e:
             errors.append(str(e))
-            continue
-        used = HEADER_SIZE + sum(4 + len(s) for _, s in m.records)
-        if len(data) <= size:
-            out[off:off + size] = m.build(size)
-            report.append("%-16s %4d changed, %6d of %6d bytes used" % (
-                m.name, len(changed[key]), used, size))
-        elif len(data) <= slot:
-            out[off:off + slot] = data + b"0" * (slot - len(data))
-            struct.pack_into("<I", out, 0x20 + i * pac.stride + 4, len(data))
-            grown += 1
-            report.append("%-16s %4d changed, grew %d -> %d bytes (slot %d)" % (
-                m.name, len(changed[key]), size, len(data), slot))
-        else:
-            errors.append("%s: %d bytes, %d more than its slot in the archive holds (%d)" % (
-                m.name, len(data), len(data) - slot, slot))
+    out, report, grown, build_errors = pack.build()
+    errors += build_errors
     if errors:
         raise SystemExit("\n".join(["nothing written:"] + ["  " + e for e in errors]))
     with open(out_path, "wb") as f:
@@ -500,15 +539,45 @@ def apply_edits(pac_path, out_path, edits):
     for line in report:
         print(line)
     print("%d messages in %d files -> %s" % (
-        sum(len(v) for v in changed.values()), len(changed), out_path))
+        sum(len(v) for v in pack.changed.values()), len(pack.changed), out_path))
     if grown:
         print("%d file%s grew: patch_disc.py --copies rebuilds the PRELOAD packs holding "
               "copies of those (python SRC/preload.py who DAT <name>)"
               % (grown, "" if grown == 1 else "s"))
 
 
-def cmd_set(pac_path, out_path, cat, rid, lang, text, copy):
-    apply_edits(pac_path, out_path, [(cat, lang, rid, copy or 0, text)])
+# What each range of categories holds (DOC/MBB_FORMAT.md#categories,
+# from English samples), for the editor's category list.
+CATEGORY_RANGES = (
+    (0, 0, "salesman dialogue"), (1, 1, "UI words"), (2, 2, "symbolic names"),
+    (3, 11, "club, city, country and league names"), (100, 999, "club-management text"),
+    (1000, 9999, "menu help, screen titles, records"), (10000, 10000, "sponsor and company names"),
+    (20000, 20000, "flag and item names"), (30000, 30003, "tutorials, rules, game-over conditions"),
+    (35000, 35999, "event dialogue"), (36000, 36030, "season-result speeches"),
+    (40000, 40000, "tournament information"), (50563, 50833, "variable lists (not shown)"),
+    (80000, 90000, "scout and transfer reports, mail prompts"),
+    (100001, 120000, "variants of categories 1, 3, 6, 9, 11, 960, 961, 10000, 20000"))
+
+
+def category_label(cat):
+    """A category with what its range holds: "3 club, city, ... names"."""
+    for lo, hi, text in CATEGORY_RANGES:
+        if lo <= cat <= hi:
+            return "%d %s" % (cat, text)
+    return str(cat)
+
+
+def cmd_set(pac_path, out_path, groups, copy):
+    """groups: [cat, id, lang, text] lists; an id may be id:copy for a
+    repeated id. --copy N applies to a single message."""
+    if copy is not None and len(groups) != 1:
+        raise SystemExit("--copy is for one message; write <id>:<copy> instead")
+    edits = []
+    for cat, rid, lang, text in groups:
+        rid, _, k = rid.partition(":")
+        edits.append((int(cat), int(lang), int(rid), int(k) if k else (copy or 0),
+                      text.replace("\\n", "\n")))
+    apply_edits(pac_path, out_path, edits)
 
 
 def cmd_import(pac_path, csv_path, out_path):
@@ -766,11 +835,10 @@ def main(argv):
         return cmd_roundtrip(args[0])
     elif cmd == "set":
         copy = _opt(args, "--copy")
-        if len(args) != 6:
+        if len(args) < 6 or (len(args) - 2) % 4:
             print(__doc__)
             return 1
-        cmd_set(args[0], args[1], int(args[2]), int(args[3]), int(args[4]),
-                args[5].replace("\\n", "\n"), copy)
+        cmd_set(args[0], args[1], [args[i:i + 4] for i in range(2, len(args), 4)], copy)
     elif cmd == "import" and len(args) == 3:
         cmd_import(*args)
     elif cmd == "vars" and len(args) <= 1:

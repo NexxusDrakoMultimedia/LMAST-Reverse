@@ -77,8 +77,9 @@ Each stage depends on the one before it.
    through `pbdata.py`, with the allowed values from `pbdata.edit_spec`
    (tested in PCSX2), and its Clubs tab the club records and squads
    through `initteam.py`, its New club tab the player's starting club
-   through `teaminit.py` (all three tested in PCSX2), and its Kits tab the
-   club and keeper kits through `uniform.py`. File > Build disc puts the
+   through `teaminit.py` (all three tested in PCSX2), its Kits tab the
+   club and keeper kits through `uniform.py` (tested in PCSX2), and its
+   Text tab the message text through `mbb.py`. File > Build disc puts the
    mod folder on a disc image and makes the xdelta patch of stage 6.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284) against
    the user's own unmodified disc image, never as game data or disc images.

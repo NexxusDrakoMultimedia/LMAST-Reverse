@@ -707,4 +707,13 @@ files. Each item keeps what was found, where, and how it was tested.
       Birmingham's home outfield and keeper kits and away shirt colour 1
       (21 fields, `UNIFORM_LIST.TBB`), built with Build disc without the
       tutorial skip
+- [x] Text tab on `mbb.py`: every message of MES.PAC by category (with
+      what its range holds), text or id in any language, shown and edited
+      in all 7 language slots with the file's room left. An edit with a
+      bad {tag}, a character the language's code page lacks, or that
+      would make its file too big for its slot is refused as it is made.
+      `mbb.py` gets `MesPack`, which `set`, `import` and the editor use
+      (same output as before), and `set` takes several messages. Checked
+      through the widgets: a save with 2 messages (2 refused), one file
+      grown, equals the logged `mbb.py set` output byte for byte
 

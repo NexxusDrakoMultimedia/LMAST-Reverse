@@ -48,6 +48,9 @@ Tabs:
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
              (DOC/UNIFORM_FORMAT.md). Colours show as swatches.
+    Text     message text in MES.PAC, one message in all 7 language slots,
+             found by category, text or id (mbb.py; DOC/MBB_FORMAT.md). An
+             edit that would make its file too big for its slot is refused.
 
 Usage:
     python SRC/editor.py open [<mod folder>] [--dat DAT] [--iso ISO]   # default: mod
@@ -65,6 +68,7 @@ import tkinter as tk
 from tkinter import font as tkfont, messagebox, ttk
 
 import initteam
+import mbb
 import pbdata
 import teaminit
 import uniform
@@ -1772,6 +1776,286 @@ class KitsTab(Tab):
         return True
 
 
+MESPAC = "MESSAGE/MES.PAC"
+LANG_NAMES = ("Japanese", "English", "French", "German", "Italian", "Spanish",
+              "unused slot")        # FC_EURO_LOCALIZE; DOC/MBB_FORMAT.md#languages
+TEXT_LIMIT = 1000
+
+
+class TextTab(Tab):
+    """Message text in MES.PAC, all 7 language slots, through mbb.MesPack
+    (the code `mbb.py set` and `import` use). An edit that would make its
+    file too big for its slot is refused as it is made."""
+    title = "Text"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.pack = None
+        self.changes = {}           # (cat, lang, id, copy) -> text, in edit order
+        self.current = None
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Language").pack(side="left")
+        self.lang_var = tk.StringVar(value="1 English")
+        box = ttk.Combobox(bar, textvariable=self.lang_var, state="readonly", width=14,
+                           values=["%d %s" % kv for kv in enumerate(LANG_NAMES)])
+        box.pack(side="left", padx=(4, 12))
+        box.bind("<<ComboboxSelected>>", lambda e: self.refresh_list())
+        ttk.Label(bar, text="Category").pack(side="left")
+        self.cat_var = tk.StringVar(value="any")
+        self.cat_box = ttk.Combobox(bar, textvariable=self.cat_var, state="readonly", width=40)
+        self.cat_box.pack(side="left", padx=(4, 12))
+        self.cat_box.bind("<<ComboboxSelected>>", lambda e: self.refresh_list())
+        ttk.Label(bar, text="Text or id").pack(side="left")
+        self.find_var = tk.StringVar()
+        find = ttk.Entry(bar, textvariable=self.find_var, width=24)
+        find.pack(side="left", padx=(4, 12))
+        find.bind("<Return>", lambda e: self.refresh_list())
+        ttk.Button(bar, text="Search", command=self.refresh_list).pack(side="left")
+        self.count_label = ttk.Label(bar, text="")
+        self.count_label.pack(side="left", padx=12)
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("cat", "id", "text")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, text, width in zip(cols, ("Category", "Id", "Text"), (70, 70, 360)):
+            self.tree.heading(c, text=text)
+            self.tree.column(c, width=width, stretch=c == "text")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=2)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    # loading
+
+    def load(self, done=None):
+        try:
+            self.path = self.app.mod.source(MESPAC)
+            self.pack = mbb.MesPack(self.path)
+        except (ValueError, struct.error, OSError) as e:
+            self.app.status("Couldn't load the text: %s" % e)
+            messagebox.showerror("Text", "Couldn't load the text:\n%s" % e)
+            return
+        # Every message by (category, id, copy), whichever languages have it.
+        self.keys = {}
+        for (cat, lang), (_, _, _, _, m) in self.pack.files.items():
+            seen = {}
+            for rid, _ in m.records:
+                k = seen[rid] = seen.get(rid, -1) + 1
+                self.keys.setdefault((cat, rid, k), set()).add(lang)
+        self.order = sorted(self.keys)
+        self.texts = {}             # lang -> {(cat, id, copy): text}, decoded on first use
+        self.changes = {}
+        cats = sorted({cat for cat, _ in self.pack.files})
+        self.cat_box["values"] = ["any"] + [mbb.category_label(c) for c in cats]
+        self.refresh_list()
+        if self.current is not None and self.current in self.keys:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def lang_texts(self, lang):
+        if lang not in self.texts:
+            out = {}
+            for (cat, l), (_, _, _, _, m) in self.pack.files.items():
+                if l != lang:
+                    continue
+                seen = {}
+                for rid, s in m.records:
+                    k = seen[rid] = seen.get(rid, -1) + 1
+                    out[(cat, rid, k)] = mbb.decode(s, lang)
+            self.texts[lang] = out
+        return self.texts[lang]
+
+    # the list
+
+    @property
+    def lang(self):
+        return int(self.lang_var.get().split()[0])
+
+    def refresh_list(self):
+        if self.pack is None:
+            return
+        texts = self.lang_texts(self.lang)
+        cat = None if self.cat_var.get() == "any" else int(self.cat_var.get().split()[0])
+        find = self.find_var.get().strip()
+        low = find.lower()
+        found = []
+        for key in self.order:
+            if cat is not None and key[0] != cat:
+                continue
+            if find:
+                if find.isdigit() and str(key[1]) == find:
+                    pass
+                elif low not in texts.get(key, "").lower():
+                    continue
+            found.append(key)
+        self.tree.delete(*self.tree.get_children())
+        for key in found[:TEXT_LIMIT]:
+            self.tree.insert("", "end", iid="%d:%d:%d" % key, values=self.row(key, texts),
+                             tags=("edited",) if self.edited(key) else ())
+        self.count_label.configure(text="%d found%s" % (
+            len(found), ", showing the first %d" % TEXT_LIMIT if len(found) > TEXT_LIMIT else ""))
+
+    def row(self, key, texts=None):
+        texts = texts or self.lang_texts(self.lang)
+        text = texts.get(key, "(none in this language)").replace("\n", " / ")
+        return (key[0], key[1] if not key[2] else "%d (copy %d)" % (key[1], key[2]),
+                text[:200])
+
+    def edited(self, key):
+        return any((c, r, k) == key for c, _, r, k in self.changes)
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(tuple(int(x) for x in sel[0].split(":")))
+
+    # one message in every language
+
+    def show(self, key):
+        self.current = key
+        cat, rid, copy = key
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="Category %s, message %d%s" % (
+            mbb.category_label(cat), rid, " (copy %d)" % copy if copy else ""),
+            font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        ttk.Label(box, text="Control codes are {tags}: {var:CAT:ID} a variable, {color:N} ... "
+                            "{/color} colour, {name:N} speaker, {face:S:N}, {react:N}, "
+                            "{circle} and other pad buttons; '{{' is a literal '{'. A new line "
+                            "is a line break (DOC/MBB_FORMAT.md). Changes apply when you leave "
+                            "the box or press Ctrl+Enter.",
+                  foreground="#555", wraplength=640, justify="left").pack(anchor="w", padx=8)
+        for lang, name in enumerate(LANG_NAMES):
+            frame = ttk.LabelFrame(box, text="%d %s" % (lang, name))
+            frame.pack(fill="x", padx=8, pady=4)
+            if lang not in self.keys[key]:
+                ttk.Label(frame, text="(no message in this language)", foreground="#777").pack(
+                    anchor="w", padx=6, pady=2)
+                continue
+            text = self.pack.text(cat, lang, rid, copy)
+            widget = tk.Text(frame, height=min(8, text.count("\n") + 2), width=72, wrap="word",
+                             undo=True, font="TkDefaultFont")
+            widget.insert("1.0", text)
+            widget.edit_reset()
+            widget.pack(fill="x", padx=6, pady=(4, 0))
+            room = ttk.Label(frame, text="", foreground="#555")
+            room.pack(anchor="w", padx=6, pady=(0, 4))
+            self.show_room(room, cat, lang)
+
+            def commit(event=None, lang=lang, widget=widget, room=room):
+                new = widget.get("1.0", "end-1c")
+                if new != self.pack.text(cat, lang, rid, copy):
+                    self.commit(key, lang, new, widget, room)
+                return "break" if event is not None and event.keysym == "Return" else None
+            widget.bind("<FocusOut>", commit)
+            widget.bind("<Control-Return>", commit)
+        self.fit_detail()
+
+    def fit_detail(self):
+        self.frame.update_idletasks()
+        need = self.detail.inner.winfo_reqwidth() + 24
+        have = self.detail.outer.winfo_width()
+        if need > have > 1:
+            pos = self.panes.sashpos(0)
+            self.panes.sashpos(0, max(LIST_MIN, pos - (need - have)))
+
+    def show_room(self, label, cat, lang):
+        need, size, slot = self.pack.room(cat, lang)
+        name = "%d_%d.mbb" % (cat, lang)
+        if need <= size:
+            label.configure(text="%s: %s of %s bytes used" % (name, format(need, ","),
+                                                               format(size, ",")))
+        else:
+            label.configure(text="%s: %s bytes, grown from %s into its slot of %s (the editor "
+                                 "updates the PRELOAD copies when it builds a disc)" % (
+                                     name, format(need, ","), format(size, ","), format(slot, ",")))
+
+    def commit(self, key, lang, text, widget, room):
+        cat, rid, copy = key
+        what = "%d_%d.mbb id %d" % (cat, lang, rid)
+        old = self.pack.text(cat, lang, rid, copy)
+
+        def revert():
+            widget.delete("1.0", "end")
+            widget.insert("1.0", old)
+        try:
+            self.pack.set(cat, lang, rid, copy, text)
+        except ValueError as e:
+            return self.refuse(str(e), revert)
+        need, size, slot = self.pack.room(cat, lang)
+        if need > slot:
+            self.pack.set(cat, lang, rid, copy, old)
+            return self.refuse("%s: the file would need %s bytes, %s more than its slot in "
+                               "MES.PAC holds (%s). Shorten this or another message of the "
+                               "file." % (what, format(need, ","), format(need - slot, ","),
+                                          format(slot, ",")), revert)
+        self.changes.pop((cat, lang, rid, copy), None)
+        self.changes[cat, lang, rid, copy] = text
+        if lang in self.texts:
+            self.texts[lang][key] = self.pack.text(cat, lang, rid, copy)
+        self.show_room(room, cat, lang)
+        iid = "%d:%d:%d" % key
+        if self.tree.exists(iid):
+            self.tree.item(iid, values=self.row(key), tags=("edited",))
+        self.app.status("%s changed" % what)
+        self.app.update_title()
+        return True
+
+    def refuse(self, message, revert):
+        revert()
+        self.app.status(message)
+        messagebox.showerror("Text", message)
+        return False
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(MESPAC)
+        temps = [(out + ".new", out)]
+        data, report, grown, errors = self.pack.build()
+        if errors:
+            messagebox.showerror("Text", "Can't save:\n" + "\n".join(errors))
+            return False
+        try:
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except OSError as e:
+            remove_new(temps)
+            messagebox.showerror("Text", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        args = []
+        for (cat, lang, rid, copy), text in self.changes.items():
+            args += [str(cat), "%d:%d" % (rid, copy) if copy else str(rid), str(lang),
+                     quote(text.replace("\n", "\\n"))]
+        cmd = ["python", "SRC/mbb.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + args
+        n = len(self.changes)
+        lines = log_lines("Text: %d messages" % n, [cmd], temps, "\n".join(report))
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d messages%s" % (shown_path(out), n, ", %d file%s grew" % (
+            grown, "" if grown == 1 else "s") if grown else ""))
+        return True
+
+
 class LogTab(Tab):
     """The commands each save corresponds to, as written to editor.log."""
     title = "Log"
@@ -2164,7 +2448,8 @@ class App:
         self.clubs = ClubsTab(self)
         self.newclub = NewClubTab(self)
         self.kits = KitsTab(self)
-        self.tabs = [self.people, self.clubs, self.newclub, self.kits]
+        self.text = TextTab(self)
+        self.tabs = [self.people, self.clubs, self.newclub, self.kits, self.text]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)

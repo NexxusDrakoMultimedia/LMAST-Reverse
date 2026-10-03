@@ -289,6 +289,13 @@ fill variables (`MakeVarList`).
 
 ## Writing
 
+The editor's Text tab (`SRC/editor.py`) edits messages through
+`mbb.MesPack`, the same code `set` and `import` use: it finds a message by
+category, text or id, shows it in all 7 language slots, and refuses an
+edit as it is made if the file would no longer fit its slot (see Size
+below). `set` takes several messages in one command, each as `<category>
+<id> <lang> "<text>"`, with `<id>:<copy>` for a repeated id.
+
 `mbb.py` writes text back. `set` changes one message and `import` applies
 a CSV in the format `csv` writes. Both write a new `MES.PAC`, which
 `patch_disc.py` puts on the disc (see [`REBUILD.md`](REBUILD.md)):
