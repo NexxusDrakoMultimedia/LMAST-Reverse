@@ -270,7 +270,8 @@ files. Each item keeps what was found, where, and how it was tested.
       CheckClubEditSkip and a Call to the won route's MonthEnd, YearEnd and
       Finalize), so the real `Sche.YearEnd` runs. Tested in PCSX2: All
       Clubs Ranking has real ranks (the first version left every club at
-      65536), and the club starts with £3,350,000 (£1,785,000 before)
+      65536), and the club starts with £3,350,000 (£1,785,000 before).
+      The sponsors are normal (user report)
 
 ## 3. Ninja 3D models and motions
 

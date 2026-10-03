@@ -569,8 +569,9 @@ All Clubs Ranking had real ranks (Real Madrid 1, Juventus 2, Chelsea 3,
 AC Milan 4, Bayern 5), and Real Madrid's detail screen showed world
 ranking 1. The club started with £3,350,000, against £1,785,000 on the
 first version's disc at the same date, so the year end also settles the
-playoff season's money. Not checked yet: the supplier (Egamucho expected)
-and the sub-sponsors at the first Sponsor screen.
+playoff season's money. At the first Sponsor screen the sponsors were
+normal: a £2.2 million main sponsor and the usual sub-sponsors, where a
+normal career gets sponsors around £2.5 million (user report).
 
 ## The developer launcher
 
