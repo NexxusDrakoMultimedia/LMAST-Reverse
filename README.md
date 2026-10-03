@@ -279,7 +279,7 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | a window with a tab per kind of data. **People** edits players, managers and scouts in the player database: search by name, id, nationality or club, every named field with its allowed values, unnamed fields read-only. **Clubs** edits the club records (rank, manager, stadium, city, transfer policy) and the computer teams' squads (player, age, shirt, contract). **New club** edits what a new career gets for each league and team style: squad, staff, scouts, youth team, candidate lists and the rival club. It saves to a mod folder (`mod/` by default) and writes the matching `python SRC/...` command to `mod/editor.log` |
+| [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | a window with a tab per kind of data. **People** edits players, managers and scouts in the player database: search by name, id, nationality or club, every named field with its allowed values, unnamed fields read-only. **Clubs** edits the club records (rank, manager, stadium, city, transfer policy) and the computer teams' squads (player, age, shirt, contract). **New club** edits what a new career gets for each league and team style: squad, staff, scouts, youth team, candidate lists and the rival club. **Kits** edits every club's home and away kits, with colour swatches, and the keeper kits made for your club, the rival and the VS teams. It saves to a mod folder (`mod/` by default) and writes the matching `python SRC/...` command to `mod/editor.log` |
 
 ```bash
 python SRC/editor.py open             # the mod folder mod/
@@ -321,7 +321,7 @@ over sessions.
   kits, `sles_disasm.py` for the executable's copy, and `initteam.py` for
   club names.
 - `editor.py` edits through `pbdata.py` (People), `initteam.py`
-  (Clubs) and `teaminit.py` (New club).
+  (Clubs), `teaminit.py` (New club) and `uniform.py` (Kits).
 - `save.py` loads the game's serializers with `sles_disasm.py` and
   `snr2.py`, and takes field layouts, names and tables from `pbdata.py`,
   `initteam.py` and `tbb.py`.

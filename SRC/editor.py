@@ -44,6 +44,10 @@ Tabs:
              (TEAM_INIT_DATA.TBB, teaminit.py; DOC/TEAMINIT_FORMAT.md):
              squad, rival-only records, staff, scouts, youth team,
              candidate lists and the rival club, as pwkTeam_Init2 reads them.
+    Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
+             keeper kits made from the outfield kit for your club, the rival
+             and the VS teams (UNIFORM_GK.TBB), through uniform.py
+             (DOC/UNIFORM_FORMAT.md). Colours show as swatches.
 
 Usage:
     python SRC/editor.py open [<mod folder>] [--dat DAT] [--iso ISO]   # default: mod
@@ -63,6 +67,7 @@ from tkinter import font as tkfont, messagebox, ttk
 import initteam
 import pbdata
 import teaminit
+import uniform
 
 SLES = "SLES_541.51"
 MOD_OWN_FILES = ("editor.log", "build.json")    # the editor's files, not the game's
@@ -1391,6 +1396,377 @@ class NewClubTab(Tab):
         return True
 
 
+UNIFORM_LIST = "PLAYER/UNIFORM_LIST.TBB"
+UNIFORM_GK = "PLAYER/UNIFORM_GK.TBB"
+
+
+def colour_input(parent, swatches, get, apply):
+    """A kit colour: a drop-down of the 96 colours by name and a swatch of
+    the chosen one (entry 128 of its palette)."""
+    frame = ttk.Frame(parent)
+    swatch = tk.Label(frame, width=3, relief="solid", borderwidth=1)
+
+    def paint():
+        v = get()
+        if swatches and 0 <= v < len(swatches):
+            swatch.configure(bg="#%02x%02x%02x" % swatches[v], text="")
+        else:
+            swatch.configure(bg=frame.winfo_toplevel().cget("bg"), text="?")
+
+    def commit(text, revert):
+        ok = apply(text, revert)
+        paint()
+        return ok
+    swatch.pack(side="left", padx=(0, 4))
+    value_input(frame, ("choice", list(range(uniform.COLOURS))), uniform.colour_label, get,
+                commit).pack(side="left")
+    paint()
+    return frame
+
+
+class KitsTab(Tab):
+    """Club kits (UNIFORM_LIST.TBB) and the keeper kits made from them
+    (UNIFORM_GK.TBB), through uniform.set_row_field and apply_gk_edit, as
+    `uniform.py set` and `setgk` do."""
+    title = "Kits"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.blob = None
+        self.changes = {}           # (team, field name) -> value, in edit order
+        self.gk_changes = {}        # field name -> value
+        self.current = None
+        inner = ttk.Notebook(self.frame)
+        inner.pack(fill="both", expand=True, padx=4, pady=4)
+        clubs = ttk.Frame(inner)
+        keepers = ttk.Frame(inner)
+        inner.add(clubs, text="Club kits")
+        inner.add(keepers, text="Keeper kits for your club, the rival and VS teams")
+
+        bar = ttk.Frame(clubs)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Name or id").pack(side="left")
+        self.find_var = tk.StringVar()
+        find = ttk.Entry(bar, textvariable=self.find_var, width=22)
+        find.pack(side="left", padx=(4, 12))
+        find.bind("<Return>", lambda e: self.refresh_list())
+        ttk.Button(bar, text="Search", command=self.refresh_list).pack(side="left")
+        self.count_label = ttk.Label(bar, text="")
+        self.count_label.pack(side="left", padx=12)
+        panes = self.panes = ttk.PanedWindow(clubs, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("id", "name", "kit")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, text, width in zip(cols, ("Id", "Club", "Kit"), (50, 170, 70)):
+            self.tree.heading(c, text=text)
+            self.tree.column(c, width=width, stretch=c == "name")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+        bar = ttk.Frame(keepers)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Outfield shirt design").pack(side="left")
+        self.design_var = tk.StringVar(value="0")
+        spin = ttk.Spinbox(bar, textvariable=self.design_var, from_=0,
+                           to=uniform.OUTFIELD_SHIRTS - 1, width=5, command=self.show_gk)
+        spin.pack(side="left", padx=(4, 12))
+        spin.bind("<Return>", lambda e: self.show_gk())
+        ttk.Label(bar, text="In a match, these teams' keeper kit comes from the outfield shirt "
+                            "design: the row below, then the first scheme whose shirt colour 1 "
+                            "doesn't clash (DOC/UNIFORM_FORMAT.md).",
+                  foreground="#555", wraplength=760, justify="left").pack(side="left")
+        self.gk_detail = Scrolled(keepers)
+        self.gk_detail.outer.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+
+    # loading
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(UNIFORM_LIST)
+            self.blob, self.base, self.n = uniform.rows_of(self.path)
+            self.gk_path = mod.source(UNIFORM_GK)
+            self.gk_original = open(self.gk_path, "rb").read()
+            self.gk_blob = bytearray(self.gk_original)
+            self.t0, self.t1 = uniform.load_gk(self.gk_path)
+            self.teams = initteam.team_names(mod.source(MES), 1)
+            self.swatches = uniform.colour_swatches(os.path.join(mod.dat, "PLAYER"))
+            try:
+                self.licensed = set(uniform.licence_table(mod.disc_source(SLES))[0])
+            except (OSError, ValueError, struct.error):
+                self.licensed = set()
+        except (ValueError, struct.error, OSError) as e:
+            self.app.status("Couldn't load the kits: %s" % e)
+            messagebox.showerror("Kits", "Couldn't load the kits:\n%s" % e)
+            return
+        self.rows = {}              # team -> unpacked fields, edits included
+        self.changes, self.gk_changes = {}, {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        self.show_gk()
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def fields(self, team):
+        if team not in self.rows:
+            i = team - uniform.FIRST_TEAM
+            self.rows[team] = uniform.unpack(
+                self.blob[self.base + i * uniform.ROW_SIZE:self.base + (i + 1) * uniform.ROW_SIZE])
+        return self.rows[team]
+
+    # the club list
+
+    def refresh_list(self):
+        if self.blob is None:
+            return
+        find = self.find_var.get().strip().lower()
+        self.tree.delete(*self.tree.get_children())
+        n = 0
+        for i in range(self.n):
+            team = i + uniform.FIRST_TEAM
+            if self.fields(team)[0] != team:
+                continue            # rows with id 0 are never looked up
+            name = self.teams.get(team, "")
+            if find and not (find == str(team) or (not find.isdigit() and find in name.lower())):
+                continue
+            self.tree.insert("", "end", iid=str(team),
+                             values=(team, name, "licensed" if team in self.licensed else ""),
+                             tags=("edited",) if any(t == team for t, _ in self.changes) else ())
+            n += 1
+        self.count_label.configure(text="%d clubs" % n)
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    # a club's kits
+
+    def show(self, team):
+        self.current = team
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%d  %s" % (team, self.teams.get(team, "")),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        if team in self.licensed:
+            ttk.Label(box, text="Licensed club: the game draws its kits from the licensed kit "
+                                "textures (PLPACK_HOME/AWAY), not from these fields "
+                                "(DOC/UNIFORM_FORMAT.md#licensed-kits).",
+                      foreground="#a05000", wraplength=700, justify="left").pack(anchor="w", padx=8)
+        ttk.Label(box, text="A design or colour past what its pack holds would be reset by "
+                            "the game, so the lists stop there. Fields with no name yet are "
+                            "read-only.", foreground="#555").pack(anchor="w", padx=8)
+        for side in ("home", "away"):
+            frame = ttk.LabelFrame(box, text=side.capitalize())
+            frame.pack(fill="x", padx=8, pady=6)
+            row = 0
+            for k, label in enumerate(uniform.SIDE_FIELD_NAMES):
+                name = "%s.side.%d" % (side, k)
+                ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", padx=(6, 12))
+                self.kit_widget(frame, team, name).grid(row=row, column=1, columnspan=2,
+                                                        sticky="w", pady=1)
+                row += 1
+            ttk.Label(frame, text="outfield kit", foreground="#555").grid(row=row, column=1,
+                                                                         sticky="w")
+            ttk.Label(frame, text="keeper kit", foreground="#555").grid(row=row, column=2,
+                                                                       sticky="w")
+            row += 1
+            for k, label in enumerate(uniform.KIT_FIELD_NAMES):
+                ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", padx=(6, 12))
+                for col, part in ((1, "outfield"), (2, "keeper")):
+                    self.kit_widget(frame, team, "%s.%s.%d" % (side, part, k)).grid(
+                        row=row, column=col, sticky="w", padx=(0, 16), pady=1)
+                row += 1
+        self.fit_detail()
+
+    def fit_detail(self):
+        self.frame.update_idletasks()
+        need = self.detail.inner.winfo_reqwidth() + 24
+        have = self.detail.outer.winfo_width()
+        if need > have > 1:
+            pos = self.panes.sashpos(0)
+            self.panes.sashpos(0, max(LIST_MIN, pos - (need - have)))
+
+    def kit_widget(self, parent, team, name):
+        fields = self.fields(team)
+        hw = uniform.field_index(name)
+        rng = uniform.edit_range(name)
+
+        def get():
+            return fields[hw]
+        if rng is None:
+            return ttk.Label(parent, text=str(get()), foreground="#777")
+
+        def apply(text, revert):
+            return self.commit(team, name, text, revert)
+        n = int(name.rsplit(".", 1)[1])
+        part = name.split(".")[1]
+        if part != "side" and n in uniform.COLOUR_FIELDS:
+            return colour_input(parent, self.swatches, get, apply)
+        if part == "side":
+            names = {3: ("off", "on"), 4: uniform.SHORTS_NUMBER}[n]
+            return value_input(parent, ("choice", list(range(rng[0], rng[1] + 1))),
+                               lambda v: "%d %s" % (v, names[v]) if v < len(names) else str(v),
+                               get, apply)
+        return value_input(parent, ("range",) + rng, str, get, apply)
+
+    def commit(self, team, name, text, revert):
+        what = "%d %s" % (team, self.teams.get(team, ""))
+        try:
+            value = int(text)
+        except ValueError:
+            return self.refuse(what, "%s must be a number" % name, revert)
+        lo, hi = uniform.edit_range(name)
+        if not lo <= value <= hi:
+            return self.refuse(what, "%s must be %d-%d" % (name, lo, hi), revert)
+        try:
+            old = uniform.set_row_field(self.fields(team), name, value)
+        except ValueError as e:
+            return self.refuse(what, str(e), revert)
+        self.changes.pop((team, name), None)
+        self.changes[team, name] = value
+        self.app.status("%s: %s %s -> %s" % (what, name, old, value))
+        if self.tree.exists(str(team)):
+            self.tree.item(str(team), tags=("edited",))
+        self.app.update_title()
+        return True
+
+    def refuse(self, what, message, revert):
+        revert()
+        self.app.status("%s: %s" % (what, message))
+        messagebox.showerror("Kits", "%s: %s" % (what, message))
+        return False
+
+    # the keeper kit table
+
+    def show_gk(self):
+        if self.blob is None:
+            return
+        try:
+            design = int(self.design_var.get())
+        except ValueError:
+            return
+        if not 0 <= design < uniform.OUTFIELD_SHIRTS:
+            return
+        self.gk_detail.clear()
+        box = self.gk_detail.inner
+        frame = ttk.LabelFrame(box, text="Table 0: the keeper designs for outfield shirt "
+                                         "design %d" % design)
+        frame.pack(fill="x", padx=8, pady=6)
+        for col, (part, _, limit) in enumerate(uniform.GK_ROW_FIELDS):
+            ttk.Label(frame, text="keeper %s design" % part).grid(row=0, column=2 * col,
+                                                                 sticky="w", padx=(6, 6))
+            name = "outfield.%d.%s" % (design, part)
+            self.gk_widget(frame, name, ("range", 0, limit - 1)).grid(
+                row=0, column=2 * col + 1, sticky="w", padx=(0, 16), pady=4)
+        off, _ = uniform.gk_offset(self.t0, self.t1, "outfield.%d.shirt" % design)
+        keeper = self.gk_blob[off]
+        frame = ttk.LabelFrame(box, text="Table 1: the 6 colour schemes of keeper shirt design "
+                                         "%d, tried in order" % keeper)
+        frame.pack(fill="x", padx=8, pady=6)
+        if keeper < uniform.GK_SHIRTS:
+            heads = ["scheme"] + [uniform.KIT_FIELD_NAMES[f] for f in uniform.SCHEME_FIELDS]
+            for col, text in enumerate(heads):
+                ttk.Label(frame, text=text, foreground="#555", wraplength=90).grid(
+                    row=0, column=col, sticky="w", padx=(6, 4))
+            for n in range(uniform.SCHEMES):
+                ttk.Label(frame, text=str(n)).grid(row=n + 1, column=0, sticky="w", padx=(6, 4))
+                for col, f in enumerate(uniform.SCHEME_FIELDS, 1):
+                    name = "keeper.%d.%d.%d" % (keeper, n, f)
+                    spec = ("range", 0, uniform.CAPTAIN_MARKS - 1) if f == 14 else None
+                    self.gk_widget(frame, name, spec).grid(row=n + 1, column=col, sticky="w",
+                                                           padx=(0, 4), pady=1)
+
+    def gk_widget(self, parent, name, spec):
+        off, _ = uniform.gk_offset(self.t0, self.t1, name)
+
+        def get():
+            return self.gk_blob[off]
+
+        def apply(text, revert):
+            return self.commit_gk(name, text, revert)
+        if spec is None:
+            return colour_input(parent, self.swatches, get, apply)
+        return value_input(parent, spec, str, get, apply)
+
+    def commit_gk(self, name, text, revert):
+        try:
+            value = int(text)
+            old = uniform.apply_gk_edit(self.gk_blob, self.t0, self.t1, name, value)
+        except ValueError as e:
+            return self.refuse("UNIFORM_GK", str(e), revert)
+        self.gk_changes.pop(name, None)
+        self.gk_changes[name] = value
+        self.app.status("UNIFORM_GK %s: %s -> %s" % (name, old, value))
+        self.app.update_title()
+        if name.endswith(".shirt"):
+            self.show_gk()          # another keeper design: show its schemes
+        return True
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes or self.gk_changes)
+
+    def save(self):
+        if not self.dirty():
+            return True
+        mod = self.app.mod
+        temps, commands = [], []
+        try:
+            if self.changes:
+                out = mod.target(UNIFORM_LIST)
+                data = bytearray(self.blob)
+                for team in {t for t, _ in self.changes}:
+                    i = team - uniform.FIRST_TEAM
+                    lo = self.base + i * uniform.ROW_SIZE
+                    data[lo:lo + uniform.ROW_SIZE] = uniform.pack(
+                        bytes(self.blob[lo:lo + uniform.ROW_SIZE]), self.rows[team])
+                os.makedirs(os.path.dirname(out), exist_ok=True)
+                with open(out + ".new", "wb") as f:
+                    f.write(data)
+                temps.append((out + ".new", out))
+                args, last = [], None
+                for (team, name), value in self.changes.items():
+                    if team != last:
+                        args.append(str(team))
+                        last = team
+                    args.append("%s=%d" % (name, value))
+                commands.append(["python", "SRC/uniform.py", "set", quote(shown_path(self.path)),
+                                 quote(shown_path(out + ".new"))] + args)
+            if self.gk_changes:
+                uniform.check_gk_blob(self.gk_blob, self.gk_original, self.t0, self.t1)
+                out = mod.target(UNIFORM_GK)
+                os.makedirs(os.path.dirname(out), exist_ok=True)
+                with open(out + ".new", "wb") as f:
+                    f.write(self.gk_blob)
+                temps.append((out + ".new", out))
+                commands.append(["python", "SRC/uniform.py", "setgk",
+                                 quote(shown_path(self.gk_path)), quote(shown_path(out + ".new"))]
+                                + ["%s=%d" % kv for kv in self.gk_changes.items()])
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Kits", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        n = len(self.changes) + len(self.gk_changes)
+        lines = log_lines("Kits: %d changes" % n, commands, temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (" and ".join(shown_path(f) for _, f in temps), n))
+        return True
+
+
 class LogTab(Tab):
     """The commands each save corresponds to, as written to editor.log."""
     title = "Log"
@@ -1782,7 +2158,8 @@ class App:
         self.people = PeopleTab(self)
         self.clubs = ClubsTab(self)
         self.newclub = NewClubTab(self)
-        self.tabs = [self.people, self.clubs, self.newclub]
+        self.kits = KitsTab(self)
+        self.tabs = [self.people, self.clubs, self.newclub, self.kits]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)

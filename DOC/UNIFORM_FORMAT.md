@@ -143,7 +143,10 @@ The Uniform Viewer uses the same names ("Back Number Color: A8").
 | F | sea green | | L | pink |
 
 Digits 1–7 run from light to dark. Digit 8 is a grey scale instead, from
-white (A8) through greys to near-black (L8).
+white (A8) through greys to near-black (L8). Entries 64–191 of every ramp
+hold its main shade (entry 128: A1 (255, 222, 222), A4 (148, 41, 41), A8
+white), which the editor shows as each colour's swatch
+(`uniform.colour_swatches`).
 
 ## Licensed kits
 
@@ -342,12 +345,17 @@ python SRC/uniform.py show      DAT/PLAYER 3                 # Birmingham's kits
 python SRC/uniform.py licensed  DAT/PLAYER ISO/SLES_541.51   # the 116 licensed kits
 python SRC/uniform.py clash     DAT/PLAYER A8                # colours that clash with white
 python SRC/uniform.py roundtrip DAT/PLAYER/UNIFORM_LIST.TBB  # re-pack all 661 rows
-python SRC/uniform.py set DAT/PLAYER/UNIFORM_LIST.TBB out/UNIFORM_LIST.TBB 3 home.outfield.1=A4
+python SRC/uniform.py set DAT/PLAYER/UNIFORM_LIST.TBB out/UNIFORM_LIST.TBB 3 home.outfield.1=A4 7 away.outfield.0=12
 python SRC/uniform.py setexe ISO/SLES_541.51 out/SLES_541.51 home 0 outfield.backnumber=A8
 python SRC/uniform.py gk        DAT/PLAYER 35                # keeper design 35 and its schemes
 python SRC/uniform.py setgk DAT/PLAYER/UNIFORM_GK.TBB out/UNIFORM_GK.TBB keeper.35.0.1=A8
 python SRC/tbb.py roundtrip     DAT/PLAYER/UNIFORM_GK.TBB    # the container re-writes
 ```
+
+`set` takes several teams, each followed by its fields. The editor's
+Kits tab (`SRC/editor.py`) edits the same fields through the same code
+(`set_row_field`, `apply_gk_edit`), offering only values the game keeps
+(`uniform.edit_range`) and showing each colour as a swatch.
 
 `setexe`'s output is patched onto a disc image with
 `python SRC/patch_disc.py patch <in.iso> <out.iso> disc:SLES_541.51=out/SLES_541.51`.

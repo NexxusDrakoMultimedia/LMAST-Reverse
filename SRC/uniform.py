@@ -76,7 +76,7 @@ Usage:
     python uniform.py licensed  <DAT/PLAYER> [SLES_541.51]   # the 116 licensed kits
     python uniform.py clash     <DAT/PLAYER> <colour>        # colours that clash
     python uniform.py roundtrip <UNIFORM_LIST.TBB>
-    python uniform.py set       <in.TBB> <out.TBB> <team> <field>=<value> ...
+    python uniform.py set       <in.TBB> <out.TBB> <team> <field>=<value> ... [<team> ...]
         e.g. set UNIFORM_LIST.TBB out.TBB 3 home.outfield.1=A4 home.outfield.3=A4
     python uniform.py gk        <DAT/PLAYER> [keeper design ...]  # the keeper kit table
     python uniform.py setgk     <in.TBB> <out.TBB> <field>=<value> ...
@@ -191,6 +191,85 @@ def parse_value(text):
             raise ValueError("no colour %r" % text)
         return (ord(letter) - ord("A")) * 8 + digit - 1
     return int(text, 0)
+
+
+def set_row_field(fields, name, value):
+    """Set field `name` (<side>.<part>.<n> or flag) of an unpacked row
+    (unpack's list) to `value`, which must fit the field's bits. Returns
+    the old value."""
+    hw = field_index(name)
+    width = POSITION[hw][1]
+    if not 0 <= value < (1 << width):
+        raise ValueError("%s: %d doesn't fit in %d bits" % (name, value, width))
+    old = fields[hw]
+    fields[hw] = value
+    return old
+
+
+# What an editor (SRC/editor.py) offers for each field, narrower than its
+# bits: the pack limits the loader clamps to (LIMITS, COLOURS), the
+# collar's 3 bits (0-7 on the disc), captain marks 0-4 (the keeper table's
+# check at 0x2d3a38; 0-4 on the disc), the front number on/off and the
+# shorts number position (SHORTS_NUMBER). Fields with no name yet (side
+# fields 0, 1, 2 and 5, the flag) are read-only.
+def edit_range(name):
+    """(low, high) an editor offers for a field named as `set` takes it,
+    or None for a field with no name yet."""
+    if name == "flag":
+        return None
+    side, part, n = name.split(".")
+    n = int(n)
+    if part == "side":
+        return {3: (0, 1), 4: (0, len(SHORTS_NUMBER) - 1)}.get(n)
+    if n in LIMITS[part]:
+        return (0, LIMITS[part][n] - 1)
+    if n in COLOUR_FIELDS:
+        return (0, COLOURS - 1)
+    if n == 4:
+        return (0, 7)
+    if n == 14:
+        return (0, CAPTAIN_MARKS - 1)
+    return None
+
+
+KIT_FIELD_NAMES = ("shirt design", "shirt colour 1", "shirt colour 2", "shirt colour 3",
+                   "collar", "shorts design", "shorts colour 1", "shorts colour 2",
+                   "shorts colour 3", "socks design", "socks colour 1", "socks colour 2",
+                   "shirt number colour", "shorts number colour", "captain mark")
+SIDE_FIELD_NAMES = ("unknown 0", "unknown 1", "unknown 2", "front number", "shorts number",
+                    "unknown 5")
+
+
+# The hue of each colour letter, digits 1-7 light to dark and 8 a grey
+# scale (empirical, from the palettes; DOC/UNIFORM_FORMAT.md#colours).
+HUES = ("red", "orange", "yellow", "lime", "green", "sea green", "cyan", "sky blue",
+        "blue", "purple", "magenta", "pink")
+
+
+def colour_label(n):
+    """A colour as an editor lists it: "A4 red 4", "A8 grey 1"."""
+    if not 0 <= n < COLOURS:
+        return str(n)
+    letter, digit = n // 8, n % 8 + 1
+    return "%s %s" % (colour_name(n), "grey %d" % (letter + 1) if digit == 8
+                      else "%s %d" % (HUES[letter], digit))
+
+
+def colour_swatches(dat):
+    """[(r, g, b)] for the 96 colours: entry 128 of each EDIT_UNIFORM_CLUT
+    palette, the main shade of its ramp (empirical: A1 light pink, A4 red,
+    A8 white)."""
+    import pac
+    import svr
+    path = os.path.join(dat, "EDIT_UNIFORM_CLUT.HED")
+    h = pac.load_header(path)
+    with open(pac.data_path(path, h), "rb") as f:
+        buf = f.read()
+    out = []
+    for off, size, _, _ in h.entries[:COLOURS]:
+        pal = svr.parse_svp(buf[off:off + size])
+        out.append(svr._decode_colors(pal.data, pal.pf, pal.count)[128][:3])
+    return out
 
 
 class Team:
@@ -559,26 +638,34 @@ def cmd_roundtrip(path):
     print("%d/%d rows re-pack byte for byte" % (n - bad, n))
 
 
-def cmd_set(src, dst, team, edits):
+def cmd_set(src, dst, args):
+    """Edit rows of UNIFORM_LIST: <team> <field>=<value> ... [<team> ...]."""
     blob, base, n = rows_of(src)
     out = bytearray(blob)
-    i = team - FIRST_TEAM
-    if not 0 <= i < n:
-        raise ValueError("no row for team %d" % team)
-    row = bytes(out[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE])
-    fields = unpack(row)
-    if fields[0] != team:
-        raise ValueError("row %d holds team %d, not %d" % (i, fields[0], team))
-    for edit in edits:
-        name, _, text = edit.partition("=")
-        hw = field_index(name)
+    team = fields = row = None
+    edited = {}
+    for a in args:
+        if "=" not in a:
+            team = int(a, 0)
+            i = team - FIRST_TEAM
+            if not 0 <= i < n:
+                raise ValueError("no row for team %d" % team)
+            row = bytes(blob[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE])
+            fields = edited.get(team) or unpack(row)
+            if fields[0] != team:
+                raise ValueError("row %d holds team %d, not %d" % (i, fields[0], team))
+            edited[team] = fields
+            continue
+        if fields is None:
+            raise ValueError("give a team id before %r" % a)
+        name, _, text = a.partition("=")
         value = parse_value(text)
-        width = POSITION[hw][1]
-        if not 0 <= value < (1 << width):
-            raise ValueError("%s: %d doesn't fit in %d bits" % (name, value, width))
-        print("team %d %s: %d -> %d" % (team, name, fields[hw], value))
-        fields[hw] = value
-    out[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE] = pack(row, fields)
+        old = set_row_field(fields, name, value)
+        print("team %d %s: %d -> %d" % (team, name, old, value))
+    for team, fields in edited.items():
+        i = team - FIRST_TEAM
+        row = bytes(blob[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE])
+        out[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE] = pack(row, fields)
     with open(dst, "wb") as f:
         f.write(out)
 
@@ -602,48 +689,70 @@ def cmd_gk(dat, designs):
             print("  scheme %d  %s" % (n, fmt_scheme(scheme(t1, d, n))))
 
 
-def cmd_setgk(src, dst, edits):
+GK_ROW_INDEX = {name: (k, limit) for k, (name, _, limit) in enumerate(GK_ROW_FIELDS)}
+
+
+def gk_offset(t0, t1, name):
+    """(file offset, limit) of a UNIFORM_GK byte named outfield.<design>.
+    <shirt|shorts|socks> or keeper.<design>.<scheme>.<field>."""
+    parts = name.split(".")
+    if parts[0] == "outfield" and len(parts) == 3 and parts[2] in GK_ROW_INDEX:
+        i = int(parts[1], 0)
+        k, limit = GK_ROW_INDEX[parts[2]]
+        if not 0 <= i < OUTFIELD_SHIRTS:
+            raise ValueError("%s: outfield shirt designs are 0-%d" % (name, OUTFIELD_SHIRTS - 1))
+        return t0.offset + t0.data_offset + i * GK_ROW + k, limit
+    if parts[0] == "keeper" and len(parts) == 4:
+        d, n, f = (int(p, 0) for p in parts[1:])
+        if not (0 <= d < GK_SHIRTS and 0 <= n < SCHEMES and f in SCHEME_FIELDS):
+            raise ValueError("%s: keeper designs are 0-%d, schemes 0-%d, fields %s"
+                             % (name, GK_SHIRTS - 1, SCHEMES - 1,
+                                ",".join(map(str, SCHEME_FIELDS))))
+        limit = CAPTAIN_MARKS if f == 14 else COLOURS
+        return (t1.offset + t1.data_offset + (d * SCHEMES + n) * SCHEME_SIZE
+                + SCHEME_FIELDS.index(f)), limit
+    raise ValueError("no field %r (outfield.<design>.<shirt|shorts|socks> "
+                     "or keeper.<design>.<scheme>.<field>)" % name)
+
+
+def apply_gk_edit(blob, t0, t1, name, value):
+    """Set one UNIFORM_GK byte in `blob` (a bytearray of the file).
+    Returns the old value."""
+    off, limit = gk_offset(t0, t1, name)
+    # 0x2d37bc-0x2d37dc and 0x2d3970-0x2d3a38 drop the whole kit or
+    # scheme on a value past these limits, so refuse it here.
+    if not 0 <= value < limit:
+        raise ValueError("%s: %d is out of range (the game accepts 0-%d)"
+                         % (name, value, limit - 1))
+    old = blob[off]
+    blob[off] = value
+    return old
+
+
+def check_gk_blob(blob, original, t0, t1):
+    """Raise ValueError if an edited UNIFORM_GK differs from `original`
+    anywhere outside its two tables."""
     import tbb
-    blob = bytearray(open(src, "rb").read())
-    t0, t1 = load_gk(src)
-    row_fields = {name: (k, limit) for k, (name, _, limit) in enumerate(GK_ROW_FIELDS)}
-    for edit in edits:
-        name, _, text = edit.partition("=")
-        parts = name.split(".")
-        value = parse_value(text)
-        if parts[0] == "outfield" and len(parts) == 3 and parts[2] in row_fields:
-            i = int(parts[1], 0)
-            k, limit = row_fields[parts[2]]
-            if not 0 <= i < OUTFIELD_SHIRTS:
-                raise ValueError("%s: outfield shirt designs are 0-%d" % (name, OUTFIELD_SHIRTS - 1))
-            off = t0.offset + t0.data_offset + i * GK_ROW + k
-        elif parts[0] == "keeper" and len(parts) == 4:
-            d, n, f = (int(p, 0) for p in parts[1:])
-            if not (0 <= d < GK_SHIRTS and 0 <= n < SCHEMES and f in SCHEME_FIELDS):
-                raise ValueError("%s: keeper designs are 0-%d, schemes 0-%d, fields %s"
-                                 % (name, GK_SHIRTS - 1, SCHEMES - 1,
-                                    ",".join(map(str, SCHEME_FIELDS))))
-            limit = CAPTAIN_MARKS if f == 14 else COLOURS
-            off = (t1.offset + t1.data_offset + (d * SCHEMES + n) * SCHEME_SIZE
-                   + SCHEME_FIELDS.index(f))
-        else:
-            raise ValueError("no field %r (outfield.<design>.<shirt|shorts|socks> "
-                             "or keeper.<design>.<scheme>.<field>)" % name)
-        # 0x2d37bc-0x2d37dc and 0x2d3970-0x2d3a38 drop the whole kit or
-        # scheme on a value past these limits, so refuse it here.
-        if not 0 <= value < limit:
-            raise ValueError("%s: %d is out of range (the game accepts 0-%d)"
-                             % (name, value, limit - 1))
-        print("%s: %d -> %d" % (name, blob[off], value))
-        blob[off] = value
-    # Read the result back: only bytes inside the two tables may differ.
     new = tbb.parse(bytes(blob))[1]
     outside = bytearray(blob)
     for t in (t0, t1):
         start = t.offset + t.data_offset
         outside[start:start + len(t.data)] = t.data
-    if outside != open(src, "rb").read() or [t.data for t in new[2:]]:
+    if outside != original or [t.data for t in new[2:]]:
         raise ValueError("edit reached outside UNIFORM_GK's two tables")
+
+
+def cmd_setgk(src, dst, edits):
+    original = open(src, "rb").read()
+    blob = bytearray(original)
+    t0, t1 = load_gk(src)
+    for edit in edits:
+        name, _, text = edit.partition("=")
+        value = parse_value(text)
+        old = apply_gk_edit(blob, t0, t1, name, value)
+        print("%s: %d -> %d" % (name, old, value))
+    # Read the result back: only bytes inside the two tables may differ.
+    check_gk_blob(blob, original, t0, t1)
     with open(dst, "wb") as f:
         f.write(blob)
 
@@ -654,7 +763,7 @@ def main(argv):
     if cmd == "roundtrip" and len(args) == 1:
         cmd_roundtrip(args[0])
     elif cmd == "set" and len(args) >= 4:
-        cmd_set(args[0], args[1], int(args[2], 0), args[3:])
+        cmd_set(args[0], args[1], args[2:])
     elif cmd == "info" and len(args) in (1, 2):
         cmd_info(*args)
     elif cmd == "licensed" and len(args) in (1, 2):
