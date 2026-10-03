@@ -1269,6 +1269,9 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
     # Plan everything against the unmodified image before copying it.
     jobs, notes, packs = [], [], PackEdits()
     toc, moves = TocEdits(), Moves()
+    # Files written whole: a copy that falls inside one (a schedule pack's
+    # header, which repeats its .HED) is already in its new bytes.
+    whole = {norm(resolve_target(img, index, t)[0]): d for t, _, d in pairs if "#" not in t}
     with open(image, "rb") as f:
         for target, src, data in pairs:
             file, off, size, label = resolve_target(img, index, target)
@@ -1306,7 +1309,16 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
                         off, old = 0, g.read()
                 cjobs, cnotes = plan_copies(img, index, f, file, off, old, data,
                                             write_copies, packs)
-                jobs += cjobs
+                for j in cjobs:
+                    mine = whole.get(norm(j.file)) if j.file is not None else None
+                    if mine is None or norm(j.file) == norm(file):
+                        jobs.append(j)
+                    elif mine[j.off:j.off + len(j.data)] != j.data:
+                        raise SystemExit("%s: its copy in %s differs from that file's own "
+                                         "new bytes" % (label, j.file))
+                    else:
+                        notes.append("%s: copy in %s already in that file's new bytes"
+                                     % (label, j.file))
                 notes += cnotes
         busy = {norm(j.file) for j in jobs if j.file is not None}
         clash = busy & set(packs.packs)

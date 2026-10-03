@@ -100,6 +100,13 @@ names), and others only on one screen (`MAIL`, the talk scenes). So
 `--copies` can't be narrowed: every copy is read somewhere. The details,
 with the loader of every pack, are in [`PRELOAD_DIR.md`](PRELOAD_DIR.md).
 
+A pack and its `.HED` patched together (`leaguesize.py build` writes
+both for the schedule packs) are each other's copies: the `.PAC` starts
+with the header the `.HED` repeats. `patch` skips a copy that falls
+inside a file it writes whole in the same run, once it has checked that
+the file's new bytes already hold it, so a pack that grows and moves
+isn't also written in place.
+
 `patch` compares each target with the unmodified file in `DAT/` and finds
 every unit whose bytes change: the whole file, its header, the entries
 it overlaps. It warns about each one's copies, and `--copies` writes the
