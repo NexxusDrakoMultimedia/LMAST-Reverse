@@ -187,14 +187,19 @@ def value_input(parent, spec, label, get, apply):
     apply(text, revert) is called with the new value's text when it
     changes; it calls revert() to put the old value back."""
     var = tk.StringVar()
+    values = [label(v) for v in spec[1]] if spec[0] == "choice" else None
 
     def commit(event=None):
-        text = var.get().split()[0] if var.get().strip() else ""
+        if values is not None and var.get() in values:
+            # A drop-down entry stands for its value, whatever its label
+            # looks like ("A4 red 4" is colour 3).
+            text = str(spec[1][values.index(var.get())])
+        else:
+            text = var.get().split()[0] if var.get().strip() else ""
         if text != str(get()):
             apply(text, lambda: var.set(label(get())))
 
     if spec[0] == "choice":
-        values = [label(v) for v in spec[1]]
         width = max(4, min(30, max(len(v) for v in values) + 1))
         w = ttk.Combobox(parent, textvariable=var, values=values, state="readonly",
                          width=width, height=20)
