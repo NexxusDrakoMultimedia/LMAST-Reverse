@@ -28,3 +28,29 @@ patch=1,EE,0012f9d0,word,e4800000
 patch=1,EE,0012f9d4,word,03200008
 patch=1,EE,0012f9d8,word,00000000
 
+
+[Widescreen 16:9 UI fix (experimental)]
+author=LMAST-Reverse
+description=Use with "Widescreen 16:9". Draws the match HUD at 4:3 proportions, centred. Name tags over players drift toward the centre.
+
+// Text: Ninja's 2D primitives (nnDrawPrimitive2D 0x1779d8,
+// nnuPrimitive2DSetVertex 0x167580, nnDrawPrimitiveSprite2DPS2 0x179cc0)
+// map x as offX + x * scaleX from the table at 0x365b98, filled once by
+// nnInitSystemPS2 (0x18f318, 0x18f368). The game is 512 wide:
+// offX = (2048 - 256) * 16 = 28672, scaleX = 16. Scale by 0.75 about the
+// centre: scaleX = 12, offX = 32768 - 4096 * 0.75 = 29696.
+patch=1,EE,00365b98,word,46e80000
+patch=1,EE,00365b9c,word,41400000
+
+// Panels, scoreboard, clock, radar: CSpriteDirect::SetPrimData (0x126568)
+// converts x as ((x - 256) + 2048) * 16 with 256 in $f23. Replace the
+// sub.s at 0x12666c with a call to a cave that also scales by 0.75.
+// The function restores $ra from the stack, so the jal is safe.
+// Cave at 0x12fa10 (rest of print_config_parameter):
+//   sub.s f12,f12,f23; lui at,0x3f40; mtc1 at,f0; jr ra; mul.s f12,f12,f0
+patch=1,EE,0012fa10,word,46176301
+patch=1,EE,0012fa14,word,3c013f40
+patch=1,EE,0012fa18,word,44810000
+patch=1,EE,0012fa1c,word,03e00008
+patch=1,EE,0012fa20,word,46006302
+patch=1,EE,0012666c,word,0c04be84

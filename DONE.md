@@ -519,6 +519,9 @@ files. Each item keeps what was found, where, and how it was tested.
       projection in `nnSetProjectionPXPlusPS2` for Hor+ 16:9, leaving the
       stadium shadow's projection alone. Tested in PCSX2 in a match
       (user report)
+- [x] Widescreen match HUD: the pnach's UI section squeezes Ninja's 2D
+      table (text) and `CSpriteDirect` (panels) to 4:3 in the middle.
+      Tested in PCSX2 in a match (user report)
 
 ## 8. Housekeeping
 

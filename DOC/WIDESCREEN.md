@@ -4,8 +4,9 @@
 # Widescreen
 
 A PCSX2 patch that draws the 3D in 16:9 without stretching it (Hor+: more
-of the pitch at the sides, players keep their shape). The 2D UI is still
-stretched; see [What's still open](#whats-still-open).
+of the pitch at the sides, players keep their shape), and an optional
+second section that draws the match HUD at 4:3 proportions; see
+[The UI fix](#the-ui-fix).
 
 The patch is
 [`PNACH/SLES-54151_3CB245D5.pnach`](../PNACH/SLES-54151_3CB245D5.pnach),
@@ -52,24 +53,47 @@ at the copy after `nnCopyMatrix`, which only touches `$t0`–`$t3`.
 Patching `nnMakePerspectiveMatrix` itself would also squash the stadium
 shadow's projection, which is why the patch works one step later.
 
+## The UI fix
+
+A second section, "Widescreen 16:9 UI fix (experimental)", draws the
+match HUD at 4:3 proportions in the middle of the 16:9 screen. Tested in
+PCSX2: in an exhibition match the scoreboard, clock, radar and their text
+line up at 4:3 proportions (user report, 2026-10-04). The menus are not
+fixed yet: their text is squeezed but their panels are not.
+
+The match HUD draws through two paths, and both have to be squeezed the
+same way (PAL is 512 pixels wide; GS units are 1/16 pixel, centre 2048):
+
+| Path | Draws | Placement | Patch |
+|---|---|---|---|
+| Ninja 2D table `0x365b98` {offX, scaleX, offY, scaleY}, filled once by `nnInitSystemPS2` (`0x18f308`–`0x18f370`); read by `nnDrawPrimitive2D` (`0x1779d8`), `nnuPrimitive2DSetVertex` (`0x167580`) and `nnDrawPrimitiveSprite2DPS2` (`0x179cc0`) | text | `offX + x·scaleX`, 28672 and 16 | 29696 and 12 (two data words) |
+| `CSpriteDirect::SetPrimData` (`0x126568`) | panels, scoreboard, clock, radar | `((x − 256) + 2048) × 16`, 256 in `$f23` | `sub.s` at `0x12666c` becomes `jal 0x12fa10`, which also multiplies by 0.75 |
+
+Which functions run in a match was found by hooking each candidate with
+a stub that stored its return address (live, over PINE): `CSpriteDirect::SetPrimData`,
+`nnuPrimitive2DSetVertex` and `nnDrawPrimitive2D` ran; `CSprite::Draw`,
+`nnDrawPrimitiveSprite2DPS2` and every CSE draw routine
+(`cseCastFaceDrawCorePS2`, `cseCastFaceNonTexDrawCore`, `0x1f1378`,
+`0x1f3850`) did not.
+
+Ruled out:
+
+| Tried | Result |
+|---|---|
+| CSE screen (`cseSetScreen` `0x1f47d8`; context at `0x38f458`, scale `+0x80`, offset `+0xa0`) | no change in the match (CSE doesn't draw there) |
+| PX screen parameters `0x369c30` (half-width 256) | squashed the 3D, HUD unchanged |
+
 ## What's still open
 
-The UI draws through several separate 2D paths, and an attempt to
-squeeze it to 4:3 only moved some of them. Found so far (PAL, 512-wide
-screen, GS units of 1/16 pixel centred on 2048):
-
-| Path | Used for | Placement | Result of scaling it |
-|---|---|---|---|
-| Ninja 2D table `0x365b98` {offX, scaleX, offY, scaleY}, filled once by `nnInitSystemPS2` (`0x18f308`–`0x18f370`); read by `nnDrawPrimitive2D` (`0x1779d8`) and `nnDrawPrimitiveSprite2DPS2` (`0x179cc0`) | text | `offX + x·scaleX`; values 28672 and 16 | text squeezed correctly (tested in PCSX2) |
-| CSE screen, set by `cseSetScreen` (`0x1f47d8`) from `etc::InitializeGameSystem` (`0x14997c`); context pointer at `0x38f458`, scale `+0x80`, offset `+0xa0` | — | offset −0.5, scale 1 | no visible change in the match |
-| PX screen parameters `0x369c30` (half-width 256, half-height −224, centre 2048) | 3D (non-PX Plus) | — | squashed the 3D, HUD unchanged (tested live over PINE) |
-| `CSpriteDirect::SetPrimData` (`0x126568`) | sprites | hard-coded `(x − 256 + 2048) × 16` | not tried |
-
-`CSpriteRef` (`0x1267e8`, `0x126d70`, `0x127018`) holds the same
-hard-coded constants. The scoreboard frames, squad list, radar and
-crests still need their path found. `CEditFaceRender::Render`
-(`0x151858`) also calls `cseSetScreen`, to build face textures, so a
-global CSE change would distort faces.
+- The menus (VS Mode, the management overlay `SIMPRG.REL`) draw panels
+  with CSE, which builds a 3×3 matrix per cast node and hands it to VU1 in
+  `cseCastFacePutTriStripParamPS2` (`0x1f2040`, rows at `$t1`, copied by
+  the loop at `0x1f20b4`; `x' = x·m00 + y·m10 + tx`). `CEditFaceRender::Render`
+  (`0x151858`) also uses CSE, to build face textures, so a fix there must
+  leave faces alone.
+- Name tags over players come from 3D positions but are drawn as text,
+  so the text patch pulls them toward the centre.
+- The boot video-mode box uses yet another path; it stays stretched.
 
 ## Checking the claims
 
