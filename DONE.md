@@ -555,6 +555,10 @@ files. Each item keeps what was found, where, and how it was tested.
       PCSX2: a disc 10,208 sectors bigger, with a 25 MB-grown referee face
       pack moved, booted and showed the referee's face
       (`DOC/REBUILD.md#growing-the-disc`)
+- [x] `patch_disc.py --sponsor-negotiation` in PCSX2: the prompt, Bid
+      input, accepted and refused bids and the contract question all work,
+      refused sponsors leave the list, and the signed contract pays the
+      negotiated fee (user report). `DOC/SPONSOR_NEGOTIATION.md`
 
 ## 10. Save data
 

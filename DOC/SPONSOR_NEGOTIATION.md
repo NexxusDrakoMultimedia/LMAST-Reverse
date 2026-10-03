@@ -115,8 +115,6 @@ python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xc8ee0 58 --sles ISO/SLES_541.51
 - The "Remaining 1" line on the sponsor panel (seen in the test below) is
   probably message 60, remaining contract slots (1 for the main sponsor),
   not 61. It hasn't been traced in the code.
-- Not yet seen in game: whether the contract after a success pays the
-  agreed fee.
 
 ## Tested in PCSX2
 
@@ -128,7 +126,8 @@ want to negotiate with Africmap Airways." (message 120). Yes opened the
 money." (121). Before the patch, the same pick goes straight to the
 contract question. A bid of £1,500,000 (11% over the fee) was accepted,
 and the screen went on to ask whether to sign Africmap Airways as main
-sponsor (state 0x17; user report). After a reload, a higher bid was
+sponsor (state 0x17; user report). The signed contract pays the
+negotiated fee, not the listed one (user report). After a reload, a higher bid was
 refused: a "Broken Down" banner and "Unfortunately negotiations have
 broken down. Africmap Airways cannot do a deal for the season now."
 (message 124). The refused sponsors left the list. With only Yogurens
