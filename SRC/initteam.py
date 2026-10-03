@@ -39,14 +39,20 @@ Usage:
     python initteam.py nations <DAT/PARAM>
     python initteam.py stadiums <DAT/PARAM>
     python initteam.py setteam <PLRESOURCESIM.PAC> <out.PAC> <team> <field>=<value> ... [<team> ...]
-    python initteam.py roundtrip <DAT/PARAM>                 # re-encode both, !! if not identical
+    python initteam.py swap    <PLRRSRC_INITTEAMDATA.TBB> <out.TBB> <team>:<team> ...
+    python initteam.py roundtrip <DAT/PARAM>                 # re-encode all three, !! if not identical
 
 `set` edits squad slots (fields player, age, shirt, contract) and writes a
 new OTEAMMEMBER.TBB of the same size, ready for patch_disc.py. A computer
 team's players take their age from here, not from the player database; a
-new game shows it one year older (Terry's 25 shows as 26). `set` and
-`setteam` write through the same encoders that `roundtrip` checks: every
-squad slot and club record on the disc re-encodes byte for byte.
+new game shows it one year older (Terry's 25 shows as 26). `swap`
+exchanges two league clubs everywhere in PLRRSRC_INITTEAMDATA.TBB: their
+places in the starting divisions (table 0) and in last season's results
+(table 1), which the first season's divisions, after promotion and
+relegation, and its cup places are built from. Every division keeps its
+size, which the schedules fix (SCHEDULE_FORMAT.md). Both clubs must be in
+the starting divisions. `set`, `setteam` and `swap` write through the same
+encoders that `roundtrip` checks: the three files re-encode byte for byte.
 
 Names are read from <DAT/PARAM>/../MESSAGE/MES.PAC unless --mes is given,
 in language slot 1 (English) unless --lang is given. Without MES.PAC the
@@ -92,15 +98,25 @@ class Division:
     def __init__(self, league, div, raw):
         self.league, self.div = league, div
         self.ids = list(struct.unpack("<%dI" % DIV_MAX, raw))
+
+    @property
+    def teams(self):
+        """The clubs the game reads: up to the first 0."""
         n = self.ids.index(0) if 0 in self.ids else DIV_MAX
-        self.teams = self.ids[:n]
-        # Ids after the first 0 are never read by the game.
-        self.ignored = [t for t in self.ids[n:] if t]
+        return self.ids[:n]
+
+    @property
+    def ignored(self):
+        """Ids after the first 0, which the game never reads."""
+        return [t for t in self.ids[len(self.teams):] if t]
 
 
 class InitTeamData:
     def __init__(self, path):
-        _, tables = tbb.load(path)
+        with open(path, "rb") as f:
+            self.buf = f.read()
+        self.end, tables = tbb.parse(self.buf)
+        self.tables = tables
         if len(tables) != 3:
             raise ValueError("%d tables, expected 3" % len(tables))
         for t, size in zip(tables, INIT_SIZES):
@@ -113,6 +129,44 @@ class InitTeamData:
         self.past = [list(struct.unpack_from("<%dI" % PAST_SLOTS, p, i * PAST_ROW))
                      for i in range(len(p) // PAST_ROW)]
         self.years = list(struct.unpack("<%dh" % (tables[2].size // 2), tables[2].data))
+
+    def encode(self):
+        """The whole file rebuilt from the divisions, past records and
+        years with tbb.build."""
+        trailer = tbb.trailer(self.buf, self.tables)
+        self.tables[0].data = b"".join(struct.pack("<%dI" % DIV_MAX, *d.ids)
+                                       for d in self.divisions)
+        self.tables[1].data = b"".join(struct.pack("<%dI" % PAST_SLOTS, *r) for r in self.past)
+        self.tables[2].data = struct.pack("<%dh" % len(self.years), *self.years)
+        return tbb.build(self.tables, self.end, trailer)
+
+    def league_clubs(self):
+        """{team: (league, division)} for every club in the starting divisions."""
+        return {t: (d.league, d.div) for d in self.divisions for t in d.teams}
+
+    def swap(self, a, b):
+        """Exchange clubs a and b in the starting divisions (table 0) and in
+        every past record (table 1), so each takes the other's place:
+        its division and slot, and its results last season, which decide
+        the first season's divisions after promotion and relegation (the
+        schedules' LAST_RANK slots) and its cup places. Division sizes, which
+        the schedules fix, don't change. Both must be league clubs.
+        Returns the number of ids changed."""
+        clubs = self.league_clubs()
+        for t in (a, b):
+            if t not in clubs:
+                raise ValueError("team %d isn't in the starting divisions (league clubs are "
+                                 "%d-%d)" % (t, min(clubs), max(clubs)))
+        if a == b:
+            raise ValueError("team %d swapped with itself" % a)
+        n = 0
+        for lists in ([d.ids for d in self.divisions], self.past):
+            for ids in lists:
+                for k, t in enumerate(ids):
+                    if t in (a, b):
+                        ids[k] = b if t == a else a
+                        n += 1
+        return n
 
 
 class Member:
@@ -467,9 +521,37 @@ def cmd_set(path, out_path, args):
     print("wrote %s" % out_path)
 
 
+def cmd_swap(path, out_path, args):
+    """Exchange pairs of league clubs, <a>:<b>, in PLRRSRC_INITTEAMDATA.TBB."""
+    if os.path.abspath(out_path) == os.path.abspath(path):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    init = InitTeamData(path)
+    for a in args:
+        try:
+            x, y = (int(v, 0) for v in a.split(":"))
+            clubs = init.league_clubs()
+            n = init.swap(x, y)
+        except ValueError as e:
+            raise SystemExit("%s: %s" % (a, e))
+        print("swapped %d (league %d division %d) and %d (league %d division %d): %d ids" % (
+            x, *clubs[x], y, *clubs[y], n))
+    with open(out_path, "wb") as f:
+        f.write(init.encode())
+    print("wrote %s" % out_path)
+
+
 def cmd_roundtrip(root):
-    """Re-encode every squad slot and club record and rebuild both files;
-    !! where anything differs from the original."""
+    """Re-encode the starting divisions, every squad slot and club record
+    and rebuild the three files; !! where anything differs."""
+    path = find(root, INIT_TBB)
+    try:
+        init = InitTeamData(path)
+        same = init.encode() == init.buf
+        print("%s  %d divisions, %d past records re-encoded; file %s%s" % (
+            path, len(init.divisions), len(init.past), "identical" if same else "differs",
+            "" if same else "  !! file differs"))
+    except (ValueError, struct.error) as e:
+        print("%s  !! %s" % (path, e))
     path = find(root, OTEAM_TBB)
     try:
         ot = OteamMembers(path)
@@ -687,6 +769,9 @@ def main(argv):
         return 0
     if cmd == "setteam" and len(args) >= 4:
         cmd_setteam(args[0], args[1], args[2:])
+        return 0
+    if cmd == "swap" and len(args) >= 3:
+        cmd_swap(args[0], args[1], args[2:])
         return 0
     if cmd == "nations" and len(args) == 1:
         cmd_nations(root)

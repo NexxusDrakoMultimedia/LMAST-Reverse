@@ -253,6 +253,12 @@ files. Each item keeps what was found, where, and how it was tested.
       time from each `plTeam_Build*`, upkeep from `payment_Equip` and
       stadium capacity by stand level; the nation tables are named.
       `plrcommon.py` (`info`, `show`), checked by `regress.py`
+- [x] League membership: `initteam.py swap` exchanges two league clubs'
+      ids in `PLRRSRC_INITTEAMDATA.TBB` tables 0 and 1, so each starts in
+      the other's division with its results last season, keeping every
+      division's size (fixed by the schedules). `roundtrip` rebuilds the
+      file byte for byte (in `regress.py`). Checked: Highbury (11) and
+      Cardiff (25), 8 ids, `info` has no `!!`
 
 ## 3. Ninja 3D models and motions
 

@@ -81,6 +81,37 @@ fall on the national-team competitions 44–47, which fits a 4-year or
 2-year cycle ("keika year" is roughly "years elapsed"). How the game uses
 the sign is **not traced**.
 
+### Swapping clubs
+
+`initteam.py swap <in> <out> <a>:<b> ...` exchanges two clubs' ids in
+tables 0 and 1. Each club takes the other's place in the starting
+divisions and in last season's results. The first season is built from
+those results: the league schedules fill their slots from `LAST_RANK`
+records (UID 0 takes ranks 1–20 of competition 0, UIDs 1 and 2 take its
+ranks 18–20 and the promotion places of competitions 1 and 2,
+[`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#what-decides-the-first-seasons-leagues)),
+and the cups take their entrants the same way. So a swapped club starts
+in the other's division and inherits its promotion, relegation and cup
+places.
+
+What a swap keeps, and why:
+
+- **Division sizes.** A league schedule has a fixed number of entrant
+  slots and `n(n−1)/2` pairings for it, so a writer can't add a club to a
+  division or take one away without new schedules. A swap changes no
+  size. Changing sizes needs a schedule writer (TODO).
+- **Only league clubs.** Both clubs must be in table 0 (teams 3–244).
+  Clubs from the rest of Europe and beyond (245 on) have squads and club
+  records but no place in the emblem screens' league lists and no
+  `MAPTEAM_LIST` row; whether one can play in a league isn't tested.
+- **Not touched:** table 2, `MAPTEAM_LIST.TBB` (its reader isn't known),
+  the club records (city, stadium, manager) and the schedules, none of
+  which names a league club: their `PLTEAMID` records name only team 1
+  and the VS teams.
+
+A club's squad, kit, crest and record stay its own. Not tested in PCSX2
+yet.
+
 ## `OTEAMMEMBER.TBB`
 
 One table of 175,600 bytes = 439 teams (ids 3–441) × 25 slots × 16 bytes.

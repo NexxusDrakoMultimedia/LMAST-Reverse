@@ -11,10 +11,11 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **Writers for the starting season** (section 2). League membership
-   (the starting divisions) and the season schedules have readers but no
-   writer, so neither a command nor the editor can change them, and they
-   are the first thing [`GOALS.md`](GOALS.md) wants a mod to change.
+1. **The starting season** (section 2). `initteam.py swap` now exchanges
+   two league clubs' places; next a PCSX2 test, a Season tab in the
+   editor, and a schedule writer, which changing a division's size
+   needs. The starting season is the first thing
+   [`GOALS.md`](GOALS.md) wants a mod to change.
 2. **The editor's leftovers** (section 11). All five tabs are tested in
    PCSX2; left are tests of a mail text and a keeper scheme, the licensed kit descriptors, and a free-agents
    tab once `plrsim.py setfree` round-trips (section 8).
@@ -57,12 +58,14 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 `pbdata.py`); `0SYSTEM/` is surveyed in
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
-- [ ] Writers for the starting season, then an editor tab for them:
-      league membership and last season's order (`PLRRSRC_INITTEAMDATA.TBB`
-      tables 0 and 1, read by `initteam.py`, which writes only squads and
-      club records) and the schedules (`SCHEDULE_*` packs, read by
-      `schedule.py`, which has no writer). Each with a `roundtrip` check
-      in `regress.py`
+- [ ] Test in PCSX2: `initteam.py swap` (two clubs from different
+      divisions, or leagues, start the first season in each other's
+      places)
+- [ ] A Season tab in the editor for `initteam.py swap`: the starting
+      divisions by league, and swapping two clubs
+- [ ] A schedule writer (`SCHEDULE_*` packs, read by `schedule.py`), with
+      a `roundtrip` check: needed to change a division's size, which the
+      league schedules' entrant slots and pairings fix
 - [ ] Parameter tables: name the fields of the `TBB1` tables a mod would
       tune (`REGULATION.TBB` and the others in `DOC/PARAM_DIR.md`), so
       they can get a field-level writer and an editor tab. `tbb.py
