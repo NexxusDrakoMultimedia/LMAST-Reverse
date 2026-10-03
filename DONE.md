@@ -656,4 +656,9 @@ files. Each item keeps what was found, where, and how it was tested.
       Checked: a save with 7 edits (and 4 refused) equals the logged
       `initteam.py set` and `setteam` output byte for byte, and `info`
       over the result has no `!!`
+- [x] Tested in PCSX2: a Clubs-tab edit shows in game. Van der Sar
+      (Manchester slot 0) set to age 16 and shirt 69 in the editor, on a
+      disc with the earlier People edits (`patch_disc.py --copies
+      --skip-tutorial`): his detail screen shows age 17 (one year older in
+      a new game) and 69 in the shirt badge, with the People edits intact
 

@@ -101,7 +101,9 @@ Empirical, checked by `initteam.py info`:
 - These are the ages a computer team's players show in game, one year
   older in a new game. Tested in PCSX2: Terry's 25 shows as 26, and after
   `initteam.py set 7:1 age=15` he shows as 16. The player database's own
-  age field doesn't override them.
+  age field doesn't override them. Also tested through the editor's Clubs
+  tab: Van der Sar (team 13, slot 0) at age 16 and shirt 69 showed 17 and
+  69 on his detail screen.
 - Shirt numbers are 1–99 and never repeat within a team.
 - All padding bytes are zero.
 

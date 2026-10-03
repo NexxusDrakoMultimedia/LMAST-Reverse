@@ -13,9 +13,8 @@ item in its section below.
 
 1. **The editor GUI** (section 11). `SRC/editor.py` has its People tab
    (the player database, tested in PCSX2) and Clubs tab (club records and
-   squads). Next: test a Clubs edit in PCSX2, then the new club
-   (`teaminit.py`), kits and text tabs, and building a disc from the
-   editor.
+   squads), both tested in PCSX2. Next: the new club (`teaminit.py`),
+   kits and text tabs, and building a disc from the editor.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -303,11 +302,6 @@ and every GUI edit must also be possible as a `python SRC/...` command.
 
 - [ ] The player's new club (`teaminit.py`), kits (`uniform.py`), message
       text (`mbb.py`)
-- [ ] Test in PCSX2: a Clubs-tab edit (a squad slot's player, age and
-      shirt; a club's rank, manager and stadium) shows in game. Disc
-      `LMAST-editor-test2.iso` (`--skip-tutorial`): Van der Sar (Manchester
-      slot 0) at age 16 and shirt 69, so 17 and 69 in a new game, with the
-      People edits of the first test disc
 - [ ] Build a modded disc from the GUI: collect the edited files, run
       `patch_disc.py` with `--copies`, and optionally make an xdelta
       patch with `vcdiff.py`
