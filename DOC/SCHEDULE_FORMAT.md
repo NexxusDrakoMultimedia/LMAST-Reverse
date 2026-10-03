@@ -331,8 +331,9 @@ open:
   for more games in total isn't traced. The 22-club test below saved
   and reloaded without trouble, which doesn't rule out a limit for
   bigger changes.
-- Promotion and relegation into the second season of a changed size
-  aren't tested yet.
+- Promotion and relegation into the second season are tested for
+  England at 22 clubs only (below). Other nations and sizes are checked
+  by `build` but not in game.
 
 ### Where the clubs come from
 
@@ -402,8 +403,20 @@ Champions Division had 24, the player's club and the relegated Crystal
 Palace among them, and the player's club had 46 league fixtures: the
 last three on May week 1 weekend, May week 2 midweek and May week 2
 weekend, the last three turns `league_turns` gave UID 1. Saving and
-reloading during the season worked. Promotion and relegation at the
-end of the season are still to be checked.
+reloading during the season worked.
+
+The second season worked too (user report, with screenshots). The
+2006–07 Premier Division ended with all 22 clubs on 42 games, and the
+bottom three (Sunderland, Reading and Sheffield U) went down. The
+Champions Division ended on 46 games: Ipswich and Leeds went up, and
+ranks 3–6 (Southampton, Crystal Palace, SC Nottingham, Burnley) went
+into the playoff, paired 3rd against 6th and 4th against 5th.
+Southampton won it. In 2007–08 the Premier Division table again ran to
+22 clubs, with Ipswich, Leeds and Southampton in it. The Champions
+Division had Sunderland, Reading and Sheffield U, and Crystal Palace
+and SC Nottingham, two of the losing playoff clubs, were still there.
+The screenshots show that table only down to 15th place, so its 24
+clubs rest on the user's report.
 
 ### Game days for a league of another size
 

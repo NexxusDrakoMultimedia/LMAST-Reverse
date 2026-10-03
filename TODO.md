@@ -11,29 +11,21 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **The starting season** (section 2). `initteam.py swap` and the
-   editor's Season tab exchange two league clubs' places (tested in
-   PCSX2), `schedule.py` re-encodes the schedules byte for byte and
-   builds league schedules of any size (`league`) with game days on
-   free turns (`turns`), and `leaguesize.py build` changes a division's
-   size: tested in PCSX2 for the first season. Next: the second
-   season's promotion and relegation (being tested). The starting season is the first thing [`GOALS.md`](GOALS.md)
-   wants a mod to change.
-2. **Name the rest of the player fields** (section 2). The editor can only
+1. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
-3. **What each PwkScript computes** (sections 2 and 7). The formulas
+2. **What each PwkScript computes** (sections 2 and 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
-4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
+3. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc: a message file can only grow into its own slot.
-5. **The `GAME/` tactics AI files** (section 6). The play books, the
+4. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
-   records. These are still the lead for the player fields in #2.
-6. **The parameter tables' fields** (section 2). Start with
+   records. These are still the lead for the player fields in #1.
+5. **The parameter tables' fields** (section 2). Start with
    `REGULATION.TBB`: name its fields so it can get a field-level writer
    and an editor tab. These are the next thing a mod would tune, and
    `tbb.py replace` can only swap a whole table.
@@ -62,11 +54,6 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 `pbdata.py`); `0SYSTEM/` is surveyed in
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
-- [ ] Test in PCSX2: the second season of England at 22 clubs
-      (`LMAST-eng22-test.iso`): 3 down, 2 up plus the playoff winner, and
-      the divisions still 22 and 24 in 2007-08. The first season's
-      tables, fixtures and saves are tested
-      (`DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from`)
 - [ ] Division sizes: an editor tab on `leaguesize.py`, and room for
       bigger second divisions (start the season earlier, or use cup
       turns)

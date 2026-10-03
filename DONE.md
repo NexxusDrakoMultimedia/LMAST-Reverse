@@ -304,6 +304,11 @@ files. Each item keeps what was found, where, and how it was tested.
       season. The Premier Division had 22 clubs (Reading and Sheffield U
       moved up), the Champions Division 24, the player's club 46 fixtures
       on the built dates, and saves reloaded fine (user report)
+- [x] Tested in PCSX2: the second season of England at 22 clubs. The
+      bottom three Premier Division clubs went down, Ipswich and Leeds
+      went up, and Southampton won the playoff (3rd against 6th, 4th
+      against 5th). In 2007-08 the Premier Division still had 22 clubs
+      and the Champions Division 24 (user report, with screenshots)
 
 ## 3. Ninja 3D models and motions
 
