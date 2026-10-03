@@ -32,6 +32,16 @@ Rules for an entry:
 | Crest presets 4–11 in three tables | broken data (a missing byte) | [`EMBLEM_DIR.md`](EMBLEM_DIR.md): tables 93, 101, 105 of `EDIT_EMBLEM.TBB` | add the missing `04 00` key | candidate. Check first whether the crest editor shows the gap |
 | 32 dialogue categories | cut before both releases (no reference in the Japanese code either) | [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md): derby interviews, a facilities tour, notices | needs triggers in the event system and English text | research |
 
+## Improvements
+
+Not restorations: changes to data that works but plays badly. They
+follow the same rules (evidence, smallest change, tested in PCSX2) and
+stay separate switches, so the restorations can be used without them.
+
+| Change | Evidence | Fix | Status |
+|---|---|---|---|
+| Better home and away runs in the league schedules | [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-league-of-another-size): the disc has one schedule per size, and some send a club to one venue up to 7 times running (the 22-club leagues, UIDs 11, 30, 40, 48) or 9 (the 26-club English second division with your club, UID 1); the 8-club VS league (UIDs 154–155) reaches 5 | rebuild those UIDs with `schedule.set_league` at the same size: no more than 2 running, same game days and turns, team slots untouched | candidate (earmarked by the user). `python SRC/schedule.py league DAT/PARAM` compares each size |
+
 ## Not candidates
 
 - `EVENT/EVENTDATA_TURN.TBB`, `0SYSTEM/SCHEDULE.TBB` and the `CVS/`

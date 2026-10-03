@@ -283,7 +283,9 @@ The event tables, the procedures and the overlay loader are documented in
       kind-6 injury value 1600 (`0x532d70`), the injury kind row past
       fatigue 1000, the short `EDIT_EMBLEM` tables 93/101/105. The
       "two months"/"nine months" injury lines need thresholds chosen
-      first
+      first. Improvement earmarked: rebuild the badly balanced league
+      schedules (22 and 26 clubs, the 8-club VS league) at the same size
+      with `schedule.set_league`
 - [ ] Japanese release leftovers (`DOC/JAPANESE_RELEASE.md`): why
       `PLRESOURCESIM.PAC` entry 0's weather tables stop partway; whether
       the player-database values above PAL's limits are Japanese features
