@@ -745,4 +745,10 @@ files. Each item keeps what was found, where, and how it was tested.
       Checked through the widgets: two swaps (one across leagues) and a
       refused same-club swap; the save equals the logged `initteam.py
       swap` output byte for byte
+- [x] Tested in PCSX2: a Season-tab swap shows in the first season.
+      Chelsea (1st of the Premier Division last season) swapped with
+      Sheffield (24th of 24 in the Champions Division), built with the
+      tutorial skip: in 2006-07 Chelsea plays in the Champions Division.
+      The second division keeps its last season's ranks 7-26, and there
+      is no third tier (user report)
 

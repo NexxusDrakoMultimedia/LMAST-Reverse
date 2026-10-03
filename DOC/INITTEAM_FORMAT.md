@@ -109,8 +109,17 @@ What a swap keeps, and why:
   which names a league club: their `PLTEAMID` records name only team 1
   and the VS teams.
 
-A club's squad, kit, crest and record stay its own. Not tested in PCSX2
-yet.
+A club's squad, kit, crest and record stay its own.
+
+**Tested in PCSX2.** In the editor's Season tab, Chelsea (team 7, 1st of
+20 in the English first division last season) was swapped with
+Sheffield (41, 24th of 24 in the second division), on a
+`--skip-tutorial` disc. In the 2006–07 season Chelsea played in the
+Champions Division (the English second division), at home to the
+player's club. A club that finishes low in a second division stays
+there: the English second division's own-nation schedule (UID 1) keeps
+ranks 7–26 of last season's second division, and the game has no third
+tier to relegate to (user report).
 
 **Empirical:** each division's clubs are exactly the clubs of one read
 past record, its table last season: records 0, 1, 6, 7, 11, 12, 16, 17,
