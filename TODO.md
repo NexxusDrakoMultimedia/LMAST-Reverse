@@ -19,8 +19,8 @@ item in its section below.
    wants a mod to change.
 2. **The editor's leftovers** (section 11). All six tabs are tested in
    PCSX2. Left: tests of a mail text and a keeper scheme, the licensed
-   kit descriptors, and a free-agents tab once `plrsim.py setfree`
-   round-trips (section 8).
+   kit descriptors, and a free-agents tab (`plrsim.py setfree` now
+   round-trips).
 3. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -299,9 +299,6 @@ The event tables, the procedures and the overlay loader are documented in
 
 - [ ] Decode the `RBD0` trailer in `GAME/ROUTEBOX_*.BCR` (copied as-is by
       the writer)
-- [ ] `plrsim.py roundtrip`: `setfree` writes the free agents (entry 15)
-      but nothing checks that the pack re-encodes byte for byte, unlike the
-      other writers
 
 ## 9. Rebuild
 
@@ -364,5 +361,5 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       (`uniform.py setlicence`, `setexe`)
 - [ ] Test in PCSX2: a mail text edited in the Text tab (club names and
       the rival owner's name in event dialogue are tested)
-- [ ] Free agents tab (`plrsim.py setfree`, `PLRESOURCESIM.PAC` entry 15),
-      after `plrsim.py roundtrip` (section 8)
+- [ ] Free agents tab (`plrsim.py setfree`, `PLRESOURCESIM.PAC` entry 15;
+      `plrsim.py roundtrip` checks its encoder)

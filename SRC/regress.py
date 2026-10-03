@@ -77,6 +77,8 @@ def checks():
          ["DAT/PARAM/TEAM_INIT_DATA.TBB"]),
         # The new club's squads and staff, named from the player database.
         ("plrsim", ["plrsim.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        # The free-agent list through the encoder setfree uses.
+        ("plrsim_roundtrip", ["plrsim.py", "roundtrip", "DAT/PARAM"], ["DAT/PARAM"]),
         ("plrcommon", ["plrcommon.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("bpb", ["bpb.py", "info", "DAT/GAME"], ["DAT/GAME"]),
         ("gamedata", ["gamedata.py", "info", "DAT/GAME"], ["DAT/GAME"]),
@@ -205,7 +207,7 @@ def _jp(arg):
 
 
 # The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15).
-JP_SKIP = {"plrsim_show_free"}
+JP_SKIP = {"plrsim_show_free", "plrsim_roundtrip"}
 
 
 def jp_checks(pal):

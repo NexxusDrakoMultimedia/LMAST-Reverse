@@ -34,11 +34,14 @@ Usage:
     python plrsim.py info    <PLRESOURCESIM.PAC | DAT/PARAM>
     python plrsim.py show    <PLRESOURCESIM.PAC | DAT/PARAM> <entry> [--pbdata PBDATA.PAC]
     python plrsim.py setfree <in.PAC> <out.PAC> <slot>=<player> ...
+    python plrsim.py roundtrip <PLRESOURCESIM.PAC | DAT/PARAM>
 
 `show` prints one entry in readable form, naming players, managers and
 scouts from PBDATA_EU.PAC next to the pack (or --pbdata). `setfree`
 replaces players in the free-agent list (entry 15; slots as `show 15`
-numbers them) and writes a same-size pack for patch_disc.py.
+numbers them) and writes a same-size pack for patch_disc.py. `roundtrip`
+re-encodes the unchanged list through setfree's encoder and checks that
+the rebuilt pack equals the original byte for byte.
 """
 import os
 import struct
@@ -412,15 +415,54 @@ def cmd_show(path, entry, pbpath):
             print("  table %d (%d bytes): %s%s" % (i, len(x), x[:48].hex(), "..." if len(x) > 48 else ""))
 
 
+def free_agents(data):
+    """The free-agent list (entry 15) of a whole pack, as player ids."""
+    h, blobs = pac.binpac_blobs(data)
+    end, raw = tbb.parse(blobs[15])
+    v = s16s(raw[0].data)
+    return v[:v.index(-1)]
+
+
+def encode_free(data, ids):
+    """The pack `data` with its free-agent list replaced by `ids`, the same
+    length as the old list. Whatever follows the 0xffff end is kept."""
+    h, blobs = pac.binpac_blobs(data)
+    end, raw = tbb.parse(blobs[15])
+    v = s16s(raw[0].data)
+    count = v.index(-1)
+    if len(ids) != count:
+        raise ValueError("%d players; the list holds %d" % (len(ids), count))
+    v[:count] = ids
+    raw[0].data = struct.pack("<%dh" % len(v), *v)
+    blobs[15] = tbb.build(raw, end, tbb.trailer(blobs[15], raw))
+    return pac.build_binpac(data[:h.header_size], blobs)
+
+
+def cmd_roundtrip(path):
+    path, blobs = load(path)
+    with open(path, "rb") as f:
+        data = f.read()
+    if len(blobs) <= 15:
+        print("%s: %d entries, no free-agent list to rebuild" % (path, len(blobs)))
+        return
+    ids = free_agents(data)
+    try:
+        out = encode_free(data, ids)                    # the encoder setfree uses
+    except (ValueError, struct.error) as e:
+        print("%s: !! %s" % (path, e))
+        return
+    same = free_agents(out) == ids
+    print("entry 15: %d free agents  %s" % (len(ids), "identical" if same else "!! re-read list differs"))
+    print("%s: %s" % (path, "rebuilt pack identical" if out == data else "!! rebuilt pack differs"))
+
+
 def cmd_setfree(src, dst, pairs):
     if os.path.abspath(src) == os.path.abspath(dst):
         raise SystemExit("refusing to overwrite the input; write to a new file")
     with open(src, "rb") as f:
         data = f.read()
-    h, blobs = pac.binpac_blobs(data)
-    end, raw = tbb.parse(blobs[15])
-    v = s16s(raw[0].data)
-    count = v.index(-1)
+    v = free_agents(data)
+    count = len(v)
     for pair in pairs:
         slot, sep, player = pair.partition("=")
         if not sep or not slot.isdigit() or not player.isdigit():
@@ -430,13 +472,11 @@ def cmd_setfree(src, dst, pairs):
             raise SystemExit("slot %d: the list has slots 0-%d" % (slot, count - 1))
         if not 0 <= player < PLAYERS:
             raise SystemExit("player %d: players are 0-%d" % (player, PLAYERS - 1))
-        if player in v[:count]:
+        if player in v:
             raise SystemExit("player %d is already in the list (slot %d)" % (player, v.index(player)))
         print("slot %d: %d -> %d" % (slot, v[slot], player))
         v[slot] = player
-    raw[0].data = struct.pack("<%dh" % len(v), *v)
-    blobs[15] = tbb.build(raw, end, tbb.trailer(blobs[15], raw))
-    out = pac.build_binpac(data[:h.header_size], blobs)
+    out = encode_free(data, v)
     if len(out) != len(data):
         raise SystemExit("rebuilt pack is %d bytes, not %d" % (len(out), len(data)))
     with open(dst, "wb") as f:
@@ -461,6 +501,8 @@ def main(argv):
         cmd_info(args[0])
     elif cmd == "show" and len(args) == 2 and args[1].isdigit() and int(args[1]) < ENTRIES:
         cmd_show(args[0], int(args[1]), pbpath)
+    elif cmd == "roundtrip" and len(args) == 1:
+        cmd_roundtrip(args[0])
     elif cmd == "setfree" and len(args) >= 3:
         cmd_setfree(args[0], args[1], args[2:])
     else:

@@ -52,7 +52,7 @@ Each stage depends on the one before it.
    new club), `uniform.py` (club kits), `sqb.py` (the 41 sequencer scripts
    that decode) and `pac.py` (BINPACs) write and round-trip every file.
    `initteam.py` edits and round-trips squads and club records,
-   `plrsim.py` edits the free agents (no round-trip check yet), and
+   `plrsim.py` edits and round-trips the free agents, and
    `save.py` edits saved games. Edits to the player database, text, the
    computer squads, the new club, kits, free agents and saves have been
    tested in PCSX2. `initteam.py swap` exchanges two league clubs' places

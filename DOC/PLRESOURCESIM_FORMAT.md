@@ -208,7 +208,9 @@ the database. **Empirical:** 1,300 players.
 `python SRC/plrsim.py setfree <in> <out> <slot>=<player>` replaces players
 in the list and keeps the pack's size. The pack has copies in the seven
 `PRELOAD/SIMLOCALMEM*.PAC` packs, so patch it with `patch_disc.py
---copies`.
+--copies`. `python SRC/plrsim.py roundtrip DAT/PARAM` re-encodes the
+unchanged list through the same encoder and checks that the rebuilt pack
+equals the original byte for byte.
 
 ## Entry 6 table 2
 

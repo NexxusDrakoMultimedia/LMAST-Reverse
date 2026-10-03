@@ -507,6 +507,11 @@ files. Each item keeps what was found, where, and how it was tested.
       files rebuild byte for byte. `set` and `setteam` now write through
       the same encoders (`Member.encode`, `OteamMembers.encode`,
       `TeamDb.encode`), with the same output as before
+- [x] `plrsim.py roundtrip` (in `regress.py` as `plrsim_roundtrip`): the
+      1,300 free agents (entry 15) re-encode through `encode_free`, the
+      encoder `setfree` now uses, and the pack rebuilds byte for byte.
+      `setfree`'s output is unchanged. The Japanese pack has no entry 15,
+      so the check has no `jp_` version
 
 ## 9. Rebuild
 
