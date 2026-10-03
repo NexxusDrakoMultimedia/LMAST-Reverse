@@ -115,12 +115,11 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       slot 0, age 16 in the mod): 16 means the skip adds the year. Then
       document which code adds it (`DOC/INITTEAM_FORMAT.md`,
       `DOC/TEAMINIT_FORMAT.md`)
-- [ ] Tutorial skip: the club rankings are never computed (every club
-      65536 in All Clubs Ranking, world ranking 0; tested in PCSX2 on an
-      unmodified skip disc). Find the club-rank year end in the playoffs'
-      skipped `Sche.YearEnd` (the ranking at `SIMPRG.REL 0x150738`) and
-      call it from the skip as well, like `pwkTeam_YearEndCheck`
-      (`DOC/SQB_FORMAT.md#known-problem-the-club-rankings`)
+- [ ] Test in PCSX2: the second tutorial skip (`patch_disc.py
+      --skip-tutorial`, which now runs the playoffs' real year end): the
+      playoffs are skipped, All Clubs Ranking has real ranks, the supplier
+      is Egamucho and the sub-sponsors can be signed
+      (`DOC/SQB_FORMAT.md#the-second-version-the-playoffs-own-schedule-steps`)
 - [ ] Tutorial skip leftovers: check other leagues (the switch calls
       `pwkLg_Init(0)`), and whether the rest of the skipped
       `Sche.YearEnd`/`Sche.MonthEnd` (`pwkTeam_ChangePop_Year`) changes

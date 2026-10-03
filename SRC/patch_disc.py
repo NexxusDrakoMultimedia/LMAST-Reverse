@@ -67,19 +67,16 @@ the integrity descriptor's size table change, and the UDF end anchor moves
 to the new last sector. Files outside DATA.CVM keep their size.
 
 --skip-tutorial (test discs; whole disc image only) skips the opening
-playoffs of a new career, the tutorial, with the developers' own switch:
-it sets the flag word at SLES 0x34d434 (Dummy.CheckClubEditSkip, which
-promotes the club) and swaps commands 88/89 in RootClubEditSeq.sqb,
-RootMainSeq.sqb and RootYearStartSeq.sqb, 4 bytes in all. It also starts
-the six playoff-period sponsors one year into their contracts (SLES
-0x3994a8, 6 bytes), so they end on time: the playoffs run one extra
-Sche.YearStart, which is what ends them. And it makes the skip command
-also call pwkTeam_YearEndCheck (SLES 0x108dac, 9 words), the playoffs'
-year end, which gives the club its first 500 status (needed for the
-supplier Egamucho). Known problem: the club rankings stay uncomputed
-(All Clubs Ranking shows 65536 for every club), as the rest of the
-playoffs' year end is skipped. The club must be in England (the switch calls
-pwkLg_Init(0)). See DOC/SQB_FORMAT.md.
+playoffs of a new career, the tutorial, but runs their schedule steps: it
+sets the flag word at SLES 0x34d434 (Dummy.CheckClubEditSkip, the
+developers' switch, which promotes the club) and turns RootClubEditSeq.sqb's
+playoff section into InitializeFirstCheck, YearStart, MonthStart,
+CheckClubEditSkip and a Call to the won route's MonthEnd, YearEnd and
+Finalize, so the real year end runs (club rankings, the club's status);
+RootMainSeq.sqb and RootYearStartSeq.sqb keep club creation and year
+starts. On an image patched by the earlier skip it also undoes that
+skip's sponsor and pwkTeam_YearEndCheck workarounds. The club must be in
+England (the switch calls pwkLg_Init(0)). See DOC/SQB_FORMAT.md.
 
 --sponsor-negotiation (whole disc image only) turns the Sponsor screen's
 main sponsor negotiation back on, as in the Japanese release. The screen's
@@ -952,24 +949,42 @@ class PackEdits:
 # --- skipping the tutorial (DOC/SQB_FORMAT.md) --------------------------------
 
 SKIP_FLAG = (DISC + "SLES_541.51", 0x24e434)    # SLES 0x34d434, Dummy.CheckClubEditSkip's flag
-SKIP_SCRIPTS = (                                # (file, offset, old command, new command)
-    ("SEQ/ROOTCLUBEDITSEQ.SQB", 0x868, "Dummy.CheckFirstMatchSkip", "4:89"),
-    ("SEQ/ROOTMAINSEQ.SQB", 0x6d8, "Dummy.CheckClubEditSkip", "4:88"),
-    ("SEQ/ROOTYEARSTARTSEQ.SQB", 0x30, "Dummy.CheckClubEditSkip", "4:88"),
+# The skip runs the playoffs' own schedule steps without the playoff turns:
+# RootClubEditSeq.sqb's playoff section (L2) becomes InitializeFirstCheck,
+# YearStart, MonthStart, then Dummy.CheckClubEditSkip (pwkLg_Init(0) and
+# ScheCallback_ProcPromotion, which Sche.FirstCheck runs for a won
+# playoff), then Call L8: MonthEnd, YearEnd, Finalize, the won route. So the
+# real Sche.YearEnd runs: the club rankings (ClubRank::UpdateYearEnd), the
+# club's status (pwkTeam_YearEndCheck) and the rest. 0x868 stays the
+# retail CheckFirstMatchSkip, which writes 0, so the script enters L2. The
+# only jump to L3, in the playoff turn loop, now goes to L8 too, as L3's
+# marker becomes the Call; that loop no longer runs. The script uses no
+# other Call, so the one that never returns can't block another.
+# (file, [(offset, accepted old commands, new "table:cmd", {arg: value})])
+SKIP_SCRIPTS = (
+    ("SEQ/ROOTCLUBEDITSEQ.SQB", [
+        # 4:89 there is the earlier skip, which branched straight to L9.
+        (0x868, ("Dummy.CheckFirstMatchSkip", "Dummy.CheckClubEditSkip"), "4:88", None),
+        (0x8b0, ("TutorialHelp.Effective100",), "4:34", None),
+        (0x8c0, ("Sche.InitializeFirstCheck",), "4:18", None),
+        (0x8d0, ("Sche.YearStart",), "4:20", None),
+        (0x8e0, ("Sche.MonthStart",), "4:89", None),
+        (0x8f0, ("Label",), "0:5", {1: 8}),                # Call L8
+        (0xba8, ("BranchIfZero",), "0:27", {2: 8}),        # its jump to L3 -> L8
+    ]),
+    # Year starts and club creation stay (4:88 writes 0 there).
+    ("SEQ/ROOTMAINSEQ.SQB", [(0x6d8, ("Dummy.CheckClubEditSkip",), "4:88", None)]),
+    ("SEQ/ROOTYEARSTARTSEQ.SQB", [(0x30, ("Dummy.CheckClubEditSkip",), "4:88", None)]),
 )
-# The starting sponsors (main, 4 subs, supplier), copied into the club's
-# slots at new game by SLES 0x257200. Sche.YearStart adds a year to each
-# contract (+4) and ends it once its length (+5) is less (SIMPRG.REL
-# 0x16b580). The playoffs run one extra Sche.YearStart, so a skip disc
-# starts them one year in.
-SKIP_SPONSORS = (DISC + "SLES_541.51", 0x29a4a8)  # SLES 0x3994a8
-SKIP_SPONSOR_COUNT, SKIP_SPONSOR_SIZE = 6, 0x14
-# Dummy.CheckClubEditSkip (SLES 0x108d98) promotes the club but skips the
-# playoffs' Sche.YearEnd, whose pwkTeam_YearEndCheck (0x26e2a0) adds the
-# club's first 500 status (0x26e2c4). Drop the flag test, which a skip disc
-# always passes, to make room: save $ra first, then pwkLg_Init(0),
-# ScheCallback_ProcPromotion, pwkTeam_YearEndCheck, the normal route's order.
-SKIP_CODE = (DISC + "SLES_541.51", 0x9dac, bytes.fromhex(   # SLES 0x108dac
+# The earlier skip worked around the year start and year end it left out:
+# it started the six playoff-period sponsors one year into their contracts
+# (SLES 0x3994a8, byte +4 of each 0x14-byte record) and made
+# Dummy.CheckClubEditSkip also call pwkTeam_YearEndCheck (9 words at SLES
+# 0x108dac). With the real YearStart and YearEnd those would count twice,
+# so an image patched by the earlier skip gets the retail bytes back.
+OLD_SKIP_SPONSORS = (DISC + "SLES_541.51", 0x29a4a8)  # SLES 0x3994a8
+OLD_SKIP_SPONSOR_COUNT, OLD_SKIP_SPONSOR_SIZE = 6, 0x14
+OLD_SKIP_CODE = (DISC + "SLES_541.51", 0x9dac, bytes.fromhex(   # SLES 0x108dac: retail, earlier skip
     "34d4438c2d888000010002240f0062140000bfff8618090c2d200000724c040c00000000"),
     bytes.fromhex(
     "0000bfff2d8880008618090c2d200000724c040c00000000a8b8090c0000000000000000"))
@@ -977,7 +992,8 @@ SKIP_CODE = (DISC + "SLES_541.51", 0x9dac, bytes.fromhex(   # SLES 0x108dac
 
 def plan_skip_tutorial(f, img):
     """Jobs for --skip-tutorial, made from the files as the image holds
-    them. A spot that already holds the patched value is left alone."""
+    them. A spot that already holds the patched value is left alone, and
+    the earlier skip's workarounds are undone."""
     import sqb
     if img.kind != "disc image":
         raise ValueError("--skip-tutorial patches SLES_541.51 too, so it needs the whole "
@@ -992,42 +1008,41 @@ def plan_skip_tutorial(f, img):
         notes.append("note: %s 0x34d434 already holds 1" % file)
     else:
         raise ValueError("%s 0x34d434 holds %d, not 0 or 1; not the retail executable?" % (file, word))
-    for path, offset, old, spec in SKIP_SCRIPTS:
+    for path, edits in SKIP_SCRIPTS:
         e = img.entry(path)
         data = read_at(f, img, e.path, 0, e.size)
-        new, held, name = sqb.set_command(data, offset, spec)
-        if held == name:
-            notes.append("note: %s 0x%x already holds %s" % (path, offset, name))
-        elif held != old:
-            raise ValueError("%s 0x%x holds %s, expected %s" % (path, offset, held, old))
-        else:
-            for i, (a, b) in enumerate(zip(data, new)):
-                if a != b:
-                    jobs.append(Job(e.path, i, new[i:i + 1], "%s 0x%x" % (path, offset),
-                                    "--skip-tutorial: %s -> %s" % (held, name)))
-    file, base = SKIP_SPONSORS
-    for i in range(SKIP_SPONSOR_COUNT):
-        off = base + i * SKIP_SPONSOR_SIZE
-        rec = read_at(f, img, file, off, SKIP_SPONSOR_SIZE)
-        if rec[6] not in (0xff, 0xfe, 0xfc):
-            raise ValueError("%s: starting sponsor %d has slot code 0x%02x; not the retail "
-                             "executable?" % (file, i, rec[6]))
-        if rec[4] == 0:
-            jobs.append(Job(file, off + 4, b"\x01", "%s (0x%x)" % (file, 0x3994a8 + i * 0x14 + 4),
-                            "--skip-tutorial: starting sponsor %d one year into its contract" % i))
-        elif rec[4] == 1:
-            notes.append("note: %s: starting sponsor %d already one year in" % (file, i))
-        else:
-            raise ValueError("%s: starting sponsor %d has %d years served, not 0 or 1"
-                             % (file, i, rec[4]))
-    file, off, old, new = SKIP_CODE
-    held = read_at(f, img, file, off, len(old))
-    if held == old:
-        jobs.append(Job(file, off, new, "%s (0x108dac)" % file,
-                        "--skip-tutorial: Dummy.CheckClubEditSkip also runs pwkTeam_YearEndCheck"))
-    elif held == new:
-        notes.append("note: %s 0x108dac already calls pwkTeam_YearEndCheck" % file)
-    else:
+        todo = []
+        for offset, olds, spec, args in edits:
+            held, held_args = sqb.command_at(data, offset)
+            table, cmd = (int(x, 0) for x in spec.split(":"))
+            want = sqb.SETS["root"][table][cmd][0]
+            if held == want and all(held_args[i][1] == v for i, v in (args or {}).items()):
+                continue
+            if held not in olds:
+                raise ValueError("%s 0x%x holds %s, expected %s" % (path, offset, held,
+                                                                    " or ".join(olds)))
+            todo.append((offset, spec, args))
+        if not todo:
+            notes.append("note: %s already holds the tutorial skip" % path)
+            continue
+        new, names = sqb.set_commands(data, todo)
+        what = ", ".join("0x%x %s -> %s" % (o, a, b) for (o, _, _), (a, b) in zip(todo, names))
+        for i, (a, b) in enumerate(zip(data, new)):
+            if a != b:
+                jobs.append(Job(e.path, i, new[i:i + 1], path, "--skip-tutorial: " + what))
+    file, base = OLD_SKIP_SPONSORS
+    for i in range(OLD_SKIP_SPONSOR_COUNT):
+        off = base + i * OLD_SKIP_SPONSOR_SIZE
+        rec = read_at(f, img, file, off, OLD_SKIP_SPONSOR_SIZE)
+        if rec[4] == 1 and rec[6] in (0xff, 0xfe, 0xfc):
+            jobs.append(Job(file, off + 4, b"\x00", "%s (0x%x)" % (file, 0x3994a8 + i * 0x14 + 4),
+                            "--skip-tutorial: undo the earlier skip's sponsor %d offset" % i))
+    file, off, retail, earlier = OLD_SKIP_CODE
+    held = read_at(f, img, file, off, len(retail))
+    if held == earlier:
+        jobs.append(Job(file, off, retail, "%s (0x108dac)" % file,
+                        "--skip-tutorial: undo the earlier skip's pwkTeam_YearEndCheck call"))
+    elif held != retail:
         raise ValueError("%s 0x108dac doesn't hold Dummy.CheckClubEditSkip's code; "
                          "not the retail executable?" % file)
     notes.append("note: --skip-tutorial: start the career in England")
@@ -1315,7 +1330,7 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
         # (--skip-tutorial and --launcher both edit RootMainSeq.sqb).
         touched = {norm(j.file) for j in jobs if j.file is not None}
         if skip_tutorial:
-            clash = touched & {norm(p) for p, _, _, _ in SKIP_SCRIPTS}
+            clash = touched & {norm(p) for p, _ in SKIP_SCRIPTS}
             if clash:
                 raise SystemExit("--skip-tutorial edits %s; don't patch it as a target too"
                                  % ", ".join(sorted(clash)))

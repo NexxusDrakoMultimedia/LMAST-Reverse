@@ -548,10 +548,13 @@ def cmd_roundtrip(paths):
     print("%d/%d scripts re-encode byte for byte" % (ok, count))
 
 
-def set_command(data, offset, spec):
-    """(new bytes, old name, new name) with the command at `offset`
-    swapped for `spec` ("table:cmd"), which must take as many arguments.
-    The edited script is decoded again and its labels re-checked."""
+def set_commands(data, edits):
+    """(new bytes, [(old name, new name)]) with several commands of one
+    script swapped. Each edit is (offset, "table:cmd", {argument: value}):
+    the new command must take as many arguments, and the values (a label,
+    say) replace those arguments' values, keeping their types. The script
+    is decoded again and its labels checked once, after all the edits, so
+    an edit may leave a label unused until a later one fixes it."""
     blob = bytearray(data)
     cmdset, result = fit(bytes(blob))
     if cmdset is None:
@@ -560,25 +563,51 @@ def set_command(data, offset, spec):
         raise ValueError("setcmd handles single-script files only")
     table_off, cmds = result[0]
     doff = struct.unpack_from("<I", blob, table_off + 4)[0]
-    old = next((c for c in cmds if c.pos == offset), None)
-    if old is None:
-        raise ValueError("no command starts at 0x%x" % offset)
-    table, cmd = (int(x, 0) for x in spec.split(":"))
-    tables = SETS[cmdset]
-    if table not in tables or cmd >= len(tables[table]):
-        raise ValueError("the %s set has no command %d:%d" % (cmdset, table, cmd))
-    name, argc = tables[table][cmd]
-    if argc != len(old.args):
-        raise ValueError("%s takes %d arguments, %s takes %d"
-                         % (name, argc, old.name, len(old.args)))
-    struct.pack_into("<II", blob, table_off + doff + offset, table, cmd)
-    # Re-decode the edited script with the same set and re-check its labels.
-    size = struct.unpack_from("<I", blob, table_off + 8)[0]
     start = table_off + doff
+    names = []
+    for offset, spec, args in edits:
+        old = next((c for c in cmds if c.pos == offset), None)
+        if old is None:
+            raise ValueError("no command starts at 0x%x" % offset)
+        table, cmd = (int(x, 0) for x in spec.split(":"))
+        tables = SETS[cmdset]
+        if table not in tables or cmd >= len(tables[table]):
+            raise ValueError("the %s set has no command %d:%d" % (cmdset, table, cmd))
+        name, argc = tables[table][cmd]
+        if argc != len(old.args):
+            raise ValueError("%s takes %d arguments, %s takes %d"
+                             % (name, argc, old.name, len(old.args)))
+        struct.pack_into("<II", blob, start + offset, table, cmd)
+        for i, value in (args or {}).items():
+            if not 0 <= i < argc:
+                raise ValueError("%s has no argument %d" % (name, i))
+            struct.pack_into("<i", blob, start + offset + 8 + 8 * i + 4, value)
+        names.append((old.name, name))
+    size = struct.unpack_from("<I", blob, table_off + 8)[0]
     _, problems = check(decode(bytes(blob[start:start + size]), cmdset))
     if problems:
         raise ValueError("the edit breaks the script: " + "; ".join(problems))
-    return bytes(blob), old.name, name
+    return bytes(blob), names
+
+
+def set_command(data, offset, spec):
+    """(new bytes, old name, new name) with the command at `offset`
+    swapped for `spec` ("table:cmd"), which must take as many arguments.
+    The edited script is decoded again and its labels re-checked."""
+    blob, names = set_commands(data, [(offset, spec, None)])
+    return blob, names[0][0], names[0][1]
+
+
+def command_at(data, offset):
+    """(name, [(type, value)]) of the command at `offset` of a
+    single-script file."""
+    cmdset, result = fit(bytes(data))
+    if cmdset is None or len(result) != 1:
+        raise ValueError(result if cmdset is None else "not a single-script file")
+    c = next((c for c in result[0][1] if c.pos == offset), None)
+    if c is None:
+        raise ValueError("no command starts at 0x%x" % offset)
+    return c.name, c.args
 
 
 def cmd_setcmd(src, dst, offset, spec):

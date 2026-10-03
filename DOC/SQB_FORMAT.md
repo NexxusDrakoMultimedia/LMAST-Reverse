@@ -517,6 +517,9 @@ disc. Nothing has shown a difference from them yet.
 
 ### Known problem: the club rankings
 
+(The first version of the skip, described above. The second version,
+below, is meant to fix it.)
+
 **Tested in PCSX2** (user report): on an unmodified `--skip-tutorial`
 disc, Information → All Clubs Ranking lists every club as **65536**, in
 no order (North Shore, SC Dunstable, Birmingham, ...), and a club's
@@ -526,6 +529,44 @@ year end (only `pwkTeam_YearEndCheck` is called, above), so the
 rankings are most likely never computed. Not traced yet; the swaps
 first suspected (Season tab) aren't the cause, as the unmodified skip
 disc shows the same.
+
+### The second version: the playoffs' own schedule steps
+
+`Sche.YearEnd` (`0x113668`) is a multi-step command: the first call
+creates the `ClubRank` singleton and runs `CScheEuro::updateYearEnd`;
+later calls run `ClubRank::UpdateYearEnd` (in an overlay) until it
+reports done, then `0x113428`, free the ranking, `jmSche_CheckLeagueBottom`,
+`pwkTeam_YearEndCheck` and `pwkTeam_ChangePop_Year`. Spread over frames
+and partly in an overlay, it can't be called from the 9 words of
+`Dummy.CheckClubEditSkip`. So the second version runs the command itself:
+on a skip disc the playoff section of `RootClubEditSeq.sqb` is dead code,
+and it is rewritten to do what the won route does, without the turns.
+
+| Offset | Retail | Skip |
+|---|---|---|
+| `0x868` | `Dummy.CheckFirstMatchSkip` | unchanged: it writes 0, so the script enters `L2` |
+| `0x8b0` | `TutorialHelp.Effective100` | `Sche.InitializeFirstCheck` |
+| `0x8c0` | `Sche.InitializeFirstCheck` | `Sche.YearStart` |
+| `0x8d0` | `Sche.YearStart` | `Sche.MonthStart` |
+| `0x8e0` | `Sche.MonthStart` | `Dummy.CheckClubEditSkip`: `pwkLg_Init(0)` and `ScheCallback_ProcPromotion`, which `Sche.FirstCheck` (`0x114174`) runs after a won playoff |
+| `0x8f0` | `Label L3` | `Call L8`: `Sche.MonthEnd`, `Sche.YearEnd`, `Sche.Finalize`, then `L9` |
+| `0xba8` | `BranchIfZero … L3` (turn loop) | jumps to `L8`, as `L3` no longer exists; never reached |
+
+That is the won route's order: initialise, year and month start,
+promotion, month end, year end, finalise. The script has no other
+`Call`, so the one that never returns can't block another (calls don't
+nest). The flag at `0x34d434` and the `RootMainSeq`/`RootYearStartSeq`
+swaps stay. As the real `Sche.YearStart` and `Sche.YearEnd` now run, the
+first version's sponsor offset and `pwkTeam_YearEndCheck` call aren't
+written, and `patch_disc.py` undoes them on an image that has them: an
+old skip disc re-patched comes out byte for byte the same as a fresh one.
+`sqb.set_commands` makes the script edits and checks the labels once at
+the end.
+
+**Not tested in PCSX2 yet.** To check: the playoffs are skipped and the
+career starts in 2006–07; All Clubs Ranking has real ranks; the supplier
+is Egamucho (status 500 from the real year end); the sub-sponsors can be
+signed at the first Sponsor screen.
 
 ## The developer launcher
 
