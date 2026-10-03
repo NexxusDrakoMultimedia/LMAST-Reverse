@@ -320,23 +320,75 @@ entry encodes and re-reads with no problems; a 22-club UID 0 grows from
 2,000 to 2,416 bytes, which moves the entries after it (see
 [Writing](#writing)).
 
-**Still needed before a size can change in game:**
+`python SRC/leaguesize.py build` puts it all together (below). Still
+open:
 
-- The UID's turn mask must get one set bit per game day (42 for 22
-  clubs instead of 38). `league_turns` picks them (below).
-- The team-entry slots must match: a `LAST_RANK` record per slot, with
-  the promotion and relegation places of both divisions changed together
-  (UID 0 takes the top two and the playoff winner from the second
-  division), the own-nation and other-nations versions (UIDs 1 and 2)
-  kept in step, and the playoffs' `NOW_RANK` ranks.
-- `PLRRSRC_INITTEAMDATA.TBB` must put that many clubs in the division,
-  and the past records it seeds must hold them.
 - Memory: each loaded UID takes its games, entrants and table rows from
   shared save-buffer pools (`ScheEuro_Memory::init` `0x209210` sets
   sizes such as `0x16c0` and `0x1800`; `alloc_save_buffer` `0x2097e8`,
   type from `savectrl`). The big leagues are all type 0, which already
   holds the 26-club league (650 games), but whether the pools have room
-  for more games in total isn't traced.
+  for more games in total isn't traced. A test in PCSX2 would show it.
+- Nothing has been tested in PCSX2 yet.
+
+### Where the clubs come from
+
+**Empirical, all six nations** (`python SRC/leaguesize.py nations
+DAT/PARAM`): a nation's two divisions follow one pattern.
+
+| Division | Slots (`LAST_RANK` of last season, in this order) |
+|---|---|
+| First (UID 0 for England) | its own ranks 1–*k*, then the second division's promoted clubs and, where there are playoffs, the playoff winner |
+| Second, other-nations (UID 2) | the first division's ranks after *k* that go down, the playoff losers, then its own ranks *m* + 1 to the end |
+| Second, own-nation (UID 1) | the same plus 2 more ranks: your club and the rival |
+
+*k* is 17 (15 in Germany and the Netherlands) and *m* is 6 in England
+and Italy (ranks 1–2 promoted, 3–6 to the playoffs), 3 in France,
+Germany and Spain (three promoted, no playoffs) and 7 in the
+Netherlands, whose playoff groups (UIDs 50–51) take the first
+division's 16th and 17th (`NOW_RANK`, the current table) and second
+division ranks 2–7. The playoffs (UID 3 for England) take ranks 3–6 of
+the second division's current table. The cups draw on the same ranks:
+England's UIDs 4–7 name first-division, second-division and playoff
+ranks by `LAST_RANK`.
+
+The first season is built from the past records that
+`PLRRSRC_INITTEAMDATA.TBB` table 1 seeds: England's record 0 (the first
+division, 20 clubs), 1 (the second, 24) and 2 (the playoffs: the
+winner, then the three losers, who are ranks 3–6 of record 1). Your
+club and the rival fill the own-nation version's last two slots, ranks
+past the seeded record. Played out from the disc's records with these
+slots, every nation's first season puts each of its clubs in exactly
+one division.
+
+**Changing the size.** A nation's clubs are fixed, so the first
+division grows by as many clubs as the second loses. `leaguesize.py`
+moves clubs at the boundary in the seeded records: to grow the first
+division by *d*, the second division's ranks *m* + 1 to *m* + *d* (its best
+clubs outside the promotion and playoff places) move to the first
+division's ranks *k* + 1 to *k* + *d*, above the relegation places; to
+shrink it, its ranks *k* − *d* + 1 to *k* move to the second division's
+ranks *m* + 1 onward. Every `LAST_RANK` reference, in the leagues and in
+the nation's cups, is renumbered so it names the same club; `NOW_RANK`
+references to places counted from the bottom of a table (the Dutch
+playoffs) move with its size. The moved clubs' slots go to the other
+division's UIDs, and table 0's starting divisions get the new records'
+clubs. For England at 22 clubs: the first division keeps ranks 1–19
+plus the two promoted clubs and the playoff winner, ranks 20–22 go
+down, and the second division has 22 clubs (24 with yours and the
+rival).
+
+`python SRC/leaguesize.py plan DAT/PARAM England 22` shows the new slots
+and the checks. `build` writes the three schedule packs with their
+`.HED` and `PLRRSRC_INITTEAMDATA.TBB`, with the leagues' games
+(`set_league`) and game days (`league_turns`) for the new sizes, reads
+them back and plays out the first season again. Built and checked at
+every size from 4 below to 6 above each nation's current first
+division: England builds at 20–24, France 16–24, Germany 14–24 (and
+more), Italy 20–24, Spain 18–24 and the Netherlands 16–22. The rest are
+refused for lack of free turns (a second division's own-nation version
+fills up first) or the 26-club limit of a division in table 0
+(`plLg_EntryTeamSetToDiv`).
 
 ### Game days for a league of another size
 

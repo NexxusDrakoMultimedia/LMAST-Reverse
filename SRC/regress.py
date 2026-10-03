@@ -109,6 +109,8 @@ def checks():
         ("schedule_league", ["schedule.py", "league", "DAT/PARAM"], ["DAT/PARAM"]),
         # Each domestic league's game days and its room for more.
         ("schedule_turns", ["schedule.py", "turns", "DAT/PARAM"], ["DAT/PARAM"]),
+        # Each nation's divisions, the first season played out from its records.
+        ("leaguesize", ["leaguesize.py", "nations", "DAT/PARAM"], ["DAT/PARAM"]),
         ("stadium", ["stadium.py", "info", "DAT/STADIUM", "DAT/PARAM"],
          ["DAT/STADIUM", "DAT/PARAM"]),
         # SEQ/*.SQB and the PSC*.PAC scripts; the main script's listing

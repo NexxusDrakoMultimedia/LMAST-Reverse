@@ -292,6 +292,14 @@ files. Each item keeps what was found, where, and how it was tested.
       in the widest gaps or drops midweeks. The year is July to June, 8
       turns a month (empirical). England's first division has room for
       24 clubs, its second division none. In `regress.py`
+- [x] Where a division's clubs come from: `leaguesize.py` finds each
+      nation's divisions (first division ranks 1-k stay, the second's
+      from m+1), plays out the first season from the seeded records (each
+      club once in all six nations), and `build` changes the first
+      division's size: moves clubs at the boundary in the past records,
+      renumbers the leagues' and cups' references, and writes the slots,
+      records, games and game days. Built and checked at every size from
+      4 below to 6 above each nation's; in `regress.py`
 
 ## 3. Ninja 3D models and motions
 
