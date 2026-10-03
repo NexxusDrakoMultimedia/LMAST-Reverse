@@ -276,6 +276,9 @@ files. Each item keeps what was found, where, and how it was tested.
       Clubs Ranking has real ranks (the first version left every club at
       65536), and the club starts with £3,350,000 (£1,785,000 before).
       The sponsors are normal (user report)
+- [x] Tested in PCSX2: a career national squad lists each player's
+      club, so call-ups draw only on club players and the renamed fixed
+      record 26,046 (`NT.Terry.VS`) doesn't appear (user report)
 
 ## 3. Ninja 3D models and motions
 
@@ -789,3 +792,13 @@ files. Each item keeps what was found, where, and how it was tested.
       The second division keeps its last season's ranks 7-26, and there
       is no third tier (user report)
 
+- [x] Tested in PCSX2: a keeper scheme (`UNIFORM_GK`) edited in the Kits
+      tab shows on your club's keeper in a match (user report)
+- [x] Tested in PCSX2: the welcome mail's body rewritten in the Text tab
+      shows on the Mail screen, sender filled in. The window wraps at its
+      width, not at spaces, so long edits need their own line breaks
+      (user report)
+- [x] Tested in PCSX2: a Season-tab swap across leagues. F.C. Barcelona
+      in the Champions Division has fixtures there in 2006-07 and keeps
+      Spain on its Information page (user report). Its league ranking
+      after a few games is still open (TODO section 2)

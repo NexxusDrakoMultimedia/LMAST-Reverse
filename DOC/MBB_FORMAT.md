@@ -420,6 +420,13 @@ the rival's lines 102 and 104 in `487_1.mbb`, which has no `PRELOAD` copy
 (the Big Bang street interview, 2005–2006 week 3 of June in a new game).
 They showed, and the window wrapped the long lines on its own.
 
+**Through the editor's Text tab** (user report): the welcome mail's
+body was rewritten with new text of six sentences, and the Mail screen
+(Check e-mails, Others) showed it with the sender filled in. The window
+wraps lines at its width, not at spaces, so a word can break across
+lines ("ju" / "mpscare"). A long edit needs its own line breaks where a
+word would otherwise split.
+
 The pop-up is the event code's own request, made while no mail pack is
 loaded. A later test opened the same mail from the Mail screen, which
 loads `MAIL1.PAC` first. It showed **copy B**. So both copies are read,

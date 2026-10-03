@@ -329,6 +329,9 @@ scheme.
   `PRELOAD/SIMFILE0`–`6.PAC` (disc `LMAST-gk-test.iso`), a new career's
   keeper (Dunstable Utd) wore pink sleeves, shorts and socks in a match,
   with the shirt's main colour unchanged.
+- **Keeper scheme through the editor's Kits tab** (user report): a
+  `UNIFORM_GK` scheme edited in the Kits tab and built with Build disc
+  showed on your club's keeper in a match.
 - **User report:** the club editor only lets you choose your outfield
   kits. The keeper kit is never chosen, so `UNIFORM_GK` is the only place
   it comes from.

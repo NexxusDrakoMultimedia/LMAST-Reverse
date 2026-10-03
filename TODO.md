@@ -18,8 +18,8 @@ item in its section below.
    needs. The starting season is the first thing [`GOALS.md`](GOALS.md)
    wants a mod to change.
 2. **The editor's leftovers** (section 11). All six tabs are tested in
-   PCSX2. Left: tests of a mail text and a keeper scheme, the licensed
-   kit descriptors, and a free-agents tab (`plrsim.py setfree` now
+   PCSX2, mail texts and keeper schemes included. Left: the licensed kit
+   descriptors and a free-agents tab (`plrsim.py setfree` now
    round-trips).
 3. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
@@ -60,9 +60,10 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 `pbdata.py`); `0SYSTEM/` is surveyed in
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
-- [ ] Test in PCSX2: a swap across leagues in the Season tab (a club
-      playing in another nation's league) and its rankings, on a disc without the
-      tutorial skip (the skip breaks the rankings by itself)
+- [ ] Test in PCSX2: the league ranking of a club swapped into another
+      nation's league, after it has played a few league games (Barcelona
+      in the Champions Division shows "-" in week 1; its fixtures there
+      work, user report)
 - [ ] Change a division's size: build a league schedule for n clubs
       (pairings, games, game days), give its UID that many turns,
       re-point the team-entry slots (more or fewer promoted and
@@ -127,9 +128,6 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       `PlPinfo +0x20c` flag `0x300` in the call-up
       filter, and which clubs teams 442-459 are
       (`DOC/PBDATA_FORMAT.md#national-team-call-ups`)
-- [ ] Test in PCSX2: a renamed fixed national player (26,046 as
-      `NT.Terry.VS`, disc `LMAST-nt-test.iso`) should not show in a career
-      call-up of England; the club Terry should
 - [ ] Test in PCSX2: a main-position change with `pbdata.py --sles` on its
       own (rank edits are tested; position goes through the same table)
 - [ ] `PLRESOURCECOMMON.PAC` leftovers (`DOC/PLRESOURCECOMMON_FORMAT.md`):
@@ -355,11 +353,7 @@ organised by what a player of the game recognises (a player, a club, a
 season) rather than by file. `tkinter` only, as the principles there say,
 and every GUI edit must also be possible as a `python SRC/...` command.
 
-- [ ] Test in PCSX2: a keeper scheme edited in the Kits tab (UNIFORM_GK,
-      your club's keeper in a match)
 - [ ] Kits tab: the licensed kits' descriptors and number colours
       (`uniform.py setlicence`, `setexe`)
-- [ ] Test in PCSX2: a mail text edited in the Text tab (club names and
-      the rival owner's name in event dialogue are tested)
 - [ ] Free agents tab (`plrsim.py setfree`, `PLRESOURCESIM.PAC` entry 15;
       `plrsim.py roundtrip` checks its encoder)

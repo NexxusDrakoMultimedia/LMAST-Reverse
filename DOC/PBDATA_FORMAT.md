@@ -1062,7 +1062,14 @@ the fixed national records (26,041+) are never called up.
 
 So to change who plays for a country in a career, edit the club players
 (their nationality and their place in the ranking, see above). The fixed
-blocks only change VS mode. What `_getNationalTeamPoint` scores, what
+blocks only change VS mode.
+
+**User report (PCSX2):** with record 26,046 renamed `NT.Terry.VS`, the
+career national squads list each player's club, so they are drawn only
+from club players. The renamed fixed record doesn't appear, as the
+search limit above says.
+
+What `_getNationalTeamPoint` scores, what
 team 465 is, and what flag `0x300` means aren't traced.
 
 ## `PBDATA_JP.PAC`
@@ -1150,8 +1157,7 @@ Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
   effects aren't traced.
 - Header `+0x14`, `+0x24` and the last 8 header bytes.
 - What `_getNationalTeamPoint` scores.
-- Which clubs teams 442–459 are, and a PCSX2 check that a career
-  call-up doesn't show a renamed fixed national player (VS mode does).
+- Which clubs teams 442–459 are.
 
 ## Checking the claims
 

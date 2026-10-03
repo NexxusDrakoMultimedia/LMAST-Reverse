@@ -123,6 +123,13 @@ there: the English second division's own-nation schedule (UID 1) keeps
 ranks 7–26 of last season's second division, and the game has no third
 tier to relegate to (user report).
 
+**Across leagues** (user report, PCSX2): F.C. Barcelona, swapped into
+the English Champions Division in the Season tab, has fixtures in that
+league in 2006–07 (fixture 22, away at the player's Dunstable Utd). Its
+Information page still shows Spain and Barcelona, world ranking 12, and
+league ranking "-" in week 1, before any league match. Its league
+ranking after it has played isn't checked yet.
+
 **Empirical:** each division's clubs are exactly the clubs of one read
 past record, its table last season: records 0, 1, 6, 7, 11, 12, 16, 17,
 22, 23, 27 and 28 for the 12 divisions in order (the English second
