@@ -57,7 +57,11 @@ Tabs:
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
-             (DOC/UNIFORM_FORMAT.md). Colours show as swatches.
+             (DOC/UNIFORM_FORMAT.md). Colours show as swatches. A licensed
+             club's descriptors (numbers, name, collar, captain mark) are
+             written to both copies, the executable's (mod/disc/SLES_541.51,
+             which the game draws from) and PLPACK_HOME/AWAY.PAC, as
+             `uniform.py setexe` and `setlicence` do.
     Text     message text in MES.PAC, one message in all 7 language slots,
              found by category, text or id (mbb.py; DOC/MBB_FORMAT.md). An
              edit that would make its file too big for its slot is refused.
@@ -1424,11 +1428,13 @@ class NewClubTab(Tab):
 
 UNIFORM_LIST = "PLAYER/UNIFORM_LIST.TBB"
 UNIFORM_GK = "PLAYER/UNIFORM_GK.TBB"
+PLPACK = {"home": "PLAYER/PLPACK_HOME", "away": "PLAYER/PLPACK_AWAY"}   # .HED and .PAC
 
 
-def colour_input(parent, swatches, get, apply):
-    """A kit colour: a drop-down of the 96 colours by name and a swatch of
-    the chosen one (entry 128 of its palette)."""
+def colour_input(parent, swatches, get, apply, values=None):
+    """A kit colour: a drop-down of the 96 colours by name (or `values`,
+    where 0xff is "off") and a swatch of the chosen one (entry 128 of its
+    palette)."""
     frame = ttk.Frame(parent)
     swatch = tk.Label(frame, width=3, relief="solid", borderwidth=1)
 
@@ -1444,16 +1450,18 @@ def colour_input(parent, swatches, get, apply):
         paint()
         return ok
     swatch.pack(side="left", padx=(0, 4))
-    value_input(frame, ("choice", list(range(uniform.COLOURS))), uniform.colour_label, get,
+    value_input(frame, ("choice", values or list(range(uniform.COLOURS))),
+                lambda v: "off" if v == uniform.NO_COLOUR else uniform.colour_label(v), get,
                 commit).pack(side="left")
     paint()
     return frame
 
 
 class KitsTab(Tab):
-    """Club kits (UNIFORM_LIST.TBB) and the keeper kits made from them
-    (UNIFORM_GK.TBB), through uniform.set_row_field and apply_gk_edit, as
-    `uniform.py set` and `setgk` do."""
+    """Club kits (UNIFORM_LIST.TBB), the keeper kits made from them
+    (UNIFORM_GK.TBB) and the licensed clubs' kit descriptors, through
+    uniform.set_row_field, apply_gk_edit and set_descriptor, as `uniform.py
+    set`, `setgk`, `setexe` and `setlicence` do."""
     title = "Kits"
 
     def __init__(self, app):
@@ -1461,6 +1469,7 @@ class KitsTab(Tab):
         self.blob = None
         self.changes = {}           # (team, field name) -> value, in edit order
         self.gk_changes = {}        # field name -> value
+        self.lic_changes = {}       # (side, licence, field) -> value
         self.current = None
         inner = ttk.Notebook(self.frame)
         inner.pack(fill="both", expand=True, padx=4, pady=4)
@@ -1526,15 +1535,25 @@ class KitsTab(Tab):
             self.teams = initteam.team_names(mod.source(MES), 1)
             self.swatches = uniform.colour_swatches(os.path.join(mod.dat, "PLAYER"))
             try:
-                self.licensed = set(uniform.licence_table(mod.disc_source(SLES))[0])
+                self.sles_path = mod.disc_source(SLES)
+                self.licence_of, elf = uniform.licence_table(self.sles_path)
+                # The descriptors as the game draws them: the executable's
+                # copy (DOC/UNIFORM_FORMAT.md#the-descriptor). Saves write
+                # the pack's copy too, so the two stay equal.
+                self.desc = {}
+                for side in ("home", "away"):
+                    for n in range(uniform.LICENCES):
+                        b = uniform.exe_descriptor_base(self.sles_path, elf, side, n)
+                        self.desc[side, n] = bytearray(elf.data[b:b + uniform.DESCRIPTOR_SIZE])
             except (OSError, ValueError, struct.error):
-                self.licensed = set()
+                self.licence_of, self.desc = {}, {}
+            self.licensed = set(self.licence_of)
         except (ValueError, struct.error, OSError) as e:
             self.app.status("Couldn't load the kits: %s" % e)
             messagebox.showerror("Kits", "Couldn't load the kits:\n%s" % e)
             return
         self.rows = {}              # team -> unpacked fields, edits included
-        self.changes, self.gk_changes = {}, {}
+        self.changes, self.gk_changes, self.lic_changes = {}, {}, {}
         self.refresh_list()
         if self.current is not None:
             self.show(self.current)
@@ -1567,9 +1586,13 @@ class KitsTab(Tab):
                 continue
             self.tree.insert("", "end", iid=str(team),
                              values=(team, name, "licensed" if team in self.licensed else ""),
-                             tags=("edited",) if any(t == team for t, _ in self.changes) else ())
+                             tags=("edited",) if self.edited(team) else ())
             n += 1
         self.count_label.configure(text="%d clubs" % n)
+
+    def edited(self, team):
+        return any(t == team for t, _ in self.changes) or any(
+            n == self.licence_of.get(team) for _, n, _ in self.lic_changes)
 
     def select(self):
         sel = self.tree.selection()
@@ -1586,9 +1609,12 @@ class KitsTab(Tab):
                   font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
         if team in self.licensed:
             ttk.Label(box, text="Licensed club: the game draws its kits from the licensed kit "
-                                "textures (PLPACK_HOME/AWAY), not from these fields "
-                                "(DOC/UNIFORM_FORMAT.md#licensed-kits).",
+                                "textures (PLPACK_HOME/AWAY), not from the fields further down. "
+                                "The descriptor below gives the numbers, name, collar and "
+                                "captain mark (DOC/UNIFORM_FORMAT.md#licensed-kits).",
                       foreground="#a05000", wraplength=700, justify="left").pack(anchor="w", padx=8)
+            if self.desc:
+                self.licence_frames(box, self.licence_of[team])
         ttk.Label(box, text="A design or colour past what its pack holds would be reset by "
                             "the game, so the lists stop there. Fields with no name yet are "
                             "read-only.", foreground="#555").pack(anchor="w", padx=8)
@@ -1622,6 +1648,59 @@ class KitsTab(Tab):
         if need > have > 1:
             pos = self.panes.sashpos(0)
             self.panes.sashpos(0, max(LIST_MIN, pos - (need - have)))
+
+    def licence_frames(self, box, licence):
+        for side in ("home", "away"):
+            frame = ttk.LabelFrame(box, text="Licensed %s kit descriptor (licence %d)"
+                                             % (side, licence))
+            frame.pack(fill="x", padx=8, pady=6)
+            ttk.Label(frame, text="outfield kit", foreground="#555").grid(row=0, column=1,
+                                                                         sticky="w")
+            ttk.Label(frame, text="keeper kit", foreground="#555").grid(row=0, column=2,
+                                                                       sticky="w")
+            for row, (label, _, _) in enumerate(uniform.DESCRIPTOR, 1):
+                ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", padx=(6, 12))
+                for col, part in ((1, "outfield"), (2, "keeper")):
+                    field = "%s.%s" % (part, label.replace(" ", ""))
+                    self.licence_widget(frame, side, licence, field).grid(
+                        row=row, column=col, sticky="w", padx=(0, 16), pady=1)
+
+    def licence_widget(self, parent, side, licence, field):
+        desc = self.desc[side, licence]
+        b, kind = uniform.descriptor_field(field)
+        spec = uniform.descriptor_spec(field)
+
+        def get():
+            return desc[b]
+        if spec is None:
+            return ttk.Label(parent, text=str(get()), foreground="#777")
+
+        def apply(text, revert):
+            return self.commit_licence(side, licence, field, text, revert)
+        if kind == "colour":
+            return colour_input(parent, self.swatches, get, apply, spec[1])
+        names = {"collar": lambda v: "%d %s" % (v, uniform.collar_name(v)),
+                 "side": lambda v: "%d %s" % (v, uniform.SHORTS_NUMBER[v])
+                 if v < len(uniform.SHORTS_NUMBER) else str(v)}
+        return value_input(parent, spec, names.get(kind, str), get, apply)
+
+    def commit_licence(self, side, licence, field, text, revert):
+        what = "licence %d %s" % (licence, side)
+        try:
+            value = int(text)
+        except ValueError:
+            return self.refuse(what, "%s must be a number" % field, revert)
+        if value not in uniform.descriptor_spec(field)[1]:
+            return self.refuse(what, "%s can't be %d" % (field, value), revert)
+        old = uniform.set_descriptor(self.desc[side, licence], 0, field, value)
+        self.lic_changes.pop((side, licence, field), None)
+        self.lic_changes[side, licence, field] = value
+        self.app.status("%s: %s %s -> %s" % (what, field, old, value))
+        team = next((t for t, n in self.licence_of.items() if n == licence), None)
+        if team is not None and self.tree.exists(str(team)):
+            self.tree.item(str(team), tags=("edited",))
+        self.app.update_title()
+        return True
 
     def kit_widget(self, parent, team, name):
         fields = self.fields(team)
@@ -1742,7 +1821,61 @@ class KitsTab(Tab):
     # saving
 
     def dirty(self):
-        return bool(self.changes or self.gk_changes)
+        return bool(self.changes or self.gk_changes or self.lic_changes)
+
+    def licence_commands(self, temps, commands):
+        """Write the descriptor edits into both copies, each read as it is
+        now (the People tab writes the executable too): one setexe and one
+        setlicence command per side and licence."""
+        import pac
+        import sles_disasm
+        mod = self.app.mod
+        groups = {}
+        for (side, n, field), value in self.lic_changes.items():
+            groups.setdefault((side, n), []).append((field, value))
+
+        def args(edits):
+            return ["%s=%d" % e for e in edits]
+        sles_in = mod.disc_source(SLES)
+        elf = sles_disasm.Elf(sles_in)
+        data = bytearray(elf.data)
+        out = mod.disc_target(SLES)
+        src = sles_in
+        for (side, n), edits in groups.items():
+            base = uniform.exe_descriptor_base(sles_in, elf, side, n)
+            for field, value in edits:
+                uniform.set_descriptor(data, base, field, value)
+            commands.append(["python", "SRC/uniform.py", "setexe", quote(shown_path(src)),
+                             quote(shown_path(out + ".new")), side, str(n)] + args(edits))
+            src = out + ".new"
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with open(out + ".new", "wb") as f:
+            f.write(data)
+        temps.append((out + ".new", out))
+        for side in ("home", "away"):
+            mine = [(n, edits) for (s, n), edits in groups.items() if s == side]
+            if not mine:
+                continue
+            # The header stays in DAT/ (same size); the data may be the
+            # mod's edited copy, hence --data.
+            header = os.path.join(mod.dat, PLPACK[side] + ".HED")
+            src = mod.source(PLPACK[side] + ".PAC")
+            h = pac.load_header(header)
+            with open(src, "rb") as f:
+                data = bytearray(f.read())
+            out = mod.target(PLPACK[side] + ".PAC")
+            for n, edits in mine:
+                base = uniform.pack_descriptor_base(h, data, n)
+                for field, value in edits:
+                    uniform.set_descriptor(data, base, field, value)
+                commands.append(["python", "SRC/uniform.py", "setlicence",
+                                 quote(shown_path(header)), quote(shown_path(out + ".new")),
+                                 str(n)] + args(edits) + ["--data", quote(shown_path(src))])
+                src = out + ".new"
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+            temps.append((out + ".new", out))
 
     def save(self):
         if not self.dirty():
@@ -1750,6 +1883,8 @@ class KitsTab(Tab):
         mod = self.app.mod
         temps, commands = [], []
         try:
+            if self.lic_changes:
+                self.licence_commands(temps, commands)
             if self.changes:
                 out = mod.target(UNIFORM_LIST)
                 data = bytearray(self.blob)
@@ -1780,12 +1915,12 @@ class KitsTab(Tab):
                 commands.append(["python", "SRC/uniform.py", "setgk",
                                  quote(shown_path(self.gk_path)), quote(shown_path(out + ".new"))]
                                 + ["%s=%d" % kv for kv in self.gk_changes.items()])
-        except (ValueError, OSError) as e:
+        except (ValueError, OSError, struct.error) as e:
             remove_new(temps)
             messagebox.showerror("Kits", "Can't save: %s" % e)
             return False
         replace_new(temps)
-        n = len(self.changes) + len(self.gk_changes)
+        n = len(self.changes) + len(self.gk_changes) + len(self.lic_changes)
         lines = log_lines("Kits: %d changes" % n, commands, temps)
         mod.log(lines)
         self.app.write_log(lines)

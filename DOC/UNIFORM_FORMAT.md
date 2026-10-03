@@ -356,6 +356,7 @@ python SRC/uniform.py clash     DAT/PLAYER A8                # colours that clas
 python SRC/uniform.py roundtrip DAT/PLAYER/UNIFORM_LIST.TBB  # re-pack all 661 rows
 python SRC/uniform.py set DAT/PLAYER/UNIFORM_LIST.TBB out/UNIFORM_LIST.TBB 3 home.outfield.1=A4 7 away.outfield.0=12
 python SRC/uniform.py setexe ISO/SLES_541.51 out/SLES_541.51 home 0 outfield.backnumber=A8
+python SRC/uniform.py setlicence DAT/PLAYER/PLPACK_HOME.HED out/PLPACK_HOME.PAC 0 outfield.backnumber=A8
 python SRC/uniform.py gk        DAT/PLAYER 35                # keeper design 35 and its schemes
 python SRC/uniform.py setgk DAT/PLAYER/UNIFORM_GK.TBB out/UNIFORM_GK.TBB keeper.35.0.1=A8
 python SRC/tbb.py roundtrip     DAT/PLAYER/UNIFORM_GK.TBB    # the container re-writes
@@ -365,6 +366,17 @@ python SRC/tbb.py roundtrip     DAT/PLAYER/UNIFORM_GK.TBB    # the container re-
 Kits tab (`SRC/editor.py`) edits the same fields through the same code
 (`set_row_field`, `apply_gk_edit`), offering only values the game keeps
 (`uniform.edit_range`) and showing each colour as a swatch.
+
+For a licensed club the tab also edits the descriptor's named fields
+(`set_descriptor`). It reads the executable's copy, which the game draws
+from, and writes each edit to both copies, logged as one `setexe` and
+one `setlicence` per side and licence, so the two stay equal as on the
+disc. The values it offers (`uniform.descriptor_spec`): the 96 colours
+or off, collars 0–11, shorts number off/right/left, and for name type
+(1, 2) and captain mark (0–4) the values the disc uses; the unknown
+bytes 14–15 are read-only. `setlicence --data <in.PAC>` reads the
+pack's data from an already edited copy instead of the one next to the
+header, which stays in `DAT/` (the pack keeps its size).
 
 `setexe`'s output is patched onto a disc image with
 `python SRC/patch_disc.py patch <in.iso> <out.iso> disc:SLES_541.51=out/SLES_541.51`.

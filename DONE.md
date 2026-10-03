@@ -818,3 +818,12 @@ files. Each item keeps what was found, where, and how it was tested.
       replaying the two logged commands gives the saved pack byte for
       byte. The Clubs tab now also saves onto the pack as it is at save
       time, so neither tab drops the other's edits
+- [x] Kits tab: the licensed clubs' descriptors (number, name and shorts
+      number colours, name type, collar, shorts number position, captain
+      mark), read from the executable's copy and written to both copies
+      through `uniform.set_descriptor`, logged as `setexe` and
+      `setlicence` (which gained `--data` for an already edited pack).
+      Checked through the widgets over two sessions on one mod folder:
+      replaying the 8 logged commands from the disc's files gives the
+      saved executable and both packs byte for byte, and the two copies
+      agree for all 232 descriptors

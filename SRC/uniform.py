@@ -81,9 +81,11 @@ Usage:
     python uniform.py gk        <DAT/PLAYER> [keeper design ...]  # the keeper kit table
     python uniform.py setgk     <in.TBB> <out.TBB> <field>=<value> ...
         e.g. setgk UNIFORM_GK.TBB out.TBB outfield.0.shirt=20 keeper.35.0.1=A8
-    python uniform.py setlicence <PLPACK_HOME.HED> <out.PAC> <licence> <field>=<value> ...
+    python uniform.py setlicence <PLPACK_HOME.HED> <out.PAC> <licence> <field>=<value> ... [--data <in.PAC>]
         e.g. setlicence PLPACK_HOME.HED out.PAC 0 outfield.backnumber=A8
-        (edits the pack's copy of the descriptor only, not the executable's)
+        (edits the pack's copy of the descriptor only, not the executable's;
+        --data reads the pack's data from <in.PAC> instead of next to the
+        header, such as an already edited copy in a mod folder)
     python uniform.py setexe    <SLES_541.51> <out> <home|away> <licence> <field>=<value> ...
         (edits the executable's copy, which the Uniform Viewer draws the
         numbers from; patch it with patch_disc.py disc:SLES_541.51=<out>)
@@ -326,6 +328,13 @@ DESCRIPTOR_TABLE = 0x3a0c80     # (side * 116 + licence) * 0x12
 DESCRIPTOR_SIZE = 0x12
 NO_COLOUR = 0xff
 COLLARS = 12                    # l_nml_bdy_01..11, l_tgt_bdy_01 (TESTPRG.REL 0x23570)
+
+
+def collar_name(n):
+    """The viewer's texture name for a descriptor collar (TESTPRG.REL 0x23570)."""
+    return "l_nml_bdy_%02d" % (n + 1) if n < COLLARS - 1 else "l_tgt_bdy_01"
+
+
 # (name, byte, kind): outfield at byte, keeper at byte + 1.
 DESCRIPTOR = (("front number", 0, "colour"), ("back number", 2, "colour"),
               ("name type", 4, "int"), ("name colour", 6, "colour"),
@@ -565,35 +574,86 @@ def cmd_licensed(dat, sles_path=None):
             print("       %s  %s" % (side, fmt_descriptor(descs[s][n][0])))
 
 
-def apply_descriptor_edits(data, base, label, edits):
-    """Apply <outfield|keeper>.<name>=<value> edits to the descriptor at
-    data[base:]. Names are DESCRIPTOR's without spaces (outfield.backnumber)."""
+def descriptor_field(field):
+    """(byte offset, kind) of <outfield|keeper>.<name>, the names being
+    DESCRIPTOR's without spaces (outfield.backnumber)."""
     names = {name.replace(" ", ""): (b, kind) for name, b, kind in DESCRIPTOR}
-    for edit in edits:
-        field, _, text = edit.partition("=")
-        part, _, name = field.partition(".")
-        if part not in ("outfield", "keeper") or name not in names:
-            raise ValueError("no descriptor field %r (fields: %s)" % (field, ", ".join(names)))
-        b = names[name][0] + (part == "keeper")
-        value = NO_COLOUR if text.lower() == "off" else parse_value(text)
-        if not 0 <= value <= 0xff:
-            raise ValueError("%s: %d doesn't fit in a byte" % (field, value))
-        print("%s %s: %d -> %d" % (label, field, data[base + b], value))
-        data[base + b] = value
+    part, _, name = field.partition(".")
+    if part not in ("outfield", "keeper") or name not in names:
+        raise ValueError("no descriptor field %r (fields: %s)" % (field, ", ".join(names)))
+    b, kind = names[name]
+    return b + (part == "keeper"), kind
 
 
-def cmd_setlicence(header, dst, licence, edits):
-    """Edit one PLPACK entry's descriptor (block 0) in a copy of the pack's
-    data file."""
+# What an editor (SRC/editor.py) offers for each descriptor field. Colours
+# and collars are the viewer's names (TESTPRG.REL 0x23570), the shorts
+# number positions its labels. Name type (1, 2) and captain mark (0-4) are
+# the values on the disc (empirical). The unknown bytes are read-only.
+DESCRIPTOR_EDIT = {"colour": list(range(COLOURS)) + [NO_COLOUR], "collar": list(range(COLLARS)),
+                   "side": list(range(len(SHORTS_NUMBER))), "name type": [1, 2],
+                   "captain mark": list(range(CAPTAIN_MARKS))}
+
+
+def descriptor_spec(field):
+    """("choice", [values]) an editor offers for a descriptor field, or
+    None for one with no meaning yet."""
+    b, kind = descriptor_field(field)
+    name = next(n for n, nb, _ in DESCRIPTOR if nb == b & ~1)
+    values = DESCRIPTOR_EDIT.get(kind if kind != "int" else name)
+    return ("choice", values) if values else None
+
+
+def set_descriptor(data, base, field, value):
+    """Set one descriptor byte at data[base:] (a bytearray), as `setexe`
+    and `setlicence` do. Any byte is accepted; descriptor_spec says what
+    an editor should offer. Returns the old value."""
+    b, _ = descriptor_field(field)
+    if not 0 <= value <= 0xff:
+        raise ValueError("%s: %d doesn't fit in a byte" % (field, value))
+    old = data[base + b]
+    data[base + b] = value
+    return old
+
+
+def exe_descriptor_base(sles_path, elf, side, licence):
+    """Where the executable's copy of a descriptor (0x3a0c80) sits in the
+    file `elf` was read from."""
+    if side not in ("home", "away") or not 0 <= licence < LICENCES:
+        raise ValueError("side must be home or away and licence 0-%d" % (LICENCES - 1))
+    import gamever
+    return elf.v2f(gamever.at(sles_path, DESCRIPTOR_TABLE)) +         ((side == "away") * LICENCES + licence) * DESCRIPTOR_SIZE
+
+
+def pack_descriptor_base(h, data, licence):
+    """Where PLPACK entry `licence`'s descriptor (block 0) sits in the
+    pack's data file, given its header `h`."""
     import pac
     import packdata
-    h = pac.load_header(header)
-    data = bytearray(open(pac.data_path(header, h), "rb").read())
     off, size, _, _ = h.entries[licence]
     if data[off:off + 4] == pac.PRSH_MAGIC:
         raise ValueError("entry %d is compressed; only raw entries can be edited" % licence)
     _, _, d = packdata.PackData(bytes(data[off:off + size])).blocks[0]
-    apply_descriptor_edits(data, off + d, "licence %d pack" % licence, edits)
+    return off + d
+
+
+def apply_descriptor_edits(data, base, label, edits):
+    """Apply <outfield|keeper>.<name>=<value> edits to the descriptor at
+    data[base:]."""
+    for edit in edits:
+        field, _, text = edit.partition("=")
+        value = NO_COLOUR if text.lower() == "off" else parse_value(text)
+        old = set_descriptor(data, base, field, value)
+        print("%s %s: %d -> %d" % (label, field, old, value))
+
+
+def cmd_setlicence(header, dst, licence, edits, data_in=None):
+    """Edit one PLPACK entry's descriptor (block 0) in a copy of the pack's
+    data file: the one next to the header, or data_in."""
+    import pac
+    h = pac.load_header(header)
+    data = bytearray(open(data_in or pac.data_path(header, h), "rb").read())
+    apply_descriptor_edits(data, pack_descriptor_base(h, data, licence),
+                           "licence %d pack" % licence, edits)
     with open(dst, "wb") as f:
         f.write(data)
 
@@ -602,12 +662,9 @@ def cmd_setexe(sles_path, dst, side, licence, edits):
     """Edit the executable's copy of a descriptor (0x3a0c80) in a copy of
     SLES_541.51."""
     import sles_disasm
-    if side not in ("home", "away") or not 0 <= licence < LICENCES:
-        raise ValueError("side must be home or away and licence 0-%d" % (LICENCES - 1))
     elf = sles_disasm.Elf(sles_path)
+    base = exe_descriptor_base(sles_path, elf, side, licence)
     data = bytearray(elf.data)
-    import gamever
-    base = elf.v2f(gamever.at(sles_path, DESCRIPTOR_TABLE)) + ((side == "away") * LICENCES + licence) * DESCRIPTOR_SIZE
     apply_descriptor_edits(data, base, "licence %d %s executable" % (licence, side), edits)
     with open(dst, "wb") as f:
         f.write(data)
@@ -763,6 +820,11 @@ def cmd_setgk(src, dst, edits):
 def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
+    data_in = None
+    if "--data" in args:
+        i = args.index("--data")
+        data_in = args[i + 1]
+        del args[i:i + 2]
     if cmd == "roundtrip" and len(args) == 1:
         cmd_roundtrip(args[0])
     elif cmd == "set" and len(args) >= 4:
@@ -772,7 +834,7 @@ def main(argv):
     elif cmd == "licensed" and len(args) in (1, 2):
         cmd_licensed(*args)
     elif cmd == "setlicence" and len(args) >= 4:
-        cmd_setlicence(args[0], args[1], int(args[2], 0), args[3:])
+        cmd_setlicence(args[0], args[1], int(args[2], 0), args[3:], data_in)
     elif cmd == "setexe" and len(args) >= 5:
         cmd_setexe(args[0], args[1], args[2], int(args[3], 0), args[4:])
     elif cmd == "show" and len(args) >= 2:

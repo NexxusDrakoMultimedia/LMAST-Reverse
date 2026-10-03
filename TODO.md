@@ -18,8 +18,8 @@ item in its section below.
    needs. The starting season is the first thing [`GOALS.md`](GOALS.md)
    wants a mod to change.
 2. **The editor's leftovers** (section 11). Six of the seven tabs are
-   tested in PCSX2. Left: a PCSX2 test of the new Free agents tab and
-   the licensed kit descriptors.
+   tested in PCSX2. Left: PCSX2 tests of the Free agents tab and the
+   Kits tab's licensed kit descriptors.
 3. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -349,7 +349,8 @@ organised by what a player of the game recognises (a player, a club, a
 season) rather than by file. `tkinter` only, as the principles there say,
 and every GUI edit must also be possible as a `python SRC/...` command.
 
-- [ ] Kits tab: the licensed kits' descriptors and number colours
-      (`uniform.py setlicence`, `setexe`)
+- [ ] Test in PCSX2: a licensed club's descriptor edited in the Kits tab
+      (back number colour, collar) in a match, not only the Uniform Viewer.
+      Shows whether the match draws from the executable's copy too
 - [ ] Test in PCSX2: a free agent replaced in the Free agents tab shows
       on the Transfer List (rank within the new club's band, 0-5)
