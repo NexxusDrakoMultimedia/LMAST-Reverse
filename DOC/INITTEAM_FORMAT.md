@@ -101,7 +101,9 @@ What a swap keeps, and why:
 - **Division sizes.** A league schedule has a fixed number of entrant
   slots and `n(n−1)/2` pairings for it, so a writer can't add a club to a
   division or take one away without new schedules. A swap changes no
-  size. Changing sizes needs a schedule writer (TODO).
+  size. `leaguesize.py build` changes a first division's size, with new
+  schedules
+  ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#where-the-clubs-come-from)).
 - **Only league clubs.** Both clubs must be in table 0 (teams 3–244).
   Clubs from the rest of Europe and beyond (245 on) have squads and club
   records but no place in the emblem screens' league lists and no

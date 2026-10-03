@@ -57,9 +57,10 @@ Each stage depends on the one before it.
    computer squads, the new club, kits, free agents and saves have been
    tested in PCSX2. `initteam.py swap` exchanges two league clubs' places
    in the starting season (tested in PCSX2). `schedule.py` re-encodes the
-   three schedule packs byte for byte, but nothing edits a schedule yet,
-   so division sizes can't change; the parameter tables' fields have no
-   writer either.
+   three schedule packs byte for byte and builds league schedules of any
+   size, and `leaguesize.py build` uses it to change a first division's
+   size (England at 22 clubs tested in PCSX2 through two seasons). The
+   parameter tables' fields have no writer yet.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
    `DATA.CVM`, and produce a disc image that boots. This includes repacking
    BINPAC/KC@P archives and PRS compression, and handling files that change
@@ -86,8 +87,8 @@ Each stage depends on the one before it.
    places, `initteam.py`) and Free agents (`plrsim.py`). All seven are
    tested in PCSX2.
    File > Build disc puts the mod folder on a disc image and makes the
-   xdelta patch of stage 6. Still to come: the schedules (division
-   sizes) and the parameters, once they have writers.
+   xdelta patch of stage 6. Still to come: division sizes (a tab on
+   `leaguesize.py`) and the parameters, once they have writers.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284) against
    the user's own unmodified disc image, never as game data or disc images.
    This matches the rule that no game data goes in the repo. xdelta is the
@@ -129,7 +130,7 @@ The "Still open" column is a summary. The full items are in
 | `GAME/` | match data: commentary, sound, models, tactics AI | partly | [`GAME_DIR.md`](DOC/GAME_DIR.md), `sounddat.py`, `ninja.py`, `bpb.py`, `gamedata.py` | the `.CBB` fields and combination commands, what the play books' paths mean, what a `GAMEDATA.BIN` record is, whether `AI_PARAM.BIN` is used, `CUTINPACK` blocks, the `RBD0` trailer, the `SHADOWCOLLI`/`WALLCOLLI` entries, `TEAM.TMB` |
 | `MESSAGE/` | all message text | done, with a writer | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md), `mbb.py` | which value the screen-set variables hold |
 | `NEWS/` | newspaper pictures and ranking months | done | [`NEWS_DIR.md`](DOC/NEWS_DIR.md), `news.py` | where ads and cartoons go on the page |
-| `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `plrsim.py`, `plrcommon.py` | the values in `PLRESOURCECOMMON.PAC` entries 1, 2 and 4, a few schedule tables, some player fields |
+| `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `leaguesize.py`, `plrsim.py`, `plrcommon.py` | the values in `PLRESOURCECOMMON.PAC` entries 1, 2 and 4, a few schedule tables, some player fields |
 | `PLAYER/` | faces, kits, player models | most files, with a kit writer | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md), [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md), `packdata.py`, `uniform.py` | the face block-4 header, a few kit fields |
 | `PRELOAD/` | copies of other files for bulk loading | done, with a writer | [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md), `preload.py` | |
 | `SEQ/` | the root sequencer scripts | most files | [`SEQ_DIR.md`](DOC/SEQ_DIR.md), [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md), `sqb.py` | two unused 2004 scripts, `WPX` |

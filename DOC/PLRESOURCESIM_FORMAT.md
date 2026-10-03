@@ -289,7 +289,10 @@ club also stops seeing ranks 0–2. Because of the stride, a player inside
 the band may still be skipped when more than 100 players pass. To offer
 a star as a free agent, lower his rank (`+0x18` for ids from `0x63f7`
 up) to 11 or less, and to the club's band for a new club (5 or less).
-Not tested in PCSX2.
+**Tested in PCSX2:** free agent A.Rankin, lowered from rank 9 to 5,
+showed on a new club's Transfer List
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#entries-2-and-3)). The bands of
+higher club ranks and the stride aren't tested in game.
 
 That the "move list" functions build the Transfer List screen is read
 from their names and from their use of the free-agent pool; the screen's

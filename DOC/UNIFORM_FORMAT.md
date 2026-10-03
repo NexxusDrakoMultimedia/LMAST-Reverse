@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
+
 # Club kits: `UNIFORM_LIST`, `UNIFORM_GK`, `COLOR_TBL` and the licensed kits
 
 Every club's kit comes from one of two places:

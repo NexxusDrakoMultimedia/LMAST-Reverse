@@ -11,21 +11,26 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **Name the rest of the player fields** (section 2). The editor can only
+1. **A division-size tab in the editor** (section 2). `leaguesize.py
+   build` changes a first division's size, tested in PCSX2 through two
+   seasons of England at 22 clubs. A tab would let a mod do it without
+   commands. The starting season is the first thing
+   [`GOALS.md`](GOALS.md) wants a mod to change.
+2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
-2. **What each PwkScript computes** (sections 2 and 7). The formulas
+3. **What each PwkScript computes** (sections 2 and 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
-3. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
+4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc: a message file can only grow into its own slot.
-4. **The `GAME/` tactics AI files** (section 6). The play books, the
+5. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
-   records. These are still the lead for the player fields in #1.
-5. **The parameter tables' fields** (section 2). Start with
+   records. These are still the lead for the player fields in #2.
+6. **The parameter tables' fields** (section 2). Start with
    `REGULATION.TBB`: name its fields so it can get a field-level writer
    and an editor tab. These are the next thing a mod would tune, and
    `tbb.py replace` can only swap a whole table.
