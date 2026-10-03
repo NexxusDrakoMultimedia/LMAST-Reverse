@@ -938,7 +938,7 @@ class ClubsTab(Tab):
                     name.configure(text="(names load with People)" if players is None else "?")
             describe()
             for col, field in ((1, "player"), (4, "age"), (5, "shirt"), (6, "contract")):
-                lo, hi = initteam.SET_LIMITS[field]
+                lo, hi = initteam.SQUAD_EDIT_RANGES.get(field, initteam.SET_LIMITS[field])
                 if field == "player" and players:
                     hi = len(players) - 1
                 w = value_input(frame, ("range", lo, hi), str,
@@ -995,6 +995,11 @@ class ClubsTab(Tab):
         players = self.people("players")
         if field == "player" and players and not 0 <= value < len(players):
             return self.refuse(what, "players are 0-%d" % (len(players) - 1), revert)
+        if field in initteam.SQUAD_EDIT_RANGES:
+            lo, hi = initteam.SQUAD_EDIT_RANGES[field]
+            if not lo <= value <= hi:
+                return self.refuse(what, "%s must be %d-%d (DOC/INITTEAM_FORMAT.md)" % (
+                    field, lo, hi), revert)
         if field == "player":
             # Each player is in one squad only (initteam.py info checks it).
             for t, squad in self.ot.squads.items():

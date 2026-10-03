@@ -164,6 +164,13 @@ class OteamMembers:
 SET_LIMITS = {"player": (0, 0xffff), "age": (0, 0xff), "shirt": (1, 99), "contract": (0, 0xff)}
 
 
+# What an editor (SRC/editor.py) offers for a squad slot: the documented
+# values, narrower than SET_LIMITS. Ages: 16-40 on the disc, and 15 is
+# tested in PCSX2 (Terry shows 16 in a new game). Contracts: 2-6 on the
+# disc. Widen these when a value outside them is tested in game.
+SQUAD_EDIT_RANGES = {"age": (15, 40), "shirt": (1, 99), "contract": (2, 6)}
+
+
 def set_member(m, name, value):
     """Set one squad-slot field (player, age, shirt, contract) within
     SET_LIMITS. Returns the old value."""
