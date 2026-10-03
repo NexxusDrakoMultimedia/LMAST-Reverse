@@ -31,6 +31,10 @@ item in its section below.
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
    records. These are still the lead for the player fields in #2.
+6. **The parameter tables' fields** (section 2). Start with
+   `REGULATION.TBB`: name its fields so it can get a field-level writer
+   and an editor tab. These are the next thing a mod would tune, and
+   `tbb.py replace` can only swap a whole table.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
