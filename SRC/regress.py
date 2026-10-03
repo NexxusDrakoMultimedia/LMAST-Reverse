@@ -107,6 +107,8 @@ def checks():
         ("schedule_roundtrip", ["schedule.py", "roundtrip", "DAT/PARAM"], ["DAT/PARAM"]),
         # Generated leagues of 2-32 clubs, checked and compared with the disc's.
         ("schedule_league", ["schedule.py", "league", "DAT/PARAM"], ["DAT/PARAM"]),
+        # Each domestic league's game days and its room for more.
+        ("schedule_turns", ["schedule.py", "turns", "DAT/PARAM"], ["DAT/PARAM"]),
         ("stadium", ["stadium.py", "info", "DAT/STADIUM", "DAT/PARAM"],
          ["DAT/STADIUM", "DAT/PARAM"]),
         # SEQ/*.SQB and the PSC*.PAC scripts; the main script's listing

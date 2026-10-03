@@ -37,6 +37,7 @@ Usage:
     python schedule.py entry <DAT/PARAM> <uid>      # team-entry slots of one UID
     python schedule.py roundtrip <DAT/PARAM>        # re-encode all three packs and their .HED, !! if not identical
     python schedule.py league <DAT/PARAM> [<n> [single]]  # generated leagues: check every size, or print one
+    python schedule.py turns <DAT/PARAM> [<uid> [<days>]]  # leagues' game days and room; one UID's calendar
 
 `league` builds round robins for 2-32 clubs (league_days, set_league):
 each club alternates home and away, the second leg starts one round
@@ -45,6 +46,14 @@ rest day. With no size it checks every size, once and twice round, and
 compares each with the disc's own template of that size (`!!` on a
 generated league that breaks a rule). Building a league of a new size
 into the packs also needs its turn mask and team-entry slots changed.
+
+`turns` lists each league UID's game days and how many it could have:
+the free turns inside its season, where no game of its own, of its
+nation's cups or of a European, national-team or runtime competition
+falls (the disc's leagues keep clear of those). With a UID it draws that
+season as a calendar, and with a number of days the turns
+league_turns() would use: added ones fill the widest gaps, weekends
+first, and dropped ones are midweeks first.
 
 Writing: every entry re-encodes from its fields (year rows, competition
 headers, games, pairings, team-entry records), and a pack is rebuilt with
@@ -374,6 +383,104 @@ def league_stats(c):
     return probs, breaks, longest, gap
 
 
+# --- game days for a league --------------------------------------------------
+
+MONTHS = ("Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
+TURNS_PER_MONTH = 8         # 4 weeks of a midweek and a weekend turn (empirical)
+
+
+def turn_name(t):
+    """A turn as the game's calendar shows it: "Aug w2 weekend" (empirical:
+    the year starts in July, 8 turns a month, even turns midweek)."""
+    m, k = divmod(t % TURNS_PER_YEAR, TURNS_PER_MONTH)
+    return "%s w%d %s" % (MONTHS[m], k // 2 + 1, "midweek" if k % 2 == 0 else "weekend")
+
+
+def compe_nation(system, compe):
+    """The one nation a competition always belongs to (open_nation rows
+    that repeat a nation, with no 4-year start), or None for one whose
+    host changes (the European and national-team competitions)."""
+    row = next((r for r in system.open_nation if r[0] == compe), None)
+    if row is None or row[1] != -1 or len(set(row[2:])) != 1:
+        return None
+    return row[2]
+
+
+def year_turns(system):
+    """{uid: (row, [turns])}, a second-year row's turns counted from 96."""
+    out, last = {}, None
+    for r in system.year:
+        if r.uid >= 0:
+            out[r.uid] = (r, list(r.turns))
+            last = r.uid
+        elif last is not None:
+            out[last][1].extend(t + TURNS_PER_YEAR for t in r.turns)
+    return out
+
+
+def blocked_turns(system, compes, uid):
+    """Turns a league UID's clubs may be busy on, as the disc's leagues
+    keep clear of them (empirical): games of any competition whose host
+    changes (European, national teams, the runtime cups) and of the
+    league's own nation's knockouts. VS and first-promotion UIDs, the
+    runtime friendlies and other leagues don't count."""
+    rows = year_turns(system)
+    nation = compe_nation(system, rows[uid][0].compe)
+    out = set()
+    for u, (r, turns) in rows.items():
+        if u == uid or r.kind in (4, 5) or u >= len(compes):
+            continue
+        n = compe_nation(system, r.compe)
+        if n == 0:
+            continue            # the runtime friendlies (competition 49)
+        if n is None or (n == nation and compes[u].type == 1):
+            out.update(turns)
+    return out
+
+
+def free_turns(system, compes, uid):
+    """The turns inside a league UID's season (its first to last game day)
+    with no game of its own and none it keeps clear of."""
+    turns = year_turns(system)[uid][1]
+    busy = blocked_turns(system, compes, uid) | set(turns)
+    return [t for t in range(turns[0], turns[-1] + 1) if t not in busy]
+
+
+def league_turns(system, compes, uid, days):
+    """A turn list of `days` game days for a league UID, made from its own
+    by adding free turns inside its season or dropping turns. Each added
+    turn goes into the widest gap between game days (a weekend before a
+    midweek), each dropped one closes the narrowest (a midweek first), so
+    the games stay spread over the season."""
+    row, turns = year_turns(system)[uid]
+    if len(turns) != len(set(turns)) or any(t >= TURNS_PER_YEAR for t in turns):
+        raise ValueError("UID %d runs across the year end; not supported" % uid)
+    turns = sorted(turns)
+    free = free_turns(system, compes, uid)
+    if days - len(turns) > len(free):
+        raise ValueError("UID %d has room for %d game days (%d now, %d free turns)"
+                         % (uid, len(turns) + len(free), len(turns), len(free)))
+    if days < 1:
+        raise ValueError("a league needs at least 1 game day")
+    while len(turns) < days:
+        def room(t):
+            before = max((x for x in turns if x < t), default=turns[0])
+            after = min((x for x in turns if x > t), default=turns[-1])
+            return (min(t - before, after - t), t % 2, -t)
+        t = max(free, key=room)
+        free.remove(t)
+        turns = sorted(turns + [t])
+    while len(turns) > days:
+        def loss(i):
+            t = turns[i]
+            # The first and last game days stay, so the season keeps its dates.
+            before = turns[i - 1] if i else t - TURNS_PER_YEAR
+            after = turns[i + 1] if i + 1 < len(turns) else t + TURNS_PER_YEAR
+            return (t % 2, after - before, t)
+        turns.pop(min(range(len(turns)), key=loss))
+    return turns
+
+
 # --- SCHEDULE_TEAM_ENTRY -----------------------------------------------------
 
 class TeamEntry:
@@ -689,6 +796,68 @@ def cmd_league(root, n=None, legs=2):
             print(line + ("  !! " + "; ".join(probs) if probs else ""))
 
 
+def calendar(marks):
+    """A month-by-week grid of one-letter marks per turn."""
+    lines = ["       " + " ".join("w%d%s" % (k // 2 + 1, "m" if k % 2 == 0 else "e")
+                                   for k in range(TURNS_PER_MONTH))]
+    for m in range(12):
+        lines.append("  %s  " % MONTHS[m] + " ".join(
+            "%-3s" % marks.get(m * TURNS_PER_MONTH + k, ".") for k in range(TURNS_PER_MONTH)))
+    return lines
+
+
+def cmd_turns(root, uid=None, days=None):
+    """Each league UID's game days and room for more; or one UID's season
+    as a calendar, with the turns a new number of game days would use."""
+    system = System(read_pack(find(root, SYSTEM_PAC)))
+    compes = [Competition(b) for _, b in read_pack(find(root, COMPE_PAC))]
+    rows = year_turns(system)
+    if uid is None:
+        for u, c in enumerate(compes):
+            if c.type != 0 or u not in rows or rows[u][0].kind in (4, 5) or                     compe_nation(system, rows[u][0].compe) is None:
+                continue            # only the domestic leagues
+            r, turns = rows[u]
+            legs = len(c.games) // max(1, len(c.pairs))
+            if len(turns) != c.days:
+                print("UID %3d  %2d clubs: %d game days, %d turns  !! game days and turns "
+                      "differ" % (u, c.entrants, c.days, len(turns)))
+                continue
+            try:
+                free = free_turns(system, compes, u)
+            except (ValueError, IndexError) as e:
+                print("UID %3d  !! %s" % (u, e))
+                continue
+            most = len(turns) + len(free)
+            clubs = max(n for n in range(2, LEAGUE_MAX + 1)
+                        if len(league_days(n, legs)) <= most)
+            print("UID %3d  competition %2d  %2d clubs, %d leg%s: %2d game days, turns %d-%d, "
+                  "%2d free: room for %2d days, %2d clubs" % (
+                      u, r.compe, c.entrants, legs, "s" if legs == 2 else " ", len(turns),
+                      turns[0], turns[-1], len(free), most, clubs))
+        return
+    turns = rows[uid][1]
+    blocked = blocked_turns(system, compes, uid)
+    marks = {t: "x" for t in blocked}
+    marks.update({t: "L" for t in turns})
+    for t in free_turns(system, compes, uid):
+        marks[t] = "."
+    title = "UID %d: %d game days" % (uid, len(turns))
+    if days is not None:
+        try:
+            new = league_turns(system, compes, uid, days)
+        except ValueError as e:
+            raise SystemExit(str(e))
+        marks.update({t: "+" for t in set(new) - set(turns)})
+        marks.update({t: "-" for t in set(turns) - set(new)})
+        title += " -> %d" % days
+    print(title + "  (L game day, x another competition, . free, + added, - dropped)")
+    for line in calendar(marks):
+        print(line)
+    if days is not None:
+        print("added:   " + ", ".join(turn_name(t) for t in sorted(set(new) - set(turns))))
+        print("dropped: " + ", ".join(turn_name(t) for t in sorted(set(turns) - set(new))))
+
+
 def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
@@ -702,6 +871,10 @@ def main(argv):
         cmd_entry(args[0], int(args[1], 0))
     elif cmd == "roundtrip" and len(args) == 1:
         cmd_roundtrip(args[0])
+    elif cmd == "turns" and len(args) == 1:
+        cmd_turns(args[0])
+    elif cmd == "turns" and len(args) in (2, 3):
+        cmd_turns(args[0], int(args[1], 0), int(args[2]) if len(args) == 3 else None)
     elif cmd == "league" and len(args) == 1:
         cmd_league(args[0])
     elif cmd == "league" and len(args) in (2, 3) and args[1].isdigit() \

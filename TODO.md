@@ -14,9 +14,9 @@ item in its section below.
 1. **The starting season** (section 2). `initteam.py swap` and the
    editor's Season tab exchange two league clubs' places (tested in
    PCSX2), `schedule.py` re-encodes the schedules byte for byte and
-   builds league schedules of any size (`league`). Next: the turns, the
-   team-entry slots and the starting divisions for a league of another
-   size. The starting season is the first thing [`GOALS.md`](GOALS.md)
+   builds league schedules of any size (`league`) with game days on
+   free turns (`turns`). Next: the team-entry slots and the starting
+   divisions for a league of another size. The starting season is the first thing [`GOALS.md`](GOALS.md)
    wants a mod to change.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
@@ -61,13 +61,14 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 `pbdata.py`); `0SYSTEM/` is surveyed in
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
-- [ ] Change a division's size: give the UID one turn per game day
-      (free turns), re-point the team-entry slots (more or fewer promoted
-      and relegated), keep the own-nation and other-nations versions and
-      the playoffs (NOW_RANK) in step, move clubs between the starting
-      divisions, and check the save-buffer pools have room
+- [ ] Change a division's size: re-point the team-entry slots (more or
+      fewer promoted and relegated), keep the own-nation and
+      other-nations versions and the playoffs (NOW_RANK) in step, move
+      clubs between the starting divisions, and check the save-buffer
+      pools have room
       (`DOC/SCHEDULE_FORMAT.md#building-a-league-of-another-size`). The
-      encoders and the league generator (`schedule.py league`) are done
+      encoders, the league generator (`schedule.py league`) and the game
+      days (`turns`, `league_turns`) are done
 - [ ] Parameter tables: name the fields of the `TBB1` tables a mod would
       tune (`REGULATION.TBB` and the others in `DOC/PARAM_DIR.md`), so
       they can get a field-level writer and an editor tab. `tbb.py

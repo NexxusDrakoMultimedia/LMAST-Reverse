@@ -55,6 +55,15 @@ the masks are 12 bytes (96 bits). A schedule's games fall on the turns whose
 bits are set in its mask, in order. Game day 0 is on the first set bit, and
 so on.
 
+**Empirical:** the year starts in July and has 8 turns a month: 4 weeks
+of a midweek turn and a weekend turn, so turn 0 is July week 1 midweek
+and turn 11 is August week 2 weekend. The career screen shows the same
+steps ("Week 1 Mid-Week Jul.", "Week 1 Weekend Jul."), and the English
+first division's 38 game days run from turn 11 to turn 85 (May week 3
+weekend), almost every weekend in between. The cups, the European
+competitions and the national-team dates fall on midweeks, and the
+national teams have all of June.
+
 ## `SCHEDULE_SYSTEM.PAC`
 
 | Entry | Name | Tables | Contents |
@@ -314,8 +323,7 @@ entry encodes and re-reads with no problems; a 22-club UID 0 grows from
 **Still needed before a size can change in game:**
 
 - The UID's turn mask must get one set bit per game day (42 for 22
-  clubs instead of 38), on turns that don't collide with the club's
-  other competitions. Which turns are free isn't worked out.
+  clubs instead of 38). `league_turns` picks them (below).
 - The team-entry slots must match: a `LAST_RANK` record per slot, with
   the promotion and relegation places of both divisions changed together
   (UID 0 takes the top two and the playoff winner from the second
@@ -329,6 +337,54 @@ entry encodes and re-reads with no problems; a 22-club UID 0 grows from
   type from `savectrl`). The big leagues are all type 0, which already
   holds the 26-club league (650 games), but whether the pools have room
   for more games in total isn't traced.
+
+### Game days for a league of another size
+
+**Empirical, all 21 domestic league UIDs** (the 18 divisions, the
+Dutch playoff groups 50–51 and the runtime league 123): no league game
+day falls on a turn with a game of a competition whose host changes
+(the European club competitions 33–37, the national teams 44–47 and
+the runtime cups 38–43) or of a knockout of the league's own nation.
+The one exception is May week 3 weekend, the last game day of UIDs 0,
+28 and 123, which is also a turn of the English and Italian promotion
+playoffs (UIDs 3 and 31); only second-division clubs play in those.
+`league_turns` keeps clear of the playoffs anyway. Competitions 0–32
+each belong to one nation in `open_nation`: 0–5 England, 6–10 France,
+11–15 Germany, 16–21 Italy, 22–26 Spain, 27–32 the Netherlands, in the
+order of the starting leagues. The second divisions, which have more
+game days, put the extra ones on free midweeks.
+
+So a league's **free turns** are the turns inside its season (its first
+to its last game day) that hold none of those games and none of its
+own. `league_turns(uid, days)` adds free turns or drops game days to
+reach a number of days: each added turn goes into the widest gap
+between game days, a weekend before a midweek, and each dropped one is
+a midweek first, then the one that leaves the smallest gap; the first
+and last game days stay, so the season keeps its dates. For the English
+first division at 22 clubs (42 days) it adds August week 3 midweek,
+September week 1 midweek, October week 2 weekend and March week 1
+weekend.
+
+Room in each division within its current season (`python SRC/schedule.py
+turns DAT/PARAM`). A second division's own-nation version holds your
+club and the rival as well, 2 more than the other-nations version, so
+it limits how far that division can grow:
+
+| League | First division: clubs now, most | Second division: other-nations / own-nation now, most |
+|---|---|---|
+| England (UIDs 0, 2, 1) | 20, 24 | 24 / 26, 26 / 26: can't grow |
+| France (10, 12, 11) | 20, 24 | 20 / 22, 26 / 26: up to 24 |
+| Germany (19, 21, 20) | 18, 26 | 18 / 20, 26 / 26: up to 24 |
+| Italy (28, 30, 29) | 20, 24 | 22 / 24, 24 / 24: can't grow |
+| Spain (38, 40, 39) | 20, 24 | 22 / 24, 26 / 26: up to 24 |
+| Netherlands (47, 49, 48) | 18, 22 | 20 / 22, 22 / 24: up to 22 |
+
+More room would need the season to start earlier or end later (July
+week 4 is free for the first divisions) or games on the turns the cups
+use; neither is done.
+
+`python SRC/schedule.py turns DAT/PARAM 0 42` draws the season with the
+turns a 42-day schedule would add.
 
 ## Related files
 
@@ -358,5 +414,7 @@ python SRC/schedule.py year  DAT/PARAM        # the 184 year_schedule_data rows
 python SRC/schedule.py compe DAT/PARAM 6      # a 32-team knockout: games, pairings, links
 python SRC/schedule.py entry DAT/PARAM 6      # where its 32 teams come from
 python SRC/schedule.py league DAT/PARAM       # generated leagues of 2-32 clubs beside the disc's
+python SRC/schedule.py turns  DAT/PARAM       # each domestic league's game days and room for more
+python SRC/schedule.py turns  DAT/PARAM 0 42  # the English first division's season with 42 game days
 python SRC/sles_disasm.py ISO/SLES_541.51 dis Sche_Block_decode_main2 makeTeamEntryIDList
 ```

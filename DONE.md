@@ -285,6 +285,13 @@ files. Each item keeps what was found, where, and how it was tested.
       that size. The disc has one template per size; the generated ones
       never put a club more than 2 games in a row at one venue (the disc's
       22- and 26-club templates reach 7 and 9). In `regress.py`
+- [x] Game days for a league of another size: `schedule.py turns` lists
+      each domestic league's free turns (no game of a European,
+      national-team or runtime competition, or of its own nation's cups,
+      inside its season) and its room to grow; `league_turns` adds turns
+      in the widest gaps or drops midweeks. The year is July to June, 8
+      turns a month (empirical). England's first division has room for
+      24 clubs, its second division none. In `regress.py`
 
 ## 3. Ninja 3D models and motions
 
