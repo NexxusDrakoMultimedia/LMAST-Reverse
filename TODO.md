@@ -293,10 +293,16 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] Tools still PAL-only: `patch_disc.py`'s switches (they refuse
       other discs), `save.py`'s commands (they take no ISO folder), the
       editor
-- [ ] Widescreen UI leftovers (`DOC/WIDESCREEN.md#whats-still-open`): the
-      Pre-match screen's striped background stays stretched; name tags
-      over players drift toward the centre; check faces in the club
-      editor
+- [ ] Widescreen UI leftovers (`DOC/WIDESCREEN.md#whats-still-open`): UI
+      the game parks just off-screen (the hidden squad list, the
+      Pre-match stripes) now shows in the side margins, so the 2D layer
+      needs clipping to 4:3; `etc::Util_ScissorBeginDirect` clips with
+      unsqueezed coordinates; name tags over players drift toward the
+      centre
+- [ ] A custom (VPF) player's face shows blue and black stripes on the
+      in-match Tactics screens; fine in the season menus. Happens with
+      every patch off (user report, 2026-10-04), so it isn't the
+      widescreen patch
 
 ## 8. Housekeeping
 

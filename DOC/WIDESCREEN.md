@@ -70,7 +70,7 @@ the same way (PAL is 512 pixels wide; GS units are 1/16 pixel, centre 2048):
 |---|---|---|---|
 | Ninja 2D table `0x365b98` {offX, scaleX, offY, scaleY}, filled once by `nnInitSystemPS2` (`0x18f308`–`0x18f370`); read by `nnDrawPrimitive2D` (`0x1779d8`), `nnuPrimitive2DSetVertex` (`0x167580`) and `nnDrawPrimitiveSprite2DPS2` (`0x179cc0`) | text | `offX + x·scaleX`, 28672 and 16 | 29696 and 12 (two data words) |
 | `CSpriteDirect::SetPrimData` (`0x126568`) | panels, scoreboard, clock, radar | `((x − 256) + 2048) × 16`, 256 in `$f23` | `sub.s` at `0x12666c` becomes `jal 0x12fa10`, which also multiplies by 0.75 |
-| CSE: `cseCastFacePutTriStripParamPS2` (`0x1f2040`) copies each cast node's 3×3 matrix (rows at `$t1`, `x' = x·m00 + y·m10 + tx`) into the VU1 packet in the loop at `0x1f20b4` | menu panels | the node matrix | `0x1f20e0` jumps to `0x12fa30`, which scales the copied x column by 0.75 and adds 64 to tx, then returns; CSE's own matrices are unchanged |
+| CSE: `cseCastFacePutTriStripParamPS2` (`0x1f2040`) copies each cast node's 3×3 matrix (rows at `$t1`, `x' = x·m00 + y·m10 + tx`) into the VU1 packet in the loop at `0x1f20b4` | menu panels | the node matrix | `0x1f20e0` jumps to `0x12fa30`, which scales the copied x column by 0.75 and adds 64 to tx, then returns; CSE's own matrices are unchanged. It only does so while the CSE screen's offX (context `0x38f458` `+0x68`) is −0.5, the menus' value, so `CEditFaceRender::Render` (`0x151858`), which sets its own screen to build custom players' faces, is left alone |
 
 Which functions run in a match was found by hooking each candidate with
 a stub that stored its return address (live, over PINE): `CSpriteDirect::SetPrimData`,
@@ -88,14 +88,19 @@ Ruled out:
 
 ## What's still open
 
-- The Pre-match screen's striped background still runs past the 4:3
-  area, so it draws through a path not found yet.
+- UI the game parks just off its 512-pixel screen now lands in the side
+  margins: the hidden squad list in the match, and probably the
+  Pre-match screen's striped background. Clipping the 2D layer to the
+  4:3 area would hide it, but needs the point in the frame where 2D
+  drawing starts.
+- `etc::Util_ScissorBeginDirect` (`0x14c860`) clamps clip rectangles to
+  0–511 and writes them to the GS unchanged, so lists that clip will
+  clip at unsqueezed positions.
 - Name tags over players come from 3D positions but are drawn as text,
   so the text patch pulls them toward the centre.
 - The boot video-mode box uses yet another path; it stays stretched.
-- `CEditFaceRender::Render` (`0x151858`) also draws with CSE, to build
-  face textures. Faces looked normal in the test, but the club editor
-  hasn't been checked.
+- A custom (VPF) player's face is striped on the in-match Tactics
+  screens, but that happens with every patch off too (user report).
 
 ## Checking the claims
 
