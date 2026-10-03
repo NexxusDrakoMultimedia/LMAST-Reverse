@@ -518,7 +518,7 @@ disc. Nothing has shown a difference from them yet.
 ### Known problem: the club rankings
 
 (The first version of the skip, described above. The second version,
-below, is meant to fix it.)
+below, fixes it: tested in PCSX2.)
 
 **Tested in PCSX2** (user report): on an unmodified `--skip-tutorial`
 disc, Information → All Clubs Ranking lists every club as **65536**, in
@@ -563,10 +563,14 @@ old skip disc re-patched comes out byte for byte the same as a fresh one.
 `sqb.set_commands` makes the script edits and checks the labels once at
 the end.
 
-**Not tested in PCSX2 yet.** To check: the playoffs are skipped and the
-career starts in 2006–07; All Clubs Ranking has real ranks; the supplier
-is Egamucho (status 500 from the real year end); the sub-sponsors can be
-signed at the first Sponsor screen.
+**Tested in PCSX2** (unmodified game with the second skip): the playoffs
+were skipped and the career started in 2006–07, Week 1 Mid-Week July.
+All Clubs Ranking had real ranks (Real Madrid 1, Juventus 2, Chelsea 3,
+AC Milan 4, Bayern 5), and Real Madrid's detail screen showed world
+ranking 1. The club started with £3,350,000, against £1,785,000 on the
+first version's disc at the same date, so the year end also settles the
+playoff season's money. Not checked yet: the supplier (Egamucho expected)
+and the sub-sponsors at the first Sponsor screen.
 
 ## The developer launcher
 

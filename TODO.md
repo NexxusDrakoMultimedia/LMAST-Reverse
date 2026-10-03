@@ -115,10 +115,9 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       slot 0, age 16 in the mod): 16 means the skip adds the year. Then
       document which code adds it (`DOC/INITTEAM_FORMAT.md`,
       `DOC/TEAMINIT_FORMAT.md`)
-- [ ] Test in PCSX2: the second tutorial skip (`patch_disc.py
-      --skip-tutorial`, which now runs the playoffs' real year end): the
-      playoffs are skipped, All Clubs Ranking has real ranks, the supplier
-      is Egamucho and the sub-sponsors can be signed
+- [ ] Test in PCSX2: the second tutorial skip's sponsors (the club
+      rankings are fixed and tested): the supplier is Egamucho and the
+      sub-sponsors can be signed at the first Sponsor screen
       (`DOC/SQB_FORMAT.md#the-second-version-the-playoffs-own-schedule-steps`)
 - [ ] Tutorial skip leftovers: check other leagues (the switch calls
       `pwkLg_Init(0)`), and whether the rest of the skipped

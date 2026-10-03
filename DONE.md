@@ -264,6 +264,13 @@ files. Each item keeps what was found, where, and how it was tested.
       each pack with its `.HED` byte for byte (in `regress.py`); a pack
       and its `.HED` are written together, as the game reads offsets from
       the `.HED` copies in `PRELOAD/STATIONFILE.PAC`
+- [x] Tutorial skip, second version: `--skip-tutorial` runs the playoffs'
+      own schedule steps without the playoff turns (RootClubEditSeq's dead
+      playoff section becomes InitializeFirstCheck, YearStart, MonthStart,
+      CheckClubEditSkip and a Call to the won route's MonthEnd, YearEnd and
+      Finalize), so the real `Sche.YearEnd` runs. Tested in PCSX2: All
+      Clubs Ranking has real ranks (the first version left every club at
+      65536), and the club starts with £3,350,000 (£1,785,000 before)
 
 ## 3. Ninja 3D models and motions
 
