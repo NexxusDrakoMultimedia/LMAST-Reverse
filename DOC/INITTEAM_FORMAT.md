@@ -88,7 +88,8 @@ tables 0 and 1. Each club takes the other's place in the starting
 divisions and in last season's results. The first season is built from
 those results: the league schedules fill their slots from `LAST_RANK`
 records (UID 0 takes ranks 1–20 of competition 0, UIDs 1 and 2 take its
-ranks 18–20 and the promotion places of competitions 1 and 2,
+ranks 18–20 and the second division's places, competition 2 being
+the 3rd–6th promotion playoffs,
 [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#what-decides-the-first-seasons-leagues)),
 and the cups take their entrants the same way. So a swapped club starts
 in the other's division and inherits its promotion, relegation and cup

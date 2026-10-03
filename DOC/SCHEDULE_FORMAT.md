@@ -218,6 +218,23 @@ competition 0 from last season. At the start of a new game,
 So that table decides which clubs start in which division, and this pack
 decides how they are placed.
 
+**England**, from the team-entry records of UIDs 0, 1 and 3 (`python
+SRC/schedule.py entry DAT/PARAM 0`):
+
+| UID | Takes |
+|---|---|
+| 0, first division (20) | ranks 1–17 of competition 0 (the first division), ranks 1–2 of competition 1 (the second division), rank 1 of competition 2 |
+| 1, second division, own nation (26 slots) | ranks 18–20 of competition 0, ranks 2–4 of competition 2, ranks 7–26 of competition 1 |
+| 3, competition 2 (4 entrants) | ranks 3, 6, 4 and 5 of the second division's current table (`NOW_RANK` of UID 1, or UID 2 when the second division isn't your league) |
+
+UID 3 is a knockout of 5 games over 3 days: pairings 0 and 1 played home
+and away (3rd v 6th, 4th v 5th), then their winners in one game. So
+competition 2 is the **promotion playoffs**: the top two go up, 3rd to
+6th play off for the third place, and the three losers stay down. The
+second division keeps every other club; nothing is relegated from it, as
+the game has no third tier (user report). The other leagues' UIDs follow
+their own rules, not checked here.
+
 ## Related files
 
 - `0SYSTEM/SCHEDULE.TBB` (2 tables, 76 and 23 rows of 32 bytes, with a
