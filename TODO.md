@@ -17,10 +17,9 @@ item in its section below.
    building a league of another size, which changing a division's size
    needs. The starting season is the first thing [`GOALS.md`](GOALS.md)
    wants a mod to change.
-2. **The editor's leftovers** (section 11). All six tabs are tested in
-   PCSX2, mail texts and keeper schemes included. Left: the licensed kit
-   descriptors and a free-agents tab (`plrsim.py setfree` now
-   round-trips).
+2. **The editor's leftovers** (section 11). Six of the seven tabs are
+   tested in PCSX2. Left: a PCSX2 test of the new Free agents tab and
+   the licensed kit descriptors.
 3. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -351,5 +350,5 @@ and every GUI edit must also be possible as a `python SRC/...` command.
 
 - [ ] Kits tab: the licensed kits' descriptors and number colours
       (`uniform.py setlicence`, `setexe`)
-- [ ] Free agents tab (`plrsim.py setfree`, `PLRESOURCESIM.PAC` entry 15;
-      `plrsim.py roundtrip` checks its encoder)
+- [ ] Test in PCSX2: a free agent replaced in the Free agents tab shows
+      on the Transfer List (rank within the new club's band, 0-5)

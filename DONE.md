@@ -802,3 +802,13 @@ files. Each item keeps what was found, where, and how it was tested.
       in the Champions Division has fixtures there in 2006-07 and keeps
       Spain on its Information page. League Ranking is the current
       table place, so "-" before the first league match (user report)
+- [x] Free agents tab on `plrsim.py`: the 1,300 starting free agents with
+      name, nation, age, positions and rank from the People tab, and a
+      player search to replace one through `plrsim.set_free` (moved out
+      of `setfree`). Refuses a player already in the list or in a squad
+      (none is on the disc) and notes ranks above 11, which never reach
+      the Transfer List. Checked through the widgets: two replacements
+      and both refusals; with a Clubs edit to the same pack saved first,
+      replaying the two logged commands gives the saved pack byte for
+      byte. The Clubs tab now also saves onto the pack as it is at save
+      time, so neither tab drops the other's edits

@@ -63,6 +63,7 @@ CLIMATE_ZONES = 0x40
 CLUB_RECORDS = 457                       # plOteam_GetDb, teams 3-459
 SCHEDULE_UIDS = 164
 END_COMBI = -1000                        # ends the combination streams
+TRANSFER_LIST_MAX_RANK = 11              # top of the highest rank band (0x553170)
 NAMES = ("states and cities", "overseas branches", "(unread)", "club records",
          "nations", "player affiliations", "transfer AI", "player introductions",
          "record kinds", "edit colours", "stadium ids", "scout exclusives",
@@ -456,26 +457,37 @@ def cmd_roundtrip(path):
     print("%s: %s" % (path, "rebuilt pack identical" if out == data else "!! rebuilt pack differs"))
 
 
+def set_free(ids, slot, player):
+    """Put `player` in free-agent slot `slot` of the list `ids` (as
+    free_agents returns it), as `setfree` does. Returns the old player.
+    Raises ValueError for a slot or player out of range, or a player the
+    list already holds (the disc's list has no repeats)."""
+    if not 0 <= slot < len(ids):
+        raise ValueError("slot %d: the list has slots 0-%d" % (slot, len(ids) - 1))
+    if not 0 <= player < PLAYERS:
+        raise ValueError("player %d: players are 0-%d" % (player, PLAYERS - 1))
+    if player in ids and ids.index(player) != slot:
+        raise ValueError("player %d is already in the list (slot %d)" % (player, ids.index(player)))
+    old = ids[slot]
+    ids[slot] = player
+    return old
+
+
 def cmd_setfree(src, dst, pairs):
     if os.path.abspath(src) == os.path.abspath(dst):
         raise SystemExit("refusing to overwrite the input; write to a new file")
     with open(src, "rb") as f:
         data = f.read()
     v = free_agents(data)
-    count = len(v)
     for pair in pairs:
         slot, sep, player = pair.partition("=")
         if not sep or not slot.isdigit() or not player.isdigit():
             raise SystemExit("expected <slot>=<player>, got %r" % pair)
-        slot, player = int(slot), int(player)
-        if not 0 <= slot < count:
-            raise SystemExit("slot %d: the list has slots 0-%d" % (slot, count - 1))
-        if not 0 <= player < PLAYERS:
-            raise SystemExit("player %d: players are 0-%d" % (player, PLAYERS - 1))
-        if player in v:
-            raise SystemExit("player %d is already in the list (slot %d)" % (player, v.index(player)))
-        print("slot %d: %d -> %d" % (slot, v[slot], player))
-        v[slot] = player
+        try:
+            old = set_free(v, int(slot), int(player))
+        except ValueError as e:
+            raise SystemExit(str(e))
+        print("slot %s: %d -> %s" % (slot, old, player))
     out = encode_free(data, v)
     if len(out) != len(data):
         raise SystemExit("rebuilt pack is %d bytes, not %d" % (len(out), len(data)))

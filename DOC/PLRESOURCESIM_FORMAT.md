@@ -210,7 +210,12 @@ in the list and keeps the pack's size. The pack has copies in the seven
 `PRELOAD/SIMLOCALMEM*.PAC` packs, so patch it with `patch_disc.py
 --copies`. `python SRC/plrsim.py roundtrip DAT/PARAM` re-encodes the
 unchanged list through the same encoder and checks that the rebuilt pack
-equals the original byte for byte.
+equals the original byte for byte. The editor's Free agents tab makes
+the same edit and logs it as a `setfree` command.
+
+**Empirical:** no free agent is in a club squad (`OTEAMMEMBER.TBB`), and
+all 1,300 are rank 1–10. The editor refuses a squad player, to keep that
+rule.
 
 ## Entry 6 table 2
 

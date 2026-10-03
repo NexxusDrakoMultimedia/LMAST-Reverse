@@ -48,6 +48,12 @@ Tabs:
     Season   the starting divisions by league, with last season's table, and
              swapping two league clubs' places (initteam.py swap;
              DOC/INITTEAM_FORMAT.md#swapping-clubs).
+    Free agents
+             the players without a club at the start of a career
+             (PLRESOURCESIM.PAC entry 15, plrsim.py setfree;
+             DOC/PLRESOURCESIM_FORMAT.md). Refuses a player already in the
+             list or in a club's squad. Shares the pack with the Clubs tab:
+             each saves its edits onto the file as it is then.
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
@@ -74,6 +80,7 @@ from tkinter import font as tkfont, messagebox, ttk
 import initteam
 import mbb
 import pbdata
+import plrsim
 import teaminit
 import uniform
 
@@ -1105,10 +1112,16 @@ class ClubsTab(Tab):
                 commands.append(["python", "SRC/initteam.py", "set", quote(shown_path(self.ot_path)),
                                  quote(shown_path(out + ".new"))] + args)
             if self.team_changes:
+                # The Free agents tab writes the same pack, so apply the
+                # edits to the file as it is now, not as it was loaded.
+                self.db_path = mod.source(SIMPAC)
+                db = initteam.TeamDb(self.db_path)
+                for (team, name), value in self.team_changes.items():
+                    initteam.set_team_field(db.records[team], name, value)
                 out = mod.target(SIMPAC)
                 os.makedirs(os.path.dirname(out), exist_ok=True)
                 with open(out + ".new", "wb") as f:
-                    f.write(self.db.encode())
+                    f.write(db.encode())
                 temps.append((out + ".new", out))
                 args, last = [], None
                 for (team, name), value in self.team_changes.items():
@@ -1119,7 +1132,7 @@ class ClubsTab(Tab):
                 commands.append(["python", "SRC/initteam.py", "setteam",
                                  quote(shown_path(self.db_path)),
                                  quote(shown_path(out + ".new"))] + args)
-        except (OSError, struct.error) as e:
+        except (OSError, struct.error, ValueError) as e:
             remove_new(temps)
             messagebox.showerror("Clubs", "Can't save: %s" % e)
             return False
@@ -2220,6 +2233,230 @@ class SeasonTab(Tab):
         return True
 
 
+class FreeAgentsTab(Tab):
+    """The free agents at the start of a career (PLRESOURCESIM.PAC entry
+    15), through plrsim.set_free, as `plrsim.py setfree` does. The players'
+    names, ranks and clubs come from the People tab."""
+    title = "Free agents"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.ids = None             # the list as edited
+        self.original = None
+        self.changes = {}           # slot -> player, in edit order
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Find a player (name or id)").pack(side="left")
+        self.find_var = tk.StringVar()
+        find = ttk.Entry(bar, textvariable=self.find_var, width=22)
+        find.pack(side="left", padx=(4, 12))
+        find.bind("<Return>", lambda e: self.refresh_candidates())
+        self.search_button = ttk.Button(bar, text="Search", command=self.refresh_candidates)
+        self.search_button.pack(side="left")
+        self.count_label = ttk.Label(bar, text="")
+        self.count_label.pack(side="left", padx=12)
+        ttk.Label(self.frame, text="Pick a slot on the left and a player on the right, then "
+                                   "Replace. The Transfer List only shows free agents whose rank "
+                                   "is in the band for the club's rank: 0-5 for a new club, at "
+                                   "most %d for any club (DOC/PLRESOURCESIM_FORMAT.md). A player "
+                                   "in a club's squad can't also be a free agent."
+                                   % plrsim.TRANSFER_LIST_MAX_RANK,
+                  foreground="#555", wraplength=1100, justify="left").pack(anchor="w", padx=8)
+
+        panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=6)
+        cols = ("id", "name", "nation", "age", "position", "rank")
+        widths = (60, 160, 90, 40, 90, 40)
+        left = ttk.LabelFrame(panes, text="Free agents at the start")
+        self.tree = self.player_tree(left, ("slot",) + cols + ("note",),
+                                     (50,) + widths + (150,))
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.picked())
+        panes.add(left, weight=1)
+        right = ttk.LabelFrame(panes, text="Players to bring in")
+        foot = ttk.Frame(right)
+        foot.pack(side="bottom", fill="x", pady=4)
+        self.replace_button = ttk.Button(foot, text="Replace", command=self.replace,
+                                         state="disabled")
+        self.replace_button.pack(side="left", padx=4)
+        self.pick_label = ttk.Label(foot, text="")
+        self.pick_label.pack(side="left", padx=8)
+        self.found = self.player_tree(right, cols + ("club",), widths + (150,))
+        self.found.bind("<<TreeviewSelect>>", lambda e: self.picked())
+        self.found.bind("<Double-1>", lambda e: self.replace())
+        panes.add(right, weight=1)
+
+    def player_tree(self, parent, cols, widths):
+        tree = ttk.Treeview(parent, columns=cols, show="headings", selectmode="browse")
+        for c, width in zip(cols, widths):
+            tree.heading(c, text=c.capitalize())
+            tree.column(c, width=width, stretch=c == "name")
+        tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(parent, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        tree.pack(side="left", fill="both", expand=True)
+        return tree
+
+    def load(self, done=None):
+        self.path = self.app.mod.source(SIMPAC)
+        try:
+            with open(self.path, "rb") as f:
+                self.ids = plrsim.free_agents(f.read())
+        except (ValueError, struct.error, OSError, IndexError) as e:
+            self.ids = None
+            self.app.status("Couldn't load the free agents: %s" % e)
+            messagebox.showerror("Free agents", "Couldn't load the free agents:\n%s" % e)
+            return
+        self.original = list(self.ids)
+        self.changes = {}
+        self.refresh_list()
+        self.refresh_candidates()
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def changed(self, what):
+        if what in ("people", "squads") and self.ids is not None:
+            self.refresh_list()
+            self.refresh_candidates()
+
+    # the lists
+
+    def players(self):
+        """The People tab's players, edits included, or None while it loads."""
+        records = self.app.people.records
+        return records["players"] if records else None
+
+    def club(self, player):
+        club = self.app.people.club_of.get(player) if self.players() else None
+        return club[0] if club else None
+
+    def cells(self, player):
+        players = self.players()
+        if players is None or player >= len(players):
+            return (player, "", "", "", "", "")
+        f = players[player].fields
+        return (player, players[player].name, self.app.people.nations.get(f["nation"], f["nation"]),
+                f["age"], "/".join(pbdata.position_name(p) for p in f["position"] if p != 13),
+                f["rank"])
+
+    def note(self, player):
+        players = self.players()
+        if players and player < len(players) and \
+                players[player].fields["rank"] > plrsim.TRANSFER_LIST_MAX_RANK:
+            return "never on the Transfer List"
+        return ""
+
+    def refresh_list(self):
+        sel = self.tree.selection()
+        self.tree.delete(*self.tree.get_children())
+        for slot, player in enumerate(self.ids):
+            self.tree.insert("", "end", iid=str(slot),
+                             values=(slot,) + self.cells(player) + (self.note(player),),
+                             tags=("edited",) if slot in self.changes else ())
+        if sel and self.tree.exists(sel[0]):
+            self.tree.selection_set(sel)
+            self.tree.see(sel[0])
+        self.tree.master.configure(text="Free agents at the start: %d, %d changed" % (
+            len(self.ids), len(self.changes)))
+
+    def refresh_candidates(self):
+        self.found.delete(*self.found.get_children())
+        players = self.players()
+        if players is None or self.ids is None:
+            self.count_label.configure(text="(waiting for the player database)")
+            return
+        find = self.find_var.get().strip()
+        listed = set(self.ids)
+        found = [r for r in players[:plrsim.PLAYERS] if r.index not in listed and
+                 (str(r.index) == find if find.isdigit() else find.lower() in r.name.lower())]
+        for r in found[:LIST_LIMIT]:
+            club = self.club(r.index)
+            self.found.insert("", "end", iid=str(r.index), values=self.cells(r.index) + (
+                "" if club is None else self.app.people.team_label(club),))
+        self.count_label.configure(text="%d found%s" % (
+            len(found), ", showing the first %d" % LIST_LIMIT if len(found) > LIST_LIMIT else ""))
+        self.picked()
+
+    def picked(self):
+        slot, player = self.tree.selection(), self.found.selection()
+        if slot and player:
+            self.pick_label.configure(text="slot %s: %s -> %s" % (
+                slot[0], self.cells(self.ids[int(slot[0])])[1], self.cells(int(player[0]))[1]))
+        else:
+            self.pick_label.configure(text="choose a slot and a player")
+        self.replace_button.configure(state="normal" if slot and player else "disabled")
+
+    # editing
+
+    def replace(self):
+        slot, player = self.tree.selection(), self.found.selection()
+        if not slot or not player:
+            return
+        slot, player = int(slot[0]), int(player[0])
+        name = self.cells(player)[1]
+        club = self.club(player)
+        if club is not None:
+            # No free agent on the disc is in a squad (initteam.py's squads).
+            return self.refuse("%d %s is in the squad of %s" % (
+                player, name, self.app.people.team_label(club)))
+        try:
+            old = plrsim.set_free(self.ids, slot, player)
+        except ValueError as e:
+            return self.refuse(str(e))
+        self.changes.pop(slot, None)
+        if player != self.original[slot]:
+            self.changes[slot] = player
+        self.app.status("Free agents slot %d: %d %s -> %d %s" % (
+            slot, old, self.cells(old)[1], player, name))
+        self.refresh_list()
+        self.refresh_candidates()
+        self.app.update_title()
+
+    def refuse(self, message):
+        self.app.status("Refused: " + message)
+        messagebox.showerror("Free agents", message)
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        # The Clubs tab writes the same pack, so start from the file as it
+        # is now.
+        src = mod.source(SIMPAC)
+        out = mod.target(SIMPAC)
+        temps = [(out + ".new", out)]
+        try:
+            with open(src, "rb") as f:
+                data = f.read()
+            ids = plrsim.free_agents(data)
+            for slot, player in self.changes.items():
+                plrsim.set_free(ids, slot, player)
+            new = plrsim.encode_free(data, ids)
+            if len(new) != len(data):
+                raise ValueError("rebuilt pack is %d bytes, not %d" % (len(new), len(data)))
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(new)
+        except (ValueError, struct.error, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Free agents", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        cmd = ["python", "SRC/plrsim.py", "setfree", quote(shown_path(src)),
+               quote(shown_path(out + ".new"))] + ["%d=%d" % c for c in self.changes.items()]
+        n = len(self.changes)
+        lines = log_lines("Free agents: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
 class LogTab(Tab):
     """The commands each save corresponds to, as written to editor.log."""
     title = "Log"
@@ -2629,7 +2866,9 @@ class App:
         self.kits = KitsTab(self)
         self.text = TextTab(self)
         self.season = SeasonTab(self)
-        self.tabs = [self.people, self.clubs, self.newclub, self.season, self.kits, self.text]
+        self.free = FreeAgentsTab(self)
+        self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free, self.kits,
+                     self.text]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)
