@@ -36,6 +36,15 @@ Usage:
     python schedule.py compe <DAT/PARAM> <uid>      # header, games and pairings of one UID
     python schedule.py entry <DAT/PARAM> <uid>      # team-entry slots of one UID
     python schedule.py roundtrip <DAT/PARAM>        # re-encode all three packs and their .HED, !! if not identical
+    python schedule.py league <DAT/PARAM> [<n> [single]]  # generated leagues: check every size, or print one
+
+`league` builds round robins for 2-32 clubs (league_days, set_league):
+each club alternates home and away, the second leg starts one round
+later than the first so rematches are far apart, and an odd size gets a
+rest day. With no size it checks every size, once and twice round, and
+compares each with the disc's own template of that size (`!!` on a
+generated league that breaks a rule). Building a league of a new size
+into the packs also needs its turn mask and team-entry slots changed.
 
 Writing: every entry re-encodes from its fields (year rows, competition
 headers, games, pairings, team-entry records), and a pack is rebuilt with
@@ -265,6 +274,104 @@ class Competition:
             if any(n >= 2 * self.pair_count or s > 1 for n, s in self.next):
                 out.append("next-pairing link out of range")
         return out
+
+
+# --- building a league -------------------------------------------------------
+
+LEAGUE_MAX = 32             # pairing index is 9 bits: n(n-1)/2 <= 511
+
+
+def league_days(n, legs=2):
+    """A round robin for entrant slots 0..n-1, as a list of game days, each
+    a list of (home, away). Berger tables: each club alternates home and
+    away, so no club plays more than two games in a row at one venue. The
+    second leg plays the first leg's rounds again with home and away
+    swapped, starting from round 1 (round 0's return games come last), so
+    a rematch is n-2 or more game days after the first meeting. An odd n
+    gets a rest day: slot n is a dummy, and its games are left out."""
+    if not 2 <= n <= LEAGUE_MAX or legs not in (1, 2):
+        raise ValueError("a league has 2-%d clubs playing 1 or 2 legs" % LEAGUE_MAX)
+    size = n + n % 2
+    m = size - 1
+    first = []
+    for r in range(m):
+        day = [(r, m) if r % 2 == 0 else (m, r)]
+        for i in range(1, size // 2):
+            a, b = (r + i) % m, (r - i) % m
+            day.append((a, b) if i % 2 else (b, a))
+        first.append([g for g in day if n not in g])
+    if legs == 1:
+        return first
+    return first + [[(a, h) for h, a in day] for day in first[1:] + first[:1]]
+
+
+def league_tables(n, legs=2):
+    """(pairings, games) for league_days(n, legs) in the layout of
+    SCHEDULE_COMPETITION tables 1 and 2: pairings in the order they are
+    first played, each as (home, away) of its first game, and games in day
+    order, swap 1 for a return game."""
+    pairs, index, games = [], {}, []
+    for day, fixtures in enumerate(league_days(n, legs)):
+        for h, a in fixtures:
+            key = frozenset((h, a))
+            if key not in index:
+                index[key] = len(pairs)
+                pairs.append((h, a))
+            k = index[key]
+            games.append(Game(day, k | (0 if pairs[k][0] == h else 1) << 9))
+    return pairs, games
+
+
+def set_league(c, n, legs=2):
+    """Make Competition `c` a league of n entrants with league_tables'
+    pairings and games. The other header bytes are kept. Returns the
+    number of game days, which the UID's turn mask must match."""
+    if c.next is not None:
+        raise ValueError("UID is a knockout (4 tables); only a league can be rebuilt")
+    c.pairs, c.games = league_tables(n, legs)
+    c.type, c.entrants = 0, n
+    c.pair_count, c.game_count = len(c.pairs), len(c.games)
+    return c.days
+
+
+def league_stats(c):
+    """(problems, breaks, longest run at one venue, shortest gap in game
+    days between two meetings of the same clubs) of a league Competition."""
+    probs = []
+    venue = {t: {} for t in range(c.entrants)}
+    meetings = {}
+    for g in c.games:
+        if g.pair >= len(c.pairs):
+            probs.append("game on day %d names pairing %d of %d" % (g.day, g.pair, len(c.pairs)))
+            continue
+        pair = c.pairs[g.pair]
+        h, a = pair[g.swap], pair[1 - g.swap]
+        for t, v in ((h, "H"), (a, "A")):
+            if t not in venue:
+                probs.append("slot %d out of range" % t)
+            elif g.day in venue[t]:
+                probs.append("slot %d plays twice on day %d" % (t, g.day))
+            else:
+                venue[t][g.day] = v
+        meetings.setdefault(g.pair, []).append((g.day, h))
+    legs = {len(m) for m in meetings.values()}
+    if len(meetings) != len(c.pairs) or len(legs) != 1:
+        probs.append("pairings are played %s times" % sorted(legs))
+    elif legs == {2} and any(m[0][1] == m[1][1] for m in meetings.values()):
+        probs.append("a pairing has both games at the same club")
+    if {frozenset(p) for p in c.pairs} != {frozenset((i, j)) for i in range(c.entrants)
+                                           for j in range(i + 1, c.entrants)}:
+        probs.append("pairings are not every two slots once")
+    breaks = longest = 0
+    for days in venue.values():
+        seq = [days[d] for d in sorted(days)]
+        run = 1
+        for i in range(1, len(seq)):
+            run = run + 1 if seq[i] == seq[i - 1] else 1
+            breaks += seq[i] == seq[i - 1]
+            longest = max(longest, run)
+    gap = min((m[1][0] - m[0][0] for m in meetings.values() if len(m) > 1), default=0)
+    return probs, breaks, longest, gap
 
 
 # --- SCHEDULE_TEAM_ENTRY -----------------------------------------------------
@@ -552,6 +659,36 @@ def cmd_entry(root, uid):
             print("  slot %3d  %-9s %s%s" % (r[0], kind, describe(kind, r), shuffle))
 
 
+def cmd_league(root, n=None, legs=2):
+    """Check the generated league for every size, beside the disc's own
+    template of that size; or print one generated league day by day."""
+    if n is not None:
+        days = league_days(n, legs)
+        print("%d clubs, %d leg%s: %d game days" % (n, legs, "s" * (legs - 1), len(days)))
+        for d, fixtures in enumerate(days):
+            print("  day %3d  %s" % (d, "  ".join("%d-%d" % f for f in fixtures)))
+        return
+    disc = {}
+    for uid, (_, buf) in enumerate(read_pack(find(root, COMPE_PAC))):
+        c = Competition(buf)
+        if c.type == 0:
+            disc.setdefault((c.entrants, len(c.games) // len(c.pairs)), (uid, c))
+    for legs in (1, 2):
+        for n in range(2, LEAGUE_MAX + 1):
+            c = Competition.__new__(Competition)
+            c.next, c.header, c.tails = None, bytes(COMPE_HEADER), [b"", b"", b""]
+            days = set_league(c, n, legs)
+            probs, breaks, longest, gap = league_stats(c)
+            line = "%2d clubs %d leg%s: %3d days %3d games  breaks %3d  longest %d  gap %2d" % (
+                n, legs, "s" if legs == 2 else " ", days, len(c.games), breaks, longest, gap)
+            if (n, legs) in disc:
+                uid, d = disc[n, legs]
+                _, db, dl, dg = league_stats(d)
+                line += "  (disc UID %d: %d days, breaks %d, longest %d, gap %d)" % (
+                    uid, d.days, db, dl, dg)
+            print(line + ("  !! " + "; ".join(probs) if probs else ""))
+
+
 def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
@@ -565,6 +702,11 @@ def main(argv):
         cmd_entry(args[0], int(args[1], 0))
     elif cmd == "roundtrip" and len(args) == 1:
         cmd_roundtrip(args[0])
+    elif cmd == "league" and len(args) == 1:
+        cmd_league(args[0])
+    elif cmd == "league" and len(args) in (2, 3) and args[1].isdigit() \
+            and (len(args) == 2 or args[2] == "single"):
+        cmd_league(args[0], int(args[1]), 1 if len(args) == 3 else 2)
     else:
         print(__doc__)
         return 1

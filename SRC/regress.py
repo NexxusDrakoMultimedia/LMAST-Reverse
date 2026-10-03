@@ -105,6 +105,8 @@ def checks():
         ("schedule", ["schedule.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         # Every schedule entry re-encoded, each pack rebuilt with its .HED.
         ("schedule_roundtrip", ["schedule.py", "roundtrip", "DAT/PARAM"], ["DAT/PARAM"]),
+        # Generated leagues of 2-32 clubs, checked and compared with the disc's.
+        ("schedule_league", ["schedule.py", "league", "DAT/PARAM"], ["DAT/PARAM"]),
         ("stadium", ["stadium.py", "info", "DAT/STADIUM", "DAT/PARAM"],
          ["DAT/STADIUM", "DAT/PARAM"]),
         # SEQ/*.SQB and the PSC*.PAC scripts; the main script's listing

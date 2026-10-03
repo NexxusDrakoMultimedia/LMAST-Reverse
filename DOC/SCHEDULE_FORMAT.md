@@ -261,6 +261,75 @@ that changes size moves the entries after it, and the pack and its
 `.HED` must be written together; `patch_disc.py --copies` then updates
 the `STATIONFILE` copies.
 
+## Building a league of another size
+
+Changing a division's size needs a new league schedule for that many
+clubs. `schedule.py` can now build one; putting it into the packs is the
+next step (below).
+
+**The disc's leagues (empirical, all 77 league UIDs):** there is one
+fixed schedule per size. Every league of the same size and number of
+legs has exactly the same games: all seven 20-club leagues (UIDs 0, 10,
+12, 20, 28, 38, 49) are one template, so are the three 18-club ones and
+so on. In every even-sized league each club plays once per game day,
+and a double round robin uses 2(*n* − 1) days. The second half repeats
+the first half's days in the same order with home and away swapped (day
+19 of the 20-club league is day 0 reversed). Pairings are listed in the
+order they are first played, each as (home, away) of its first game,
+and return games have swap 1. The 5-club groups (UIDs 87–112) are
+irregular: some clubs play twice on one day.
+
+The templates differ a lot in how well home and away games alternate:
+
+| Clubs, legs | UIDs | Longest run at one venue | Breaks (two in a row at one venue) |
+|---|---|---|---|
+| 20, 2 | 0, 10, 12, 20, 28, 38, 49 | 2 | 54 |
+| 22, 2 | 11, 30, 40, 48 | 7 | 400 |
+| 24, 2 | 2, 29, 39 | 2 | 168 |
+| 26, 2 | 1 | 9 | 512 |
+
+**The generator** (`league_days`, `league_tables`, `set_league`) uses
+Berger tables (the circle method): club *n* − 1 stays put while the
+others rotate, and every club alternates home and away. The second half
+plays the first half's rounds again with home and away swapped,
+starting from round 1, so round 0's return games come last. That keeps
+the run at one venue to 2 at every size, gives 2*n* breaks in a double
+round robin (40 for 20 clubs, against the disc's 54), and puts every
+rematch at least *n* − 2 game days after the first meeting. A plain
+same-order mirror gives runs of 3 where the halves meet, and a
+reverse-order mirror gives back-to-back rematches. An odd number of
+clubs gets a rest day: a dummy club joins the draw and its games are
+left out. Sizes run from 2 to 32 clubs: the pairing index is 9 bits, so
+*n*(*n* − 1)/2 must stay under 512.
+
+`python SRC/schedule.py league DAT/PARAM` builds every size once and
+twice round, checks each (every pair of clubs meets the right number of
+times, home once each in a double round robin, no club twice on one
+day) and prints it beside the disc's template of that size. `python
+SRC/schedule.py league DAT/PARAM 22` prints one day by day. A rebuilt
+entry encodes and re-reads with no problems; a 22-club UID 0 grows from
+2,000 to 2,416 bytes, which moves the entries after it (see
+[Writing](#writing)).
+
+**Still needed before a size can change in game:**
+
+- The UID's turn mask must get one set bit per game day (42 for 22
+  clubs instead of 38), on turns that don't collide with the club's
+  other competitions. Which turns are free isn't worked out.
+- The team-entry slots must match: a `LAST_RANK` record per slot, with
+  the promotion and relegation places of both divisions changed together
+  (UID 0 takes the top two and the playoff winner from the second
+  division), the own-nation and other-nations versions (UIDs 1 and 2)
+  kept in step, and the playoffs' `NOW_RANK` ranks.
+- `PLRRSRC_INITTEAMDATA.TBB` must put that many clubs in the division,
+  and the past records it seeds must hold them.
+- Memory: each loaded UID takes its games, entrants and table rows from
+  shared save-buffer pools (`ScheEuro_Memory::init` `0x209210` sets
+  sizes such as `0x16c0` and `0x1800`; `alloc_save_buffer` `0x2097e8`,
+  type from `savectrl`). The big leagues are all type 0, which already
+  holds the 26-club league (650 games), but whether the pools have room
+  for more games in total isn't traced.
+
 ## Related files
 
 - `0SYSTEM/SCHEDULE.TBB` (2 tables, 76 and 23 rows of 32 bytes, with a
@@ -288,5 +357,6 @@ python SRC/schedule.py info  DAT/PARAM        # every entry; reports UID 117
 python SRC/schedule.py year  DAT/PARAM        # the 184 year_schedule_data rows
 python SRC/schedule.py compe DAT/PARAM 6      # a 32-team knockout: games, pairings, links
 python SRC/schedule.py entry DAT/PARAM 6      # where its 32 teams come from
+python SRC/schedule.py league DAT/PARAM       # generated leagues of 2-32 clubs beside the disc's
 python SRC/sles_disasm.py ISO/SLES_541.51 dis Sche_Block_decode_main2 makeTeamEntryIDList
 ```

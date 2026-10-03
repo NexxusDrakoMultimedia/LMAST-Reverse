@@ -279,6 +279,12 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Tested in PCSX2: a career national squad lists each player's
       club, so call-ups draw only on club players and the renamed fixed
       record 26,046 (`NT.Terry.VS`) doesn't appear (user report)
+- [x] League schedules of any size: `schedule.py league` builds round
+      robins of 2-32 clubs (Berger tables, second half rotated by one
+      round), checks each and compares it with the disc's template of
+      that size. The disc has one template per size; the generated ones
+      never put a club more than 2 games in a row at one venue (the disc's
+      22- and 26-club templates reach 7 and 9). In `regress.py`
 
 ## 3. Ninja 3D models and motions
 
