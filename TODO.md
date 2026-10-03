@@ -246,8 +246,8 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] Whether anything starts module 69 (the `TESTPRG` launcher) or the test
       modules at 71–129; their viewers could be useful for modding.
       `RootMainSeq` skips `RootLauncherSeq.sqb` because
-      `Dummy.CheckLauncher` always returns 1; `sqb.py setcmd
-      ROOTMAINSEQ.SQB out 0x98 0:27` flips the test (1 byte,
+      `Dummy.CheckLauncher` always returns 1; `patch_disc.py
+      --launcher` (or the editor's Build disc box) flips the test (1 byte,
       `DOC/SQB_FORMAT.md#the-developer-launcher`)
 - [ ] Why the blank test modules show nothing: missing data, or waiting
       for input or arguments from the launcher

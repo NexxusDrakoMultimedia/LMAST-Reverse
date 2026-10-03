@@ -727,4 +727,10 @@ files. Each item keeps what was found, where, and how it was tested.
       variable. Category 1 messages 760-783 (the rival owners' names,
       variable 131) all set to "The FRC" in the Text tab: the reporter in
       the Big Bang Konzern event called the rival owner "The FRC"
+- [x] Build disc switches: boxes for `--sponsor-negotiation` and a new
+      `patch_disc.py --launcher` (the developers' debug menu, the 1-byte
+      `RootMainSeq.sqb` patch tested in PCSX2 before), next to the
+      tutorial skip, remembered in `build.json`. Checked: all three
+      switches in one build write the expected bytes, and the dialog's
+      boxes add them to the command it runs
 

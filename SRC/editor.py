@@ -24,7 +24,8 @@ patch_disc.py's targets: PARAM/PBDATA_EU.PAC=mod/PARAM/PBDATA_EU.PAC and
 disc:SLES_541.51=mod/disc/SLES_541.51.
 
 File > Build disc (Ctrl+B) writes a modded disc image, an xdelta patch,
-or both: `patch_disc.py patch ... --copies` puts the mod folder on a copy
+or both, optionally with patch_disc.py's switches (--skip-tutorial,
+--sponsor-negotiation, --launcher): `patch_disc.py patch ... --copies` puts the mod folder on a copy
 of the original, and `vcdiff.py make` compares the two. For a patch on
 its own that image is temporary (<patch>.building.iso, removed after).
 It shows their output and logs both commands. The original must be the Redump dump
@@ -2121,6 +2122,8 @@ class BuildDialog:
         self.make_patch = tk.IntVar(value=settings.get("make_patch", 1))
         self.patch = tk.StringVar(value=settings.get("patch") or name + ".xdelta")
         self.skip = tk.IntVar(value=settings.get("skip_tutorial", 0))
+        self.nego = tk.IntVar(value=settings.get("sponsor_negotiation", 0))
+        self.launcher = tk.IntVar(value=settings.get("launcher", 0))
 
         form = ttk.Frame(win)
         form.pack(fill="x", padx=10, pady=10)
@@ -2145,14 +2148,21 @@ class BuildDialog:
                                 command=lambda v=var, k=kind: self.browse(v, k))
             button.grid(row=row, column=2, padx=(8, 0), pady=3)
             self.entries[kind] = (flag, entry, button)
-        ttk.Checkbutton(form, text="Skip the tutorial (for testing; patch_disc.py "
-                                   "--skip-tutorial)", variable=self.skip
-                        ).grid(row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        # patch_disc.py's switches, one box each (its docstring and the
+        # docs say what each changes).
+        for row, (text, var) in enumerate((
+                ("Skip the tutorial (for testing; patch_disc.py --skip-tutorial)", self.skip),
+                ("Sponsor negotiation: negotiate with the main sponsor, as in the Japanese "
+                 "release (--sponsor-negotiation)", self.nego),
+                ("Debug menu: boot into the developers' launcher of test modules and viewers "
+                 "(--launcher)", self.launcher)), 3):
+            ttk.Checkbutton(form, text=text, variable=var).grid(
+                row=row, column=0, columnspan=3, sticky="w", pady=(6 if row == 3 else 0, 0))
         ttk.Label(form, text="The original must be the Redump dump (redump.info/disc/12334) "
                              "for a patch others can apply. It is only read. A patch without "
                              "the image still needs room for a temporary one while it is made.",
                   foreground="#555", wraplength=900, justify="left"
-                  ).grid(row=4, column=0, columnspan=3, sticky="w", pady=(6, 0))
+                  ).grid(row=6, column=0, columnspan=3, sticky="w", pady=(6, 0))
         self.update_entries()
 
         targets = self.mod.targets()
@@ -2200,7 +2210,9 @@ class BuildDialog:
         with open(self.settings_path(), "w", encoding="utf-8") as f:
             json.dump({"original": self.original.get(), "make_image": self.make_image.get(),
                        "output": self.output.get(), "make_patch": self.make_patch.get(),
-                       "patch": self.patch.get(), "skip_tutorial": self.skip.get()}, f,
+                       "patch": self.patch.get(), "skip_tutorial": self.skip.get(),
+                       "sponsor_negotiation": self.nego.get(), "launcher": self.launcher.get()},
+                      f,
                       indent=2)
 
     def update_entries(self):
@@ -2261,6 +2273,10 @@ class BuildDialog:
         cmd += ["--copies", "--dat", shown_path(self.mod.dat)]
         if self.skip.get():
             cmd.append("--skip-tutorial")
+        if self.nego.get():
+            cmd.append("--sponsor-negotiation")
+        if self.launcher.get():
+            cmd.append("--launcher")
         out = [cmd]
         if self.make_patch.get():
             out.append(["vcdiff.py", "make", original, output, self.patch.get()])

@@ -232,7 +232,7 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back (a file may change size inside its last sector; one that needs more sectors is moved to the end of `DATA.ISO`, re-keying the table of contents and growing the disc image if needed; `PRELOAD` packs are rebuilt around entries that change size), and files outside `DATA.CVM` (`disc:SLES_541.51`, renamed with `--rename`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), skips the tutorial on test discs (`--skip-tutorial`), turns the Japanese main sponsor negotiation back on (`--sponsor-negotiation`), finds where each file lives, and checks an image holds given bytes |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back (a file may change size inside its last sector; one that needs more sectors is moved to the end of `DATA.ISO`, re-keying the table of contents and growing the disc image if needed; `PRELOAD` packs are rebuilt around entries that change size), and files outside `DATA.CVM` (`disc:SLES_541.51`, renamed with `--rename`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), skips the tutorial on test discs (`--skip-tutorial`), boots into the developers' debug menu (`--launcher`), turns the Japanese main sponsor negotiation back on (`--sponsor-negotiation`), finds where each file lives, and checks an image holds given bytes |
 | [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
 
 ```bash
@@ -292,7 +292,8 @@ patch for sharing, or both: it puts the mod folder's files on a copy of
 your disc image (`patch_disc.py patch ... --copies`) and makes the patch
 from it (`vcdiff.py make`), showing their output and logging both
 commands. For a patch on its own the image is temporary and removed
-afterwards. Use the unmodified Redump image as the
+afterwards. Boxes add `patch_disc.py`'s switches: skip the tutorial,
+main sponsor negotiation, and the debug menu. Use the unmodified Redump image as the
 original, so the patch applies for everyone; the dialog warns if it isn't.
 
 Each tab edits through a writer's own functions and takes the field names

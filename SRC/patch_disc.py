@@ -36,8 +36,8 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--skip-tutorial] [--sponsor-negotiation]
-    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--skip-tutorial] [--sponsor-negotiation]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--skip-tutorial] [--sponsor-negotiation] [--launcher]
+    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--skip-tutorial] [--sponsor-negotiation] [--launcher]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
 `patch` re-reads every patched range afterwards. Keep an unmodified copy
@@ -85,6 +85,11 @@ check (DLL/SIMPRG.REL 0xc5ca0) is a stub returning 0 in PAL; the patch
 makes it return 1 for a sponsor not yet negotiated with on this screen, 12
 words in all (0xc5ca0 and the unused method at 0xd3748). See
 DOC/SPONSOR_NEGOTIATION.md.
+
+--launcher boots into the developers' launcher, a debug menu of test
+modules (viewers, screen tests, MAIN GAME START): it turns RootMainSeq.sqb's
+branch past the launcher at 0x98 into BranchIfZero, 1 byte. It works on
+DATA.CVM or DATA.ISO too. See DOC/SQB_FORMAT.md#the-developer-launcher.
 
 Copies: the same data is often on the disc more than once. PRELOAD/*.PAC
 bundles hold copies of loose files (REGULATION.TBB is in all seven
@@ -1079,6 +1084,31 @@ def plan_sponsor_negotiation(f, img):
     return jobs, notes
 
 
+# --- the developer launcher (DOC/SQB_FORMAT.md#the-developer-launcher) --------
+
+# RootMainSeq.sqb runs Dummy.CheckLauncher (always 1) at 0x88 and at 0x98
+# branches past RootLauncherSeq.sqb when the value is non-zero. Turning the
+# branch into BranchIfZero (command 0:27, 1 byte) boots into the launcher.
+LAUNCHER = ("SEQ/ROOTMAINSEQ.SQB", 0x98, "BranchIfNotZero", "0:27")
+
+
+def plan_launcher(f, img):
+    """Jobs for --launcher. A script that already holds the new command is
+    left alone."""
+    import sqb
+    path, offset, old, spec = LAUNCHER
+    e = img.entry(path)
+    data = read_at(f, img, e.path, 0, e.size)
+    new, held, name = sqb.set_command(data, offset, spec)
+    if held == name:
+        return [], ["note: %s 0x%x already holds %s" % (path, offset, name)]
+    if held != old:
+        raise ValueError("%s 0x%x holds %s, expected %s" % (path, offset, held, old))
+    return [Job(e.path, i, new[i:i + 1], "%s 0x%x" % (path, offset),
+                "--launcher: %s -> %s, boot into the developer launcher" % (held, name))
+            for i, (a, b) in enumerate(zip(data, new)) if a != b], []
+
+
 def resolve_target(img, index, target):
     """(file, offset in file, size, label) for 'PATH' or 'PATH#entry'."""
     if "#" in target:
@@ -1212,7 +1242,7 @@ def copy_file(src, dst):
 
 
 def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tutorial=False,
-              sponsor_nego=False):
+              sponsor_nego=False, launcher=False):
     pairs = parse_pairs(args)
     img = Image(image)
     index = Index(dat) if dat else None
@@ -1279,8 +1309,10 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
         for r in renames:
             target, _, new = r.partition("=")
             jobs += plan_rename(f, img, target, new)
+        # The files the targets write, before the switches below add theirs
+        # (--skip-tutorial and --launcher both edit RootMainSeq.sqb).
+        touched = {norm(j.file) for j in jobs if j.file is not None}
         if skip_tutorial:
-            touched = {norm(j.file) for j in jobs if j.file is not None}
             clash = touched & {norm(p) for p, _, _, _ in SKIP_SCRIPTS}
             if clash:
                 raise SystemExit("--skip-tutorial edits %s; don't patch it as a target too"
@@ -1295,6 +1327,13 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
             njobs, nnotes = plan_sponsor_negotiation(f, img)
             jobs += njobs
             notes += nnotes
+        if launcher:
+            if norm(LAUNCHER[0]) in touched:
+                raise SystemExit("--launcher edits %s; don't patch it as a target too"
+                                 % LAUNCHER[0])
+            ljobs, lnotes = plan_launcher(f, img)
+            jobs += ljobs
+            notes += lnotes
     if index is None:
         notes.append("note: no DAT index (--dat), so copies elsewhere on the disc weren't checked")
 
@@ -1375,6 +1414,9 @@ def main(argv):
     sponsor_nego = "--sponsor-negotiation" in args
     if sponsor_nego:
         args.remove("--sponsor-negotiation")
+    launcher = "--launcher" in args
+    if launcher:
+        args.remove("--launcher")
     dat =_opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
     renames = []
     while "--rename" in args:
@@ -1386,11 +1428,11 @@ def main(argv):
         if cmd == "copies" and len(args) >= 2:
             cmd_copies(args[0], args[1:])
             return 0
-        if cmd == "patch" and (len(args) >= 3 or (renames or skip_tutorial or sponsor_nego)
-                               and len(args) == 2):
+        if cmd == "patch" and (len(args) >= 3 or (renames or skip_tutorial or sponsor_nego
+                                                  or launcher) and len(args) == 2):
             in_place = args[1] == "--in-place"
             cmd_patch(args[0], None if in_place else args[1], in_place, args[2:], dat,
-                      write_copies, renames, skip_tutorial, sponsor_nego)
+                      write_copies, renames, skip_tutorial, sponsor_nego, launcher)
             return 0
         if cmd == "verify" and len(args) >= 2:
             return cmd_verify(args[0], args[1:])

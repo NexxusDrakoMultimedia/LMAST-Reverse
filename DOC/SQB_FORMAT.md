@@ -542,7 +542,9 @@ launcher's result *n* (`Module.GetBranch`):
 After each test module, the script goes back to the launcher. Once the
 launcher is left, the main script continues with the normal boot at `L0`.
 
-`setcmd ... 0x98 0:27` (`BranchIfZero`) changes 1 byte and sends the boot
+`patch_disc.py patch <in.iso> <out.iso> --launcher` writes it to a disc
+(also a box in the editor's Build disc dialog); by hand it is
+`setcmd ... 0x98 0:27` (`BranchIfZero`), which changes 1 byte and sends the boot
 into the launcher.
 
 **Tested in PCSX2** (the 1-byte patch written with `patch_disc.py`): the
