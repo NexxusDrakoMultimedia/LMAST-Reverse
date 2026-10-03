@@ -56,6 +56,30 @@ would change:
 | Reputation harder to raise | club rank (0–31, save `+0xa0`), the world rank points (`SIMPRG.REL 0x151568`) and the status rank (`SAVE_FORMAT.md`, club rank leftovers) | what changes the rank after a match (`0x26ddd8`) and the weights behind the points aren't traced |
 | Lesser players dearer, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the player price kinds (`WithInRange_SM` `0x246d18` clamps by price kind; kind 0 is salary) | how a transfer fee is worked out isn't traced; the price limits are filled at run time |
 
+Another idea (the user's, not decided): **a third tier and a harsher
+end.** Each season the second division's bottom two go down to a third
+tier that isn't played on screen, two clubs chosen at random from it
+(its "playoffs") come up, and a player who finishes in the second
+division's bottom two loses the game at once, instead of after two
+seasons running there, so they are never forced out of the playable
+leagues. What it would take:
+
+- The game-over rule: the manual's four ways to lose include the second
+  division's bottom two two years running, decided in `Sche.YearEnd`
+  ([`GAME_FLOW.md`](GAME_FLOW.md#game-over)); the count of seasons
+  isn't traced. Making it one season means finding that counter.
+- Relegating out of the second division: its next season's slots stop
+  naming its last two ranks (`leaguesize.py` rewrites those lists).
+- The third tier: a nation's clubs are fixed (England has 44 plus yours
+  and the rival), so the relegated clubs need somewhere to be and to
+  come back from. `LIST` slots pick at random but from fixed lists, which
+  can't follow who went down. The likeliest way is a small league the
+  game simulates out of sight, whose past record holds the third-tier
+  clubs, with the shuffle flag of its `LAST_RANK` slots for the random
+  pick. All 164 schedule UIDs are used, so that needs one repurposed or
+  the tables extended, and a few clubs moved out of the second division
+  at the start to fill the tier.
+
 ## Not candidates
 
 - `EVENT/EVENTDATA_TURN.TBB`, `0SYSTEM/SCHEDULE.TBB` and the `CVS/`
