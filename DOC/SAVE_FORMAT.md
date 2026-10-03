@@ -715,35 +715,48 @@ for each `eCATEGORY` from three strings:
 | 1 | `0x5213f8` | `BESLES-54151-C` | VS data, for VS mode and for Virtua Pro Football |
 | 2 | `0x521408` | `BESLES-54153FASYS` | Virtua Pro Football's save, read by the import feature |
 
-No other file on the disc contains the serial. `save.py serial` writes a
-copy of `SLES_541.51` with categories 0 and 1 moved to another serial of
-the same length (`PYRA-31396` → `BEPYRA-31396-G000`, `BEPYRA-31396-C000`).
-Moving the VS data is deliberate, as anti-cheat: teams built in a modded
-game can't be carried into Virtua Pro Football or an unmodded game's VS
-mode. Category 2 stays, so the import from Virtua Pro Football still
-works.
+No other file on the disc contains the serial.
 
-That only separates the saves. PCSX2 (and disc loaders) take a disc's
-serial from the boot file named in `SYSTEM.CNF`
-(`BOOT2 = cdrom0:\SLES_541.51;1`), so a disc that still boots
-`SLES_541.51` still shows up as SLES-54151 (**empirical**: tested in
-PCSX2). `save.py serial` therefore also writes the executable as
-`PYRA_313.96` with a `SYSTEM.CNF` that boots it, and prints the
-`patch_disc.py` command that patches both and renames the file on the
-disc (`--rename`, see [`REBUILD.md`](REBUILD.md#usage)). The names are the
-same length, so nothing moves. Nothing in the executable refers to its own
-file name. Changing the executable changes its CRC, so PCSX2 patches and
-cheats keyed to the original CRC won't apply to the modded disc.
+**`patch_disc.py --mod-saves`** gives a modded disc its own saves by
+changing the letter after the serial: saved games go to
+`BESLES-54151-Mnnn` instead of `-Gnnn`, and the VS data to
+`BESLES-54151-D000` instead of `-C000`, one byte each. The original game
+looks only for `-G` and `-C`, so it never opens a modded save, and a
+modded game never opens the original's. Moving the VS data is
+deliberate, as anti-cheat: teams built in a modded game can't be
+carried into Virtua Pro Football or an unmodded game's VS mode.
+Category 2 stays, so the import from Virtua Pro Football still works.
+The editor's Build disc dialog has a box for it.
 
-Tested in PCSX2: the renamed disc boots as PYRA-31396. PCSX2 doesn't show
-it in its game list without a GameDB entry for that serial, which this
-project doesn't provide. The serial change is an optional feature for
-mods that want their own saves; the default is to keep SLES-54151.
+The serial stays SLES-54151 on purpose. PCSX2 takes a disc's serial
+from the boot file named in `SYSTEM.CNF` (`BOOT2 =
+cdrom0:\SLES_541.51;1`) and looks it up in its GameDB, whose entry for
+SLES-54151 sets `eeClampMode: 3` ("Makes the game correctly register
+left and right Dpad button input") and the `memcardFilters` SLES-54151
+and SLES-54153, the folders a folder memory card shows the game. A disc
+booting under another serial loses both, and PCSX2 doesn't list it
+without a GameDB entry (tested in PCSX2 with an earlier `save.py serial`
+command, which renamed the executable to `PYRA_313.96`; it booted as
+PYRA-31396). `BESLES-54151-M000` still contains `SLES-54151`, so the
+filter shows it. That earlier command is removed.
 
-The game opens `<folder>/<folder>`, so a save moved to the new serial
-needs both names changed. `save.py rename` copies a save folder with both
-renamed, and fixes the name in PCSX2's `_pcsx2_meta_directory` (`+0x40`)
-and `_pcsx2_index` for folder memory cards.
+**The CRC.** PCSX2 also computes a CRC of the executable, the XOR of its
+32-bit words (**empirical**: `3CB245D5` for the retail `SLES_541.51`,
+the name of PCSX2's `gamesettings/SLES-54151_3CB245D5.ini` and of its
+savestates). It keys per-game settings, savestates, patches and cheats
+on serial and CRC, so any edit to the executable gives a disc its own:
+`--mod-saves` makes it `3CB248D4`, the tutorial skip alone `3CB245D4`,
+both together with other executable edits something else again.
+`patch_disc.py` prints the executable's CRC at the end of every patch
+of a whole disc image. The Japanese `SLPM_663.16` is `8E66FF4E`.
+
+The game opens `<folder>/<folder>`, so moving a save needs both names
+changed. `save.py rename <folder> <parent>` copies a save folder from
+`-G` to `-M` (or `-C` to `-D`, and back), and fixes the name in PCSX2's
+`_pcsx2_meta_directory` (`+0x40`) and `_pcsx2_index` for folder memory
+cards. That carries a career into a mod that keeps the save layout; a
+mod that changes the season (a division of another size) shouldn't take
+an old save.
 
 ## Still unknown
 

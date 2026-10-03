@@ -36,8 +36,8 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--skip-tutorial] [--sponsor-negotiation] [--launcher]
-    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--skip-tutorial] [--sponsor-negotiation] [--launcher]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--skip-tutorial] [--sponsor-negotiation] [--launcher] [--mod-saves]
+    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--skip-tutorial] [--sponsor-negotiation] [--launcher] [--mod-saves]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
 `patch` re-reads every patched range afterwards. Keep an unmodified copy
@@ -84,6 +84,20 @@ check (DLL/SIMPRG.REL 0xc5ca0) is a stub returning 0 in PAL; the patch
 makes it return 1 for a sponsor not yet negotiated with on this screen, 12
 words in all (0xc5ca0 and the unused method at 0xd3748). See
 DOC/SPONSOR_NEGOTIATION.md.
+
+--mod-saves (whole disc image only) gives a modded disc its own saves: the
+memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
+original) and BESLES-54151-Dnnn (VS data, -C), two bytes of SLES_541.51
+(0x5213e8, 0x5213f8; MC::CFcEuroIF::initialize 0x12ad38). The original
+game never opens them, and a modded game's VS teams can't reach Virtua
+Pro Football or an unmodded VS mode. The serial stays SLES-54151, so
+PCSX2's GameDB entry still applies (its D-pad clamp fix and memory-card
+filters). See DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc.
+
+Every patch of a whole disc image ends with the executable's PCSX2 CRC
+(the XOR of its 32-bit words; 3CB245D5 unmodified). PCSX2 names a game's
+settings and savestates SLES-54151_<CRC>, and keys patches and cheats on
+it, so a disc with a changed executable keeps its own.
 
 --launcher boots into the developers' launcher, a debug menu of test
 modules (viewers, screen tests, MAIN GAME START): it turns RootMainSeq.sqb's
@@ -1101,6 +1115,49 @@ def plan_sponsor_negotiation(f, img):
     return jobs, notes
 
 
+# --- separate saves (DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc) --------
+
+# MC::CFcEuroIF::initialize (SLES 0x12ad38) names the memory-card folders
+# from these strings: category 0 saved games (+ %03d), 1 VS data.
+# --mod-saves changes the letter after the serial, so the serial, and
+# with it PCSX2's GameDB entry (the D-pad clamp fix, memcardFilters, which
+# match folders containing "SLES-54151"), stays. Category 2,
+# BESLES-54153FASYS (Virtua Pro Football's save, read by the import), stays.
+SLES_FILE = DISC + "SLES_541.51"
+MOD_SAVES = ((0x4223e8, b"BESLES-54151-G", b"BESLES-54151-M"),     # SLES 0x5213e8
+             (0x4223f8, b"BESLES-54151-C", b"BESLES-54151-D"))     # SLES 0x5213f8
+RETAIL_CRC = 0x3cb245d5
+
+
+def pcsx2_crc(data):
+    """PCSX2's CRC of an executable: the XOR of its 32-bit words (it names
+    settings and savestates SLES-54151_3CB245D5 for the retail one)."""
+    crc = 0
+    for (w,) in struct.iter_unpack("<I", data[:len(data) // 4 * 4]):
+        crc ^= w
+    return crc
+
+
+def plan_mod_saves(f, img):
+    """Jobs for --mod-saves. A name already changed is left alone."""
+    if img.kind != "disc image":
+        raise ValueError("--mod-saves patches SLES_541.51, so it needs the whole disc image, "
+                         "not %s" % img.kind)
+    jobs, notes = [], []
+    for off, old, new in MOD_SAVES:
+        held = read_at(f, img, SLES_FILE, off, len(old) + 1)
+        if held == old + b"\0":
+            jobs.append(Job(SLES_FILE, off, new, "%s (0x%x)" % (SLES_FILE, off + 0xff000),
+                            "--mod-saves: memory-card folder %s -> %s" % (
+                                old.decode(), new.decode())))
+        elif held == new + b"\0":
+            notes.append("note: %s already names %s" % (SLES_FILE, new.decode()))
+        else:
+            raise ValueError("%s 0x%x doesn't hold %s; not the retail executable?"
+                             % (SLES_FILE, off, old.decode()))
+    return jobs, notes
+
+
 # --- the developer launcher (DOC/SQB_FORMAT.md#the-developer-launcher) --------
 
 # RootMainSeq.sqb runs Dummy.CheckLauncher (always 1) at 0x88 and at 0x98
@@ -1259,7 +1316,7 @@ def copy_file(src, dst):
 
 
 def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tutorial=False,
-              sponsor_nego=False, launcher=False):
+              sponsor_nego=False, launcher=False, mod_saves=False):
     pairs = parse_pairs(args)
     img = Image(image)
     index = Index(dat) if dat else None
@@ -1363,6 +1420,15 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
             ljobs, lnotes = plan_launcher(f, img)
             jobs += ljobs
             notes += lnotes
+        if mod_saves:
+            mjobs, mnotes = plan_mod_saves(f, img)
+            jobs += mjobs
+            notes += mnotes
+        crc_before = None
+        if img.kind == "disc image":
+            e = img.entry(SLES_FILE)
+            f.seek(img.offset(e))
+            crc_before = pcsx2_crc(f.read(e.size))
     if index is None:
         notes.append("note: no DAT index (--dat), so copies elsewhere on the disc weren't checked")
 
@@ -1401,6 +1467,16 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
     print("%s: %d write%s; %s" % (
         target_path, len(jobs), "" if len(jobs) == 1 else "s",
         ", ".join(changed) or "table of contents untouched"))
+    if crc_before is not None:
+        e = img.entry(SLES_FILE)
+        with open(target_path, "rb") as f:
+            f.seek(img.offset(e))
+            crc = pcsx2_crc(f.read(e.size))
+        print("%s: PCSX2 CRC of the executable %08X%s; %s" % (
+            target_path, crc,
+            "" if crc == crc_before else " (was %08X)" % crc_before,
+            "the retail CRC" if crc == RETAIL_CRC else
+            "PCSX2 keeps this disc's settings and savestates as SLES-54151_%08X" % crc))
 
 
 def cmd_verify(image, args):
@@ -1446,6 +1522,9 @@ def main(argv):
     launcher = "--launcher" in args
     if launcher:
         args.remove("--launcher")
+    mod_saves = "--mod-saves" in args
+    if mod_saves:
+        args.remove("--mod-saves")
     dat =_opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
     renames = []
     while "--rename" in args:
@@ -1458,10 +1537,10 @@ def main(argv):
             cmd_copies(args[0], args[1:])
             return 0
         if cmd == "patch" and (len(args) >= 3 or (renames or skip_tutorial or sponsor_nego
-                                                  or launcher) and len(args) == 2):
+                                                  or launcher or mod_saves) and len(args) == 2):
             in_place = args[1] == "--in-place"
             cmd_patch(args[0], None if in_place else args[1], in_place, args[2:], dat,
-                      write_copies, renames, skip_tutorial, sponsor_nego, launcher)
+                      write_copies, renames, skip_tutorial, sponsor_nego, launcher, mod_saves)
             return 0
         if cmd == "verify" and len(args) >= 2:
             return cmd_verify(args[0], args[1:])

@@ -96,8 +96,9 @@ Each stage depends on the one before it.
    anything from this repo. *Started:* `SRC/vcdiff.py` makes and applies
    these patches in plain Python, so `xdelta3` isn't needed
    ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod)). Delta Patcher applies
-   them with the same result. A modded disc can take its own serial
-   (`save.py serial`), so its saves stay apart from the original game's.
+   them with the same result. A modded disc can keep its saves apart
+   from the original game's (`patch_disc.py --mod-saves`, which keeps
+   the serial so PCSX2's GameDB fixes still apply).
 
 ## Coverage of `DATA.CVM`
 
@@ -163,4 +164,4 @@ studied.
 - Changes that need new game code, until the data side is done. Patching
   `SLES_541.51` or the `.REL` overlays may come later if a mod needs it.
   Small patches that flip switches already in the code (the tutorial skip,
-  the developer launcher, the save serial) are fine as testing aids.
+  the developer launcher, separate saves) are fine as testing aids.

@@ -25,7 +25,7 @@ disc:SLES_541.51=mod/disc/SLES_541.51.
 
 File > Build disc (Ctrl+B) writes a modded disc image, an xdelta patch,
 or both, optionally with patch_disc.py's switches (--skip-tutorial,
---sponsor-negotiation, --launcher): `patch_disc.py patch ... --copies` puts the mod folder on a copy
+--sponsor-negotiation, --launcher, --mod-saves): `patch_disc.py patch ... --copies` puts the mod folder on a copy
 of the original, and `vcdiff.py make` compares the two. For a patch on
 its own that image is temporary (<patch>.building.iso, removed after).
 It shows their output and logs both commands. The original must be the Redump dump
@@ -2659,6 +2659,7 @@ class BuildDialog:
         self.skip = tk.IntVar(value=settings.get("skip_tutorial", 0))
         self.nego = tk.IntVar(value=settings.get("sponsor_negotiation", 0))
         self.launcher = tk.IntVar(value=settings.get("launcher", 0))
+        self.mod_saves = tk.IntVar(value=settings.get("mod_saves", 0))
 
         form = ttk.Frame(win)
         form.pack(fill="x", padx=10, pady=10)
@@ -2690,14 +2691,16 @@ class BuildDialog:
                 ("Sponsor negotiation: negotiate with the main sponsor, as in the Japanese "
                  "release (--sponsor-negotiation)", self.nego),
                 ("Debug menu: boot into the developers' launcher of test modules and viewers "
-                 "(--launcher)", self.launcher)), 3):
+                 "(--launcher)", self.launcher),
+                ("Separate saves: this disc saves to BESLES-54151-M/-D, which the original "
+                 "game never opens (--mod-saves)", self.mod_saves)), 3):
             ttk.Checkbutton(form, text=text, variable=var).grid(
                 row=row, column=0, columnspan=3, sticky="w", pady=(6 if row == 3 else 0, 0))
         ttk.Label(form, text="The original must be the Redump dump (redump.info/disc/12334) "
                              "for a patch others can apply. It is only read. A patch without "
                              "the image still needs room for a temporary one while it is made.",
                   foreground="#555", wraplength=900, justify="left"
-                  ).grid(row=6, column=0, columnspan=3, sticky="w", pady=(6, 0))
+                  ).grid(row=7, column=0, columnspan=3, sticky="w", pady=(6, 0))
         self.update_entries()
 
         targets = self.mod.targets()
@@ -2746,7 +2749,8 @@ class BuildDialog:
             json.dump({"original": self.original.get(), "make_image": self.make_image.get(),
                        "output": self.output.get(), "make_patch": self.make_patch.get(),
                        "patch": self.patch.get(), "skip_tutorial": self.skip.get(),
-                       "sponsor_negotiation": self.nego.get(), "launcher": self.launcher.get()},
+                       "sponsor_negotiation": self.nego.get(), "launcher": self.launcher.get(),
+                       "mod_saves": self.mod_saves.get()},
                       f,
                       indent=2)
 
@@ -2812,6 +2816,8 @@ class BuildDialog:
             cmd.append("--sponsor-negotiation")
         if self.launcher.get():
             cmd.append("--launcher")
+        if self.mod_saves.get():
+            cmd.append("--mod-saves")
         out = [cmd]
         if self.make_patch.get():
             out.append(["vcdiff.py", "make", original, output, self.patch.get()])

@@ -70,24 +70,19 @@ Usage:
     python save.py roundtrip <save> ...                   # decode + encode, compare
     python save.py blocks                                 # block sizes and offsets in .bin
     python save.py fields    [rounds]                     # re-record and check the field list
-    python save.py serial    <ISO dir> <out dir> PYRA-31396   # new boot file + SYSTEM.CNF
-    python save.py rename    <save folder> <parent> PYRA-31396  # copy a save to that serial
+    python save.py rename    <save folder> <parent>        # copy a save between -G/-C and a modded disc's -M/-D
 
-<save> is a BESLES-54151-Gnnn folder or the main file inside it (on a
+<save> is a BESLES-54151-Gnnn (or a modded disc's -Mnnn) folder or the main file inside it (on a
 PCSX2 folder memory card these are plain files). Each run decodes the whole
 save from the cached field list, about a second (the first run records
 the list, about 10 seconds). Needs
 ISO/DLL/SAVEPRG.REL and ISO/SLES_541.51.
 
-`serial` changes the names MC::CFcEuroIF::initialize (0x12ad38) uses for
-saved games (-G) and VS data (-C). Moving the VS data keeps a modded
-game's teams out of Virtua Pro Football and unmodded VS mode. It leaves
-BESLES-54153FASYS alone: that is Virtua Pro Football's own save, read by
-the import feature. Emulators and loaders read the serial from
-SYSTEM.CNF's boot file name, so `serial` also names the executable after
-the serial (PYRA_313.96) and writes a SYSTEM.CNF that boots it; it prints
-the patch_disc.py command that writes both and renames the file on the
-disc (--rename).
+A modded disc patched with patch_disc.py --mod-saves keeps its saves in
+BESLES-54151-Mnnn and its VS data in BESLES-54151-Dnnn instead of -G and
+-C, so the original game never loads them. `rename` copies a save from
+one name to the other, to carry a career into a mod that keeps the save
+layout (or back).
 """
 import array
 import hashlib
@@ -1632,67 +1627,27 @@ def cmd_set(game, path, out, assigns):
 
 # MC::CFcEuroIF::initialize (0x12ad38) picks the memory-card name for each
 # eCATEGORY: 0 game saves ("-G" + %03d), 1 VS data ("-C"), 2
-# "BESLES-54153FASYS". Virtua Pro Football (SLES-54153) reads the VS data,
-# and category 2 is its own save, read for the import. `serial` moves the
-# game saves and the VS data, so a modded game's teams can't be carried
-# into Virtua Pro Football or an unmodded VS mode (anti-cheat), and leaves
-# the import alone.
-CARD_NAMES = ((0x5213e8, b"BESLES-54151-G"), (0x5213f8, b"BESLES-54151-C"))
+# "BESLES-54153FASYS" (Virtua Pro Football's save). patch_disc.py
+# --mod-saves moves a modded disc's saves to "-M" and its VS data to "-D"
+# (patch_disc.MOD_SAVES); `rename` copies a save between the two.
+SAVE_LETTERS = {"G": "M", "C": "D", "M": "G", "D": "C"}
 
 
-BOOT_NAME = "SLES_541.51"
-
-
-def cmd_serial(iso_dir, out_dir, serial):
-    """Write <out_dir>/<new boot name> (SLES_541.51 with the memory-card
-    names moved to `serial`) and a SYSTEM.CNF booting it. Emulators and
-    loaders take the serial from SYSTEM.CNF's BOOT2 file name, so the
-    executable is renamed on the disc too (patch_disc.py --rename)."""
-    import re
-    if not re.fullmatch(r"[A-Z]{4}-\d{5}", serial):
-        raise SystemExit("serial must look like ABCD-12345")
-    boot = serial.replace("-", "_")[:8] + "." + serial[-2:]     # PYRA_313.96
-    src = os.path.join(iso_dir, BOOT_NAME)
-    with open(os.path.join(iso_dir, "SYSTEM.CNF"), "rb") as f:
-        cnf = f.read()
-    if cnf.count(BOOT_NAME.encode()) != 1:
-        raise SystemExit("SYSTEM.CNF doesn't name %s once" % BOOT_NAME)
-    os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, "SYSTEM.CNF"), "wb") as f:
-        f.write(cnf.replace(BOOT_NAME.encode(), boot.encode()))
-    out = os.path.join(out_dir, boot)
-    elf = Elf(src)
-    data = bytearray(elf.data)
-    for va, old in CARD_NAMES:
-        o = elf.v2f(va)
-        if data[o:o + len(old) + 1] != old + b"\0":
-            raise SystemExit("%s: %#x holds %r, expected %r" % (src, va, bytes(data[o:o + len(old)]), old))
-        new = b"BE" + serial.encode() + old[12:]
-        data[o:o + len(new)] = new
-        print("  %#x  %s -> %s" % (va, old.decode(), new.decode()))
-    with open(out, "wb") as f:
-        f.write(data)
-    print("%s: %d bytes" % (out, len(data)))
-    print("%s: BOOT2 = cdrom0:\\%s;1" % (os.path.join(out_dir, "SYSTEM.CNF"), boot))
-    print("Patch them in with:")
-    print("  python SRC/patch_disc.py patch <disc.iso> <modded.iso> "
-          "disc:%s=%s disc:SYSTEM.CNF=%s --rename disc:%s=%s" % (
-              BOOT_NAME, out, os.path.join(out_dir, "SYSTEM.CNF"), BOOT_NAME, boot))
-
-
-def cmd_rename(src, parent, serial):
-    """Copy a save folder under another serial: BESLES-54151-G003 becomes
-    <parent>/BEPYRA-31396-G003, main file included. The game opens
-    <folder>/<folder>, so both names must change. PCSX2 folder memory cards
-    also keep the name in _pcsx2_meta_directory (+0x40) and _pcsx2_index."""
+def cmd_rename(src, parent):
+    """Copy a save folder between the original game's names and a modded
+    disc's (patch_disc.py --mod-saves): BESLES-54151-G003 becomes
+    <parent>/BESLES-54151-M003 and back, -C and -D likewise, main file
+    included. The game opens <folder>/<folder>, so both names change.
+    PCSX2 folder memory cards also keep the name in _pcsx2_meta_directory
+    (+0x40) and _pcsx2_index."""
     import re
     import shutil
     src = os.path.normpath(src)
     old = os.path.basename(src)
-    m = re.fullmatch(r"BE([A-Z]{4}-\d{5})(-[GC]\d*)", old)
-    if not m or not re.fullmatch(r"[A-Z]{4}-\d{5}", serial):
-        raise SystemExit("expected a BExxxx-nnnnn-Gnnn folder and a serial like ABCD-12345")
-    new = "BE" + serial + m.group(2)
+    m = re.fullmatch(r"(BESLES-54151-)([GCMD])(\d*)", old)
+    if not m:
+        raise SystemExit("expected a BESLES-54151-G/C/M/Dnnn folder, got %s" % old)
+    new = m.group(1) + SAVE_LETTERS[m.group(2)] + m.group(3)
     dst = os.path.join(parent, new)
     if os.path.exists(dst):
         raise SystemExit("%s already exists" % dst)
@@ -1744,10 +1699,7 @@ def main(argv):
         print(__doc__)
         return 1
     cmd, args = argv[1], argv[2:]
-    if cmd == "serial" and len(args) == 3:
-        cmd_serial(*args)
-        return 0
-    if cmd == "rename" and len(args) == 3:
+    if cmd == "rename" and len(args) == 2:
         cmd_rename(*args)
         return 0
     game = Game()

@@ -320,10 +320,12 @@ lists them). A moved file can't be undone that way; keep the original
 image.
 
 Files on the disc outside `DATA.CVM` take a `disc:` prefix and need the
-whole disc image, for example `disc:SLES_541.51=out/SLES_541.51` (the
-executable with its save names moved to another serial, see
-[`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)) or
-`disc:DLL/SAVEPRG.REL=...`. These keep their size: `patch` doesn't
+whole disc image, for example `disc:SLES_541.51=out/SLES_541.51` (an
+executable edited by `pbdata.py --sles` or `uniform.py setexe`) or
+`disc:DLL/SAVEPRG.REL=...`. `--mod-saves` moves a modded disc's saves
+to their own memory-card folders, and every patch of a whole image
+prints the executable's PCSX2 CRC (see
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)). These keep their size: `patch` doesn't
 rewrite the outer disc's directory records (or its UDF copies of them).
 
 `--rename disc:<path>=<NAME>` renames an outer file without changing the

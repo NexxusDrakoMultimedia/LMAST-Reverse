@@ -250,7 +250,7 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back (a file may change size inside its last sector; one that needs more sectors is moved to the end of `DATA.ISO`, re-keying the table of contents and growing the disc image if needed; `PRELOAD` packs are rebuilt around entries that change size), and files outside `DATA.CVM` (`disc:SLES_541.51`, renamed with `--rename`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), skips the tutorial on test discs (`--skip-tutorial`), boots into the developers' debug menu (`--launcher`), turns the Japanese main sponsor negotiation back on (`--sponsor-negotiation`), finds where each file lives, and checks an image holds given bytes |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back (a file may change size inside its last sector; one that needs more sectors is moved to the end of `DATA.ISO`, re-keying the table of contents and growing the disc image if needed; `PRELOAD` packs are rebuilt around entries that change size), and files outside `DATA.CVM` (`disc:SLES_541.51`, renamed with `--rename`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), skips the tutorial on test discs (`--skip-tutorial`), boots into the developers' debug menu (`--launcher`), turns the Japanese main sponsor negotiation back on (`--sponsor-negotiation`), gives a modded disc its own saves (`--mod-saves`) and prints the executable's PCSX2 CRC, finds where each file lives, and checks an image holds given bytes |
 | [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
 
 ```bash
@@ -282,14 +282,13 @@ python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers, shows the date, money, squad, youth team and staff, edits money, your club's status, abilities, fatigue, condition, motivation the pair combinations behind the tactics screen's hearts (`combi`), staff abilities and the manager's dissatisfaction, the candidate lists (`candidates`), the accounts and season plan (`finances`; ad budget, ticket prices and season tickets can be set), and other clubs' friendship and club rank, with each club's reputation text (`clubs`), and re-encodes byte for byte; moves saves to another serial (`serial`, `rename`) so a modded disc keeps its own |
+| [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers, shows the date, money, squad, youth team and staff, edits money, your club's status, abilities, fatigue, condition, motivation the pair combinations behind the tactics screen's hearts (`combi`), staff abilities and the manager's dissatisfaction, the candidate lists (`candidates`), the accounts and season plan (`finances`; ad budget, ticket prices and season tickets can be set), and other clubs' friendship and club rank, with each club's reputation text (`clubs`), and re-encodes byte for byte; copies a save between the original game's names and a modded disc's (`rename`) |
 
 ```bash
 python SRC/save.py show <card>/BESLES-54151-G003
 python SRC/save.py player <card>/BESLES-54151-G003 3
 python SRC/save.py set <card>/BESLES-54151-G003 edited.bin money=2000000000 0:all=99
-python SRC/save.py serial ISO out PYRA-31396
-python SRC/patch_disc.py patch disc.iso modded.iso disc:SLES_541.51=out/PYRA_313.96 disc:SYSTEM.CNF=out/SYSTEM.CNF --rename disc:SLES_541.51=PYRA_313.96
+python SRC/save.py rename <card>/BESLES-54151-G003 <card>    # to BESLES-54151-M003, for a --mod-saves disc
 ```
 
 See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
@@ -380,7 +379,7 @@ workflow is:
 |---|---|
 | [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | repo layout, regenerating `DATA.ISO` |
 | [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc (in-place patching, size changes inside a file's last sector, copies and rebuilt `PRELOAD` packs), sharing mods as xdelta patches, what's still needed for size changes |
-| [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, the save-name serial |
+| [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
 | [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | ROFS key recovery in PCSX2 |
 | [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format, the SN DLL loader, `SLES_541.51`'s imports, which overlay each sequencer module lives in, the wild-card module |
 | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) | `SEQ/*.SQB` and `PSC*.PAC` sequencer scripts: command encoding, argument types, labels, the root and PwkScript command sets, global memory |

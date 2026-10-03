@@ -693,6 +693,14 @@ files. Each item keeps what was found, where, and how it was tested.
       candidate lists (players, managers, coaches, scouts) with their
       countdown. The youth join list isn't in the save and youth training
       isn't stored. `save.py candidates` lists them all with names
+- [x] Separate saves without a new serial: `patch_disc.py --mod-saves`
+      (and the editor's Build disc box) moves career saves to
+      `BESLES-54151-M` and VS data to `-D`, keeping the serial so PCSX2's
+      GameDB entry (D-pad clamp fix, memcard filters) still applies; every
+      patch prints the executable's PCSX2 CRC (XOR of its words, retail
+      `3CB245D5`, matching PCSX2's settings file). `save.py rename` copies
+      a save between `-G/-C` and `-M/-D`; `save.py serial` (the
+      PYRA-31396 path) is removed
 
 ## 11. Editor GUI
 
