@@ -225,6 +225,7 @@ python SRC/initteam.py squads DAT/PARAM 7      # one squad
 python SRC/initteam.py teams DAT/PARAM 7       # a club record, with names
 python SRC/initteam.py nations DAT/PARAM
 python SRC/initteam.py stadiums DAT/PARAM
+python SRC/initteam.py roundtrip DAT/PARAM     # every squad slot and club record re-encodes
 python SRC/sles_disasm.py ISO/SLES_541.51 dis plOteam_ pwkOteam_Init2 plTeam_IsAgreeTransferChangeMoney
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkRec_GetUefaNation pwkRec_GetWorldNation plTeam_GetCapacityFromID
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 253228 40
@@ -235,7 +236,9 @@ python SRC/sles_disasm.py ISO/SLES_541.51 dis GetString__3MsgQ23Msg5eTYPEUib Glo
 `python SRC/initteam.py set OTEAMMEMBER.TBB out.TBB 7:1 age=15` edits a
 squad slot (team 7, slot 1: Terry) and writes a same-size table that
 `patch_disc.py` can put on the disc. Shirt numbers are limited to 1–99,
-the range `pwkTeam_SetUnumberOpinfo` keeps.
+the range `pwkTeam_SetUnumberOpinfo` keeps. `set` and `setteam` write
+through the same encoders that `roundtrip` checks (all 10,975 squad slots
+and 457 club records re-encode, and both files rebuild byte for byte).
 
 A starting-season mod can change these tables with
 `python SRC/tbb.py extract` / `replace` ([`TBB_FORMAT.md`](TBB_FORMAT.md#tool)).

@@ -12,8 +12,8 @@ What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
 1. **The editor GUI** (section 11). `SRC/editor.py` has its People tab
-   (the player database), tested in PCSX2. Next: `initteam.py roundtrip`
-   (section 8) and a Squads and clubs tab on it.
+   (the player database), tested in PCSX2. Next: a Squads and clubs tab
+   on `initteam.py`.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -246,8 +246,6 @@ The event tables, the procedures and the overlay loader are documented in
 
 - [ ] Decode the `RBD0` trailer in `GAME/ROUTEBOX_*.BCR` (copied as-is by
       the writer)
-- [ ] `initteam.py roundtrip`: it writes (`set`, `setteam`) but has no
-      round-trip check in `regress.py`, unlike the other writers
 
 ## 9. Rebuild
 
@@ -301,8 +299,8 @@ organised by what a player of the game recognises (a player, a club, a
 season) rather than by file. `tkinter` only, as the principles there say,
 and every GUI edit must also be possible as a `python SRC/...` command.
 
-- [ ] Squad and club editor on `initteam.py` (needs `initteam.py
-      roundtrip` first, section 8), named from the player database
+- [ ] Squad and club editor on `initteam.py`, named from the player
+      database
 - [ ] The player's new club (`teaminit.py`), kits (`uniform.py`), message
       text (`mbb.py`)
 - [ ] Build a modded disc from the GUI: collect the edited files, run

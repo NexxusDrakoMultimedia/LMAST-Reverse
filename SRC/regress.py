@@ -51,6 +51,8 @@ def checks():
         ("tbb", ["tbb.py", "info", "DAT"], ["DAT"]),
         ("tbb_roundtrip", ["tbb.py", "roundtrip", "DAT"], ["DAT"]),
         ("initteam", ["initteam.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        # Every squad slot and club record through the encoders set/setteam use.
+        ("initteam_roundtrip", ["initteam.py", "roundtrip", "DAT/PARAM"], ["DAT/PARAM"]),
         ("pbdata", ["pbdata.py", "info", "DAT/PARAM/PBDATA_EU.PAC", "DAT/PARAM/PBDATA_JP.PAC"],
          ["DAT/PARAM/PBDATA_EU.PAC", "DAT/PARAM/PBDATA_JP.PAC"]),
         # Re-encode all 31,950 records and rebuild the pack byte for byte,

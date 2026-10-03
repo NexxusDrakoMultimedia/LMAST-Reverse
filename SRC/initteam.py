@@ -39,11 +39,14 @@ Usage:
     python initteam.py nations <DAT/PARAM>
     python initteam.py stadiums <DAT/PARAM>
     python initteam.py setteam <PLRESOURCESIM.PAC> <out.PAC> <team> <field>=<value> ... [<team> ...]
+    python initteam.py roundtrip <DAT/PARAM>                 # re-encode both, !! if not identical
 
 `set` edits squad slots (fields player, age, shirt, contract) and writes a
 new OTEAMMEMBER.TBB of the same size, ready for patch_disc.py. A computer
 team's players take their age from here, not from the player database; a
-new game shows it one year older (Terry's 25 shows as 26).
+new game shows it one year older (Terry's 25 shows as 26). `set` and
+`setteam` write through the same encoders that `roundtrip` checks: every
+squad slot and club record on the disc re-encodes byte for byte.
 
 Names are read from <DAT/PARAM>/../MESSAGE/MES.PAC unless --mes is given,
 in language slot 1 (English) unless --lang is given. Without MES.PAC the
@@ -114,19 +117,30 @@ class InitTeamData:
 
 class Member:
     def __init__(self, raw):
+        self.raw = bytes(raw)
         for name, off, fmt in OTEAM_FIELDS:
             setattr(self, name, struct.unpack_from(fmt, raw, off)[0])
         # The exporter wrote each field as a u32; the upper bytes should be 0.
         used = {off + i for _, off, fmt in OTEAM_FIELDS for i in range(struct.calcsize(fmt))}
         self.padding_ok = not any(raw[i] for i in range(OTEAM_ROW) if i not in used)
 
+    def encode(self):
+        """The 16-byte record: the fields over the original bytes, so the
+        padding is kept as it was."""
+        out = bytearray(self.raw)
+        for name, off, fmt in OTEAM_FIELDS:
+            struct.pack_into(fmt, out, off, getattr(self, name))
+        return bytes(out)
+
 
 class OteamMembers:
     def __init__(self, path):
-        _, tables = tbb.load(path)
-        if len(tables) != 1:
-            raise ValueError("%d tables, expected 1" % len(tables))
-        d = tables[0].data
+        with open(path, "rb") as f:
+            self.buf = f.read()
+        self.end, self.tables = tbb.parse(self.buf)
+        if len(self.tables) != 1:
+            raise ValueError("%d tables, expected 1" % len(self.tables))
+        d = self.tables[0].data
         want = (OTEAM_END - OTEAM_FIRST) * SQUAD * OTEAM_ROW
         if len(d) != want:
             raise ValueError("table is %d bytes, expected %d" % (len(d), want))
@@ -135,6 +149,32 @@ class OteamMembers:
             base = i * SQUAD * OTEAM_ROW
             self.squads[team] = [Member(d[base + k * OTEAM_ROW:][:OTEAM_ROW])
                                  for k in range(SQUAD)]
+
+    def encode(self):
+        """The whole file, rebuilt from the squads with tbb.build."""
+        data = b"".join(m.encode() for team in range(OTEAM_FIRST, OTEAM_END)
+                        for m in self.squads[team])
+        trailer = tbb.trailer(self.buf, self.tables)
+        self.tables[0].data = data
+        return tbb.build(self.tables, self.end, trailer)
+
+
+# Limits for `set`: the fields are copied into PlOpinfo bytes, and
+# pwkTeam_SetUnumberOpinfo only keeps shirt numbers 1-99.
+SET_LIMITS = {"player": (0, 0xffff), "age": (0, 0xff), "shirt": (1, 99), "contract": (0, 0xff)}
+
+
+def set_member(m, name, value):
+    """Set one squad-slot field (player, age, shirt, contract) within
+    SET_LIMITS. Returns the old value."""
+    if name not in SET_LIMITS:
+        raise ValueError("fields are %s" % ", ".join(SET_LIMITS))
+    lo, hi = SET_LIMITS[name]
+    if not lo <= value <= hi:
+        raise ValueError("%s must be %d-%d" % (name, lo, hi))
+    old = getattr(m, name)
+    setattr(m, name, value)
+    return old
 
 
 # --- club records, nations, stadiums -------------------------------------------
@@ -182,6 +222,7 @@ def read_pac_entry(path, index):
 class TeamDb:
     def __init__(self, path):
         buf, off, size = read_pac_entry(path, 3)
+        self.buf = buf
         _, tables = tbb.parse(buf[off:off + size])
         t = tables[0]
         if t.size % TEAM_ROW:
@@ -194,6 +235,56 @@ class TeamDb:
             raw = t.data[i * TEAM_ROW:(i + 1) * TEAM_ROW]
             self.records[TEAM_FIRST + i] = {
                 name: struct.unpack_from(fmt, raw, o)[0] for name, o, fmt, _ in TEAM_FIELDS}
+
+    def encode(self):
+        """The whole pack with every club record written back in place;
+        nothing else in the file changes."""
+        out = bytearray(self.buf)
+        for team, r in self.records.items():
+            base = self.file_offset + (team - TEAM_FIRST) * TEAM_ROW
+            for name, o, fmt, _ in TEAM_FIELDS:
+                struct.pack_into(fmt, out, base + o, r[name])
+        return bytes(out)
+
+
+def set_team_field(record, name, value):
+    """Set one club-record field; the value must fit its type. Returns the
+    old value."""
+    fmt = next((fmt for n, _, fmt, _ in TEAM_FIELDS if n == name), None)
+    if fmt is None:
+        raise ValueError("fields are %s" % ", ".join(n for n, _, _, _ in TEAM_FIELDS))
+    try:
+        struct.pack(fmt, value)
+    except struct.error:
+        raise ValueError("%s=%d does not fit (%s)" % (name, value, fmt))
+    old = record[name]
+    record[name] = value
+    return old
+
+
+# What an editor (SRC/editor.py) may offer for each club-record field: the
+# documented range where there is one (DOC/INITTEAM_FORMAT.md#club-records),
+# else the type's. Fields with no reader (f_0b ...) are read-only.
+TEAM_EDIT_RANGES = {
+    "rank": (0, 31),
+    "manager": (0, 2999),           # the 3,000 manager records of PBDATA
+    "stadium": (0, 118),            # STADIUM_DATA's 119 rows (StadiumData.COUNT)
+    "foreign": (0, 7),              # rows of PLRESOURCESIM entry 6, table 1
+    "newface": (0, 3),              # the % table at 0x533ff8
+    "search_region": (0, 31),       # rows of entry 6, table 4
+}
+
+
+def team_edit_range(name):
+    """(low, high) an editor may set a club-record field to, or None for a
+    field with no name yet."""
+    if name.startswith("f_"):
+        return None
+    if name in TEAM_EDIT_RANGES:
+        return TEAM_EDIT_RANGES[name]
+    fmt = next(fmt for n, _, fmt, _ in TEAM_FIELDS if n == name)
+    bits = struct.calcsize(fmt) * 8
+    return (-(1 << (bits - 1)), (1 << (bits - 1)) - 1) if fmt[-1].islower() else (0, (1 << bits) - 1)
 
 
 class NationData:
@@ -335,47 +426,57 @@ def cmd_info(root):
     check_start_data(root)
 
 
-# Limits for `set`: the fields are copied into PlOpinfo bytes, and
-# pwkTeam_SetUnumberOpinfo only keeps shirt numbers 1-99.
-SET_LIMITS = {"player": (0, 0xffff), "age": (0, 0xff), "shirt": (1, 99), "contract": (0, 0xff)}
-
-
 def cmd_set(path, out_path, args):
     if os.path.abspath(out_path) == os.path.abspath(path):
         raise SystemExit("refusing to overwrite the input; write to a new file")
-    with open(path, "rb") as f:
-        buf = f.read()
-    end, tables = tbb.parse(buf)
-    OteamMembers(path)                  # layout check
-    data = bytearray(tables[0].data)
-    offsets = {name: (off, fmt) for name, off, fmt in OTEAM_FIELDS}
-    slot_base = None
+    ot = OteamMembers(path)
+    m = None
     for a in args:
         if "=" not in a:
             team, slot = (int(x, 0) for x in a.split(":"))
             if not OTEAM_FIRST <= team < OTEAM_END or not 0 <= slot < SQUAD:
                 raise SystemExit("%s: teams are %d-%d and slots 0-%d" % (
                     a, OTEAM_FIRST, OTEAM_END - 1, SQUAD - 1))
-            slot_base = ((team - OTEAM_FIRST) * SQUAD + slot) * OTEAM_ROW
+            m = ot.squads[team][slot]
             label = a
             continue
-        if slot_base is None:
+        if m is None:
             raise SystemExit("give <team>:<slot> before %r" % a)
         name, value = a.split("=", 1)
-        if name not in offsets:
-            raise SystemExit("fields are %s" % ", ".join(offsets))
-        value = int(value, 0)
-        lo, hi = SET_LIMITS[name]
-        if not lo <= value <= hi:
-            raise SystemExit("%s must be %d-%d" % (name, lo, hi))
-        off, fmt = offsets[name]
-        old = struct.unpack_from(fmt, data, slot_base + off)[0]
-        struct.pack_into(fmt, data, slot_base + off, value)
-        print("%s %s: %d -> %d" % (label, name, old, value))
-    tables[0].data = bytes(data)
+        try:
+            old = set_member(m, name, int(value, 0))
+        except ValueError as e:
+            raise SystemExit(str(e))
+        print("%s %s: %d -> %d" % (label, name, old, getattr(m, name)))
     with open(out_path, "wb") as f:
-        f.write(tbb.build(tables, end, tbb.trailer(buf, tables)))
+        f.write(ot.encode())
     print("wrote %s" % out_path)
+
+
+def cmd_roundtrip(root):
+    """Re-encode every squad slot and club record and rebuild both files;
+    !! where anything differs from the original."""
+    path = find(root, OTEAM_TBB)
+    try:
+        ot = OteamMembers(path)
+        members = [m for team in sorted(ot.squads) for m in ot.squads[team]]
+        bad = sum(1 for m in members if m.encode() != m.raw)
+        same = ot.encode() == ot.buf
+        probs = (["%d slots differ" % bad] if bad else []) + ([] if same else ["file differs"])
+        print("%s  %d squad slots re-encoded, %d differ; file %s%s" % (
+            path, len(members), bad, "identical" if same else "differs",
+            "  !! " + "; ".join(probs) if probs else ""))
+    except (ValueError, struct.error) as e:
+        print("%s  !! %s" % (path, e))
+    path = find(root, SIM_PAC)
+    try:
+        db = TeamDb(path)
+        same = db.encode() == db.buf
+        print("%s #3  %d club records re-encoded; file %s%s" % (
+            path, len(db.records), "identical" if same else "differs",
+            "" if same else "  !! file differs"))
+    except (ValueError, struct.error) as e:
+        print("%s  !! %s" % (path, e))
 
 
 def cmd_leagues(root, names):
@@ -529,9 +630,6 @@ def cmd_setteam(path, out_path, args):
     if os.path.abspath(out_path) == os.path.abspath(path):
         raise SystemExit("refusing to overwrite the input; write to a new file")
     db = TeamDb(path)
-    with open(path, "rb") as f:
-        buf = bytearray(f.read())
-    fields = {name: (o, fmt) for name, o, fmt, _ in TEAM_FIELDS}
     team = None
     for a in args:
         if "=" not in a:
@@ -542,19 +640,13 @@ def cmd_setteam(path, out_path, args):
         if team is None:
             raise SystemExit("give a team id before %r" % a)
         name, value = a.split("=", 1)
-        if name not in fields:
-            raise SystemExit("fields are %s" % ", ".join(fields))
-        o, fmt = fields[name]
-        value = int(value, 0)
-        pos = db.file_offset + (team - TEAM_FIRST) * TEAM_ROW + o
-        old = struct.unpack_from(fmt, buf, pos)[0]
         try:
-            struct.pack_into(fmt, buf, pos, value)
-        except struct.error:
-            raise SystemExit("%s=%d does not fit (%s)" % (name, value, fmt))
-        print("team %d %s: %d -> %d" % (team, name, old, value))
+            old = set_team_field(db.records[team], name, int(value, 0))
+        except ValueError as e:
+            raise SystemExit(str(e))
+        print("team %d %s: %d -> %d" % (team, name, old, db.records[team][name]))
     with open(out_path, "wb") as f:
-        f.write(buf)
+        f.write(db.encode())
     print("wrote %s (same size; patch it with patch_disc.py)" % out_path)
 
 
@@ -590,6 +682,9 @@ def main(argv):
         return 0
     if cmd == "info" and len(args) == 1:
         cmd_info(root)
+        return 0
+    if cmd == "roundtrip" and len(args) == 1:
+        cmd_roundtrip(root)
         return 0
     names = team_names(mes or default_mes(root), lang)
     if cmd == "leagues" and len(args) == 1:

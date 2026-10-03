@@ -468,6 +468,11 @@ files. Each item keeps what was found, where, and how it was tested.
       rebuilds byte for byte (`roundtrip`, in `regress.py`); `set` and CSV
       `import` edit players, managers and scouts
 - [x] Update the `PLAYER/` and `PARAM/` rows in `GOALS.md`'s coverage table
+- [x] `initteam.py roundtrip` (in `regress.py` as `initteam_roundtrip`):
+      all 10,975 squad slots and 457 club records re-encode and both
+      files rebuild byte for byte. `set` and `setteam` now write through
+      the same encoders (`Member.encode`, `OteamMembers.encode`,
+      `TeamDb.encode`), with the same output as before
 
 ## 9. Rebuild
 

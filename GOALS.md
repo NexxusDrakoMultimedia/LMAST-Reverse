@@ -51,8 +51,8 @@ Each stage depends on the one before it.
    player database), `mbb.py` (message text), `teaminit.py` (the player's
    new club), `uniform.py` (club kits), `sqb.py` (the 41 sequencer scripts
    that decode) and `pac.py` (BINPACs) write and round-trip every file.
-   `initteam.py` edits squads and club records (no `roundtrip` check yet),
-   and `save.py` edits saved games. Edits to the
+   `initteam.py` edits and round-trips squads and club records, and
+   `save.py` edits saved games. Edits to the
    player database, text, the new club's squad, kits, free agents and saves
    have been tested in PCSX2.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
