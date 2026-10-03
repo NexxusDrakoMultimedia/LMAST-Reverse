@@ -718,4 +718,9 @@ files. Each item keeps what was found, where, and how it was tested.
       (same output as before), and `set` takes several messages. Checked
       through the widgets: a save with 2 messages (2 refused), one file
       grown, equals the logged `mbb.py set` output byte for byte
+- [x] Tested in PCSX2 (user report): a Text-tab edit shows in game. Seven
+      English club names (category 3: Arsenal, Man Utd, Man City, Aston
+      Villa, Schalke, Sheffield W, Cardiff), built with Build disc: the
+      names show in VS mode Team Selection, read from the `STATIONMES1.PAC`
+      copy that `--copies` updates. All five tabs are now tested in game
 

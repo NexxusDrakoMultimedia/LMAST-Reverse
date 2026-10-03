@@ -383,6 +383,12 @@ info DAT` gives each pack's room (4 to 2,032 bytes, median 1,244), and
 `preload.py who DAT <name>` lists the packs holding a file. A file whose
 pack would need another sector is refused. Tested in PCSX2: two
 lengthened club names in a rebuilt `STATIONMES1.PAC` showed in VS mode.
+Also through the editor's Text tab (user report): seven English club
+names in `3_1.mbb` (Arsenal 2011, Man Utd 2013, Man City 2008, Aston
+Villa 2019, Schalke 2095, Sheffield W 2041, Cardiff 2025), the file kept
+at its size, built with Build disc (`--copies` updates the
+`STATIONMES1.PAC` copy): Arsenal, Man Utd, Man City, Aston Villa and
+Schalke showed in VS mode Team Selection.
 
 **Confirmed in the game (PCSX2).** The English subject (`563:11000`) and
 body (`563:1000`) of the first mail in a new game, "Welcome to Football

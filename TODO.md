@@ -15,8 +15,8 @@ item in its section below.
    (the starting divisions) and the season schedules have readers but no
    writer, so neither a command nor the editor can change them, and they
    are the first thing [`GOALS.md`](GOALS.md) wants a mod to change.
-2. **The editor's leftovers** (section 11). PCSX2 tests of a Text edit
-   and a keeper scheme, the licensed kit descriptors, and a free-agents
+2. **The editor's leftovers** (section 11). All five tabs are tested in
+   PCSX2; left are tests of a mail text and a keeper scheme, the licensed kit descriptors, and a free-agents
    tab once `plrsim.py setfree` round-trips (section 8).
 3. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
@@ -284,6 +284,13 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       `MES.PAC`), KC@P repacking, and PRS recompression
 - [ ] Optional: let `vcdiff.py`/`patch_disc.py` read CSO (and CHD) images,
       which many players keep instead of ISOs
+- [ ] Test in PCSX2: `patch_disc.py --sponsor-negotiation` (main sponsor
+      negotiation at the season's Sponsor screen; a bid that should pass,
+      one that should fail, and the contract after a success).
+      `DOC/SPONSOR_NEGOTIATION.md`
+- [ ] Sponsor negotiation leftovers: whether Japan limited the number of
+      negotiations (message 61), and the acceptance tables at
+      `SIMPRG.REL 0x1dad80`/`0x1dada8`
 
 ## 10. Save data
 
@@ -327,7 +334,8 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       your club's keeper in a match)
 - [ ] Kits tab: the licensed kits' descriptors and number colours
       (`uniform.py setlicence`, `setexe`)
-- [ ] Test in PCSX2: a Text-tab edit (a club name, read from the
-      `STATIONMES` copy, and a mail text) shows in game
+- [ ] Test in PCSX2: a mail or event text edited in the Text tab (club
+      names are tested; category 1's UI words 760-783 were changed in the
+      same test but not looked at)
 - [ ] Free agents tab (`plrsim.py setfree`, `PLRESOURCESIM.PAC` entry 15),
       after `plrsim.py roundtrip` (section 8)
