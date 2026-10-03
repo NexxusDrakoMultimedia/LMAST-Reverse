@@ -36,8 +36,8 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--skip-tutorial]
-    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--skip-tutorial]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--skip-tutorial] [--sponsor-negotiation]
+    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--skip-tutorial] [--sponsor-negotiation]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
 `patch` re-reads every patched range afterwards. Keep an unmodified copy
@@ -78,6 +78,13 @@ also call pwkTeam_YearEndCheck (SLES 0x108dac, 9 words), the playoffs'
 year end, which gives the club its first 500 status (needed for the
 supplier Egamucho). The club must be in England (the switch calls
 pwkLg_Init(0)). See DOC/SQB_FORMAT.md.
+
+--sponsor-negotiation (whole disc image only) turns the Sponsor screen's
+main sponsor negotiation back on, as in the Japanese release. The screen's
+check (DLL/SIMPRG.REL 0xc5ca0) is a stub returning 0 in PAL; the patch
+makes it return 1 for a sponsor not yet negotiated with on this screen, 12
+words in all (0xc5ca0 and the unused method at 0xd3748). See
+DOC/SPONSOR_NEGOTIATION.md.
 
 Copies: the same data is often on the disc more than once. PRELOAD/*.PAC
 bundles hold copies of loose files (REGULATION.TBB is in all seven
@@ -1020,6 +1027,58 @@ def plan_skip_tutorial(f, img):
     return jobs, notes
 
 
+# --- sponsor negotiation (DOC/SPONSOR_NEGOTIATION.md) -------------------------
+
+# The Sponsor screen asks 0xc5ca0(this, sponsor id) whether the chosen main
+# sponsor can be negotiated with (SIMPRG.REL 0xc6634). In PAL it is a stub
+# returning 0, so the screen always goes to the contract question. The
+# negotiation states behind it (0xb-0x16) are all still there, and each
+# negotiation adds the sponsor to a 20-word list at this+0x12f0 (0xc5c58)
+# that nothing else reads. The new check returns 1 unless the sponsor is in
+# that list: one negotiation per sponsor per Sponsor screen. The stub
+# branches to the unreferenced CStaffContractWindow method at 0xd3748 (24
+# words, no relocation sites), which holds the loop. Branches only, since
+# the overlay is relocated when it loads.
+NEGO_FILE = DISC + "DLL/SIMPRG.REL"
+NEGO_CODE = (
+    (0xc5ca0, bytes.fromhex("0800e0032d100000"),        # jr $ra; move $v0, $zero
+     bytes.fromhex("a9360010f0128324")),                 # b 0xd3748; addiu $v1, $a0, 0x12f0
+    (0xd3748, bytes.fromhex(
+        "d0ffbd272000b07f1000b17f881790240000bfff010011240000048e00000000ffff312604001026"),
+     bytes.fromhex(
+        "40138824"      # addiu $t0, $a0, 0x1340      end of the list
+        "0000628c"      # lw    $v0, ($v1)
+        "05004510"      # beq   $v0, $a1, 0xd3768     already negotiated
+        "04006324"      # addiu $v1, $v1, 4
+        "fcff6814"      # bne   $v1, $t0, 0xd374c
+        "00000000"      # nop
+        "0800e003"      # jr    $ra
+        "01000224"      # addiu $v0, $zero, 1
+        "0800e003"      # jr    $ra
+        "2d100000")),   # move  $v0, $zero
+)
+
+
+def plan_sponsor_negotiation(f, img):
+    """Jobs for --sponsor-negotiation. A spot that already holds the new
+    code is left alone."""
+    if img.kind != "disc image":
+        raise ValueError("--sponsor-negotiation patches DLL/SIMPRG.REL, so it needs the whole "
+                         "disc image, not %s" % img.kind)
+    jobs, notes = [], []
+    for off, old, new in NEGO_CODE:
+        held = read_at(f, img, NEGO_FILE, off, len(old))
+        if held == old:
+            jobs.append(Job(NEGO_FILE, off, new, "%s (0x%x)" % (NEGO_FILE, off),
+                            "--sponsor-negotiation: main sponsor negotiation check"))
+        elif held == new:
+            notes.append("note: %s 0x%x already holds the negotiation check" % (NEGO_FILE, off))
+        else:
+            raise ValueError("%s 0x%x doesn't hold the expected code; not the retail "
+                             "overlay?" % (NEGO_FILE, off))
+    return jobs, notes
+
+
 def resolve_target(img, index, target):
     """(file, offset in file, size, label) for 'PATH' or 'PATH#entry'."""
     if "#" in target:
@@ -1152,7 +1211,8 @@ def copy_file(src, dst):
     os.chmod(dst, 0o644)
 
 
-def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tutorial=False):
+def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tutorial=False,
+              sponsor_nego=False):
     pairs = parse_pairs(args)
     img = Image(image)
     index = Index(dat) if dat else None
@@ -1228,6 +1288,13 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
             sjobs, snotes = plan_skip_tutorial(f, img)
             jobs += sjobs
             notes += snotes
+        if sponsor_nego:
+            if norm(NEGO_FILE) in {norm(j.file) for j in jobs if j.file is not None}:
+                raise SystemExit("--sponsor-negotiation edits %s; don't patch it as a target too"
+                                 % NEGO_FILE)
+            njobs, nnotes = plan_sponsor_negotiation(f, img)
+            jobs += njobs
+            notes += nnotes
     if index is None:
         notes.append("note: no DAT index (--dat), so copies elsewhere on the disc weren't checked")
 
@@ -1305,7 +1372,10 @@ def main(argv):
     skip_tutorial = "--skip-tutorial" in args
     if skip_tutorial:
         args.remove("--skip-tutorial")
-    dat = _opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
+    sponsor_nego = "--sponsor-negotiation" in args
+    if sponsor_nego:
+        args.remove("--sponsor-negotiation")
+    dat =_opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
     renames = []
     while "--rename" in args:
         renames.append(_opt(args, "--rename"))
@@ -1316,10 +1386,11 @@ def main(argv):
         if cmd == "copies" and len(args) >= 2:
             cmd_copies(args[0], args[1:])
             return 0
-        if cmd == "patch" and (len(args) >= 3 or (renames or skip_tutorial) and len(args) == 2):
+        if cmd == "patch" and (len(args) >= 3 or (renames or skip_tutorial or sponsor_nego)
+                               and len(args) == 2):
             in_place = args[1] == "--in-place"
             cmd_patch(args[0], None if in_place else args[1], in_place, args[2:], dat,
-                      write_copies, renames, skip_tutorial)
+                      write_copies, renames, skip_tutorial, sponsor_nego)
             return 0
         if cmd == "verify" and len(args) >= 2:
             return cmd_verify(args[0], args[1:])

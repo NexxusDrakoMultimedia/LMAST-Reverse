@@ -288,9 +288,10 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       `MES.PAC`), KC@P repacking, and PRS recompression
 - [ ] Optional: let `vcdiff.py`/`patch_disc.py` read CSO (and CHD) images,
       which many players keep instead of ISOs
-- [ ] Test in PCSX2: `patch_disc.py --sponsor-negotiation` (main sponsor
-      negotiation at the season's Sponsor screen; a bid that should pass,
-      one that should fail, and the contract after a success).
+- [ ] Test in PCSX2: `patch_disc.py --sponsor-negotiation` (prompt, Bid input,
+      accepted and refused bids and the contract question all work in
+      game, and refused sponsors leave the list): that the signed contract
+      pays the agreed fee.
       `DOC/SPONSOR_NEGOTIATION.md`
 - [ ] Sponsor negotiation leftovers: whether Japan limited the number of
       negotiations (message 61), and the acceptance tables at
