@@ -232,8 +232,15 @@ and away (3rd v 6th, 4th v 5th), then their winners in one game. So
 competition 2 is the **promotion playoffs**: the top two go up, 3rd to
 6th play off for the third place, and the three losers stay down. The
 second division keeps every other club; nothing is relegated from it, as
-the game has no third tier (user report). The other leagues' UIDs follow
-their own rules, not checked here.
+the game has no third tier (user report).
+
+**Your club and the rival.** After the tutorial the game adds your club
+and the rival to your nation's second division, which grows by 2 (user
+report). That fits the slot counts: the own-nation UID 1 has 26 slots
+and takes ranks 7–26 of competition 1, whose record holds 24 clubs, so
+ranks 25 and 26 are the two new clubs; the other-nations UID 2 has 24.
+How the game gives them those ranks isn't traced. The other leagues'
+UIDs follow their own rules, not checked here.
 
 ## Related files
 

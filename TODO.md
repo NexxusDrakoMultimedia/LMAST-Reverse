@@ -66,6 +66,10 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       tune (`REGULATION.TBB` and the others in `DOC/PARAM_DIR.md`), so
       they can get a field-level writer and an editor tab. `tbb.py
       replace` only swaps a whole table
+- [ ] How your club and the rival become ranks 25 and 26 of the second
+      division's past record, which the own-nation schedule (UID 1, 26
+      slots) takes after the tutorial (`DOC/SCHEDULE_FORMAT.md`, user
+      report)
 - [ ] Still open from the schedules: `GROUP2COMPE.TBB`, `CLUB_RANK_SYSTEM.TBB`
       tables 0, 1 and 4 (tables 2 and 3 are the club ranking, `SAVE_FORMAT.md`),
       `PeriodName.tbb`, the `make_list` source functions, game bits `w0`
