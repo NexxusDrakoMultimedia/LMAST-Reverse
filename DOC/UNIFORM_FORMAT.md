@@ -322,6 +322,13 @@ scheme.
 - **Licensed number colour.** AC Milan, a "licence team"
   (`ライセンスチーム`), as described above: the executable's copy of the
   descriptor sets the colour of the shirt number.
+- **Licensed kit in a match, through the editor's Kits tab** (user
+  report): AC Milan's home outfield back number, shorts number and front
+  number colours set to L3 (pink), in both copies (`setexe` and
+  `setlicence`, built with Build disc). In a match against Juventus the
+  back numbers and the shorts numbers were pink. No number showed on the
+  shirt front, although the front number was no longer off. Because both
+  copies were changed, which one a match reads is still open.
 - **Keeper kit from `UNIFORM_GK`.** With `uniform.py setgk` setting bytes
   1, 2, 3, 4, 5, 6 and 7 (kit fields 2, 3, 6, 7, 8, 10, 11) of every
   scheme of keeper designs 20–37 to L4 (pink), and shirt colour 1 left

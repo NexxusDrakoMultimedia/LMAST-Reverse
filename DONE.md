@@ -827,3 +827,9 @@ files. Each item keeps what was found, where, and how it was tested.
       replaying the 8 logged commands from the disc's files gives the
       saved executable and both packs byte for byte, and the two copies
       agree for all 232 descriptors
+- [x] Tested in PCSX2: a licensed kit edited in the Kits tab shows in a
+      match. AC Milan's home back and shorts number colours set to pink
+      (L3) were pink against Juventus (user report)
+- [x] Tested in PCSX2: a free agent replaced in the Free agents tab
+      (J.Montsalvatge, rank 3, in P.Camp's slot 21) shows on the Transfer
+      List in a new career (user report)

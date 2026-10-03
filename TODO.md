@@ -17,23 +17,20 @@ item in its section below.
    building a league of another size, which changing a division's size
    needs. The starting season is the first thing [`GOALS.md`](GOALS.md)
    wants a mod to change.
-2. **The editor's leftovers** (section 11). Six of the seven tabs are
-   tested in PCSX2. Left: PCSX2 tests of the Free agents tab and the
-   Kits tab's licensed kit descriptors.
-3. **Name the rest of the player fields** (section 2). The editor can only
+2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
-4. **What each PwkScript computes** (sections 2 and 7). The formulas
+3. **What each PwkScript computes** (sections 2 and 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
-5. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
+4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc: a message file can only grow into its own slot.
-6. **The `GAME/` tactics AI files** (section 6). The play books, the
+5. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
-   records. These are still the lead for the player fields in #3.
+   records. These are still the lead for the player fields in #2.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -349,8 +346,7 @@ organised by what a player of the game recognises (a player, a club, a
 season) rather than by file. `tkinter` only, as the principles there say,
 and every GUI edit must also be possible as a `python SRC/...` command.
 
-- [ ] Test in PCSX2: a licensed club's descriptor edited in the Kits tab
-      (back number colour, collar) in a match, not only the Uniform Viewer.
-      Shows whether the match draws from the executable's copy too
-- [ ] Test in PCSX2: a free agent replaced in the Free agents tab shows
-      on the Transfer List (rank within the new club's band, 0-5)
+- [ ] Licensed kits: which descriptor copy a match reads (an edit to
+      only one copy would tell), and whether a front number can show at
+      all (a front number colour showed nothing on AC Milan's shirt, user
+      report)

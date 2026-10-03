@@ -253,6 +253,12 @@ Transfer List (Club House / Scouting, "Acquire transfer list") in
 agents, and Buffon was held back by something else, most likely his
 rank (14) against the club's reputation, as the user suggested.
 
+**Tested in PCSX2, through the editor's Free agents tab** (user
+report). Slot 21, P.Camp (rank 5), was replaced by J.Montsalvatge
+(11,567, a rank 3 goalkeeper aged 16) with `plrsim.py setfree ... 21=11567`.
+In a new career he showed on the Transfer List in 2006–07, week 1, aged
+16 with no team.
+
 ## Which free agents the Transfer List shows
 
 The Transfer List shows a player from the pool only when his rank lies
