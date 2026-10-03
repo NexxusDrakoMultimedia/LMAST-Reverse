@@ -175,7 +175,9 @@ files. Each item keeps what was found, where, and how it was tested.
       `0x3994a8`) end when `Sche.YearStart` has run twice, and the
       playoffs run one of them. `--skip-tutorial` now starts them a year
       in (6 more bytes). Tested in PCSX2: the first Sponsor screen offers
-      the main and sub-sponsor slots (`DOC/SQB_FORMAT.md`)
+      the main and sub-sponsor slots (`DOC/SQB_FORMAT.md`). Replaced by
+      the second version of the skip (below), which runs the real
+      `Sche.YearStart`
 - [x] Player play styles and ability names: `+0x5e` is 5 play styles
       (`pwkPlayStyle_Init`, names message 1:150 + style), abilities 45–52
       are the 8 systems (match growth at `0x246884`), hexagon 0 is
@@ -200,7 +202,9 @@ files. Each item keeps what was found, where, and how it was tested.
       `Sche.YearEnd` adds 500 (`pwkTeam_YearEndCheck`). Measured over PINE.
       `--skip-tutorial` now also calls it from the skip command (28 bytes).
       Tested in PCSX2: status 500 and Egamucho at the first Sponsor screen
-      (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`)
+      (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`). Replaced by
+      the second version of the skip (below), which runs the real
+      `Sche.YearEnd`
 - [x] Manager and scout fields named from the developers' staff editors
       in `DEBUGPRG.REL` (`MinfoEditorTask`, `SinfoEditorTask`): all 48
       manager and 45 scout abilities ({label, number} tables at `0x103d8`

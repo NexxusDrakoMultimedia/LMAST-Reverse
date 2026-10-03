@@ -11,13 +11,16 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **The starting season** (section 2). `initteam.py swap` and the editor's
-   Season tab exchange two league clubs' places (tested in PCSX2); next a
-   schedule writer, which changing a division's size needs. The starting season is the first thing
-   [`GOALS.md`](GOALS.md) wants a mod to change.
-2. **The editor's leftovers** (section 11). All five tabs are tested in
-   PCSX2; left are tests of a mail text and a keeper scheme, the licensed kit descriptors, and a free-agents
-   tab once `plrsim.py setfree` round-trips (section 8).
+1. **The starting season** (section 2). `initteam.py swap` and the
+   editor's Season tab exchange two league clubs' places (tested in
+   PCSX2), and `schedule.py` re-encodes the schedules byte for byte. Next:
+   building a league of another size, which changing a division's size
+   needs. The starting season is the first thing [`GOALS.md`](GOALS.md)
+   wants a mod to change.
+2. **The editor's leftovers** (section 11). All six tabs are tested in
+   PCSX2. Left: tests of a mail text and a keeper scheme, the licensed
+   kit descriptors, and a free-agents tab once `plrsim.py setfree`
+   round-trips (section 8).
 3. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).

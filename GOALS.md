@@ -55,10 +55,11 @@ Each stage depends on the one before it.
    `plrsim.py` edits the free agents (no round-trip check yet), and
    `save.py` edits saved games. Edits to the player database, text, the
    computer squads, the new club, kits, free agents and saves have been
-   tested in PCSX2. `initteam.py swap` exchanges
-   two league clubs' places in the starting season. The schedules and the
-   parameter tables' fields have no writer yet, so division sizes can't
-   change.
+   tested in PCSX2. `initteam.py swap` exchanges two league clubs' places
+   in the starting season (tested in PCSX2). `schedule.py` re-encodes the
+   three schedule packs byte for byte, but nothing edits a schedule yet,
+   so division sizes can't change; the parameter tables' fields have no
+   writer either.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
    `DATA.CVM`, and produce a disc image that boots. This includes repacking
    BINPAC/KC@P archives and PRS compression, and handling files that change
