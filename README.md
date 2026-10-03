@@ -279,7 +279,7 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | a window with a tab per kind of data. **People** edits players, managers and scouts in the player database: search by name, id, nationality or club, every named field with its allowed values, unnamed fields read-only. It saves to a mod folder (`mod/` by default) and writes the matching `python SRC/...` command to `mod/editor.log` |
+| [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | a window with a tab per kind of data. **People** edits players, managers and scouts in the player database: search by name, id, nationality or club, every named field with its allowed values, unnamed fields read-only. **Clubs** edits the club records (rank, manager, stadium, city, transfer policy) and the computer teams' squads (player, age, shirt, contract). It saves to a mod folder (`mod/` by default) and writes the matching `python SRC/...` command to `mod/editor.log` |
 
 ```bash
 python SRC/editor.py open             # the mod folder mod/
@@ -312,8 +312,8 @@ over sessions.
 - `uniform.py` uses `pac.py`, `packdata.py` and `svr.py` for the licensed
   kits, `sles_disasm.py` for the executable's copy, and `initteam.py` for
   club names.
-- `editor.py` edits through `pbdata.py`, and names clubs with
-  `initteam.py`.
+- `editor.py` edits through `pbdata.py` (People) and `initteam.py`
+  (Clubs).
 - `save.py` loads the game's serializers with `sles_disasm.py` and
   `snr2.py`, and takes field layouts, names and tables from `pbdata.py`,
   `initteam.py` and `tbb.py`.

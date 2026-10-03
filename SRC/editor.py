@@ -27,6 +27,11 @@ Tabs:
              A change to a player's rank, main position or nationality
              that changes the ranking (entries 2 and 3) also writes
              mod/disc/SLES_541.51, as `pbdata.py set --sles` does.
+    Clubs    club records (PLRESOURCESIM.PAC entry 3) and the computer
+             teams' squads (OTEAMMEMBER.TBB), through initteam.py
+             (DOC/INITTEAM_FORMAT.md). Refuses a player already in another
+             squad, a shirt number twice in one squad, and a manager who
+             already has a club, which `initteam.py info` would flag.
 
 Usage:
     python SRC/editor.py open [<mod folder>] [--dat DAT] [--iso ISO]   # default: mod
@@ -35,6 +40,7 @@ import contextlib
 import datetime
 import io
 import os
+import struct
 import subprocess
 import sys
 import threading
@@ -138,6 +144,56 @@ class Scrolled:
         self.canvas.yview_moveto(0)
 
 
+def value_input(parent, spec, label, get, apply):
+    """A drop-down for ("choice", [values]) or a spin box for ("range",
+    low, high). label(v) is a value's text, get() the current value, and
+    apply(text, revert) is called with the new value's text when it
+    changes; it calls revert() to put the old value back."""
+    var = tk.StringVar()
+
+    def commit(event=None):
+        text = var.get().split()[0] if var.get().strip() else ""
+        if text != str(get()):
+            apply(text, lambda: var.set(label(get())))
+
+    if spec[0] == "choice":
+        values = [label(v) for v in spec[1]]
+        width = max(4, min(30, max(len(v) for v in values) + 1))
+        w = ttk.Combobox(parent, textvariable=var, values=values, state="readonly",
+                         width=width, height=20)
+        w.bind("<<ComboboxSelected>>", commit)
+    else:
+        lo, hi = spec[1], spec[2]
+        w = ttk.Spinbox(parent, textvariable=var, from_=lo, to=hi, increment=1,
+                        width=max(4, len(str(hi)) + 2), command=commit)
+        w.bind("<Return>", commit)
+        w.bind("<FocusOut>", commit)
+    var.set(label(get()))
+    return w
+
+
+def replace_new(temps):
+    """Move each written <file>.new over its target."""
+    for tmp, final in temps:
+        os.replace(tmp, final)
+
+
+def remove_new(temps):
+    """Remove the .new files of a save that failed."""
+    for tmp, _ in temps:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
+def log_lines(title, commands, temps, report=""):
+    """The editor.log entry for one save."""
+    lines = ["# %s  %s" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), title)]
+    lines += [" ".join(c) for c in commands]
+    lines.append("# then each .new file replaces %s" % ", ".join(shown_path(f) for _, f in temps))
+    lines += ["# " + line for line in report.splitlines()]
+    return lines
+
+
 # --- tabs --------------------------------------------------------------------
 
 class Tab:
@@ -156,6 +212,11 @@ class Tab:
         return False
 
     def save(self):
+        pass
+
+    def changed(self, what):
+        """Another tab saved or loaded something this one shows: "squads"
+        (OTEAMMEMBER.TBB) or "people" (the People tab's records)."""
         pass
 
 
@@ -337,6 +398,18 @@ class PeopleTab(Tab):
         self.app.status("%s: %d players, %d managers, %d scouts" % (
             shown_path(self.path), *(len(self.records[k]) for k in pbdata.KINDS)))
         self.app.update_title()
+        self.app.notify(self, "people")
+
+    def changed(self, what):
+        """The Clubs tab saved the squads: refresh which club each player
+        is in, for the list, the club filter and the notes."""
+        if what != "squads" or self.records is None:
+            return
+        squads = initteam.OteamMembers(self.app.mod.source(OTEAM)).squads
+        self.club_of = {m.player: (team, m) for team, s in squads.items() for m in s}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
 
     def team_label(self, team):
         return "%d %s" % (team, self.teams.get(team, ""))
@@ -509,39 +582,16 @@ class PeopleTab(Tab):
         """The widget for one value: a drop-down for listed values, a spin
         box for a range, check boxes for a bit mask, a label if read-only."""
         spec = pbdata.edit_spec(r.kind, fname)
-        current = r.fields[fname] if index is None else r.fields[fname][index]
-        if spec is None:
-            return ttk.Label(parent, text=str(current), foreground="#777")
-        if spec[0] == "bits":
-            return self.bit_boxes(parent, r, fname)
-        var = tk.StringVar()
 
         def get():
             return r.fields[fname] if index is None else r.fields[fname][index]
-
-        def commit(event=None):
-            text = var.get().split()[0] if var.get().strip() else ""
-            if text != str(get()):
-                self.commit(r, fname, index, text, lambda: var.set(label(get())))
-
-        if spec[0] == "choice":
-            def label(v):
-                return pbdata.value_label(r.kind, fname, v, self.nations)
-            values = [label(v) for v in spec[1]]
-            width = max(4, min(26, max(len(v) for v in values) + 1))
-            w = ttk.Combobox(parent, textvariable=var, values=values, state="readonly",
-                             width=width, height=20)
-            w.bind("<<ComboboxSelected>>", commit)
-        else:
-            def label(v):
-                return pbdata.value_label(r.kind, fname, v)
-            lo, hi = spec[1], spec[2]
-            w = ttk.Spinbox(parent, textvariable=var, from_=lo, to=hi, increment=1,
-                            width=max(4, len(str(hi)) + 2), command=commit)
-            w.bind("<Return>", commit)
-            w.bind("<FocusOut>", commit)
-        var.set(label(current))
-        return w
+        if spec is None:
+            return ttk.Label(parent, text=str(get()), foreground="#777")
+        if spec[0] == "bits":
+            return self.bit_boxes(parent, r, fname)
+        return value_input(parent, spec,
+                           lambda v: pbdata.value_label(r.kind, fname, v, self.nations), get,
+                           lambda text, revert: self.commit(r, fname, index, text, revert))
 
     def bit_boxes(self, parent, r, fname):
         frame = ttk.Frame(parent)
@@ -645,13 +695,10 @@ class PeopleTab(Tab):
                 pbdata.write_pack(temps[0][0], self.db, self.records,
                                   (sles[0], temps[1][0]) if sles else None)
         except (SystemExit, ValueError, OSError) as e:
-            for tmp, _ in temps:
-                if os.path.exists(tmp):
-                    os.remove(tmp)
+            remove_new(temps)
             messagebox.showerror("People", "Can't save: %s" % e)
             return False
-        for tmp, final in temps:
-            os.replace(tmp, final)
+        replace_new(temps)
 
         args = []
         last = None
@@ -666,11 +713,8 @@ class PeopleTab(Tab):
                quote(shown_path(temps[0][0]))] + args
         if sles:
             cmd += ["--sles", quote(shown_path(sles[0])), quote(shown_path(temps[1][0]))]
-        lines = ["# %s  People: %d changes in %d records" % (
-                    datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), len(self.changes), records),
-                 " ".join(cmd),
-                 "# then each .new file replaces %s" % ", ".join(shown_path(f) for _, f in temps)]
-        lines += ["# " + line for line in report.getvalue().splitlines()]
+        lines = log_lines("People: %d changes in %d records" % (len(self.changes), records),
+                          [cmd], temps, report.getvalue())
         mod.log(lines)
         self.app.write_log(lines)
         done = "Saved %s%s: %d changes in %d records" % (
@@ -682,6 +726,358 @@ class PeopleTab(Tab):
         self.current = None
         self.detail.clear()
         self.load(done)
+        return True
+
+
+SIMPAC = "PARAM/PLRESOURCESIM.PAC"
+STADIUMS = "PARAM/STADIUM_DATA.TBB"
+TEAM_LABELS = {
+    "world_rank": "world rank points", "foreign": "foreign players (policy row)",
+    "newface": "new faces (policy)", "search_region": "search region (policy row)",
+    "money": "transfer money factor", "list_state": "listed under state",
+    "list_city": "listed under city",
+}
+SQUAD_FIELDS = ("player", "age", "shirt", "contract")
+
+
+class ClubsTab(Tab):
+    """Club records (PLRESOURCESIM.PAC entry 3) and computer-team squads
+    (OTEAMMEMBER.TBB), through initteam.py's set_team_field and set_member,
+    as `initteam.py setteam` and `set` do."""
+    title = "Clubs"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.ot = self.db = None
+        self.squad_changes = {}     # (team, slot, field) -> value, in edit order
+        self.team_changes = {}      # (team, field) -> value
+        self.current = None         # the team on the right
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Name or id").pack(side="left")
+        self.find_var = tk.StringVar()
+        find = ttk.Entry(bar, textvariable=self.find_var, width=22)
+        find.pack(side="left", padx=(4, 12))
+        find.bind("<Return>", lambda e: self.refresh_list())
+        ttk.Button(bar, text="Search", command=self.refresh_list).pack(side="left")
+        self.count_label = ttk.Label(bar, text="")
+        self.count_label.pack(side="left", padx=12)
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("id", "name", "rank", "world", "squad")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, text, width in zip(cols, ("Id", "Club", "Rank", "World pts", "Squad"),
+                                  (50, 170, 50, 70, 50)):
+            self.tree.heading(c, text=text)
+            self.tree.column(c, width=width, stretch=c == "name")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    # loading
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.ot_path, self.db_path = mod.source(OTEAM), mod.source(SIMPAC)
+            self.ot = initteam.OteamMembers(self.ot_path)
+            self.db = initteam.TeamDb(self.db_path)
+            mes = mod.source(MES)
+            self.teams = initteam.team_names(mes, 1)
+            self.names = {cat: initteam.category_names(mes, cat)
+                          for cat in set(initteam.TEAM_NAME_CATEGORIES.values())}
+            self.stadiums = initteam.StadiumData(mod.source(STADIUMS))
+        except (ValueError, struct.error, OSError, SystemExit) as e:
+            self.app.status("Couldn't load the clubs: %s" % e)
+            messagebox.showerror("Clubs", "Couldn't load the clubs:\n%s" % e)
+            return
+        self.squad_changes, self.team_changes = {}, {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def changed(self, what):
+        if what == "people" and self.current is not None and self.db is not None:
+            self.show(self.current)         # the squad's names come from People
+
+    def people(self, kind):
+        """The People tab's records, edits included, or None while it loads."""
+        records = self.app.people.records
+        return records[kind] if records else None
+
+    # the list
+
+    def refresh_list(self):
+        if self.db is None:
+            return
+        find = self.find_var.get().strip().lower()
+        self.tree.delete(*self.tree.get_children())
+        n = 0
+        for team in sorted(self.db.records):
+            name = self.teams.get(team, "")
+            if find and not (find == str(team) or (not find.isdigit() and find in name.lower())):
+                continue
+            self.tree.insert("", "end", iid=str(team), values=self.row(team),
+                             tags=("edited",) if self.edited(team) else ())
+            n += 1
+        self.count_label.configure(text="%d clubs" % n)
+
+    def row(self, team):
+        r = self.db.records[team]
+        return (team, self.teams.get(team, ""), r["rank"], r["world_rank"],
+                "yes" if team in self.ot.squads else "no")
+
+    def edited(self, team):
+        return (any(t == team for t, _ in self.team_changes)
+                or any(t == team for t, _, _ in self.squad_changes))
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    # the detail panel
+
+    def show(self, team):
+        self.current = team
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%d  %s" % (team, self.teams.get(team, "")),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        frame = ttk.LabelFrame(box, text="Club record (PLRESOURCESIM.PAC entry 3; "
+                                         "fields with no name yet are read-only)")
+        frame.pack(fill="x", padx=8, pady=6)
+        record = self.db.records[team]
+        for row, (name, _, _, _) in enumerate(initteam.TEAM_FIELDS):
+            ttk.Label(frame, text=TEAM_LABELS.get(name, name.replace("_", " "))).grid(
+                row=row, column=0, sticky="w", padx=(6, 12), pady=2)
+            self.team_widget(frame, team, record, name).grid(row=row, column=1, sticky="w", pady=2)
+        frame = ttk.LabelFrame(box, text="Squad (OTEAMMEMBER.TBB)")
+        frame.pack(fill="x", padx=8, pady=6)
+        if team not in self.ot.squads:
+            ttk.Label(frame, text="No squad in OTEAMMEMBER.TBB: only teams %d-%d have one "
+                                  "(DOC/INITTEAM_FORMAT.md)." % (initteam.OTEAM_FIRST,
+                                                                 initteam.OTEAM_END - 1),
+                      foreground="#555").pack(anchor="w", padx=6, pady=4)
+        else:
+            self.squad_grid(frame, team)
+        self.fit_detail()
+
+    def fit_detail(self):
+        self.frame.update_idletasks()
+        need = self.detail.inner.winfo_reqwidth() + 24
+        have = self.detail.outer.winfo_width()
+        if need > have > 1:
+            pos = self.panes.sashpos(0)
+            self.panes.sashpos(0, max(LIST_MIN, pos - (need - have)))
+
+    def team_widget(self, parent, team, record, name):
+        rng = initteam.team_edit_range(name)
+        if rng is None:
+            return ttk.Label(parent, text=str(record[name]), foreground="#777")
+        if name == "manager":
+            managers = self.people("managers")
+            spec = ("choice", list(range(rng[0], rng[1] + 1)))
+
+            def label(v):
+                return "%d %s" % (v, managers[v].name) if managers and 0 <= v < len(managers) \
+                    else str(v)
+        elif name == "stadium":
+            spec = ("choice", list(range(rng[0], rng[1] + 1)))
+
+            def label(v):
+                if not 0 <= v < len(self.stadiums.rows):
+                    return str(v)
+                return "%d  %d seats%s" % (v, self.stadiums.capacity(v),
+                                           ", roof" if self.stadiums.rows[v][0] else "")
+        elif name in initteam.TEAM_NAME_CATEGORIES:
+            names = self.names[initteam.TEAM_NAME_CATEGORIES[name]]
+            spec = ("choice", sorted(set(names) | {record[name]}))
+
+            def label(v):
+                return "%d %s" % (v, names[v]) if v in names else str(v)
+        else:
+            spec = ("range",) + rng
+
+            def label(v):
+                return str(v)
+        return value_input(parent, spec, label, lambda: record[name],
+                           lambda text, revert: self.commit_team(team, name, text, revert))
+
+    def squad_grid(self, frame, team):
+        players = self.people("players")
+        for col, text in enumerate(("slot", "player", "name", "position", "age", "shirt",
+                                    "contract years")):
+            ttk.Label(frame, text=text, foreground="#555").grid(row=0, column=col, sticky="w",
+                                                               padx=(6, 8))
+        for slot, m in enumerate(self.ot.squads[team]):
+            row = slot + 1
+            ttk.Label(frame, text=str(slot)).grid(row=row, column=0, sticky="w", padx=(6, 8))
+            name = ttk.Label(frame, text="")
+            pos = ttk.Label(frame, text="")
+
+            def describe(m=m, name=name, pos=pos):
+                if players and 0 <= m.player < len(players):
+                    r = players[m.player]
+                    name.configure(text=r.name)
+                    pos.configure(text="/".join(pbdata.position_name(p)
+                                                for p in r.fields["position"] if p != 13))
+                else:
+                    name.configure(text="(names load with People)" if players is None else "?")
+            describe()
+            for col, field in ((1, "player"), (4, "age"), (5, "shirt"), (6, "contract")):
+                lo, hi = initteam.SET_LIMITS[field]
+                if field == "player" and players:
+                    hi = len(players) - 1
+                w = value_input(frame, ("range", lo, hi), str,
+                                lambda m=m, field=field: getattr(m, field),
+                                lambda text, revert, slot=slot, field=field, d=describe:
+                                    self.commit_squad(team, slot, field, text, revert, d))
+                w.grid(row=row, column=col, sticky="w", padx=(0, 8), pady=1)
+            name.grid(row=row, column=2, sticky="w", padx=(0, 8))
+            pos.grid(row=row, column=3, sticky="w", padx=(0, 8))
+        ttk.Label(frame, text="A new game shows each age one year older. The game takes these "
+                              "players' age and shirt from here, not from the player database.",
+                  foreground="#555").grid(row=len(self.ot.squads[team]) + 1, column=0,
+                                          columnspan=7, sticky="w", padx=6, pady=(6, 4))
+
+    # edits
+
+    def refuse(self, what, message, revert):
+        revert()
+        self.app.status("%s: %s" % (what, message))
+        messagebox.showerror("Clubs", "%s: %s" % (what, message))
+        return False
+
+    def commit_team(self, team, name, text, revert):
+        what = "%d %s" % (team, self.teams.get(team, ""))
+        try:
+            value = int(text)
+        except ValueError:
+            return self.refuse(what, "%s must be a number" % name, revert)
+        lo, hi = initteam.team_edit_range(name)
+        if not lo <= value <= hi:
+            return self.refuse(what, "%s must be %d-%d" % (name, lo, hi), revert)
+        if name == "manager":
+            # Every club has its own manager (initteam.py info checks it).
+            other = next((t for t, r in self.db.records.items()
+                          if t != team and r["manager"] == value), None)
+            if other is not None:
+                return self.refuse(what, "manager %d already manages %d %s" % (
+                    value, other, self.teams.get(other, "")), revert)
+        try:
+            old = initteam.set_team_field(self.db.records[team], name, value)
+        except ValueError as e:
+            return self.refuse(what, str(e), revert)
+        self.team_changes.pop((team, name), None)
+        self.team_changes[team, name] = value
+        self.edited_one(team, "%s: %s %s -> %s" % (what, name, old, value))
+        return True
+
+    def commit_squad(self, team, slot, field, text, revert, describe):
+        what = "%d %s slot %d" % (team, self.teams.get(team, ""), slot)
+        try:
+            value = int(text)
+        except ValueError:
+            return self.refuse(what, "%s must be a number" % field, revert)
+        players = self.people("players")
+        if field == "player" and players and not 0 <= value < len(players):
+            return self.refuse(what, "players are 0-%d" % (len(players) - 1), revert)
+        if field == "player":
+            # Each player is in one squad only (initteam.py info checks it).
+            for t, squad in self.ot.squads.items():
+                for k, m in enumerate(squad):
+                    if m.player == value and (t, k) != (team, slot):
+                        return self.refuse(what, "player %d is already in %d %s, slot %d" % (
+                            value, t, self.teams.get(t, ""), k), revert)
+        if field == "shirt":
+            # Shirt numbers don't repeat within a squad (initteam.py info).
+            for k, m in enumerate(self.ot.squads[team]):
+                if k != slot and m.shirt == value:
+                    return self.refuse(what, "shirt %d is already slot %d's" % (value, k), revert)
+        try:
+            old = initteam.set_member(self.ot.squads[team][slot], field, value)
+        except ValueError as e:
+            return self.refuse(what, str(e), revert)
+        self.squad_changes.pop((team, slot, field), None)
+        self.squad_changes[team, slot, field] = value
+        describe()
+        self.edited_one(team, "%s: %s %s -> %s" % (what, field, old, value))
+        return True
+
+    def edited_one(self, team, message):
+        self.app.status(message)
+        if self.tree.exists(str(team)):
+            self.tree.item(str(team), values=self.row(team), tags=("edited",))
+        self.app.update_title()
+
+    # saving
+
+    def dirty(self):
+        return bool(self.squad_changes or self.team_changes)
+
+    def save(self):
+        """Write the edited squad table and club pack to the mod folder."""
+        if not self.dirty():
+            return True
+        mod = self.app.mod
+        temps, commands = [], []
+        try:
+            if self.squad_changes:
+                out = mod.target(OTEAM)
+                os.makedirs(os.path.dirname(out), exist_ok=True)
+                with open(out + ".new", "wb") as f:
+                    f.write(self.ot.encode())
+                temps.append((out + ".new", out))
+                args, last = [], None
+                for (team, slot, field), value in self.squad_changes.items():
+                    if (team, slot) != last:
+                        args.append("%d:%d" % (team, slot))
+                        last = (team, slot)
+                    args.append("%s=%d" % (field, value))
+                commands.append(["python", "SRC/initteam.py", "set", quote(shown_path(self.ot_path)),
+                                 quote(shown_path(out + ".new"))] + args)
+            if self.team_changes:
+                out = mod.target(SIMPAC)
+                os.makedirs(os.path.dirname(out), exist_ok=True)
+                with open(out + ".new", "wb") as f:
+                    f.write(self.db.encode())
+                temps.append((out + ".new", out))
+                args, last = [], None
+                for (team, name), value in self.team_changes.items():
+                    if team != last:
+                        args.append(str(team))
+                        last = team
+                    args.append("%s=%d" % (name, value))
+                commands.append(["python", "SRC/initteam.py", "setteam",
+                                 quote(shown_path(self.db_path)),
+                                 quote(shown_path(out + ".new"))] + args)
+        except (OSError, struct.error) as e:
+            remove_new(temps)
+            messagebox.showerror("Clubs", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        n = len(self.squad_changes) + len(self.team_changes)
+        lines = log_lines("Clubs: %d changes" % n, commands, temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        squads = bool(self.squad_changes)
+        # Read the saved files back, so a bad write shows here.
+        self.load("Saved %s: %d changes" % (" and ".join(shown_path(f) for _, f in temps), n))
+        if squads:
+            self.app.notify(self, "squads")
         return True
 
 
@@ -737,7 +1133,9 @@ class App:
         self.status_var = tk.StringVar()
         ttk.Label(self.root, textvariable=self.status_var, anchor="w", relief="sunken"
                   ).pack(fill="x", side="bottom")
-        self.tabs = [PeopleTab(self)]
+        self.people = PeopleTab(self)
+        self.clubs = ClubsTab(self)
+        self.tabs = [self.people, self.clubs]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)
@@ -747,6 +1145,11 @@ class App:
 
     def status(self, text):
         self.status_var.set(text)
+
+    def notify(self, source, what):
+        for tab in self.tabs:
+            if tab is not source:
+                tab.changed(what)
 
     def write_log(self, lines):
         self.log_tab.write(lines)

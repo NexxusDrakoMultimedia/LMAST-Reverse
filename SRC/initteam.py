@@ -275,6 +275,13 @@ TEAM_EDIT_RANGES = {
 }
 
 
+# Club-record fields whose values are named by a message category. The
+# manager is a PBDATA manager index (pbdata.py) and the stadium a
+# STADIUM_DATA row (StadiumData).
+TEAM_NAME_CATEGORIES = {"city": CITY_CATEGORY, "list_city": CITY_CATEGORY,
+                        "list_state": STATE_CATEGORY}
+
+
 def team_edit_range(name):
     """(low, high) an editor may set a club-record field to, or None for a
     field with no name yet."""

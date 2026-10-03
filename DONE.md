@@ -646,3 +646,14 @@ files. Each item keeps what was found, where, and how it was tested.
       `OTEAMMEMBER.TBB`, not the edited 16 and 69, as the editor's note
       says. The kit style (long sleeves, GK pants, gloves, boots) wasn't
       checked in a match
+- [x] Clubs tab on `initteam.py`: the 457 club records (named fields with
+      their documented ranges; managers, stadiums, cities and states by
+      name; unnamed bytes read-only) and the 439 squads (player, age,
+      shirt, contract per slot, named from the People tab's records). It
+      refuses a player already in another squad, a repeated shirt number
+      and a manager who already has a club, as `initteam.py info` would
+      flag them. A squad save refreshes the People tab's club notes.
+      Checked: a save with 7 edits (and 4 refused) equals the logged
+      `initteam.py set` and `setteam` output byte for byte, and `info`
+      over the result has no `!!`
+
