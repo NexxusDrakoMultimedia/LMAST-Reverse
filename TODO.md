@@ -58,7 +58,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 [`DOC/0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md).
 
 - [ ] Test in PCSX2: a swap across leagues in the Season tab (a club
-      playing in another nation's league)
+      playing in another nation's league) and its rankings, on a disc without the
+      tutorial skip (the skip breaks the rankings by itself)
 - [ ] Change a division's size: build a league schedule for n clubs
       (pairings, games, game days), give its UID that many turns,
       re-point the team-entry slots (more or fewer promoted and
@@ -114,11 +115,16 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       slot 0, age 16 in the mod): 16 means the skip adds the year. Then
       document which code adds it (`DOC/INITTEAM_FORMAT.md`,
       `DOC/TEAMINIT_FORMAT.md`)
+- [ ] Tutorial skip: the club rankings are never computed (every club
+      65536 in All Clubs Ranking, world ranking 0; tested in PCSX2 on an
+      unmodified skip disc). Find the club-rank year end in the playoffs'
+      skipped `Sche.YearEnd` (the ranking at `SIMPRG.REL 0x150738`) and
+      call it from the skip as well, like `pwkTeam_YearEndCheck`
+      (`DOC/SQB_FORMAT.md#known-problem-the-club-rankings`)
 - [ ] Tutorial skip leftovers: check other leagues (the switch calls
-      `pwkLg_Init(0)`), and whether the rest of the playoffs' skipped
-      `Sche.YearEnd`/`Sche.MonthEnd` (club-rank year end,
-      `pwkTeam_ChangePop_Year`) changes anything
-      (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`)
+      `pwkLg_Init(0)`), and whether the rest of the skipped
+      `Sche.YearEnd`/`Sche.MonthEnd` (`pwkTeam_ChangePop_Year`) changes
+      anything (`DOC/SQB_FORMAT.md#the-supplier-and-the-clubs-status`)
 - [ ] National team leftovers: what `_getNationalTeamPoint` (`0x227200`)
       scores, team 465 (the Netherlands national team, `PLRESOURCECOMMON` 3.3) and
       `PlPinfo +0x20c` flag `0x300` in the call-up

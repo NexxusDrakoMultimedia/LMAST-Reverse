@@ -76,7 +76,9 @@ the six playoff-period sponsors one year into their contracts (SLES
 Sche.YearStart, which is what ends them. And it makes the skip command
 also call pwkTeam_YearEndCheck (SLES 0x108dac, 9 words), the playoffs'
 year end, which gives the club its first 500 status (needed for the
-supplier Egamucho). The club must be in England (the switch calls
+supplier Egamucho). Known problem: the club rankings stay uncomputed
+(All Clubs Ranking shows 65536 for every club), as the rest of the
+playoffs' year end is skipped. The club must be in England (the switch calls
 pwkLg_Init(0)). See DOC/SQB_FORMAT.md.
 
 --sponsor-negotiation (whole disc image only) turns the Sponsor screen's

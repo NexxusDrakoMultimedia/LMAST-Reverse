@@ -515,6 +515,18 @@ The rest of the playoffs' `Sche.YearEnd` (club-rank year end,
 `pwkTeam_ChangePop_Year`) and `Sche.MonthEnd` still don't run on a skip
 disc. Nothing has shown a difference from them yet.
 
+### Known problem: the club rankings
+
+**Tested in PCSX2** (user report): on an unmodified `--skip-tutorial`
+disc, Information → All Clubs Ranking lists every club as **65536**, in
+no order (North Shore, SC Dunstable, Birmingham, ...), and a club's
+detail screen shows world ranking 0 and league ranking "–". The skip
+leaves out the playoffs' `Sche.YearEnd`, which includes the club-rank
+year end (only `pwkTeam_YearEndCheck` is called, above), so the
+rankings are most likely never computed. Not traced yet; the swaps
+first suspected (Season tab) aren't the cause, as the unmodified skip
+disc shows the same.
+
 ## The developer launcher
 
 **Confirmed** from the code: `Dummy.CheckLauncher` (`0x109270`) always
