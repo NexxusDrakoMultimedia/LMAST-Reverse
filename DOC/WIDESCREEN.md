@@ -13,6 +13,8 @@ The patch is
 for the PAL executable (PCSX2 CRC `3CB245D5`). Copy it into PCSX2's
 `patches/` folder, tick "Widescreen 16:9" under Game Properties →
 Patches, and boot. The section also sets PCSX2's aspect ratio to 16:9.
+For the FMVs, set Game Properties → Graphics → FMV Aspect Ratio Override
+to "Auto 4:3/3:2"; PCSX2 then shows them at 4:3 (tested, user report).
 
 Tested in PCSX2: in an exhibition match the pitch widens at the sides
 and players keep their proportions, in play and in close-ups; shadows
@@ -141,7 +143,6 @@ at the 4:3 edge, list rows are intact (user report, 2026-10-04).
   game's normal behaviour, not the patch (user report).
 - Name tags over players come from 3D positions but are drawn as text,
   so the text patch pulls them toward the centre.
-- The boot video-mode box uses yet another path; it stays stretched.
 
 ## Checking the claims
 
