@@ -143,3 +143,108 @@ patch=0,EE,0012fa7c,word,e540fff0
 patch=0,EE,0012fa80,word,0807c839
 patch=0,EE,0012fa84,word,3c026404
 patch=0,EE,001f20e0,word,0804be8c
+
+// Margins: UI the game parks just off its 512-pixel screen (the hidden
+// squad list, slide-ins) would show in the side margins. Clip the 2D pass
+// to the 4:3 area with the GS scissor, like the edge of a 4:3 screen.
+// etc::Util_ScissorEnd (0x14cb20) restores a hard-coded full-screen scissor
+// (x 0-511, y 0-447) in both draw contexts; make it read that value from a
+// variable at 0x13bfc0 instead (0x14cb40-0x14cb4c):
+//   lui $at, 0x14; ld $s5, -0x4040($at); nop ; nop 
+patch=0,EE,0014cb40,word,3c010014
+patch=0,EE,0014cb44,word,dc35bfc0
+patch=0,EE,0014cb48,word,00000000
+patch=0,EE,0014cb4c,word,00000000
+// The 2D pass, sort2d::CSort2d::Execute (0x1fe220), is called from
+// sort2d::CEtcSort2d::Execute at 0x14c5d4. Wrap it: set the variable to x
+// 64-447 and apply it, run the pass, then set it back to x 0-511 and apply
+// that. Lists that clip themselves during the pass end on the 4:3 value.
+// Cave in graphics::GlareFilter::display_reduction_buffer (0x13be98, 0x140
+// bytes, a debug display nothing calls):
+//   addiu $sp, $sp, -0x10; sd $ra, ($sp); sd $a0, 8($sp); lui $at, 0x14; ld $t0, -0x4038($at)
+//   sd $t0, -0x4040($at); jal 0x14cb20; nop ; ld $a0, 8($sp); jal 0x1fe220
+//   nop ; lui $at, 0x14; ld $t0, -0x4030($at); sd $t0, -0x4040($at); jal 0x14cb20
+//   nop ; ld $ra, ($sp); jr $ra; addiu $sp, $sp, 0x10
+patch=0,EE,0013be98,word,27bdfff0
+patch=0,EE,0013be9c,word,ffbf0000
+patch=0,EE,0013bea0,word,ffa40008
+patch=0,EE,0013bea4,word,3c010014
+patch=0,EE,0013bea8,word,dc28bfc8
+patch=0,EE,0013beac,word,fc28bfc0
+patch=0,EE,0013beb0,word,0c0532c8
+patch=0,EE,0013beb4,word,00000000
+patch=0,EE,0013beb8,word,dfa40008
+patch=0,EE,0013bebc,word,0c07f888
+patch=0,EE,0013bec0,word,00000000
+patch=0,EE,0013bec4,word,3c010014
+patch=0,EE,0013bec8,word,dc28bfd0
+patch=0,EE,0013becc,word,fc28bfc0
+patch=0,EE,0013bed0,word,0c0532c8
+patch=0,EE,0013bed4,word,00000000
+patch=0,EE,0013bed8,word,dfbf0000
+patch=0,EE,0013bedc,word,03e00008
+patch=0,EE,0013bee0,word,27bd0010
+// Data: the variable (starts full width), the 4:3 value, the full value.
+patch=0,EE,0013bfc0,word,01ff0000
+patch=0,EE,0013bfc4,word,01bf0000
+patch=0,EE,0013bfc8,word,01bf0040
+patch=0,EE,0013bfcc,word,01bf0000
+patch=0,EE,0013bfd0,word,01ff0000
+patch=0,EE,0013bfd4,word,01bf0000
+patch=0,EE,0014c5d4,word,0c04efa6
+
+// etc::Util_ScissorBeginDirect (0x14c860) sets list and ticker clip boxes
+// from unsqueezed coordinates, clamped to x 0-511, which would reopen the
+// margins. After its clamps, x0 and x1 are floats at 0($sp) and 8($sp);
+// map both to x * 0.75 + 64 before they are written to the GS (0x14c9b0
+// jumps to the cave, which re-runs the moved lui). Cave at 0x13bee4:
+//   lui $at, 0x3f40; mtc1 $at, $f1; lui $at, 0x4280; mtc1 $at, $f2; lwc1 $f0, ($sp); mul.s $f0, $f0, $f1
+//   add.s $f0, $f0, $f2; swc1 $f0, ($sp); lwc1 $f0, 8($sp); mul.s $f0, $f0, $f1; add.s $f0, $f0, $f2; swc1 $f0, 8($sp)
+//   j 0x14c9b4; lui $a2, 0x37
+patch=0,EE,0013bee4,word,3c013f40
+patch=0,EE,0013bee8,word,44810800
+patch=0,EE,0013beec,word,3c014280
+patch=0,EE,0013bef0,word,44811000
+patch=0,EE,0013bef4,word,c7a00000
+patch=0,EE,0013bef8,word,46010002
+patch=0,EE,0013befc,word,46020000
+patch=0,EE,0013bf00,word,e7a00000
+patch=0,EE,0013bf04,word,c7a00008
+patch=0,EE,0013bf08,word,46010002
+patch=0,EE,0013bf0c,word,46020000
+patch=0,EE,0013bf10,word,e7a00008
+patch=0,EE,0013bf14,word,0805326d
+patch=0,EE,0013bf18,word,3c060037
+patch=0,EE,0014c9b0,word,0804efb9
+
+// sort2d keeps its own scissor pair, used by list and ticker boxes in the
+// 2D pass. sort2d::CEtcSort2d::CallScissorEnd (0x14bf28) restores the same
+// hard-coded full width; read the variable instead (0x14bf40-0x14bf4c):
+//   lui $at, 0x14; ld $v1, -0x4040($at); nop ; nop 
+patch=0,EE,0014bf40,word,3c010014
+patch=0,EE,0014bf44,word,dc23bfc0
+patch=0,EE,0014bf48,word,00000000
+patch=0,EE,0014bf4c,word,00000000
+// CallScissorBegin (0x14bd70) clamps the box to x 0-511 in unsqueezed
+// coordinates; after the clamps, map x0 and x1 (0($sp), 8($sp)) to
+// x * 0.75 + 64. 0x14be6c jumps to the cave, which re-runs the moved sw.
+// Cave at 0x13bf1c:
+//   lui $at, 0x3f40; mtc1 $at, $f1; lui $at, 0x4280; mtc1 $at, $f2; lwc1 $f0, ($sp); mul.s $f0, $f0, $f1
+//   add.s $f0, $f0, $f2; swc1 $f0, ($sp); lwc1 $f0, 8($sp); mul.s $f0, $f0, $f1; add.s $f0, $f0, $f2; swc1 $f0, 8($sp)
+//   sw $zero, 0x84($t2); j 0x14be70; nop 
+patch=0,EE,0013bf1c,word,3c013f40
+patch=0,EE,0013bf20,word,44810800
+patch=0,EE,0013bf24,word,3c014280
+patch=0,EE,0013bf28,word,44811000
+patch=0,EE,0013bf2c,word,c7a00000
+patch=0,EE,0013bf30,word,46010002
+patch=0,EE,0013bf34,word,46020000
+patch=0,EE,0013bf38,word,e7a00000
+patch=0,EE,0013bf3c,word,c7a00008
+patch=0,EE,0013bf40,word,46010002
+patch=0,EE,0013bf44,word,46020000
+patch=0,EE,0013bf48,word,e7a00008
+patch=0,EE,0013bf4c,word,ad400084
+patch=0,EE,0013bf50,word,08052f9c
+patch=0,EE,0013bf54,word,00000000
+patch=0,EE,0014be6c,word,0804efc7

@@ -102,16 +102,36 @@ Ruled out:
 | CSE screen (`cseSetScreen` `0x1f47d8`; context at `0x38f458`, scale `+0x80`, offset `+0xa0`) | no change in the match (CSE doesn't draw there); the per-node matrix in the VU1 packet is patched instead |
 | PX screen parameters `0x369c30` (half-width 256) | squashed the 3D, HUD unchanged |
 
+### Clipping to 4:3
+
+UI the game parks just off its 512-pixel screen (the hidden squad list,
+slide-ins, the scrolling news ticker) would land in the side margins once
+squeezed. The UI fix clips 2D to the 4:3 area with the GS scissor (x
+64–447), like the edge of a 4:3 screen. Every way the game sets a
+scissor has to agree on the squeezed coordinates, or a full-width box
+reopens the margins:
+
+| Where | What it did | Patch |
+|---|---|---|
+| `sort2d::CEtcSort2d::Execute` calls the 2D pass, `sort2d::CSort2d::Execute` (`0x1fe220`), at `0x14c5d4` | — | a wrapper at `0x13be98` sets the variable below to x 64–447 and applies it, runs the pass, then sets x 0–511 and applies that |
+| `etc::Util_ScissorEnd` (`0x14cb20`) | restores a hard-coded full screen (`0x14cb40`–`0x14cb4c`) | reads the variable at `0x13bfc0` |
+| `sort2d::CEtcSort2d::CallScissorEnd` (`0x14bf28`) | the same, at `0x14bf40`–`0x14bf4c` | reads the variable |
+| `etc::Util_ScissorBeginDirect` (`0x14c860`), also behind `etc::Viewport_SetRect` | clamps boxes to x 0–511, unsqueezed | after the clamps, x0 and x1 (`0($sp)`, `8($sp)`) become x·0.75 + 64 (`0x14c9b0` → `0x13bee4`) |
+| `sort2d::CEtcSort2d::CallScissorBegin` (`0x14bd70`) | the same | the same mapping (`0x14be6c` → `0x13bf1c`) |
+
+The scissor value is the GS SCISSOR register (`x0 | x1<<16 | y0<<32 |
+y1<<48`), kept in two draw contexts at `0x369dc0` and `0x369f20` and sent by
+`PXPutContext` (`0x1b4ac8`). These caves sit in
+`graphics::GlareFilter::display_reduction_buffer` (`0x13be98`, 0x140
+bytes), a debug display nothing calls. Tested in PCSX2: the hidden squad
+list no longer shows in the match, the ticker and the menu slide-ins stop
+at the 4:3 edge, list rows are intact (user report, 2026-10-04).
+
 ## What's still open
 
-- UI the game parks just off its 512-pixel screen now lands in the side
-  margins: the hidden squad list in the match, and probably the
-  Pre-match screen's striped background. Clipping the 2D layer to the
-  4:3 area would hide it, but needs the point in the frame where 2D
-  drawing starts.
-- `etc::Util_ScissorBeginDirect` (`0x14c860`) clamps clip rectangles to
-  0–511 and writes them to the GS unchanged, so lists that clip will
-  clip at unsqueezed positions.
+- The Pre-match screen's background movie (clock-like ticks) still shows
+  in the right margin, so it draws outside the 2D pass and the clip
+  boxes.
 - Name tags over players come from 3D positions but are drawn as text,
   so the text patch pulls them toward the centre.
 - The boot video-mode box uses yet another path; it stays stretched.
