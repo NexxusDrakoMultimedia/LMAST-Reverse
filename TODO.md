@@ -294,8 +294,9 @@ The event tables, the procedures and the overlay loader are documented in
       other discs), `save.py`'s commands (they take no ISO folder), the
       editor
 - [ ] Widescreen UI leftovers (`DOC/WIDESCREEN.md#whats-still-open`): the
-      Pre-match background movie still shows in the right margin; name
-      tags over players drift toward the centre
+      Pre-match background movie still shows in the right margin; the
+      special-tactics replays' letterbox bars only cover the 4:3 area;
+      name tags over players drift toward the centre
 
 ## 8. Housekeeping
 

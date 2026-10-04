@@ -131,7 +131,14 @@ at the 4:3 edge, list rows are intact (user report, 2026-10-04).
 
 - The Pre-match screen's background movie (clock-like ticks) still shows
   in the right margin, so it draws outside the 2D pass and the clip
-  boxes.
+  boxes. It isn't `CSpriteRef` (`0x1267e8`): squeezing that class's
+  hard-coded x conversions changed nothing (tested in PCSX2).
+- The black letterbox bars of the special-tactics replays are 2D, so
+  they are squeezed and clipped to 4:3 and the 3D shows beside them.
+  Drawing full-width bars unsqueezed would need telling them apart from
+  sliding panels, which would then stretch while they slide.
+- The stadium ad boards floating above the pitch in replays are the
+  game's normal behaviour, not the patch (user report).
 - Name tags over players come from 3D positions but are drawn as text,
   so the text patch pulls them toward the centre.
 - The boot video-mode box uses yet another path; it stays stretched.
