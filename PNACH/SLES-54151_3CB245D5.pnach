@@ -1,33 +1,84 @@
 gametitle=Let's Make a Soccer Team! (PAL) [SLES-54151] (3CB245D5)
 
+// Code is patched once, when the executable loads (patch=0): the game never
+// reloads it, and rewriting code every frame makes PCSX2 recompile those
+// pages each frame. Only the Ninja 2D table words, which the game itself
+// writes after boot, are re-applied every frame (patch=1).
+
 [Widescreen 16:9]
 gsaspectratio=16:9
 author=LMAST-Reverse
-description=Hor+ 16:9 for 3D scenes (the match, and other scenes drawn through nnSetProjectionPXPlusPS2). 2D UI is left stretched.
+description=Hor+ 16:9 for 3D scenes drawn to the screen. 2D UI is left stretched; use the UI fix for that.
 
-// nnSetProjectionPXPlusPS2 (0x18f8a8) copies the projection matrix to the
-// global one at 0x365ad0 with nnCopyMatrix (0x183ec0), then derives the
-// VU screen matrix and the clip planes from that copy. Redirect the copy
-// to a cave that also scales m[0][0] by 0.75 (4:3 -> 16:9, Hor+), but only
-// for perspective projections (type in $s0 == 0).
-// The stadium shadow (graphics::StadiumShadowContext, 0x1384c8) uses
-// nnSetProjection instead, so it is not touched.
-patch=1,EE,0018f900,word,0c04be6c
-
-// Cave: graphics::Graphics::print_config_parameter (0x12f9b0, 0x170
+// nnSetProjectionPXPlusPS2 (0x18f8a8) and nnSetProjection (0x18f450) copy the
+// projection matrix to the global one at 0x365ad0 with nnCopyMatrix
+// (0x183ec0), then derive the VU screen matrix and clip planes from the
+// copy. Both copies are redirected to caves that scale the copy's m[0][0]
+// by 0.75 (4:3 -> 16:9, Hor+) for perspective projections ($s0 == 0).
+//
+// The common part only scales while the PX screen half-width (0x369c30) is
+// 256, the real screen: graphics::TargetSurface::begin (0x1394a8) puts the
+// texture's own screen parameters when the game renders into a texture
+// (player portraits, faces), and end (0x139598) restores the screen's.
+//
+// nnSetProjection is also used by the stadium shadow, so its cave skips the
+// two shadow call sites (return addresses 0x13853c and 0x1385c4, read from
+// nnSetProjection's frame at 0x60($sp)). Other callers, including ones in
+// the overlays (the management screens' staff bodies), are scaled.
+//
+// Caves sit in graphics::Graphics::print_config_parameter (0x12f9b0, 0x170
 // bytes), a debug print nothing calls.
-patch=1,EE,0012f9b0,word,03e0c82d
-patch=1,EE,0012f9b4,word,0c060fb0
-patch=1,EE,0012f9b8,word,00000000
-patch=1,EE,0012f9bc,word,16000005
-patch=1,EE,0012f9c0,word,3c013f40
-patch=1,EE,0012f9c4,word,44810800
-patch=1,EE,0012f9c8,word,c4800000
-patch=1,EE,0012f9cc,word,46010002
-patch=1,EE,0012f9d0,word,e4800000
-patch=1,EE,0012f9d4,word,03200008
-patch=1,EE,0012f9d8,word,00000000
 
+// nnSetProjectionPXPlusPS2 cave, 0x12f9b0:
+//   move $t9, $ra; jal 0x183ec0; nop ; bnez $s0, 0x12f9cc; nop ; j 0x12fad8
+//   nop ; jr $t9; nop 
+patch=0,EE,0012f9b0,word,03e0c82d
+patch=0,EE,0012f9b4,word,0c060fb0
+patch=0,EE,0012f9b8,word,00000000
+patch=0,EE,0012f9bc,word,16000003
+patch=0,EE,0012f9c0,word,00000000
+patch=0,EE,0012f9c4,word,0804beb6
+patch=0,EE,0012f9c8,word,00000000
+patch=0,EE,0012f9cc,word,03200008
+patch=0,EE,0012f9d0,word,00000000
+patch=0,EE,0018f900,word,0c04be6c
+
+// nnSetProjection cave, 0x12fa90:
+//   move $t9, $ra; jal 0x183ec0; nop ; bnez $s0, 0x12fac4; lw $t8, 0x60($sp); lui $at, 0x13
+//   ori $t7, $at, 0x853c; beq $t8, $t7, 0x12fac4; ori $t7, $at, 0x85c4; beq $t8, $t7, 0x12fac4; nop ; j 0x12fad8
+//   nop ; jr $t9; nop 
+patch=0,EE,0012fa90,word,03e0c82d
+patch=0,EE,0012fa94,word,0c060fb0
+patch=0,EE,0012fa98,word,00000000
+patch=0,EE,0012fa9c,word,16000009
+patch=0,EE,0012faa0,word,8fb80060
+patch=0,EE,0012faa4,word,3c010013
+patch=0,EE,0012faa8,word,342f853c
+patch=0,EE,0012faac,word,130f0005
+patch=0,EE,0012fab0,word,342f85c4
+patch=0,EE,0012fab4,word,130f0003
+patch=0,EE,0012fab8,word,00000000
+patch=0,EE,0012fabc,word,0804beb6
+patch=0,EE,0012fac0,word,00000000
+patch=0,EE,0012fac4,word,03200008
+patch=0,EE,0012fac8,word,00000000
+patch=0,EE,0018f488,word,0c04bea4
+
+// Common: scale m[0][0] at $a0 if the screen half-width is 256; return to $t9.
+// 0x12fad8:
+//   lui $at, 0x37; lw $at, -0x63d0($at); lui $t7, 0x4380; bne $at, $t7, 0x12fafc; lui $at, 0x3f40; mtc1 $at, $f1
+//   lwc1 $f0, ($a0); mul.s $f0, $f0, $f1; swc1 $f0, ($a0); jr $t9; nop 
+patch=0,EE,0012fad8,word,3c010037
+patch=0,EE,0012fadc,word,8c219c30
+patch=0,EE,0012fae0,word,3c0f4380
+patch=0,EE,0012fae4,word,142f0005
+patch=0,EE,0012fae8,word,3c013f40
+patch=0,EE,0012faec,word,44810800
+patch=0,EE,0012faf0,word,c4800000
+patch=0,EE,0012faf4,word,46010002
+patch=0,EE,0012faf8,word,e4800000
+patch=0,EE,0012fafc,word,03200008
+patch=0,EE,0012fb00,word,00000000
 
 [Widescreen 16:9 UI fix (experimental)]
 author=LMAST-Reverse
@@ -48,12 +99,12 @@ patch=1,EE,00365b9c,word,41400000
 // The function restores $ra from the stack, so the jal is safe.
 // Cave at 0x12fa10 (rest of print_config_parameter):
 //   sub.s f12,f12,f23; lui at,0x3f40; mtc1 at,f0; jr ra; mul.s f12,f12,f0
-patch=1,EE,0012fa10,word,46176301
-patch=1,EE,0012fa14,word,3c013f40
-patch=1,EE,0012fa18,word,44810000
-patch=1,EE,0012fa1c,word,03e00008
-patch=1,EE,0012fa20,word,46006302
-patch=1,EE,0012666c,word,0c04be84
+patch=0,EE,0012fa10,word,46176301
+patch=0,EE,0012fa14,word,3c013f40
+patch=0,EE,0012fa18,word,44810000
+patch=0,EE,0012fa1c,word,03e00008
+patch=0,EE,0012fa20,word,46006302
+patch=0,EE,0012666c,word,0c04be84
 
 // Menus: CSE layouts.
 // cseCastFacePutTriStripParamPS2 (0x1f2040) copies each cast node's 3x3
@@ -69,26 +120,26 @@ patch=1,EE,0012666c,word,0c04be84
 //   swc1 $f0, -0x30($t2); lwc1 $f0, -0x20($t2); mul.s $f0, $f0, $f1; swc1 $f0, -0x20($t2); lwc1 $f0, -0x10($t2)
 //   mul.s $f0, $f0, $f1; lui $at, 0x4280; mtc1 $at, $f2; add.s $f0, $f0, $f2; swc1 $f0, -0x10($t2)
 //   j 0x1f20e4; lui $v0, 0x6404
-patch=1,EE,0012fa30,word,3c010039
-patch=1,EE,0012fa34,word,8c21f458
-patch=1,EE,0012fa38,word,8c210068
-patch=1,EE,0012fa3c,word,3c02bf00
-patch=1,EE,0012fa40,word,1422000f
-patch=1,EE,0012fa44,word,00000000
-patch=1,EE,0012fa48,word,3c013f40
-patch=1,EE,0012fa4c,word,44810800
-patch=1,EE,0012fa50,word,c540ffd0
-patch=1,EE,0012fa54,word,46010002
-patch=1,EE,0012fa58,word,e540ffd0
-patch=1,EE,0012fa5c,word,c540ffe0
-patch=1,EE,0012fa60,word,46010002
-patch=1,EE,0012fa64,word,e540ffe0
-patch=1,EE,0012fa68,word,c540fff0
-patch=1,EE,0012fa6c,word,46010002
-patch=1,EE,0012fa70,word,3c014280
-patch=1,EE,0012fa74,word,44811000
-patch=1,EE,0012fa78,word,46020000
-patch=1,EE,0012fa7c,word,e540fff0
-patch=1,EE,0012fa80,word,0807c839
-patch=1,EE,0012fa84,word,3c026404
-patch=1,EE,001f20e0,word,0804be8c
+patch=0,EE,0012fa30,word,3c010039
+patch=0,EE,0012fa34,word,8c21f458
+patch=0,EE,0012fa38,word,8c210068
+patch=0,EE,0012fa3c,word,3c02bf00
+patch=0,EE,0012fa40,word,1422000f
+patch=0,EE,0012fa44,word,00000000
+patch=0,EE,0012fa48,word,3c013f40
+patch=0,EE,0012fa4c,word,44810800
+patch=0,EE,0012fa50,word,c540ffd0
+patch=0,EE,0012fa54,word,46010002
+patch=0,EE,0012fa58,word,e540ffd0
+patch=0,EE,0012fa5c,word,c540ffe0
+patch=0,EE,0012fa60,word,46010002
+patch=0,EE,0012fa64,word,e540ffe0
+patch=0,EE,0012fa68,word,c540fff0
+patch=0,EE,0012fa6c,word,46010002
+patch=0,EE,0012fa70,word,3c014280
+patch=0,EE,0012fa74,word,44811000
+patch=0,EE,0012fa78,word,46020000
+patch=0,EE,0012fa7c,word,e540fff0
+patch=0,EE,0012fa80,word,0807c839
+patch=0,EE,0012fa84,word,3c026404
+patch=0,EE,001f20e0,word,0804be8c

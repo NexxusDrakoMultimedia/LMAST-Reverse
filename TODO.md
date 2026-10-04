@@ -299,10 +299,6 @@ The event tables, the procedures and the overlay loader are documented in
       needs clipping to 4:3; `etc::Util_ScissorBeginDirect` clips with
       unsqueezed coordinates; name tags over players drift toward the
       centre
-- [ ] A custom (VPF) player's face shows blue and black stripes on the
-      in-match Tactics screens; fine in the season menus. Happens with
-      every patch off (user report, 2026-10-04), so it isn't the
-      widescreen patch
 
 ## 8. Housekeeping
 

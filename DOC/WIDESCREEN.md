@@ -15,29 +15,45 @@ for the PAL executable (PCSX2 CRC `3CB245D5`). Copy it into PCSX2's
 Patches, and boot. The section also sets PCSX2's aspect ratio to 16:9.
 
 Tested in PCSX2: in an exhibition match the pitch widens at the sides
-and players keep their proportions, in play and in close-ups
-(user report, 2026-10-04).
+and players keep their proportions, in play and in close-ups; shadows
+stay under the players; the Club House staff and the player-card
+portraits keep their shape (user report, 2026-10-04).
 
 ## How it works
 
-The match sets its camera through Ninja's `nnSetProjectionPXPlusPS2`.
-That function copies the projection matrix to a global one, then builds
-the VU screen matrix and the clip planes from the copy. The patch
-redirects the copy to a cave that also scales `m[0][0]` by 0.75, but only
-for perspective projections. Drawing and culling both come from the
+Ninja sets a projection with `nnSetProjectionPXPlusPS2` (the match, most
+3D scenes) or `nnSetProjection` (some management-screen models, the
+stadium shadow). Both copy the projection matrix to a global one, then
+build the VU screen matrix and the clip planes from the copy. The patch
+redirects both copies to caves that scale the copy's `m[0][0]` by 0.75,
+for perspective projections only. Drawing and culling both come from the
 scaled copy, so nothing is culled early at the new edges.
 
-The cave sits in `graphics::Graphics::print_config_parameter`, a debug
+Two checks keep the scaling to the real screen:
+
+- It only applies while the PX screen half-width (`0x369c30`) is 256.
+  `graphics::TargetSurface::begin` (`0x1394a8`) puts the texture's own
+  screen parameters when the game renders into a texture (player
+  portraits), and `end` (`0x139598`) restores the screen's. Without this
+  the portraits came out narrow, squeezed once here and once more by the
+  UI fix when shown.
+- `nnSetProjection` skips the stadium shadow's two call sites (return
+  addresses `0x13853c` and `0x1385c4`, read from its frame at
+  `0x60($sp)`). Without the `nnSetProjection` cave, the Club House
+  staff's heads (PX Plus) and bodies (`nnSetProjection`) came apart.
+
+The caves sit in `graphics::Graphics::print_config_parameter`, a debug
 print that nothing calls (no `jal`, no pointer outside the export
-table, and no `.REL` imports it).
+table, and no `.REL` imports it): `0x12f9b0` (PX Plus), `0x12fa90`
+(`nnSetProjection`) and `0x12fad8` (the shared check and scale). The
+hooks are `0x18f900` and `0x18f488`, both `jal nnCopyMatrix` before.
 
-| Address | Was | Now |
-|---|---|---|
-| `0x18f900` | `jal nnCopyMatrix` | `jal 0x12f9b0` |
-| `0x12f9b0`–`0x12f9d8` | `print_config_parameter` | `move t9,ra; jal nnCopyMatrix; nop; bnez s0,+5; lui at,0x3f40; mtc1 at,f1; lwc1 f0,0(a0); mul.s f0,f0,f1; swc1 f0,0(a0); jr t9; nop` |
-
-`$s0` holds the projection type (0 = perspective) and `$a0` still points
-at the copy after `nnCopyMatrix`, which only touches `$t0`–`$t3`.
+All code patches use `patch=0`, applied once when the executable loads.
+With `patch=1` PCSX2 rewrote the code every frame, which makes it
+recompile those pages each frame; a custom (VPF) player's face, which the
+match builds at load time, then came out striped (tested in PCSX2: fixed
+by `patch=0`, user report). Only the two Ninja 2D table words of the UI
+fix stay `patch=1`, because the game writes that table itself after boot.
 
 ## Confirmed from the game code
 
@@ -99,8 +115,6 @@ Ruled out:
 - Name tags over players come from 3D positions but are drawn as text,
   so the text patch pulls them toward the centre.
 - The boot video-mode box uses yet another path; it stays stretched.
-- A custom (VPF) player's face is striped on the in-match Tactics
-  screens, but that happens with every patch off too (user report).
 
 ## Checking the claims
 
