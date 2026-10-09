@@ -566,6 +566,12 @@ files. Each item keeps what was found, where, and how it was tested.
       `EDIT::reInitNnConfigureSystemPS2` rewrote the unsqueezed text table,
       so text flashed stretched when scrolling player cards. A cave puts
       the squeezed values back. Tested in PCSX2 (user report)
+- [x] Widescreen match cut-ins: the match draws its HUD and the
+      substitution cut-in straight to the GS (`CSpriteDirect::Draw0`,
+      Ninja 2D primitives) outside the 2D pass, so the cut-in's parked
+      panels showed in the margins. The three functions now clip to 4:3
+      while the scissor is full width. Traced over PINE; tested in PCSX2
+      (user report)
 
 ## 8. Housekeeping
 

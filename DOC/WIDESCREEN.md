@@ -62,7 +62,7 @@ fix stay `patch=1`, because the game writes that table itself after boot.
 
 Each run of consecutive words is one `bytes` line (PCSX2 writes the hex
 in memory order, so each instruction word appears byte-reversed), and
-single words stay `word` lines: 17 lines in all. Unused words between
+single words stay `word` lines: 20 lines in all. Unused words between
 caves in the same debug function are written as zero. Checked over PINE
 in PCSX2 2.8.2: after boot, all 167 words of the earlier one-word-per-line
 patch read back unchanged, and the gaps read zero.
@@ -154,6 +154,43 @@ y1<<48`), kept in two draw contexts at `0x369dc0` and `0x369f20` and sent by
 bytes), a debug display nothing calls. Tested in PCSX2: the hidden squad
 list no longer shows in the match, the ticker and the menu slide-ins stop
 at the 4:3 edge, list rows are intact (user report, 2026-10-04).
+
+### Match HUD and cut-ins
+
+The match draws its HUD and the substitution cut-in straight to the GS,
+outside the 2D pass, so the clip above didn't cover them. The HUD stays
+inside 4:3 anyway, but the cut-in's panels are parked off-screen and
+slide in: the other team's panel showed in the right margin, and the
+incoming one was visible before it slid onto the 4:3 picture.
+
+Traced live over PINE with stubs that counted each caller's return
+address. In the match, `GAMEPRG.REL` (loaded at `0xc75000` in that
+test) draws through `CSpriteDirect::Draw0` (`0x1267a8`) and
+`nnBeginDrawPrimitive2D` (`0x177698`) … `nnEndDrawPrimitive2D`
+(`0x177e58`); the cut-in's widgets are at `GAMEPRG.REL 0x2039e8`,
+`0x203a14` and `0x204060`. A second run that also recorded the scissor
+variable showed every one of these calls with it at full width. No CSE
+draw function ran, and `sort2d::DirectSwitch_Sort2d` (`0x14c830`), the
+switch for sort2d's direct mode, wasn't called.
+
+The UI fix wraps all three functions. If the GS context's scissor
+(`0x369dc0`, which `etc::Util_ScissorEnd` and
+`etc::Util_ScissorBeginDirect` both write) is full width when one
+starts, it saves the scissor variable, sets 4:3, draws, and puts the saved
+value back afterwards. A narrower scissor is left alone, so list boxes
+and the 2D pass keep their own clipping. Everything these paths draw is
+already squeezed, so the clip only removes what lay outside the game's
+512-pixel screen. The hooks are one word each: `nnBegin` and `nnEnd`
+jump from their first instruction (the second, `move $v1, $a1` or
+`lui $v0, 0x57`, runs in the delay slot and again in the cave), and
+`Draw0` from its third (`move $s0, $a0`), swapping its saved return
+address so it returns through the cave. The caves sit in
+`graphics::OperatePostEffect::display_efx_slect_menu` (`0x13cdf8`,
+`0x114` bytes), called only from the dead `display_menu`.
+
+Tested in PCSX2: the substitution cut-in stays inside 4:3, the rest of
+the match HUD is unchanged, and the speed is unaffected (user report,
+2026-10-09).
 
 ### Season-mode backdrops
 
@@ -290,10 +327,8 @@ text (user report, 2026-10-09).
 - The FMVs stay stretched to 16:9 (see the top of this page).
 - The stadium ad boards floating above the pitch in replays are the
   game's normal behaviour, not the patch (user report).
-- The substitution cut-in in a match is not clipped: the other team's
-  panel shows in the side margin, and the substituting team's panel
-  pops in rather than sliding in (user report). Its draw path hasn't
-  been traced yet.
+- Nothing is known to be broken: every UI item found so far is fixed or
+  is the intended look.
 
 ## Checking the claims
 
