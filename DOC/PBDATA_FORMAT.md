@@ -85,7 +85,7 @@ also found.
 | 3 | 1 | `+0x2c` | leg | 0–3. Bit 0 set means right-footed, clear means left. *Empirical*: every well-known left-footer tested (Robben, Ashley Cole, Giggs, Messi, Roberto Carlos, Duff, Cech) has it clear. Bit 1 is set for famously two-footed players (Maldini, Henry, Rooney, Duff), and VPF's Player Edit screen shows Rooney (leg 3) as "Both(R)", so bit 1 is two-footed. The developers' editor names the four values 左, 右, 両左, 両右 (left, right, both-left, both-right). The detail screen shows a message from 100–103 (LEFT, RIGHT, LEFT, RIGHT), which fits `100 + leg`, but the copy into `PlPinfo +0x1c4` hasn't been traced. Tested in PCSX2: Van der Sar (250) set to 2 shows LEFT, as `100 + leg` predicts; the screen doesn't show two-footedness |
 | 16 | 1 | `+0x30` | f_30 | always 0 |
 | 16 | 1 | `+0x32` | face | face number, 0–17,172. **confirmed**: `CDetailManager` passes it to `CDetailFace::Request` (`0x2869b4`) |
-| 16 | 1 | `+0x34` | req_status | required status: band 0–15, looked up in the status table (`0x55b970`). **confirmed**: `pwkTeam_UpdatePlayerCandidates` (`0x260cf8`) leaves a player out of a candidate list when it is above the club's `pwkTeam_Status()`. Managers (`+0x24`) and scouts (`+0x22`) have the same field. Earlier lead: the BPINFO CHECK screen labels the 10,000 cutoff "1mil" ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)) |
+| 16 | 1 | `+0x34` | req_status | required status: band 0–15, looked up in the status table (`0x55b970`). **confirmed**: `pwkTeam_UpdatePlayerCandidates` (`0x260cf8`) leaves a player out of a candidate list when it is above the club's `pwkTeam_Status()`. Managers (`+0x24`) and scouts (`+0x22`) have the same field. The BPINFO CHECK screen labels the 10,000 cutoff "1mil" ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)) |
 | 3 | 1 | `+0x36` | tone | speech tone, 0–3. Read by the event code in `SIMPRG.REL`; what each value sounds like isn't traced |
 | 2 | 8 | `+0x37` | dissatis | sensitivity to 8 causes of dissatisfaction, 0–3. **confirmed**; see [Personality](#personality-and-condition-fields) |
 | 4 | 1 | `+0x3f` | professionalism | picks the starting power range. **confirmed** |
@@ -1124,14 +1124,14 @@ python SRC/patch_disc.py patch game.iso out.iso PARAM/PBDATA_EU.PAC=out.PAC disc
 
 `import` writes only the values that differ from the pack, so an unedited
 CSV gives an identical file. The bar and `entry2`/`entry3` columns are
-derived and ignored. Putting the edited pack back on a disc is the
-Rebuild stage in [`GOALS.md`](../GOALS.md), which isn't done yet.
+derived and ignored. `patch_disc.py` puts the edited pack on a disc
+([`REBUILD.md`](REBUILD.md)).
 
 ## Still unknown
 
 - What `+0x30` (always 0) and `+0x43`–`+0x46` mean; no reader was found.
   What the ten `+0x66` values other than `+0x67` do in a match (they
-  become engine parameters 129–138).
+  become engine parameters 128 and 130–138).
 - Kit style: what `+0x5a` is (value 3 showed no hat in a VS match), what
   turns the outfield gloves on (`plGi +0x1f538`; not a night match),
   and whether the dissatisfaction

@@ -183,8 +183,10 @@ Table 8 holds foreign 0 and newface 1 everywhere, and search_region 13,
 
 With the file, `0x25dd38` and `0x25e234` copy the table's ids over those
 two lists before using them. The built-in players come from the blocks
-of low-rank England players with shirts 1–25 that `TODO.md` asked about
-(25,591–25,615 and 25,616 on).
+of low-rank England players with shirts 1–25 (25,591–25,615 and 25,616
+on, [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#player-id-blocks)). The
+launcher's new game keeps them, as its PERSONAL AFFAIRS screen shows
+([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)).
 
 ## Editing
 

@@ -7,7 +7,7 @@
 It is a BINPAC of 5 TBB1 files. Every reader calls
 `plResource_GetResourceDataBinPacTbbTbl` (`0x21e9e0`) with `ePLRSRC` 0 and
 **constant** entry and table numbers, so each table's reader is known
-(the list is in [`PARAM_DIR.md`](PARAM_DIR.md#plresourcecommonpac)).
+(the tables below).
 
 `python SRC/plrcommon.py info DAT/PARAM` checks every table.
 `python SRC/plrcommon.py show DAT/PARAM <entry>.<table>` prints one, with

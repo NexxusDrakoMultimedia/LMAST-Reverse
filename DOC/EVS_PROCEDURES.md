@@ -230,7 +230,7 @@ That 1–4 follow that order is an assumption, but it fits the team vision
 screen, whose grid has Counter at the top, Possession at the bottom,
 Individual on the left and Organisation on the right (each player's point
 there is `PlPinfo +0x296`/`+0x298`, see
-[`SAVE_FORMAT.md`](SAVE_FORMAT.md)) — if the 25 styles are laid out the
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md)), if the 25 styles are laid out the
 same way.
 
 **The search repeats.** The procedure copies its own request (`0x12bff0`)
@@ -285,13 +285,12 @@ negotiation (see [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#scene-types)).
 
 `PlDRegion` has 13 values, named by message `1:(310 + region)`. The report
 layout (`WP::CReport`, `SIMPRG.REL 0x99130`) and the region list
-(`0xbee14`) both add `0x136` to the region. The scout-search repeat delay
-from the table at `0x238ee0` is shown with each:
-
-A second table at `0x238ef0` (`0x12f000`, 2 turns with an overseas
-branch) gives the delay for dealing with a club in the region:
-`0x12f050(club)` looks up `plMisc_Club2DRegion`. Procedure 9's player
-search report (`0x9e8c4`) waits that long. Both in turns:
+(`0xbee14`) both add `0x136` to the region. The table below gives each
+region's scout-search repeat delay (the table at `0x238ee0`, above) and
+its delay for dealing with a club there: a second table at `0x238ef0`
+(`0x12f000`, 2 turns with an overseas branch), which `0x12f050(club)`
+reaches through `plMisc_Club2DRegion`. Procedure 9's player search
+report (`0x9e8c4`) waits that long. Both are in turns:
 
 | Region | Name | Scout search | Club dealings |
 |---|---|---|---|

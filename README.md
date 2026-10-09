@@ -251,25 +251,34 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files or archive entries back (a file may change size inside its last sector; one that needs more sectors is moved to the end of `DATA.ISO`, re-keying the table of contents and growing the disc image if needed; `PRELOAD` packs are rebuilt around entries that change size), and files outside `DATA.CVM` (`disc:SLES_541.51`, renamed with `--rename`), finds and updates their copies elsewhere on the disc (`copies`, `--copies`), skips the tutorial on test discs (`--skip-tutorial`), boots into the developers' debug menu (`--launcher`), turns the Japanese main sponsor negotiation back on (`--sponsor-negotiation`), gives a modded disc its own saves (`--mod-saves`) and prints the executable's PCSX2 CRC, finds where each file lives, and checks an image holds given bytes |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes |
 | [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
 
 ```bash
 python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30
-python SRC/patch_disc.py patch disc.iso modded.iso PARAM/PBDATA_EU.PAC=out/PBDATA_EU.PAC
+python SRC/patch_disc.py patch disc.iso modded.iso PARAM/PBDATA_EU.PAC=out/PBDATA_EU.PAC --copies
 python SRC/preload.py who DAT 3_1.mbb       # the English club names: read from STATIONMES1.PAC
 ```
 
-Many files have a copy in a `PRELOAD` pack, and the game reads that copy
-whenever the pack is loaded, so an edit must reach both (`--copies`). See
-[`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md).
+What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
 
-Only the table of contents of `DATA.CVM` is encrypted, so a file that keeps
-its size can be written over the original without re-encrypting anything.
-A file can grow to the end of its last sector in place. One that needs more
-sectors is moved to the end of `DATA.ISO`, and the disc image grows if it
-has to. Repacking archives other than `PRELOAD` packs isn't supported yet.
-See [`REBUILD.md`](DOC/REBUILD.md).
+- **Size changes.** Only the table of contents of `DATA.CVM` is
+  encrypted, so a file that keeps its size is written over the original
+  without re-encrypting anything. A file can grow or shrink inside its
+  last sector. One that needs more sectors is moved to the end of
+  `DATA.ISO`, which re-keys the table of contents and grows the disc
+  image if it has to. Repacking archives other than `PRELOAD` packs
+  isn't supported yet.
+- **Copies.** Many files have a copy in a `PRELOAD` pack, and the game
+  reads that copy whenever the pack is loaded, so an edit must reach
+  both. `--copies` updates every copy and rebuilds the packs around
+  entries that change size ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md)).
+- **Switches.** `--skip-tutorial` skips the opening playoffs on test
+  discs, `--launcher` boots into the developers' debug menu,
+  `--sponsor-negotiation` turns the cut main sponsor negotiation back on,
+  `--mod-saves` gives a modded disc its own saves, and `--rename` renames
+  a file outside `DATA.CVM`. Every patch of a whole image prints the
+  executable's PCSX2 CRC.
 
 | Tool | Reads | Does |
 |---|---|---|
@@ -311,8 +320,9 @@ your disc image (`patch_disc.py patch ... --copies`) and makes the patch
 from it (`vcdiff.py make`), showing their output and logging both
 commands. For a patch on its own the image is temporary and removed
 afterwards. Boxes add `patch_disc.py`'s switches: skip the tutorial,
-main sponsor negotiation, and the debug menu. Use the unmodified Redump image as the
-original, so the patch applies for everyone; the dialog warns if it isn't.
+main sponsor negotiation, the debug menu and separate saves. Use the
+unmodified Redump image as the original, so the patch applies for
+everyone; the dialog warns if it isn't.
 
 Each tab edits through a writer's own functions and takes the field names
 and ranges from it (`pbdata.edit_spec`), so a file saved by the editor is
@@ -324,66 +334,62 @@ over sessions.
 
 ## How the tools fit together
 
-- `csp.py` uses `svr.py` to decode the textures inside CSP packs.
-- `zbf.py` uses `pac.py` to read depth buffers directly from `BG_*.MRG`
-  archives.
-- `eventdata_turn.py` uses `tbb.py` for the table container.
-- `packdata.py` uses `pac.py` to find KC@P entries and expand PRSH.
-- `ninja.py` uses `pac.py` to check the Ninja entries inside `.PAC`/`.MRG`/
-  `.HED` archives.
-- `teaminit.py` uses `tbb.py`, and `pbdata.py` for names; `plrsim.py` and
-  `plrcommon.py` use `pac.py`, `tbb.py` and `pbdata.py`.
-- `mbb.py` uses `pac.py` for `MES.PAC`; `pbdata.py`, `initteam.py`,
-  `schedule.py`, `stadium.py` and `system.py` use `pac.py` and `tbb.py`;
-  `sqb.py` uses `pac.py`, and `packdata.py` for `COMBINATION2.CSB`.
-- `evsdatabin.py --text` uses `mbb.py`.
-- `uniform.py` uses `pac.py`, `packdata.py` and `svr.py` for the licensed
-  kits, `sles_disasm.py` for the executable's copy, and `initteam.py` for
-  club names.
-- `editor.py` edits through `pbdata.py` (People), `initteam.py`
-  (Clubs, Season), `teaminit.py` (New club), `plrsim.py` (Free agents),
-  `uniform.py` (Kits) and `mbb.py` (Text).
-- `save.py` loads the game's serializers with `sles_disasm.py` and
-  `snr2.py`, and takes field layouts, names and tables from `pbdata.py`,
-  `initteam.py` and `tbb.py`.
-- `patch_disc.py` uses `extract_disc.py` and `rofs_decrypt.py` to find files
-  in the image and rewrite directory records, `pac.py` to rebuild
-  `PRELOAD` packs, and `sqb.py` for `--skip-tutorial`.
-- `preload.py` uses `pac.py` for the packs and `MES.PAC`.
-- `emblem.py` and `news.py` use `pac.py`, `tbb.py` and `svr.py`;
-  `acrobata.py` uses `pac.py`, `ninja.py`, `svr.py`, `snr2.py` and
-  `sles_disasm.py`;
-  `sounddat.py music` reads the executable through `sles_disasm.py`.
+Tools reuse each other by importing the sibling script. The ones not
+listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
+`rofs_decrypt.py`, `svr.py`, `tbb.py`, `vcdiff.py`) stand alone.
 
-The disassemblers connect to the format tools through the docs. The usual
-workflow is:
+| Tool | Builds on |
+|---|---|
+| `sles_disasm.py`, `snr2.py` | each other: the executable's symbols name an overlay's imports |
+| `gamever.py` | `sles_disasm.py`, `snr2.py`; and every tool that reads the executable or an overlay uses it to find PAL addresses in another build |
+| `extract_disc.py` | `rofs_decrypt.py` |
+| `csp.py` | `svr.py` for the textures inside CSP packs |
+| `zbf.py` | `pac.py`, to read depth buffers straight from `BG_*.MRG` |
+| `eventdata_turn.py` | `tbb.py` |
+| `evsdatabin.py` | `mbb.py` for `--text` |
+| `packdata.py`, `ninja.py` | `pac.py` (KC@P entries, PRSH) and each other; `ninja.py` also `svr.py` for its exports |
+| `stadium.py`, `system.py`, `schedule.py` | `pac.py`, `tbb.py` |
+| `emblem.py`, `news.py` | `pac.py`, `tbb.py`, `svr.py` |
+| `mbb.py` | `pac.py` for `MES.PAC`; `sles_disasm.py`, `snr2.py` for `vars` |
+| `sqb.py` | `pac.py`, and `packdata.py` for `COMBINATION2.CSB` |
+| `pbdata.py` | `pac.py`, `tbb.py`, `initteam.py` (club names), `sles_disasm.py` (`--sles`) |
+| `initteam.py` | `pac.py`, `tbb.py`, `pbdata.py` and `mbb.py` for names |
+| `teaminit.py`, `plrcommon.py`, `plrsim.py` | `tbb.py` and `pbdata.py` for names; the last two `pac.py` |
+| `leaguesize.py` | `schedule.py`, `initteam.py` |
+| `uniform.py` | `pac.py`, `tbb.py`, `packdata.py` and `svr.py` (licensed kits), `sles_disasm.py` (the executable's copy), `initteam.py` (club names) |
+| `acrobata.py` | `pac.py`, `ninja.py`, `svr.py`, `snr2.py`, `sles_disasm.py` |
+| `sounddat.py` | `sles_disasm.py` for `music` |
+| `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
+| `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables |
+| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding `PRELOAD` packs), `sqb.py` (`--skip-tutorial`) |
+| `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `uniform.py` (Kits), `mbb.py` (Text); `extract_disc.py` for Build disc's Redump check, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 
-1. Find the routine that loads a file in `SLES_541.51` or an overlay.
-2. Record the layout it implies, with addresses, in `DOC/`.
-3. Implement it in `SRC/`.
-4. Run `info` over all of `DAT/` to check it.
-5. Add it to [`regress.py`](SRC/regress.py), which runs every tool's check
-   and compares the output with a saved baseline:
+The disassemblers connect to the format tools through the docs: a
+format is found in the code, documented in `DOC/`, implemented in
+`SRC/` and checked over all of `DAT/` (the full workflow is in
+[`AGENTS.md`](AGENTS.md#workflow-for-a-new-format)). Every tool's check
+then goes into [`regress.py`](SRC/regress.py), which compares the output
+with a saved baseline:
 
-   ```bash
-   python SRC/regress.py bless        # once, from a known-good state
-   python SRC/regress.py run          # after every change; exit 1 on any difference
-   ```
+```bash
+python SRC/regress.py bless        # once, from a known-good state
+python SRC/regress.py run          # after every change; exit 1 on any difference
+```
 
-   Baselines are kept in `.regress/`, which is git-ignored because they list
-   file names and counts from your disc. When an output change is intended,
-   `bless <name>` accepts it.
+Baselines are kept in `.regress/`, which is git-ignored because they list
+file names and counts from your disc. When an output change is intended,
+`bless <name>` accepts it.
 
 ## Documentation index
 
 | Doc | Covers |
 |---|---|
-| [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | repo layout, regenerating `DATA.ISO` |
+| [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | the `DATA.CVM` container, how the ROFS key is derived from its header, regenerating `DATA.ISO` |
 | [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc (in-place patching, size changes inside a file's last sector, copies and rebuilt `PRELOAD` packs), sharing mods as xdelta patches, what's still needed for size changes |
 | [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
-| [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | ROFS key recovery in PCSX2 |
+| [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | the original ROFS key recovery in PCSX2 and `cvm_tool` workflow (historical) |
 | [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format, the SN DLL loader, `SLES_541.51`'s imports, which overlay each sequencer module lives in, the wild-card module |
-| [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) | `SEQ/*.SQB` and `PSC*.PAC` sequencer scripts: command encoding, argument types, labels, the root and PwkScript command sets, global memory |
+| [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) | `SEQ/*.SQB` and `PSC*.PAC` sequencer scripts: command encoding, argument types, labels, the root and PwkScript command sets, global memory, the tutorial skip and the developer launcher |
 | [`GAME_FLOW.md`](DOC/GAME_FLOW.md) | the root scripts as a flow chart: title routes, new game, loading, the season loop, year start, main menu, match day, game over, the event timings |
 | [`SPONSOR_NEGOTIATION.md`](DOC/SPONSOR_NEGOTIATION.md) | the Sponsor screen's main sponsor negotiation, switched off in PAL by a stub check, and the `patch_disc.py --sponsor-negotiation` patch that restores it |
 | [`INJURIES.md`](DOC/INJURIES.md) | how injuries are rolled (fatigue and age pick the kind), the value table, recovery, and the condition-line messages, two of which were cut |
@@ -410,7 +416,7 @@ workflow is:
 | [`TEST3D_DIR.md`](DOC/TEST3D_DIR.md) | `DAT/TEST3D`: test models, debug shapes, test kits, the launcher viewers' data |
 | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md) | `DAT/ACROBATA`: the Acroarts event scenes, their chunk layout and resources, the executable's copy of the pack index, scene ids by language |
 | [`CVS_DIR.md`](DOC/CVS_DIR.md) | the `CVS/` folders left on the disc: original file names, commit dates, which files the build made |
-| [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: starting leagues, squads, schedules, which code loads each table |
+| [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: which code loads each file, record sizes, and the tables without a doc of their own |
 | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) | the player database: header, bit-packed player/manager/scout records, ability and money tables |
 | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) | starting leagues and divisions, last season's order, computer-team squads, where club names come from |
 | [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) | the player's new club: what the league and team style choose (squad, youth team, staff, rival club) |

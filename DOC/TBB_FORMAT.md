@@ -21,7 +21,7 @@ with labels (`python SRC/sles_disasm.py ISO/SLES_541.51 dis TblData`).
 The TBB accessors recovered from it:
 
 | Address    | Symbol                                             | Behaviour |
-|------------|----------------------------------------------------|-----------|
+|---|---|---|
 | `0x1fb2b8` | `TbbData::GetTableDataCount(const TBB_FILEHEADER*)` | checks magic `0x31424254` (`TBB1`), returns `hdr+0x08` |
 | `0x1fb270` | `TbbData::GetTableDataPtr(const TBB_FILEHEADER*, uint i)` | if `i < hdr+0x08`: `return hdr + ((u32*)(hdr + hdr[+0x04]))[i]` |
 | `0x2b9dd0` | `TblData::GetDataHeadPoint(TBB_FILEHEADER*, uint i)` | `tbl = GetTableDataPtr(i); return tbl + tbl[+0x04]` |
@@ -37,7 +37,7 @@ stores it, `Clear()` zeroes it).
 ### `TBB_FILEHEADER` (file offset 0)
 
 | Offset | Type  | Meaning |
-|--------|-------|---------|
+|---|---|---|
 | `0x00` | char[4] | magic `TBB1` |
 | `0x04` | u32   | offset of the table-offset array (always `0x10`) |
 | `0x08` | u32   | number of tables *N* |
@@ -49,11 +49,11 @@ The offset array is zero-padded to a 16-byte boundary.
 ### `TBL1` table header (at each offset above, 16-byte aligned)
 
 | Offset | Type  | Meaning |
-|--------|-------|---------|
+|---|---|---|
 | `0x00` | char[4] | magic `TBL1` |
 | `0x04` | u32   | offset of row data, relative to this header (always `0x10`) |
 | `0x08` | u32   | data size in bytes |
-| `0x0C` | u32   | **line size** — bytes per row ("1 line size" in the game's naming) |
+| `0x0C` | u32   | **line size**: bytes per row ("1 line size" in the game's naming) |
 
 Row count = `size / line_size` (integer division, as the game does it).
 Row data is followed by zero padding to the next 16-byte boundary, where
@@ -73,12 +73,12 @@ These rules are enough to rebuild every one of the 70 `.TBB`, `.BCR` and
 
 The only bytes this doesn't cover are the `0x350`-byte trailers after the
 last table in `GAME/ROUTEBOX_EU.BCR` and `ROUTEBOX_KAN.BCR`. Each starts with
-its own magic `RBD0` (see [GAME_DIR.md](GAME_DIR.md)) and is copied
+its own magic `RBD0` (see [`GAME_DIR.md`](GAME_DIR.md)) and is copied
 unchanged. The game code only ever reads the offset array and the table
 headers, so it doesn't depend on the padding or the order. The padding is
 reproduced anyway so that an unedited file comes out identical.
 
-### Example — `GAME/BACK_MATCH.TBB`
+### Example: `GAME/BACK_MATCH.TBB`
 
 ```
 0000: 54424231 10000000 06000000 1f010000   TBB1, arr@0x10, 6 tables, end 0x11f
@@ -97,8 +97,8 @@ The line size is what the game uses for row counting, but it isn't always
 the size of the record the consumer actually walks:
 
 | File | Line size | Observed record | Notes |
-|------|-----------|-----------------|-------|
-| `EVENT/EVENTDATA_TURN.TBB` | 32 | **281** bytes (61258 = 281 × 218) | packed struct of strings up to char[64] + a u8; unused by the game. See [EVENTDATA_TURN.md](EVENTDATA_TURN.md) |
+|---|---|---|---|
+| `EVENT/EVENTDATA_TURN.TBB` | 32 | **281** bytes (61258 = 281 × 218) | packed struct of strings up to char[64] + a u8; unused by the game. See [`EVENTDATA_TURN.md`](EVENTDATA_TURN.md) |
 | `0SYSTEM/MSGCOMMON.TBB` t1/t2 | 32 / 24 | 64 / 48 | rows alternate name / 3-letter abbreviation (`ENGLAND`, `ENG`, ...) |
 | `PARAM/TEAM_INIT_DATA.TBB` | 4 | 24, 144, 72, 16 ... | tables of u32 fields |
 | `PARAM/REGULATION.TBB` | 2 | 120 | u16 fields |

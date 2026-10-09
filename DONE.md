@@ -43,8 +43,11 @@ files. Each item keeps what was found, where, and how it was tested.
       and the welcome mail opened from the Mail screen showed the `MAIL1`
       copy
 - [x] Let a message file grow into `MES.PAC`'s `0x800` slot (median 1,544
-      bytes free; filler is ASCII `'0'`): only the header size changes, and
-      the loader reads `(size >> 11) + 1` sectors from it (`0x10cf1c`).
+      bytes free; filler is ASCII `'0'`): only the header size changes. The
+      game reads `(size >> 11) + 1` sectors of the original size from the
+      executable's copy of the index (`0x34df50`, `0x10f4b0`), which covers
+      every slot (corrected 2026-10-09; first credited to the header,
+      `0x10cf1c`).
       `patch_disc.py --copies` warns about, and leaves alone, `PRELOAD`
       copies of grown files instead of writing them cut short
 - [x] Confirm a grown message file in PCSX2: the rival's Big Bang lines,
@@ -463,6 +466,11 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] The launcher's full list: 59 `simprg` entries = modules 71-129 in
       order, `gameprg` = 171-173 (names in `DOC/SQB_FORMAT.md` and
       `sqb.py`)
+- [x] What starts module 69 (the launcher) and the test modules 71–129:
+      only `RootLauncherSeq.sqb`, which the retail boot skips because
+      `Dummy.CheckLauncher` always returns 1; the wild card never queues
+      them (`DOC/SNR2_FORMAT.md`). `patch_disc.py --launcher` (or the
+      editor's Build disc box) flips the test
 - [x] Try each launcher entry in PCSX2 (all recorded in
       `DOC/SQB_FORMAT.md`): STADIUM VIEWER MK2, Uniform Viewer, CHARACTER
       VIEWER, SATO TEST (heads), CLUB EDIT and its sub-screens and many
@@ -856,7 +864,6 @@ files. Each item keeps what was found, where, and how it was tested.
       tutorial skip: in 2006-07 Chelsea plays in the Champions Division.
       The second division keeps its last season's ranks 7-26, and there
       is no third tier (user report)
-
 - [x] Tested in PCSX2: a keeper scheme (`UNIFORM_GK`) edited in the Kits
       tab shows on your club's keeper in a match (user report)
 - [x] Tested in PCSX2: the welcome mail's body rewritten in the Text tab

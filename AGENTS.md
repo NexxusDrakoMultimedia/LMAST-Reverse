@@ -116,6 +116,17 @@ Commits usually add a doc and its tool together, with messages like
   guessing.
 - Write plainly: short sentences, tables for field layouts, and a
   `python SRC/...` command showing how to check the claims.
+- Keep each fact in one place: the doc of the file or system it
+  describes. Other docs link to it rather than repeat it; a folder doc
+  (`*_DIR.md`) gives the overview and links to the format docs.
+- Write the current state. When a finding is corrected or a tool
+  improves, rewrite the text to say what is true now (keep any earlier
+  version to a short note); `DONE.md` keeps the history. Remove an open
+  question as soon as it is answered, in every doc that lists it.
+- Formatting: link another doc as ``[`NAME.md`](NAME.md)``, with
+  `#anchor` for a section; put commands in code blocks tagged `bash`;
+  write table separators as `|---|`; use "–" for an empty table cell, and
+  no em dashes.
 
 ## Code conventions (`SRC/`)
 

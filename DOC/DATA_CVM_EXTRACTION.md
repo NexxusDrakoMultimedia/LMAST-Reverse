@@ -3,28 +3,20 @@
 
 # Extracting DATA.CVM
 
-## Repo layout
-
-```
-ISO/    Preservation of the original PS2 disc filesystem (SYSTEM.CNF, DLL,
-        DRIVERS, AUDIO, SLES_541.51, ...), including the encrypted ROFS
-        archive DATA.CVM (never modified), plus the decrypted DATA.ISO
-        produced from it. Ignored by git — too large to version.
-DAT/    Plain game data unpacked from DATA.ISO (PLAYER, GAME, EVENT, PARAM,
-        etc.) — this is what modding/reverse-engineering work reads from.
-SRC/    Reverse-engineering tooling (this project's own scripts).
-DOC/    Documentation, including notes recovered from other engineers.
-```
+Almost all of the game's data is in one file in the disc's root,
+`DATA.CVM`. This page describes its encryption and how the tools undo it.
+The repo layout and the one-command setup are in the
+[`README`](../README.md#setup).
 
 ## Format
 
 `DATA.CVM` is a Konami "ROFSBLD Ver.1.52" container: a 3-sector (0x1800
 byte) `CVMH`/`ZONE` header followed by a plain ISO9660 image. Only the
-ISO's table of contents (the primary volume descriptor at sector 16 and
-the directory record sectors reachable from its root, sectors 16-102 in
-this disc) is encrypted — actual file contents are stored as plain
-bytes. See [`LMAST_DATA_CVM_INFO.md`](LMAST_DATA_CVM_INFO.md) for how
-the 8-byte ROFS key was recovered from the running game in PCSX2:
+ISO's table of contents is encrypted: the primary volume descriptor at
+sector 16 and the directory record sectors reachable from its root,
+sectors 16–102 on this disc. File contents are stored as plain bytes.
+The 8-byte ROFS key was first recovered from the running game in PCSX2
+([`LMAST_DATA_CVM_INFO.md`](LMAST_DATA_CVM_INFO.md)):
 
 ```
 5A FB 65 7D 4A 57 5F D5
@@ -44,13 +36,23 @@ CVM's size (`+0x1c`), so a `DATA.CVM` of another size has another key
 `SRC/rofs_decrypt.py` is a pure-Python reimplementation of roxfan's CRI
 ROFS decryption algorithm (`cvm_tool`), so no C++ toolchain is required.
 It parses the CVMH/ZONE header directly rather than hard-coding sector
-numbers, decrypts just the TOC sectors, and bulk-copies the rest.
+numbers, decrypts just the table-of-contents sectors, and copies the
+rest as it is.
 
 ## Regenerating DATA.ISO and DAT/
+
+`python SRC/extract_disc.py all <disc image>` does every step. To
+decrypt an existing `ISO/DATA.CVM` on its own:
 
 ```bash
 python SRC/rofs_decrypt.py ISO/DATA.CVM ISO/DATA.ISO
 ```
 
-Then mount `ISO/DATA.ISO` (e.g. PowerShell `Mount-DiskImage`) and copy
-its contents into `DAT/`.
+Then extract it into `DAT/` without mounting anything:
+
+```bash
+python SRC/extract_disc.py extract ISO/DATA.ISO DAT
+```
+
+Mounting `ISO/DATA.ISO` (for example with PowerShell's `Mount-DiskImage`)
+and copying its contents works too.

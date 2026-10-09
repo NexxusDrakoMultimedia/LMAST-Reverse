@@ -30,7 +30,7 @@ and what loads them.
 | `0x10d8fc`–`0x10d974` | same | an entry with column 4 = 1 is registered without the character before the dot: `gp_icon0.csp` becomes `gp_icon.csp` |
 | `0x112040` | `fcEuroRsrc_EntryResource` | registering a name that already exists deletes the new resource and returns the old one, so **the first copy registered wins** |
 | `0x10cc98` | `CFcEuro_FileResource::ExistingSetup` | a request for an entry of a pack first looks for the pack among the resident resources |
-| `0x10f1c0` | `CFcEuro_MsgResource` constructor | a message request first looks up `F03_0000_0000_<cat>_<lang>.mbb`. Only if that doesn't exist does `Execute` (`0x10f4b0`) read the file from `MES.PAC`, through the executable's own 3,738-entry offset table |
+| `0x10f1c0` | `CFcEuro_MsgResource` constructor | a message request first looks up `F03_0000_0000_<cat>_<lang>.mbb`. Only if that doesn't exist does `Execute` (`0x10f4b0`) read the file from `MES.PAC`, through the executable's own 3,738-entry offset table at `0x34df50` ([`MBB_FORMAT.md`](MBB_FORMAT.md#size)) |
 | `0x10bf58`, `0x10c008` | `FC_EURO_EVCOM` sequencer commands (table `0x34de68`) | the first starts loading `stationmes.pac` (folder `0x74` = 116). The second waits until it has loaded, then creates the 10 global message categories from the table at `0x51a528` |
 | `0x307f18`–`0x307f9c` | `CFileManagerRofs::FileUpdateCore` | a whole-file request (sector count 0) takes its length from `ADXF_GetFsizeSct`, allocates that many sectors × `0x800` (`0x307f2c`, the buffer call at `0x307f54`), seeks to 0 and reads them all with `ADXF_ReadNw` |
 | `0x1bd234`–`0x1bd244` | inside `ADXF_GetFsizeSct` (`0x1bd1e0`) | the sector count is `(size + 0x7ff) >> 11` of the byte size from `0x1bd290` (the open ROFS file; not traced further). The ISO9660 directory record is the only place the disc stores a file's size |
@@ -60,8 +60,6 @@ columns:
 |---|---|
 | 3 | the folder the entry's original lives in (the ids above) |
 | 4 | 1 if the name ends in the language digit, which is dropped when the entry is registered |
-
-`PAC_FORMAT.md` had called column 3 "a load type"; it is the folder id.
 
 ## Which copy the game reads
 
@@ -147,8 +145,8 @@ A test disc was patched with different text in each copy:
   from `STATIONMES<n>.PAC` all game.
 - A message file that grows in `MES.PAC` ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing))
   also grows in its `PRELOAD` copies: `patch_disc.py --copies` rebuilds
-  the packs that hold it (below), as long as each pack stays inside its
-  last sector.
+  the packs that hold it (below), and moves a pack that outgrows its
+  last sector ([`REBUILD.md`](REBUILD.md#moving-files)).
 
 ## Rebuilding a pack
 
@@ -170,7 +168,8 @@ How `patch_disc.py` does it ([`REBUILD.md`](REBUILD.md#size-changes-inside-the-l
   Otherwise the pack is rebuilt with `pac.build_binpac`, which lays it
   out exactly as the original packer did ([`PAC_FORMAT.md`](PAC_FORMAT.md#how-the-packer-laid-them-out-empirical);
   all 139 packs rebuild byte for byte). A pack that would need another
-  sector is refused, with the number of bytes it is over.
+  sector is moved to the end of `DATA.ISO`
+  ([`REBUILD.md`](REBUILD.md#moving-files)).
 - An entry that grows but stays inside its `0x40` gap doesn't move
   anything: the pack keeps its size and only the entry's size field
   changes.

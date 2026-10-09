@@ -62,21 +62,21 @@ shows them with imports resolved.
 ## EVENT record (272 bytes)
 
 Field names come from how `SIMPRG.REL` uses each field. **Confirmed**
-means read in code with a clear meaning; **data** means inferred from
-the value distribution only.
+means read in code with a clear meaning; **empirical** means inferred
+from the value distribution only.
 
 ### Identity and presentation
 
 | Offset | Type | Field | Evidence | Values |
 |---|---|---|---|---|
-| `0x00` | u32 | index | data (all rows) | = record index |
+| `0x00` | u32 | index | empirical (all rows) | = record index |
 | `0x04` | u32 | always-eligible key | confirmed | if every condition field below is 0, the event is eligible only when this is non-zero. 0–116 |
 | `0x08` | u32 | handler type | confirmed: `0x12d7d8` switches on it (80 cases), each case allocates a different handler object | 0–78 |
-| `0x0c` | u32 | ? | data | 0–9 (3 ×182) |
+| `0x0c` | u32 | ? | empirical | 0–9 (3 ×182) |
 | `0x10` | u32 | speaker/actor class | confirmed: indexes a 90-entry flag table at `0x23a3c8` (via `0x139718`) that picks the scene-type override | 0–89 |
 | `0x18` | u32 | second actor? | confirmed: indexes the flag table at `0x23a428` (same call) | 0–123 |
-| `0x1c` | u32 | ? | data | 0–18 |
-| `0x24`–`0x5c` | 5 × {u32, u32, u32} | ? | data | five groups at `0x24`/`0x30`/`0x3c`/`0x48`/`0x54`: (0–322, {0,2,46,47}, 0 or ~2000/3000/4000) |
+| `0x1c` | u32 | ? | empirical | 0–18 |
+| `0x24`–`0x5c` | 5 × {u32, u32, u32} | ? | empirical | five groups at `0x24`/`0x30`/`0x3c`/`0x48`/`0x54`: (0–322, {0,2,46,47}, 0 or ~2000/3000/4000) |
 | `0x64` | u32 | dialogue (message ref) | confirmed: `0x1393d0` fetches the record with the EVENT getter, copies it to the stack and stores `+0x64` in the scene object at `+0x44` (unless the object's `+0x48` overrides it) | id is always 0; category 35000–36030 in 373 records, 0 in 8 (256, 311–315, 359, 361). The whole category is the scene's script |
 | `0xe0` | u32 | scene type | confirmed: `0x12a578` returns it; `0x12a690` switches on it (29 cases). What happens after the scene: see [Scene types](#scene-types) | 0–28 |
 | `0xe8`, `0xec` | u32 | scene type override A/B | confirmed: used instead of `0xe0` when the actor flag has bit `0x02`, picked by `EvsWork+0x1f8 == 1` | |
@@ -138,7 +138,7 @@ Money values are in units of **10,000** (the handler multiplies by
 | 9 | `0x121310` | nothing in the dispatcher (see below) | 167: 500 |
 | 10 | `0x121318` | popularity +value for the squad player with ID `0x7cce` (31950) (`plPinfo_ChangePop`, kind 0) | 308: 50 |
 | 11 | `0x121358` | same, −value | 307: 50 |
-| 12 | `0x121258` | gate income: seat price × seats sold × a factor of 17–25 picked by `0x15cff8`, as `PlIncomeType 3`. The value is ignored | — |
+| 12 | `0x121258` | gate income: seat price × seats sold × a factor of 17–25 picked by `0x15cff8`, as `PlIncomeType 3`. The value is ignored | – |
 | 13–19 | `0x121398`–`0x1213c8` | nothing in the dispatcher | 16: 261; 18: 102, 103, 241, 257, 262, 263; 19: 287 |
 
 **Handler-read values.** Some handler modules read `effect1_value`
@@ -338,7 +338,7 @@ pick them. Other code presumably sends them directly.
 
 | Offset | Type | Field | Evidence | Values |
 |---|---|---|---|---|
-| `0x00` | u32 | index | data | = record index |
+| `0x00` | u32 | index | empirical | = record index |
 | `0x04` | u32 | check type | confirmed: `0x13f3f0` switches on it (48 cases, table `0x23b000`) after the condition check; each case tests game state. Types 14 and 34/35 also read `+0x9c` / `+0xb0` | 0–47, non-zero in 196 |
 | `0x08` | u32 | handler type | confirmed: `0x12c4a0` switches on `value - 1` (32 cases, table `0x2388c0`), each allocating a 0x44-byte handler. 0 gets the default handler (`0x12fb40`) | 0–32 |
 | `0x0c` | u32 | content type (`Param::PlNewsContentType`) | confirmed: `0x14c1ac` copies it to `PlNewsBody+0x8`, which `pwkGenNews_SearchStockNum` (`0x245b58`) compares with a `PlNewsContentType` | 2 ×201, 3 ×105, 0 ×40, 1 ×21 |
@@ -346,11 +346,11 @@ pick them. Other code presumably sends them directly.
 | `0x14` | u32 | picture mode | confirmed: at `0x14c1c4`, 1 picks the article picture with `+0x18`, anything else with `+0x1c` | 1 in 130 |
 | `0x18` | u32 | picture selector A | confirmed: `0x14bc10` (76 cases, table `0x23c7e0`); the result goes to article `+0x134`, which `NEWS::CFactory` reads (`0x24db0`) | 0–75 |
 | `0x1c` | u32 | picture selector B | confirmed: `0x12ec50` (62-entry table at `0x238de8`), result at article `+0x134` | 0–61 |
-| `0x20` | u32 | ? | data only; no traced NEWS consumer reads it | 0–14, non-zero in 204 |
+| `0x20` | u32 | ? | empirical; no traced NEWS consumer reads it | 0–14, non-zero in 204 |
 | `0x24`–`0x5c` | 5 × {u32, u32, u32} | article variables 1–5: kind, arg1, arg2 | confirmed: `0x14c4d8` copies the five triplets into kind/arg1/arg2 arrays and fills variable slot *n* from triplet *n*, switching on the kind (e.g. 23) | kinds 23, 25, 26, 99, 188, 203, 257, 264–268; arg1 2/40/43/46/47; arg2 e.g. 1100, 4067–4122 |
-| `0x60` | u32 | ? | data only | 0–2, non-zero in 31 |
+| `0x60` | u32 | ? | empirical | 0–2, non-zero in 31 |
 | `0x64` | u32 | article body (message ref) | confirmed: `0x14c388`, `lhu +0x64` → `PlNewsBody+0x18` | category always 832 |
-| `0x68` | u32 | caption (message ref) | data: a valid message ref, but no traced code reads it | 10 records (44–53), category 833, e.g. `Clear skies over {var:1:8}` |
+| `0x68` | u32 | caption (message ref) | empirical: a valid message ref, but no traced code reads it | 10 records (44–53), category 833, e.g. `Clear skies over {var:1:8}` |
 | `0x6c` | u32 | headline (message ref) | confirmed: `0x14c394`, `lhu +0x6c` → `PlNewsBody+0x16` | category always 833 |
 | `0x70` | s16 | ? | confirmed copied: `0x14c194` stores it at `PlNewsBody+0x10`; meaning unknown | 0, 4 ×20, 6 ×5 |
 | `0x74` | s32 | timing | see the condition block | 4 ×237, -1 ×55, 0 ×40, 9 ×32, 21 ×3 |
@@ -374,17 +374,17 @@ read it.
 
 | Offset | Type | Field | Evidence | Values |
 |---|---|---|---|---|
-| `0x00` | u32 | index | data | = record index |
+| `0x00` | u32 | index | empirical | = record index |
 | `0x04` | u32 | check type | confirmed: `0x13d538` switches on it (39 cases, table `0x23ae30`) after the condition check | 0–38, non-zero in 39 |
 | `0x08` | u32 | handler type | confirmed: `0x128c48` switches on `value - 1` (11 cases, table `0x2386d0`) when the mail is processed | 0–11, non-zero in 40 |
-| `0x0c` | u32 | direction | data: 2 marks mail the player sends (sender `{var:1:7}`, recipient a manager); 1 is received mail | 1 ×411, 2 ×32 |
+| `0x0c` | u32 | direction | empirical: 2 marks mail the player sends (sender `{var:1:7}`, recipient a manager); 1 is received mail | 1 ×411, 2 ×32 |
 | `0x10` | u32 | sender (message ref) | confirmed: `0x156da0` returns `lhu +0x10` of the current mail (MAIL getter `0x128e78`) | category 563, ids 20001–20019 (e.g. `Youth team Manager`, or `{var:1:101}`) |
 | `0x14` | u32 | recipient (message ref) | confirmed: `0x156dd0`, `lhu +0x14` | category 563, ids 20001–20008, 3 distinct (mostly 20001 = `{var:1:7}`, the player) |
 | `0x18` | u32 | open handler | confirmed: when non-zero, `0x128de8` creates a 0xc8-byte object (`0x131db0`, which reads the subject and body) | 1 ×257 |
 | `0x1c` | u32 | question | confirmed: at `0x124fbc`, when non-zero the mail asks a yes/no question. The value (clamped to 0–4) indexes a table at `0x238678` of message refs `3000:2`–`3000:5`: "Make an offer?", "Accept the offer?", "Send a reply?", "Continue negotiations?" | 1 ×16 (player search reports) |
 | `0x20` | u32 | subject (message ref) | confirmed: `0x156d70`, `lhu +0x20` | category 563, ids 11000–11309 |
 | `0x24` | u32 | body (message ref) | confirmed: `0x156d40`, `lhu +0x24` | category 563, ids 1000–1442 |
-| `0x28` | u32 | sender group | copied to the mail object's `+0x14` (`0x156c68`); data: groups mail by department (1 accounts, 2 facilities, 3 personnel/sales, 4 PR/sponsor, 5 secretary/other) | 0–5 |
+| `0x28` | u32 | sender group | copied to the mail object's `+0x14` (`0x156c68`); empirical: groups mail by department (1 accounts, 2 facilities, 3 personnel/sales, 4 PR/sponsor, 5 secretary/other) | 0–5 |
 | `0x2c` | s32 | timing | see the condition block | 4 ×386, 0 ×41, -1 ×10, 2 ×6 |
 | `0x30`–`0x58` | | condition block | see above | `0x54` is 0 in every record |
 | `0x5c` | u32 | weight | confirmed (`0x12b0b8`) | 100 in every record |
@@ -395,18 +395,18 @@ column with data now has a name.
 
 ## Open questions
 
-- Names for the timing enum (`+0x68`), the 170 condition kinds
-  (jump table `0x237df0`) and the 80 handler types (`0x238a40`). The
-  effect kinds are decoded above.
+- Names for the 170 condition kinds (jump table `0x237df0`) and the 80
+  handler types (`0x238a40`). The timings and the effect kinds are
+  decoded above.
 - Which regions `PlTeam_Region` 0 and 1–13 are (0 is presumably the
   club's home region), who squad player `0x7cce` is, and what
   `PlPinfo+0x23c` holds.
 - Which handler types consume `effect1_value` directly, and so what
   kinds 9/16/18/19 mean.
-- What `+0x0c`, `+0x1c`, the five triplets at `+0x24`–`+0x5c` and
-  `+0x64` are. They aren't read through the getter in the functions
-  traced so far; the 32-byte unaligned copies of `+0x00`–`+0x1f`
-  (e.g. at `0x13578c`) are a lead.
+- What EVENT `+0x0c`, `+0x1c` and the five triplets at `+0x24`–`+0x5c`
+  are. They aren't read through the getter in the functions traced so
+  far; the 32-byte unaligned copies of `+0x00`–`+0x1f` (e.g. at
+  `0x13578c`) are a lead.
 - The meaning of `date[2]` and `date[3]` in the date struct.
 - How the 48×21 pattern table is laid out.
 - NEWS `+0x20`, `+0x60` and `+0x70`; the NEWS/MAIL check types, handler

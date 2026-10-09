@@ -239,7 +239,10 @@ So an event can end by opening a management screen, for example a forced
 player dismissal or the captain selection. The EVENT record's scene type
 (`+0xe0`…) picks which one; see
 [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#scene-types). The wild card never queues an id
-above 69, so it's not a route to the test modules.
+above 69, so it's not a route to the test modules. Only
+`RootLauncherSeq.sqb` starts the launcher (69) and the test modules,
+and the retail boot skips it
+([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)).
 
 ## Local relocations (packed)
 
@@ -296,8 +299,6 @@ site's resolved target.
 
 - What `0x38` is for, and what `0x20`/`0x24` tell the caller. All three
   are offsets equal to `0x34` in every file.
-- Whether anything starts module 69 (the `TESTPRG` launcher) or the test
-  modules at 71–129. The wild card doesn't.
 - Where the overlay index passed to the loading code at `0x10babc` comes
   from, and so which modules load which overlay at runtime. The module
   table gives the static answer.

@@ -369,19 +369,27 @@ the unused rest of its slot in `MES.PAC`:
   of 3,737 gaps (empirical). The last entry ends at the end of the archive
   and can't grow. The median slot has 1,544 spare bytes, and only 15 have
   fewer than 64.
-- The game finds a message file with `fcEuroBinPac_SearchHeaderFilename`
-  (**confirmed**, `0x10cf1c` in the `CFcEuro_FileResource` constructor at
-  `0x10cdb0`, created for the name from `Localize_MakeMessageFileName` at
-  `0x108fd8`). It turns the header's offset and size into sectors
-  (`srl 0xb`, `0x10cf40`/`0x10cf48`) and reads `(size >> 11) + 1` sectors
-  (`0x10cf90`). The size in the header is therefore what decides how much
-  is read.
+- The game doesn't read `MES.PAC`'s header. It finds a message file in
+  the executable's own copy of the index (**confirmed**):
+  `CFcEuro_MsgResource::Execute` (`0x10f4b0`) walks 3,738 (`0xe9a`)
+  records of `{u32 offset, u32 size, u32 category, u32 language}` at
+  `0x34df50` for the category and language, and creates the file
+  resource (`0x10cdb0`) with sector `offset >> 11` and a length of
+  `(size >> 11) + 1` sectors (`0x10f5ac`, `0x10f590`–`0x10f5b4`). All
+  3,738 records equal the header's entries (**empirical**).
+- So the game always reads the original size's `(size >> 11) + 1`
+  sectors. For every file on the disc that covers its whole slot
+  (**empirical**, all 3,738: no slot reaches past those sectors), so a
+  file that grows inside its slot is read in full without changing the
+  executable.
 
 So `mbb.py` writes the grown file at the same offset, fills the rest of
 the slot with `'0'` again, and changes only that entry's size field in the
-header. The archive keeps its size and every other entry stays where it
-was. A file too big for its slot is refused, and the message says how
-many bytes over it is.
+header, which keeps the archive self-consistent for the tools. The
+archive keeps its size and every other entry stays where it was. A file
+too big for its slot is refused, and the message says how many bytes
+over it is. Moving an entry would need the executable's table patched
+too, which no tool does.
 
 A grown file's `PRELOAD` copies follow too. Every copy is what the game
 reads while its pack is loaded ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)), so a
@@ -393,8 +401,9 @@ its later entries. The pack may grow to the end of its last sector,
 because the game reads whole sectors
 ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)). `python SRC/preload.py
 info DAT` gives each pack's room (4 to 2,032 bytes, median 1,244), and
-`preload.py who DAT <name>` lists the packs holding a file. A file whose
-pack would need another sector is refused. Tested in PCSX2: two
+`preload.py who DAT <name>` lists the packs holding a file. A pack that
+would need another sector is moved to the end of `DATA.ISO`
+([`REBUILD.md`](REBUILD.md#moving-files)). Tested in PCSX2: two
 lengthened club names in a rebuilt `STATIONMES1.PAC` showed in VS mode.
 Also through the editor's Text tab (user report): seven English club
 names in `3_1.mbb` (Arsenal 2011, Man Utd 2013, Man City 2008, Aston
@@ -443,13 +452,9 @@ packs could be rebuilt. Now `--copies` rebuilds the pack; see
 **Growth confirmed in the game (PCSX2).** The rival's lines 102 and 104
 were rewritten about 60% longer. That made `487_1.mbb` grow from 9,636 to
 9,704 bytes inside its 10,240-byte slot. Every line showed in full in the
-Big Bang street interview. What this doesn't show: the game reads
-`(size >> 11) + 1` sectors, and entries start on sector boundaries, so it
-already reads the whole slot of an unedited file. Here 9,636 and 9,704
-bytes are both 5 sectors, so the test confirms that the game takes a grown
-file with a larger `data_size`, but not that it uses the new header size.
-That would need a file whose growth crosses into an extra sector, which
-only happens in slots that end with a whole spare sector.
+Big Bang street interview. The game reads the original size's sectors
+from its own table (above), which already cover the whole slot, so the
+test confirms that it takes a grown file with a larger `data_size`.
 
 ## Open questions
 

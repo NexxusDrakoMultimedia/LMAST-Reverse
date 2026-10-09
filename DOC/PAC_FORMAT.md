@@ -29,7 +29,7 @@ The accessors come from `SLES_541.51` (symbols recovered with
 `SRC/sles_disasm.py`):
 
 | Address    | Symbol | Behaviour |
-|------------|--------|-----------|
+|---|---|---|
 | `0x104670` | `fcEuroBinPac_GetHeaderInfo(void*, int i)` | `i`: 0→`u32@0`, 1→`s16@4`, 2→`s16@6`, 3→`u32@8`, 4→`u32@0xC`, 5→`u32@0x10`, 6→`u32@0x14` (or `0x80` if < 1) |
 | `0x1046e8` | `fcEuroBinPac_GetHeaderListData(void*, int idx, int col)` | returns column `col` of entry `idx` (u32). Layout below |
 | `0x1047f8` | `fcEuroBinPac_GetHeaderFilename(void*, int idx)` | `hdr + 0x20 + idx*stride + 8` |
@@ -40,7 +40,7 @@ The accessors come from `SLES_541.51` (symbols recovered with
 ### Header (offset 0, 0x20 bytes)
 
 | Offset | Type | Info # | Meaning |
-|--------|------|--------|---------|
+|---|---|---|---|
 | `0x00` | u32 | 0 | header size = offset of the first entry's data (padded to `align`) |
 | `0x04` | s16 | 1 | entry count *N* |
 | `0x06` | s16 | 2 | **version**: the number of u32 columns after the name, plus 1 (1, 2 or 3 seen) |
@@ -131,7 +131,7 @@ whose entries are found through the pack's own header
 ### Variants seen
 
 | Ext | ver | align | name_len | Files | Notes |
-|-----|-----|-------|----------|-------|-------|
+|---|---|---|---|---|---|
 | PAC/HED | 3 | 0x800 | 128 / 16 / 4 | 145 | textures, models, schedules |
 | PAC | 3 | 0x40 | 128 | 140 | `PRELOAD/GAMEFILE*` hold `.hed`, `.tbb`, ... |
 | PAC/HED | 3 | 4 | 4 / 128 | 42 | `STADIUM/ADT_*`, `AUD_*_CLUT_CMN` |
@@ -176,7 +176,7 @@ The data files have no header at all. Entries run back to back and are
 2048-aligned.
 
 | Offset | Type | Meaning |
-|--------|------|---------|
+|---|---|---|
 | `0x00` | char[4] | `KC@P` |
 | `0x04` | u32 | total size of the data file |
 | `0x08` | u32 | entry count *N* |
@@ -184,7 +184,7 @@ The data files have no header at all. Entries run back to back and are
 | `0x10` | u32[N] | **end** offset of each entry. Entry *i* spans `[end[i-1], end[i])`, and entry 0 starts at 0 |
 
 | Header | Data file | N | Payload |
-|--------|-----------|---|---------|
+|---|---|---|---|
 | `PLAYER/FC_EURO_FACEPACK_00.HED` | `FC_EURO_FACEPACK_00.BIN` (1.1 GB) | 21171 | PRSH |
 | `PLAYER/FC_EURO_FACEPACK_01.HED` | `FC_EURO_FACEPACK_01.BIN` | 215 | PRSH |
 | `PLAYER/EDITFACEPACK_BIN.HED` | `EDITFACEPACK.BIN` | 1 | raw |
@@ -199,7 +199,7 @@ last end offset equals the file size.
 ## PRSH (compressed entry)
 
 | Offset | Type | Meaning |
-|--------|------|---------|
+|---|---|---|
 | `0x00` | char[4] | `PRSH` |
 | `0x04` | u32 | offset of the compressed stream (0x40) |
 | `0x08` | u32 | compressed size |

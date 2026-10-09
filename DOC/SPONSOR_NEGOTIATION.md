@@ -11,9 +11,10 @@ compiled in. One check switches it off: a function that returns 0. This doc
 traces the feature and describes `patch_disc.py --sponsor-negotiation`,
 which turns it back on.
 
-There's no Japanese disc in the project, so the Japanese check's body is
-unknown. The rebuilt check is based on what the PAL code around it still
-expects (see [The restored check](#the-restored-check)).
+The Japanese check's body hasn't been compared yet (the Japanese release
+can be read with the tools, [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)).
+The rebuilt check is based on what the PAL code around it still expects
+(see [The restored check](#the-restored-check)).
 
 ## The text
 
@@ -36,7 +37,7 @@ Only 110 mentions negotiating. The sub-sponsor (111) and supplier (112)
 lines only ask you to sign. That matches the code: the check is called only
 in the main sponsor part of the screen.
 
-```
+```bash
 python SRC/mbb.py dump DAT/MESSAGE/MES.PAC --cat 950 --lang 1
 ```
 
@@ -96,7 +97,7 @@ and neither spot holds a relocation site that the loader would patch over.
 That's 12 words in all. The rest of the old method at `0xd3770` is left as
 it was.
 
-```
+```bash
 python SRC/patch_disc.py patch disc.iso nego.iso --sponsor-negotiation
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xc6630 4 --sles ISO/SLES_541.51
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xc8ee0 58 --sles ISO/SLES_541.51
@@ -107,7 +108,8 @@ python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xc8ee0 58 --sles ISO/SLES_541.51
 - Whether the Japanese check had other conditions, for example the limit
   that message 61 ("remaining negotiations") counts down. No PAL code was
   found that shows 61 or 63, or keeps such a counter. They may be layout
-  text in the screen's CSE file.
+  text in the screen's CSE file. The Japanese `SIMPRG.REL`'s Sponsor
+  screen is the place to look.
 - Which acceptance factor applies to which economy and sponsor type: the
   layouts of the tables at `0x1dad80` (bytes, 5 × 7) and `0x1dada8`
   (floats).

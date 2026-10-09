@@ -7,7 +7,7 @@ An early export of the "turn" event sheet: one row per scripted event
 (office visits, salesman pitches, locker-room talks, stadium news, ...).
 218 records of **281 bytes** in a single `TBL1` table (61258 = 281 × 218).
 The TBL1 line size says 32, which is wrong as a stride (see
-[TBB_FORMAT.md](TBB_FORMAT.md)). At 32 bytes a line, 10 bytes are left
+[`TBB_FORMAT.md`](TBB_FORMAT.md)). At 32 bytes a line, 10 bytes are left
 over (61,258 = 32 × 1,914 + 10), which is why `tbb.py info` reports 10
 trailing bytes. At 281 bytes the table divides exactly.
 
@@ -26,17 +26,17 @@ trailing bytes. At 281 bytes the table divides exactly.
   `EvsDataBin_MAIL.bin`. Those are fully numeric (no strings), so this
   TBB is a dead prototype of the same sheet.
 
-So the layout below is **inferred from the data only**; no loader
+So the layout below is **empirical**, inferred from the data alone; no loader
 exists to confirm the field names. It does account for every non-zero
 byte in all 218 records, and no string overruns its slot.
 
 ## Record layout (281 bytes, packed, no alignment)
 
 | Offset | Size | Type | Name (inferred) | Values seen |
-|--------|------|------|-----------------|-------------|
+|---|---|---|---|---|
 | `0x00` | 4  | char[4] | category | always `TURN` (the shipped data splits events into EVENT / NEWS / MAIL, cf. `lastEventDate_TURN/NEWS/MAIL` in the ELF) |
 | `0x04` | 4  | s32 | end marker | `0`, or `-1` on the last row only |
-| `0x08` | 8  | — | padding | always 0 |
+| `0x08` | 8  | – | padding | always 0 |
 | `0x10` | 32 | char[32] | event id | `TUT000`, `OSA0006_001`, `OHI039`, `LOC0110`, `STA001` ... (prefix ≈ location/series; some IDs repeat with different `item`s) |
 | `0x30` | 32 | char[32] | timing | `TURNSTART` 101, `GAMESTART` 71, `MONTHSTART` 16, `MENUEND` 12, `-` 8 (follow-ups), `YEARSTART` 4, `TURNEND` 3 |
 | `0x50` | 1  | u8 | priority / weight | 100 ×124, 200 ×41 (all stadium `STA*`), 0 ×24, plus 1–10 and 101–250 |
@@ -64,10 +64,9 @@ always-zero u32; the data can't tell those apart.
   (`TURNSTART` / `TUT` / `OFFICE`).
 - **Priority values.** `priority` is only a guess, taken from the
   distribution. The values 100 and 200 look like percentages or
-  priority tiers, and 0 shows up on tutorial and chained events.
-- **Next target.** `EvsDataBin_EVENT.bin` (103,904 bytes) is the real
-  event table and is loaded by `SIMPRG.REL`, so it's the one worth
-  reverse-engineering next.
+  priority tiers, and 0 shows up on tutorial and chained events. The
+  shipping EVENT table has the same 100/200 split in its weight column
+  ([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)).
 
 ## Tool
 

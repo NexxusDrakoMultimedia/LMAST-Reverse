@@ -12,7 +12,7 @@ earlier build, and the reference for content PAL changed or cut (see
 
 ## Setting it up
 
-```
+```bash
 python SRC/extract_disc.py all "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso"
 ```
 
@@ -62,9 +62,9 @@ the Japanese disc):
 | `mbb.py vars` | global variables, switch tables, converters | each variable resolves to a function, as in PAL |
 | `save.py` | key, Blowfish tables, CRC table, block sizes | same key `sakatsukue`, same Blowfish P-array start |
 
-## Confirmed differences in the game code
+## Confirmed from the game code
 
-| Address (SLPM_663.16) | Symbol | What differs |
+| Address (SLPM_663.16) | Symbol | Compared with PAL |
 |---|---|---|
 | SIMPRG.REL `0x17010c` | `Msg::SearchGlobalVarHeader` | 0x1b8 global variables (PAL 0x370) |
 | `0x202538`, `0x202548` | `MSG_UTIL::CMsgWildCard::getString` | 0x85 converters of 12 bytes `{u32, u32 function, u32 id}` (PAL: 0x10a of 16 bytes, with an argument word) |

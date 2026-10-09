@@ -219,11 +219,11 @@ can be listed once per alternative. UID 3 fills its 4 slots from UID 1
 
 ### What decides the first season's leagues
 
-A league's slots are `LAST_RANK` records. UID 0 takes ranks 1–20 of
-competition 0 from last season. At the start of a new game,
-`PLRRSRC_INITTEAMDATA.TBB` table 1 seeds those past records
+A league's slots are `LAST_RANK` records: places in last season's
+tables of its own and its neighbouring competitions. At the start of a
+new game, `PLRRSRC_INITTEAMDATA.TBB` table 1 seeds those past records
 (`pwkRec_SetPastRecordLastTeam`, see
-[`PARAM_DIR.md`](PARAM_DIR.md#plrrsrc_initteamdatatbb-starting-leagues)).
+[`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#table-1-last-seasons-order-7168-bytes)).
 So that table decides which clubs start in which division, and this pack
 decides how they are placed.
 
@@ -273,8 +273,8 @@ the `STATIONFILE` copies.
 ## Building a league of another size
 
 Changing a division's size needs a new league schedule for that many
-clubs. `schedule.py` can now build one; putting it into the packs is the
-next step (below).
+clubs. `schedule.py` builds one, and `leaguesize.py build` puts it into
+the packs ([below](#where-the-clubs-come-from)).
 
 **The disc's leagues (empirical, all 77 league UIDs):** there is one
 fixed schedule per size. Every league of the same size and number of
@@ -476,7 +476,7 @@ turns a 42-day schedule would add.
   `year_schedule_data` competition (91 of 164 differ) nor the header's
   `+0x02` (93 differ). Only the `SIMPRG.REL` load list names it.
 - `PARAM/SCHEDULE_LIST.TBB`: which competitions run in which year of the
-  4-year cycle ([`PARAM_DIR.md`](PARAM_DIR.md)).
+  4-year cycle ([`PARAM_DIR.md`](PARAM_DIR.md#schedule_listtbb-which-years-a-competition-runs)).
 
 ## Still unknown
 
@@ -484,7 +484,9 @@ turns a 42-day schedule would add.
   `+7`, and the first two team-entry header bytes.
 - `PeriodName.tbb`, the `make_list` source functions and tables 1–8, and
   the meaning of the `savectrl` values.
-- `GROUP2COMPE.TBB` and `CLUB_RANK_SYSTEM.TBB`.
+- `GROUP2COMPE.TBB`, and `CLUB_RANK_SYSTEM.TBB` tables 0, 1 and 4 (tables
+  2 and 3 are the club ranking,
+  [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)).
 
 ## Checking the claims
 

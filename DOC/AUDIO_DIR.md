@@ -100,7 +100,7 @@ chants loop. Some chant headers pad the audio start past `0x800`.
 Frames are 18 bytes per channel, channels interleaved frame by frame: a
 u16 scale, then 32 signed 4-bit samples, high nibble first. Each sample is
 `nibble × (scale + 1) + (c1 × s[−1] + c2 × s[−2]) >> 12`, clamped to 16
-bits, with `c1`, `c2` computed from the cutoff and sample rate — the
+bits, with `c1`, `c2` computed from the cutoff and sample rate: the
 standard ADX predictor, as vgmstream implements it. `afs.py wav` writes
 16-bit PCM and adds a `smpl` chunk with the loop points.
 
@@ -120,10 +120,9 @@ python SRC/afs.py wav ISO/AUDIO/BC_ENG.AFS out/commentary 1 2 3
   right (pitch, speed, stereo, no crackle), as are the `DAT/SOUND` effect
   banks `SYS_SE` and `EFFECTS` decoded by `sounddat.py`.
 - Which screens play which `bgm` track, and where `VIC` and the chants are
-  used. `BGM.AFS` starts at `bgm13`, so the rest of the music is elsewhere:
-  in the 41 sequenced songs of `DAT/SOUND/MAP01`–`MAP10` and the stereo
-  pieces `MAP11`–`MAP23` (see [`GAME_DIR.md`](GAME_DIR.md#songs-sequences));
-  `sounddat.py wav` renders them with the banks' own instruments.
+  used. The rest of the music is the sequenced songs and stereo pieces of
+  `DAT/SOUND`, which the game's music table maps to music ids
+  ([`SOUND_DIR.md`](SOUND_DIR.md)).
 - The loader that maps `0FLIST.DIR` lines to archives, and the commentary
   code that picks clips.
 - `OPMOVIE.SFD` (MPEG video with ADX audio; not handled).

@@ -51,19 +51,19 @@ with a digit 0–6 added to the name:
 | `gm_short_02.csp` | `GM_SHORT_020.CSP` … `GM_SHORT_026.CSP` |
 | `sc_sixnations_01_0.csp` | `SC_SIXNATIONS_01_00.CSP` … `_06.CSP` |
 
-The digit is almost certainly added at runtime, probably one per
-language. I haven't found where that happens, so I don't know which digit
-is which language. `WP_KEYBOAD.CSP` is on the disc but not in the table.
+The digit is added at run time: a file request for folder 100 + *n*
+puts the language digit before the dot (**confirmed**,
+`CFcEuro_FileResource::CommonSetup` `0x10c9a0`,
+[`PRELOAD_DIR.md`](PRELOAD_DIR.md#confirmed-from-the-game-code)), and the
+digits are the `MES.PAC` language slots (0 Japanese, 1 English, ...). `WP_KEYBOAD.CSP` is on the disc but not in the table.
 The code only loads `wp_keyboad_JP` and `wp_keyboad_PAL`.
 
 ### The `CVS/` folder
 
-`CVS/ROOT`, `CVS/REPOSITORY` and `CVS/ENTRIES` were copied onto the disc by
-mistake. They name the developer's server and module
-(`:pserver:kajimah@danae:/mnt/part_1/cvsroot`, `fc_euro/Data/Cse`) and
-list a revision and commit time for every file in the folder, from
-September 2004 (`2d001.*`) to January 2006. `ENTRIES` uses the original
-lower/mixed-case file names.
+The developers' CVS bookkeeping files, as in every data folder
+([`CVS_DIR.md`](CVS_DIR.md)). `ENTRIES` lists a revision, commit time and
+the original lower/mixed-case name for every file in the folder, from
+July 2004 to July 2006.
 
 ## CSP pack
 
@@ -253,6 +253,5 @@ from `ffffffff` to `ffffff00`.
 - Scene `+0x0C…`, Node `+0x1C/+0x24/+0x28/+0x2C`, Face `+0x04/+0x1E`
   are only described from the data.
 - Project `+0x1A`, and how it relates to `AnimBank.frames`.
-- Where the code adds the language digit to CSP names, and which BG
-  palette (`.svp`) is picked for the 41 backgrounds without their own
-  (see [`ZBF_FORMAT.md`](ZBF_FORMAT.md)).
+- Which BG palette (`.svp`) is picked for the 41 backgrounds without
+  their own (see [`ZBF_FORMAT.md`](ZBF_FORMAT.md)).

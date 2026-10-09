@@ -9,7 +9,7 @@ Next") binary chunk format for PS2. The library is linked into
 layout below is confirmed from the code that reads it.
 
 | Ext | Chunks | Contents |
-|-----|--------|----------|
+|---|---|---|
 | `.SNJ`, `.SNO` | `NSOB` (+`NSTL`) | model (`NNS_OBJECT`) and its texture file list |
 | `.snq` (in archives) | `NSME` (+`NSTL`) | model part that hangs off an external skeleton |
 | `.SNP` | `NSNT` | node tree: a skeleton object with no meshes |
@@ -33,7 +33,7 @@ All values are little-endian.
 ## Confirmed from the game code
 
 | Address | Symbol | What it shows |
-|---------|--------|---------------|
+|---|---|---|
 | `0x10e338` | `DataUtility::resolveBinaryPointer` | NOF0: count at `+8`, entries from `+0x10`; each entry and pointer is relative to the data start |
 | `0x10e570` | `DataUtility::convertNNDBinaryModelTexture` | NSIF `+8` chunk count, `+0xC` data offset, `+0x14` NOF0 offset; chunk walk `+4` size, `+8` main struct; `NSTL` → texture list; `NSOB`/`NSNT`/`NSME` → `NNS_OBJECT`; stops at `NEND` |
 | `0x10e470` | `DataUtility::convertNNDBinaryCameraMotion` | `NSCA` → camera, `NSMC` → camera motion |
@@ -61,7 +61,7 @@ Each chunk is `{char tag[4], u32 size}` followed by `size` bytes, and the
 next chunk starts right after it.
 
 | Offset | Size | Field |
-|--------|------|-------|
+|---|---|---|
 | 0x00 | 4 | `NSIF` |
 | 0x04 | 4 | `0x18` (chunk size) |
 | 0x08 | 4 | number of data chunks (not counting `NOF0`/`NFN0`/`NEND`) |
@@ -88,7 +88,7 @@ name (`M_player.sno`).
 ## `NNS_OBJECT` (`NSOB`, `NSNT`, `NSME`)
 
 | Offset | Field |
-|--------|-------|
+|---|---|
 | 0x00 | center x, y, z (f32) |
 | 0x0C | radius (f32) |
 | 0x10 | material count, `+0x14` → `{u32 type, ptr material}` list |
@@ -110,7 +110,7 @@ lists hold the strips. Only the common-vertex lists (below) use them.
 ### Nodes (`NNS_NODE`, 0x90 bytes)
 
 | Offset | Field |
-|--------|-------|
+|---|---|
 | 0x00 | flags |
 | 0x04 | s16 matrix palette index (-1 = none) |
 | 0x06 | s16 parent |
@@ -125,7 +125,7 @@ lists hold the strips. Only the common-vertex lists (below) use them.
 Flags (confirmed at `0x16c274`–`0x16c41c`):
 
 | Bit | Meaning |
-|-----|---------|
+|---|---|
 | `0x1` | no translation |
 | `0x2` | no rotation |
 | `0x4` | no scale |
@@ -156,7 +156,7 @@ aren't decoded. Such objects have no subobjects of their own and are drawn
 node by node (`opt_nnDrawPriNodeObject`).
 
 | Offset | Field |
-|--------|-------|
+|---|---|
 | 0x00 | `0x80000001` plain (0x90 bytes) or `0x80000002` with meshes (0xD0 bytes) |
 | 0x04 | node flags (as above) |
 | 0x08 | s16 matrix palette index, `+0xA` s16 index of this node in the full skeleton |
@@ -199,7 +199,7 @@ references are decoded so far. The colours (0–255 floats in `0x400`/`0x800`,
 0–1 floats in `0x1000`) and the GS register words are not.
 
 | Type | Where | Texture layer | Texture index |
-|------|-------|---------------|---------------|
+|---|---|---|---|
 | `0x400` | plain objects | inline at `+0x50` (0x70 bytes) | u16 at layer `+6` |
 | `0x800` | plain objects, 2 textures | `+0x50`, second layer at `+0xC0` | u16 at layer `+6` |
 | `0x1000` | PX Plus (players) | `+0x10` → layers of 0x40 bytes | u32 at layer `+4` |
@@ -207,7 +207,7 @@ references are decoded so far. The colours (0–255 floats in `0x400`/`0x800`,
 Confirmed from the game code:
 
 | Address | Symbol | What it shows |
-|---------|--------|---------------|
+|---|---|---|
 | `0x18855c` | `nnPutMaterialCoreExt` | passes material `+0x50` as the texture layer |
 | `0x1885a8`–`0x1886e0` | `nnPutMaterialCoreExt` | the second layer's fields are read 0x70 further on (`+0xb0`, `+0xb4`, `+0xc0`) |
 | `0x187b24` | `nnSetMaterialSingleTextureExtPS2` | texture index = u16 at layer `+6`, used to pick the entry in the loaded texture list |
@@ -263,7 +263,7 @@ and texturing, and the registers are ST, RGBAQ, XYZ2. All of this is
 Rigid types unpack the attributes separately at stride 3 (`STCYCL 3,1`):
 
 | Type | +2 | +3 | +4 |
-|------|----|----|----|
+|---|---|---|---|
 | `0x5` | position V3-32 | normal V3-32 | UV V2-32 |
 | `0x6` | position V3-32 | colour V4-8 | UV V2-32 |
 | `0x9` | position V3-32 | normal V3-16 | UV V2-16 |
@@ -277,7 +277,7 @@ what `0x100` means is **unknown**.
 Skinned types upload the whole batch as one `V4-32` block:
 
 | Type | qwords/vertex | Layout |
-|------|---------------|--------|
+|---|---|---|
 | `0x11`, `0x111` | 3 | `[pos, w0] [normal, 1] [u, v, i0, 0]` |
 | `0x21` | 4 | `[pos, w0] [normal, 1] [u, v, i0, i1] [w1, 0, 0, 0]` |
 | `0x31`, `0x32`, `0x131` | 3 | `[pos, i0] [normal/colour, 1] [u, v, 1.0, 1.0]` |
@@ -300,7 +300,7 @@ list is 0x14 bytes, like the VU lists. Each batch is `STCYCL 4,1`, then
 There is no GIF tag. The per-vertex attributes follow at stride 4 from VU 4.
 
 | Type bit | VU | Attribute |
-|----------|----|-----------|
+|---|---|---|
 | `0x60000` | +4 | position V3-32 (always) |
 | `0x80000` | +5 | normal V3-16 (/4096) |
 | `0x800000` | +6 | UV V2-16 (/4096) |
@@ -322,7 +322,7 @@ Every batch is one triangle strip: triangle `i` uses vertices `i`, `i+1`,
 `i+2`. **Empirical**, from all batches that carry normals:
 
 | Triangle | Faces along the stored normals | Faces against them |
-|----------|--------------------------------|--------------------|
+|---|---|---|
 | even `i` | 256,035 | 1,717 |
 | odd `i`  | 1,441 | 229,400 |
 
@@ -351,7 +351,7 @@ type. The streams have **their own counts**, so a corner can reuse a
 position with a different UV, as in an OBJ `v/vt/vn` face.
 
 | Format | Size | Element (**empirical**) |
-|--------|------|-------------------------|
+|---|---|---|
 | `0x1` | 12 | position x, y, z (f32) |
 | `0x401` | 24 | position, then u32 bone 0, u32 bone 1, f32 weight of bone 0 |
 | `0x1001` | 44 | position, then 4 × {u32 bone, f32 weight} |
@@ -366,7 +366,7 @@ in all 21,872 checked vertices).
 The primitive list pointer has type `0x20000`, and the list is:
 
 | Offset | Field |
-|--------|-------|
+|---|---|
 | 0x00 | mask of the indexed streams: `7` (3 streams) or `3` (2) |
 | 0x04 | indices per corner, equal to the vertex list's stream count |
 | 0x08 | strip count |
@@ -398,7 +398,7 @@ search) in 173 files and type 1 (linear) in 5. For example, `CSE/PITCH.SNA` name
 `NNS_MOTION` (0x18 bytes):
 
 | Offset | Field |
-|--------|-------|
+|---|---|
 | 0x00 | type: `0x10010001` (758), `0x10040001` (130), `0x10080001` (2), `0x40001` (1) |
 | 0x04 | start frame (f32) |
 | 0x08 | end frame (f32) |
@@ -409,7 +409,7 @@ search) in 173 files and type 1 (linear) in 5. For example, `CSE/PITCH.SNA` name
 Submotion (0x28 bytes):
 
 | Offset | Field |
-|--------|-------|
+|---|---|
 | 0x00 | type (confirmed: `&0x700` translation, `&0x7800` rotation) |
 | 0x04 | interpolation: `0x20002`, `0x20004`, `0x20200` (meaning **not decoded**) |
 | 0x08 | node index (confirmed) |
@@ -422,7 +422,7 @@ Submotion (0x28 bytes):
 The key formats (**empirical**, from all 891 motions):
 
 | Type | Key size | Key |
-|------|----------|-----|
+|---|---|---|
 | `0x101` / `0x201` / `0x401` | 8 | translation X / Y / Z: f32 frame, f32 value |
 | `0x812` / `0x1012` / `0x2012` | 4 | rotation X / Y / Z: s16 frame, s16 angle |
 | `0x3812` | 8 | rotation XYZ: s16 frame, 3 × s16 angle |
@@ -457,7 +457,7 @@ has 3 more. That is the camera to use with its
 The camera (type 0 in all 174):
 
 | Offset | Field |
-|--------|-------|
+|---|---|
 | 0x00 | camera type (0) |
 | 0x04 | vertical field of view, s32 NN angle (0x10000 = 360°) |
 | 0x08 | aspect ratio (f32, 1.3333) |
@@ -471,7 +471,7 @@ submotions animate the camera. Confirmed from `nnCalcCameraMotionCore`
 to the fields above:
 
 | Submotion type | Mask | Evaluator | Animates | Key |
-|----------------|------|-----------|----------|-----|
+|---|---|---|---|---|
 | `0x101`/`0x201`/`0x401` | `0x700` | `nnCalcMotionTranslate` | position X/Y/Z | f32 frame, f32 |
 | `0x40001`/`0x80001`/`0x100001` | `0x1c0000` | `nnCalcMotionCameraXYZ` | target X/Y/Z | f32 frame, f32 |
 | `0x200012` | `0x200000` | `nnCalcMotionCameraAngle` | roll | s16 frame, s16 angle |
@@ -488,7 +488,7 @@ Two files (`BG/BG_OF_00.MRG`, `BG/BG_OF_03.MRG`). `NSLI` main struct:
 whose branch in `nnSetLight` (`0x17b330`) reads:
 
 | Offset | Field | Set with |
-|--------|-------|----------|
+|---|---|---|
 | 0x04 | colour R, G, B (f32) | `nnSetLightColor` |
 | 0x10 | alpha | `nnSetLightAlpha` |
 | 0x14 | intensity | `nnSetLightIntensity` |
@@ -511,7 +511,7 @@ whose branch in `nnSetLight` (`0x17b330`) reads:
 
 ## Tools
 
-```
+```bash
 python SRC/ninja.py info DAT                    # 8,822 blobs, no problems
 python SRC/ninja.py info DAT --prs              # also the PRS-compressed ones
 python SRC/ninja.py dump DAT/PLAYER/M_PLAYER.SNO

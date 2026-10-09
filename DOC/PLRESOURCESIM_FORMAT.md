@@ -25,7 +25,7 @@ managers and scouts from `PBDATA_EU.PAC`.
 | 3 | 11,024 | 457 club records | `plOteam_GetDb` (`0x2165d8`); see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md) |
 | 4 | 2,672 | per nation: national-team manager and 8 clubs | `plOteam_GetManagerNoOffset` (`0x216668`), `plTeam_GetPlTeamFromNation` (`0x22a678`) |
 | 5 | 32,152 | the clubs each player is affiliated with | `PlayerAffiliateaSearchTableInitialize` (`0x2161b8`), `plMisc_GetPlayerAffiliateTeam` (`0x2163f0`) |
-| 6 | 2,848 | transfer AI tables | `CAcquirePlayer::*`, `CComOffer`, `CContractReform`, `CMakeDataBase` ([`PARAM_DIR.md`](PARAM_DIR.md#plresourcesimpac)) |
+| 6 | 2,848 | transfer AI tables | `CAcquirePlayer::*` (tables 0, 1, 3, 4, 5), `CComOffer::CalcuOfferClub`, `CContractReform::Execute`, `CMakeDataBase::GetOutOfClubRange` ([below](#entry-6-transfer-ai-tables)) |
 | 7 | 4,048 | players offered by introduction | `GetPlayerIntroducePlayerNo` (`0x2202f8`) |
 | 8 | 704 | statistics row of each schedule UID | `0x267bf8`, from `pwkTeam_AddPlayerRecord` (`0x267d80`) |
 | 9 | 832 | the edit screens' colour palette | `EDIT::CColor` (`0x2b9998`–`0x2b9c88`) in 8 `SIMPRG.REL` screens, `PlGiTask::InitStadium` (`0x212fa0`) |
@@ -120,6 +120,20 @@ header (room for 8,287, `0x817c` bytes) for a search by player number
 **Empirical:** 8,003 players. 7,933 have one club, 64 two, 4 three, and 2
 none. All clubs are computer clubs (3–441). The headers are not in
 player order.
+
+## Entry 6: transfer AI tables
+
+Six byte tables, read by the computer clubs' transfer code:
+`CAcquirePlayer::*` reads tables 0, 1, 3, 4 and 5, and
+`CComOffer::CalcuOfferClub`, `CContractReform::Execute` and
+`CMakeDataBase::GetOutOfClubRange` read the entry too. Two are indexed
+by bytes of the club records
+([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#club-records-plresourcesimpac-entry-3)):
+table 1 by a club's `foreign` byte (2 bytes a row: foreign players
+allowed, % chance to search abroad) and table 4 by its `search_region`
+byte (13 weights a row, one per scouting region). Table 2 is
+`{1, 5, 2, 5, 3, 5, 4, 5, 5, 5, 6, 5}`, and no reader of entry 6 uses it.
+Tables 0, 3 and 5 aren't decoded.
 
 ## Entry 7: players offered by introduction
 
@@ -217,22 +231,9 @@ the same edit and logs it as a `setfree` command.
 all 1,300 are rank 1–10. The editor refuses a squad player, to keep that
 rule.
 
-## Entry 6 table 2
+### Tested in PCSX2
 
-`{1, 5, 2, 5, 3, 5, 4, 5, 5, 5, 6, 5}`: no reader of entry 6 uses table
-2. The other tables are described in [`PARAM_DIR.md`](PARAM_DIR.md#plresourcesimpac)
-and [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md).
-
-## Still unknown
-
-- The season numbers (entry 0).
-- What the 8 clubs per nation in entry 4 are for.
-- What the 10 introduction groups of entry 7 and their counter are.
-- The exact meaning of statistics rows 1 and 2 (entry 8).
-- How combination levels act in the game.
-- Entry 6's tables in full.
-
-**Tested in PCSX2.** J.Galvan (slot 627) was replaced by Gianluigi
+J.Galvan (slot 627) was replaced by Gianluigi
 Buffon, using Italy's national-team record 26,110
 ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#player-id-blocks)). In a
 new career J.Galvan was gone from the in-game Transfer List, so the
@@ -297,6 +298,15 @@ higher club ranks and the stride aren't tested in game.
 That the "move list" functions build the Transfer List screen is read
 from their names and from their use of the free-agent pool; the screen's
 call into them hasn't been traced.
+
+## Still unknown
+
+- The season numbers (entry 0).
+- What the 8 clubs per nation in entry 4 are for.
+- Entry 6's tables 0, 3 and 5.
+- What the 10 introduction groups of entry 7 and their counter are.
+- The exact meaning of statistics rows 1 and 2 (entry 8).
+- How combination levels act in the game.
 
 ## Checking the claims
 

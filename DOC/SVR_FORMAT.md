@@ -7,7 +7,7 @@ These are the Sega **Ninja (PS2)** texture formats, the PS2 counterparts
 of the Dreamcast PVR/PVM/PVP files:
 
 | Ext   | Chunks          | Contents |
-|-------|-----------------|----------|
+|---|---|---|
 | `.SVR` | `GBIX` + `PVRT` | one texture (407 files in `DAT/`) |
 | `.SVM` | `PVMH` + n × `PVRT` | texture archive (22 loose, 256 more inside `.MRG`s) |
 | `.SVP` | `PVPL`          | external palette for the `0x62`–`0x65` data formats |
@@ -20,7 +20,7 @@ to PNG. The 801 textures inside `.MRG`s decode the same way after
 ## Confirmed from the game code
 
 | Address    | Symbol | What it shows |
-|------------|--------|---------------|
+|---|---|---|
 | `0x1340b0` | `graphics::CalculateTextureImageSize(const NVS_SVRHEADER*)` | size per `(data fmt << 8 \| pixel fmt)` code, e.g. `0x6809` → `w*h/2 + 0x40` |
 | `0x1ad658` | `nvSetupSVRTexObj` | format → GS PSM: `0x62/0x66/0x68` → PSMT4 (`0x14`), `0x64/0x6a/0x6c` → PSMT8 (`0x13`), `0x60` + pixel fmt 9 → PSMCT32, 8 → PSMCT16; masks with `0xfe00`, so odd codes (mips) set up like even ones |
 | `0x1adb10` | `nvPrepareSVRTexImagePacket` | CLUT upload, then each level: if `w >= minW && h >= minH` (per-PSM table at `0x527620`) the level is sent **as PSMCT32** of `w>>shW × h>>shH` (i.e. it is stored swizzled), else in its native PSM; levels advance by `(w*h*bpp/8 + 15) & ~15` |
@@ -29,8 +29,8 @@ to PNG. The 801 textures inside `.MRG`s decode the same way after
 Table at `0x527620` (8-byte entries indexed by PSM: `u8 bpp, u8 shW, u8 shH, pad, u16 minW, u16 minH`):
 
 | PSM | bpp | upload as CT32 | swizzled when |
-|-----|-----|----------------|---------------|
-| PSMCT32 (0x00) | 32 | — | never (min 2048×2048) |
+|---|---|---|---|
+| PSMCT32 (0x00) | 32 | – | never (min 2048×2048) |
 | PSMCT16 (0x02) | 16 | `w × h/2` | `w >= 64 && h >= 64` |
 | PSMT8 (0x13)   | 8  | `w/2 × h/2` | `w >= 128 && h >= 64` |
 | PSMT4 (0x14)   | 4  | `w/2 × h/4` | `w >= 128 && h >= 128` |
@@ -41,7 +41,7 @@ page of its own PSM.
 ## `GBIX` chunk (SVR only, optional)
 
 | Offset | Type | Meaning |
-|--------|------|---------|
+|---|---|---|
 | `0x00` | char[4] | `GBIX` |
 | `0x04` | u32 | chunk length after this field (always 8) |
 | `0x08` | u32 | global index (texture ID) |
@@ -50,7 +50,7 @@ page of its own PSM.
 ## `PVRT` chunk
 
 | Offset | Type | Meaning |
-|--------|------|---------|
+|---|---|---|
 | `0x00` | char[4] | `PVRT` |
 | `0x04` | u32 | length of the rest of the chunk (from `+0x08`). In `.SVM`s it includes padding to 16 bytes |
 | `0x08` | u8  | **pixel format** (colour format of direct pixels / palette) |
@@ -58,7 +58,7 @@ page of its own PSM.
 | `0x0A` | u16 | mip level count − 1, read by `nvPrepareSVRTexImagePacket`; 0 in every file on this disc |
 | `0x0C` | u16 | width |
 | `0x0E` | u16 | height |
-| `0x10` | —   | palette (if any), then image data |
+| `0x10` | – | palette (if any), then image data |
 
 The game reads `+0x08` as one u16, so format codes appear in the code as
 `0x6809` = data format `0x68`, pixel format `0x09`.
@@ -66,7 +66,7 @@ The game reads `+0x08` as one u16, so format codes appear in the code as
 ### Pixel formats
 
 | Code | GS PSM | Layout |
-|------|--------|--------|
+|---|---|---|
 | `0x08` | PSMCT16 | u16 `ABBBBBGGGGGRRRRR` (A = bit 15; with A=0 the GS substitutes TEXA.TA0) |
 | `0x09` | PSMCT32 | bytes `R G B A`, A in PS2 range: `0x80` = opaque |
 | `0x0A` | PSMCT24 / 16S | handled by the code (`w*h*3`), not used on this disc |
@@ -76,10 +76,10 @@ The game reads `+0x08` as one u16, so format codes appear in the code as
 Odd codes are the even format **plus mipmaps**.
 
 | Code | Meaning | Palette | Pixel data |
-|------|---------|---------|------------|
-| `0x60` / `0x61` | direct colour | — | `w*h` × 2 or 4 bytes |
-| `0x62` / `0x63` | 4 bpp, external palette (`.SVP`) | — | `w*h/2` |
-| `0x64` / `0x65` | 8 bpp, external palette (`.SVP`) | — | `w*h` |
+|---|---|---|---|
+| `0x60` / `0x61` | direct colour | – | `w*h` × 2 or 4 bytes |
+| `0x62` / `0x63` | 4 bpp, external palette (`.SVP`) | – | `w*h/2` |
+| `0x64` / `0x65` | 8 bpp, external palette (`.SVP`) | – | `w*h` |
 | `0x66` / `0x67` | 4 bpp | 16 × u16 | `w*h/2` |
 | `0x68` / `0x69` | 4 bpp | 16 × u32 | `w*h/2` |
 | `0x6A` / `0x6B` | 8 bpp | 256 × u16 | `w*h` |
@@ -112,7 +112,7 @@ Smaller levels are plain linear pixels.
 ## `PVMH` archive header (`.SVM`)
 
 | Offset | Type | Meaning |
-|--------|------|---------|
+|---|---|---|
 | `0x00` | char[4] | `PVMH` |
 | `0x04` | u32 | header length after this field; the first `PVRT` is at `8 + this` |
 | `0x08` | u16 | flags, always `0x010F` (low byte = entries carry name, format, dims, global index) |
@@ -122,7 +122,7 @@ Smaller levels are plain linear pixels.
 Entry:
 
 | Offset | Type | Meaning |
-|--------|------|---------|
+|---|---|---|
 | `0x00` | u16 | index |
 | `0x02` | char[28] | name (no extension) |
 | `0x1E` | u16 | format, same value as `PVRT+0x08` |
@@ -136,14 +136,14 @@ aligned (zero padding between them).
 ## `PVPL` palette (`.SVP`)
 
 | Offset | Type | Meaning |
-|--------|------|---------|
+|---|---|---|
 | `0x00` | char[4] | `PVPL` |
 | `0x04` | u32 | length after this field |
 | `0x08` | u16 | pixel format (`0x08` or `0x09`, as above) |
 | `0x0A` | u16 | 0 |
 | `0x0C` | u16 | 0 |
 | `0x0E` | u16 | entry count (16 or 256) |
-| `0x10` | —   | colours; 256-entry palettes are in CSM1 order |
+| `0x10` | – | colours; 256-entry palettes are in CSM1 order |
 
 Which `.SVP` goes with which external-palette texture is decided by the
 code (e.g. `TEST3D/TST000_01FAC_{B,W,Y}0{0,1}.SVP` are skin-tone variants

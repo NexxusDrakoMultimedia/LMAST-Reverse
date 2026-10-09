@@ -1,9 +1,19 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Let's Make a Soccer Team (PS2) — DATA.CVM Decryption to DATA.ISO
-Special thanks to **@tw09627** on the LMAST Discord, who first decrypted `DATA.CVM` with the help of
-        ChatGPT and opened up the game's data for this project. This file is from his ChatGPT agent.
+# Let's Make a Soccer Team (PS2): DATA.CVM Decryption to DATA.ISO
+
+Special thanks to **@tw09627** on the LMAST Discord, who first decrypted
+`DATA.CVM` with the help of ChatGPT and opened up the game's data for
+this project. This file is from his ChatGPT agent.
+
+> **Historical record.** This is the original write-up of how the key was
+> found and used with a patched `cvm_tool`, kept as it was written. The
+> project no longer needs `cvm_tool` or a C++ build:
+> `SRC/extract_disc.py` and `SRC/rofs_decrypt.py` do the whole job in
+> Python, and the key has since been shown to be derived from the `CVMH`
+> header ([`DATA_CVM_EXTRACTION.md`](DATA_CVM_EXTRACTION.md)). The "next
+> stages" at the end are done: see [`REBUILD.md`](REBUILD.md).
 
 ## Purpose
 

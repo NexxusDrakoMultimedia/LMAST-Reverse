@@ -255,8 +255,9 @@ groups (**empirical**, every file):
 | `MAP01`–`MAP10` | 27–166, 7–41 of them looped, 8–48 kHz | 22–97 KB | sequenced music: 41 songs (below) played with the bank's instruments |
 | `MAP11`–`MAP23` | exactly 2, same length, 32 kHz, not looped | 896 bytes | the left and right channels of one stereo piece, 11–26 s. The channels differ (0–6% of samples coincide). In game: the jingles before a full match and the quick-match music (identified by ear) |
 
-`BGM.AFS` in `ISO/AUDIO` holds only `bgm13`–`bgm21` and the ending, so
-these banks are the likely home of the other music.
+`BGM.AFS` in `ISO/AUDIO` holds only `bgm13`–`bgm21` and the ending; the
+game's music table names these banks' songs for the other music ids
+([`SOUND_DIR.md`](SOUND_DIR.md#the-music-table-sles-0x5190d8)).
 
 ### Songs (sequences)
 
@@ -431,9 +432,9 @@ slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
 
 ## Open questions
 
-- Names for the loader functions listed above. `SNR2` is now parsed
-  (`SNR2_FORMAT.md`, `SRC/snr2.py`), so their imports are labelled, but
-  local functions carry no names of their own.
+- Names for the loader functions listed above. `snr2.py` labels their
+  imports ([`SNR2_FORMAT.md`](SNR2_FORMAT.md)), but local functions carry
+  no names of their own.
 - The meaning of the bank selectors `t`/`v`, the second byte of each
   selector pair, and what loads bank 39.
 - The BCR2 record layout and trailer, the BCB3 item fields and script

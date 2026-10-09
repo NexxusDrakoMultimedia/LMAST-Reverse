@@ -134,7 +134,7 @@ reopens the margins:
 
 | Where | What it did | Patch |
 |---|---|---|
-| `sort2d::CEtcSort2d::Execute` calls the 2D pass, `sort2d::CSort2d::Execute` (`0x1fe220`), at `0x14c5d4` | — | a wrapper at `0x13be98` sets the variable below to x 64–447 and applies it, runs the pass, then sets x 0–511 and applies that |
+| `sort2d::CEtcSort2d::Execute` calls the 2D pass, `sort2d::CSort2d::Execute` (`0x1fe220`), at `0x14c5d4` | – | a wrapper at `0x13be98` sets the variable below to x 64–447 and applies it, runs the pass, then sets x 0–511 and applies that |
 | `etc::Util_ScissorEnd` (`0x14cb20`) | restores a hard-coded full screen (`0x14cb40`–`0x14cb4c`) | reads the variable at `0x13bfc0` |
 | `sort2d::CEtcSort2d::CallScissorEnd` (`0x14bf28`) | the same, at `0x14bf40`–`0x14bf4c` | reads the variable |
 | `etc::Util_ScissorBeginDirect` (`0x14c860`), also behind `etc::Viewport_SetRect` | clamps boxes to x 0–511, unsqueezed | after the clamps, x0 and x1 (`0($sp)`, `8($sp)`) become x·0.75 + 64 (`0x14c9b0` → `0x13bee4`) |

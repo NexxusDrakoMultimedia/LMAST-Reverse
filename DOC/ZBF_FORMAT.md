@@ -38,8 +38,8 @@ The colour image is `CSE/BG_xx_nn_00.CSP` (see [`CSE_FORMAT.md`](CSE_FORMAT.md);
 151 background CSPs carry their own palette (data format `0x6C`). The
 other 41 use an external one (`0x64`). 63 of the 140 MRGs carry a set of
 32 palettes, `BG_xx_nn_00.svp` … `BG_xx_nn_31.svp`. `BG_CH_00_00.svp`
-decodes `BG_CH_00_00.CSP` correctly. I haven't worked out which of the 32
-the game picks, or when.
+decodes `BG_CH_00_00.CSP` correctly. Which of the 32 the game picks, and
+when, isn't known.
 
 Scaled to 512×448, that texture lines up with the `.zbf` **pixel for
 pixel**: every depth edge sits on the rendered furniture, plants and
@@ -64,10 +64,10 @@ resolution.
 ## Not yet confirmed from code
 
 The loader lives in the overlays (`BGCONTROL_MODULE` in `DLL/SIMPRG.REL`,
-`BG_LIGHT_TEST_MODULE` in `DLL/TESTPRG.REL`). These are SNR2 relocatable
-modules, and `SRC/sles_disasm.py` can't disassemble them yet. The
-executable holds no `zbf` string, and nothing in it references the
-`BG_%s_%02d.mrg` strings in its data section directly, so the
+`BG_LIGHT_TEST_MODULE` in `DLL/TESTPRG.REL`), which `SRC/snr2.py`
+disassembles ([`SNR2_FORMAT.md`](SNR2_FORMAT.md)); it hasn't been traced
+yet. The executable holds no `zbf` string, and nothing in it references
+the `BG_%s_%02d.mrg` strings in its data section directly, so the
 PSMZ24/GEQUAL reading above comes from the data alone. Still unknown: the
 exact GS upload (probably a PSMZ32 transfer into a PSMZ24 buffer) and the
 projection that maps scene depth to these values.

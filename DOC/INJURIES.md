@@ -151,7 +151,7 @@ The Japanese build's kind and value tables (`0x52e998`, `0x52ea00`,
 
 ## Checking
 
-```
+```bash
 python SRC/sles_disasm.py ISO/SLES_541.51 dis judgeKegaKind calcKegav plPinfo_KegaRecoverDaysChno
 python SRC/sles_disasm.py ISO/SLES_541.51 dis plPinfo_CheckKega__
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x163638 60 --sles ISO/SLES_541.51

@@ -13,11 +13,11 @@ packs is still to do.
 `SRC/patch_disc.py` writes edited `DAT/` files into a copy of the disc
 image (or `DATA.CVM`, or `DATA.ISO`). The sections below go from the
 simplest case, a file that keeps its size, to one that has to move.
-That covers every edit the current writers make: `pbdata.py set`/`import`
-(records are fixed-size), `tbb.py replace` when a table keeps its
-length, and `mbb.py set`/`import` (`MES.PAC` keeps its size; a message
-file that grows uses the spare room in its slot,
-[`MBB_FORMAT.md`](MBB_FORMAT.md#writing)).
+That covers every edit the writers make: most keep the file's size
+(`pbdata.py`, `initteam.py`, `teaminit.py`, `uniform.py`, `plrsim.py`,
+`sqb.py setcmd`, and `mbb.py`, whose grown message files use the spare
+room in their slot, [`MBB_FORMAT.md`](MBB_FORMAT.md#writing)); `tbb.py
+replace` and `leaguesize.py build` can change it.
 
 ## Why same-size patching needs no encryption
 
@@ -168,17 +168,12 @@ This is used for:
 A file or pack that would need another sector is moved
 ([below](#moving-files)).
 
-**Tested** on a copy of `DATA.CVM`. A grown `3_1.mbb` (6,672 -> 6,724
-bytes) rebuilt `STATIONMES1.PAC` from 45,264 to 45,328 bytes, and its
-directory record was rewritten. The patched image's decrypted table of
-contents gave the new size, and the pack's entries matched their
-sources. Patching the original `MES.PAC` and `STATIONMES1.PAC` back gave
-a byte-identical `DATA.CVM`, so the re-encrypted sector is exact.
-
-**Confirmed in the game (PCSX2).** A disc with two lengthened English
-club names (`3_1.mbb` 6,672 -> 6,720 bytes, `STATIONMES1.PAC` rebuilt to
-45,328 bytes, its later entries moved) showed both names in VS mode Team
-Selection ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)).
+**Tested** on a copy of `DATA.CVM` and in PCSX2, with `STATIONMES1.PAC`
+rebuilt around a grown `3_1.mbb` (45,264 to 45,328 bytes): the
+re-encrypted directory record is exact (patching the originals back gives
+a byte-identical `DATA.CVM`), and both lengthened club names showed in VS
+mode Team Selection. The details are in
+[`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack).
 
 ## Moving files
 
@@ -298,18 +293,15 @@ python SRC/patch_disc.py patch disc.iso test.iso PARAM/...=... --skip-tutorial  
 ```
 
 `--skip-tutorial` is for test discs. It skips the opening playoffs of a
-new career (5–10 minutes) with the developers' own switch, 4 bytes in
-the executable and three sequencer scripts
-([`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs)),
-and starts the playoff-period sponsors one year into their contracts (6
-more bytes in the executable) so they end on time. It also makes the
-skip command run the playoffs' year-end status gain (`pwkTeam_YearEndCheck`,
-28 bytes of code), so the club starts with status 500.
-Tested in PCSX2: the career goes from club creation to the 2006–07 season,
-and the first Sponsor screen offers the main and sub-sponsor slots with
-Egamucho as supplier, as in a normal career. Start the career in
-England, since the switch names league 0. It needs the whole disc image.
-Running it again changes nothing.
+new career (5–10 minutes): the developers' own switch (one word of the
+executable) plus edits to three sequencer scripts that run the
+playoffs' schedule steps without their matches
+([`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs)).
+Tested in PCSX2: the career goes from club creation to the 2006–07
+season with real club rankings, the playoff season's money and the
+usual sponsors. Start the career in England, since the switch names
+league 0. It needs the whole disc image. Running it again changes
+nothing.
 
 `patch` copies the image first (use `--in-place` to patch a copy you made
 yourself), plans every write against the unmodified image, then writes

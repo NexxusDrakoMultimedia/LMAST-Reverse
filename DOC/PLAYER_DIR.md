@@ -24,7 +24,7 @@ game code. Everything else here (what the names mean, counts) is
 | Files | Container | Entries hold |
 |---|---|---|
 | `FC_EURO_FACEPACK_00.HED` + `.BIN` | KC@P, PRSH entries | 21,171 real-player heads, one `PackData` each (see [Face packs](#face-packs)) |
-| `FC_EURO_FACEPACK_01.HED` + `.BIN` | KC@P, PRSH entries | 215 heads for event characters. Each head's model (`NFN0`) and texture are named after the character: 0–19 `REFREE`, 20–35 `FLAGMAN`, 36–41 `ANNOUNCER_M/F`, 42–121 `SUPPORTER_M/F`, 122–131 `AGENT`, 132–135 `COACH`, 136–139 `SALESMAN_M/F`, 140–159 `COMMISSIONER`, 160–169 `REPORTER`/`CAMERAMAN`, 170–175 `MANAGER`, 176–187 `VISITOR_M/F`, 188–191 four identical copies of `kihon` ("basic"), 192–211 `STAFF_M/F`, and 212–214 untextured `HUMAN_head_9000/9500/9600.snj`. 137 `SALESMAN_M_02` uses the texture `base_face_sc`. `python SRC/packdata.py names` lists them. The developer SATO TEST viewer shows the same heads by entry number ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)) |
+| `FC_EURO_FACEPACK_01.HED` + `.BIN` | KC@P, PRSH entries | 215 heads for event characters, each named after the character (referees, supporters, agents, staff, ...; see [Face packs](#face-packs)). The developer SATO TEST viewer shows them by entry number, and its name table lists the ids ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)) |
 | `EDITFACEPACK_BIN.HED` + `EDITFACEPACK.BIN` | KC@P, 1 raw entry | the face-edit resources, one `PackData` (see [Edit face pack](#edit-face-pack)) |
 | `PLPACK_HOME.HED` / `_AWAY` + `.PAC` | KC@P, 116 raw entries | licensed club kits, one `PackData` per club (see [Licensed kits](#licensed-kits-plpack_)) |
 | `PLAYER_MODEL.PAC/.HED`, `PLAYER_MODEL_PRI.PAC/.HED` | BINPAC v1, extension-only names | 267 / 317 entries: `.svm` textures, `.snq`/`.sno` models, `.snp` node trees, one `.sna` |
@@ -110,8 +110,10 @@ PRSH-compressed, and expands to a 5-block `PackData`.
 `CFaceLoader::LoadRequest` (`0x103450`) picks the pack. A player whose
 `Param::PlPinfo` is not an edit player goes to `LoadRequestNormal`
 (`0x1036a8`) with the u16 at **`PlPinfo+0x1ca`** as the entry index into
-`fc_euro_facepack_00.bin`. The value `0xFFFF` there means the face is built
-in the face editor instead. `LoadRequestEvent` (`0x103770`) loads from
+`fc_euro_facepack_00.bin`. That is the player database's face number,
+record `+0x32` in the `PlPbase` copy at `PlPinfo +0x198`
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)). The value `0xFFFF` there means
+the face is built in the face editor instead. `LoadRequestEvent` (`0x103770`) loads from
 `fc_euro_facepack_01.bin`.
 
 | Block | Type | Contents | Used by `l_realize_facepack` as |
@@ -145,9 +147,12 @@ One code is mistyped as `IRl`. The count of 113 includes it.
 Pack 01's names say what the character is: `SUPPORTER` 80, `REFREE` 20,
 `COMMISSIONER` 20, `STAFF` 20, `FLAGMAN` 16, `VISITOR` 12, `AGENT` 10,
 `ANNOUNCER` 6, `MANAGER` 6, `REPORTER` 5, `CAMERAMAN` 5, `COACH` 4,
-`SALESMAN` 3, `kihon` 4 ("basic"), `base` 1. The 3 other entries have no
-`.svr` name in the model. The last entry (214) has no hair and a
-two-texture `PVMH` (`camskin`, `came_hair`).
+`SALESMAN` 3, `kihon` 4 ("basic"), `base` 1 (137 `SALESMAN_M_02` uses
+the texture `base_face_sc`). The 3 other entries, 212–214, are the
+untextured `HUMAN_head_9000/9500/9600.snj` and have no `.svr` name in the
+model. The last entry (214) has no hair and a two-texture `PVMH`
+(`camskin`, `came_hair`). `python SRC/packdata.py names` lists every
+entry's model and texture name.
 
 Hair-model names use the same style prefixes as `HAIR_PACK` and
 `HAIR_PALETTE`. Across the 20,280 pack-00 heads with hair: `sho` 9,629,
@@ -219,4 +224,3 @@ python SRC/svr.py info out/face                                 # the texture bl
   executable's copy.
 - Which models in `PLAYER_MODEL*.PAC` are which. Their names were cut to
   the extension, so the game must address them by index.
-- Where `Param::PlPinfo+0x1ca` (the face index) is filled from.

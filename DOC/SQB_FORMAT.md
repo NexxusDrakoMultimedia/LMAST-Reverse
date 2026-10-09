@@ -325,8 +325,8 @@ A third set runs the 540 combination scripts in `GAME/COMBINATION2.CSB`
 (argument counts at `GAMEPRG.REL 0x274790`, no symbols). See
 [`BPB_FORMAT.md`](BPB_FORMAT.md#combination2cbb-and-csb).
 `python SRC/sqb.py info DAT/GAME/COMBINATION2.CSB` decodes 539 of them.
-`sqb.py` now prefers a set that decodes with no argument or label
-problems, and falls back to the first that decodes at all.
+`sqb.py` prefers a set that decodes with no argument or label problems,
+and falls back to the first that decodes at all.
 
 The 25 PwkScript files hold 68 `SQT1` tables. Every one of the 41 scripts
 that decodes ends exactly at the end of its table. Every argument has a
@@ -393,38 +393,73 @@ the year start). So setting `0x34d430` alone would skip the playoffs
 without promoting the club, and setting `0x34d434` alone would also skip
 club creation and every year start.
 
-**The patch** (four bytes, plus the six sponsor bytes and the status
-call described [below](#why-the-playoff-sponsors-stayed); `python
-SRC/patch_disc.py patch <disc> <out> ... --skip-tutorial` writes it, on a
-whole disc image):
+**The patch.** `python SRC/patch_disc.py patch <disc> <out> ...
+--skip-tutorial` writes it, on a whole disc image. It sets the
+developers' flag, keeps club creation and the year starts, and rewrites
+the playoff section of `RootClubEditSeq.sqb` (dead code once the flag is
+set) to run the won route's schedule steps without the playoff turns:
 
-| File | Change |
-|---|---|
-| `SLES_541.51` `0x34d434` (file offset `0x24e434`) | 0 → 1 |
-| `ROOTCLUBEDITSEQ.SQB` `0x868` | `4:88` → `4:89`: promote, then branch to `L9` |
-| `ROOTMAINSEQ.SQB` `0x6d8` | `4:89` → `4:88`, which writes 0: club creation stays |
-| `ROOTYEARSTARTSEQ.SQB` `0x30` | `4:89` → `4:88`: year starts stay |
+| File | Offset | Retail | Skip |
+|---|---|---|---|
+| `SLES_541.51` (file offset `0x24e434`) | `0x34d434` | 0 | 1 |
+| `ROOTMAINSEQ.SQB` | `0x6d8` | `4:89` | `4:88`, which writes 0: club creation stays |
+| `ROOTYEARSTARTSEQ.SQB` | `0x30` | `4:89` | `4:88`: year starts stay |
+| `ROOTCLUBEDITSEQ.SQB` | `0x868` | `Dummy.CheckFirstMatchSkip` | unchanged: it writes 0, so the script enters `L2` |
+| | `0x8b0` | `TutorialHelp.Effective100` | `Sche.InitializeFirstCheck` |
+| | `0x8c0` | `Sche.InitializeFirstCheck` | `Sche.YearStart` |
+| | `0x8d0` | `Sche.YearStart` | `Sche.MonthStart` |
+| | `0x8e0` | `Sche.MonthStart` | `Dummy.CheckClubEditSkip`: `pwkLg_Init(0)` and `ScheCallback_ProcPromotion`, which `Sche.FirstCheck` (`0x114174`) runs after a won playoff |
+| | `0x8f0` | `Label L3` | `Call L8`: `Sche.MonthEnd`, `Sche.YearEnd`, `Sche.Finalize`, then `L9` |
+| | `0xba8` | `BranchIfZero … L3` (turn loop) | jumps to `L8`, as `L3` no longer exists; never reached |
 
-```bash
-python SRC/sqb.py setcmd DAT/SEQ/ROOTCLUBEDITSEQ.SQB out/ROOTCLUBEDITSEQ.SQB 0x868 4:89
-python SRC/sqb.py setcmd DAT/SEQ/ROOTMAINSEQ.SQB out/ROOTMAINSEQ.SQB 0x6d8 4:88
-python SRC/sqb.py setcmd DAT/SEQ/ROOTYEARSTARTSEQ.SQB out/ROOTYEARSTARTSEQ.SQB 0x30 4:88
-```
+That is the won route's order: initialise, year and month start,
+promotion, month end, year end, finalise. The script has no other
+`Call`, so the one that never returns can't block another (calls don't
+nest). `sqb.set_commands` makes the script edits and checks the labels
+once at the end. `pwkLg_Init(0)` names league 0 (England), so other
+leagues may not come out right.
 
-The skip route leaves out what the playoff route runs between `L2` and
-`L9` (the schedule's first year, month and turn steps, and their ends),
-as the developers' own switch does. `pwkLg_Init(0)` names league 0
-(England), so other leagues may not come out right.
+`Sche.YearEnd` (`0x113668`) has to run as a script command: it works
+over several frames and partly in an overlay (the first call creates
+the `ClubRank` singleton and runs `CScheEuro::updateYearEnd`; later
+calls run `ClubRank::UpdateYearEnd` until it reports done, then
+`0x113428`, free the ranking, `jmSche_CheckLeagueBottom`,
+`pwkTeam_YearEndCheck` and `pwkTeam_ChangePop_Year`).
 
 **Tested in PCSX2** (England): club creation ran as usual, the playoffs
-were skipped, and the career went on to 2006–07 Week 1 Mid-Week July with
-the season's Sponsor contract screen. But the sponsors weren't right: only
-the main sponsor changed, and the supplier and the four sub-sponsors were
-left as they were. **User report:** those are the club's sponsors during
-the playoffs (main sponsor Fosty Misty, supplier Doclla, four
-sub-sponsors). In a normal career they end with the playoffs: the first
-sponsor screen lets you sign the sub-sponsors, and the supplier becomes
-Egamucho on a random 1–3 year contract.
+were skipped, and the career started in 2006–07, Week 1 Mid-Week July.
+All Clubs Ranking had real ranks (Real Madrid 1, Juventus 2, Chelsea 3,
+AC Milan 4, Bayern 5), and Real Madrid's detail screen showed world
+ranking 1. The club started with £3,350,000, so the year end also
+settles the playoff season's money. At the first Sponsor screen the
+sponsors were normal: a £2.2 million main sponsor and the usual
+sub-sponsors, where a normal career gets sponsors around £2.5 million
+(user report).
+
+### The first version
+
+The first version of the skip set the same flag but changed
+`RootClubEditSeq.sqb` `0x868` from `4:88` to `4:89`, which promotes the
+club and branches straight to `L9`, as the developers' switch does. The
+playoffs' year and month steps then never ran, and three things came out
+wrong (tested in PCSX2):
+
+- The playoff-period sponsors stayed ([below](#why-the-playoff-sponsors-stayed)).
+  The first version started them a year into their contracts (6 bytes at
+  `0x3994ac` + `0x14`·*n*).
+- The supplier stayed Doclla, because the club's status stayed 0
+  ([below](#the-supplier-and-the-clubs-status)). The first version
+  rewrote `Dummy.CheckClubEditSkip` (9 words at `0x108dac`) to call
+  `pwkTeam_YearEndCheck` as well.
+- Information → All Clubs Ranking listed every club as 65536, in no
+  order, and a club's detail screen showed world ranking 0 (user report):
+  the club-rank year end in `Sche.YearEnd` never ran. The club also
+  started with £1,785,000 instead of £3,350,000.
+
+The second version runs the real `Sche.YearStart` and `Sche.YearEnd`, so
+it needs neither workaround. `patch_disc.py` undoes both on an image
+that has them: an old skip disc re-patched comes out byte for byte the
+same as a fresh one.
 
 ### Why the playoff sponsors stayed
 
@@ -451,29 +486,21 @@ The table at `0x3994a8` (sponsor ids are message ids of category 10000):
 The playoff route runs `Sche.YearStart` twice before the first Sponsor
 screen: once in `RootClubEditSeq.sqb` (`0x8d0`) and once for the season
 (`RootMainSeq.sqb` `0xc70`). That takes the main and sub-sponsors to 2
-years served against a length of 1, so they end. The skip route runs only
-the second, so they reach 1 and stay.
-
-`--skip-tutorial` now also starts the six records one year in (`+4` = 1,
-6 bytes at `0x3994ac` + `0x14`·*n*). Only `0x257200` reads the table.
+years served against a length of 1, so they end. A route that skips the
+first leaves them at 1, and they stay. Only `0x257200` reads the table.
 TV contracts aren't affected: `pwkTv_UpdateStatus` (`SIMPRG.REL
 0x164598`) does nothing while `pwkGen_Keika` (the year minus 2006) is 0
 or less.
 
-**Tested in PCSX2** with the 6-byte change (England): the first Sponsor
-screen let the user sign a new main sponsor (Biassenn) and four new
-sub-sponsors. The supplier was still Doclla. A second test disc also
-started Doclla two years in, so its contract ended at the season's year
-start, and the screen showed Doclla again: the game signed it anew. So
-the supplier is chosen, not left over. The Sponsor module's setup
-(`SIMPRG.REL 0xc49c0`) signs an offer by itself when `pwkGen_Keika` is 0
-or less (`0xc49e0`–`0xc49f0`).
-
-**User report:** in a normal career Egamucho is the supplier at the first
-Sponsor screen, so Doclla is replaced in year 1. (EVENT 338, timing 16 in
-season 2, has Jane say the supplier contract "ends soon", and the manual
-says other suppliers become available after the first year; neither
-contradicts this.)
+**Tested in PCSX2:** a disc that also started Doclla two years in ended
+its contract at the season's year start, and the Sponsor screen showed
+Doclla again: the game signed it anew, so the supplier is chosen, not
+left over. The Sponsor module's setup (`SIMPRG.REL 0xc49c0`) signs an
+offer by itself when `pwkGen_Keika` is 0 or less (`0xc49e0`–`0xc49f0`).
+**User report:** in a normal career Egamucho is the supplier at the
+first Sponsor screen. (EVENT 338, timing 16 in season 2, has Jane say
+the supplier contract "ends soon", and the manual says other suppliers
+become available after the first year; neither contradicts this.)
 
 ### The supplier and the club's status
 
@@ -499,79 +526,7 @@ Both are tier 6 (`+8`) with no fee.
 disc, status was 0 through the playoffs (dated June 2005) and became 500
 at their end, just before the date moved to July 2006: that is the
 playoffs' `Sche.YearEnd` (`RootClubEditSeq` `L8`). At the first Sponsor
-screen: status 500, status rank 7, supplier Egamucho. With the skip disc,
-status stayed 0 and the supplier stayed Doclla (shown as 2/2 years: the
-playoffs' extra year start counts as its first year).
-
-**The fix:** `--skip-tutorial` also rewrites `Dummy.CheckClubEditSkip`
-(9 words at `0x108dac`). The flag test goes (a skip disc always passes
-it), which leaves room to save `$ra` first and call, in the normal
-route's order, `pwkLg_Init(0)`, `ScheCallback_ProcPromotion` and then
-`pwkTeam_YearEndCheck`. **Tested in PCSX2:** status became 500 right
-after club creation, and the first Sponsor screen had Egamucho as
-supplier (on a 1-year contract; the term is random).
-
-The rest of the playoffs' `Sche.YearEnd` (club-rank year end,
-`pwkTeam_ChangePop_Year`) and `Sche.MonthEnd` still don't run on a skip
-disc. Nothing has shown a difference from them yet.
-
-### Known problem: the club rankings
-
-(The first version of the skip, described above. The second version,
-below, fixes it: tested in PCSX2.)
-
-**Tested in PCSX2** (user report): on an unmodified `--skip-tutorial`
-disc, Information → All Clubs Ranking lists every club as **65536**, in
-no order (North Shore, SC Dunstable, Birmingham, ...), and a club's
-detail screen shows world ranking 0 and league ranking "–". The skip
-leaves out the playoffs' `Sche.YearEnd`, which includes the club-rank
-year end (only `pwkTeam_YearEndCheck` is called, above), so the
-rankings are most likely never computed. Not traced yet; the swaps
-first suspected (Season tab) aren't the cause, as the unmodified skip
-disc shows the same.
-
-### The second version: the playoffs' own schedule steps
-
-`Sche.YearEnd` (`0x113668`) is a multi-step command: the first call
-creates the `ClubRank` singleton and runs `CScheEuro::updateYearEnd`;
-later calls run `ClubRank::UpdateYearEnd` (in an overlay) until it
-reports done, then `0x113428`, free the ranking, `jmSche_CheckLeagueBottom`,
-`pwkTeam_YearEndCheck` and `pwkTeam_ChangePop_Year`. Spread over frames
-and partly in an overlay, it can't be called from the 9 words of
-`Dummy.CheckClubEditSkip`. So the second version runs the command itself:
-on a skip disc the playoff section of `RootClubEditSeq.sqb` is dead code,
-and it is rewritten to do what the won route does, without the turns.
-
-| Offset | Retail | Skip |
-|---|---|---|
-| `0x868` | `Dummy.CheckFirstMatchSkip` | unchanged: it writes 0, so the script enters `L2` |
-| `0x8b0` | `TutorialHelp.Effective100` | `Sche.InitializeFirstCheck` |
-| `0x8c0` | `Sche.InitializeFirstCheck` | `Sche.YearStart` |
-| `0x8d0` | `Sche.YearStart` | `Sche.MonthStart` |
-| `0x8e0` | `Sche.MonthStart` | `Dummy.CheckClubEditSkip`: `pwkLg_Init(0)` and `ScheCallback_ProcPromotion`, which `Sche.FirstCheck` (`0x114174`) runs after a won playoff |
-| `0x8f0` | `Label L3` | `Call L8`: `Sche.MonthEnd`, `Sche.YearEnd`, `Sche.Finalize`, then `L9` |
-| `0xba8` | `BranchIfZero … L3` (turn loop) | jumps to `L8`, as `L3` no longer exists; never reached |
-
-That is the won route's order: initialise, year and month start,
-promotion, month end, year end, finalise. The script has no other
-`Call`, so the one that never returns can't block another (calls don't
-nest). The flag at `0x34d434` and the `RootMainSeq`/`RootYearStartSeq`
-swaps stay. As the real `Sche.YearStart` and `Sche.YearEnd` now run, the
-first version's sponsor offset and `pwkTeam_YearEndCheck` call aren't
-written, and `patch_disc.py` undoes them on an image that has them: an
-old skip disc re-patched comes out byte for byte the same as a fresh one.
-`sqb.set_commands` makes the script edits and checks the labels once at
-the end.
-
-**Tested in PCSX2** (unmodified game with the second skip): the playoffs
-were skipped and the career started in 2006–07, Week 1 Mid-Week July.
-All Clubs Ranking had real ranks (Real Madrid 1, Juventus 2, Chelsea 3,
-AC Milan 4, Bayern 5), and Real Madrid's detail screen showed world
-ranking 1. The club started with £3,350,000, against £1,785,000 on the
-first version's disc at the same date, so the year end also settles the
-playoff season's money. At the first Sponsor screen the sponsors were
-normal: a £2.2 million main sponsor and the usual sub-sponsors, where a
-normal career gets sponsors around £2.5 million (user report).
+screen: status 500, status rank 7, supplier Egamucho.
 
 ## The developer launcher
 
@@ -644,7 +599,7 @@ the real game screen, opened on its own with the launcher's new game.
 
 | Module | Entry | What happened |
 |---|---|---|
-| — | MAIN GAME START | starts the normal game |
+| – | MAIN GAME START | starts the normal game |
 | 71 | BPINFO CHECK | the training-ground background and the debug text `CBpinfoCheckModule( return X button ), m_bra` / `0 all=27949 0=18871 1mil=8063`, plus a few garbled characters. The counts match the player database (below) |
 | 72 | 3D TEST | hangs |
 | 73 | MODEL VIEWER | a shaded test triangle with red and green axis lines. The buttons do nothing |
@@ -733,18 +688,19 @@ DAT/PLAYER/FC_EURO_FACEPACK_01.HED`). The rows without a name are
 `HUMAN_head_9000/9500/9600.snj` (212–214). The viewer's load code isn't
 traced.
 
-PERSONAL AFFAIRS's players belong to a block of 25 English players,
-database IDs 25591–25615, with shirts 1–25 and ranks 1–4. None of them is
-in a computer club's squad (`initteam.py squads`). The next block, from
-25616, is another England squad numbered from shirt 1. **Empirical lead:**
-these look like ready-made squads for the player's own club, and the
-launcher's new game (`Pwk.NewGame`) gave its club the first English one.
+PERSONAL AFFAIRS's players, database IDs 25591–25615 (shirts 1–25,
+ranks 1–4, in no computer club's squad), are the built-in default club
+that `pwkTeam_Init` builds before the team-style screen
+([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#without-the-file)). The
+launcher's new game (`Pwk.NewGame`) never reaches that screen, so its
+club keeps them.
 
 BPINFO CHECK's numbers match the player database (`pbdata.py csv`):
-27,949 is the last player index, 18,871 players have money 0, and 8,063
-have money between 1 and 9,999. The other 1,016 have 10,000 or more, and
-the three counts add up to 27,950. See
-[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md) for what the "1mil" label suggests.
+27,949 is the last player index, 18,871 players have a required status
+of 0, and 8,063 one between 1 and 9,999. The other 1,016 have 10,000 or
+more, and the three counts add up to 27,950. So "1mil" labels the
+required-status cutoff 10,000
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#players-98-bytes-779-bits-used)).
 
 The stadium viewer's CREATE fields look like the stadium build request of
 [`STADIUM_DIR.md`](STADIUM_DIR.md): level, stand level, time of day,

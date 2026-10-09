@@ -55,8 +55,8 @@ There are three routes.
    has one at `0x1b288`, and `CTacticsManagerImplement::GetPreLoadData`
    (`0x2e3420`) returns the one at `SLES 0x55b3a8`. Other lists are only
    known by the address of the entry that names the file. Those addresses
-   are given in the table below. The fields other than the name aren't
-   decoded.
+   are given in the table below. The record is decoded in
+   [`PRELOAD_DIR.md`](PRELOAD_DIR.md#the-load-list-record).
 
 `CVS/ENTRIES` keeps the original mixed-case names (`OteamMember.tbb`,
 `Stadium_Data.tbb`, ...) and revision numbers. `plresourcesim.pac` is at
@@ -81,7 +81,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division. **confirmed**, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes"). Tables 0, 1 and 4 not traced |
 | `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 332 bytes (166 × u16?): schedule group to competition |
 | `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170` | 424 bytes (212 × u16?) |
-| `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical). Reader not found |
+| `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#mapteam_listtbb). Reader not found |
 | `TACTICS_FORMATION_SET.TBB` | TBB, 1 table | entry 11 of the `GetPreLoadData` list (`SLES 0x55b560`), and `SLES 0x55b2d8` | 8 formations × 8 bytes |
 | `SPONSOR_BOARD.TBB` | TBB, 1 table | **not referenced by name** | 132 bytes, `01 02 03 ...` |
 | `PLRESOURCECOMMON.PAC` | BINPAC, 5 TBB entries | `ePLRSRC` 0 | team facilities, formations, nations. See [`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md) |
@@ -97,52 +97,9 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 The `uniform_name` string in `SLES` (`0x54ad98`) is a save-data field
 name next to `editplayer` and `pinfo`, not this file.
 
-## `OTEAMMEMBER.TBB`: computer-team squads
-
-**Confirmed** by `pwkOteam_Init(TBL_FILEHEADER*)` (`0x24a6a0`), which runs
-on load. It walks teams `3`–`441` (`PlTeam` ids, `slti 0x1ba`), 25 players
-each, reading 16-byte records:
-
-| Offset | Type | Copied to |
-|---|---|---|
-| `0x00` | u16 | squad slot `+0` (the player number) |
-| `0x04` | u8 | slot `+2` |
-| `0x08` | u8 | slot `+3` |
-| `0x0C` | u8 | slot `+4` |
-
-The other bytes are padding (the exporter wrote each field as a u32). 439
-teams × 25 × 16 = 175,600 bytes, exactly the table size. The three bytes
-are the age, shirt number and contract years. That is confirmed by
-`UpdateConyear` and `pwkTeam_SetUnumberOpinfo`: see
-[`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md), and `SRC/initteam.py` for a
-reader.
-
-## `PLRRSRC_INITTEAMDATA.TBB`: starting leagues
-
-**Confirmed** by the load callback at `0x253338`, which hands each table to
-its own function:
-
-| Table | Size | Reader | Layout |
-|---|---|---|---|
-| 0 | 1,248 | `0x253228` | 6 leagues (`pwkLg_GetLeague` 0–5) × 2 divisions × `0x68` bytes. Each `0x68` block is passed to `plLg_EntryTeamSetToDiv` (`0x2e94c8`) as the division's team list: up to 26 u32 team ids, ending at a 0 |
-| 1 | 7,168 | `0x2531b0` | 56 × `0x80`-byte records. The first 49 (`slti 0x31`) are passed to `pwkRec_SetPastRecordLastTeam` per `PLSCHE_COMPE`. The last 7 aren't read |
-| 2 | 112 | `0x2532c8` | 56 × u16. The first 49 go to `pwkRec_GetCompeConventionRecordKeikayear` (the years since a competition was last held?) |
-
-So table 0 decides which clubs start in which league and division. That is
-the main thing [`GOALS.md`](../GOALS.md) wants a starting-season mod to
-change. The field layouts and a reader with club names are in
-[`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md).
-
-## `INITNATIDATA.TBB`: nations
-
-**Confirmed** by the load callback at `0x253418`. 145 records of 6 bytes
-(870 = 145 × 6), for nations 1–145, copied into Pwork block 5:
-
-| Offset | Type | Used for |
-|---|---|---|
-| `0x00` | u8 | nations 1–52 only |
-| `0x02` | u16 | nations 1–52 only |
-| `0x04` | u8 | all nations |
+The record layouts of the files with their own doc are in that doc. The
+sections below cover the two files whose layout is known and that have
+no doc of their own.
 
 ## `SCHEDULE_LIST.TBB`: which years a competition runs
 
@@ -151,46 +108,6 @@ table `(year − 2006) mod 4` (years before 2006 use `year − 2003`). The
 table's byte at index `i` (`i < 0x60`) has bit 0 set if competition `i`
 runs that year. This matches internationals held every 4 years (World Cup
 and European Championship years).
-
-## `PLRESOURCECOMMON.PAC`
-
-Record layouts and the tool are in
-[`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md). 5 TBB entries. **Confirmed** readers (entry/table from the constant
-arguments to `plResource_GetResourceDataBinPacTbb[Tbl]`):
-
-| Entry.table | Rows × line | Reader |
-|---|---|---|
-| 0.0–0.8 | u32 tables | `plTeam_GetSiteDb`, `GetGrEquipsDb`, `GetStEquipsDb`, `GetChouseDb`, `GetDChEquipsDb`, `GetDAcEquipsDb`, `GetOfEquipsDb`, `GetStadiumDb`, `GetStAdvertiseDb` (club facilities, in table order) |
-| 1.0 | 700 × 1 | `plTeam_FormationID2Formation` |
-| 1.1 / 1.2 / 1.3 | 90 / 1,419 / 1,419 × 1 | `plTeam_PitchArea2Apos`, `AreaMatrix2AreaMy`, `AreaMatrix2AreaCom` |
-| 1.4 / 1.5 / 1.6 | 32 / 8 / 26 × 1 | `plTeam_GetSystem2PosNum`, `GetPosNumLimit`, `GetAPosNumLimit` |
-| 2.0 | 512 × 1 | `plPinfo_CalcHexAbil` |
-| 3.0–3.5 | 13 / 146 / 146×2 / 83 / 146 / 460 | `plMisc_DRegion2Region`, `Nati2DRegion`, `Nati2NatiTeam`, `NatiTeam2Nati`, `Nati2EU`, `Club2Nati` |
-| 4.0 | 7 × 22 | `plCombi_GetCombinationGrow` |
-| 4.1 | 96 × 8 | `plCompeData_getCupUID_FromNation` |
-
-## `PLRESOURCESIM.PAC`
-
-16 entries, 12 TBB and 4 raw. Every entry is described in
-[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md) and checked by
-`plrsim.py`. **Confirmed** readers:
-
-| Entry | Contents | Reader |
-|---|---|---|
-| 0 | TBB, 5 byte tables | `GetAreaData_Pointer(i)` (`0x21ef58`), `i < 5`: states, cities, climate, weather |
-| 1 | TBB, 2 tables | `SLES 0x232d88` (table `i < 2`): overseas branch costs |
-| 2 | TBB, 2 tables | none: no call asks for entry 2 |
-| 3 | TBB, 10,968 bytes | `plOteam_GetDb(team)` (`0x2165d8`): **457 × 24 bytes**, indexed by `PlTeam − 3`: rank, world rank, manager, stadium, transfer policy, city. See [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#club-records-plresourcesimpac-entry-3). Team 2 uses a runtime rival record instead |
-| 4 | TBB, 1,305 × u16 | `plOteam_GetManagerNoOffset`, `plTeam_GetPlTeamFromNation` |
-| 5 | raw, 32,152 bytes | `PlayerAffiliateaSearchTableInitialize`, `plMisc_GetPlayerAffiliateTeam` |
-| 6 | TBB, 6 byte tables | `CAcquirePlayer::*` (tables 0, 1, 3, 4, 5), `CComOffer::CalcuOfferClub`, `CContractReform::Execute`, `CMakeDataBase::GetOutOfClubRange` |
-| 7 | TBB, 2,000 × u16 | `GetPlayerIntroducePlayerNo` |
-| 8 | TBB, 164 × u32 | `0x267bf8` from `pwkTeam_AddPlayerRecord`: statistics row per schedule UID |
-| 9 | TBB, 7 tables | `EDIT::CColor`: the edit screens' colour palette (8 `SIMPRG.REL` screens, `PlGiTask::InitStadium`) |
-| 10 | TBB, 6 × 25 bytes | `plTeam_GetStadiumDataIndex`: stadium id by league, level and stand/roof/lights. The same bytes as `STADIUM/CONV_INFO_BUILD.TBB` ([`STADIUM_DIR.md`](STADIUM_DIR.md#conv_info_buildtbb)) |
-| 11, 12 | raw, 22,528 bytes each | `SLES 0x21ea08` / `0x21ea28`: scouts' exclusive and semi-exclusive players (`plSinfo_Check[Semi]Exclusive`) |
-| 13, 14 | raw, 4,096 / 2,048 bytes | `0x2145b8` / `0x2145d8`: good and bad player/manager combinations (`plMisc_GetGood/BadLevel`) |
-| 15 | TBB, 1,301 × u16 | `CMakeDataBase::Set_InitDBSet` |
 
 ## `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`
 
@@ -202,17 +119,15 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- Field meanings in most tables above, including the 24-byte
-  `plOteam_GetDb` record. (`OTEAMMEMBER` and `PLRRSRC_INITTEAMDATA` are
-  done, in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md), and
-  `TEAM_INIT_DATA` in [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md).)
-- Parts of the schedule packs, listed in
-  [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown).
-- What each `.sqb` script in `PSC*.PAC` computes. The format and commands
-  are decoded in [`SQB_FORMAT.md`](SQB_FORMAT.md). (`PBDATA_*.PAC` is
-  decoded in [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md).)
-- The meaning of the other fields in the overlay load-list entries, and the
-  code that walks the `SIMPRG.REL` list holding `ClubEvent` and
+- The fields of the tables without a doc of their own: `REGULATION`,
+  `CLUBRESULT`, `TRAINING_LIST`, the camp tables, `CLUBEVENT`,
+  `GROUP2COMPE`, `TOUR_LIST`, `TACTICS_FORMATION_SET` and
+  `CLUB_RANK_SYSTEM` tables 0, 1 and 4.
+- What's still open in the files that have a doc is listed there, for
+  example the schedule packs
+  ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown)) and what each
+  PwkScript in `PSC*.PAC` computes ([`SQB_FORMAT.md`](SQB_FORMAT.md)).
+- The code that walks the `SIMPRG.REL` list holding `ClubEvent` and
   `Camp_Explane` (entries at `0x225dd0`, `0x225df8`).
 
 ## Checking the claims
@@ -220,7 +135,7 @@ unused placeholders for kit names.
 ```bash
 python SRC/tbb.py info DAT/PARAM                     # tables, sizes, line sizes
 python SRC/pac.py list DAT/PARAM/PLRESOURCESIM.PAC   # pack entries
-python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkOteam_Init plResource_LoadRequest plRec_MatchRegulations
-python SRC/sles_disasm.py ISO/SLES_541.51 addr 253338 60   # PlRrsrc_InitTeamData callback
+python SRC/sles_disasm.py ISO/SLES_541.51 dis plResource_LoadRequest plRec_MatchRegulations
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 256a50 60   # SCHEDULE_LIST reader
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 7a18 12 --sles ISO/SLES_541.51   # load-list choice
 ```

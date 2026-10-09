@@ -19,7 +19,7 @@ item in its section below.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
-3. **What each PwkScript computes** (sections 2 and 7). The formulas
+3. **What each PwkScript computes** (section 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
 4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
@@ -127,9 +127,6 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       the build cost, the rest of the stadium record, the values in
       entries 1 (formations), 2 (hexagon) and 4 (combination growth, cup
       ids), and which messages name the facilities
-- [ ] The packs `PSC{COMMON,GAME,PRACTICE}.PAC` are PwkScript scripts,
-      decoded in `DOC/SQB_FORMAT.md`; what each one computes is still open
-      (section 7)
 - [ ] `0SYSTEM` leftovers: what the `DETAILFLAG` flags switch (only the
       first 99 of 528 bytes are read), which UI element uses each colour,
       who the `V001`-`V032` crests are, whether `SPONSOR_TEXTURE_M`
@@ -211,6 +208,8 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       isn't named in the code (`DOC/TEST3D_DIR.md`); decode the format
       with the `GAME/` pack, and `GAME/WALLCOLLI.PAC`'s entries with it
       (both loaded into `CStadiumCollision`, `DOC/STADIUM_DIR.md`)
+- [ ] Decode the `RBD0` trailer in `GAME/ROUTEBOX_*.BCR` (`tbb.py`'s
+      writer copies it as-is; `DOC/GAME_DIR.md`)
 - [ ] `GAME/TEAM.TMB` (`TMB1`: team names, codes, stadiums; dated March
       2005 and not named in the code, `DOC/GAME_DIR.md`): parse it and
       confirm nothing reads it
@@ -242,12 +241,6 @@ The event tables, the procedures and the overlay loader are documented in
       procedure 9 chooses between 10 and 12
 - [ ] Where the overlay index passed to `0x10babc` comes from, and what SNR2
       header fields `0x20`/`0x24`/`0x38` tell the caller
-- [ ] Whether anything starts module 69 (the `TESTPRG` launcher) or the test
-      modules at 71–129; their viewers could be useful for modding.
-      `RootMainSeq` skips `RootLauncherSeq.sqb` because
-      `Dummy.CheckLauncher` always returns 1; `patch_disc.py
-      --launcher` (or the editor's Build disc box) flips the test (1 byte,
-      `DOC/SQB_FORMAT.md#the-developer-launcher`)
 - [ ] Why the blank test modules show nothing: missing data, or waiting
       for input or arguments from the launcher
 - [ ] Try the launcher entries not yet recorded: YAMAZAKI TEST, Talk and
@@ -296,8 +289,7 @@ The event tables, the procedures and the overlay loader are documented in
 
 ## 8. Housekeeping
 
-- [ ] Decode the `RBD0` trailer in `GAME/ROUTEBOX_*.BCR` (copied as-is by
-      the writer)
+Nothing open.
 
 ## 9. Rebuild
 
@@ -313,8 +305,9 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
 - [ ] Optional: let `vcdiff.py`/`patch_disc.py` read CSO (and CHD) images,
       which many players keep instead of ISOs
 - [ ] Sponsor negotiation leftovers: whether Japan limited the number of
-      negotiations (message 61), and the acceptance tables at
-      `SIMPRG.REL 0x1dad80`/`0x1dada8`
+      negotiations (message 61; compare the Japanese `SIMPRG.REL`'s
+      Sponsor screen, now that `ISO_JP/` is set up), and the acceptance
+      tables at `SIMPRG.REL 0x1dad80`/`0x1dada8`
 
 ## 10. Save data
 
