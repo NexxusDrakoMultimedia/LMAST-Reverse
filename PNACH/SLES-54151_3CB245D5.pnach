@@ -8,7 +8,7 @@ gametitle=Let's Make a Soccer Team! (PAL) [SLES-54151] (3CB245D5)
 [Widescreen 16:9]
 gsaspectratio=16:9
 author=LMAST-Reverse
-description=Hor+ 16:9 for 3D scenes drawn to the screen. 2D UI is left stretched; use the UI fix for that.
+description=Renders the 3D in 16:9 (Hor+). The 2D UI stays stretched; use the UI fix for that.
 
 // nnSetProjectionPXPlusPS2 (0x18f8a8) and nnSetProjection (0x18f450) copy the
 // projection matrix to the global one at 0x365ad0 with nnCopyMatrix
