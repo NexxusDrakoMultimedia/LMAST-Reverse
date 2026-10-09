@@ -272,9 +272,8 @@ The event tables, the procedures and the overlay loader are documented in
       `patch_disc.py` switches, each tested in PCSX2. Candidates: the
       kind-6 injury value 1600 (`0x532d70`), the injury kind row past
       fatigue 1000, the short `EDIT_EMBLEM` tables 93/101/105. Built,
-      to test in PCSX2: `--mod rival-manager` (a new career per style)
-      and `--mod national-cups` (a World Cup and a Euro year to the
-      end); national-cups can't yet be built together with an edited
+      to test in PCSX2: `--mod national-cups` (a World Cup and a Euro
+      year to the end); national-cups can't yet be built together with an edited
       `SCHEDULE_SYSTEM.PAC`. The
       "two months"/"nine months" injury lines need thresholds chosen
       first. Improvement earmarked: rebuild the badly balanced league

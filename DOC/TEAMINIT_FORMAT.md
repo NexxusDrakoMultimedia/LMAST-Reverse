@@ -164,7 +164,8 @@ rival's manager is always record 0's (manager 898), and records 1–3
 (1,970, 1,247, 1,246) are never read. The Japanese build has the same
 load (`0x25e8e8`). `patch_disc.py --mod rival-manager` changes it to
 `lw $s3, 4($v1)`, the matching record's manager
-([`LMASTER_MOD.md`](LMASTER_MOD.md)); not yet tested in PCSX2.
+([`LMASTER_MOD.md`](LMASTER_MOD.md)). Tested in PCSX2 (user report):
+with it, a Teamwork career's rival no longer had H.Raphanel.
 
 Table 8 holds foreign 0 and newface 1 everywhere, and search_region 13,
 2, 7 or 12 by style.
