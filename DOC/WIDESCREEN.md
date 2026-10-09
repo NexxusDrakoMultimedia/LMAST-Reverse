@@ -60,6 +60,13 @@ match builds at load time, then came out striped (tested in PCSX2: fixed
 by `patch=0`, user report). Only the two Ninja 2D table words of the UI
 fix stay `patch=1`, because the game writes that table itself after boot.
 
+Each run of consecutive words is one `bytes` line (PCSX2 writes the hex
+in memory order, so each instruction word appears byte-reversed), and
+single words stay `word` lines: 14 lines in all. Unused words between
+caves in the same debug function are written as zero. Checked over PINE
+in PCSX2 2.8.2: after boot, all 167 words of the earlier one-word-per-line
+patch read back unchanged, and the gaps read zero.
+
 ## Confirmed from the game code
 
 | Address | Symbol | What it shows |

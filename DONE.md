@@ -540,6 +540,9 @@ files. Each item keeps what was found, where, and how it was tested.
       call (`0x1052a8`) for draw methods that use
       `ACROBATA::CAckManager`. Tested in PCSX2 from boot on Edit club,
       Pre-match, the Club House and a match (user report)
+- [x] Widescreen pnach shortened from 167 lines to 14: each run of
+      words is one `bytes` line. The same words land in memory (checked
+      over PINE in PCSX2 2.8.2)
 
 ## 8. Housekeeping
 
