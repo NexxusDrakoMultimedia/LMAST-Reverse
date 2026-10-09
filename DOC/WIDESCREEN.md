@@ -62,7 +62,7 @@ fix stay `patch=1`, because the game writes that table itself after boot.
 
 Each run of consecutive words is one `bytes` line (PCSX2 writes the hex
 in memory order, so each instruction word appears byte-reversed), and
-single words stay `word` lines: 15 lines in all. Unused words between
+single words stay `word` lines: 17 lines in all. Unused words between
 caves in the same debug function are written as zero. Checked over PINE
 in PCSX2 2.8.2: after boot, all 167 words of the earlier one-word-per-line
 patch read back unchanged, and the gaps read zero.
@@ -227,13 +227,73 @@ Tested in PCSX2 from boot: changing rooms in season mode, the old room
 keeps its full 4:3 width while the next one loads and fades in (user
 report, 2026-10-09).
 
+### Room depth
+
+The Club House rooms are pre-rendered: the picture is a CSE scene,
+squeezed like the other menus, and a 512x448 depth image from disc goes
+into the Z buffer so the staff walk behind the desk, the lamp and so on.
+That image is sent with `nnuLoadImagePS2` (`0x1668f0`), a straight GS
+transfer that no 2D squeeze touches, so the hidden shapes sat 4/3 as far
+from the centre as the objects they belong to. In My Room the lamp's head
+cut across the secretary's face.
+
+Every call loads the same shape: `nnuLoadImagePS2(512, 448, 0x30
+(PSMZ32), Z buffer, data, 0xe0000)`:
+
+| Caller | What it loads |
+|---|---|
+| `SIMPRG.REL 0xfc3a8` | a depth file through `CLoader::getBinary` |
+| `SIMPRG.REL 0xfe8c0` | `CBackgroundManager`'s Z clear buffer (`+0x180`, zeros) |
+| `SIMPRG.REL 0x408a8`, `0xcace4` | other scenes' depth buffers |
+| `CEDITPRG.REL 0x1db8`, `0x6bb8` | the same, in the club editor |
+| `0x2e3b90` (executable, Acrobata code) | the same |
+
+The first two instructions of `nnuLoadImagePS2` jump to a cave at
+`0x13bfd8`, in `graphics::GlareFilter::display_crosswise_buffer`
+(`0x138` bytes, referenced only from the export table, imported by no
+overlay). For a 512x448 PSMZ32 image it squeezes each row in place,
+`row[64 + k] = row[k · 4/3]` for k 0–383, then writes a marker
+(`0x57444531`) into pixel 0 so the image is squeezed only once. The left
+half runs from k = 191 down and the right half from 192 up, so every
+pixel is read before it is overwritten. The 64 columns at each side keep
+their old values; they are outside the 4:3 area.
+
+Tested in PCSX2 from boot: in My Room the secretary walks behind the
+desk and lamp without being cut by stray shapes (user report,
+2026-10-09).
+
+### Face builds
+
+To build a custom player's face, the game points Ninja's screen at the
+face texture (`EDIT::apply_PXScreenParam_To_NnConfigureSystemPS2`,
+`0x154d50`) and afterwards sets it back to 512x448
+(`EDIT::reInitNnConfigureSystemPS2`, `0x154db0`). Both go through
+`nnConfigureSystemPS2` (`0x18f148`), which fills the Ninja 2D table, so
+the second call wrote back the unsqueezed text values. Text drew
+stretched for the rest of that frame, until the table line put the
+squeezed values back: a flash on every player change while scrolling
+player cards. The pair is called five times in `SIMPRG.REL`
+(`0x10e638`–`0x11213c`).
+
+`reInitNnConfigureSystemPS2`'s `jr $ra` (`0x154ddc`) jumps to a cave
+at `0x13c07c`, after the room-depth cave, that writes the squeezed
+values (29696, 12) and returns. The face texture is built before this,
+so it keeps the unsqueezed values it needs. `nnConfigureSystemPS2`'s
+other callers (`0x12ea18`, `0x12f794`) run when the video mode is set;
+the table line covers those.
+
+Tested in PCSX2: scrolling the player cards no longer flashes stretched
+text (user report, 2026-10-09).
+
 ## Known behaviour
 
 - The FMVs stay stretched to 16:9 (see the top of this page).
 - The stadium ad boards floating above the pitch in replays are the
   game's normal behaviour, not the patch (user report).
-- Nothing is known to be broken: every UI item found so far is fixed or
-  is the intended look.
+- The substitution cut-in in a match is not clipped: the other team's
+  panel shows in the side margin, and the substituting team's panel
+  pops in rather than sliding in (user report). Its draw path hasn't
+  been traced yet.
 
 ## Checking the claims
 
@@ -245,4 +305,6 @@ python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x7f40 48 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x105280 16
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xfe5c0 140 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 dis nnDrawPrimitive2D
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xfc380 12 --sles ISO/SLES_541.51
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x154d50 40
 ```

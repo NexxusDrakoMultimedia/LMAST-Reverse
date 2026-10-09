@@ -557,6 +557,15 @@ files. Each item keeps what was found, where, and how it was tested.
       `CBackgroundManager` shows between Club House rooms was squeezed
       twice (75% width). A cave on `nnDrawPrimitive2D` draws that
       full-screen quad unsqueezed. Tested in PCSX2 (user report)
+- [x] Widescreen room depth: the pre-rendered rooms' depth images, loaded
+      straight into the Z buffer by `nnuLoadImagePS2`, were full width, so
+      staff were hidden by shapes beside the desk and lamp. A cave
+      squeezes each 512x448 depth image to 4:3 once. Tested in PCSX2 in
+      My Room (user report)
+- [x] Widescreen face builds: after a custom face is built,
+      `EDIT::reInitNnConfigureSystemPS2` rewrote the unsqueezed text table,
+      so text flashed stretched when scrolling player cards. A cave puts
+      the squeezed values back. Tested in PCSX2 (user report)
 
 ## 8. Housekeeping
 
