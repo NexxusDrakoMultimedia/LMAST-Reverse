@@ -273,8 +273,7 @@ The event tables, the procedures and the overlay loader are documented in
       kind-6 injury value 1600 (`0x532d70`), the injury kind row past
       fatigue 1000, the short `EDIT_EMBLEM` tables 93/101/105. Built,
       to test in PCSX2: `--mod national-cups` (a World Cup and a Euro
-      year to the end); national-cups can't yet be built together with an edited
-      `SCHEDULE_SYSTEM.PAC`. The
+      year to the end). The
       "two months"/"nine months" injury lines need thresholds chosen
       first. Improvement earmarked: rebuild the badly balanced league
       schedules (22 and 26 clubs, the 8-club VS league) at the same size

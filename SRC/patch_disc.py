@@ -104,8 +104,10 @@ shown. It writes PARAM/SCHEDULE_SYSTEM.PAC and its copy in
 PRELOAD/STATIONFILE.PAC. The national-team calendar moves with them
 (PARAM/SCHEDULE_LIST.TBB and its copies in PRELOAD/SIMLOCALMEM0-6.PAC): in
 the tournament years the matches and the release are a turn earlier, and
-the call-up stays on turn 88 with the first group game. See
-DOC/LMASTER_MOD.md.
+the call-up stays on turn 88 with the first group game. With a
+SCHEDULE_SYSTEM.PAC target (leaguesize.py build, a league of another size)
+the cups are moved in the target's bytes, and --copies carries them to
+STATIONFILE.PAC. See DOC/LMASTER_MOD.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -1278,25 +1280,48 @@ def shift_list(data):
     return bytes(new)
 
 
-def plan_national_cups(f, img):
-    """Jobs for --mod national-cups. A file already moved is left alone."""
+def shift_cups(data):
+    """SCHEDULE_SYSTEM.PAC with the national cups a turn earlier; None when
+    it already has them. Leagues never reach the cups' turns (a rebuilt
+    league keeps its first and last game day, schedule.league_turns), so
+    a pack from leaguesize.py build takes the move as the retail one does."""
     import pac
     import schedule
-    why = "national-cups: World and Euro National Cups a turn earlier"
-    jobs, notes = [], []
-    e = img.entry(SCHEDULE_FILE)
-    data = read_at(f, img, e.path, 0, e.size)
     h, blobs = pac.binpac_blobs(data)
     rows = schedule.year_uids(schedule.System(
         [(x[2], b) for x, b in zip(h.entries, blobs)]).year)
     first = rows[122][0].turns[0]
     if first == 91:
-        notes.append("note: %s already has the national cups a turn earlier" % SCHEDULE_FILE)
-    elif first != 92:
+        return None
+    if first != 92:
         raise ValueError("%s: UID 122 starts on turn %d, expected 92; not the retail pack?"
                          % (SCHEDULE_FILE, first))
+    return schedule.shift_pack(data, NATIONAL_UIDS, -1)
+
+
+def target_national_cups(file, data):
+    """A target's new bytes with the national cups moved: a SCHEDULE_SYSTEM.PAC
+    written as a target (a league of another size) gets the move itself, and
+    its --copies carry it to PRELOAD/STATIONFILE.PAC."""
+    if norm(file) != norm(SCHEDULE_FILE):
+        return data
+    new = shift_cups(data)
+    return data if new is None else new
+
+
+def plan_national_cups(f, img, adopted=()):
+    """Jobs for --mod national-cups. A file already moved is left alone, and
+    so is SCHEDULE_SYSTEM.PAC when a target writes it (`adopted`)."""
+    why = "national-cups: World and Euro National Cups a turn earlier"
+    jobs, notes = [], []
+    e = img.entry(SCHEDULE_FILE)
+    data = read_at(f, img, e.path, 0, e.size)
+    new = None if norm(SCHEDULE_FILE) in adopted else shift_cups(data)
+    if norm(SCHEDULE_FILE) in adopted:
+        notes.append("note: national-cups: moved the cups in the target's %s" % SCHEDULE_FILE)
+    elif new is None:
+        notes.append("note: %s already has the national cups a turn earlier" % SCHEDULE_FILE)
     else:
-        new = schedule.shift_pack(data, NATIONAL_UIDS, -1)
         jobs += diff_jobs(e.path, 0, data, new, why)
         jobs += pack_copy_jobs(f, img, STATION_FILE, STATION_ENTRY, SCHEDULE_FILE, data, new, why)
     e = img.entry(LIST_FILE)
@@ -1368,6 +1393,12 @@ SWITCHES = (
      "never opens"),
 )
 SWITCH_NAMES = [s[0] for s in SWITCHES]
+
+# Switches that also edit a target's own bytes, so that a file both write
+# (a league build's SCHEDULE_SYSTEM.PAC) takes the switch's change: name ->
+# (hook(file, data) -> data, the files the switch then leaves to the target).
+# The plan is called with those files as `adopted`.
+TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, STATION_FILE])}
 
 # Names --mod takes for several switches at once.
 SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups")}
@@ -1523,6 +1554,19 @@ def copy_file(src, dst):
 def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()):
     pairs = parse_pairs(args)
     img = Image(image)
+    # Switches that edit a target's bytes do so before anything is planned,
+    # so its copies (--copies) carry the change too.
+    adopted = {}
+    for name, (hook, files) in TARGET_HOOKS.items():
+        if name not in mods:
+            continue
+        for k, (target, src, data) in enumerate(pairs):
+            if "#" in target:
+                continue
+            file = norm(img.entry(target).path)
+            if file in {norm(p) for p in files}:
+                pairs[k] = (target, src, hook(file, data))
+                adopted[name] = {norm(p) for p in files}
     index = Index(dat) if dat else None
     if write_copies and index is None:
         raise SystemExit("--copies needs the DAT index (--dat)")
@@ -1605,11 +1649,12 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
         for name, plan, files, _ in SWITCHES:
             if name not in mods:
                 continue
-            clash = touched & {norm(p) for p in files}
+            mine = adopted.get(name, set())
+            clash = touched & ({norm(p) for p in files} - mine)
             if clash:
                 raise SystemExit("--mod %s edits %s; don't patch it as a target too"
                                  % (name, ", ".join(sorted(clash))))
-            sjobs, snotes = plan(f, img)
+            sjobs, snotes = plan(f, img, mine) if name in TARGET_HOOKS else plan(f, img)
             jobs += sjobs
             notes += snotes
         crc_before = None
