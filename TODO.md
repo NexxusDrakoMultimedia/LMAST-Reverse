@@ -358,5 +358,9 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       only one copy would tell), and whether a front number can show at
       all (a front number colour showed nothing on AC Milan's shirt, user
       report)
+- [ ] Save editor (`SRC/saveedit.py`), a separate window for career saves
+      on top of `save.py`: see `DOC/SAVE_EDITOR_PLAN.md`. Waiting on the
+      decisions listed there (memory card format, where an edit is
+      written)
 - [ ] Test in PCSX2: a save from the Regulations tab (the same edit from
       `regulation.py set` is tested)

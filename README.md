@@ -423,6 +423,7 @@ file names and counts from your disc. When an output change is intended,
 | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) | starting leagues and divisions, last season's order, computer-team squads, where club names come from |
 | [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) | the player's new club: what the league and team style choose (squad, youth team, staff, rival club) |
 | [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md) | match regulations per schedule: prizes and win bonus, bans, squad, foreigners and substitution limits, promotion and relegation places |
+| [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | plan for a separate save editor on top of `save.py`: pages, steps, and the decisions still open |
 | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) | `GAME/GAMEDATA.BIN`'s 0x30-byte records (partial) and the unread `AI_PARAM.BIN` |
 | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) | the match AI's play books: records of player and ball paths, point coordinates, play ids |
 | [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md) | the common resource pack: facility records (build time, upkeep, stadium capacity), formation and nation tables, and which code reads each |
