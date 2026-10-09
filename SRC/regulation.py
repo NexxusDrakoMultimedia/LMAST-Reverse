@@ -14,7 +14,8 @@ See DOC/REGULATION_FORMAT.md.
   +0x04 ?            not traced
   +0x06 prize_kind   2: the prizes scale by the UEFA rank of the player's
                      nation, 120-80 % (plRec_GetMatchBonus 0x21e2ec)
-  +0x08 win_bonus    x 10,000 per win (pwkUnkei_GetMatchIncome 0x2732b8)
+  +0x08 win_bonus    x 10,000 per win (pwkUnkei_GetMatchIncome 0x2732b8),
+                     in the game's money unit: pounds are that / 6
   +0x0a prize1-32    by final position, x 10,000 (plRec_GetMatchBonus;
                      booked as income 6 at SIMPRG.REL 0x133844)
   +0x4a ban_yellows  yellow cards that ban a player (0x2851d4; <= 0 none)
@@ -34,6 +35,7 @@ Usage:
     python regulation.py roundtrip <REGULATION.TBB>
 
 `show` and `set` name the fields as above (prize1 is the winner's prize;
+`show` gives money in pounds, as the game shows it;
 slot fields are up1_count, up1_compe, up1_uid, ...). `set` writes a
 same-size file for patch_disc.py, which also patches the copies in
 PRELOAD/SIMFILE*.PAC (--copies).
@@ -54,6 +56,7 @@ GRADES = 6                      # the float table at 0x391c18 has 6 entries
 SQUAD_MIN, SQUAD_MAX = 11, 25   # bench slots 11..squad-1 of 25 (0x24c6ac, 0x24c618)
 PRIZES = 32                     # plRec_GetMatchBonus: rank + 1 < 0x21
 MONEY_UNIT = 10000              # 0x2732b8 and SIMPRG.REL 0x133844
+POUND = 6                       # the game's money unit / 6 = pounds (SAVE_FORMAT.md)
 PRIZE_SCALED = 2                # prize_kind that scales by UEFA rank (0x21e2ec)
 UEFA_PERCENT = (120, 110, 105, 100, 90, 80)     # 0x533b88, by UEFA rank 1-6
 
@@ -157,6 +160,11 @@ def check(r):
             if not -1 <= uid < UIDS:
                 problems.append("%s uid %d" % (name, uid))
     return problems
+
+
+def pounds(value):
+    """A field's money as the game shows it in pounds (rounded down)."""
+    return "GBP {:,}".format(value * MONEY_UNIT // POUND)
 
 
 def slot_text(count, compe, uid):
@@ -288,13 +296,13 @@ def cmd_show(path, uids):
         prizes = r.prizes()
         while prizes and prizes[-1] == 0:
             prizes.pop()
-        print("uid %3d  grade %d  clubs %2d  +0x04 %2d  win bonus %d  "
+        print("uid %3d  grade %d  clubs %2d  +0x04 %2d  win bonus %s  "
               "ban at %d yellows  squad %d/%d  foreigners %d  subs %d" % (
-                  r.uid, r["grade"], r["clubs"], r["unk04"], r["win_bonus"] * MONEY_UNIT,
+                  r.uid, r["grade"], r["clubs"], r["unk04"], pounds(r["win_bonus"]),
                   r["ban_yellows"], r["squad"], r["squad2"], r["foreigners"], r["subs"]))
         if prizes:
             print("    prizes (kind %d): %s" % (r["prize_kind"], " ".join(
-                str(p * MONEY_UNIT) for p in prizes)))
+                pounds(p) for p in prizes)))
         for names, where in ((("up1", "up2", "up3", "up4"), "top"), (("down1", "down2"), "bottom")):
             for name, s in read_slots(r, names):
                 print("    %-5s %s (from the %s)" % (name, slot_text(*s), where))

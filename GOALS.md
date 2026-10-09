@@ -61,7 +61,8 @@ Each stage depends on the one before it.
    size, and `leaguesize.py build` uses it to change a first division's
    size (England at 22 clubs tested in PCSX2 through two seasons). Of the
    parameter tables, `regulation.py` edits the match regulations field by
-   field (untested in game); the others have no field-level writer yet.
+   field (squad size and win bonus tested in PCSX2); the others have no
+   field-level writer yet.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
    `DATA.CVM`, and produce a disc image that boots. This includes repacking
    BINPAC/KC@P archives and PRS compression, and handling files that change

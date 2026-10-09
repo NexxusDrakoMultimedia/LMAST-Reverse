@@ -66,9 +66,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       others in `DOC/PARAM_DIR.md#still-unknown`), so they can get
       field-level writers. `tbb.py replace` only swaps a whole table
 - [ ] `REGULATION.TBB` leftovers (`DOC/REGULATION_FORMAT.md`): `+0x04`,
-      the reader of `squad2`, what the place checks change on screen, and
-      a PCSX2 test of an edit (a win bonus or substitution count is the
-      easiest to see). Then an editor tab
+      the reader of `squad2`, and what the place checks change on screen.
+      Then an editor tab
 - [ ] How your club and the rival become ranks 25 and 26 of the second
       division's past record, which the own-nation schedule (UID 1, 26
       slots) takes after the tutorial (`DOC/SCHEDULE_FORMAT.md`, user

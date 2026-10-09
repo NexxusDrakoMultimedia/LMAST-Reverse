@@ -330,7 +330,9 @@ files. Each item keeps what was found, where, and how it was tested.
       players, substitutions, and six place slots read by
       `plRec_getNextCompetitionData` (`0x21df60`). All confirmed from the
       code except `+0x04`; all 165 rows fit, and `clubs` matches the
-      team-entry slots for 163 of 164 UIDs
+      team-entry slots for 163 of 164 UIDs. Tested in PCSX2: the Premier
+      League at `squad=18` shows 7 on the bench, and `win_bonus=200` pays
+      £333,333 a win (× 10,000 in the game's money unit, ÷ 6 for pounds)
 
 ## 3. Ninja 3D models and motions
 
