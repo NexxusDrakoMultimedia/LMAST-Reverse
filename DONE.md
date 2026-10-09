@@ -957,3 +957,9 @@ files. Each item keeps what was found, where, and how it was tested.
       candidates). Tested off-screen on a copy of save G000. Found on the
       way: money is any s64 (G000 holds 7,308,451,892), not capped at
       0x7fffffff
+- [x] Save editor Club page edits (step 3): money, club status and status
+      rank through `save.apply_assigns`; File > Save backs up to
+      `<card>.bak/<save>/` and logs `save.py set <backup> ...`. Tested
+      through the widgets on a copy of G003: the logged command gives the
+      saved bytes, the card's save folder is left with only the game's
+      files

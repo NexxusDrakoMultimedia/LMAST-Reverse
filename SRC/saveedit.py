@@ -12,12 +12,29 @@ Everything it shows comes from save.py's Save methods, so the window
 keeps no layout of its own. Money shows in pounds (the stored unit / 6)
 next to the stored value.
 
-This first version only shows the save; editing comes next (the plan's
-step 3), through save.apply_assigns, the function behind `save.py set`.
+Edits go through save.apply_assigns, the function behind `save.py set`,
+with the ranges from save.edit_spec; a value it refuses is put back. So
+far the Club page edits money, the club status and the status rank; the
+other pages only show (the plan's step 3 adds them page by page).
+
+File > Save writes over the save's main file. First it copies the file
+as it is to a backup folder beside the memory card, not in it (a folder
+card shows the PS2 every folder in it):
+
+    <card>.bak/<save folder>/<main file>.<date>-<time>.bak
+
+and it logs the equivalent command in <card>.bak/saveedit.log, which
+reads that backup and writes the same bytes:
+
+    python SRC/save.py set <backup> <main file>.new money=... status=...
+
+Close the game in PCSX2 before saving, so it doesn't write the card
+over the edit.
 
 Usage:
     python SRC/saveedit.py open [<save folder or main file>]
 """
+import datetime
 import os
 import sys
 import threading
@@ -111,19 +128,36 @@ class ClubPage(Page):
         box = ttk.Frame(self.frame)
         box.pack(anchor="nw", padx=8, pady=8)
         ttk.Label(box, text=os.path.basename(os.path.dirname(s.path)) or s.path,
-                  font=self.app.title_font).grid(row=0, column=0, columnspan=2, sticky="w",
+                  font=self.app.title_font).grid(row=0, column=0, columnspan=3, sticky="w",
                                                  pady=(0, 6))
         grid_rows(box, (
             ("Date", "%d-%d, Week %d %s %s. (turn %d of the season)" % (
                 year, year + 1, week // 2 + 1, ("Midweek", "Weekend")[week & 1],
                 save.MONTHS[month - 1], turn)),
-            ("Money", money(s.money)),
-            ("Club status", "%s of a cap of %s" % (format(status, ","), format(cap, ","))),
-            ("Status rank", "%d (0 is the top)" % srank),
+        ), start=1)
+        rows = (("money", "Money", save.pounds(s.money), "the save's unit; below 0 is debt"),
+                ("status", "Club status", "cap %s at this status rank" % format(cap, ","),
+                 "the club ranks follow from it, as the game sets them"),
+                ("status_rank", "Status rank", "0 is the top",
+                 "the game only ever lowers it; lower the status first to go down"))
+        for r, (key, text, note, help_text) in enumerate(rows, 2):
+            ttk.Label(box, text=text, foreground=GREY).grid(row=r, column=0, sticky="w",
+                                                            padx=(6, 12), pady=2)
+            cell = ttk.Frame(box)
+            cell.grid(row=r, column=1, sticky="w", pady=2)
+            self.app.input(cell, key, refill=True).pack(side="left")
+            ttk.Label(cell, text=note, foreground=GREY).pack(side="left", padx=8)
+            ttk.Label(box, text=help_text, foreground=GREY).grid(row=r, column=2, sticky="w",
+                                                                 padx=(12, 6))
+        grid_rows(box, (
             ("Club rank", "%d (%s)" % (rank, names.reputation(rank))),
             ("Rival's club rank", str(s.club(2)["rank"])),
             ("File", s.path),
-        ), start=1)
+        ), start=5)
+        ttk.Label(box, text="Close the game in PCSX2 before File > Save, so it doesn't write "
+                            "the memory card over the edit. Each save first copies the file "
+                            "to %s." % backup_dir(s.path), foreground=GREY, wraplength=900,
+                  justify="left").grid(row=8, column=0, columnspan=3, sticky="w", pady=(12, 0))
 
 
 class FinancesPage(Page):
@@ -386,6 +420,23 @@ class CandidatesPage(Page):
                     youth[1] if youth else ""))
 
 
+def backup_dir(main):
+    """<card>.bak/<save folder> for a save's main file <card>/<folder>/<file>:
+    beside the memory card, since a folder card shows the PS2 every folder
+    in it."""
+    folder = os.path.dirname(os.path.abspath(main))
+    card = os.path.dirname(folder)
+    return os.path.join(card + ".bak", os.path.basename(folder))
+
+
+def spec_range(s, key):
+    """(low, high) save.edit_spec gives for a concrete key of save `s`."""
+    for k, lo, hi, step, _ in save.edit_spec(s):
+        if k == key:
+            return lo, hi
+    raise KeyError(key)
+
+
 PAGES = (ClubPage, FinancesPage, SquadPage, CombiPage, StaffPage, ClubsPage, CandidatesPage)
 
 
@@ -408,11 +459,15 @@ class App:
         menu = tk.Menu(self.root)
         file_menu = tk.Menu(menu, tearoff=False)
         file_menu.add_command(label="Open save...", accelerator="Ctrl+O", command=self.ask_open)
+        file_menu.add_command(label="Save", accelerator="Ctrl+S", command=self.write)
         file_menu.add_separator()
-        file_menu.add_command(label="Quit", command=self.root.destroy)
+        file_menu.add_command(label="Quit", command=self.quit)
         menu.add_cascade(label="File", menu=file_menu)
         self.root.configure(menu=menu)
+        self.root.protocol("WM_DELETE_WINDOW", self.quit)
         self.root.bind_all("<Control-o>", lambda e: self.ask_open())
+        self.root.bind_all("<Control-s>", lambda e: self.write())
+        self.changes = {}           # save.py set key -> value, in edit order
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True)
         self.status_var = tk.StringVar()
@@ -432,12 +487,14 @@ class App:
         self.status_var.set(text)
 
     def ask_open(self):
+        if not self.keep_changes():
+            return
         path = filedialog.askdirectory(title="Open a save folder (BESLES-54151-...)",
                                        mustexist=True)
         if path:
             self.open(path)
 
-    def open(self, path):
+    def open(self, path, done=None):
         """Decode the save (and the names, the first time) in a thread; the
         first decode of a session records save.py's field list."""
         self.status("Loading %s ..." % path)
@@ -469,15 +526,124 @@ class App:
                 return
             self.game = result.get("game") or self.game
             self.names = result.get("names") or self.names
-            self.loaded(result["save"])
+            self.loaded(result["save"], done)
         poll()
 
-    def loaded(self, s):
+    def loaded(self, s, done=None):
         self.save = s
+        self.changes = {}
         for page in self.pages:
             page.fill(s, self.names)
-        self.root.title("LMAST save editor - %s" % editor.shown_path(s.path))
-        self.status("Opened %s (read-only: editing comes next)." % editor.shown_path(s.path))
+        self.update_title()
+        self.status(done or "Opened %s." % editor.shown_path(s.path))
+
+    def update_title(self):
+        if self.save is None:
+            return
+        self.root.title("LMAST save editor - %s%s" % (
+            editor.shown_path(self.save.path), "  (unsaved: %d changes)" % len(self.changes)
+            if self.changes else ""))
+
+    # edits
+
+    def input(self, parent, key, refill=False):
+        """A spin box for a save.py set key, its range from save.edit_spec.
+        refill: redraw the pages after a change (values that follow it)."""
+        lo, hi = spec_range(self.save, key)
+        return editor.value_input(
+            parent, ("range", lo, hi), str, lambda: self.value(key),
+            lambda text, revert: self.commit(key, text, revert, refill))
+
+    def value(self, key):
+        """The current value of a key the inputs edit."""
+        s = self.save
+        if key == "money":
+            return s.money
+        srank, _, status, _ = s.status()
+        return {"status": status, "status_rank": srank}[key]
+
+    def commit(self, key, text, revert, refill=False):
+        try:
+            value = int(text)
+        except ValueError:
+            return self.refuse("%s must be a number" % key, revert)
+        old = self.value(key)
+        before = bytes(self.save.blocks)
+        try:
+            save.apply_assigns(self.save, ["%s=%d" % (key, value)])
+        except ValueError as e:
+            self.save.blocks[:] = before
+            return self.refuse(str(e), revert)
+        self.changes.pop(key, None)
+        self.changes[key] = value
+        if refill:
+            # Redraw after the widget's own event has finished.
+            self.root.after_idle(lambda: [page.fill(self.save, self.names)
+                                          for page in self.pages])
+        self.update_title()
+        self.status("%s: %s -> %s" % (key, format(old, ","), format(value, ",")))
+        return True
+
+    def refuse(self, message, revert):
+        revert()
+        self.status(message)
+        messagebox.showerror("Save editor", message)
+        return False
+
+    # saving
+
+    def write(self):
+        """Back up the main file, write the edited save over it and log the
+        save.py set command that gives the same bytes from the backup."""
+        if self.save is None or not self.changes:
+            return True
+        s = self.save
+        main = s.path
+        folder = backup_dir(main)
+        stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        backup = os.path.join(folder, "%s.%s.bak" % (os.path.basename(main), stamp))
+        new = main + ".new"
+        try:
+            data = s.encode()
+            os.makedirs(folder, exist_ok=True)
+            with open(main, "rb") as f:
+                original = f.read()
+            if original != s.file:
+                raise ValueError("the file changed on disk since it was opened (was the game "
+                                 "running?); open it again")
+            with open(backup, "wb") as f:
+                f.write(original)
+            with open(new, "wb") as f:
+                f.write(data)
+            os.replace(new, main)
+        except (ValueError, OSError) as e:
+            if os.path.exists(new):
+                os.remove(new)
+            messagebox.showerror("Save editor", "Can't save: %s" % e)
+            return False
+        cmd = ["python", "SRC/save.py", "set", editor.quote(editor.shown_path(backup)),
+               editor.quote(editor.shown_path(new))]
+        cmd += ["%s=%d" % kv for kv in self.changes.items()]
+        lines = editor.log_lines("%s: %d changes" % (os.path.basename(main), len(self.changes)),
+                                 [cmd], [(new, main)], moved="the .new file")
+        with open(os.path.join(os.path.dirname(folder), "saveedit.log"), "a",
+                  encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n\n")
+        n = len(self.changes)
+        self.open(main, "Saved %s: %d changes (backup %s)" % (
+            editor.shown_path(main), n, editor.shown_path(backup)))
+        return True
+
+    def keep_changes(self):
+        """False when the user cancels leaving unsaved changes."""
+        if not self.changes:
+            return True
+        answer = messagebox.askyesnocancel("Unsaved changes", "Save the changes first?")
+        return answer is not None and (not answer or self.write())
+
+    def quit(self):
+        if self.keep_changes():
+            self.root.destroy()
 
     def run(self):
         self.root.mainloop()

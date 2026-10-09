@@ -363,9 +363,9 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       report)
 - [ ] Save editor (`SRC/saveedit.py`), a separate window for career saves
       on folder memory cards, on top of `save.py`: steps 3-5 in
-      `DOC/SAVE_EDITOR_PLAN.md` (the edits page by page, then a PCSX2
-      test). Steps 1-2 are done: `save.py spec` and the read-only window.
-      Writes over the save after a backup beside the card
+      `DOC/SAVE_EDITOR_PLAN.md`. Step 3 so far edits the Club page; next
+      Finances, Squad, Combinations, Staff, Other clubs, then a PCSX2
+      test of a save written by the editor
 - [ ] Save editor: `.ps2` memory card images (PCSX2's default), which
       need a reader and writer for the card's file system
 - [ ] Save editor: an option to write an edited save to a new slot (the

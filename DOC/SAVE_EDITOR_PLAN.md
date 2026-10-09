@@ -73,7 +73,10 @@ Each page shows what `save.py` can already read, and edits only what
    candidates, style path) are now `Save` methods, so both use the same
    code; every command's output is unchanged on saves G000 and G003.
 3. **Edits** page by page, in the order of the table, each with its
-   widget test and the logged-command check.
+   widget test and the logged-command check. *Done so far:* Club (money,
+   status, status rank), tested on a copy of save G003: an edit of each,
+   a refused status above the cap, File > Save, the backup beside the
+   card, and the logged command giving the saved bytes.
 4. **PCSX2 test** (by the user): one save edited in each page, loaded in
    game, the change seen on its screen. Recorded in
    [`SAVE_FORMAT.md`](SAVE_FORMAT.md) and `DONE.md`.
@@ -90,13 +93,17 @@ Decided (user, 2026-10-09):
 - **Memory card format: folder cards.** `save.py` reads PCSX2 folder
   memory cards, where a save is a plain folder. `.ps2` card images
   (PCSX2's default) are a later item in `TODO.md`.
-- **Where an edit goes: over the save, after a backup.** Before the
-  first write in a session, the editor copies the save's main file to
+- **Where an edit goes: over the save, after a backup.** Before each
+  save, the editor copies the save's main file to
   `<card folder>.bak/<save folder>/<main file>.<date and time>.bak`,
   beside the memory card and not in it: a folder card shows the PS2
   every folder in it, and one named `BESLES-54151-…` would appear in the
-  game's save list. Writing to a new slot instead is a later item in
-  `TODO.md`.
+  game's save list. A backup per save (rather than one per session) lets
+  the logged command name it as its input:
+  `<card folder>.bak/saveedit.log` gets `python SRC/save.py set <backup>
+  <main file>.new ...`, which writes the same bytes. The editor also
+  refuses to save when the main file changed on disk since it was
+  opened. Writing to a new slot instead is a later item in `TODO.md`.
 
 Still open:
 
