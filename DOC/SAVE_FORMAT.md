@@ -666,6 +666,19 @@ every value on both pages matches for Carson and Aiblinger). Table 3 looks
 like last season (38 league games for a regular). Table 1 is empty in
 every slot checked. The Total lines are computed by the screen.
 
+## Editing
+
+`save.py set <save> <out> field=value ...` writes an edited main file.
+The fields it takes are described with the parts of the save above;
+`save.py spec` lists them all with the values each accepts. Given a save,
+`spec` fills in the ranges that depend on it (the status cap, the
+highest status rank that holds the current status, the season tickets
+the stadium allows) and checks each range on that save: both ends must
+be accepted and the values just outside refused (`!!` otherwise). Money
+is 0 to 2,147,483,647 in the stored unit, the most `pwkGen_Income`
+(`0x244570`) allows. The save editor ([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md))
+takes its ranges from the same list (`save.edit_spec`).
+
 ## Decoding
 
 The ten serializers are generated code: 1,575 calls to
@@ -797,6 +810,7 @@ python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x26dd40 38
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x288a24 60
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 151938 60 --sles ISO/SLES_541.51
 python SRC/tbb.py dump DAT/PARAM/CLUB_RANK_SYSTEM.TBB 3
+python SRC/save.py spec  <card>/BESLES-54151-G003
 python SRC/save.py set   <card>/BESLES-54151-G003 edited.bin money=2000000000 0:all=99
 python SRC/snr2.py dis ISO/DLL/SAVEPRG.REL 0x33140 160 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 dis initialize__Q22MC9CFcEuroIF pwkGen_GetSikin plMisc_AbilExp2Lv

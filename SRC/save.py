@@ -61,6 +61,7 @@ Usage:
                                    (staff: manager, ymanager, coach0-3, scout0-2; fields
                                     dissat.0-4 and pop_supporters/pop_players 0-65535 for
                                     managers and coaches, abil.<n>|all 38-99 for all)
+    python save.py spec      [<save>]                     # what `set` accepts; with a save, checked
     python save.py combi     <save> [slot ...]            # pair combinations (tactics screen hearts)
     python save.py clubs     <save> [team ...]            # other clubs: friendship, ranks, players
     python save.py set       <save> <out> club:7:friendship=100 club:7:rank=31  # 0-100, 0-31
@@ -929,6 +930,7 @@ STATS_ROW = "<6H2B"     # goals, assists, games, games2, mom, points x 100, red,
 # SLES_541.51: ability experience per level 0-100, plMisc_AbilExp2Lv (0x2153c0)
 # and plMisc_AbilLv2Exp (0x215438).
 ABIL_EXP = 0x531c70
+MONEY_MAX = 0x7fffffff         # pwkGen_Income (0x244570) sets this on overflow
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
@@ -1547,82 +1549,195 @@ def cmd_clubs(game, path, teams):
                     years, "" if years == 1 else "s", "  flags %#x" % flags if flags else ""))
 
 
-def cmd_set(game, path, out, assigns):
-    """money=N; status=N and status_rank=N (your club's standing); for a
-    squad player slot:ability=level, slot:all=level, or slot:field=value
-    for the settable PINFO_FIELDS (fatigue, condition, ...); combi:a:b=value
-    for a pair of squad slots, combi:a:all=value for all of a slot's pairs."""
-    s = Save(game, path)
+def apply_assigns(s, assigns):
+    """Apply `set`'s field=value assignments to the decoded save `s`:
+    money=N; status=N and status_rank=N (your club's standing); plan:<field>;
+    for a squad player slot:ability=level, slot:all=level, or
+    slot:field=value for the settable PINFO_FIELDS (fatigue, condition, ...);
+    combi:a:b=value for a pair of squad slots, combi:a:all=value for all of
+    a slot's pairs; club:<team>:<field>; <staff>:<field>. Raises
+    ValueError naming the assignment on the first one it can't apply."""
     squad = dict(s.squad())
     filled = [int(i) for i in squad if i.isdigit()]
     status_edits = {}
     for a in assigns:
         key, _, val = a.partition("=")
         if not val:
-            raise SystemExit("expected field=value, got %r" % a)
+            raise ValueError("expected field=value, got %r" % a)
+        try:
+            value = int(val, 0)
+        except ValueError:
+            raise ValueError("%s: the value must be a number" % a)
         if key == "money":
-            s.money = int(val, 0)
+            if not 0 <= value <= MONEY_MAX:
+                raise ValueError("%s: money is 0-%d" % (a, MONEY_MAX))
+            s.money = value
             continue
         if key.startswith("plan:"):
             try:
-                s.set_plan(key[5:], int(val, 0))
+                s.set_plan(key[5:], value)
             except ValueError as e:
-                raise SystemExit("%s: %s" % (a, e))
+                raise ValueError("%s: %s" % (a, e))
             continue
         if key in ("status", "status_rank"):
-            status_edits[key] = int(val, 0)
+            status_edits[key] = value
             continue
         if key.startswith("combi:"):
             _, x, y = (key.split(":") + [""])[:3]
             if not x.isdigit() or int(x) not in filled or (y != "all" and (
                     not y.isdigit() or int(y) not in filled)):
-                raise SystemExit("%r: use combi:<slot>:<slot>=value or combi:<slot>:all=value "
+                raise ValueError("%r: use combi:<slot>:<slot>=value or combi:<slot>:all=value "
                                  "(filled squad slots, see `show`)" % a)
             others = [b for b in filled if b != int(x)] if y == "all" else [int(y)]
             try:
                 for b in others:
-                    s.set_combi(int(x), b, int(val, 0))
+                    s.set_combi(int(x), b, value)
             except ValueError as e:
-                raise SystemExit("%s: %s" % (a, e))
+                raise ValueError("%s: %s" % (a, e))
             continue
         if key.startswith("club:"):
             _, team, field = (key.split(":") + ["", ""])[:3]
             try:
-                s.set_club(int(team, 0), field, int(val, 0))
+                s.set_club(int(team, 0), field, value)
             except ValueError as e:
-                raise SystemExit("%s: %s (use club:<team>:friendship=0-100 or rank=0-%d)"
+                raise ValueError("%s: %s (use club:<team>:friendship=0-100 or rank=0-%d)"
                                  % (a, e, CLUB_RANK_MAX))
             continue
         slot, _, which = key.partition(":")
         if slot.rstrip("0123456789") in ("manager", "ymanager", "coach", "scout"):
             try:
-                s.set_staff(slot, which, int(val, 0))
+                s.set_staff(slot, which, value)
             except ValueError as e:
-                raise SystemExit("%s: %s" % (a, e))
+                raise ValueError("%s: %s" % (a, e))
             continue
         if slot not in squad or not which:
-            raise SystemExit("%r: use money=N, <slot>:<ability>=level, <slot>:all=level or "
+            raise ValueError("%r: use money=N, <slot>:<ability>=level, <slot>:all=level or "
                              "<slot>:<field>=value (slot = a filled squad slot, see `show`)" % a)
         o = squad[slot]
         if not which.isdigit() and which != "all":
             try:
-                s.set_field(o, which, int(val, 0))
+                s.set_field(o, which, value)
             except ValueError as e:
-                raise SystemExit("%s: %s" % (a, e))
+                raise ValueError("%s: %s" % (a, e))
             continue
         for k in range(ABIL_COUNT) if which == "all" else [int(which)]:
             if not 0 <= k < ABIL_COUNT:
-                raise SystemExit("ability must be 0-%d" % (ABIL_COUNT - 1))
-            s.set_ability(o, k, int(val))
+                raise ValueError("ability must be 0-%d" % (ABIL_COUNT - 1))
+            try:
+                s.set_ability(o, k, value)
+            except ValueError as e:
+                raise ValueError("%s: %s" % (a, e))
     if status_edits:
         try:
             s.set_status(status_edits.get("status"), status_edits.get("status_rank"))
         except ValueError as e:
-            raise SystemExit("status: %s" % e)
+            raise ValueError("status: %s" % e)
+
+
+def cmd_set(game, path, out, assigns):
+    """Apply the assignments (apply_assigns) and write the edited main file."""
+    s = Save(game, path)
+    try:
+        apply_assigns(s, assigns)
+    except ValueError as e:
+        raise SystemExit(str(e))
     data = s.encode()
     with open(out, "wb") as f:
         f.write(data)
     print("%s: %d bytes written" % (out, len(data)))
+
+
+def edit_spec(s=None):
+    """[(key, low, high, step, note)]: every assignment `set` takes, with
+    the values it accepts. Keys use placeholders: <slot> a filled squad or
+    youth slot, <a>/<b> filled squad slots, <ability> 0-63, <staff> a filled
+    staff label (<mstaff>: manager, ymanager or a coach), <team> 2-441,
+    <kind> 0-4. With a decoded save `s`, the ranges that depend on it are
+    filled in (the ends of status, status_rank and plan:season_tickets);
+    without one they are None."""
+    out = [("money", 0, MONEY_MAX, 1,
+            "stored unit (pounds x 6); pwkGen_Income caps money there")]
+    cap = srank_hi = None
+    if s is not None:
+        # The caps fall as the rank number rises (rank 0 is the top), so a
+        # rank is allowed while its cap still holds the current status.
+        caps, _ = status_tables()
+        _, cap, cur, _ = s.status()
+        srank_hi = max(r for r in range(STATUS_RANK_MAX + 1) if caps[r] >= cur)
+    out.append(("status", 0, cap, 1, "club status, up to the cap of the status rank"))
+    out.append(("status_rank", 0, srank_hi, 1,
+                "status rank, 0 the top; up to the last whose cap holds the status"))
+    for field, (_, lo, hi, step) in PLAN_EDITS.items():
+        if hi is None and s is not None:
+            hi = s.stadium_capacity() * SEASON_TICKET_SHARE // 100 // step * step
+        out.append(("plan:" + field, lo, hi, step, "season plan"))
+    out.append(("<slot>:<ability>", 0, 99, 1, "ability level; <slot>:all sets all 64"))
+    for name, _, _, rng, note in PINFO_FIELDS:
+        if rng is not None:
+            out.append(("<slot>:" + name, rng[0], rng[1], 1, note))
+    out.append(("combi:<a>:<b>", 0, 0xffff, 1,
+                "pair combination; combi:<a>:all sets a slot's pairs"))
+    out.append(("<staff>:abil.<n>", STAFF_ABIL_RANGE[0], STAFF_ABIL_RANGE[1], 1,
+                "staff ability; abil.all sets all"))
+    out.append(("<mstaff>:dissat.<kind>", 0, 0xffff, 1,
+                "dissatisfaction, managers and coaches"))
+    for name in ("pop_supporters", "pop_players"):
+        out.append(("<mstaff>:" + name, 0, 0xffff, 1, "popularity, managers and coaches"))
+    out.append(("club:<team>:friendship", 0, 100, 1, "another club's friendship"))
+    out.append(("club:<team>:rank", 0, CLUB_RANK_MAX, 1, "another club's rank"))
+    return out
+
+
+def spec_keys(s, key):
+    """Concrete keys of the save `s` for a spec key with placeholders."""
+    squad = [label for label, _ in s.squad()]
+    filled = [x for x in squad if x.isdigit()]
+    counts = {role: count for role, _, count, _ in STAFF}
+    staff, mstaff = [], []
+    for role, i, st in s.staff():
+        label = ("ymanager" if role == "youth manager" else role) + (
+            str(i) if counts[role] > 1 else "")
+        staff.append(label)
+        if st["kind"] == "M":
+            mstaff.append(label)
+    subs = {"<slot>": filled[:1] + [x for x in squad if x.startswith("y")][:1],
+            "<ability>": ["0", str(ABIL_COUNT - 1)], "<a>": filled[:1], "<b>": filled[1:2],
+            "<staff>": staff, "<mstaff>": mstaff, "<n>": ["0"], "<kind>": ["0", "4"],
+            "<team>": ["3"]}
+    keys = [key]
+    for ph, values in subs.items():
+        if ph in key:
+            keys = [k.replace(ph, v) for k in keys for v in values]
+    return keys
+
+
+def cmd_spec(game, path=None):
+    """Print edit_spec; with a save, also apply each range's ends and the
+    values just outside them through apply_assigns: the ends must be
+    accepted and the outside values refused."""
+    s = Save(game, path) if path else None
+    original = bytes(s.blocks) if s else None
+    for key, lo, hi, step, note in edit_spec(s):
+        line = "%-26s %10s - %-10s%s  %s" % (key, "?" if lo is None else lo,
+                                            "?" if hi is None else hi,
+                                            "  step %d" % step if step > 1 else "", note)
+        problems = []
+        if s is not None:
+            keys = spec_keys(s, key)
+            if not keys:
+                problems.append("nothing in this save to try it on")
+            for k in keys:
+                for v, ok in ((lo, True), (hi, True), (lo - step, False), (hi + step, False)):
+                    s.blocks[:] = original
+                    try:
+                        apply_assigns(s, ["%s=%d" % (k, v)])
+                        took = True
+                    except ValueError:
+                        took = False
+                    if took != ok:
+                        problems.append("%s=%d %s" % (k, v, "refused" if ok else "accepted"))
+            s.blocks[:] = original
+        print(line + ("  !! " + "; ".join(problems) if problems else ""))
 
 
 # MC::CFcEuroIF::initialize (0x12ad38) picks the memory-card name for each
@@ -1725,6 +1840,8 @@ def main(argv):
         cmd_combi(game, args[0], [int(a) for a in args[1:]])
     elif cmd == "player" and len(args) == 2:
         cmd_player(game, args[0], args[1])
+    elif cmd == "spec" and len(args) <= 1:
+        cmd_spec(game, args[0] if args else None)
     elif cmd == "set" and len(args) >= 3:
         cmd_set(game, args[0], args[1], args[2:])
     elif cmd == "fields" and len(args) <= 1:

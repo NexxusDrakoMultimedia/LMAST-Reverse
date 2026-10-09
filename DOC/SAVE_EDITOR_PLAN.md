@@ -30,13 +30,13 @@ from the disc data as the mod editor does (players and staff from
 
 The same as the mod editor's ([`GOALS.md`](../GOALS.md), stage 5):
 
-- Every edit goes through `save.py`'s own functions (`Save.set_ability`,
-  `set_field`, `set_staff`, `set_plan`, `set_status`, `set_club`,
-  `set_combi`, `money`). The editor keeps no layout of its own.
-- `save.py` says which values each field allows. A new
-  `save.edit_spec()` gathers the ranges it already checks
-  (`PLAN_EDITS`, `STAFF_ABIL_RANGE`, `CLUB_RANK_MAX`, the 0–99 ability
-  levels, the 0–65,535 condition values) in one place for the editor.
+- Every edit goes through `save.apply_assigns`, the function behind
+  `save.py set`, which calls `Save.set_ability`, `set_field`,
+  `set_staff`, `set_plan`, `set_status`, `set_club` and `set_combi`. The
+  editor keeps no layout of its own.
+- `save.py` says which values each field allows: `save.edit_spec()`
+  gathers the ranges `set` checks in one place, with the ends that
+  depend on the save filled in from it.
 - Each save logs the equivalent `python SRC/save.py set ...` command,
   and the file the editor writes must equal what that command writes,
   byte for byte. A test checks it.
@@ -63,6 +63,9 @@ Each page shows what `save.py` can already read, and edits only what
 
 1. **`save.edit_spec()`** and a `save.py` command that prints it. It also
    gets a check that every range it gives is one `cmd_set` accepts.
+   *Done:* `save.py spec [<save>]`; `set`'s edits now go through
+   `apply_assigns`, which the editor will call too. Checked on saves G000
+   and G003 with no problems.
 2. **Read-only window**: open a save, the pages above without inputs.
    Decoding runs in a background thread with a "Loading" status, as the
    People tab does.

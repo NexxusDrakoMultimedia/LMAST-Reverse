@@ -171,6 +171,8 @@ def checks():
         ("save_blocks", ["save.py", "blocks"], ["ISO/SLES_541.51", "ISO/DLL/SAVEPRG.REL"]),
         # The recorded field list, checked against the interpreter on random data.
         ("save_fields", ["save.py", "fields"], ["ISO/SLES_541.51", "ISO/DLL/SAVEPRG.REL"]),
+        # What `set` accepts, without a save (the save-dependent ends are "?").
+        ("save_spec", ["save.py", "spec"], ["ISO/SLES_541.51", "ISO/DLL/SAVEPRG.REL"]),
         # VCDIFF encoder/decoder round trips (shrink, grow, identical).
         ("vcdiff_roundtrip", ["vcdiff.py", "roundtrip", "DAT/PARAM/PBDATA_EU.PAC",
                               "DAT/PARAM/PBDATA_JP.PAC"], ["DAT/PARAM"]),
