@@ -5,8 +5,14 @@
 
 A mod that restores content the PAL release cut or left broken. Each
 restoration is a separate `patch_disc.py` switch first, so it can be
-built and tested in PCSX2 on its own. Once several work, one switch can
-turn them all on.
+built and tested in PCSX2 on its own. Switches are named, and
+`--mod lmaster` turns on the mod's fixes together (sponsor-negotiation,
+rival-manager, national-cups); the editor's Build window has a box for
+each. A test disc with all of them:
+
+```bash
+python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster.iso --mod lmaster
+```
 
 Rules for an entry:
 
@@ -24,14 +30,14 @@ Rules for an entry:
 
 | Content | Kind | Evidence | Fix | Status |
 |---|---|---|---|---|
-| Main sponsor negotiation | cut (stub check) | [`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md) | `--sponsor-negotiation` | restored, tested in PCSX2 |
-| Debug menu | developers' switch | `RootMainSeq.sqb` | `--launcher` | works, tested in PCSX2. A tool, not part of the mod |
+| Main sponsor negotiation | cut (stub check) | [`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md) | `--mod sponsor-negotiation` | restored, tested in PCSX2 |
+| Debug menu | developers' switch | `RootMainSeq.sqb` | `--mod launcher` | works, tested in PCSX2. A tool, not part of the mod |
 | Kind-6 injuries starting at 1600 | broken data (dropped digit?), in both releases | [`INJURIES.md`](INJURIES.md#the-value-table-0x532cf8): `0x532d70` holds 1600 where 16001 fits | one u16 in `SLES_541.51` | candidate |
 | Injury rows past fatigue 1000 | bug (out-of-bounds read) | [`INJURIES.md`](INJURIES.md#the-kind-tables): row 11 for ages 35+ | clamp the row in `judgeKegaKind` (`0x21a068`), a few instructions | candidate. Rare |
 | "Two months" and "nine months" injury lines | cut before both releases (the Japanese code is the same) | [`INJURIES.md`](INJURIES.md#the-condition-line) | new thresholds in `plPinfo_KegaRecoverDaysChno` and text in four languages | needs a decision on thresholds |
 | Crest presets 4–11 in three tables | broken data (a missing byte) | [`EMBLEM_DIR.md`](EMBLEM_DIR.md): tables 93, 101, 105 of `EDIT_EMBLEM.TBB` | add the missing `04 00` key | candidate. Check first whether the crest editor shows the gap |
-| The rival's manager by style | bug (wrong register), PAL; the Japanese build unchecked | [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8): the loop at `0x25e6d0` finds the record for the rival's style, but its load reads record 0, so the rival always gets H.Raphanel (898), never I.Ricardo (1,970), L.Alfano (1,247) or L.Nobili (1,246) | one instruction at `0x25e6d8`: `lw $s3, 8($a0)` (`8c930008`) becomes `lw $s3, 4($v1)` (`8c730004`). The rival's style is already the opposite of yours (`0x5531e0`), so its manager then matches it | candidate (asked for by the user) |
-| The World National Cup final on the last turn of the year | bug (schedule data) | the knockout UID 122 plays turns 92–95, and 95 is the year's last turn ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#turns)), so the winner is never shown (user report). The group UIDs 114–121 play 89–91. The Euro National Cup ends on 94 | move the whole window back one turn: groups 88–90, knockout 91–94, by shifting the turn masks of UIDs 114–122 one bit, and their start turns (88, 92) if a schedule must load before its first game. No league or cup plays after turn 87, and the other national cups are in other years of the cycle | candidate (asked for by the user). Needs a mask edit command in `schedule.py`, then a World Cup year played to the end in PCSX2 |
+| The rival's manager by style | bug (wrong register), in both releases (Japanese `0x25e8e8`) | [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8): the loop at `0x25e6d0` finds the record for the rival's style, but its load reads record 0, so the rival always gets H.Raphanel (898), never I.Ricardo (1,970), L.Alfano (1,247) or L.Nobili (1,246) | one instruction at `0x25e6d8`: `lw $s3, 8($a0)` (`8c930008`) becomes `lw $s3, 4($v1)` (`8c730004`). The rival's style is already the opposite of yours (`0x5531e0`), so its manager then matches it. `--mod rival-manager` | built, needs a PCSX2 test: a new career in each style, the rival's manager on its Information screen (asked for by the user) |
+| The World National Cup final on the last turn of the year | bug (schedule data) | the knockout UID 122 plays turns 92–95, and 95 is the year's last turn ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#turns)), so the winner is never shown (user report). The group UIDs 114–121 play 89–91. The Euro National Cup ends on 94 | move both national cups back one turn (`schedule.py shift`, masks and start turns; the end turn stays 95): World Cup groups 88–90 and knockout 91–94, Euro groups 88–90 and knockout 91–93. No league or cup plays after turn 87, and the two cups are in different years of the cycle. `--mod national-cups` writes `SCHEDULE_SYSTEM.PAC` and its copy in `PRELOAD/STATIONFILE.PAC` | built, needs a PCSX2 test: a World Cup year and a Euro year played to the end, the winners shown (asked for by the user). It can't be combined with an edited `SCHEDULE_SYSTEM.PAC` (a league of another size) in one build yet |
 | 32 dialogue categories | cut before both releases (no reference in the Japanese code either) | [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md): derby interviews, a facilities tour, notices | needs triggers in the event system and English text | research |
 
 ## Improvements

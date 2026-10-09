@@ -143,7 +143,7 @@ disassemble as unrelated MIPS instructions.
 | [`plrcommon.py`](SRC/plrcommon.py) | the common pack `PLRESOURCECOMMON.PAC`: checks all 25 tables (facilities, formations, nations, competitions) and prints any one, with the facility records' build time, upkeep and stadium capacity | [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md) |
 | [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database; replaces free agents (`setfree`) and checks that the pack rebuilds byte for byte (`roundtrip`) | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
 | [`leaguesize.py`](SRC/leaguesize.py) | a nation's two divisions: checks that the first season plays out with each club once (`nations`), and changes the first division's size, moving clubs to or from the second (`plan`, which also gives the sizes each nation allows; `build`, for one or more leagues: the slots, last season's records, the games and the game days) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from) |
-| [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources; re-encodes all three packs and their `.HED` byte for byte (`roundtrip`); builds and checks league schedules of 2–32 clubs (`league`) and finds free turns for their game days (`turns`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
+| [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources; re-encodes all three packs and their `.HED` byte for byte (`roundtrip`); builds and checks league schedules of 2–32 clubs (`league`) and finds free turns for their game days (`turns`); moves schedules' game days (`shift`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
 | [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command and module names, re-encodes every script byte for byte (`roundtrip`) and patches a command (`setcmd`); `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
 | [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, the 116 licensed kits' descriptors (`PLPACK` and the executable's copy), and the keeper kit table `UNIFORM_GK.TBB`; edits kits (`set`, `setlicence`, `setexe`, `setgk`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
 | [`stadium.py`](SRC/stadium.py) | `DAT/STADIUM`: `.PRI` draw priorities, `BUILD_STADIUM.TBB` (which model each of the 119 stadiums uses), packs per model | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) |
@@ -252,7 +252,7 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below), and applies named switches (`--mod`, `--mod lmaster` for the LMASTER Mod); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes |
 | [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
 
 ```bash
@@ -320,8 +320,10 @@ patch for sharing, or both: it puts the mod folder's files on a copy of
 your disc image (`patch_disc.py patch ... --copies`) and makes the patch
 from it (`vcdiff.py make`), showing their output and logging both
 commands. For a patch on its own the image is temporary and removed
-afterwards. Boxes add `patch_disc.py`'s switches: skip the tutorial,
-main sponsor negotiation, the debug menu and separate saves. Use the
+afterwards. Boxes add `patch_disc.py`'s switches, one per entry of its
+switch table (`--mod <name>,...`): skip the tutorial, main sponsor
+negotiation, the rival's manager, the national cups a turn earlier, the
+debug menu and separate saves. Use the
 unmodified Redump image as the original, so the patch applies for
 everyone; the dialog warns if it isn't.
 

@@ -362,6 +362,18 @@ that changes size moves the entries after it, and the pack and its
 `.HED` must be written together; `patch_disc.py --copies` then updates
 the `STATIONFILE` copies.
 
+`python SRC/schedule.py shift <SCHEDULE_SYSTEM.PAC> <out.PAC> <delta> <uid>[-<uid>] ...`
+moves UIDs' game days by `delta` turns: the turn mask and the start turn.
+The end turn stays, a UID that runs across the year end is refused, and
+the start may not pass the first game day. The games are by game day, so
+`SCHEDULE_COMPETITION` doesn't change, and the year rows keep their size,
+so neither does the `.HED`. `patch_disc.py --mod national-cups` uses it
+([`LMASTER_MOD.md`](LMASTER_MOD.md)):
+
+```bash
+python SRC/schedule.py shift DAT/PARAM/SCHEDULE_SYSTEM.PAC out/SCHEDULE_SYSTEM.PAC -1 98-102 114-122
+```
+
 ## Building a league of another size
 
 Changing a division's size needs a new league schedule for that many

@@ -271,9 +271,11 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] LMASTER Mod (`DOC/LMASTER_MOD.md`): the first restorations as
       `patch_disc.py` switches, each tested in PCSX2. Candidates: the
       kind-6 injury value 1600 (`0x532d70`), the injury kind row past
-      fatigue 1000, the short `EDIT_EMBLEM` tables 93/101/105, the
-      rival's manager (one instruction at `0x25e6d8`), and the World
-      National Cup a turn earlier so its final isn't on turn 95. The
+      fatigue 1000, the short `EDIT_EMBLEM` tables 93/101/105. Built,
+      to test in PCSX2: `--mod rival-manager` (a new career per style)
+      and `--mod national-cups` (a World Cup and a Euro year to the
+      end); national-cups can't yet be built together with an edited
+      `SCHEDULE_SYSTEM.PAC`. The
       "two months"/"nine months" injury lines need thresholds chosen
       first. Improvement earmarked: rebuild the badly balanced league
       schedules (22 and 26 clubs, the 8-club VS league) at the same size

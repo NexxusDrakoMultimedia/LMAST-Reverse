@@ -36,8 +36,8 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--skip-tutorial] [--sponsor-negotiation] [--launcher] [--mod-saves]
-    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--skip-tutorial] [--sponsor-negotiation] [--launcher] [--mod-saves]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...]
+    python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--mod <switch>,...]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
 `patch` re-reads every patched range afterwards. Keep an unmodified copy
@@ -66,6 +66,13 @@ volume size, the UDF partition length in both partition descriptors and
 the integrity descriptor's size table change, and the UDF end anchor moves
 to the new last sector. Files outside DATA.CVM keep their size.
 
+Switches: --mod takes switch names, comma-separated (or repeated):
+skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
+launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
+(sponsor-negotiation, rival-manager, national-cups; DOC/LMASTER_MOD.md).
+Each also works as a flag of its own (--skip-tutorial, ...). With
+switches and no targets, `patch <image> <out_image>` is enough.
+
 --skip-tutorial (test discs; whole disc image only) skips the opening
 playoffs of a new career, the tutorial, but runs their schedule steps: it
 sets the flag word at SLES 0x34d434 (Dummy.CheckClubEditSkip, the
@@ -84,6 +91,17 @@ check (DLL/SIMPRG.REL 0xc5ca0) is a stub returning 0 in PAL; the patch
 makes it return 1 for a sponsor not yet negotiated with on this screen, 12
 words in all (0xc5ca0 and the unused method at 0xd3748). See
 DOC/SPONSOR_NEGOTIATION.md.
+
+rival-manager (whole disc image only) gives the rival club the manager of
+its own style. pwkTeam_Init2 finds TEAM_INIT_DATA table 6's record for the
+rival's style, but its load reads record 0, so every rival had H.Raphanel;
+one instruction of SLES_541.51 (0x25e6d8). See DOC/TEAMINIT_FORMAT.md.
+
+national-cups moves the World National Cup (UIDs 114-122) and the Euro
+National Cup (98-102) one turn earlier (schedule.shift_pack), so the World
+Cup final is no longer on the year's last turn, where its winner was never
+shown. It writes PARAM/SCHEDULE_SYSTEM.PAC and its copy in
+PRELOAD/STATIONFILE.PAC. See DOC/LMASTER_MOD.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -1158,6 +1176,90 @@ def plan_mod_saves(f, img):
     return jobs, notes
 
 
+# --- the rival's manager (DOC/TEAMINIT_FORMAT.md, the table 6 quirk) -----------
+
+# pwkTeam_Init2's loop at 0x25e6d0 walks TEAM_INIT_DATA table 6 with $v1 at
+# each record's style (+4) and, on the record matching the rival's style,
+# loads the manager in the beql delay slot from $a0, the table's start: so
+# every rival gets record 0's manager. Loading 4($v1) reads the matching
+# record's +8. The rival's style is already the opposite of the club's
+# (0x5531e0), so its manager follows it.
+RIVAL_MANAGER = (0x15f6d8,                       # SLES 0x25e6d8
+                 bytes.fromhex("0800938c"),      # lw $s3, 8($a0)
+                 bytes.fromhex("0400738c"))      # lw $s3, 4($v1)
+
+
+def plan_rival_manager(f, img):
+    """Jobs for --mod rival-manager."""
+    if img.kind != "disc image":
+        raise ValueError("rival-manager patches SLES_541.51, so it needs the whole disc "
+                         "image, not %s" % img.kind)
+    off, old, new = RIVAL_MANAGER
+    held = read_at(f, img, SLES_FILE, off, len(old))
+    if held == new:
+        return [], ["note: %s 0x%x already reads the rival's own manager"
+                    % (SLES_FILE, off + 0xff000)]
+    if held != old:
+        raise ValueError("%s 0x%x doesn't hold the expected code; not the retail executable?"
+                         % (SLES_FILE, off + 0xff000))
+    return [Job(SLES_FILE, off, new, "%s (0x%x)" % (SLES_FILE, off + 0xff000),
+                "rival-manager: the rival's manager by its style")], []
+
+
+# --- the national cups a turn earlier (DOC/LMASTER_MOD.md) ---------------------
+
+# The World National Cup's knockout (UID 122) plays turns 92-95, and 95 is
+# the last turn of the year, so its winner is never shown (user report).
+# Its groups (114-121) and the Euro National Cup's (98-101, knockout 102)
+# move back with it: groups 88-90, knockouts 91-94 and 91-93. The game
+# loads the system pack from PRELOAD/STATIONFILE.PAC as well, so both are
+# written.
+NATIONAL_UIDS = list(range(98, 103)) + list(range(114, 123))
+SCHEDULE_FILE = "PARAM/SCHEDULE_SYSTEM.PAC"
+STATION_FILE, STATION_ENTRY = "PRELOAD/STATIONFILE.PAC", "schedule_system.pac"
+
+
+def diff_jobs(file, base, old, new, why, gap=0x20):
+    """One Job per stretch of differing bytes between old and new; changes
+    less than `gap` bytes apart share one."""
+    diff = [i for i in range(len(old)) if old[i] != new[i]]
+    jobs = []
+    while diff:
+        i = j = diff.pop(0)
+        while diff and diff[0] - j < gap:
+            j = diff.pop(0)
+        jobs.append(Job(file, base + i, new[i:j + 1], "%s 0x%x" % (file, base + i), why))
+    return jobs
+
+
+def plan_national_cups(f, img):
+    """Jobs for --mod national-cups. A pack already moved is left alone."""
+    import pac
+    import schedule
+    e = img.entry(SCHEDULE_FILE)
+    data = read_at(f, img, e.path, 0, e.size)
+    h, blobs = pac.binpac_blobs(data)
+    rows = schedule.year_uids(schedule.System(
+        [(x[2], b) for x, b in zip(h.entries, blobs)]).year)
+    first = rows[122][0].turns[0]
+    if first == 91:
+        return [], ["note: %s already has the national cups a turn earlier" % SCHEDULE_FILE]
+    if first != 92:
+        raise ValueError("%s: UID 122 starts on turn %d, expected 92; not the retail pack?"
+                         % (SCHEDULE_FILE, first))
+    new = schedule.shift_pack(data, NATIONAL_UIDS, -1)
+    why = "national-cups: World and Euro National Cups a turn earlier"
+    jobs = diff_jobs(e.path, 0, data, new, why)
+    s = img.entry(STATION_FILE)
+    station = read_at(f, img, s.path, 0, s.size)
+    sh, sblobs = pac.binpac_blobs(station)
+    i = pac.find_entry(sh, STATION_ENTRY)
+    if sblobs[i] != data:
+        raise ValueError("%s#%s isn't a copy of %s" % (STATION_FILE, STATION_ENTRY, SCHEDULE_FILE))
+    jobs += diff_jobs(s.path, sh.entries[i][0], data, new, why)
+    return jobs, []
+
+
 # --- the developer launcher (DOC/SQB_FORMAT.md#the-developer-launcher) --------
 
 # RootMainSeq.sqb runs Dummy.CheckLauncher (always 1) at 0x88 and at 0x98
@@ -1181,6 +1283,47 @@ def plan_launcher(f, img):
     return [Job(e.path, i, new[i:i + 1], "%s 0x%x" % (path, offset),
                 "--launcher: %s -> %s, boot into the developer launcher" % (held, name))
             for i, (a, b) in enumerate(zip(data, new)) if a != b], []
+
+
+# --- the switch table ----------------------------------------------------------
+
+# (name, plan, files it edits, description), in the order they run. A
+# target may not write a file a chosen switch edits. editor.py draws one
+# box per row.
+SWITCHES = (
+    ("skip-tutorial", plan_skip_tutorial, [p for p, _ in SKIP_SCRIPTS],
+     "Skip the tutorial (for testing)"),
+    ("sponsor-negotiation", plan_sponsor_negotiation, [NEGO_FILE],
+     "Sponsor negotiation: negotiate with the main sponsor, as in the Japanese release"),
+    ("rival-manager", plan_rival_manager, [SLES_FILE],
+     "Rival's manager: the rival gets the manager of its own style"),
+    ("national-cups", plan_national_cups, [SCHEDULE_FILE, STATION_FILE],
+     "National cups a turn earlier, so the World National Cup's winner is shown"),
+    ("launcher", plan_launcher, [LAUNCHER[0]],
+     "Debug menu: boot into the developers' launcher of test modules and viewers"),
+    ("mod-saves", plan_mod_saves, [SLES_FILE],
+     "Separate saves: this disc saves to BESLES-54151-M/-D, which the original game "
+     "never opens"),
+)
+SWITCH_NAMES = [s[0] for s in SWITCHES]
+
+# Names --mod takes for several switches at once.
+SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups")}
+
+
+def parse_mods(values):
+    """The switch names in --mod values ('a,b', group names allowed)."""
+    out = set()
+    for v in values:
+        for name in filter(None, v.lower().split(",")):
+            if name in SWITCH_GROUPS:
+                out.update(SWITCH_GROUPS[name])
+            elif name in SWITCH_NAMES:
+                out.add(name)
+            else:
+                raise SystemExit("--mod %s: no such switch (%s)" % (
+                    name, ", ".join(SWITCH_NAMES + sorted(SWITCH_GROUPS))))
+    return out
 
 
 def resolve_target(img, index, target):
@@ -1315,8 +1458,7 @@ def copy_file(src, dst):
     os.chmod(dst, 0o644)
 
 
-def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tutorial=False,
-              sponsor_nego=False, launcher=False, mod_saves=False):
+def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()):
     pairs = parse_pairs(args)
     img = Image(image)
     index = Index(dat) if dat else None
@@ -1395,35 +1537,19 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), skip_tu
         for r in renames:
             target, _, new = r.partition("=")
             jobs += plan_rename(f, img, target, new)
-        # The files the targets write, before the switches below add theirs
-        # (--skip-tutorial and --launcher both edit RootMainSeq.sqb).
+        # The files the targets write, before the switches add theirs
+        # (skip-tutorial and launcher both edit RootMainSeq.sqb).
         touched = {norm(j.file) for j in jobs if j.file is not None}
-        if skip_tutorial:
-            clash = touched & {norm(p) for p, _ in SKIP_SCRIPTS}
+        for name, plan, files, _ in SWITCHES:
+            if name not in mods:
+                continue
+            clash = touched & {norm(p) for p in files}
             if clash:
-                raise SystemExit("--skip-tutorial edits %s; don't patch it as a target too"
-                                 % ", ".join(sorted(clash)))
-            sjobs, snotes = plan_skip_tutorial(f, img)
+                raise SystemExit("--mod %s edits %s; don't patch it as a target too"
+                                 % (name, ", ".join(sorted(clash))))
+            sjobs, snotes = plan(f, img)
             jobs += sjobs
             notes += snotes
-        if sponsor_nego:
-            if norm(NEGO_FILE) in {norm(j.file) for j in jobs if j.file is not None}:
-                raise SystemExit("--sponsor-negotiation edits %s; don't patch it as a target too"
-                                 % NEGO_FILE)
-            njobs, nnotes = plan_sponsor_negotiation(f, img)
-            jobs += njobs
-            notes += nnotes
-        if launcher:
-            if norm(LAUNCHER[0]) in touched:
-                raise SystemExit("--launcher edits %s; don't patch it as a target too"
-                                 % LAUNCHER[0])
-            ljobs, lnotes = plan_launcher(f, img)
-            jobs += ljobs
-            notes += lnotes
-        if mod_saves:
-            mjobs, mnotes = plan_mod_saves(f, img)
-            jobs += mjobs
-            notes += mnotes
         crc_before = None
         if img.kind == "disc image":
             e = img.entry(SLES_FILE)
@@ -1513,18 +1639,15 @@ def main(argv):
     write_copies = "--copies" in args
     if write_copies:
         args.remove("--copies")
-    skip_tutorial = "--skip-tutorial" in args
-    if skip_tutorial:
-        args.remove("--skip-tutorial")
-    sponsor_nego = "--sponsor-negotiation" in args
-    if sponsor_nego:
-        args.remove("--sponsor-negotiation")
-    launcher = "--launcher" in args
-    if launcher:
-        args.remove("--launcher")
-    mod_saves = "--mod-saves" in args
-    if mod_saves:
-        args.remove("--mod-saves")
+    # Each switch's own flag (--skip-tutorial, ...) still works, as --mod <name>.
+    values = []
+    for name in SWITCH_NAMES:
+        if "--" + name in args:
+            args.remove("--" + name)
+            values.append(name)
+    while "--mod" in args:
+        values.append(_opt(args, "--mod"))
+    mods = parse_mods(values)
     dat =_opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
     renames = []
     while "--rename" in args:
@@ -1536,11 +1659,10 @@ def main(argv):
         if cmd == "copies" and len(args) >= 2:
             cmd_copies(args[0], args[1:])
             return 0
-        if cmd == "patch" and (len(args) >= 3 or (renames or skip_tutorial or sponsor_nego
-                                                  or launcher or mod_saves) and len(args) == 2):
+        if cmd == "patch" and (len(args) >= 3 or (renames or mods) and len(args) == 2):
             in_place = args[1] == "--in-place"
             cmd_patch(args[0], None if in_place else args[1], in_place, args[2:], dat,
-                      write_copies, renames, skip_tutorial, sponsor_nego, launcher, mod_saves)
+                      write_copies, renames, mods)
             return 0
         if cmd == "verify" and len(args) >= 2:
             return cmd_verify(args[0], args[1:])

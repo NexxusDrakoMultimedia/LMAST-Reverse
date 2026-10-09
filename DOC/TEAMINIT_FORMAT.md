@@ -161,7 +161,10 @@ random one of four per league: `league × 4 + rand(4)`.
 4 records' style with the rival's, but the load in its branch delay slot
 is `lw $s3, 8($a0)`, and `$a0` stays at the start of the table. So the
 rival's manager is always record 0's (manager 898), and records 1–3
-(1,970, 1,247, 1,246) are never read.
+(1,970, 1,247, 1,246) are never read. The Japanese build has the same
+load (`0x25e8e8`). `patch_disc.py --mod rival-manager` changes it to
+`lw $s3, 4($v1)`, the matching record's manager
+([`LMASTER_MOD.md`](LMASTER_MOD.md)); not yet tested in PCSX2.
 
 Table 8 holds foreign 0 and newface 1 everywhere, and search_region 13,
 2, 7 or 12 by style.

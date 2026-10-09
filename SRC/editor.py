@@ -95,6 +95,7 @@ from tkinter import font as tkfont, messagebox, ttk
 import initteam
 import leaguesize
 import mbb
+import patch_disc
 import pbdata
 import plrsim
 import regulation
@@ -3132,10 +3133,9 @@ class BuildDialog:
         self.output = tk.StringVar(value=settings.get("output") or name + ".iso")
         self.make_patch = tk.IntVar(value=settings.get("make_patch", 1))
         self.patch = tk.StringVar(value=settings.get("patch") or name + ".xdelta")
-        self.skip = tk.IntVar(value=settings.get("skip_tutorial", 0))
-        self.nego = tk.IntVar(value=settings.get("sponsor_negotiation", 0))
-        self.launcher = tk.IntVar(value=settings.get("launcher", 0))
-        self.mod_saves = tk.IntVar(value=settings.get("mod_saves", 0))
+        # patch_disc.py's switches by name, saved as e.g. "skip_tutorial".
+        self.switches = {name: tk.IntVar(value=settings.get(name.replace("-", "_"), 0))
+                         for name in patch_disc.SWITCH_NAMES}
 
         form = ttk.Frame(win)
         form.pack(fill="x", padx=10, pady=10)
@@ -3160,23 +3160,18 @@ class BuildDialog:
                                 command=lambda v=var, k=kind: self.browse(v, k))
             button.grid(row=row, column=2, padx=(8, 0), pady=3)
             self.entries[kind] = (flag, entry, button)
-        # patch_disc.py's switches, one box each (its docstring and the
-        # docs say what each changes).
-        for row, (text, var) in enumerate((
-                ("Skip the tutorial (for testing; patch_disc.py --skip-tutorial)", self.skip),
-                ("Sponsor negotiation: negotiate with the main sponsor, as in the Japanese "
-                 "release (--sponsor-negotiation)", self.nego),
-                ("Debug menu: boot into the developers' launcher of test modules and viewers "
-                 "(--launcher)", self.launcher),
-                ("Separate saves: this disc saves to BESLES-54151-M/-D, which the original "
-                 "game never opens (--mod-saves)", self.mod_saves)), 3):
-            ttk.Checkbutton(form, text=text, variable=var).grid(
+        # patch_disc.py's switches, one box each, from its switch table (its
+        # docstring and the docs say what each changes).
+        for row, (name, _, _, text) in enumerate(patch_disc.SWITCHES, 3):
+            ttk.Checkbutton(form, text="%s (--mod %s)" % (text, name),
+                            variable=self.switches[name]).grid(
                 row=row, column=0, columnspan=3, sticky="w", pady=(6 if row == 3 else 0, 0))
+        note_row = 3 + len(patch_disc.SWITCHES)
         ttk.Label(form, text="The original must be the Redump dump (redump.info/disc/12334) "
                              "for a patch others can apply. It is only read. A patch without "
                              "the image still needs room for a temporary one while it is made.",
                   foreground="#555", wraplength=900, justify="left"
-                  ).grid(row=7, column=0, columnspan=3, sticky="w", pady=(6, 0))
+                  ).grid(row=note_row, column=0, columnspan=3, sticky="w", pady=(6, 0))
         self.update_entries()
 
         targets = self.mod.targets()
@@ -3224,9 +3219,9 @@ class BuildDialog:
         with open(self.settings_path(), "w", encoding="utf-8") as f:
             json.dump({"original": self.original.get(), "make_image": self.make_image.get(),
                        "output": self.output.get(), "make_patch": self.make_patch.get(),
-                       "patch": self.patch.get(), "skip_tutorial": self.skip.get(),
-                       "sponsor_negotiation": self.nego.get(), "launcher": self.launcher.get(),
-                       "mod_saves": self.mod_saves.get()},
+                       "patch": self.patch.get(),
+                       **{name.replace("-", "_"): var.get()
+                          for name, var in self.switches.items()}},
                       f,
                       indent=2)
 
@@ -3286,14 +3281,9 @@ class BuildDialog:
         cmd = ["patch_disc.py", "patch", original, output]
         cmd += ["%s=%s" % (t, shown_path(p)) for t, p in self.mod.targets()]
         cmd += ["--copies", "--dat", shown_path(self.mod.dat)]
-        if self.skip.get():
-            cmd.append("--skip-tutorial")
-        if self.nego.get():
-            cmd.append("--sponsor-negotiation")
-        if self.launcher.get():
-            cmd.append("--launcher")
-        if self.mod_saves.get():
-            cmd.append("--mod-saves")
+        mods = [name for name in patch_disc.SWITCH_NAMES if self.switches[name].get()]
+        if mods:
+            cmd += ["--mod", ",".join(mods)]
         out = [cmd]
         if self.make_patch.get():
             out.append(["vcdiff.py", "make", original, output, self.patch.get()])

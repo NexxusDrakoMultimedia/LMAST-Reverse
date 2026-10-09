@@ -38,6 +38,12 @@ Usage:
     python schedule.py roundtrip <DAT/PARAM>        # re-encode all three packs and their .HED, !! if not identical
     python schedule.py league <DAT/PARAM> [<n> [single]]  # generated leagues: check every size, or print one
     python schedule.py turns <DAT/PARAM> [<uid> [<days>]]  # leagues' game days and room; one UID's calendar
+    python schedule.py shift <SCHEDULE_SYSTEM.PAC> <out.PAC> <delta> <uid>[-<uid>] ...  # move UIDs' game days
+
+`shift` moves each UID's turn mask and start turn by delta turns (-1 is
+one turn earlier) and writes the pack with its .HED. The end turn stays,
+and a UID that runs across the year end is refused. patch_disc.py
+--mod national-cups uses it for the World and Euro National Cups.
 
 `league` builds round robins for 2-32 clubs (league_days, set_league):
 each club alternates home and away, the second leg starts one round
@@ -406,6 +412,52 @@ def compe_nation(system, compe):
     return row[2]
 
 
+def shift_turns(system, uids, delta):
+    """Move each UID's game days `delta` turns (its mask and its start
+    turn). The end turn stays: what the game does with it isn't traced,
+    and the national cups' 95 is the end of the year either way. The games
+    and pairings are by game day, so SCHEDULE_COMPETITION is unchanged."""
+    rows = year_uids(system.year)
+    for u in uids:
+        if u not in rows:
+            raise ValueError("UID %d has no year_schedule_data row" % u)
+        r, nxt = rows[u]
+        if nxt is not None:
+            raise ValueError("UID %d runs across the year end; shifting it isn't supported" % u)
+        turns = [t + delta for t in r.turns]
+        if turns and not 0 <= turns[0] <= turns[-1] < TURNS_PER_YEAR:
+            raise ValueError("UID %d: turns %d-%d move out of the year" % (
+                u, turns[0], turns[-1]))
+        start = r.start
+        if start != 0xff:
+            start += delta
+            if not 0 <= start < TURNS_PER_YEAR or (turns and start > turns[0]):
+                raise ValueError("UID %d: start turn %d would be past its first game day"
+                                 % (u, start))
+        r.turns, r.start = turns, start
+
+
+def shift_pack(data, uids, delta):
+    """SCHEDULE_SYSTEM.PAC bytes with shift_turns applied. The year rows
+    keep their size, so the pack and its .HED keep their layout."""
+    h, blobs = pac.binpac_blobs(data)
+    system = System([(e[2], b) for e, b in zip(h.entries, blobs)])
+    shift_turns(system, uids, delta)
+    out = pac.build_binpac(data[:h.header_size], [b for _, b in system.encode()])
+    if len(out) != len(data) or out[:h.header_size] != data[:h.header_size]:
+        raise ValueError("the rebuilt pack changed its layout")
+    return out
+
+
+def parse_uids(args):
+    """UIDs from '98' and '98-102' arguments."""
+    out = []
+    for a in args:
+        lo, _, hi = a.partition("-")
+        out += range(int(lo, 0), int(hi or lo, 0) + 1)
+    return out
+
+
 def year_turns(system):
     """{uid: (row, [turns])}, a second-year row's turns counted from 96."""
     out, last = {}, None
@@ -741,6 +793,31 @@ def cmd_year(root):
             r.flag, span))
 
 
+def cmd_shift(src, dst, delta, uids):
+    """Write src (SCHEDULE_SYSTEM.PAC) to dst with the UIDs' turns moved by
+    delta, and dst's .HED beside it (unchanged, as the layout is)."""
+    if os.path.abspath(src) == os.path.abspath(dst):
+        raise SystemExit("output is the input")
+    with open(src, "rb") as f:
+        data = f.read()
+    try:
+        new = shift_pack(data, uids, delta)
+    except (ValueError, struct.error) as e:
+        raise SystemExit("%s: %s" % (src, e))
+    h, blobs = pac.binpac_blobs(new)
+    rows = year_uids(System([(e[2], b) for e, b in zip(h.entries, blobs)]).year)
+    for u in uids:
+        r = rows[u][0]
+        print("UID %3d: start %d, turns %s" % (
+            u, r.start, "%d-%d" % (r.turns[0], r.turns[-1]) if r.turns else "none"))
+    _, hed = build_pack(src, blobs)
+    with open(dst, "wb") as f:
+        f.write(new)
+    with open(dst[:-4] + ".HED", "wb") as f:
+        f.write(hed)
+    print("%s: written, with %s" % (dst, dst[:-4] + ".HED"))
+
+
 def cmd_compe(root, uid):
     c = Competition(read_pack(find(root, COMPE_PAC))[uid][1])
     print("UID %d: %s, %d entrants, %d pairings, %d games over %d days" % (
@@ -871,6 +948,8 @@ def main(argv):
         cmd_entry(args[0], int(args[1], 0))
     elif cmd == "roundtrip" and len(args) == 1:
         cmd_roundtrip(args[0])
+    elif cmd == "shift" and len(args) >= 4:
+        cmd_shift(args[0], args[1], int(args[2]), parse_uids(args[3:]))
     elif cmd == "turns" and len(args) == 1:
         cmd_turns(args[0])
     elif cmd == "turns" and len(args) in (2, 3):
