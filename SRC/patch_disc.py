@@ -101,7 +101,11 @@ national-cups moves the World National Cup (UIDs 114-122) and the Euro
 National Cup (98-102) one turn earlier (schedule.shift_pack), so the World
 Cup final is no longer on the year's last turn, where its winner was never
 shown. It writes PARAM/SCHEDULE_SYSTEM.PAC and its copy in
-PRELOAD/STATIONFILE.PAC. See DOC/LMASTER_MOD.md.
+PRELOAD/STATIONFILE.PAC. The national-team calendar moves with them
+(PARAM/SCHEDULE_LIST.TBB and its copies in PRELOAD/SIMLOCALMEM0-6.PAC): in
+the tournament years the matches and the release are a turn earlier, and
+the call-up stays on turn 88 with the first group game. See
+DOC/LMASTER_MOD.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -1232,10 +1236,54 @@ def diff_jobs(file, base, old, new, why, gap=0x20):
     return jobs
 
 
+# The national-team calendar moves with them. SCHEDULE_LIST.TBB has one
+# table per year of the 4-year cycle, picked by (year - 2006) mod 4
+# (0x256a50), and one byte of flags per turn: 1 national match, 2 finals
+# tournament, 4 call-up, 8 release (pwkSche_IsNationalMatch/FMatch/
+# Convene/Break, 0x256b30-0x256c50). SIMPRG.REL's jmNT_CallCheck
+# (0x160b68) calls the squads up on a call-up turn, and jmNT_FreeCheck
+# (0x160c50) releases them, and in a tournament year asks for the champion.
+# Tables 1 (Euro) and 3 (World Cup) call up on 88 and play 89-94/95. The
+# matches and the release move back a turn; the call-up stays on 88 and
+# shares it with the first group game, as in the qualifying years, since
+# turn 87 has the play-off finals of England, Italy, the Netherlands and
+# Spain. The game reads the PRELOAD/SIMLOCALMEM0-6.PAC copies too.
+LIST_FILE, LIST_ENTRY = "PARAM/SCHEDULE_LIST.TBB", "Schedule_list.tbb"
+LIST_PACKS = ["PRELOAD/SIMLOCALMEM%d.PAC" % i for i in range(7)]
+LIST_TABLES = (1, 3)                    # Euro and World Cup years
+LIST_MATCH, LIST_FINALS, LIST_CALL, LIST_FREE = 1, 2, 4, 8
+LIST_CALL_TURN = 88
+
+
+def shift_list(data):
+    """SCHEDULE_LIST.TBB with the tournament years' matches and release a
+    turn earlier; None when it already has them."""
+    import tbb
+    _, tables = tbb.parse(data)
+    new = bytearray(data)
+    for k in LIST_TABLES:
+        t = tables[k]
+        b = t.data
+        if len(b) != 0x60:
+            raise ValueError("%s table %d: %d bytes, expected 96" % (LIST_FILE, k, len(b)))
+        if b[LIST_CALL_TURN] & LIST_MATCH:
+            return None
+        if b[LIST_CALL_TURN] != LIST_FINALS | LIST_CALL or not b[0x5f - (k == 1)] & LIST_FREE:
+            raise ValueError("%s table %d: turn 88 is 0x%x; not the retail table?"
+                             % (LIST_FILE, k, b[LIST_CALL_TURN]))
+        moved = bytearray(b[:LIST_CALL_TURN]) + b[LIST_CALL_TURN + 1:] + b"\0"
+        moved[LIST_CALL_TURN] |= b[LIST_CALL_TURN]
+        start = t.offset + t.data_offset
+        new[start:start + 0x60] = moved
+    return bytes(new)
+
+
 def plan_national_cups(f, img):
-    """Jobs for --mod national-cups. A pack already moved is left alone."""
+    """Jobs for --mod national-cups. A file already moved is left alone."""
     import pac
     import schedule
+    why = "national-cups: World and Euro National Cups a turn earlier"
+    jobs, notes = [], []
     e = img.entry(SCHEDULE_FILE)
     data = read_at(f, img, e.path, 0, e.size)
     h, blobs = pac.binpac_blobs(data)
@@ -1243,21 +1291,35 @@ def plan_national_cups(f, img):
         [(x[2], b) for x, b in zip(h.entries, blobs)]).year)
     first = rows[122][0].turns[0]
     if first == 91:
-        return [], ["note: %s already has the national cups a turn earlier" % SCHEDULE_FILE]
-    if first != 92:
+        notes.append("note: %s already has the national cups a turn earlier" % SCHEDULE_FILE)
+    elif first != 92:
         raise ValueError("%s: UID 122 starts on turn %d, expected 92; not the retail pack?"
                          % (SCHEDULE_FILE, first))
-    new = schedule.shift_pack(data, NATIONAL_UIDS, -1)
-    why = "national-cups: World and Euro National Cups a turn earlier"
-    jobs = diff_jobs(e.path, 0, data, new, why)
-    s = img.entry(STATION_FILE)
-    station = read_at(f, img, s.path, 0, s.size)
-    sh, sblobs = pac.binpac_blobs(station)
-    i = pac.find_entry(sh, STATION_ENTRY)
-    if sblobs[i] != data:
-        raise ValueError("%s#%s isn't a copy of %s" % (STATION_FILE, STATION_ENTRY, SCHEDULE_FILE))
-    jobs += diff_jobs(s.path, sh.entries[i][0], data, new, why)
-    return jobs, []
+    else:
+        new = schedule.shift_pack(data, NATIONAL_UIDS, -1)
+        jobs += diff_jobs(e.path, 0, data, new, why)
+        jobs += pack_copy_jobs(f, img, STATION_FILE, STATION_ENTRY, SCHEDULE_FILE, data, new, why)
+    e = img.entry(LIST_FILE)
+    data = read_at(f, img, e.path, 0, e.size)
+    new = shift_list(data)
+    if new is None:
+        notes.append("note: %s already has the national-team dates a turn earlier" % LIST_FILE)
+    else:
+        jobs += diff_jobs(e.path, 0, data, new, why)
+        for p in LIST_PACKS:
+            jobs += pack_copy_jobs(f, img, p, LIST_ENTRY, LIST_FILE, data, new, why)
+    return jobs, notes
+
+
+def pack_copy_jobs(f, img, pack, entry, of, old, new, why):
+    """diff_jobs for the copy of `of` stored as `entry` in BINPAC `pack`."""
+    import pac
+    s = img.entry(pack)
+    sh, sblobs = pac.binpac_blobs(read_at(f, img, s.path, 0, s.size))
+    i = pac.find_entry(sh, entry)
+    if sblobs[i] != old:
+        raise ValueError("%s#%s isn't a copy of %s" % (pack, entry, of))
+    return diff_jobs(s.path, sh.entries[i][0], old, new, why)
 
 
 # --- the developer launcher (DOC/SQB_FORMAT.md#the-developer-launcher) --------
@@ -1297,7 +1359,7 @@ SWITCHES = (
      "Sponsor negotiation: negotiate with the main sponsor, as in the Japanese release"),
     ("rival-manager", plan_rival_manager, [SLES_FILE],
      "Rival's manager: the rival gets the manager of its own style"),
-    ("national-cups", plan_national_cups, [SCHEDULE_FILE, STATION_FILE],
+    ("national-cups", plan_national_cups, [SCHEDULE_FILE, STATION_FILE, LIST_FILE] + LIST_PACKS,
      "National cups a turn earlier, so the World National Cup's winner is shown"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),

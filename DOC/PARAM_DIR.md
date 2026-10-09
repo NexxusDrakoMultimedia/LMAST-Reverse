@@ -73,7 +73,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `REGULATION.TBB` | TBB, 1 table | `plRec_MatchRegulations` (`0x21dc60`), `SIMPRG.REL` list | 165 match regulations × **120 bytes**, indexed by `PLSCHE_GROUP`: clubs, win bonus, prizes, bans, squad and substitution limits, places. **confirmed**, see [`REGULATION_FORMAT.md`](REGULATION_FORMAT.md) |
 | `CLUBRESULT.TBB` | TBB, 1 table | `SIMPRG.REL 0x167e90` | 165 × **8 bytes** (u16 fields), same count as `REGULATION`. **confirmed** (`0x167f4c`: `i << 3`) |
 | `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**: roof, level, capacity (thousands). **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`; readers in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) |
-| `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 flags. **confirmed**, see below |
+| `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 national-team flags per turn. **confirmed**, see below |
 | `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | `SLES 0x246540` (table 11), `SIMPRG.REL` lists | training menus. Table 11 (845 bytes) feeds `pwkMatchGrow_ClubRankCoe` (`0x246520`). Other tables not traced |
 | `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648` | training camps. Reader not traced |
 | `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8` | 612 bytes. Camp explanations (the name suggests message ids) |
@@ -101,13 +101,34 @@ The record layouts of the files with their own doc are in that doc. The
 sections below cover the two files whose layout is known and that have
 no doc of their own.
 
-## `SCHEDULE_LIST.TBB`: which years a competition runs
+## `SCHEDULE_LIST.TBB`: the national-team calendar
 
-**Confirmed** by `SLES 0x256a50`/`0x256b30`. The year (u16, e.g. 2006) picks
-table `(year − 2006) mod 4` (years before 2006 use `year − 2003`). The
-table's byte at index `i` (`i < 0x60`) has bit 0 set if competition `i`
-runs that year. This matches internationals held every 4 years (World Cup
-and European Championship years).
+**Confirmed** by `SLES 0x256a50`–`0x256c50`. The year (u16, e.g. 2006)
+picks table `(year − 2006) mod 4` (years before 2006 use `year − 2003`).
+Each table is 96 bytes, one per turn
+([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#turns)), and each byte holds
+flags:
+
+| Bit | Function | Meaning |
+|---|---|---|
+| 1 | `pwkSche_IsNationalMatch` `0x256b30` | national teams play (the globes on the Schedule screen, user report) |
+| 2 | `pwkSche_IsNationalFMatch` `0x256b90` | finals tournament |
+| 4 | `pwkSche_IsNationalConvene` `0x256c50` | call-up: `SIMPRG.REL` `jmNT_CallCheck` `0x160b68` picks every squad |
+| 8 | `pwkSche_IsNationalBreak` `0x256bf0` | release: `jmNT_FreeCheck` `0x160c50` sends the players back; with bit 2 it also asks `getChampionTeam` for the cup's winner |
+
+The retail tables (turn: flags):
+
+| Table | Years | Turns |
+|---|---|---|
+| 0, 2 | qualifying | 20, 26, 34, 36, 60, 68: 1+4+8; 88: 1+4; 89: 1+8 |
+| 1 | Euro National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–93: 1+2; 94: 1+2+8 |
+| 3 | World National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–94: 1+2; 95: 1+2+8 |
+
+These match the cups' turns in `SCHEDULE_SYSTEM.PAC`. A season starting
+in 2025 uses table 3, a World Cup year (user report). Copies sit in
+`PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 31). `patch_disc.py --mod
+national-cups` moves tables 1 and 3 a turn earlier
+([`LMASTER_MOD.md`](LMASTER_MOD.md)).
 
 ## `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`
 

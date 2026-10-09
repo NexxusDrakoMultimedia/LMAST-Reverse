@@ -604,8 +604,8 @@ turns a 42-day schedule would add.
 - `PARAM/GROUP2COMPE.TBB` holds 166 × s16 values. It matches neither the
   `year_schedule_data` competition (91 of 164 differ) nor the header's
   `+0x02` (93 differ). Only the `SIMPRG.REL` load list names it.
-- `PARAM/SCHEDULE_LIST.TBB`: which competitions run in which year of the
-  4-year cycle ([`PARAM_DIR.md`](PARAM_DIR.md#schedule_listtbb-which-years-a-competition-runs)).
+- `PARAM/SCHEDULE_LIST.TBB`: the national-team calendar, flags per turn
+  for each year of the 4-year cycle ([`PARAM_DIR.md`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)).
 
 ## Still unknown
 
