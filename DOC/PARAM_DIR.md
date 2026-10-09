@@ -125,7 +125,8 @@ The retail tables (turn: flags):
 | 3 | World National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–94: 1+2; 95: 1+2+8 |
 
 These match the cups' turns in `SCHEDULE_SYSTEM.PAC`. A season starting
-in 2025 uses table 3, a World Cup year (user report). Copies sit in
+in 2025 uses table 3, a World Cup year, and one starting in 2007 table 1,
+a Euro year (user report). Copies sit in
 `PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 31). `patch_disc.py --mod
 national-cups` moves tables 1 and 3 a turn earlier
 ([`LMASTER_MOD.md`](LMASTER_MOD.md)).
