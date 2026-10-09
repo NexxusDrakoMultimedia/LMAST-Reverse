@@ -114,6 +114,11 @@ widened 3D draws the player. Tested in PCSX2: the tags stay over their
 players (user report). Which match function places them hasn't been
 traced.
 
+The black letterbox bars of the special-tactics replays are 2D, so they
+are squeezed and clipped to 4:3 like the rest of the UI, and the 3D
+shows beside them. That is the intended look (user's choice): drawing
+full-width bars would need telling them apart from sliding panels.
+
 ### Clipping to 4:3
 
 UI the game parks just off its 512-pixel screen (the hidden squad list,
@@ -145,10 +150,6 @@ at the 4:3 edge, list rows are intact (user report, 2026-10-04).
   in the right margin, so it draws outside the 2D pass and the clip
   boxes. It isn't `CSpriteRef` (`0x1267e8`): squeezing that class's
   hard-coded x conversions changed nothing (tested in PCSX2).
-- The black letterbox bars of the special-tactics replays are 2D, so
-  they are squeezed and clipped to 4:3 and the 3D shows beside them.
-  Drawing full-width bars unsqueezed would need telling them apart from
-  sliding panels, which would then stretch while they slide.
 - The stadium ad boards floating above the pitch in replays are the
   game's normal behaviour, not the patch (user report).
 

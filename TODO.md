@@ -293,9 +293,8 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] Tools still PAL-only: `patch_disc.py`'s switches (they refuse
       other discs), `save.py`'s commands (they take no ISO folder), the
       editor
-- [ ] Widescreen UI leftovers (`DOC/WIDESCREEN.md#whats-still-open`): the
-      Pre-match background movie still shows in the right margin; the
-      special-tactics replays' letterbox bars only cover the 4:3 area
+- [ ] Widescreen UI leftover (`DOC/WIDESCREEN.md#whats-still-open`): the
+      Pre-match background movie still shows in the right margin
 
 ## 8. Housekeeping
 
