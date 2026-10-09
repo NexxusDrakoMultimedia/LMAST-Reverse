@@ -4,15 +4,17 @@
 # Widescreen
 
 A PCSX2 patch that draws the 3D in 16:9 without stretching it (Hor+: more
-of the pitch at the sides, players keep their shape), and an optional
-second section that draws the match HUD at 4:3 proportions; see
-[The UI fix](#the-ui-fix).
+of the pitch at the sides, players keep their shape), and draws the 2D
+(the match HUD, the menus and the season-mode backgrounds) at 4:3
+proportions in the middle of the screen; see [The UI fix](#the-ui-fix).
 
 The patch is
 [`PNACH/SLES-54151_3CB245D5.pnach`](../PNACH/SLES-54151_3CB245D5.pnach),
 for the PAL executable (PCSX2 CRC `3CB245D5`). Copy it into PCSX2's
 `patches/` folder, tick "Widescreen 16:9" under Game Properties →
-Patches, and boot. The section also sets PCSX2's aspect ratio to 16:9.
+Patches, and boot. It's one section, which also sets PCSX2's aspect
+ratio to 16:9. [`PNACH/pcsx2/`](../PNACH/pcsx2/) holds the same patch
+without the comments, for submitting to PCSX2's patch collection.
 The FMVs (the intro and the event movies) stay stretched to 16:9.
 PCSX2's FMV Aspect Ratio Override didn't switch them back to 4:3 in a
 test (user report); the user is happy to leave them.
@@ -74,8 +76,9 @@ shadow's projection, which is why the patch works one step later.
 
 ## The UI fix
 
-A second section, "Widescreen 16:9 UI fix (experimental)", draws the
-match HUD at 4:3 proportions in the middle of the 16:9 screen. Tested in
+The second half of the patch draws the match HUD at 4:3 proportions in
+the middle of the 16:9 screen. (It was a separate section, "Widescreen
+16:9 UI fix", until it was tested everywhere; the two are now one.) Tested in
 PCSX2: in an exhibition match the scoreboard, clock, radar and their text
 line up at 4:3 proportions; in season mode the Club House and Pre-match
 menus and the pre-match intro panel line up too, and faces look normal

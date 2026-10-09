@@ -8,7 +8,7 @@ gametitle=Let's Make a Soccer Team! (PAL) [SLES-54151] (3CB245D5)
 [Widescreen 16:9]
 gsaspectratio=16:9
 author=LMAST-Reverse
-description=Renders the 3D in 16:9 (Hor+). The 2D UI stays stretched; use the UI fix for that.
+description=Renders the 3D in 16:9 (Hor+) and draws the match HUD, the menus and the season-mode backgrounds at 4:3, centred.
 
 // nnSetProjectionPXPlusPS2 (0x18f8a8) and nnSetProjection (0x18f450) copy the
 // projection matrix to the global one at 0x365ad0 with nnCopyMatrix
@@ -80,9 +80,8 @@ patch=0,EE,0012faf8,word,e4800000
 patch=0,EE,0012fafc,word,03200008
 patch=0,EE,0012fb00,word,00000000
 
-[Widescreen 16:9 UI fix (experimental)]
-author=LMAST-Reverse
-description=Use with "Widescreen 16:9". Draws the match HUD and the menus at 4:3 proportions, centred.
+// The UI fix: the 2D drawn at 4:3 proportions in the middle of the
+// 16:9 screen, clipped to the 4:3 area (DOC/WIDESCREEN.md#the-ui-fix).
 
 // Text: Ninja's 2D primitives (nnDrawPrimitive2D 0x1779d8,
 // nnuPrimitive2DSetVertex 0x167580, nnDrawPrimitiveSprite2DPS2 0x179cc0)
