@@ -543,6 +543,10 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Widescreen pnach shortened from 167 lines to 14: each run of
       words is one `bytes` line. The same words land in memory (checked
       over PINE in PCSX2 2.8.2)
+- [x] Widescreen room changes: the captured last frame that
+      `CBackgroundManager` shows between Club House rooms was squeezed
+      twice (75% width). A cave on `nnDrawPrimitive2D` draws that
+      full-screen quad unsqueezed. Tested in PCSX2 (user report)
 
 ## 8. Housekeeping
 

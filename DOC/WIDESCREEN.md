@@ -62,7 +62,7 @@ fix stay `patch=1`, because the game writes that table itself after boot.
 
 Each run of consecutive words is one `bytes` line (PCSX2 writes the hex
 in memory order, so each instruction word appears byte-reversed), and
-single words stay `word` lines: 14 lines in all. Unused words between
+single words stay `word` lines: 15 lines in all. Unused words between
 caves in the same debug function are written as zero. Checked over PINE
 in PCSX2 2.8.2: after boot, all 167 words of the earlier one-word-per-line
 patch read back unchanged, and the gaps read zero.
@@ -197,6 +197,36 @@ value at the time. Ruled out on the way:
 | The same for 3D primitives (`nnBeginDrawPrimitive3D`, called by Acroarts at `SIMPRG.REL 0x1b155c`) | margin unchanged |
 | Clipping only SimRoot's draw | margin unchanged: on this screen the club editor's draw method draws the scene |
 
+### Room changes
+
+When the player moves between the Club House, My Room and the Office,
+`CBackgroundManager` shows the last frame while the next room loads, then
+fades it out over the new room. Its draw function (`SIMPRG.REL 0xfe5c0`,
+not exported) takes the captured frame's texture from the manager's
+surface at `+0x154` and draws it with `nnDrawPrimitive2D` as one textured
+quad: from the vertices at `SIMPRG.REL 0x1d6ab8` while the screen is
+locked, and from `0x1d6a68` with alpha `+0x17c` (falling by 8 a frame)
+during the fade. Both are 4 vertices of 0x14 bytes {x, y, colour, u, v},
+covering x and y 0–512 with u and v 0–1.
+
+The frame already holds the 4:3 picture in the middle (x 64–447), so the
+text squeeze shrank it a second time, to x 112–399: the old room dropped
+to 75% of the menu width until the new room faded in.
+
+The UI fix sends `nnDrawPrimitive2D` (`0x1779d8`, whose first instruction
+becomes `j 0x13cd40`) through a cave. For 4 vertices whose last one has
+x = y = 512.0 and v = 1.0 (offsets `0x3c`, `0x40`, `0x48`; the textured
+layout, stride 0x14 at `0x177dd4`), it writes the unsqueezed table values
+(28672, 16), draws, and writes the squeezed ones (29696, 12) back. The
+function reads the table inside its vertex loop (`0x177b68`,
+`0x177ce4`), so the change applies to that quad only. Every other
+primitive goes straight on. The cave follows the backdrop cave in
+`display_menu`, at `0x13cd40`–`0x13cdb8`.
+
+Tested in PCSX2 from boot: changing rooms in season mode, the old room
+keeps its full 4:3 width while the next one loads and fades in (user
+report, 2026-10-09).
+
 ## Known behaviour
 
 - The FMVs stay stretched to 16:9 (see the top of this page).
@@ -213,4 +243,6 @@ python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x12f9b0 92
 python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x20ecd8 30 --sles ISO/SLES_541.51
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x7f40 48 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x105280 16
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xfe5c0 140 --sles ISO/SLES_541.51
+python SRC/sles_disasm.py ISO/SLES_541.51 dis nnDrawPrimitive2D
 ```

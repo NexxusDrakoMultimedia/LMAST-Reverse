@@ -147,9 +147,19 @@ patch=0,EE,0013be98,bytes,f0ffbd270000bfff0800a4ff1400013cc8bf28dcc0bf28fcc83205
 // then put full width back. Other draw methods, the match among them (no
 // GAMEPRG code calls getInstance), are passed through untouched.
 patch=0,EE,001052a8,word,0c04f32a
-// Cave in graphics::OperatePostEffect::display_menu (0x13cca8, 0x150
+// Room changes: CBackgroundManager (SIMPRG.REL 0xfe5c0) shows the last
+// frame, captured whole, as a 512x512 textured Ninja 2D quad while the
+// next room loads and during the cross-fade. The frame already holds the
+// 4:3 picture, so the text squeeze above would shrink it a second time.
+// nnDrawPrimitive2D (0x1779d8) jumps to a cave (0x13cd40): for 4 textured
+// vertices whose last one is (512, 512) with v = 1.0, it puts the
+// unsqueezed table values (28672, 16) while it draws, then the squeezed
+// ones back. Other primitives pass straight through.
+patch=0,EE,001779d8,word,0804f350
+// Caves in graphics::OperatePostEffect::display_menu (0x13cca8, 0x150
 // bytes, a debug menu nothing calls; it and the menus it calls are only
 // referenced from the export table):
+// 0x13cca8, backdrops:
 //   move $t2, $v1; addiu $t3, $zero, 0x28; lui $t1, 0xc0b; ori $t1, $t1, 0x9cde; lw $t0, ($t2); beq $t0, $t1, 0x13ccd4
 //   addiu $t3, $t3, -1; bnez $t3, 0x13ccb8; addiu $t2, $t2, 4; jr $v1; nop; addiu $sp, $sp, -0x20
 //   sd $ra, ($sp); sd $a0, 8($sp); sd $v1, 0x10($sp); lui $at, 0x14; ld $t0, -0x4038($at); sd $t0, -0x4030($at)
@@ -157,4 +167,11 @@ patch=0,EE,001052a8,word,0c04f32a
 //   ld $t0, -0x32c8($at); sd $t0, -0x4030($at); jal 0x14cb20; sd $t0, -0x4040($at); ld $ra, ($sp); jr $ra
 //   addiu $sp, $sp, 0x20
 // Data at 0x13cd38: the full-width value.
-patch=0,EE,0013cca8,bytes,2150600028000b240b0c093cde9c29350000488d05000911ffff6b25fcff601504004a250800600000000000e0ffbd270000bfff0800a4ff1000a3ff1400013cc8bf28dcd0bf28fcc832050cc0bf28fc1000a3df09f860000800a4df1400013c38cd28dcd0bf28fcc832050cc0bf28fc0000bfdf0800e0032000bd2700000000000000000000000000000000000000000000ff010000bf01
+// 0x13cd40, room changes:
+//   addiu $t0, $zero, 4; bne $a2, $t0, 0x13cdb0; lui $t1, 0x4400; lw $t0, 0x3c($a1); bne $t0, $t1, 0x13cdb0
+//   lw $t0, 0x40($a1); bne $t0, $t1, 0x13cdb0; lw $t0, 0x48($a1); lui $t1, 0x3f80; bne $t0, $t1, 0x13cdb0
+//   nop ; addiu $sp, $sp, -0x10; sd $ra, ($sp); lui $at, 0x36; lui $t0, 0x46e0; sw $t0, 0x5b98($at)
+//   lui $t0, 0x4180; sw $t0, 0x5b9c($at); jal 0x1779dc; addiu $sp, $sp, -0x60; lui $at, 0x36
+//   lui $t0, 0x46e8; sw $t0, 0x5b98($at); lui $t0, 0x4140; sw $t0, 0x5b9c($at); ld $ra, ($sp); jr $ra
+//   addiu $sp, $sp, 0x10; j 0x1779dc; addiu $sp, $sp, -0x60
+patch=0,EE,0013cca8,bytes,2150600028000b240b0c093cde9c29350000488d05000911ffff6b25fcff601504004a250800600000000000e0ffbd270000bfff0800a4ff1000a3ff1400013cc8bf28dcd0bf28fcc832050cc0bf28fc1000a3df09f860000800a4df1400013c38cd28dcd0bf28fcc832050cc0bf28fc0000bfdf0800e0032000bd2700000000000000000000000000000000000000000000ff010000bf01040008241a00c8140044093c3c00a88c170009154000a88c150009154800a88c803f093c1200091500000000f0ffbd270000bfff3600013ce046083c985b28ac8041083c9c5b28ac77de050ca0ffbd273600013ce846083c985b28ac4041083c9c5b28ac0000bfdf0800e0031000bd2777de0508a0ffbd27
