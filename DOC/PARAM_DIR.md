@@ -70,7 +70,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `PLRRSRC_INITTEAMDATA.TBB` | TBB, 3 tables | `ePLRSRC` 4 | starting divisions and last season's order per competition, see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md). **confirmed** |
 | `INITNATIDATA.TBB` | TBB, 1 table | `ePLRSRC` 6 | UEFA rank and points, world rating per nation, see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#initnatidatatbb-nations). **confirmed** |
 | `TEAM_INIT_DATA.TBB` | TBB, 9 tables | `CEDITPRG.REL` list `0x1b288` (`CSelectTeamStyleModule`) → `pwkTeam_Init2` (`0x25eae8`) | the player's new club by league and team style: squad, youth team, manager, coaches, scouts, staff lists and the rival club, see [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md). **confirmed** |
-| `REGULATION.TBB` | TBB, 1 table | `plRec_MatchRegulations` (`0x21dc60`), `SIMPRG.REL` list | 165 match regulations × **120 bytes**, indexed by `PLSCHE_GROUP`. **confirmed** (`0x21dd18`: `group * 0x78`) |
+| `REGULATION.TBB` | TBB, 1 table | `plRec_MatchRegulations` (`0x21dc60`), `SIMPRG.REL` list | 165 match regulations × **120 bytes**, indexed by `PLSCHE_GROUP`: clubs, win bonus, prizes, bans, squad and substitution limits, places. **confirmed**, see [`REGULATION_FORMAT.md`](REGULATION_FORMAT.md) |
 | `CLUBRESULT.TBB` | TBB, 1 table | `SIMPRG.REL 0x167e90` | 165 × **8 bytes** (u16 fields), same count as `REGULATION`. **confirmed** (`0x167f4c`: `i << 3`) |
 | `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**: roof, level, capacity (thousands). **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`; readers in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) |
 | `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 flags. **confirmed**, see below |
@@ -119,10 +119,10 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- The fields of the tables without a doc of their own: `REGULATION`,
-  `CLUBRESULT`, `TRAINING_LIST`, the camp tables, `CLUBEVENT`,
-  `GROUP2COMPE`, `TOUR_LIST`, `TACTICS_FORMATION_SET` and
-  `CLUB_RANK_SYSTEM` tables 0, 1 and 4.
+- The fields of the tables without a doc of their own: `CLUBRESULT`,
+  `TRAINING_LIST`, the camp tables, `CLUBEVENT`, `GROUP2COMPE`,
+  `TOUR_LIST`, `TACTICS_FORMATION_SET` and `CLUB_RANK_SYSTEM` tables 0, 1
+  and 4.
 - What's still open in the files that have a doc is listed there, for
   example the schedule packs
   ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown)) and what each

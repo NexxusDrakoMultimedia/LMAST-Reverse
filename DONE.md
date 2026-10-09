@@ -322,6 +322,15 @@ files. Each item keeps what was found, where, and how it was tested.
       Tested through the widgets: England 22 and France 18 with a swap,
       saved, and the logged commands give the same bytes; reopened and
       set back to 20
+- [x] `REGULATION.TBB` fields: `DOC/REGULATION_FORMAT.md` and
+      `SRC/regulation.py` (`info`, `show`, `set`, `roundtrip`, in
+      `regress.py`). 165 rows of 60 s16, one per schedule UID: match
+      grade, clubs, win bonus and 32 position prizes (both x 10,000), the
+      UEFA-rank prize scaling, yellow-card ban, matchday squad, foreign
+      players, substitutions, and six place slots read by
+      `plRec_getNextCompetitionData` (`0x21df60`). All confirmed from the
+      code except `+0x04`; all 165 rows fit, and `clubs` matches the
+      team-entry slots for 163 of 164 UIDs
 
 ## 3. Ninja 3D models and motions
 

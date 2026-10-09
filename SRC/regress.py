@@ -75,6 +75,12 @@ def checks():
         ("teaminit", ["teaminit.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("teaminit_roundtrip", ["teaminit.py", "roundtrip", "DAT/PARAM/TEAM_INIT_DATA.TBB"],
          ["DAT/PARAM/TEAM_INIT_DATA.TBB"]),
+        ("regulation", ["regulation.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("regulation_roundtrip", ["regulation.py", "roundtrip", "DAT/PARAM/REGULATION.TBB"],
+         ["DAT/PARAM/REGULATION.TBB"]),
+        # Every row's fields and places by name.
+        ("regulation_show", ["regulation.py", "show", "DAT/PARAM/REGULATION.TBB"],
+         ["DAT/PARAM/REGULATION.TBB"]),
         # The new club's squads and staff, named from the player database.
         ("plrsim", ["plrsim.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         # The free-agent list through the encoder setfree uses.

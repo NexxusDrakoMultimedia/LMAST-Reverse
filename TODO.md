@@ -11,10 +11,10 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **The parameter tables' fields** (section 2). Start with
-   `REGULATION.TBB`: name its fields so it can get a field-level writer
-   and an editor tab. These are the next thing a mod would tune, and
-   `tbb.py replace` can only swap a whole table.
+1. **The parameter tables' fields** (section 2). `REGULATION.TBB` is
+   done (`regulation.py`); next an editor tab for it, then the tables a
+   mod would tune after it (`CLUBRESULT`, `TRAINING_LIST`, the camp
+   tables). `tbb.py replace` can only swap a whole table.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -61,10 +61,14 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [ ] Test in PCSX2: a smaller first division (France at 18, from the
       editor's Season tab) and two nations changed in one save. Only
       England at 22 is tested in game
-- [ ] Parameter tables: name the fields of the `TBB1` tables a mod would
-      tune (`REGULATION.TBB` and the others in `DOC/PARAM_DIR.md`), so
-      they can get a field-level writer and an editor tab. `tbb.py
-      replace` only swaps a whole table
+- [ ] Parameter tables: name the fields of the other `TBB1` tables a mod
+      would tune (`CLUBRESULT`, `TRAINING_LIST`, the camp tables and the
+      others in `DOC/PARAM_DIR.md#still-unknown`), so they can get
+      field-level writers. `tbb.py replace` only swaps a whole table
+- [ ] `REGULATION.TBB` leftovers (`DOC/REGULATION_FORMAT.md`): `+0x04`,
+      the reader of `squad2`, what the place checks change on screen, and
+      a PCSX2 test of an edit (a win bonus or substitution count is the
+      easiest to see). Then an editor tab
 - [ ] How your club and the rival become ranks 25 and 26 of the second
       division's past record, which the own-nation schedule (UID 1, 26
       slots) takes after the tutorial (`DOC/SCHEDULE_FORMAT.md`, user

@@ -68,9 +68,9 @@ Adding a writer (the write stage in `GOALS.md`) follows the same steps, plus
 a `roundtrip` command that re-encodes every file or record and marks any
 difference with `!!`. It goes into `regress.py` as `<name>_roundtrip`. The
 existing writers are `pac.py` (BINPACs), `tbb.py`, `pbdata.py`, `mbb.py`,
-`initteam.py` (`set`, `setteam`, `swap`), `teaminit.py`, `uniform.py`,
-`sqb.py` (`setcmd`, and `set_commands` for several edits checked
-together), `plrsim.py` (`setfree`), `save.py` and `leaguesize.py`
+`initteam.py` (`set`, `setteam`, `swap`), `teaminit.py`, `regulation.py`,
+`uniform.py`, `sqb.py` (`setcmd`, and `set_commands` for several edits
+checked together), `plrsim.py` (`setfree`), `save.py` and `leaguesize.py`
 (`build`, which writes the schedule packs through `schedule.py`'s
 encoders). `schedule.py` itself has the encoders and `roundtrip` but no
 edit command.
