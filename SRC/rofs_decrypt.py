@@ -3,7 +3,7 @@
 """ROFS/CVM decryptor for Let's Make a Soccer Team! (PS2).
 
 Reimplements roxfan's CRI ROFS decryption algorithm (see
-DOC/LMAST_DATA_CVM_INFO.md) in pure Python so no C++ toolchain is
+DOC/DATA_CVM_EXTRACTION.md) in pure Python so no C++ toolchain is
 needed. Parses the CVMH/ZONE chunk header written by Konami's
 "ROFSBLD" tool, decrypts the encrypted ISO9660 table-of-contents
 (the primary volume descriptor and directory records) with the 8-byte

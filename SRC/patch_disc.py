@@ -116,7 +116,7 @@ under other names (shared stadium parts, say) is only reported.
 PRELOAD packs: an entry that changes size (a message file mbb.py grew
 into its MES.PAC slot, say) is written by rebuilding its pack with
 pac.build_binpac, which moves the later entries; the pack may grow to the
-end of its last sector. Entries of a PRELOAD pack, as copies or as
+end of its last sector, and one that needs more is moved (above). Entries of a PRELOAD pack, as copies or as
 <path>#<entry> targets, are located through the header the pack has in
 the image now, so a second run works on a rebuilt pack. Any other copy
 is a fixed-size slot and keeps the old data, with a warning.

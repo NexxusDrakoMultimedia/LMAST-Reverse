@@ -10,7 +10,8 @@ source as its source segment and is encoded as COPY instructions for
 unchanged runs and ADD instructions for changed bytes, using the default
 code table and no secondary compression, so any RFC 3284 decoder (xdelta3,
 xdelta UI, DeltaPatcher, open-vcdiff) can apply it. A few changed bytes in
-a 3.5 GB image make a patch of about 4 KB.
+a 3.5 GB image make a patch of about 10 KB (one COPY per unchanged
+window: the Terry mod's is 10,642 bytes).
 
 `apply` decodes any VCDIFF file without secondary compression or a custom
 code table: all of the default code table, the address cache, RUN and

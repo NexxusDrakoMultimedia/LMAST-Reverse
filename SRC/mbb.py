@@ -45,12 +45,14 @@ non-empty cells that differ from the current text are applied.
 Sizes: an edited .mbb that still fits its original size is zero-padded to
 it (allowed by Initialize, 0x30d1f4). A bigger one grows into the unused
 rest of its 0x800-aligned slot in MES.PAC, and only its size in the
-archive header changes (the loader reads (size >> 11) + 1 sectors,
-0x10cf1c). A file too big for its slot is refused. The output always has
-MES.PAC's size and every entry keeps its offset, so patch_disc.py can
-write it to a disc; --copies updates the PRELOAD copies, rebuilding a
-pack around a grown file as long as the pack stays inside its last
-sector (DOC/PRELOAD_DIR.md#rebuilding-a-pack).
+archive header changes. The game finds each file through the executable's
+copy of the index (0x34df50, read by CFcEuro_MsgResource::Execute
+0x10f4b0) and reads (size >> 11) + 1 sectors of the original size, which
+covers the whole slot of every file on the disc. A file too big for its
+slot is refused. The output always has MES.PAC's size and every entry
+keeps its offset, so patch_disc.py can write it to a disc; --copies
+updates the PRELOAD copies, rebuilding a pack around a grown file
+(DOC/PRELOAD_DIR.md#rebuilding-a-pack).
 
 Languages (FC_EURO_LOCALIZE): 0 Japanese, 1 English, 2 French, 3 German,
 4 Italian, 5 Spanish, 6 unused slot (mostly English).
@@ -463,8 +465,9 @@ class MesPack:
     so its entry, the header and any PRELOAD copies keep their sizes. A
     bigger one grows into the unused part of its slot: entries start on
     0x800 boundaries and the gap after each is '0' filler, and the game
-    reads (size >> 11) + 1 sectors from the header's size (0x10cf1c), so
-    only the entry's size field changes. The archive keeps its size and
+    reads (size >> 11) + 1 sectors of the original size from its own copy
+    of the index (0x34df50), which covers the slot, so only the entry's
+    size field in the header changes. The archive keeps its size and
     every other entry stays put. patch_disc.py --copies rebuilds the
     PRELOAD packs holding a grown file. A file that doesn't fit its slot
     can't be built."""

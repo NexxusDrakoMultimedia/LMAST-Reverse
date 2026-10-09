@@ -25,11 +25,12 @@ disc:SLES_541.51=mod/disc/SLES_541.51.
 
 File > Build disc (Ctrl+B) writes a modded disc image, an xdelta patch,
 or both, optionally with patch_disc.py's switches (--skip-tutorial,
---sponsor-negotiation, --launcher, --mod-saves): `patch_disc.py patch ... --copies` puts the mod folder on a copy
-of the original, and `vcdiff.py make` compares the two. For a patch on
-its own that image is temporary (<patch>.building.iso, removed after).
-It shows their output and logs both commands. The original must be the Redump dump
-for a patch others can apply.
+--sponsor-negotiation, --launcher, --mod-saves): `patch_disc.py patch ...
+--copies` puts the mod folder on a copy of the original, and `vcdiff.py
+make` compares the two. For a patch on its own that image is temporary
+(<patch>.building.iso, removed after). It shows their output and logs
+both commands. The original must be the Redump dump for a patch others
+can apply.
 
 Tabs:
     People   players, managers and scouts (pbdata.py; DOC/PBDATA_FORMAT.md).

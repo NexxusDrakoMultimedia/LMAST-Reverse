@@ -44,8 +44,8 @@ each club alternates home and away, the second leg starts one round
 later than the first so rematches are far apart, and an odd size gets a
 rest day. With no size it checks every size, once and twice round, and
 compares each with the disc's own template of that size (`!!` on a
-generated league that breaks a rule). Building a league of a new size
-into the packs also needs its turn mask and team-entry slots changed.
+generated league that breaks a rule). leaguesize.py build puts a league
+of a new size into the packs, with its turn mask and team-entry slots.
 
 `turns` lists each league UID's game days and how many it could have:
 the free turns inside its season, where no game of its own, of its

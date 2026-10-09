@@ -334,8 +334,9 @@ def set_team_field(record, name, value):
 
 
 # What an editor (SRC/editor.py) may offer for each club-record field: the
-# documented range where there is one (DOC/INITTEAM_FORMAT.md#club-records),
-# else the type's. Fields with no reader (f_0b ...) are read-only.
+# documented range where there is one
+# (DOC/INITTEAM_FORMAT.md#club-records-plresourcesimpac-entry-3), else the
+# type's. Fields with no reader (f_0b ...) are read-only.
 TEAM_EDIT_RANGES = {
     "rank": (0, 31),
     "manager": (0, 2999),           # the 3,000 manager records of PBDATA
