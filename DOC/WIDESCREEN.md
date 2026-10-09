@@ -78,7 +78,8 @@ shadow's projection, which is why the patch works one step later.
 
 The second half of the patch draws the match HUD at 4:3 proportions in
 the middle of the 16:9 screen. (It was a separate section, "Widescreen
-16:9 UI fix", until it was tested everywhere; the two are now one.) Tested in
+16:9 UI fix", until it was tested everywhere; the two are now one.
+Tested in PCSX2 as one section from boot, user report, 2026-10-09.) Tested in
 PCSX2: in an exhibition match the scoreboard, clock, radar and their text
 line up at 4:3 proportions; in season mode the Club House and Pre-match
 menus and the pre-match intro panel line up too, and faces look normal
