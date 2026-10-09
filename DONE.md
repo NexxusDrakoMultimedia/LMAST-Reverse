@@ -523,6 +523,10 @@ files. Each item keeps what was found, where, and how it was tested.
       Ninja's 2D table (text), `CSpriteDirect` (HUD panels) and the CSE
       node matrices (menu panels) to 4:3 in the middle. Tested in PCSX2
       in a match and the season-mode menus (user report)
+- [x] Widescreen name tags: they stay over their players. The match
+      projects them with the scene's own 4:3 matrix (`graphics::Scene
+      +0x10`), not the widened copy, so the text squeeze puts them where
+      the Hor+ 3D draws the player. Tested in PCSX2 (user report)
 
 ## 8. Housekeeping
 

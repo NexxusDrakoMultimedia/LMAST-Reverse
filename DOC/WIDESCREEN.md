@@ -105,6 +105,15 @@ Ruled out:
 | CSE screen (`cseSetScreen` `0x1f47d8`; context at `0x38f458`, scale `+0x80`, offset `+0xa0`) | no change in the match (CSE doesn't draw there); the per-node matrix in the VU1 packet is patched instead |
 | PX screen parameters `0x369c30` (half-width 256) | squashed the 3D, HUD unchanged |
 
+Name tags over players need no patch of their own. The match keeps its
+projection matrix in `graphics::Scene` (`+0x10`, built by
+`make_perspective_matrix` at `0x12d8a8` with the 4:3 aspect) and the
+patch only widens the global copy at `0x365ad0`. A tag placed with the
+4:3 matrix and then squeezed by the UI fix's text path lands where the
+widened 3D draws the player. Tested in PCSX2: the tags stay over their
+players (user report). Which match function places them hasn't been
+traced.
+
 ### Clipping to 4:3
 
 UI the game parks just off its 512-pixel screen (the hidden squad list,
@@ -142,8 +151,6 @@ at the 4:3 edge, list rows are intact (user report, 2026-10-04).
   sliding panels, which would then stretch while they slide.
 - The stadium ad boards floating above the pitch in replays are the
   game's normal behaviour, not the patch (user report).
-- Name tags over players come from 3D positions but are drawn as text,
-  so the text patch pulls them toward the centre.
 
 ## Checking the claims
 
