@@ -312,6 +312,16 @@ files. Each item keeps what was found, where, and how it was tested.
       went up, and Southampton won the playoff (3rd against 6th, 4th
       against 5th). In 2007-08 the Premier Division still had 22 clubs
       and the Champions Division 24 (user report, with screenshots)
+- [x] Division sizes in the editor: the Season tab has a first-division
+      size box per league, limited to the sizes `leaguesize.allowed`
+      gives (each nation's range, set by the free turns, the relegation
+      and promotion places and the 26-club limit; listed in
+      `SCHEDULE_FORMAT.md`). It shows the moved clubs before saving and
+      saves through `leaguesize.build`, logged as `leaguesize.py build
+      ... --over <mod>/PARAM`. `build` now takes several leagues at once.
+      Tested through the widgets: England 22 and France 18 with a swap,
+      saved, and the logged commands give the same bytes; reopened and
+      set back to 20
 
 ## 3. Ninja 3D models and motions
 

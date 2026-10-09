@@ -386,13 +386,38 @@ rival).
 and the checks. `build` writes the three schedule packs with their
 `.HED` and `PLRRSRC_INITTEAMDATA.TBB`, with the leagues' games
 (`set_league`) and game days (`league_turns`) for the new sizes, reads
-them back and plays out the first season again. Built and checked at
-every size from 4 below to 6 above each nation's current first
-division: England builds at 20–24, France 16–24, Germany 14–24 (and
-more), Italy 20–24, Spain 18–24 and the Netherlands 16–22. The rest are
-refused for lack of free turns (a second division's own-nation version
-fills up first) or the 26-club limit of a division in table 0
-(`plLg_EntryTeamSetToDiv`).
+them back and plays out the first season again. It takes several
+leagues at once (`build DAT/PARAM out England 22 France 18`), and with
+`--over <folder>` reads each file from that folder when it is there, as
+the editor's Season tab does with its mod folder.
+
+**The sizes a first division can take** (`leaguesize.allowed`, which
+`plan` prints): each division holds 2–26 clubs, the limit of a division
+in table 0 (`plLg_EntryTeamSetToDiv`); no more clubs move down than
+are safe from relegation (*k*), and no more move up than sit below the
+promotion places (the second division's size less *m*); and every
+league's game days must fit its season, its own turns plus the free
+ones `league_turns` can add. A bigger first division needs more game
+days and a smaller one gives them to the second, so the range has no
+gaps:
+
+| Nation | First division now | Can take | One club fewer | One club more |
+|---|---|---|---|---|
+| England | 20 | 20–24 | UID 1 needs 54 game days, has 51 | UID 0 needs 50, has 48 |
+| France | 20 | 16–24 | UID 11 needs 54, has 51 | UID 10 needs 50, has 49 |
+| Germany | 18 | 12–26 | UID 20 needs 54, has 50 | 27 clubs is over 26 |
+| Italy | 20 | 20–24 | UID 29 needs 50, has 49 | UID 28 needs 50, has 46 |
+| Spain | 20 | 18–24 | UID 39 needs 54, has 52 | UID 38 needs 50, has 47 |
+| Netherlands | 18 | 16–22 | UID 49 needs 46, has 44 (UID 48 too) | UID 47 needs 46, has 42 |
+
+The lower end is always the second division's own-nation version
+(yours and the rival's clubs make it 2 bigger), except in the
+Netherlands, where both versions run out of days at 15. Empirical:
+`plan` accepts exactly these sizes for every nation (tried 1–29), and
+`build` writes and checks every nation at both ends and all six at
+their largest in one go. The free turns are counted on the
+disc's calendar; a mod that already moved a league's game days gets a
+range from its own files.
 
 **Tested in PCSX2** (user report): England's first division at 22
 clubs (`leaguesize.py build`, patched with `--copies` and

@@ -46,9 +46,13 @@ Tabs:
              (TEAM_INIT_DATA.TBB, teaminit.py; DOC/TEAMINIT_FORMAT.md):
              squad, rival-only records, staff, scouts, youth team,
              candidate lists and the rival club, as pwkTeam_Init2 reads them.
-    Season   the starting divisions by league, with last season's table, and
+    Season   the starting divisions by league, with last season's table,
              swapping two league clubs' places (initteam.py swap;
-             DOC/INITTEAM_FORMAT.md#swapping-clubs).
+             DOC/INITTEAM_FORMAT.md#swapping-clubs), and each first
+             division's size, in the range leaguesize.py allows; a size
+             change also rewrites the three schedule packs and their .HED
+             (leaguesize.py build --over;
+             DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from).
     Free agents
              the players without a club at the start of a career
              (PLRESOURCESIM.PAC entry 15, plrsim.py setfree;
@@ -83,6 +87,7 @@ import tkinter as tk
 from tkinter import font as tkfont, messagebox, ttk
 
 import initteam
+import leaguesize
 import mbb
 import pbdata
 import plrsim
@@ -134,7 +139,8 @@ class Mod:
         folder: <path under DAT>=file, and disc:<name>=file for disc/."""
         out = []
         for folder, dirs, files in os.walk(self.root):
-            dirs.sort()
+            # A <name>.new folder is a save in progress, like a .new file.
+            dirs[:] = sorted(d for d in dirs if not d.endswith(".new"))
             rel_dir = os.path.relpath(folder, self.root).replace("\\", "/")
             for name in sorted(files):
                 if (rel_dir == "." and name in MOD_OWN_FILES) or name.endswith(".new"):
@@ -247,11 +253,11 @@ def remove_new(temps):
             os.remove(tmp)
 
 
-def log_lines(title, commands, temps, report=""):
+def log_lines(title, commands, temps, report="", moved="each .new file"):
     """The editor.log entry for one save."""
     lines = ["# %s  %s" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), title)]
     lines += [" ".join(c) for c in commands]
-    lines.append("# then each .new file replaces %s" % ", ".join(shown_path(f) for _, f in temps))
+    lines.append("# then %s replaces %s" % (moved, ", ".join(shown_path(f) for _, f in temps)))
     lines += ["# " + line for line in report.splitlines()]
     return lines
 
@@ -2210,18 +2216,25 @@ class TextTab(Tab):
 
 
 INIT_TEAMS = "PARAM/PLRRSRC_INITTEAMDATA.TBB"
+LEAGUESIZE_NEW = "leaguesize.new"     # where a size change is built before it replaces the files
 
 
 class SeasonTab(Tab):
-    """The starting season's divisions (PLRRSRC_INITTEAMDATA.TBB), and
+    """The starting season's divisions (PLRRSRC_INITTEAMDATA.TBB):
     swapping two league clubs' places through initteam.InitTeamData.swap,
-    as `initteam.py swap` does."""
+    as `initteam.py swap` does, and changing a first division's size
+    through leaguesize.py, which also writes the three schedule packs.
+    A pending size change is shown from leaguesize.plan; the save runs
+    leaguesize.build after the swaps are written, as the log's commands
+    do. A swap only exchanges two ids, so it gives the same result before
+    or after a size change."""
     title = "Season"
 
     def __init__(self, app):
         super().__init__(app)
         self.init = None
         self.swaps = []             # [(a, b)] in order
+        self.sizes = {}             # {league: first-division clubs} not saved yet
         self.last_pick = None
         bar = ttk.Frame(self.frame)
         bar.pack(fill="x", padx=6, pady=6)
@@ -2231,6 +2244,8 @@ class SeasonTab(Tab):
                            state="readonly", width=14)
         box.pack(side="left", padx=(4, 20))
         box.bind("<<ComboboxSelected>>", lambda e: self.show())
+        self.size_cell = ttk.Frame(bar)
+        self.size_cell.pack(side="left", padx=(0, 20))
         ttk.Label(bar, text="Swap").pack(side="left")
         self.a_var, self.b_var = tk.StringVar(), tk.StringVar()
         self.a_box = ttk.Combobox(bar, textvariable=self.a_var, state="readonly", width=30,
@@ -2244,9 +2259,14 @@ class SeasonTab(Tab):
         ttk.Label(self.frame, text="A swap exchanges two clubs' places in the starting divisions "
                                    "and in last season's results, which decide the first "
                                    "season's divisions after promotion and relegation, and the "
-                                   "cup places. Each club keeps its squad, kit and record. "
-                                   "Division sizes are fixed by the schedules, so clubs can only "
-                                   "be swapped, not added or removed (DOC/INITTEAM_FORMAT.md).",
+                                   "cup places. Each club keeps its squad, kit and record "
+                                   "(DOC/INITTEAM_FORMAT.md). A nation's two divisions share its "
+                                   "clubs: a bigger first division takes the second division's "
+                                   "best clubs below its promotion places, a smaller one sends "
+                                   "its lowest clubs above the relegation places down. Both "
+                                   "divisions get new schedules and game days, which must fit "
+                                   "their seasons (DOC/SCHEDULE_FORMAT.md). Tested in PCSX2: "
+                                   "England at 22 clubs through two seasons.",
                   foreground="#555", wraplength=1100, justify="left").pack(anchor="w", padx=8)
         self.body = ttk.Frame(self.frame)
         self.body.pack(fill="both", expand=True, padx=6, pady=6)
@@ -2269,43 +2289,131 @@ class SeasonTab(Tab):
         mod = self.app.mod
         try:
             self.path = mod.source(INIT_TEAMS)
-            self.init = initteam.InitTeamData(self.path)
+            # The schedule packs and the divisions, each file from the mod
+            # folder when it is there, as `leaguesize.py build --over` reads them.
+            self.data = leaguesize.load(self.param_dir(), self.param_over())
+            self.init = self.data[3]
+            self.nations = [leaguesize.Nation(*self.data[:3], lg)
+                            for lg in range(len(teaminit.LEAGUES))]
             self.teams = initteam.team_names(mod.source(MES), 1)
-        except (ValueError, struct.error, OSError) as e:
+        except (ValueError, struct.error, OSError, StopIteration) as e:
             self.app.status("Couldn't load the starting divisions: %s" % e)
             messagebox.showerror("Season", "Couldn't load the starting divisions:\n%s" % e)
             return
         self.swaps = []
+        self.sizes = {}
         self.show()
         if done:
             self.app.status(done)
         self.app.update_title()
 
-    def club_label(self, team):
-        lg, dv = self.init.league_clubs()[team]
-        return "%d %s (%s %d)" % (team, self.teams.get(team, ""), teaminit.LEAGUES[lg], dv + 1)
+    def param_dir(self):
+        return os.path.join(self.app.mod.dat, "PARAM")
 
-    def show(self):
-        if self.init is None:
-            return
-        league = teaminit.LEAGUES.index(self.league_var.get())
-        swapped = {t for pair in self.swaps for t in pair}
-        for div, (frame, tree) in enumerate(self.trees):
+    def param_over(self):
+        return self.app.mod.target("PARAM")
+
+    def divisions(self, league):
+        """[(clubs in last season's order, past record or None)] for the
+        league's two divisions, with a size change not saved yet."""
+        if league in self.sizes:
+            n, _, _, recs, _ = leaguesize.plan(None, league, self.sizes[league], self.data)
+            return [(recs[0], n.c1), (recs[1], n.c2)]
+        out = []
+        for div in range(initteam.DIVISIONS):
             d = self.init.divisions[league * initteam.DIVISIONS + div]
             rec = self.init.past_record(d)
-            frame.configure(text="%s division %d: %d clubs%s" % (
-                teaminit.LEAGUES[league], div + 1, len(d.teams),
+            out.append(([t for t in self.init.past[rec] if t] if rec is not None else d.teams,
+                        rec))
+        return out
+
+    def club_label(self, team):
+        lg, dv = self.where[team]
+        return "%d %s (%s %d)" % (team, self.teams.get(team, ""), teaminit.LEAGUES[lg], dv + 1)
+
+    def league(self):
+        return teaminit.LEAGUES.index(self.league_var.get())
+
+    def show(self):
+        """The chosen league's divisions and its size box."""
+        if self.init is None:
+            return
+        self.show_tables()
+        self.size_input(self.league())
+
+    def show_tables(self):
+        league = self.league()
+        swapped = {t for pair in self.swaps for t in pair}
+        divs = {lg: self.divisions(lg) for lg in range(len(teaminit.LEAGUES))}
+        self.where = {t: (lg, div) for lg, two in divs.items()
+                      for div, (order, _) in enumerate(two) for t in order}
+        n = self.nations[league]
+        for div, ((order, rec), (frame, tree)) in enumerate(zip(divs[league], self.trees)):
+            was = (n.size1, n.size2)[div]
+            frame.configure(text="%s division %d: %d clubs%s%s" % (
+                teaminit.LEAGUES[league], div + 1, len(order),
+                " (was %d)" % was if len(order) != was else "",
                 ", last season's table is competition %d" % rec if rec is not None else ""))
-            order = [t for t in self.init.past[rec] if t] if rec is not None else d.teams
+            before = set(self.init.divisions[league * initteam.DIVISIONS + div].teams)
             tree.delete(*tree.get_children())
             for k, team in enumerate(order):
+                note = ", ".join(w for w, on in (("swapped", team in swapped),
+                                                 ("moved", team not in before)) if on)
                 tree.insert("", "end", iid=str(team),
                             values=(k + 1 if rec is not None else "", team,
-                                    self.teams.get(team, ""), "swapped" if team in swapped else ""),
-                            tags=("edited",) if team in swapped else ())
+                                    self.teams.get(team, ""), note),
+                            tags=("edited",) if note else ())
         labels = [self.club_label(t) for t in sorted(self.init.league_clubs())]
         self.a_box["values"] = labels
         self.b_box["values"] = labels
+
+    def size_input(self, league):
+        """The first division's size, in the range leaguesize.allowed gives.
+        Rebuilt when the league changes, not from the box's own events."""
+        for w in self.size_cell.winfo_children():
+            w.destroy()
+        n = self.nations[league]
+        lo, hi = leaguesize.allowed(n)
+        ttk.Label(self.size_cell, text="First division clubs").pack(side="left")
+        get = lambda: self.sizes.get(league, n.size1)
+        self.size_box = value_input(self.size_cell, ("range", lo, hi), str, get,
+                                    lambda text, revert: self.resize(league, text, revert))
+        self.size_box.pack(side="left", padx=4)
+        self.size_note = ttk.Label(self.size_cell)
+        self.size_note.pack(side="left")
+        self.show_size_note(league)
+
+    def show_size_note(self, league):
+        n = self.nations[league]
+        lo, hi = leaguesize.allowed(n)
+        self.size_note.configure(text="(%d-%d; second division %d)" % (
+            lo, hi, n.size1 + n.size2 - self.sizes.get(league, n.size1)))
+
+    def resize(self, league, text, revert):
+        n = self.nations[league]
+        try:
+            clubs = int(text)
+        except ValueError:
+            return self.refuse("Not a number: %r" % text, revert)
+        probs = leaguesize.plan(None, league, clubs, self.data)[4]
+        if probs:
+            return self.refuse("%s can't have %d clubs in its first division: %s" % (
+                teaminit.LEAGUES[league], clubs, "; ".join(probs)), revert)
+        if clubs == n.size1:
+            self.sizes.pop(league, None)
+        else:
+            self.sizes[league] = clubs
+        self.app.status("%s: first division %d clubs, second %d" % (
+            teaminit.LEAGUES[league], clubs, n.size1 + n.size2 - clubs))
+        self.show_tables()
+        self.show_size_note(league)
+        self.app.update_title()
+
+    def refuse(self, message, revert):
+        revert()
+        self.app.status(message)
+        messagebox.showerror("Season", message)
+        return False
 
     def pick(self, tree):
         sel = tree.selection()
@@ -2341,11 +2449,33 @@ class SeasonTab(Tab):
         self.app.update_title()
 
     def dirty(self):
-        return bool(self.swaps)
+        return bool(self.swaps or self.sizes)
 
     def save(self):
-        if not self.swaps:
+        """The swaps first, then the size changes, which read the swapped
+        file back from the mod folder; each is logged as its own command."""
+        if not self.dirty():
             return True
+        done = []
+        if self.swaps:
+            if not self.save_swaps():
+                return False
+            done.append("%d swaps" % len(self.swaps))
+        if self.sizes:
+            if not self.save_sizes():
+                # Any swaps are saved by now: reload them, keep the sizes.
+                sizes = self.sizes
+                self.load()
+                self.sizes = sizes
+                self.show()
+                self.app.update_title()
+                return False
+            done.append(", ".join("%s %d clubs" % (teaminit.LEAGUES[lg], c)
+                                  for lg, c in sorted(self.sizes.items())))
+        self.load("Saved the starting season: %s" % "; ".join(done))
+        return True
+
+    def save_swaps(self):
         mod = self.app.mod
         out = mod.target(INIT_TEAMS)
         temps = [(out + ".new", out)]
@@ -2361,11 +2491,47 @@ class SeasonTab(Tab):
         replace_new(temps)
         cmd = ["python", "SRC/initteam.py", "swap", quote(shown_path(self.path)),
                quote(shown_path(out + ".new"))] + ["%d:%d" % p for p in self.swaps]
-        n = len(self.swaps)
-        lines = log_lines("Season: %d swaps" % n, [cmd], temps)
+        lines = log_lines("Season: %d swaps" % len(self.swaps), [cmd], temps)
+        self.app.mod.log(lines)
+        self.app.write_log(lines)
+        return True
+
+    def save_sizes(self):
+        """leaguesize.build into <mod>/leaguesize.new, checked there with
+        leaguesize.verify, then each file replaces its copy in <mod>/PARAM."""
+        mod = self.app.mod
+        sizes = sorted(self.sizes.items())
+        folder = os.path.join(mod.root, LEAGUESIZE_NEW)
+        temps = []
+        try:
+            files, turns = leaguesize.build(self.param_dir(), sizes, self.param_over())
+            os.makedirs(folder, exist_ok=True)
+            os.makedirs(self.param_over(), exist_ok=True)
+            for name, data in sorted(files.items()):
+                temps.append((os.path.join(folder, name), os.path.join(self.param_over(), name)))
+                with open(temps[-1][0], "wb") as f:
+                    f.write(data)
+            probs = leaguesize.verify(folder, sizes, turns)
+            if probs:
+                raise ValueError("; ".join(probs))
+        except (ValueError, struct.error, OSError) as e:
+            remove_new(temps)
+            if os.path.isdir(folder) and not os.listdir(folder):
+                os.rmdir(folder)
+            messagebox.showerror("Season", "Can't save the division sizes: %s" % e)
+            return False
+        replace_new(temps)
+        os.rmdir(folder)
+        cmd = ["python", "SRC/leaguesize.py", "build", quote(shown_path(self.param_dir())),
+               quote(shown_path(folder))]
+        for lg, clubs in sizes:
+            cmd += [teaminit.LEAGUES[lg], str(clubs)]
+        cmd += ["--over", quote(shown_path(self.param_over()))]
+        lines = log_lines("Season: %s" % ", ".join("%s first division %d clubs" % (
+            teaminit.LEAGUES[lg], c) for lg, c in sizes), [cmd], temps,
+            moved="each file in %s" % shown_path(folder))
         mod.log(lines)
         self.app.write_log(lines)
-        self.load("Saved %s: %d swaps" % (shown_path(out), n))
         return True
 
 
