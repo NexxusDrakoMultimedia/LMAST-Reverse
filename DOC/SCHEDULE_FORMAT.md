@@ -24,6 +24,93 @@ The layouts below are **confirmed** from the game code unless marked
 **empirical**. `python SRC/schedule.py info DAT/PARAM` checks all of it
 against the disc and reports one problem (UID 117, below).
 
+## Competitions
+
+Message category 100009 names the competitions in capitals, id 10000 +
+competition, ids 10000–10056 ([`MBB_FORMAT.md`](MBB_FORMAT.md)). That the
+id is 10000 + competition is **empirical**: it agrees with every
+competition this doc and [`NEWS_DIR.md`](NEWS_DIR.md#newsmonthflagtbb)
+pin down (2 is the English promotion playoff below, 22 and 23 are the
+Spanish divisions, 34 has 8 group UIDs and its name list has groups A–H).
+Category 100011 has the names per group and round (`European League
+Group A`, ...), which weren't matched to UIDs.
+
+The career's Information screen lists the competitions by country (user
+report, with screenshots from a Spanish club in its first season). The
+heading of your own nation reads "Your Country", and the order within a
+country is not the id order. Some entries were greyed out in that
+season; what decides that wasn't traced.
+
+| Competition | Name (English) | Information menu | Greyed |
+|---|---|---|---|
+| 0 | Premier Division | England 1 | – |
+| 1 | Champions Division | England 2 | – |
+| 2 | Champions Division Play Off | England 6 | yes |
+| 3 | English Cup Qualifying | England 5 | – |
+| 4 | English Cup | England 3 | yes |
+| 5 | English League Cup | England 4 | yes |
+| 6 | French League Division 1 | France 1 | – |
+| 7 | French League Division 2 | France 2 | – |
+| 8 | French Prime Cup Qualifying | France 5 | – |
+| 9 | French Prime Cup | France 3 | yes |
+| 10 | French Club Cup | France 4 | yes |
+| 11 | First German League | Germany 1 | – |
+| 12 | Second German League | Germany 2 | – |
+| 13 | German Prime Cup Qualifying | Germany 5 | – |
+| 14 | German Prime Cup | Germany 3 | yes |
+| 15 | German Club Cup | Germany 4 | yes |
+| 16 | Italian League A | Italy 1 | – |
+| 17 | Italian League B | Italy 2 | – |
+| 18 | Italian League B Play Off | Italy 6 | yes |
+| 19 | Italian Prime Cup Qualifying | Italy 5 | – |
+| 20 | Italian Prime Cup | Italy 3 | yes |
+| 21 | Italian Club Cup | Italy 4 | yes |
+| 22 | Spanish League Division 1 | Your Country 1 | – |
+| 23 | Spanish League Division 2 | Your Country 2 | – |
+| 24 | Spanish Prime Cup Qualifying | Your Country 5 | – |
+| 25 | Spanish Prime Cup | Your Country 3 | yes |
+| 26 | Spanish Club Cup | Your Country 4 | yes |
+| 27 | First Dutch League | Netherlands 1 | – |
+| 28 | Second Dutch League | Netherlands 2 | – |
+| 29 | Second Dutch League Play Off | Netherlands 6 | yes |
+| 30 | Dutch Prime Cup Qualifying | Netherlands 5 | – |
+| 31 | Dutch Prime Cup | Netherlands 3 | yes |
+| 32 | Dutch Club Cup | Netherlands 4 | yes |
+| 33 | European League Round | – | – |
+| 34 | European League | European Cup 1 | – |
+| 35 | European Club Cup | European Cup 2 | – |
+| 36 | International Club Cup | European Cup 3 | yes |
+| 37 | European Super Cup | European Cup 4 | yes |
+| 38 | World Club Championship | Other Major Cups 1 | yes |
+| 39 | Golden Club Cup | Other Major Cups 3 | yes |
+| 40 | World Club Cup | Other Major Cups 2 | yes |
+| 41 | Asia-Oceania Club Cup | Other Major Cups 6 | yes |
+| 42 | American Club Cup | Other Major Cups 5 | yes |
+| 43 | African Club Cup | Other Major Cups 4 | yes |
+| 44 | Euro National Cup Primary | – | – |
+| 45 | Euro National Cup | National Match 1 | yes |
+| 46 | World National Cup Primary | – | – |
+| 47 | World National Cup | National Match 2 | – |
+| 48 | Youth League | – | – |
+| 49 | Exhibition Match | – | – |
+| 50–55 | English League 1, French League Division 3, Third German League, Italian League C, Spanish League Division 3, Third Dutch League | – | – |
+| 56 | Exhibition Match | – | – |
+| 57–71 | none | – | – |
+
+The menu shows the shorter forms "1st German League", "1st Dutch
+League" and so on. Every competition 0–71 has at least one
+`year_schedule_data` row (`python SRC/schedule.py year DAT/PARAM`):
+
+- 44 and 46, the "Primary" rounds, have 10 group UIDs and a playoff UID
+  each, which fits category 100011's `Euro National Cup PrimaryGr A`–`J`
+  and `PrimaryPlay Off`. They aren't in the menu, nor is 33.
+- 48 (Youth League) and 49 (Exhibition, 18 UIDs) are `runtime` rows.
+  They get language-dependent badges
+  ([`0SYSTEM_DIR.md`](0SYSTEM_DIR.md#competition-badges-match_texture-and-minimatch_texture)).
+- 50–55, named as third divisions, are the six `first-promote` UIDs
+  142–147, 3 turns at the end of the year.
+- 56–71 are the 16 `vs` UIDs 148–163. Only 56 has a name.
+
 ## Confirmed from the game code
 
 | Address | Symbol | What it shows |
