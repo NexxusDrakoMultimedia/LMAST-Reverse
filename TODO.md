@@ -11,24 +11,24 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **Name the rest of the player fields** (section 2). The editor can only
-   offer a field once it has a name and a range (stage 2 in
-   [`GOALS.md`](GOALS.md)).
-2. **What each PwkScript computes** (section 7). The formulas
-   behind player points, spectators, season tickets and popularity, so a
-   script edit could be tested in PCSX2.
-3. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
-   KC@P packs and PRS recompression. Larger mods need these to get their
-   edits onto a disc: a message file can only grow into its own slot.
-4. **The `GAME/` tactics AI files** (section 6). The play books, the
-   combination scripts and `GAMEDATA.BIN`'s container are decoded
-   (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
-   the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
-   records. These are still the lead for the player fields in #1.
-5. **The parameter tables' fields** (section 2). Start with
+1. **The parameter tables' fields** (section 2). Start with
    `REGULATION.TBB`: name its fields so it can get a field-level writer
    and an editor tab. These are the next thing a mod would tune, and
    `tbb.py replace` can only swap a whole table.
+2. **Name the rest of the player fields** (section 2). The editor can only
+   offer a field once it has a name and a range (stage 2 in
+   [`GOALS.md`](GOALS.md)).
+3. **What each PwkScript computes** (section 7). The formulas
+   behind player points, spectators, season tickets and popularity, so a
+   script edit could be tested in PCSX2.
+4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
+   KC@P packs and PRS recompression. Larger mods need these to get their
+   edits onto a disc: a message file can only grow into its own slot.
+5. **The `GAME/` tactics AI files** (section 6). The play books, the
+   combination scripts and `GAMEDATA.BIN`'s container are decoded
+   (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
+   the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
+   records. These are still the lead for the player fields in #2.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
