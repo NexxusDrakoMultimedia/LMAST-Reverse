@@ -57,7 +57,7 @@ Each page shows what `save.py` can already read, and edits only what
 | Combinations | the 25 × 25 pair grid as the tactics screen's icons (`combi`) | `combi:<a>:<b>=`, `combi:<a>:all=` |
 | Staff | manager, youth manager, coaches, scouts (`staff`) | `manager:abil.<n>=`, `dissat.<n>=`, `pop_supporters=`, ... |
 | Other clubs | friendship, rank, players (`clubs`) | `club:<team>:friendship=`, `rank=` |
-| Candidates | scouted players and youth, staff candidates (`candidates`) | none yet (read-only) |
+| Candidates | scouted players and youth, staff candidates (`candidates`) | none (`save.py set` can't yet) |
 
 ## Steps
 
@@ -79,9 +79,22 @@ Each page shows what `save.py` can already read, and edits only what
    card, and the logged command giving the saved bytes. Tested in PCSX2
    (user): money set to 10,000,000,000 in the editor showed £1,666,666,666
    in game. Finances (the season plan's ad budget, ticket price,
-   season-ticket rate and season tickets), tested the same way.
+   season-ticket rate and season tickets), tested the same way. *Done:*
+   the other pages. Squad (a player's 64 abilities, one or all, and the
+   condition fields), Combinations (one pair or all of a player's),
+   Staff (abilities, dissatisfaction, popularity) and Other clubs
+   (friendship and rank; the rival's rank is shown only, since a status
+   edit rewrites it). Candidates stays read-only. `save.py` gained
+   `Save.get`, `edit_range` and `staff_labels`, so the window still
+   keeps no layout. Tested through the widgets on a copy of G003: 15
+   edits over every page, two refusals, File > Save, and the logged
+   command giving the saved bytes.
+   The log lists every accepted edit in order, repeats included: an
+   ability edit raises its growth limit and cap, and a pair edit its cap,
+   so an ability set to 80 and then 30 keeps the raised limit, which
+   only the full sequence reproduces.
 4. **PCSX2 test** (by the user): one save edited in each page, loaded in
-   game, the change seen on its screen. Recorded in
+   game, the change seen on its screen. The Club page is tested. Recorded in
    [`SAVE_FORMAT.md`](SAVE_FORMAT.md) and `DONE.md`.
 5. **Later**: player fields that `save.py` reads but doesn't let `set`
    change (`PINFO_FIELDS` with no range: salary, contract years, age,

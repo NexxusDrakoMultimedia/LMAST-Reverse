@@ -8,14 +8,18 @@ saves) on the card. The window decodes it with save.py, which runs the
 game's own save code (DOC/SAVE_FORMAT.md), and shows what save.py can
 read, on one page each: the club, finances, the squad and youth team,
 pair combinations, staff, the other clubs and the candidate lists.
-Everything it shows comes from save.py's Save methods, so the window
-keeps no layout of its own. Money shows in pounds (the stored unit / 6)
-next to the stored value.
+Everything it shows and edits comes from save.py (Save methods,
+Save.get, edit_spec and edit_range), so the window keeps no layout of
+its own. Money shows in pounds (the stored unit / 6) next to the stored
+value.
 
-Edits go through save.apply_assigns, the function behind `save.py set`,
-with the ranges from save.edit_spec; a value it refuses is put back. So
-far the Club page edits money, the club status and the status rank; the
-other pages only show (the plan's step 3 adds them page by page).
+Every field `save.py set` can write has an input: money, club status and
+status rank; the season plan; a player's 64 abilities (one or all) and
+condition fields; pair combinations (one pair or all of a player's);
+staff abilities, dissatisfaction and popularity; another club's
+friendship and rank (the rival's rank follows your club status). Edits
+go through save.apply_assigns, the function behind `save.py set`; a
+value it refuses is put back. The candidate lists are shown only.
 
 File > Save writes over the save's main file. First it copies the file
 as it is to a backup folder beside the memory card, not in it (a folder
@@ -26,7 +30,11 @@ card shows the PS2 every folder in it):
 and it logs the equivalent command in <card>.bak/saveedit.log, which
 reads that backup and writes the same bytes:
 
-    python SRC/save.py set <backup> <main file>.new money=... status=...
+    python SRC/save.py set <backup> <main file>.new money=... 3:12=80 ...
+
+The command lists every accepted edit in order, repeats included: some
+edits raise a hidden value as they go (an ability's growth limit and
+cap, a pair's cap), so only the full sequence gives the same file.
 
 Close the game in PCSX2 before saving, so it doesn't write the card
 over the edit.
@@ -52,6 +60,7 @@ MES = os.path.join("DAT", "MESSAGE", "MES.PAC")
 PBDATA = os.path.join("DAT", "PARAM", "PBDATA_EU.PAC")
 GREY = "#555"
 COMBI_COLOURS = ("#c8c8c8", "#e8e8e8", "#a8c8ff", "#ff9a9a", "#ff4a4a")    # levels 1-5
+ABIL_ROWS = 16              # abilities per grid column
 
 
 def money(value):
@@ -84,6 +93,12 @@ def grid_rows(parent, rows, start=0):
         ttk.Label(parent, text=value).grid(row=r, column=1, sticky="nw", pady=1)
 
 
+def range_text(s, key):
+    lo, hi, step, _ = save.edit_range(s, key)
+    text = "%s-%s" % (format(lo, ","), format(hi, ","))
+    return text + (" in steps of %d" % step if step > 1 else "")
+
+
 class Names:
     """Names from the disc data: players and staff (PBDATA_EU.PAC), clubs,
     reputations and the accounts' lines (MES.PAC). Loaded once."""
@@ -104,6 +119,8 @@ class Names:
 # --- pages -------------------------------------------------------------------
 
 class Page:
+    """One page of the save. fill() draws it from the save; refresh()
+    draws it again after an edit, keeping what was picked."""
     title = ""
 
     def __init__(self, app):
@@ -112,6 +129,9 @@ class Page:
 
     def fill(self, s, names):
         pass
+
+    def refresh(self):
+        self.fill(self.app.save, self.app.names)
 
     def clear(self):
         for w in self.frame.winfo_children():
@@ -145,7 +165,7 @@ class ClubPage(Page):
                                                             padx=(6, 12), pady=2)
             cell = ttk.Frame(box)
             cell.grid(row=r, column=1, sticky="w", pady=2)
-            self.app.input(cell, key, refill=True).pack(side="left")
+            self.app.input(cell, key, self.refresh).pack(side="left")
             ttk.Label(cell, text=note, foreground=GREY).pack(side="left", padx=8)
             ttk.Label(box, text=help_text, foreground=GREY).grid(row=r, column=2, sticky="w",
                                                                  padx=(12, 6))
@@ -181,11 +201,8 @@ class FinancesPage(Page):
                 ttk.Label(cell, text="follows the ticket price and the rate",
                           foreground=GREY).pack(side="left", padx=8)
                 continue
-            self.app.input(cell, key, refill=True).pack(side="left")
-            lo, hi, step = spec_range(s, key)
-            note = "%s-%s" % (format(lo, ","), format(hi, ","))
-            if step > 1:
-                note += " in steps of %d" % step
+            self.app.input(cell, key, self.refresh).pack(side="left")
+            note = range_text(s, key)
             if name in save.PLAN_MONEY:
                 note = "%s; %s" % (save.pounds(v), note)
             ttk.Label(cell, text=note, foreground=GREY).pack(side="left", padx=8)
@@ -219,39 +236,60 @@ class FinancesPage(Page):
                             values=[money(v) for v in vals])
 
 
-class SquadPage(Page):
-    title = "Squad"
+class ListPage(Page):
+    """A list on the left and the picked entry's page on the right."""
+    current = None
 
-    def fill(self, s, names):
+    def build(self, cols, heads, widths):
         self.clear()
-        self.s = s
         panes = ttk.PanedWindow(self.frame, orient="horizontal")
         panes.pack(fill="both", expand=True, padx=6, pady=6)
         left = ttk.Frame(panes)
-        self.list = tree(left, ("slot", "id", "name", "pos", "age", "ability"),
-                         ("Slot", "Id", "Name", "Pos", "Age", "Mean ability"),
-                         (45, 55, 150, 50, 40, 85))
+        self.list = tree(left, cols, heads, widths)
         self.list.bind("<<TreeviewSelect>>", lambda e: self.select())
         panes.add(left, weight=1)
         self.detail = editor.Scrolled(panes)
         panes.add(self.detail.outer, weight=2)
-        self.slots = dict(s.squad())
-        for slot, o in s.squad():
-            p = s.pinfo(o)
-            lv = [save.exp2lv(s.exp, a[0]) for a in p["abil"]]
-            self.list.insert("", "end", iid=slot, values=(
-                slot, p["id"], p["name"], pbdata.position_name(p["pos"]), p["age"],
-                round(sum(lv) / len(lv))))
-        ttk.Label(self.detail.inner, text="Pick a player. Youth team slots start with y.",
-                  foreground=GREY).pack(anchor="w", padx=8, pady=8)
+
+    def reselect(self, hint):
+        if self.current is not None and self.list.exists(self.current):
+            self.list.selection_set(self.current)
+            self.list.see(self.current)
+            self.show(self.current)
+        else:
+            ttk.Label(self.detail.inner, text=hint, foreground=GREY).pack(anchor="w", padx=8,
+                                                                         pady=8)
 
     def select(self):
         sel = self.list.selection()
-        if sel:
+        if sel and sel[0] != self.current or sel and not self.detail.inner.winfo_children():
             self.show(sel[0])
 
+    def show(self, iid):
+        self.current = iid
+
+
+class SquadPage(ListPage):
+    title = "Squad"
+
+    def fill(self, s, names):
+        self.build(("slot", "id", "name", "pos", "age", "ability"),
+                   ("Slot", "Id", "Name", "Pos", "Age", "Mean ability"),
+                   (45, 55, 150, 50, 40, 85))
+        self.slots = dict(s.squad())
+        for slot in self.slots:
+            self.list.insert("", "end", iid=slot, values=self.row(slot))
+        self.reselect("Pick a player. Youth team slots start with y.")
+
+    def row(self, slot):
+        s = self.app.save
+        p = s.pinfo(self.slots[slot])
+        return (slot, p["id"], p["name"], pbdata.position_name(p["pos"]), p["age"],
+                s.get("%s:all" % slot))
+
     def show(self, slot):
-        s, o = self.s, self.slots[slot]
+        super().show(slot)
+        s, o = self.app.save, self.slots[slot]
         p, db = s.pinfo(o), s.pbase_copy(o)
         self.detail.clear()
         box = self.detail.inner
@@ -267,13 +305,8 @@ class SquadPage(Page):
             ("Body", "%d cm, %d kg, %s foot, shirt %d, nation %d" % (
                 db["height"], db["weight"], "right" if db["leg"] & 1 else "left",
                 db["shirt"], db["nation"])),
-            ("Condition", "fatigue %d/1000, condition %d%%, motivation %d%%, power %d/1000, "
-                          "form %d/1000" % (p["fatigue"], p["condition"] * 100 // 65535,
-                                            p["motivation"] * 100 // 65535, p["power"],
-                                            p["form"])),
-            ("Team fit, vision", "%d%%; %d%% towards counter, %d%% towards organisation" % (
-                p["team_fit"], (p["policy_counter"] + 1) * 100 // 65536,
-                (p["policy_organisation"] + 1) * 100 // 65536)),
+            ("Team fit", "%d%% (the game works it out from the vision below and the "
+                         "manager's)" % p["team_fit"]),
             ("Injury", "kind %d, %d days" % (p["injury"], p["injury_days"])),
             ("Captain, keyman exp", "%d, %d" % (p["captain_exp"], p["keyman_exp"])),
             ("Play style", "%s; learned: %s; to learn: %s (progress %d)" % (
@@ -285,9 +318,23 @@ class SquadPage(Page):
                 p["contract_years"], "" if p["contract_years"] == 1 else "s",
                 money(p["salary"] * 100))),
         ))
-        lv = [save.exp2lv(s.exp, a[0]) for a in p["abil"]]
-        ttk.Label(box, text="Bars  " + "   ".join("%s %d" % b for b in pbdata.bars(
-            lv, p["position"] == 0))).pack(anchor="w", padx=8, pady=4)
+
+        cond = ttk.LabelFrame(box, text="Condition")
+        cond.pack(anchor="w", fill="x", padx=8, pady=4)
+        fields = [t[len("<slot>:"):] for t, *_ in save.edit_spec(s)
+                  if t.startswith("<slot>:") and t != "<slot>:<ability>"]
+        for r, name in enumerate(fields):
+            key = "%s:%s" % (slot, name)
+            ttk.Label(cond, text=name.replace("_", " "), foreground=GREY).grid(
+                row=r, column=0, sticky="w", padx=(6, 12), pady=1)
+            self.app.input(cond, key).grid(row=r, column=1, sticky="w", pady=1)
+            _, _, _, note = save.edit_range(s, key)
+            ttk.Label(cond, text="%s; %s" % (range_text(s, key), note), foreground=GREY,
+                      wraplength=600, justify="left").grid(row=r, column=2, sticky="w",
+                                                           padx=(12, 6))
+
+        self.bars = ttk.Label(box, text="")
+        self.bars.pack(anchor="w", padx=8, pady=4)
         if slot.isdigit():
             stats = ttk.LabelFrame(box, text="Stats: games, goals, assists, man of the match, "
                                              "yellow, red, points")
@@ -304,89 +351,172 @@ class SquadPage(Page):
                         row += 1
             if row:
                 stats.pack(anchor="w", fill="x", padx=8, pady=4)
-        abil = ttk.LabelFrame(box, text="Abilities: level, growth limit, cap (0-99)")
+
+        abil = ttk.LabelFrame(box, text="Abilities: level (0-99), then growth limit and cap. "
+                                        "Raising a level raises the limit and cap with it, "
+                                        "as save.py set does")
         abil.pack(anchor="w", padx=8, pady=4)
-        for k, (cur, mid, cap) in enumerate(p["abil"]):
-            r, c = k % 16, (k // 16) * 2
+        all_row = ttk.Frame(abil)
+        all_row.grid(row=0, column=0, columnspan=12, sticky="w", padx=6, pady=(2, 6))
+        ttk.Label(all_row, text="all 64 (the mean shown)", foreground=GREY).pack(side="left")
+        self.app.input(all_row, "%s:all" % slot, lambda: self.show(slot)).pack(
+            side="left", padx=8)
+        self.limits = []
+        for k in range(save.ABIL_COUNT):
+            r, c = 1 + k % ABIL_ROWS, (k // ABIL_ROWS) * 3
             ttk.Label(abil, text="%d" % k, foreground=GREY).grid(row=r, column=c, sticky="e",
                                                                  padx=(10, 4))
-            ttk.Label(abil, text="%2d  %2d  %2d" % (lv[k], save.exp2lv(s.exp, mid),
-                                                  save.exp2lv(s.exp, cap))).grid(
-                row=r, column=c + 1, sticky="w", padx=(0, 10))
+            self.app.input(abil, "%s:%d" % (slot, k), lambda: self.update(slot)).grid(
+                row=r, column=c + 1, sticky="w")
+            lim = ttk.Label(abil, text="", foreground=GREY, width=7)
+            lim.grid(row=r, column=c + 2, sticky="w", padx=(4, 6))
+            self.limits.append(lim)
+        self.update(slot)
+
+    def update(self, slot):
+        """After an ability edit: limits, caps, bars and the list's mean."""
+        s = self.app.save
+        p = s.pinfo(self.slots[slot])
+        lv = [save.exp2lv(s.exp, a[0]) for a in p["abil"]]
+        for lim, (_, mid, cap) in zip(self.limits, p["abil"]):
+            lim.configure(text="%2d %2d" % (save.exp2lv(s.exp, mid), save.exp2lv(s.exp, cap)))
+        self.bars.configure(text="Bars  " + "   ".join("%s %d" % b for b in pbdata.bars(
+            lv, p["position"] == 0)))
+        self.list.item(slot, values=self.row(slot))
 
 
-class CombiPage(Page):
+class CombiPage(ListPage):
     title = "Combinations"
 
     def fill(self, s, names):
-        self.clear()
-        ttk.Label(self.frame, text="Pair combinations of the squad, as the tactics screen's "
-                                   "icons: %s. Each cell is the pair's value (0-65535)." % ", ".join(
-                                       "%d %s" % (i + 1, icon) for i, icon in
-                                       enumerate(save.COMBI_ICONS)),
-                  foreground=GREY, wraplength=1100, justify="left").pack(anchor="w", padx=8,
-                                                                        pady=6)
-        legend = ttk.Frame(self.frame)
-        legend.pack(anchor="w", padx=8)
+        self.build(("slot", "name", "mean"), ("Slot", "Name", "Mean value"), (45, 150, 80))
+        self.filled = [(i, s.pinfo(o)["name"]) for i, o in s.squad() if i.isdigit()]
+        for slot, name in self.filled:
+            self.list.insert("", "end", iid=slot, values=(slot, name,
+                                                          s.get("combi:%s:all" % slot)))
+        self.reselect("Pick a player to see and edit his pairs, as the tactics screen's "
+                      "icons: %s." % ", ".join("%d %s" % (i + 1, icon) for i, icon in
+                                               enumerate(save.COMBI_ICONS)))
+
+    def show(self, a):
+        super().show(a)
+        s = self.app.save
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%s  %s: pairs" % (a, dict(self.filled)[a]),
+                  font=self.app.title_font).grid(row=0, column=0, columnspan=5, sticky="w",
+                                                 padx=8, pady=(8, 2))
+        legend = ttk.Frame(box)
+        legend.grid(row=1, column=0, columnspan=5, sticky="w", padx=8, pady=(0, 4))
         for i, icon in enumerate(save.COMBI_ICONS):
-            tk.Label(legend, text=" %s " % icon, bg=COMBI_COLOURS[i]).pack(side="left", padx=2)
-        area = editor.Scrolled(self.frame)
-        area.outer.pack(fill="both", expand=True, padx=6, pady=6)
-        box = area.inner
-        filled = [(int(i), s.pinfo(o)["name"]) for i, o in s.squad() if i.isdigit()]
-        for c, (b, _) in enumerate(filled, 1):
-            ttk.Label(box, text=str(b), foreground=GREY).grid(row=0, column=c)
-        for r, (a, name) in enumerate(filled, 1):
-            ttk.Label(box, text="%2d %s" % (a, name)).grid(row=r, column=0, sticky="w", padx=4)
-            for c, (b, _) in enumerate(filled, 1):
-                if a == b:
-                    continue
-                value, cap = s.combi(a, b)
+            tk.Label(legend, text=" %d %s " % (i + 1, icon), bg=COMBI_COLOURS[i]).pack(
+                side="left", padx=2)
+        ttk.Label(box, text="all pairs (the mean shown)", foreground=GREY).grid(
+            row=2, column=0, columnspan=2, sticky="w", padx=8)
+        self.app.input(box, "combi:%s:all" % a, lambda: self.refresh()).grid(
+            row=2, column=2, sticky="w", pady=(0, 6))
+        ttk.Label(box, text=range_text(s, "combi:%s:all" % a) + "; a higher value raises the "
+                            "pair's cap with it, as save.py set does",
+                  foreground=GREY).grid(row=2, column=3, columnspan=2, sticky="w", padx=8)
+        for r, (b, name) in enumerate(self.filled, 3):
+            if b == a:
+                continue
+            ttk.Label(box, text=b, foreground=GREY).grid(row=r, column=0, sticky="e",
+                                                         padx=(8, 4))
+            ttk.Label(box, text=name).grid(row=r, column=1, sticky="w", padx=(0, 8))
+            level = tk.Label(box, text="", width=18, anchor="w")
+            level.grid(row=r, column=3, sticky="w", padx=4)
+
+            def show_level(b=b, level=level):
+                value, cap = s.combi(int(a), int(b))
                 lv = save.combi_level(value)
-                tk.Label(box, text=str(value), width=6, bg=COMBI_COLOURS[lv - 1],
-                         font=("TkFixedFont", 8)).grid(row=r, column=c, padx=1, pady=1)
+                level.configure(text="%d %s, cap %d" % (lv, save.COMBI_ICONS[lv - 1], cap),
+                                bg=COMBI_COLOURS[lv - 1])
+            self.app.input(box, "combi:%s:%s" % (a, b), lambda f=show_level: (
+                f(), self.list.item(a, values=(a, dict(self.filled)[a],
+                                               s.get("combi:%s:all" % a))))).grid(
+                row=r, column=2, sticky="w", pady=1)
+            show_level()
 
 
-class StaffPage(Page):
+class StaffPage(ListPage):
     title = "Staff"
 
     def fill(self, s, names):
-        self.clear()
-        area = editor.Scrolled(self.frame)
-        area.outer.pack(fill="both", expand=True, padx=6, pady=6)
-        for role, i, st in s.staff():
-            job = st["job"]
-            title = "%s %d: %s (id %d)" % (role, i, st["name"], st["id"])
-            box = ttk.LabelFrame(area.inner, text=title)
-            box.pack(fill="x", padx=8, pady=4)
-            rows = []
-            if job is not None:
-                rows.append(("Job", "%d %s" % (job, pbdata.JOB_NAMES[job]
-                                                if job < len(pbdata.JOB_NAMES) else "?")))
-            rows.append(("Contract", "%d year%s left, %s a year" % (
-                st["contract_years"], "" if st["contract_years"] == 1 else "s",
-                money(st["salary"] * 100))))
-            if st["kind"] == "M":
-                rows.append(("Dissatisfaction", ", ".join(
-                    "%s %d" % kv for kv in zip(save.M_DISSAT_KINDS, st["dissat"]))))
-                rows.append(("Popularity", "supporters %d, players %d%s" % (
-                    st["pop_supporters"], st["pop_players"],
-                    "; salary discount" if st["discount"] else "")))
-            if job is None:
-                bars = pbdata.average_bars(st["abil"], pbdata.SCOUT_BARS)
-            else:
-                bars = pbdata.staff_bars(st["abil"], pbdata.JOB_ROLE.get(job, "manager"))
-            rows.append(("Bars", "   ".join("%s %d" % b for b in bars)))
-            rows.append(("Abilities", " ".join(map(str, st["abil"]))))
-            grid_rows(box, rows)
+        self.build(("label", "name", "role"), ("Slot", "Name", "Role"), (80, 150, 110))
+        self.staff = {label: (role, st) for label, role, _, st in s.staff_labels()}
+        for label, (role, st) in self.staff.items():
+            self.list.insert("", "end", iid=label, values=(label, st["name"], role))
+        self.reselect("Pick a manager, coach or scout.")
+
+    def show(self, label):
+        super().show(label)
+        s = self.app.save
+        role, st = self.staff[label]
+        st = {lb: x for lb, _, _, x in s.staff_labels()}[label]
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%s  %s (id %d)" % (label, st["name"], st["id"]),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        job = st["job"]
+        rows = []
+        if job is not None:
+            rows.append(("Job", "%d %s" % (job, pbdata.JOB_NAMES[job]
+                                            if job < len(pbdata.JOB_NAMES) else "?")))
+        rows.append(("Contract", "%d year%s left, %s a year" % (
+            st["contract_years"], "" if st["contract_years"] == 1 else "s",
+            money(st["salary"] * 100))))
+        if st["kind"] == "M" and st["discount"]:
+            rows.append(("Salary", "discount"))
+        info = ttk.Frame(box)
+        info.pack(anchor="w", padx=8, pady=4)
+        grid_rows(info, rows)
+        if st["kind"] == "M":
+            frame = ttk.LabelFrame(box, text="Dissatisfaction and popularity (0-65535)")
+            frame.pack(anchor="w", padx=8, pady=4)
+            keys = [("dissat.%d" % k, "dissatisfaction: %s" % name)
+                    for k, name in enumerate(save.M_DISSAT_KINDS)]
+            keys += [("pop_supporters", "popularity with supporters"),
+                     ("pop_players", "popularity with players")]
+            for r, (field, text) in enumerate(keys):
+                ttk.Label(frame, text=text, foreground=GREY).grid(row=r, column=0, sticky="w",
+                                                                  padx=(6, 12), pady=1)
+                self.app.input(frame, "%s:%s" % (label, field)).grid(row=r, column=1,
+                                                                     sticky="w", pady=1)
+        self.bars = ttk.Label(box, text="")
+        self.bars.pack(anchor="w", padx=8, pady=4)
+        abil = ttk.LabelFrame(box, text="Abilities (%s)" % range_text(s, "%s:abil.0" % label))
+        abil.pack(anchor="w", padx=8, pady=4)
+        all_row = ttk.Frame(abil)
+        all_row.grid(row=0, column=0, columnspan=12, sticky="w", padx=6, pady=(2, 6))
+        ttk.Label(all_row, text="all %d (the mean shown)" % len(st["abil"]),
+                  foreground=GREY).pack(side="left")
+        self.app.input(all_row, "%s:abil.all" % label, lambda: self.show(label)).pack(
+            side="left", padx=8)
+        for k in range(len(st["abil"])):
+            r, c = 1 + k % ABIL_ROWS, (k // ABIL_ROWS) * 2
+            ttk.Label(abil, text="%d" % k, foreground=GREY).grid(row=r, column=c, sticky="e",
+                                                                 padx=(10, 4))
+            self.app.input(abil, "%s:abil.%d" % (label, k), lambda: self.update(label)).grid(
+                row=r, column=c + 1, sticky="w")
+        self.update(label)
+
+    def update(self, label):
+        st = {lb: x for lb, _, _, x in self.app.save.staff_labels()}[label]
+        if st["job"] is None:
+            bars = pbdata.average_bars(st["abil"], pbdata.SCOUT_BARS)
+        else:
+            bars = pbdata.staff_bars(st["abil"], pbdata.JOB_ROLE.get(st["job"], "manager"))
+        self.bars.configure(text="Bars  " + "   ".join("%s %d" % b for b in bars))
 
 
 class ClubsPage(Page):
     title = "Other clubs"
+    current = None
 
     def fill(self, s, names):
         self.clear()
-        self.s, self.names = s, names
+        self.names = names
         panes = ttk.PanedWindow(self.frame, orient="vertical")
         panes.pack(fill="both", expand=True, padx=6, pady=6)
         top = ttk.Frame(panes)
@@ -398,23 +528,57 @@ class ClubsPage(Page):
         self.list.bind("<<TreeviewSelect>>", lambda e: self.select())
         panes.add(top, weight=3)
         bottom = ttk.Frame(panes)
+        self.edit = ttk.Frame(bottom)
+        self.edit.pack(side="top", fill="x", pady=(0, 4))
         self.players = tree(bottom, ("slot", "id", "name", "age", "shirt", "years", "flags"),
                             ("Slot", "Id", "Player", "Age", "Shirt", "Contract", "Flags"),
                             (45, 60, 180, 45, 50, 70, 60), height=6)
         panes.add(bottom, weight=2)
         for team in [2] + list(range(3, save.CLUBS + 2)):
-            c = s.club(team)
-            self.list.insert("", "end", iid=str(team), values=(
-                team, names.teams.get(team, ""), c["friendship"], c["rank"],
-                names.reputation(c["rank"]), c["world_rank"], c["points"], c["league"],
-                len(c["players"])))
+            self.list.insert("", "end", iid=str(team), values=self.row(team))
+        if self.current is not None:
+            self.list.selection_set(self.current)
+            self.list.see(self.current)
+            self.show(self.current)
+        else:
+            ttk.Label(self.edit, text="Pick a club to see its players and edit its friendship "
+                                      "and rank.", foreground=GREY).pack(anchor="w")
+
+    def row(self, team):
+        c = self.app.save.club(team)
+        return (team, self.names.teams.get(team, ""), c["friendship"], c["rank"],
+                self.names.reputation(c["rank"]), c["world_rank"], c["points"], c["league"],
+                len(c["players"]))
 
     def select(self):
         sel = self.list.selection()
-        if not sel:
-            return
+        if sel and sel[0] != self.current:
+            self.show(sel[0])
+
+    def show(self, team):
+        self.current = team
+        s = self.app.save
+        for w in self.edit.winfo_children():
+            w.destroy()
+        ttk.Label(self.edit, text="%s %s" % (team, self.names.teams.get(int(team), "")),
+                  font=self.app.title_font).pack(side="left", padx=(0, 12))
+        ttk.Label(self.edit, text="friendship", foreground=GREY).pack(side="left")
+        self.app.input(self.edit, "club:%s:friendship" % team,
+                       lambda: self.list.item(team, values=self.row(int(team)))).pack(
+            side="left", padx=(4, 12))
+        ttk.Label(self.edit, text="rank", foreground=GREY).pack(side="left")
+        if team == "2":
+            # set_status writes the rival's rank from your club rank (0x26dd40).
+            ttk.Label(self.edit, text="%d (your rival: it follows your club status)"
+                      % s.club(2)["rank"]).pack(side="left", padx=4)
+        else:
+            self.app.input(self.edit, "club:%s:rank" % team,
+                           lambda: self.list.item(team, values=self.row(int(team)))).pack(
+                side="left", padx=4)
+            ttk.Label(self.edit, text=range_text(s, "club:%s:rank" % team),
+                      foreground=GREY).pack(side="left", padx=4)
         self.players.delete(*self.players.get_children())
-        for k, pid, age, shirt, years, flags in self.s.club(int(sel[0]))["players"]:
+        for k, pid, age, shirt, years, flags in s.club(int(team))["players"]:
             self.players.insert("", "end", values=(
                 k, pid, self.names.people.get(pid, "?"), age, "-" if shirt < 0 else shirt,
                 years, "%#x" % flags if flags else ""))
@@ -425,6 +589,8 @@ class CandidatesPage(Page):
 
     def fill(self, s, names):
         self.clear()
+        ttk.Label(self.frame, text="Shown only: save.py doesn't edit the candidate lists yet.",
+                  foreground=GREY).pack(anchor="w", padx=8, pady=(6, 0))
         box = ttk.Frame(self.frame)
         box.pack(fill="both", expand=True, padx=6, pady=6)
         t = tree(box, ("#0", "id", "name", "turns", "pos", "age"),
@@ -447,14 +613,6 @@ def backup_dir(main):
     folder = os.path.dirname(os.path.abspath(main))
     card = os.path.dirname(folder)
     return os.path.join(card + ".bak", os.path.basename(folder))
-
-
-def spec_range(s, key):
-    """(low, high, step) save.edit_spec gives for a concrete key of save `s`."""
-    for k, lo, hi, step, _ in save.edit_spec(s):
-        if k == key:
-            return lo, hi, step
-    raise KeyError(key)
 
 
 PAGES = (ClubPage, FinancesPage, SquadPage, CombiPage, StaffPage, ClubsPage, CandidatesPage)
@@ -487,9 +645,11 @@ class App:
         self.root.protocol("WM_DELETE_WINDOW", self.quit)
         self.root.bind_all("<Control-o>", lambda e: self.ask_open())
         self.root.bind_all("<Control-s>", lambda e: self.write())
-        self.changes = {}           # save.py set key -> value, in edit order
+        self.changes = []           # (save.py set key, value): every accepted edit, in order
+        self.stale = set()          # pages to draw again when they are shown
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True)
+        self.notebook.bind("<<NotebookTabChanged>>", lambda e: self.tab_changed())
         self.status_var = tk.StringVar()
         ttk.Label(self.root, textvariable=self.status_var, anchor="w", relief="sunken"
                   ).pack(fill="x", side="bottom")
@@ -505,6 +665,15 @@ class App:
 
     def status(self, text):
         self.status_var.set(text)
+
+    def page(self):
+        return self.pages[self.notebook.index("current")]
+
+    def tab_changed(self):
+        page = self.page()
+        if page in self.stale and self.save is not None:
+            self.stale.discard(page)
+            page.refresh()
 
     def ask_open(self):
         if not self.keep_changes():
@@ -550,9 +719,13 @@ class App:
         poll()
 
     def loaded(self, s, done=None):
+        same = self.save is not None and self.save.path == s.path
         self.save = s
-        self.changes = {}
+        self.changes = []
+        self.stale = set()
         for page in self.pages:
+            if not same and hasattr(page, "current"):
+                page.current = None
             page.fill(s, self.names)
         self.update_title()
         self.status(done or "Opened %s." % editor.shown_path(s.path))
@@ -566,41 +739,33 @@ class App:
 
     # edits
 
-    def input(self, parent, key, refill=False):
-        """A spin box for a save.py set key, its range from save.edit_spec.
-        refill: redraw the pages after a change (values that follow it)."""
+    def input(self, parent, key, after=None):
+        """A spin box for a concrete save.py set key, its range from
+        save.edit_range. after() runs once an edit is accepted, to redraw
+        what follows from it on this page."""
+        lo, hi, step, _ = save.edit_range(self.save, key)
         return editor.value_input(
-            parent, ("range",) + spec_range(self.save, key), str, lambda: self.value(key),
-            lambda text, revert: self.commit(key, text, revert, refill))
+            parent, ("range", lo, hi, step), str, lambda: self.save.get(key),
+            lambda text, revert: self.commit(key, text, revert, after))
 
-    def value(self, key):
-        """The current value of a key the inputs edit."""
-        s = self.save
-        if key == "money":
-            return s.money
-        if key.startswith("plan:"):
-            return s.get_plan(key[5:])
-        srank, _, status, _ = s.status()
-        return {"status": status, "status_rank": srank}[key]
-
-    def commit(self, key, text, revert, refill=False):
+    def commit(self, key, text, revert, after=None):
         try:
             value = int(text)
         except ValueError:
             return self.refuse("%s must be a number" % key, revert)
-        old = self.value(key)
+        old = self.save.get(key)
         before = bytes(self.save.blocks)
         try:
             save.apply_assigns(self.save, ["%s=%d" % (key, value)])
         except ValueError as e:
             self.save.blocks[:] = before
             return self.refuse(str(e), revert)
-        self.changes.pop(key, None)
-        self.changes[key] = value
-        if refill:
+        self.changes.append((key, value))
+        current = self.page()
+        self.stale = {p for p in self.pages if p is not current}
+        if after:
             # Redraw after the widget's own event has finished.
-            self.root.after_idle(lambda: [page.fill(self.save, self.names)
-                                          for page in self.pages])
+            self.root.after_idle(after)
         self.update_title()
         self.status("%s: %s -> %s" % (key, format(old, ","), format(value, ",")))
         return True
@@ -644,13 +809,13 @@ class App:
             return False
         cmd = ["python", "SRC/save.py", "set", editor.quote(editor.shown_path(backup)),
                editor.quote(editor.shown_path(new))]
-        cmd += ["%s=%d" % kv for kv in self.changes.items()]
-        lines = editor.log_lines("%s: %d changes" % (os.path.basename(main), len(self.changes)),
+        cmd += ["%s=%d" % kv for kv in self.changes]
+        n = len(self.changes)
+        lines = editor.log_lines("%s: %d changes" % (os.path.basename(main), n),
                                  [cmd], [(new, main)], moved="the .new file")
         with open(os.path.join(os.path.dirname(folder), "saveedit.log"), "a",
                   encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n\n")
-        n = len(self.changes)
         self.open(main, "Saved %s: %d changes (backup %s)" % (
             editor.shown_path(main), n, editor.shown_path(backup)))
         return True

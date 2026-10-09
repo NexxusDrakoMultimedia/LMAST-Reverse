@@ -967,3 +967,9 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Save editor Finances page: the season plan's four `set` fields
       (`save.plan_key`, `Save.get_plan`), with steps; the season-ticket
       price follows. Tested through the widgets on a copy of G003
+- [x] Save editor Squad, Combinations, Staff and Other clubs pages: every
+      remaining `save.py set` field, through `Save.get`, `edit_range` and
+      `staff_labels` in `save.py`. The log keeps every edit in order
+      (abilities and pairs raise hidden limits and caps). Tested through
+      the widgets on a copy of G003: 15 edits over all pages, two
+      refusals; the logged command gives the saved bytes

@@ -1124,15 +1124,19 @@ class Save:
                 out.append((role, i, st))
         return out
 
+    def staff_labels(self):
+        """[(label, role, index, dict)] for every filled staff slot; the
+        label is what `set` takes: manager, ymanager, coach0-3, scout0-2."""
+        counts = {role: count for role, _, count, _ in STAFF}
+        return [(("ymanager" if role == "youth manager" else role) +
+                 (str(i) if counts[role] > 1 else ""), role, i, st)
+                for role, i, st in self.staff()]
+
     def set_staff(self, label, field, value):
         """Edit a staff member: label is manager, ymanager, coach0-3 or
         scout0-2; field is dissat.<kind>, pop_supporters, pop_players,
         abil.<n> or abil.all."""
-        counts = {role: count for role, _, count, _ in STAFF}
-        labels = {}
-        for role, i, st in self.staff():
-            key = "ymanager" if role == "youth manager" else role
-            labels[key + (str(i) if counts[role] > 1 else "")] = st
+        labels = {lb: st for lb, _, _, st in self.staff_labels()}
         st = labels.get(label)
         if st is None:
             raise ValueError("no staff member %r (filled: %s)" % (label, ", ".join(labels)))
@@ -1313,6 +1317,47 @@ class Save:
         path = struct.unpack_from("<%dI" % STYLE_PATH_LEN, self.blocks, o + STYLE_PATH)
         n = self.blocks[o + PINFO_OFFSET["styles_learned"]]
         return [x for x in path[:n] if x], [x for x in path[n:] if x]
+
+    def get(self, key):
+        """The current value of a concrete `set` key (as edit_spec lists
+        them, placeholders filled). An `all` key gives the rounded mean of
+        the values it sets."""
+        def mean(values):
+            values = list(values)
+            return round(sum(values) / len(values)) if values else 0
+        if key == "money":
+            return self.money
+        if key in ("status", "status_rank"):
+            srank, _, status, _ = self.status()
+            return status if key == "status" else srank
+        if key.startswith("plan:"):
+            return self.get_plan(key[5:])
+        if key.startswith("combi:"):
+            _, a, b = key.split(":")
+            if b == "all":
+                filled = [int(i) for i, _ in self.squad() if i.isdigit()]
+                return mean(self.combi(int(a), x)[0] for x in filled if x != int(a))
+            return self.combi(int(a), int(b))[0]
+        if key.startswith("club:"):
+            _, team, field = key.split(":")
+            return self.club(int(team, 0))[field]
+        who, _, field = key.partition(":")
+        staff = {lb: st for lb, _, _, st in self.staff_labels()}
+        if who in staff:
+            st = staff[who]
+            name, _, which = field.partition(".")
+            if name == "abil":
+                return mean(st["abil"]) if which == "all" else st["abil"][int(which)]
+            if name == "dissat":
+                return st["dissat"][int(which)]
+            return st[name]
+        o = dict(self.squad())[who]
+        p = self.pinfo(o)
+        if field == "all":
+            return mean(exp2lv(self.exp, a[0]) for a in p["abil"])
+        if field.isdigit():
+            return exp2lv(self.exp, p["abil"][int(field)][0])
+        return p[field]
 
     def encode(self):
         return build(self.game, bytes(self.blocks), self.file)[0]
@@ -1752,15 +1797,31 @@ def edit_spec(s=None):
     return out
 
 
+SPEC_PATTERNS = {"<slot>": r"(?:\d+|y\d+)", "<ability>": r"(?:\d+|all)", "<a>": r"\d+",
+                 "<b>": r"(?:\d+|all)", "<staff>": r"(?:manager|ymanager|coach\d|scout\d)",
+                 "<mstaff>": r"(?:manager|ymanager|coach\d)", "<n>": r"(?:\d+|all)",
+                 "<kind>": r"\d+", "<team>": r"\d+"}
+
+
+def edit_range(s, key):
+    """(low, high, step, note) of edit_spec(s) for a concrete key, such
+    as 3:fatigue, y0:12, combi:3:all or coach0:abil.5."""
+    import re
+    for template, lo, hi, step, note in edit_spec(s):
+        pattern = re.escape(template)
+        for ph, rx in SPEC_PATTERNS.items():
+            pattern = pattern.replace(re.escape(ph), rx)
+        if re.fullmatch(pattern, key):
+            return lo, hi, step, note
+    raise KeyError(key)
+
+
 def spec_keys(s, key):
     """Concrete keys of the save `s` for a spec key with placeholders."""
     squad = [label for label, _ in s.squad()]
     filled = [x for x in squad if x.isdigit()]
-    counts = {role: count for role, _, count, _ in STAFF}
     staff, mstaff = [], []
-    for role, i, st in s.staff():
-        label = ("ymanager" if role == "youth manager" else role) + (
-            str(i) if counts[role] > 1 else "")
+    for label, _, _, st in s.staff_labels():
         staff.append(label)
         if st["kind"] == "M":
             mstaff.append(label)
