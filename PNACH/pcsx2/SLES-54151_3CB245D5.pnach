@@ -3,7 +3,7 @@ gametitle=Let's Make a Soccer Team! (PAL-M5) [SLES-54151] (3CB245D5)
 [Widescreen 16:9]
 gsaspectratio=16:9
 author=Nexxus-Drako
-description=Renders the 3D in 16:9 (Hor+) and draws the match HUD, the menus and the season-mode backgrounds at 4:3, centred.
+description=Renders the 3D match in 16:9 (Hor+) and draws the match HUD, and the menus at 4:3, centered.
 
 patch=0,EE,0018f900,word,0c04be6c
 patch=0,EE,0018f488,word,0c04bea4
