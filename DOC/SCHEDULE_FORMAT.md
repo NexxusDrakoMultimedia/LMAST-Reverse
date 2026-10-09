@@ -38,8 +38,13 @@ Group A`, ...), which weren't matched to UIDs.
 The career's Information screen lists the competitions by country (user
 report, with screenshots from a Spanish club in its first season). The
 heading of your own nation reads "Your Country", and the order within a
-country is not the id order. Some entries were greyed out in that
-season; what decides that wasn't traced.
+country is not the id order. An entry is greyed out while its
+competition has no fixtures yet, and again some time after it has
+finished (user report). The Greyed column is the state in those
+screenshots. That the game drops finished competitions to save memory
+is a guess: schedules are loaded one UID at a time
+(`CScheEuro::OneLoadCompCB`), but the code that greys the menu and the
+point at which a schedule is unloaded weren't traced.
 
 | Competition | Name (English) | Information menu | Greyed |
 |---|---|---|---|
