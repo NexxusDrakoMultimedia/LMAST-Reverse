@@ -68,7 +68,10 @@ Each page shows what `save.py` can already read, and edits only what
    and G003 with no problems.
 2. **Read-only window**: open a save, the pages above without inputs.
    Decoding runs in a background thread with a "Loading" status, as the
-   People tab does.
+   People tab does. *Done:* `python SRC/saveedit.py open <save>`. The
+   values the print commands worked out themselves (plan, accounts,
+   candidates, style path) are now `Save` methods, so both use the same
+   code; every command's output is unchanged on saves G000 and G003.
 3. **Edits** page by page, in the order of the table, each with its
    widget test and the logged-command check.
 4. **PCSX2 test** (by the user): one save edited in each page, loaded in

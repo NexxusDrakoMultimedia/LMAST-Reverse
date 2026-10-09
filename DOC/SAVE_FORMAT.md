@@ -110,9 +110,9 @@ euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
 
 **Finances.** Money moves through `pwkGen_Income` (`0x244570`) and
 `pwkGen_Pay` (`0x2445f8`). Both change the s64 at block 0 `+0x0` and
-book the amount under a type in the month's accounts. On overflow,
-`pwkGen_Income` sets the money to 0x7fffffff. **Confirmed from the game
-code:**
+book the amount under a type in the month's accounts. When adding
+would overflow the s64, `pwkGen_Income` sets the money to 0x7fffffff;
+`pwkGen_Pay` has no floor. **Confirmed from the game code:**
 
 | Address | Symbol | What it shows |
 |---|---|---|
@@ -675,8 +675,10 @@ The fields it takes are described with the parts of the save above;
 highest status rank that holds the current status, the season tickets
 the stadium allows) and checks each range on that save: both ends must
 be accepted and the values just outside refused (`!!` otherwise). Money
-is 0 to 2,147,483,647 in the stored unit, the most `pwkGen_Income`
-(`0x244570`) allows. The save editor ([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md))
+takes any s64 value: `pwkGen_Pay` (`0x2445f8`) subtracts with no floor,
+so debt is negative, and `pwkGen_Income` (`0x244570`) only resets it
+to 0x7fffffff when the s64 itself would overflow. Save G000 holds
+7,308,451,892. The save editor ([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md))
 takes its ranges from the same list (`save.edit_spec`).
 
 ## Decoding

@@ -309,10 +309,12 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 | Tool | Reads | Does |
 |---|---|---|
 | [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | a window with a tab per kind of data. **People** edits players, managers and scouts in the player database: search by name, id, nationality or club, every named field with its allowed values, unnamed fields read-only. **Clubs** edits the club records (rank, manager, stadium, city, transfer policy) and the computer teams' squads (player, age, shirt, contract). **New club** edits what a new career gets for each league and team style: squad, staff, scouts, youth team, candidate lists and the rival club. **Season** shows the starting divisions with last season's table, swaps two league clubs' places, and changes each first division's size within the range the schedules allow (rewriting the schedule packs). **Free agents** replaces the players who start a career without a club, refusing one already in a squad. **Regulations** edits each schedule's match rules (match grade, yellow-card ban, matchday squad, foreign players, substitutions), its win bonus and prizes (shown in pounds) and its promotion and relegation places, with the schedules named by league. **Kits** edits every club's home and away kits, with colour swatches, the keeper kits made for your club, the rival and the VS teams, and the licensed clubs' number colours, name, collar and captain mark. **Text** finds any message by category, text or id and edits it in all 7 language slots, refusing an edit that would make its file too big. It saves to a mod folder (`mod/` by default) and writes the matching `python SRC/...` command to `mod/editor.log` |
+| [`saveedit.py`](SRC/saveedit.py) | a career save on a PCSX2 folder memory card | a separate window for one save, through `save.py`: the club (date, money, status, ranks), finances (season plan and accounts), the squad and youth team with each player in full, pair combinations as the tactics screen's icons, staff, the 440 other clubs with their players, and the candidate lists. Read-only so far; editing is next ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)) |
 
 ```bash
 python SRC/editor.py open             # the mod folder mod/
 python SRC/editor.py open mods/terry  # another mod folder
+python SRC/saveedit.py open <card>/BESLES-54151-G000   # a save, read-only for now
 ```
 
 **File > Build disc** (Ctrl+B) writes a modded disc image, an xdelta
@@ -367,6 +369,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables |
 | `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding `PRELOAD` packs), `sqb.py` (`--skip-tutorial`) |
 | `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` (Regulations), `uniform.py` (Kits), `mbb.py` (Text); `extract_disc.py` for Build disc's Redump check, `sles_disasm.py` and `pac.py` for the executable and pack headers |
+| `saveedit.py` | `save.py`, `editor.py` (widgets), `pbdata.py` and `initteam.py` for names |
 
 The disassemblers connect to the format tools through the docs: a
 format is found in the code, documented in `DOC/`, implemented in

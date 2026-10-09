@@ -362,9 +362,10 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       all (a front number colour showed nothing on AC Milan's shirt, user
       report)
 - [ ] Save editor (`SRC/saveedit.py`), a separate window for career saves
-      on folder memory cards, on top of `save.py`: steps 2-5 in
-      `DOC/SAVE_EDITOR_PLAN.md` (step 1, `save.py spec`, is done). Writes
-      over the save after a backup beside the card
+      on folder memory cards, on top of `save.py`: steps 3-5 in
+      `DOC/SAVE_EDITOR_PLAN.md` (the edits page by page, then a PCSX2
+      test). Steps 1-2 are done: `save.py spec` and the read-only window.
+      Writes over the save after a backup beside the card
 - [ ] Save editor: `.ps2` memory card images (PCSX2's default), which
       need a reader and writer for the card's file system
 - [ ] Save editor: an option to write an edited save to a new slot (the

@@ -759,6 +759,7 @@ PLAN_OFF = 0x12470
 PLAN_FIELDS = (("ad budget", 0x0), ("ticket price", 0x4), ("season-ticket rate", 0x8),
                ("season-ticket price", 0xc), ("season tickets", 0x10))
 PLAN_OTHER, PLAN_OTHER_IDS, PLAN_OTHERS = 0x18, 0x38, 8
+PLAN_MONEY = ("ad budget", "ticket price", "season-ticket price")   # stored unit
 # The plan screen's limits (user report: £0-5,000,000 in steps of £10,000,
 # tickets £10-50, rate 50-150 in steps of 10, season tickets in steps of
 # 100 up to 80% of capacity; euros are 1.5 times the pound values). In the
@@ -845,6 +846,7 @@ PINFO_FIELDS = (
     ("salary", 0x218, "<I", None, "annual salary / 100, stored money unit (pwkTeam_ArrivePlayer)"),
     ("contract_years", 0x21d, "<B", None, "years remaining (pwkMoney_*, CheckRentalMoveEnable)"),
 )
+PINFO_OFFSET = {name: off for name, off, _, _, _ in PINFO_FIELDS}
 # Staff, block 1. PlMinfo (0xbc bytes) and PlSinfo (0x94) are 4 bytes and
 # then a copy of the PlMbase / PlSbase (pbdata.py's struct offsets, + 4).
 # (role, offset, count, kind): the manager is PlTeamData +0x4854
@@ -930,7 +932,11 @@ STATS_ROW = "<6H2B"     # goals, assists, games, games2, mom, points x 100, red,
 # SLES_541.51: ability experience per level 0-100, plMisc_AbilExp2Lv (0x2153c0)
 # and plMisc_AbilLv2Exp (0x215438).
 ABIL_EXP = 0x531c70
-MONEY_MAX = 0x7fffffff         # pwkGen_Income (0x244570) sets this on overflow
+# Money is an s64. pwkGen_Pay (0x2445f8) subtracts with no floor (debt is
+# negative), and pwkGen_Income (0x244570) only resets it to 0x7fffffff
+# when the s64 itself overflows.
+MONEY_MIN, MONEY_MAX = -(1 << 63), (1 << 63) - 1
+POUND = 6                      # the stored money unit per pound (SAVE_FORMAT.md)
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun",
           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
@@ -1250,8 +1256,70 @@ class Save:
         else:
             raise ValueError("only friendship and rank can be set for a club")
 
+    def plan(self):
+        """[(name, value)] of the season plan (PLAN_FIELDS)."""
+        o = self.at(1, PLAN_OFF)
+        return [(name, struct.unpack_from("<I", self.blocks, o + off)[0])
+                for name, off in PLAN_FIELDS]
+
+    def other_tickets(self):
+        """[(competition, ticket price)] for the plan's other competitions
+        in use (id 0xffff is a free entry)."""
+        b, o = self.blocks, self.at(1, PLAN_OFF)
+        out = []
+        for i in range(PLAN_OTHERS):
+            compe = struct.unpack_from("<H", b, o + PLAN_OTHER_IDS + 2 * i)[0]
+            if compe != 0xffff:
+                out.append((compe, struct.unpack_from("<I", b, o + PLAN_OTHER + 4 * i)[0]))
+        return out
+
+    def accounts(self):
+        """[(label, incomes, payments)] for this month and this season:
+        the s64 totals by income type 0-11 and payment type 0-22."""
+        out = []
+        for label, base in (("this month", MONTH_OFF), ("this season", SEASON_OFF)):
+            o = self.at(5, base)
+            out.append((label, struct.unpack_from("<%dq" % INCOME_TYPES, self.blocks, o),
+                        struct.unpack_from("<%dq" % PAYMENT_TYPES, self.blocks,
+                                           o + PAYMENTS_OFF)))
+        return out
+
+    def candidates(self):
+        """[(list name, slots, [(id, turns left, (position, age) or None)])]
+        for the CANDIDATE_LISTS; the pair is for youth candidates."""
+        b, out = self.blocks, []
+        for name, off, count, size, id_off, turns_off in CANDIDATE_LISTS:
+            o = self.at(1, off)
+            rows = []
+            for i in range(count):
+                r = o + i * size
+                pid = struct.unpack_from("<h", b, r + id_off)[0]
+                if pid < 0:
+                    continue
+                youth = (struct.unpack_from("<I", b, r + YCAND_POS)[0], b[r + YCAND_AGE]) \
+                    if name == "youth" else None
+                rows.append((pid, b[r + turns_off], youth))
+            out.append((name, count, rows))
+        return out
+
+    def style_path(self, o):
+        """(learned, still to learn): the style ids of the player at `o`,
+        0s left out."""
+        path = struct.unpack_from("<%dI" % STYLE_PATH_LEN, self.blocks, o + STYLE_PATH)
+        n = self.blocks[o + PINFO_OFFSET["styles_learned"]]
+        return [x for x in path[:n] if x], [x for x in path[n:] if x]
+
     def encode(self):
         return build(self.game, bytes(self.blocks), self.file)[0]
+
+
+def pounds(value):
+    """Stored money as the game shows it in pounds."""
+    return "£%s" % format(value // POUND, ",")
+
+
+def style_name(x):
+    return STYLES[x] if x < len(STYLES) else str(x)
 
 
 def combi_level(value):
@@ -1385,12 +1453,9 @@ def cmd_player(game, path, slot):
     print("  injury %d, %d days; captain exp %d, keyman exp %d; play style %d; status %d" % (
         p["injury"], p["injury_days"], p["captain_exp"], p["keyman_exp"], p["play_style"],
         p["status"]))
-    path = struct.unpack_from("<%dI" % STYLE_PATH_LEN, s.blocks, o + STYLE_PATH)
-    name = lambda x: STYLES[x] if x < len(STYLES) else str(x)
-    learned = [name(x) for x in path[:p["styles_learned"]] if x]
-    later = [name(x) for x in path[p["styles_learned"]:] if x]
+    learned, later = ([style_name(x) for x in xs] for xs in s.style_path(o))
     print("  style %s; learned: %s; still to learn: %s (progress %d)" % (
-        name(p["play_style"]), ", ".join(learned) or "-", ", ".join(later) or "-",
+        style_name(p["play_style"]), ", ".join(learned) or "-", ", ".join(later) or "-",
         p["style_progress"]))
     print("  skills: %s" % (", ".join(pbdata.skill_names(db["skills"])) or "none"))
     print("  policy type %d: %d%% towards counter (vs possession), %d%% towards organisation "
@@ -1445,47 +1510,31 @@ def cmd_candidates(game, path):
     """The candidate lists: players, youth players, managers, coaches, scouts."""
     import pbdata
     s = Save(game, path)
-    b = s.blocks
     db = pbdata.PbData(os.path.join("DAT", "PARAM", "PBDATA_EU.PAC"))
     names = {r.db_id: r.name for kind in pbdata.KINDS for r in db.records(kind)}
     print(s.path)
-    for name, off, count, size, id_off, turns_off in CANDIDATE_LISTS:
-        o = s.at(1, off)
-        rows = [o + i * size for i in range(count)
-                if struct.unpack_from("<h", b, o + i * size + id_off)[0] >= 0]
+    for name, count, rows in s.candidates():
         print("  %s: %d of %d" % (name, len(rows), count))
-        for r in rows:
-            pid = struct.unpack_from("<h", b, r + id_off)[0]
+        for pid, turns, youth in rows:
             extra = ""
-            if name == "youth":
-                extra = "  %-5s age %d" % (pbdata.position_name(
-                    struct.unpack_from("<I", b, r + YCAND_POS)[0]), b[r + YCAND_AGE])
+            if youth:
+                extra = "  %-5s age %d" % (pbdata.position_name(youth[0]), youth[1])
             print("    id %5d  %-20s %d turn%s left%s" % (
-                pid, names.get(pid, "?"), b[r + turns_off],
-                "" if b[r + turns_off] == 1 else "s", extra))
+                pid, names.get(pid, "?"), turns, "" if turns == 1 else "s", extra))
 
 
 def cmd_finances(game, path):
     """The season plan and the accounts for this month and this season."""
     s = Save(game, path)
-    b = s.blocks
     print("%s" % s.path)
     print("  money  %d (amounts are in the stored unit; euros are 1/4 of it)" % s.money)
-    o = s.at(1, PLAN_OFF)
-    print("  season plan: %s" % ", ".join(
-        "%s %d" % (name, struct.unpack_from("<I", b, o + off)[0]) for name, off in PLAN_FIELDS))
+    print("  season plan: %s" % ", ".join("%s %d" % nv for nv in s.plan()))
     print("  stadium capacity %d" % s.stadium_capacity())
-    others = ["competition %#x: %d" % (struct.unpack_from("<H", b, o + PLAN_OTHER_IDS + 2 * i)[0],
-                                       struct.unpack_from("<I", b, o + PLAN_OTHER + 4 * i)[0])
-              for i in range(PLAN_OTHERS)
-              if struct.unpack_from("<H", b, o + PLAN_OTHER_IDS + 2 * i)[0] != 0xffff]
+    others = ["competition %#x: %d" % cp for cp in s.other_tickets()]
     print("  other ticket prices: %s" % (", ".join(others) or "none"))
     import initteam
     msg = initteam.category_names(os.path.join("DAT", "MESSAGE", "MES.PAC"), REPORT_CATEGORY)
-    for label, base in (("this month", MONTH_OFF), ("this season", SEASON_OFF)):
-        o = s.at(5, base)
-        inc = struct.unpack_from("<%dq" % INCOME_TYPES, b, o)
-        pay = struct.unpack_from("<%dq" % PAYMENT_TYPES, b, o + PAYMENTS_OFF)
+    for label, inc, pay in s.accounts():
         print("  %s: income %d, payments %d, balance %d" % (
             label, sum(inc), sum(pay), sum(inc) - sum(pay)))
         line = REPORT_LINES
@@ -1569,8 +1618,8 @@ def apply_assigns(s, assigns):
         except ValueError:
             raise ValueError("%s: the value must be a number" % a)
         if key == "money":
-            if not 0 <= value <= MONEY_MAX:
-                raise ValueError("%s: money is 0-%d" % (a, MONEY_MAX))
+            if not MONEY_MIN <= value <= MONEY_MAX:
+                raise ValueError("%s: money is %d to %d" % (a, MONEY_MIN, MONEY_MAX))
             s.money = value
             continue
         if key.startswith("plan:"):
@@ -1655,8 +1704,8 @@ def edit_spec(s=None):
     <kind> 0-4. With a decoded save `s`, the ranges that depend on it are
     filled in (the ends of status, status_rank and plan:season_tickets);
     without one they are None."""
-    out = [("money", 0, MONEY_MAX, 1,
-            "stored unit (pounds x 6); pwkGen_Income caps money there")]
+    out = [("money", MONEY_MIN, MONEY_MAX, 1,
+            "stored unit (pounds x 6), an s64; below 0 is debt")]
     cap = srank_hi = None
     if s is not None:
         # The caps fall as the rank number rises (rank 0 is the top), so a

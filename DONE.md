@@ -950,3 +950,10 @@ files. Each item keeps what was found, where, and how it was tested.
       widgets: a squad, drop-down grade, win bonus, prize, place slot and a
       second UID, two refusals; the save equals the logged
       `regulation.py set`
+- [x] Save editor steps 1-2 (`DOC/SAVE_EDITOR_PLAN.md`): `save.py spec`
+      lists what `set` accepts and checks it on a save (`save.edit_spec`,
+      `apply_assigns`), and `SRC/saveedit.py` opens a save read-only on
+      seven pages (club, finances, squad, combinations, staff, other clubs,
+      candidates). Tested off-screen on a copy of save G000. Found on the
+      way: money is any s64 (G000 holds 7,308,451,892), not capped at
+      0x7fffffff
