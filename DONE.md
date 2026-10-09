@@ -942,3 +942,11 @@ files. Each item keeps what was found, where, and how it was tested.
 - [x] Tested in PCSX2: a free agent replaced in the Free agents tab
       (J.Montsalvatge, rank 3, in P.Camp's slot 21) shows on the Transfer
       List in a new career (user report)
+- [x] Regulations tab: every schedule's row of `REGULATION.TBB`, named
+      from the schedule packs (`regulation.uid_names`), through
+      `regulation.set_field` and `edit_range`. The club count is shown
+      read-only and the squad's copy follows the squad
+      (`regulation.FOLLOWS`); money shows in pounds. Tested through the
+      widgets: a squad, drop-down grade, win bonus, prize, place slot and a
+      second UID, two refusals; the save equals the logged
+      `regulation.py set`

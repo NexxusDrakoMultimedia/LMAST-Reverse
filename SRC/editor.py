@@ -59,6 +59,12 @@ Tabs:
              DOC/PLRESOURCESIM_FORMAT.md). Refuses a player already in the
              list or in a club's squad. Shares the pack with the Clubs tab:
              each saves its edits onto the file as it is then.
+    Regulations
+             each schedule's match rules, win bonus, prizes and places
+             (REGULATION.TBB, regulation.py set; DOC/REGULATION_FORMAT.md),
+             named from the schedule packs. The club count is shown, not
+             edited (it must match the schedule), and the squad's copy
+             follows the squad. Money shows in pounds.
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
@@ -91,6 +97,7 @@ import leaguesize
 import mbb
 import pbdata
 import plrsim
+import regulation
 import teaminit
 import uniform
 
@@ -1427,6 +1434,308 @@ class NewClubTab(Tab):
                quote(shown_path(out + ".new"))] + args
         n = len(self.changes)
         lines = log_lines("New club: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
+REGULATION = "PARAM/REGULATION.TBB"
+RULE_FIELDS = ("grade", "clubs", "unk04", "ban_yellows", "squad", "squad2", "foreigners", "subs")
+RULE_LABELS = {"unk04": "+0x04", "ban_yellows": "ban at yellows", "squad2": "squad (copy)",
+               "prize_kind": "prize kind", "win_bonus": "win bonus"}
+SLOT_NAMES = ("up1", "up2", "up3", "up4", "down1", "down2")
+PRIZE_COLUMNS = 4
+
+
+def pounds(value):
+    """A regulation's money field as the game shows it in pounds."""
+    return "£%s" % format(value * regulation.MONEY_UNIT // regulation.POUND, ",")
+
+
+class RegulationsTab(Tab):
+    """Match regulations, one row per schedule UID (REGULATION.TBB),
+    through regulation.set_field and encode_file, as `regulation.py set`
+    does. The schedules' names come from the schedule packs
+    (regulation.uid_names)."""
+    title = "Regulations"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.rows = None
+        self.changes = {}           # (uid, field) -> value, in edit order
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Name or UID").pack(side="left")
+        self.find_var = tk.StringVar()
+        find = ttk.Entry(bar, textvariable=self.find_var, width=22)
+        find.pack(side="left", padx=(4, 12))
+        find.bind("<Return>", lambda e: self.refresh_list())
+        ttk.Button(bar, text="Search", command=self.refresh_list).pack(side="left")
+        self.count_label = ttk.Label(bar, text="")
+        self.count_label.pack(side="left", padx=12)
+        ttk.Label(bar, text="Each schedule's rules, money and places "
+                            "(DOC/REGULATION_FORMAT.md).", foreground="#555").pack(side="left")
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("uid", "name", "clubs")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, text, width in zip(cols, ("UID", "Schedule", "Clubs"), (50, 260, 50)):
+            self.tree.heading(c, text=text)
+            self.tree.column(c, width=width, stretch=c == "name")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    # loading
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(REGULATION)
+            self.buf, self.end, self.raw, self.rows = regulation.load(self.path)
+            # The schedule packs from the mod folder when the Season tab
+            # has written them, as `leaguesize.py build --over` reads them.
+            self.names = regulation.uid_names(os.path.join(mod.dat, "PARAM"),
+                                              mod.target("PARAM"))
+        except (ValueError, struct.error, OSError, StopIteration) as e:
+            self.rows = None
+            self.app.status("Couldn't load the regulations: %s" % e)
+            messagebox.showerror("Regulations", "Couldn't load the regulations:\n%s" % e)
+            return
+        self.changes = {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    # the list
+
+    def name(self, uid):
+        return self.names.get(uid, "(no schedule)")
+
+    def refresh_list(self):
+        if self.rows is None:
+            return
+        find = self.find_var.get().strip().lower()
+        self.tree.delete(*self.tree.get_children())
+        n = 0
+        for r in self.rows:
+            if find and not (find == str(r.uid) or
+                             (not find.isdigit() and find in self.name(r.uid).lower())):
+                continue
+            self.tree.insert("", "end", iid=str(r.uid), values=self.row(r),
+                             tags=("edited",) if self.edited(r.uid) else ())
+            n += 1
+        self.count_label.configure(text="%d schedules" % n)
+
+    def row(self, r):
+        return (r.uid, self.name(r.uid), r["clubs"])
+
+    def edited(self, uid):
+        return any(u == uid for u, _ in self.changes)
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    # the detail panel
+
+    def show(self, uid):
+        self.current = uid
+        r = self.rows[uid]
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="UID %d  %s" % (uid, self.name(uid)),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+
+        frame = ttk.LabelFrame(box, text="Match rules")
+        frame.pack(fill="x", padx=8, pady=6)
+        for row, name in enumerate(RULE_FIELDS):
+            self.field_row(frame, r, name, row)
+
+        frame = ttk.LabelFrame(box, text="Money: the game shows the value × %s ÷ %d in pounds"
+                               % (format(regulation.MONEY_UNIT, ","), regulation.POUND))
+        frame.pack(fill="x", padx=8, pady=6)
+        self.field_row(frame, r, "win_bonus", 0, money=True)
+        self.field_row(frame, r, "prize_kind", 1)
+        grid = ttk.Frame(frame)
+        grid.grid(row=2, column=0, columnspan=3, sticky="w", padx=6, pady=(6, 4))
+        ttk.Label(grid, text="Prize money by final position", foreground="#555").grid(
+            row=0, column=0, columnspan=3 * PRIZE_COLUMNS, sticky="w")
+        for i in range(regulation.PRIZES):
+            row, col = 1 + i // PRIZE_COLUMNS, (i % PRIZE_COLUMNS) * 3
+            beyond = i >= r["clubs"]
+            ttk.Label(grid, text="%d" % (i + 1), foreground="#999" if beyond else "").grid(
+                row=row, column=col, sticky="e", padx=(8, 4))
+            name = "prize%d" % (i + 1)
+            money = ttk.Label(grid, text="", foreground="#555", width=12)
+            money.grid(row=row, column=col + 2, sticky="w", padx=(4, 8))
+
+            def show_money(name=name, money=money):
+                money.configure(text=pounds(r[name]))
+            show_money()
+            self.input(grid, r, name, show_money).grid(row=row, column=col + 1, sticky="w",
+                                                       pady=1)
+
+        frame = ttk.LabelFrame(box, text="Places: rank ranges counted from the top (up) or the "
+                                         "bottom (down) of the table")
+        frame.pack(fill="x", padx=8, pady=6)
+        ttk.Label(frame, text="The game uses these to tell when a club has clinched or is in "
+                              "a place. Which clubs really move next season is set in the "
+                              "schedule packs, so change those to match. A count of -1 is "
+                              "set by the host nation's UEFA rank; a count of 0 ends the list.",
+                  foreground="#555", wraplength=900, justify="left").grid(
+            row=0, column=0, columnspan=5, sticky="w", padx=6, pady=(2, 6))
+        for col, text in enumerate(("slot", "count", "competition", "UID", "gives")):
+            ttk.Label(frame, text=text, foreground="#555").grid(row=1, column=col, sticky="w",
+                                                               padx=(6, 8))
+        for row, slot in enumerate(SLOT_NAMES, 2):
+            ttk.Label(frame, text=slot).grid(row=row, column=0, sticky="w", padx=(6, 8))
+            gives = ttk.Label(frame, text="")
+            gives.grid(row=row, column=4, sticky="w", padx=(0, 8))
+
+            def show_gives(slot=slot, gives=gives):
+                group = SLOT_NAMES[:4] if slot.startswith("up") else SLOT_NAMES[4:]
+                read = dict(regulation.read_slots(r, group))
+                gives.configure(text=regulation.slot_text(*read[slot]) if slot in read
+                                else "(not read: comes after a count of 0)"
+                                if r.slot(slot)[0] else "-")
+            for col, part in enumerate(("count", "compe", "uid"), 1):
+                self.input(frame, r, "%s_%s" % (slot, part), self.refresh_slots).grid(
+                    row=row, column=col, sticky="w", padx=(0, 8), pady=1)
+            show_gives()
+        self.fit_detail()
+
+    def refresh_slots(self):
+        """Redraw the page after a slot edit: every slot's text depends on
+        the others (the list ends at a count of 0)."""
+        self.frame.after_idle(lambda: self.show(self.current))
+
+    def fit_detail(self):
+        self.frame.update_idletasks()
+        need = self.detail.inner.winfo_reqwidth() + 24
+        have = self.detail.outer.winfo_width()
+        if need > have > 1:
+            pos = self.panes.sashpos(0)
+            self.panes.sashpos(0, max(LIST_MIN, pos - (need - have)))
+
+    def field_row(self, frame, r, name, row, money=False):
+        ttk.Label(frame, text=RULE_LABELS.get(name, name)).grid(row=row, column=0, sticky="w",
+                                                                padx=(6, 12), pady=2)
+        cell = ttk.Frame(frame)
+        cell.grid(row=row, column=1, sticky="w", pady=2)
+        after = None
+        if money:
+            label = ttk.Label(cell, text="", foreground="#555")
+
+            def after(label=label):
+                label.configure(text=pounds(r[name]))
+        self.input(cell, r, name, after).pack(side="left")
+        if money:
+            label.pack(side="left", padx=6)
+            after()
+        ttk.Label(frame, text=regulation.DESCRIPTIONS.get(name, ""), foreground="#555").grid(
+            row=row, column=2, sticky="w", padx=(12, 6))
+
+    def input(self, parent, r, name, after=None):
+        rng = regulation.edit_range(name)
+        if rng is None:
+            return ttk.Label(parent, text=str(r[name]), foreground="#777")
+        if name == "grade":
+            spec = ("choice", list(range(rng[0], rng[1] + 1)))
+        else:
+            spec = ("range",) + rng
+        return value_input(parent, spec, str, lambda: r[name],
+                           lambda text, revert: self.commit(r, name, text, revert, after))
+
+    # edits
+
+    def commit(self, r, name, text, revert, after=None):
+        what = "UID %d" % r.uid
+        try:
+            value = int(text)
+        except ValueError:
+            return self.refuse(what, "%s must be a number" % name, revert)
+        lo, hi = regulation.edit_range(name)
+        if not lo <= value <= hi:
+            return self.refuse(what, "%s must be %d-%d" % (name, lo, hi), revert)
+        names = (name,) + regulation.FOLLOWS.get(name, ())
+        old = {n: r[n] for n in names}
+        try:
+            for n in names:
+                regulation.set_field(r, n, value)
+            problems = regulation.check(r)
+            if problems:
+                raise ValueError("; ".join(problems))
+        except ValueError as e:
+            for n, v in old.items():
+                r[n] = v
+            return self.refuse(what, str(e), revert)
+        for n in names:
+            self.changes.pop((r.uid, n), None)
+            self.changes[r.uid, n] = value
+        if after:
+            after()
+        if len(names) > 1:
+            self.frame.after_idle(lambda: self.show(r.uid))     # the copies' labels
+        self.tree.item(str(r.uid), values=self.row(r), tags=("edited",))
+        self.app.status("%s: %s %d -> %d%s" % (what, name, old[name], value,
+                                               " (and %s)" % ", ".join(names[1:])
+                                               if len(names) > 1 else ""))
+        self.app.update_title()
+        return True
+
+    def refuse(self, what, message, revert):
+        revert()
+        self.app.status("%s: %s" % (what, message))
+        messagebox.showerror("Regulations", "%s: %s" % (what, message))
+        return False
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(REGULATION)
+        temps = [(out + ".new", out)]
+        try:
+            data = regulation.encode_file(self.buf, self.end, self.raw, self.rows)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Regulations", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        args, last = [], None
+        for (uid, name), value in self.changes.items():
+            if uid != last:
+                args.append(str(uid))
+                last = uid
+            args.append("%s=%d" % (name, value))
+        cmd = ["python", "SRC/regulation.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + args
+        n = len(self.changes)
+        lines = log_lines("Regulations: %d changes" % n, [cmd], temps)
         mod.log(lines)
         self.app.write_log(lines)
         self.load("Saved %s: %d changes" % (shown_path(out), n))
@@ -3175,8 +3484,9 @@ class App:
         self.text = TextTab(self)
         self.season = SeasonTab(self)
         self.free = FreeAgentsTab(self)
-        self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free, self.kits,
-                     self.text]
+        self.regulations = RegulationsTab(self)
+        self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free,
+                     self.regulations, self.kits, self.text]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)

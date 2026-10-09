@@ -215,23 +215,40 @@ def set_field(r, name, value):
 
 # What an editor offers, narrower than set_field allows: the values on the
 # disc and their neighbours. ban_yellows 255 is "no ban" on the disc.
+# `clubs` must agree with the schedule packs (leaguesize.py changes a
+# division's size), and `squad2` follows `squad` (the VS override at
+# 0x206e28 writes both), so an editor shows them without its own input.
 EDIT_RANGES = {
     "grade": (0, GRADES - 1),
-    "clubs": (0, 32),
     "prize_kind": (0, 2),
     "win_bonus": (0, 0x7fff),
     "ban_yellows": (0, 255),
     "squad": (SQUAD_MIN, SQUAD_MAX),
-    "squad2": (SQUAD_MIN, SQUAD_MAX),
     "foreigners": (0, SQUAD_MAX),
     "subs": (0, SQUAD_MAX - SQUAD_MIN),
 }
 
 
+FOLLOWS = {"squad": ("squad2",)}      # an editor sets these with the field
+
+DESCRIPTIONS = {
+    "grade": "match grade, 0 the top (European and national-team); feeds attendance",
+    "clubs": "clubs in the schedule; a division's size is changed in the schedule packs",
+    "unk04": "not traced",
+    "prize_kind": "2: prizes scale by your nation's UEFA rank, 120% (rank 1) to 80% (rank 6)",
+    "win_bonus": "paid for each win",
+    "ban_yellows": "yellow cards that ban a player; 255 never",
+    "squad": "players named for a match: 11 starters and the bench",
+    "squad2": "always equal to the squad",
+    "foreigners": "foreign players allowed among them",
+    "subs": "substitutions allowed in a match",
+}
+
+
 def edit_range(name):
     """(low, high) an editor offers for `name`, or None for fields it
-    leaves alone (+0x04, not traced)."""
-    if name == "unk04":
+    shows without an input: +0x04 (not traced), clubs and squad2."""
+    if name in ("unk04", "clubs", "squad2"):
         return None
     if name in EDIT_RANGES:
         return EDIT_RANGES[name]
@@ -242,6 +259,23 @@ def edit_range(name):
     if name.endswith("_compe"):
         return (-1, COMPES - 1)
     return (-1, UIDS - 1)
+
+
+def uid_names(root, over=None):
+    """{uid: name} from the schedule packs of the DAT/PARAM folder `root`
+    (each file from `over` when it is there): the six nations' divisions
+    by name, other UIDs by competition and when they are loaded."""
+    import leaguesize
+    import schedule
+    data = leaguesize.load(root, over)
+    names = {u: "competition %d, %s" % (r.compe, schedule.LOAD_KIND.get(r.kind, r.kind))
+             for u, (r, _) in schedule.year_uids(data[0].year).items()}
+    for league, nation in enumerate(leaguesize.LEAGUE_NAMES):
+        n = leaguesize.Nation(*data[:3], league)
+        names[n.d1] = "%s first division" % nation
+        names[n.own] = "%s second division (your nation)" % nation
+        names[n.other] = "%s second division (other nations)" % nation
+    return names
 
 
 def encode_file(buf, end, raw, rows):

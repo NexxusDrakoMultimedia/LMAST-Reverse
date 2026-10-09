@@ -12,8 +12,8 @@ What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
 1. **The parameter tables' fields** (section 2). `REGULATION.TBB` is
-   done (`regulation.py`); next an editor tab for it, then the tables a
-   mod would tune after it (`CLUBRESULT`, `TRAINING_LIST`, the camp
+   done (`regulation.py`, the editor's Regulations tab); next the tables
+   a mod would tune after it (`CLUBRESULT`, `TRAINING_LIST`, the camp
    tables). `tbb.py replace` can only swap a whole table.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
@@ -65,9 +65,12 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       would tune (`CLUBRESULT`, `TRAINING_LIST`, the camp tables and the
       others in `DOC/PARAM_DIR.md#still-unknown`), so they can get
       field-level writers. `tbb.py replace` only swaps a whole table
+- [ ] `leaguesize.py build` (and the Season tab) leaves `REGULATION.TBB`'s
+      `clubs` at the old size (England at 22 still says 20). Write the new
+      sizes there too, and check what the old count changed in the tested
+      22-club seasons (a message number, `SIMPRG.REL 0x15d8f0`)
 - [ ] `REGULATION.TBB` leftovers (`DOC/REGULATION_FORMAT.md`): `+0x04`,
-      the reader of `squad2`, and what the place checks change on screen.
-      Then an editor tab
+      the reader of `squad2`, and what the place checks change on screen
 - [ ] How your club and the rival become ranks 25 and 26 of the second
       division's past record, which the own-nation schedule (UID 1, 26
       slots) takes after the tutorial (`DOC/SCHEDULE_FORMAT.md`, user
@@ -355,3 +358,5 @@ and every GUI edit must also be possible as a `python SRC/...` command.
       only one copy would tell), and whether a front number can show at
       all (a front number colour showed nothing on AC Milan's shirt, user
       report)
+- [ ] Test in PCSX2: a save from the Regulations tab (the same edit from
+      `regulation.py set` is tested)
