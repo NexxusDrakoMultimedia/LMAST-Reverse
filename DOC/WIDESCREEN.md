@@ -144,12 +144,54 @@ bytes), a debug display nothing calls. Tested in PCSX2: the hidden squad
 list no longer shows in the match, the ticker and the menu slide-ins stop
 at the 4:3 edge, list rows are intact (user report, 2026-10-04).
 
+### Season-mode backdrops
+
+The season-mode screens draw an Acrobata scene behind their menus, such as
+the scrolling map behind the Edit club screen ([`ACROBATA_DIR.md`](ACROBATA_DIR.md)). The
+scene reaches past the 4:3 area, and it isn't drawn in the 2D pass, so the
+clip above doesn't cover it. With the scissor held at 4:3 for the whole
+frame the margin was clean, so the scene does respect the scissor.
+
+The draws come from task draw methods in the overlays, which the task draw
+loop calls one by one at `0x1052a8` (`jalr $v1`, in the function at
+`0x105280`). On the Edit club screen two of them draw Acrobata scenes, both
+through `ACROBATA::CAckManager::draw` (`SIMPRG.REL 0x117a98`):
+
+| Draw method | Overlay | Fetches the manager at |
+|---|---|---|
+| SimRoot's draw (`SIMPRG.REL 0x7f40`) | `SIMPRG.REL` | `+0x7c` |
+| the club editor's draw (`CEDITPRG.REL 0xcbc8`) | `CEDITPRG.REL` | `+0x8` |
+
+The UI fix sends that call through a cave. If the first 40 words of the
+draw method contain `jal 0x2e7378` (`ACROBATA::CAckManager::getInstance`,
+the word `0c0b9cde` wherever the overlay was loaded), it runs the method
+with the scissor at 4:3, with the 2D-pass wrapper restoring 4:3 rather
+than full width, then sets full width back. Other draw methods are passed
+straight on. No code in `GAMEPRG.REL` calls `getInstance`, so the match
+isn't clipped. The cave sits in `graphics::OperatePostEffect::display_menu`
+(`0x13cca8`, 0x150 bytes), a debug menu referenced only from the export
+table; the menus it calls are only called from it.
+
+Tested in PCSX2: on the Edit club screen the map no longer shows in the
+right margin and the rest of the screen is unchanged (applied live over
+PINE, user report, 2026-10-09).
+
+Found by live hooks over PINE that logged each caller with the scissor
+value at the time. Ruled out on the way:
+
+| Tried | Result |
+|---|---|
+| Clipping Ninja 2D primitives (`nnBegin`/`nnEndDrawPrimitive2D`) drawn from the overlays outside the 2D pass | ran twice a frame (the Acroarts 2D layer, `SIMPRG.REL 0x1b1b94`, and `CBackgroundManager`'s screen-lock quad), margin unchanged |
+| The same for 3D primitives (`nnBeginDrawPrimitive3D`, called by Acroarts at `SIMPRG.REL 0x1b155c`) | margin unchanged |
+| Clipping only SimRoot's draw | margin unchanged: on this screen the club editor's draw method draws the scene |
+
 ## What's still open
 
-- The Pre-match screen's background movie (clock-like ticks) still shows
-  in the right margin, so it draws outside the 2D pass and the clip
-  boxes. It isn't `CSpriteRef` (`0x1267e8`): squeezing that class's
-  hard-coded x conversions changed nothing (tested in PCSX2).
+- The backdrop clip still needs a test from boot with the pnach alone,
+  on the Pre-match screen (its background ticks, which also showed in
+  the right margin; squeezing `CSpriteRef`'s (`0x1267e8`) x conversions
+  didn't change them, tested in PCSX2), in the Club House, and in a
+  match.
 - The stadium ad boards floating above the pitch in replays are the
   game's normal behaviour, not the patch (user report).
 
@@ -159,4 +201,6 @@ at the 4:3 edge, list rows are intact (user report, 2026-10-04).
 python SRC/sles_disasm.py ISO/SLES_541.51 dis nnSetProjectionPXPlusPS2 nnMakePerspectiveMatrix
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x12f9b0 92
 python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x20ecd8 30 --sles ISO/SLES_541.51
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x7f40 48 --sles ISO/SLES_541.51
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x105280 16
 ```

@@ -248,3 +248,58 @@ patch=0,EE,0013bf4c,word,ad400084
 patch=0,EE,0013bf50,word,08052f9c
 patch=0,EE,0013bf54,word,00000000
 patch=0,EE,0014be6c,word,0804efc7
+
+// Backdrops: the season-mode screens draw their Acrobata backdrops (such
+// as the scrolling map behind Edit club) from task draw
+// methods in the overlays, outside the 2D pass, and the scene reaches past
+// the 4:3 area. The task draw loop calls each draw method at 0x1052a8
+// (jalr $v1). Send it through a cave instead: if the first 40 words of
+// the draw method contain a call to ACROBATA::CAckManager::getInstance
+// (jal 0x2e7378, word 0c0b9cde wherever the overlay loads), run it with the
+// scissor at 4:3 and with the 2D pass restoring 4:3 rather than full width,
+// then put full width back. Other draw methods, the match among them (no
+// GAMEPRG code calls getInstance), are passed through untouched.
+// Cave in graphics::OperatePostEffect::display_menu (0x13cca8, 0x150
+// bytes, a debug menu nothing calls; it and the menus it calls are only
+// referenced from the export table):
+//   move $t2, $v1; addiu $t3, $zero, 0x28; lui $t1, 0xc0b; ori $t1, $t1, 0x9cde; lw $t0, ($t2); beq $t0, $t1, 0x13ccd4
+//   addiu $t3, $t3, -1; bnez $t3, 0x13ccb8; addiu $t2, $t2, 4; jr $v1; nop; addiu $sp, $sp, -0x20
+//   sd $ra, ($sp); sd $a0, 8($sp); sd $v1, 0x10($sp); lui $at, 0x14; ld $t0, -0x4038($at); sd $t0, -0x4030($at)
+//   jal 0x14cb20; sd $t0, -0x4040($at); ld $v1, 0x10($sp); jalr $v1; ld $a0, 8($sp); lui $at, 0x14
+//   ld $t0, -0x32c8($at); sd $t0, -0x4030($at); jal 0x14cb20; sd $t0, -0x4040($at); ld $ra, ($sp); jr $ra
+//   addiu $sp, $sp, 0x20
+// Data at 0x13cd38: the full-width value.
+patch=0,EE,0013cca8,word,00605021
+patch=0,EE,0013ccac,word,240b0028
+patch=0,EE,0013ccb0,word,3c090c0b
+patch=0,EE,0013ccb4,word,35299cde
+patch=0,EE,0013ccb8,word,8d480000
+patch=0,EE,0013ccbc,word,11090005
+patch=0,EE,0013ccc0,word,256bffff
+patch=0,EE,0013ccc4,word,1560fffc
+patch=0,EE,0013ccc8,word,254a0004
+patch=0,EE,0013cccc,word,00600008
+patch=0,EE,0013ccd0,word,00000000
+patch=0,EE,0013ccd4,word,27bdffe0
+patch=0,EE,0013ccd8,word,ffbf0000
+patch=0,EE,0013ccdc,word,ffa40008
+patch=0,EE,0013cce0,word,ffa30010
+patch=0,EE,0013cce4,word,3c010014
+patch=0,EE,0013cce8,word,dc28bfc8
+patch=0,EE,0013ccec,word,fc28bfd0
+patch=0,EE,0013ccf0,word,0c0532c8
+patch=0,EE,0013ccf4,word,fc28bfc0
+patch=0,EE,0013ccf8,word,dfa30010
+patch=0,EE,0013ccfc,word,0060f809
+patch=0,EE,0013cd00,word,dfa40008
+patch=0,EE,0013cd04,word,3c010014
+patch=0,EE,0013cd08,word,dc28cd38
+patch=0,EE,0013cd0c,word,fc28bfd0
+patch=0,EE,0013cd10,word,0c0532c8
+patch=0,EE,0013cd14,word,fc28bfc0
+patch=0,EE,0013cd18,word,dfbf0000
+patch=0,EE,0013cd1c,word,03e00008
+patch=0,EE,0013cd20,word,27bd0020
+patch=0,EE,0013cd38,word,01ff0000
+patch=0,EE,0013cd3c,word,01bf0000
+patch=0,EE,001052a8,word,0c04f32a

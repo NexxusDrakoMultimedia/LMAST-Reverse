@@ -293,8 +293,9 @@ The event tables, the procedures and the overlay loader are documented in
 - [ ] Tools still PAL-only: `patch_disc.py`'s switches (they refuse
       other discs), `save.py`'s commands (they take no ISO folder), the
       editor
-- [ ] Widescreen UI leftover (`DOC/WIDESCREEN.md#whats-still-open`): the
-      Pre-match background movie still shows in the right margin
+- [ ] Widescreen backdrop clip (`DOC/WIDESCREEN.md#season-mode-backdrops`):
+      tested live on the Edit club screen; test it from boot with the
+      pnach on the Pre-match screen, in the Club House and in a match
 
 ## 8. Housekeeping
 
