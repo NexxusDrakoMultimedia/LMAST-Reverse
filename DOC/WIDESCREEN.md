@@ -190,7 +190,8 @@ address so it returns through the cave. The caves sit in
 
 Tested in PCSX2: the substitution cut-in stays inside 4:3, the rest of
 the match HUD is unchanged, and the speed is unaffected (user report,
-2026-10-09).
+2026-10-09), first with the code written over PINE and then from boot
+with the pnach.
 
 ### Season-mode backdrops
 
