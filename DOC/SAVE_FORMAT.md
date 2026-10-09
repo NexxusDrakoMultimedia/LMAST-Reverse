@@ -678,7 +678,8 @@ be accepted and the values just outside refused (`!!` otherwise). Money
 takes any s64 value: `pwkGen_Pay` (`0x2445f8`) subtracts with no floor,
 so debt is negative, and `pwkGen_Income` (`0x244570`) only resets it
 to 0x7fffffff when the s64 itself would overflow. Save G000 holds
-7,308,451,892. The save editor ([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md))
+7,308,451,892. **Tested in PCSX2** (user): a save edited to
+10,000,000,000 showed £1,666,666,666 in game. The save editor ([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md))
 takes its ranges from the same list (`save.edit_spec`).
 
 ## Decoding

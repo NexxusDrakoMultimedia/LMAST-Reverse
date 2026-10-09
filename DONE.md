@@ -962,4 +962,8 @@ files. Each item keeps what was found, where, and how it was tested.
       `<card>.bak/<save>/` and logs `save.py set <backup> ...`. Tested
       through the widgets on a copy of G003: the logged command gives the
       saved bytes, the card's save folder is left with only the game's
-      files
+      files. Tested in PCSX2 (user): money set to 10,000,000,000 showed
+      £1,666,666,666, so a balance above 0x7fffffff loads and displays
+- [x] Save editor Finances page: the season plan's four `set` fields
+      (`save.plan_key`, `Save.get_plan`), with steps; the season-ticket
+      price follows. Tested through the widgets on a copy of G003

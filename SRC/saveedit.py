@@ -167,15 +167,35 @@ class FinancesPage(Page):
         self.clear()
         top = ttk.Frame(self.frame)
         top.pack(fill="x", padx=8, pady=8)
-        plan = ttk.LabelFrame(top, text="Season plan")
+        plan = ttk.LabelFrame(top, text="Season plan (the Accounting Dept.'s "
+                                        "Administrative Plan)")
         plan.pack(side="left", anchor="n", padx=(0, 12))
-        rows = [(name, money(v) if name in save.PLAN_MONEY else format(v, ","))
-                for name, v in s.plan()]
-        rows.append(("stadium capacity", format(s.stadium_capacity(), ",")))
+        for r, (name, v) in enumerate(s.plan()):
+            ttk.Label(plan, text=name, foreground=GREY).grid(row=r, column=0, sticky="w",
+                                                             padx=(6, 12), pady=2)
+            key = save.plan_key(name)
+            cell = ttk.Frame(plan)
+            cell.grid(row=r, column=1, sticky="w", pady=2)
+            if key is None:
+                ttk.Label(cell, text=money(v)).pack(side="left")
+                ttk.Label(cell, text="follows the ticket price and the rate",
+                          foreground=GREY).pack(side="left", padx=8)
+                continue
+            self.app.input(cell, key, refill=True).pack(side="left")
+            lo, hi, step = spec_range(s, key)
+            note = "%s-%s" % (format(lo, ","), format(hi, ","))
+            if step > 1:
+                note += " in steps of %d" % step
+            if name in save.PLAN_MONEY:
+                note = "%s; %s" % (save.pounds(v), note)
+            ttk.Label(cell, text=note, foreground=GREY).pack(side="left", padx=8)
+        rows = [("stadium capacity", format(s.stadium_capacity(), ","))]
         rows += [("competition %#x ticket" % c, money(v)) for c, v in s.other_tickets()]
-        grid_rows(plan, rows)
-        ttk.Label(top, text="Amounts are in the save's money unit, with pounds (the unit / %d) "
-                            "in brackets." % save.POUND, foreground=GREY,
+        grid_rows(plan, rows, start=len(s.plan()))
+        ttk.Label(top, text="Amounts are in the save's money unit, with pounds (the unit / %d). "
+                            "The ranges are the same in either currency; the game's plan "
+                            "screen also moves money in steps (pounds: 60,000 of the unit), "
+                            "which these inputs don't." % save.POUND, foreground=GREY,
                   wraplength=500, justify="left").pack(side="left", anchor="n")
 
         box = ttk.LabelFrame(self.frame, text="Accounts (Earnings Report lines, then each type)")
@@ -430,10 +450,10 @@ def backup_dir(main):
 
 
 def spec_range(s, key):
-    """(low, high) save.edit_spec gives for a concrete key of save `s`."""
+    """(low, high, step) save.edit_spec gives for a concrete key of save `s`."""
     for k, lo, hi, step, _ in save.edit_spec(s):
         if k == key:
-            return lo, hi
+            return lo, hi, step
     raise KeyError(key)
 
 
@@ -549,9 +569,8 @@ class App:
     def input(self, parent, key, refill=False):
         """A spin box for a save.py set key, its range from save.edit_spec.
         refill: redraw the pages after a change (values that follow it)."""
-        lo, hi = spec_range(self.save, key)
         return editor.value_input(
-            parent, ("range", lo, hi), str, lambda: self.value(key),
+            parent, ("range",) + spec_range(self.save, key), str, lambda: self.value(key),
             lambda text, revert: self.commit(key, text, revert, refill))
 
     def value(self, key):
@@ -559,6 +578,8 @@ class App:
         s = self.save
         if key == "money":
             return s.money
+        if key.startswith("plan:"):
+            return s.get_plan(key[5:])
         srank, _, status, _ = s.status()
         return {"status": status, "status_rank": srank}[key]
 

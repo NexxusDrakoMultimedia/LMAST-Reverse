@@ -217,7 +217,7 @@ class Scrolled:
 
 def value_input(parent, spec, label, get, apply):
     """A drop-down for ("choice", [values]) or a spin box for ("range",
-    low, high). label(v) is a value's text, get() the current value, and
+    low, high[, step]). label(v) is a value's text, get() the current value, and
     apply(text, revert) is called with the new value's text when it
     changes; it calls revert() to put the old value back."""
     var = tk.StringVar()
@@ -240,7 +240,8 @@ def value_input(parent, spec, label, get, apply):
         w.bind("<<ComboboxSelected>>", commit)
     else:
         lo, hi = spec[1], spec[2]
-        w = ttk.Spinbox(parent, textvariable=var, from_=lo, to=hi, increment=1,
+        step = spec[3] if len(spec) > 3 else 1
+        w = ttk.Spinbox(parent, textvariable=var, from_=lo, to=hi, increment=step,
                         width=max(4, len(str(hi)) + 2), command=commit)
         w.bind("<Return>", commit)
         w.bind("<FocusOut>", commit)

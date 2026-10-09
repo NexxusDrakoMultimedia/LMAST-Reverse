@@ -76,7 +76,10 @@ Each page shows what `save.py` can already read, and edits only what
    widget test and the logged-command check. *Done so far:* Club (money,
    status, status rank), tested on a copy of save G003: an edit of each,
    a refused status above the cap, File > Save, the backup beside the
-   card, and the logged command giving the saved bytes.
+   card, and the logged command giving the saved bytes. Tested in PCSX2
+   (user): money set to 10,000,000,000 in the editor showed £1,666,666,666
+   in game. Finances (the season plan's ad budget, ticket price,
+   season-ticket rate and season tickets), tested the same way.
 4. **PCSX2 test** (by the user): one save edited in each page, loaded in
    game, the change seen on its screen. Recorded in
    [`SAVE_FORMAT.md`](SAVE_FORMAT.md) and `DONE.md`.

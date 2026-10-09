@@ -1262,6 +1262,11 @@ class Save:
         return [(name, struct.unpack_from("<I", self.blocks, o + off)[0])
                 for name, off in PLAN_FIELDS]
 
+    def get_plan(self, field):
+        """A season plan field by its `set` name (PLAN_EDITS)."""
+        return struct.unpack_from("<I", self.blocks,
+                                  self.at(1, PLAN_OFF) + PLAN_EDITS[field][0])[0]
+
     def other_tickets(self):
         """[(competition, ticket price)] for the plan's other competitions
         in use (id 0xffff is a free entry)."""
@@ -1311,6 +1316,16 @@ class Save:
 
     def encode(self):
         return build(self.game, bytes(self.blocks), self.file)[0]
+
+
+def plan_key(name):
+    """The `set` key ("plan:<field>") for a PLAN_FIELDS line, or None for
+    the one set doesn't take (the season-ticket price follows the others)."""
+    off = dict(PLAN_FIELDS)[name]
+    for field, (o, _, _, _) in PLAN_EDITS.items():
+        if o == off:
+            return "plan:" + field
+    return None
 
 
 def pounds(value):
