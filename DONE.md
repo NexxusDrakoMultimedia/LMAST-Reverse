@@ -527,6 +527,11 @@ files. Each item keeps what was found, where, and how it was tested.
       projects them with the scene's own 4:3 matrix (`graphics::Scene
       +0x10`), not the widened copy, so the text squeeze puts them where
       the Hor+ 3D draws the player. Tested in PCSX2 (user report)
+- [x] Widescreen season-mode backdrops: the UI fix clips the Acrobata
+      scenes behind the menus to 4:3 by wrapping the task draw loop's
+      call (`0x1052a8`) for draw methods that use
+      `ACROBATA::CAckManager`. Tested in PCSX2 from boot on Edit club,
+      Pre-match, the Club House and a match (user report)
 
 ## 8. Housekeeping
 

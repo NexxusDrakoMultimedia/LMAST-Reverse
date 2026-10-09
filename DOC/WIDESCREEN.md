@@ -172,9 +172,10 @@ isn't clipped. The cave sits in `graphics::OperatePostEffect::display_menu`
 (`0x13cca8`, 0x150 bytes), a debug menu referenced only from the export
 table; the menus it calls are only called from it.
 
-Tested in PCSX2: on the Edit club screen the map no longer shows in the
-right margin and the rest of the screen is unchanged (applied live over
-PINE, user report, 2026-10-09).
+Tested in PCSX2 from boot with the pnach: the map behind Edit club and the
+Pre-match screen's background stop at the 4:3 edge; the Club House rooms,
+staff and portraits look as before; in a match the 3D still fills 16:9
+and the HUD is unchanged (user report, 2026-10-09).
 
 Found by live hooks over PINE that logged each caller with the scissor
 value at the time. Ruled out on the way:
@@ -185,15 +186,13 @@ value at the time. Ruled out on the way:
 | The same for 3D primitives (`nnBeginDrawPrimitive3D`, called by Acroarts at `SIMPRG.REL 0x1b155c`) | margin unchanged |
 | Clipping only SimRoot's draw | margin unchanged: on this screen the club editor's draw method draws the scene |
 
-## What's still open
+## Known behaviour
 
-- The backdrop clip still needs a test from boot with the pnach alone,
-  on the Pre-match screen (its background ticks, which also showed in
-  the right margin; squeezing `CSpriteRef`'s (`0x1267e8`) x conversions
-  didn't change them, tested in PCSX2), in the Club House, and in a
-  match.
+- The FMVs stay stretched to 16:9 (see the top of this page).
 - The stadium ad boards floating above the pitch in replays are the
   game's normal behaviour, not the patch (user report).
+- Nothing is known to be broken: every UI item found so far is fixed or
+  is the intended look.
 
 ## Checking the claims
 
