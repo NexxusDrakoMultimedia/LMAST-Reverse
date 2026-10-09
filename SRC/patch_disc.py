@@ -99,8 +99,8 @@ one instruction of SLES_541.51 (0x25e6d8). See DOC/TEAMINIT_FORMAT.md.
 
 national-cups moves the World National Cup (UIDs 114-122) and the Euro
 National Cup (98-102) one turn earlier (schedule.shift_pack), so the World
-Cup final is no longer on the year's last turn, where its winner was never
-shown. It writes PARAM/SCHEDULE_SYSTEM.PAC and its copy in
+Cup final is no longer on the year's last turn, where the season ended
+before its results could be viewed. It writes PARAM/SCHEDULE_SYSTEM.PAC and its copy in
 PRELOAD/STATIONFILE.PAC. The national-team calendar moves with them
 (PARAM/SCHEDULE_LIST.TBB and its copies in PRELOAD/SIMLOCALMEM0-6.PAC): in
 the tournament years the matches and the release are a turn earlier, and
@@ -1215,7 +1215,8 @@ def plan_rival_manager(f, img):
 # --- the national cups a turn earlier (DOC/LMASTER_MOD.md) ---------------------
 
 # The World National Cup's knockout (UID 122) plays turns 92-95, and 95 is
-# the last turn of the year, so its winner is never shown (user report).
+# the last turn of the year: the season ends on the turn of the final, and
+# its results can't be viewed in the Competition menu (user report).
 # Its groups (114-121) and the Euro National Cup's (98-101, knockout 102)
 # move back with it: groups 88-90, knockouts 91-94 and 91-93. The game
 # loads the system pack from PRELOAD/STATIONFILE.PAC as well, so both are
@@ -1385,7 +1386,7 @@ SWITCHES = (
     ("rival-manager", plan_rival_manager, [SLES_FILE],
      "Rival's manager: the rival gets the manager of its own style"),
     ("national-cups", plan_national_cups, [SCHEDULE_FILE, STATION_FILE, LIST_FILE] + LIST_PACKS,
-     "National cups a turn earlier, so the World National Cup's winner is shown"),
+     "National cups a turn earlier, so the World National Cup's results can be viewed"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
