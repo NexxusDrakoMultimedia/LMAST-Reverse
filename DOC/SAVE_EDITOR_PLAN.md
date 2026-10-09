@@ -77,17 +77,23 @@ Each page shows what `save.py` can already read, and edits only what
    `save.py set` field with its range from the game code, then on the
    Squad page.
 
-## Decisions needed before building
+## Decisions
 
-- **Memory card format.** `save.py` reads PCSX2 **folder** memory cards,
-  where a save is a plain folder. A `.ps2` card image (PCSX2's default)
-  would need a reader and writer for the card's file system, a separate
-  piece of work. Which kind do you use?
-- **Where an edit goes.** Writing over the save in its slot is the most
-  convenient, but a bad edit then loses the career. The choices are:
-  (a) write over it after copying the original to `<save>.bak` next to
-  it, (b) always write to a new slot (the next free `-Gnnn`), or
-  (c) ask each time.
+Decided (user, 2026-10-09):
+
+- **Memory card format: folder cards.** `save.py` reads PCSX2 folder
+  memory cards, where a save is a plain folder. `.ps2` card images
+  (PCSX2's default) are a later item in `TODO.md`.
+- **Where an edit goes: over the save, after a backup.** Before the
+  first write in a session, the editor copies the save's main file to
+  `<card folder>.bak/<save folder>/<main file>.<date and time>.bak`,
+  beside the memory card and not in it: a folder card shows the PS2
+  every folder in it, and one named `BESLES-54151-…` would appear in the
+  game's save list. Writing to a new slot instead is a later item in
+  `TODO.md`.
+
+Still open:
+
 - **PCSX2 running.** PCSX2 may keep a folder card's files open or write
   them back while the game runs. The editor could warn when the card's
   folder is in use, or the guide could just say to close the game
