@@ -733,6 +733,14 @@ files. Each item keeps what was found, where, and how it was tested.
       `AcrobataPackFile.pac` (`0x3a3b08`) as it does `MES.PAC`'s
       (`EXE_INDEXED`). Checked on disc copies (`NUMBER_00.PAC#0`,
       `ACROBATAPACKFILE.PAC#3`); not tested in PCSX2
+- [x] KC@P repacking and PRS compression: `pac.build_kcap` (entries on
+      sectors, as `CLoader::loadFaceRequest` 0x1192a0 reads them; all six
+      headers check out and `FC_EURO_FACEPACK_01` rebuilds byte for
+      byte), `replace` for KC@P headers, and `pac.prs_compress` /
+      `prsh_wrap` (all 5,496 PRSH entries compress and expand back, at
+      101.3% of the original size; `prscheck`, `prs`, `replace --prs`).
+      A grown face pack patched with `--copies` moved and updated its
+      header in all eight places (checked on a copy of `DATA.CVM`)
 
 ## 10. Save data
 

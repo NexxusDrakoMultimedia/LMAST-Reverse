@@ -10,8 +10,10 @@ file that needs more sectors is moved to the end of `DATA.ISO`
 ([Moving files](#moving-files)). Self-describing archives can be
 rebuilt with entries of another size, their `.HED` copies follow, and
 the two archives the executable indexes (`MES.PAC`, the Acrobata pack)
-get that index rewritten ([Archives](#archives)). KC@P packs and PRS
-recompression are still to do.
+get that index rewritten ([Archives](#archives)). KC@P packs (the
+face, player and cut-in packs) are rebuilt with `pac.py replace`, and
+PRS-compressed entries can be written again
+([`PAC_FORMAT.md`](PAC_FORMAT.md#writing-kcp)).
 
 `SRC/patch_disc.py` writes edited `DAT/` files into a copy of the disc
 image (or `DATA.CVM`, or `DATA.ISO`). The sections below go from the
@@ -433,8 +435,8 @@ patches out of the repo anyway, like everything built from the disc.
 - **Dual-layer images.** The disc can grow to a single-layer DVD's
   2,295,104 sectors (about 1.1 GB more). Past that would need a layer
   break.
-- **KC@P packs** (the face and player packs) aren't rebuilt: their
-  offset table is a separate `.HED`, and their entries are PRS-compressed.
-  PRS recompression.
+- **The big face pack.** `FC_EURO_FACEPACK_00.BIN` (1.1 GB) can be
+  rebuilt, but if it outgrows its sectors the move needs nearly all the
+  room a single-layer disc has left.
 - **Compressed images.** Players who keep CSO or CHD images have to
   decompress them before patching. `vcdiff.py` could read CSO directly.

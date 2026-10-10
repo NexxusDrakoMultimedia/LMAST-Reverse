@@ -51,6 +51,9 @@ def checks():
     out = [
         ("pac", ["pac.py", "info", "DAT"], ["DAT"]),
         ("pac_roundtrip", ["pac.py", "roundtrip", "DAT"], ["DAT"]),
+        # PRS: two archives' PRSH entries compressed again and expanded.
+        ("pac_prscheck", ["pac.py", "prscheck", "DAT/STADIUM/ADT_AW01A_N2.PAC",
+                          "DAT/PLAYER/EDIT_UNIFORM_CLUT_PRESS.PAC"], ["DAT"]),
         ("tbb", ["tbb.py", "info", "DAT"], ["DAT"]),
         ("tbb_roundtrip", ["tbb.py", "roundtrip", "DAT"], ["DAT"]),
         ("initteam", ["initteam.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),

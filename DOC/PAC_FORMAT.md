@@ -192,9 +192,41 @@ The data files have no header at all. Entries run back to back and are
 | `GAME/CUTINPACK_HEADER.BIN` | `GAME/CUTINPACK.BIN` | 277 | raw, starts with a small u32 count (`0x0d`, `0x10`, ...) |
 
 The `KC@P` magic doesn't appear as an immediate in the executable, so the
-loader probably doesn't check it. The layout above is empirical, but it
-holds for all five headers: the sizes match, the offsets increase, and the
-last end offset equals the file size.
+loader probably doesn't check it. **Confirmed** how an entry is read:
+`CLoader::loadFaceRequest` (`0x119208`, `0x11929c`–`0x1192b0`) takes the
+u32 at header `+0xc + 4i` (the previous entry's end; the `0` field for
+entry 0) and at `+0x10 + 4i`, and reads `start >> 11` sectors in, `(end −
+start) >> 11` sectors long. So entries must start and end on 2048-byte
+sectors. **Empirical**, all six headers (`PLPACK_AWAY.HED` repeats
+`PLPACK_HOME.HED`'s offsets): the header is `0x10 + 4 × N` bytes, the
+total size equals the data file, and after each PRSH entry's stream come
+zeros up to the next sector (less than one sector); the raw entries fill
+their sectors.
+
+### Writing KC@P
+
+`pac.build_kcap(blobs)` lays the entries out that way and returns the new
+header and data file; for every pack on the disc it gives the same files
+back (`python SRC/pac.py roundtrip` checks the six headers without
+rebuilding the 1.1 GB face pack, and `FC_EURO_FACEPACK_01` rebuilds byte
+for byte). `pac.py replace` takes a KC@P header too:
+
+```bash
+python SRC/pac.py extract DAT/PLAYER/FC_EURO_FACEPACK_01.HED faces/ --prs
+python SRC/pac.py replace DAT/PLAYER/FC_EURO_FACEPACK_01.HED out/FC_EURO_FACEPACK_01.HED 5=faces/5.bin --prs
+python SRC/patch_disc.py patch disc.iso modded.iso PLAYER/FC_EURO_FACEPACK_01.HED=out/FC_EURO_FACEPACK_01.HED PLAYER/FC_EURO_FACEPACK_01.BIN=out/FC_EURO_FACEPACK_01.BIN --copies
+```
+
+It writes the header and the data file (under its own name) into the
+output's folder. Both go on the disc as targets: `--copies` carries the
+header to its `PRELOAD` copies (`FC_EURO_FACEPACK_01.HED` is entry 3 of
+the seven `SIMFILE` packs, `CUTINPACK_HEADER.BIN` entry 9 of
+`GAMEFILE5`/`6`), and a data file that needs more sectors is moved to
+the end of `DATA.ISO`. The 1.1 GB `FC_EURO_FACEPACK_00.BIN` can only
+move while the disc has room for another copy of it (about 1.1 GB of
+the 1.1 GB a single-layer DVD has spare). Checked on a copy of
+`DATA.CVM`: face 5 of `FC_EURO_FACEPACK_01` grown by three sectors moved
+the data file and rewrote the header in all eight places.
 
 ## PRSH (compressed entry)
 
@@ -218,7 +250,21 @@ bits are read LSB-first, one byte at a time:
   `offset = byte - 0x100`.
 
 All 5,496 PRSH entries inside BINPACs decompress to exactly their
-header's size, and so do all sampled face-pack entries.
+header's size, and so do all sampled face-pack entries. Every one has the
+stream at `0x40`, zeros between the header and it, and nothing after it
+(**empirical**).
+
+**Writing.** `pac.prs_compress` is a greedy LZ77 in this format: short
+copies of 2–5 bytes from up to `0x100` back, long ones of 3–9 bytes (or up
+to 256 with the length byte) from up to `0x1fff` back. A long copy from
+exactly `0x2000` back with the length byte would read as the end marker,
+so it isn't used. `pac.prsh_wrap` adds the 16-byte header and the zeros
+to `0x40`. Its output differs from Sega's packer, so it is checked by
+expanding: all 5,496 entries compress and expand back to the same data,
+in 101.3% of the original's size (17,272,464 bytes against 17,050,850).
+`python SRC/pac.py prscheck <archive>` does this for an archive, `pac.py
+prs` wraps one file, and `pac.py replace --prs` compresses a new entry
+whose original was PRSH.
 
 ## Tool
 

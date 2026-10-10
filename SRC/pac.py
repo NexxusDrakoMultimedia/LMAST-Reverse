@@ -2,7 +2,7 @@
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """Reader for the BINPAC (.PAC/.MRG/.HED) and KC@P (.HED + .BIN/.PAC)
 archive formats in DATA.CVM, plus the PRSH (Sega PRS) compression wrapper,
-and a writer for self-describing BINPACs.
+and writers for self-describing BINPACs and for PRS (prs_compress).
 
 See DOC/PAC_FORMAT.md for the layouts.
 
@@ -19,13 +19,24 @@ Usage:
     python pac.py list      <file>                  # one line per entry
     python pac.py extract   <file> <outdir> [--prs] # write entries (--prs: expand PRSH)
     python pac.py unprs     <in> <out>              # expand one PRSH blob
+    python pac.py prs       <in> <out>              # compress a file into a PRSH blob
+    python pac.py prscheck  <file|dir> ...          # recompress every PRSH entry, expand, compare
     python pac.py roundtrip <file|dir> ...          # rebuild every BINPAC, compare bytes
-    python pac.py replace   <in> <out> <entry>=<file> ...   # repack with new entries
+    python pac.py replace   <in> <out> <entry>=<file> ... [--prs]   # repack with new entries
 
 <file> may be a self-describing .PAC/.MRG, or a detached header (.HED, or a
 KC@P *_HEADER.BIN); the data file is then found next to it by name.
-`roundtrip` and `replace` work on self-describing BINPACs only (not .HED
-headers or KC@P). <entry> is an index or a name.
+`roundtrip` and `replace` work on self-describing BINPACs and KC@P headers
+(not .HED copies of a BINPAC header). <entry> is an index or a name (an
+index for KC@P). With --prs, `replace` compresses a new file whose entry
+was PRSH (one made by `extract --prs`). For a KC@P header, `replace`
+writes <out> and the data file, under its own name, next to it: entries
+start on 0x800-byte sectors with zero padding, as CLoader::loadFaceRequest
+(0x1192a0) reads them.
+
+The PRS writer is greedy LZ77 in the format stPrsInf::Extract (0x1ff570)
+reads; it gives other bytes than Sega's packer (101% of its size over the
+disc's 5,496 PRSH entries), so `prscheck` compares the expanded data.
 """
 import os
 import struct
@@ -81,6 +92,110 @@ def prs_decompress(src, pos=0, out_size=None):
     if out_size is not None and len(out) != out_size:
         raise ValueError("PRS: expanded %d bytes, header says %d" % (len(out), out_size))
     return bytes(out)
+
+
+# What the PRS stream can encode (stPrsInf::Extract, prs_decompress above):
+# a short copy is 2-5 bytes from up to 0x100 back, a long copy 3-9 bytes
+# (or 1-256 with a length byte) from up to 0x2000 back. 0x2000 back with
+# the length byte would read as the end marker (lo = hi = 0), so long
+# copies stay within 0x1fff.
+PRS_SHORT_BACK, PRS_SHORT_MAX = 0x100, 5
+PRS_LONG_BACK, PRS_LONG_MAX = 0x1fff, 0x100
+PRS_CHAIN = 64                  # candidates tried per position
+
+
+def prs_compress(data):
+    """Sega PRS for prs_decompress / stPrsInf::Extract: greedy LZ77 over a
+    0x1fff-byte window, control bits LSB-first in bytes placed where the
+    decoder reads them (before the data they govern)."""
+    out = bytearray()
+    ctrl = [None, 8]                # [position of the control byte, bits used]
+
+    def bit(b):
+        if ctrl[1] == 8:
+            ctrl[0], ctrl[1] = len(out), 0
+            out.append(0)
+        out[ctrl[0]] |= b << ctrl[1]
+        ctrl[1] += 1
+
+    chains = {}                     # 3-byte key -> positions, newest last
+    n, i = len(data), 0
+
+    def add(k):
+        if k + 3 <= n:
+            chains.setdefault(data[k:k + 3], []).append(k)
+
+    while i < n:
+        best_len, best_off = 0, 0
+        if i + 3 <= n:
+            cands = chains.get(data[i:i + 3], ())
+            limit = min(PRS_LONG_MAX, n - i)
+            for j in reversed(cands[-PRS_CHAIN:]):
+                if i - j > PRS_LONG_BACK:
+                    break
+                m = 3
+                while m < limit and data[j + m] == data[i + m]:
+                    m += 1
+                if m > best_len:
+                    best_len, best_off = m, i - j
+                    if m == limit:
+                        break
+        if best_len < 3 or (best_len <= PRS_SHORT_MAX and best_off > PRS_SHORT_BACK):
+            # A short copy: 2-5 bytes within 0x100.
+            short = 0
+            for back in range(1, min(PRS_SHORT_BACK, i) + 1):
+                m = 0
+                while m < PRS_SHORT_MAX and i + m < n and data[i - back + m] == data[i + m]:
+                    m += 1
+                if m > short:
+                    short, sback = m, back
+                    if m == PRS_SHORT_MAX:
+                        break
+            if short >= 2 and short >= best_len:
+                best_len, best_off, kind = short, sback, "short"
+            elif best_len >= 3 and best_off <= PRS_LONG_BACK:
+                kind = "long"
+            else:
+                best_len, kind = 1, "literal"
+        else:
+            short_ok = best_len <= PRS_SHORT_MAX and best_off <= PRS_SHORT_BACK
+            kind = "short" if short_ok else "long"
+        if kind == "literal":
+            bit(1)
+            out.append(data[i])
+        elif kind == "short":
+            bit(0)
+            bit(0)
+            v = best_len - 2
+            bit(v >> 1)
+            bit(v & 1)
+            out.append(PRS_SHORT_BACK - best_off)
+        else:
+            bit(0)
+            bit(1)
+            raw = 0x2000 - best_off
+            if best_len <= 9:
+                out += bytes(((raw & 0x1f) << 3 | (best_len - 2), raw >> 5))
+            else:
+                out += bytes(((raw & 0x1f) << 3, raw >> 5, best_len - 1))
+        for k in range(i, i + best_len):
+            add(k)
+        i += best_len
+    bit(0)
+    bit(1)
+    out += b"\0\0"
+    return bytes(out)
+
+
+PRSH_DATA = 0x40                # every PRSH on the disc: header, zeros, stream at 0x40
+
+
+def prsh_wrap(raw):
+    """A PRSH blob of `raw`: {'PRSH', 0x40, compressed size, raw size},
+    zeros to 0x40, then the stream (Press::ExtractData 0x1ff470)."""
+    stream = prs_compress(raw)
+    head = PRSH_MAGIC + struct.pack("<III", PRSH_DATA, len(stream), len(raw))
+    return head + bytes(PRSH_DATA - len(head)) + stream
 
 
 def prsh_expand(blob):
@@ -186,6 +301,64 @@ class KcAtP:
         ends = struct.unpack_from("<%dI" % self.count, hdr, 16)
         starts = (0,) + ends[:-1]
         self.entries = [(s, e - s, "", ()) for s, e in zip(starts, ends)]
+
+
+KCAP_SECTOR = 0x800     # CLoader::loadFaceRequest (0x1192a0) reads sectors: start >> 11,
+                        # (end - start) >> 11; every entry starts on one (empirical, all 5)
+
+
+def kcap_payload(slot):
+    """An entry's own bytes: a PRSH blob up to the end of its stream (the
+    rest of the slot is zero padding), anything else the whole slot."""
+    if slot[:4] == PRSH_MAGIC:
+        off, comp = struct.unpack_from("<II", slot, 4)
+        return slot[:off + comp]
+    return slot
+
+
+def build_kcap(blobs):
+    """(header, data file) for entries laid out as on the disc: each starts
+    on a sector, the gap after it zero-filled; the header holds the total
+    size, the count, 0 and each entry's end offset."""
+    data, ends = bytearray(), []
+    for b in blobs:
+        data += b + bytes(-len(b) % KCAP_SECTOR)
+        ends.append(len(data))
+    head = KCAP_MAGIC + struct.pack("<III%dI" % len(ends), len(data), len(ends), 0, *ends)
+    return head, bytes(data)
+
+
+def kcap_check(head, data_file):
+    """Problems with a KC@P header and its data file against build_kcap's
+    layout, read entry by entry (the face pack is 1.1 GB)."""
+    h = KcAtP(head)
+    problems = []
+    if len(head) != 0x10 + 4 * h.count:
+        problems.append("header is %d bytes, not 0x10 + 4 x %d" % (len(head), h.count))
+    size = os.path.getsize(data_file)
+    if h.total_size != size:
+        problems.append("total size %d, data file %d" % (h.total_size, size))
+    with open(data_file, "rb") as f:
+        for i, (off, n, _, _) in enumerate(h.entries):
+            if off % KCAP_SECTOR:
+                problems.append("entry %d starts at %#x, not on a sector" % (i, off))
+                break
+            f.seek(off)
+            slot = f.read(n)
+            own = kcap_payload(slot)
+            if len(slot) - len(own) >= KCAP_SECTOR or any(slot[len(own):]):
+                problems.append("entry %d: %d bytes after its data aren't the zero padding "
+                                "to the next sector" % (i, len(slot) - len(own)))
+                break
+            if (off + n) % KCAP_SECTOR:
+                problems.append("entry %d ends at %#x, not on a sector" % (i, off + n))
+                break
+    return problems
+
+
+def kcap_blobs(head, data):
+    """The entries of a KC@P pack (kcap_payload of each slot)."""
+    return [kcap_payload(data[o:o + n]) for o, n, _, _ in KcAtP(head).entries]
 
 
 def load_header(path):
@@ -323,6 +496,22 @@ def cmd_extract(path, outdir, prs):
 def cmd_roundtrip(paths):
     ok = bad = 0
     for p in _walk(paths):
+        with open(p, "rb") as f:
+            magic = f.read(16)
+        if magic[:4] == KCAP_MAGIC:
+            # A KC@P header: rebuilding gives the same files exactly when
+            # every entry sits on a sector with only zero padding after it.
+            with open(p, "rb") as f:
+                head = f.read()
+            dp = partner(p)
+            problems = kcap_check(head, dp) if dp else ["data file not found"]
+            if problems:
+                bad += 1
+                print("%-50s KC@P  !! %s" % (p, "; ".join(problems)))
+            else:
+                ok += 1
+                print("%-50s KC@P %d entries  identical" % (p, KcAtP(head).count))
+            continue
         if p.upper().endswith(".HED"):
             continue                    # detached headers; their data file is checked
         with open(p, "rb") as f:
@@ -348,9 +537,49 @@ def cmd_roundtrip(paths):
     print("%d identical, %d differ" % (ok, bad))
 
 
-def cmd_replace(src, dst, pairs):
+def cmd_replace_kcap(src, dst, pairs, prs):
+    """replace for a KC@P header: writes <dst> and the data file, named as
+    the original's, next to it."""
+    with open(src, "rb") as f:
+        head = f.read()
+    dp = partner(src)
+    if dp is None:
+        raise SystemExit("%s: data file not found" % src)
+    out_data = os.path.join(os.path.dirname(os.path.abspath(dst)), os.path.basename(dp))
+    if os.path.abspath(out_data) == os.path.abspath(dp):
+        raise SystemExit("write to another folder than %s's" % src)
+    with open(dp, "rb") as f:
+        data = f.read()
+    blobs = kcap_blobs(head, data)
+    for pair in pairs:
+        sel, sep, path = pair.partition("=")
+        if not sep or not sel.isdigit() or not 0 <= int(sel) < len(blobs):
+            raise SystemExit("expected <index>=<file> with an index 0-%d, got %r"
+                             % (len(blobs) - 1, pair))
+        i = int(sel)
+        with open(path, "rb") as f:
+            new = f.read()
+        note = ""
+        if prs and blobs[i][:4] == PRSH_MAGIC and new[:4] != PRSH_MAGIC:
+            note = " (%d expanded, PRSH)" % len(new)
+            new = prsh_wrap(new)
+        print("#%d: %d -> %d bytes%s" % (i, len(blobs[i]), len(new), note))
+        blobs[i] = new
+    new_head, new_data = build_kcap(blobs)
+    with open(dst, "wb") as f:
+        f.write(new_head)
+    with open(out_data, "wb") as f:
+        f.write(new_data)
+    print("%s: %d bytes; %s: %d -> %d bytes (%d -> %d sectors)" % (
+        dst, len(new_head), out_data, len(data), len(new_data),
+        len(data) >> 11, len(new_data) >> 11))
+
+
+def cmd_replace(src, dst, pairs, prs=False):
     with open(src, "rb") as f:
         data = f.read()
+    if data[:4] == KCAP_MAGIC:
+        return cmd_replace_kcap(src, dst, pairs, prs)
     h, blobs = binpac_blobs(data)
     for pair in pairs:
         sel, sep, path = pair.partition("=")
@@ -359,13 +588,51 @@ def cmd_replace(src, dst, pairs):
         i = find_entry(h, sel)
         with open(path, "rb") as f:
             new = f.read()
-        print("#%d %s: %d -> %d bytes" % (i, h.entries[i][2], len(blobs[i]), len(new)))
+        note = ""
+        if prs and blobs[i][:4] == PRSH_MAGIC and new[:4] != PRSH_MAGIC:
+            note = " (%d expanded, PRSH)" % len(new)
+            new = prsh_wrap(new)
+        print("#%d %s: %d -> %d bytes%s" % (i, h.entries[i][2], len(blobs[i]), len(new), note))
         blobs[i] = new
     out = build_binpac(data[:h.header_size], blobs)
     with open(dst, "wb") as f:
         f.write(out)
     print("%s: %d -> %d bytes (%d -> %d sectors)" % (
         dst, len(data), len(out), (len(data) + 0x7ff) >> 11, (len(out) + 0x7ff) >> 11))
+
+
+def cmd_prscheck(paths):
+    """Every PRSH entry of every self-describing archive: expanded,
+    compressed again by prs_compress, expanded again; `!!` where that
+    doesn't give the same data."""
+    total = ours = theirs = 0
+    for p in _walk(paths):
+        with open(p, "rb") as f:
+            data = f.read()
+        try:
+            h = BinPac(data)
+        except (ValueError, struct.error):
+            continue
+        n = bad = 0
+        for off, size, name, _ in h.entries:
+            blob = data[off:off + size]
+            if blob[:4] != PRSH_MAGIC:
+                continue
+            raw = prsh_expand(blob)
+            again = prsh_wrap(raw)
+            n += 1
+            ours += len(again)
+            theirs += len(blob)
+            if prsh_expand(again) != raw:
+                bad += 1
+                print("%s %s  !! recompressed entry expands to other data" % (p, name))
+        if n:
+            total += n
+            print("%s: %d PRSH entries recompressed%s" % (p, n, "" if not bad else
+                                                           "  !! %d differ" % bad))
+    if total:
+        print("%d entries; recompressed %d bytes, the disc's %d (%.1f%%)"
+              % (total, ours, theirs, 100.0 * ours / theirs))
 
 
 def main(argv):
@@ -376,8 +643,11 @@ def main(argv):
     if cmd == "roundtrip":
         cmd_roundtrip(args)
         return 0
-    if cmd == "replace" and len(args) >= 3:
-        cmd_replace(args[0], args[1], args[2:])
+    if cmd == "replace" and len([a for a in args if a != "--prs"]) >= 3:
+        cmd_replace(args[0], args[1], [a for a in args[2:] if a != "--prs"], "--prs" in args)
+        return 0
+    if cmd == "prscheck":
+        cmd_prscheck(args)
         return 0
     if cmd == "info":
         cmd_info(args)
@@ -385,6 +655,13 @@ def main(argv):
         cmd_list(args[0])
     elif cmd == "extract" and len(args) >= 2:
         cmd_extract(args[0], args[1], "--prs" in args[2:])
+    elif cmd == "prs" and len(args) == 2:
+        with open(args[0], "rb") as f:
+            raw = f.read()
+        out = prsh_wrap(raw)
+        with open(args[1], "wb") as f:
+            f.write(out)
+        print("%s: %d -> %d bytes" % (args[1], len(raw), len(out)))
     elif cmd == "unprs" and len(args) == 2:
         with open(args[0], "rb") as f:
             raw = prsh_expand(f.read())

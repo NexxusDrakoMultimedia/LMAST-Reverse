@@ -131,7 +131,7 @@ disassemble as unrelated MIPS instructions.
 
 | Tool | Formats | Doc |
 |---|---|---|
-| [`pac.py`](SRC/pac.py) | BINPAC `.PAC`/`.MRG`/`.HED`, KC@P headers, PRSH (Sega PRS); rebuilds BINPACs byte for byte (`roundtrip`, `replace`) | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) |
+| [`pac.py`](SRC/pac.py) | BINPAC `.PAC`/`.MRG`/`.HED`, KC@P headers, PRSH (Sega PRS); rebuilds BINPACs and KC@P packs byte for byte (`roundtrip`, `replace`), and compresses PRS (`prs`, `prscheck`, `replace --prs`) | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) |
 | [`tbb.py`](SRC/tbb.py) | `TBB1`/`TBL1` parameter tables; reads and writes (all 70 files round-trip) | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) |
 | [`packdata.py`](SRC/packdata.py) | `etc::PackData` inside KC@P entries (face packs, licensed kits, edit face, cut-ins); `names` lists each head's model and texture name | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) |
 | [`pbdata.py`](SRC/pbdata.py) | player database `PBDATA_*.PAC`: 27,950 players, 3,000 managers, 1,000 scouts (bit-packed records); list, show, CSV; writes edits (`set`, CSV `import`; every record round-trips; `--sles` re-sorts the ranking and patches the executable for rank, position and nationality edits) | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) |

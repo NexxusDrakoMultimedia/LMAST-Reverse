@@ -17,9 +17,9 @@ item in its section below.
 2. **What each PwkScript computes** (section 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
-3. **Archive repacking** (section 9). `MES.PAC`, archives with `.HED`
-   copies and the Acrobata pack are done; next KC@P packs and PRS
-   recompression, which face and player-pack edits need.
+3. **Archive repacking: tests in PCSX2** (section 9). Every archive
+   kind can now be rebuilt (`MES.PAC`, `.HED` archives, the Acrobata
+   pack, KC@P packs, PRS); none of these rebuilds has been seen in game.
 4. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
@@ -311,7 +311,9 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       resource: whether its entries stand in for their originals
 - [ ] Test in PCSX2: a `PRELOAD` pack that a rebuild moves (the code path
       is the same as a moved file, but untested in game)
-- [ ] KC@P repacking and PRS recompression
+- [ ] Test in PCSX2: a face changed in a rebuilt `FC_EURO_FACEPACK_01`
+      (`pac.py replace --prs`), and any PRS entry written by
+      `pac.prs_compress`
 - [ ] Test in PCSX2: an archive rebuilt around a grown entry, with its
       `.HED` (a `PLAYER/NUMBER_*.PAC` number texture), and an Acrobata
       scene in a rebuilt pack
