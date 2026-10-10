@@ -119,7 +119,12 @@ python SRC/patch_disc.py patch disc.iso modded.iso --mod camp-types,camp-cities
 ```
 
 `set` takes a city, then `field=value` pairs (`type` 0–255, the other
-fields 0–65535). The files keep their size.
+fields 0–65535). The files keep their size. The editor's Camps tab edits
+the type (0–87, the list's own numbering) and shows what it trains as the
+retail game reads it and with the fix. A `CAMP_LIST.TBB` or
+`CAMP_EXPLANE.TBB` written that way still gets the two fixes when the
+disc is built with `--mod camp-types` or `camp-cities`: the switches
+apply them to the target's bytes.
 `python SRC/camp.py roundtrip` re-encodes `CAMP_LIST` and checks it
 rebuilds byte for byte.
 

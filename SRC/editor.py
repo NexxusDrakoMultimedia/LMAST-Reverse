@@ -76,6 +76,11 @@ Tabs:
              camp type, pitch position, equipment item or growth type), and
              edit its value for each ability, its fatigue or each age.
              Columns the game doesn't read are shown, not edited.
+    Camps    the training camps (CAMP_LIST.TBB, camp.py set;
+             DOC/CAMP_FORMAT.md): each camp's town, description and the
+             clubs of its area, and its camp type, the one field edited,
+             with what that type trains (from the Training tab, as the
+             retail game reads it and with the LMASTER camp-types fix).
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
@@ -111,6 +116,7 @@ import mbb
 import patch_disc
 import pbdata
 import plrsim
+import camp
 import clubresult
 import regulation
 import training
@@ -2051,6 +2057,224 @@ class TrainingTab(Tab):
         return True
 
 
+CAMP_LIST = "PARAM/CAMP_LIST.TBB"
+CAMP_FIELDS = ("city", "nation", "region", "type", "unk06", "unk08", "unk0a")
+CAMP_LABELS = {"unk06": "+0x06", "unk08": "+0x08", "unk0a": "+0x0a"}
+
+
+class CampsTab(Tab):
+    """The training camps (CAMP_LIST.TBB) through camp.set_field's checks
+    and camp.encode_file, as `camp.py set` does. Only the camp type is
+    edited (camp.edit_range); the rest, the clubs of the camp's area and
+    its description (CAMP_EXPLANE.TBB, message category 570) are shown.
+    Names come from MES.PAC (cities, category 961; clubs, category 3)."""
+    title = "Camps"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.camps = None
+        self.changes = {}           # city -> type, in edit order
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Town").pack(side="left")
+        self.find_var = tk.StringVar()
+        find = ttk.Entry(bar, textvariable=self.find_var, width=22)
+        find.pack(side="left", padx=(4, 12))
+        find.bind("<Return>", lambda e: self.refresh_list())
+        ttk.Button(bar, text="Search", command=self.refresh_list).pack(side="left")
+        self.count_label = ttk.Label(bar, text="")
+        self.count_label.pack(side="left", padx=12)
+        ttk.Label(bar, text="The training camps (DOC/CAMP_FORMAT.md). The LMASTER Mod fixes the "
+                            "camp types and seven English towns when it builds a disc.",
+                  foreground="#555").pack(side="left")
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("city", "name", "type")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, text, width in zip(cols, ("City", "Town", "Type"), (50, 200, 50)):
+            self.tree.heading(c, text=text)
+            self.tree.column(c, width=width, stretch=c == "name")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    # loading
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(CAMP_LIST)
+            self.buf, self.end, self.raw, self.camps = camp.load_list(self.path)
+            self.explane = dict(camp.load_explane(mod.source("PARAM/" + camp.EXPLANE_FILE)))
+            mes = mod.source(MES)
+            self.towns = camp.messages(mes, camp.CITY_NAMES)
+            self.texts = camp.messages(mes, camp.CAMP_MESSAGES)
+            self.clubs = {rid - initteam.TEAM_NAME_BASE: t for rid, t in
+                          camp.messages(mes, initteam.TEAM_NAME_CATEGORY).items()}
+        except (ValueError, struct.error, OSError) as e:
+            self.camps = None
+            self.app.status("Couldn't load the camps: %s" % e)
+            messagebox.showerror("Camps", "Couldn't load the camps:\n%s" % e)
+            return
+        self.by_city = {c["city"]: c for c in self.camps}
+        self.changes = {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    # the list
+
+    def town(self, city):
+        return self.towns.get(city, "")
+
+    def refresh_list(self):
+        if self.camps is None:
+            return
+        find = self.find_var.get().strip().lower()
+        self.tree.delete(*self.tree.get_children())
+        n = 0
+        for c in sorted(self.camps, key=lambda c: self.town(c["city"])):
+            if find and find not in self.town(c["city"]).lower() and find != str(c["city"]):
+                continue
+            self.tree.insert("", "end", iid=str(c["city"]),
+                             values=(c["city"], self.town(c["city"]), c["type"]),
+                             tags=("edited",) if c["city"] in self.changes else ())
+            n += 1
+        self.count_label.configure(text="%d camps" % n)
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    # the detail panel
+
+    def show(self, city):
+        self.current = city
+        c = self.by_city[city]
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%s (city %d)" % (self.town(city), city),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        text = self.texts.get(self.explane.get(city), "")
+        ttk.Label(box, text=text or "(no description for this town in CAMP_EXPLANE)",
+                  foreground="#555", wraplength=640, justify="left").pack(anchor="w", padx=8)
+        frame = ttk.LabelFrame(box, text="The camp")
+        frame.pack(fill="x", padx=8, pady=6)
+        for row, name in enumerate(CAMP_FIELDS):
+            ttk.Label(frame, text=CAMP_LABELS.get(name, name)).grid(
+                row=row, column=0, sticky="w", padx=(6, 12), pady=2)
+            rng = camp.edit_range(name)
+            if rng is None:
+                w = ttk.Label(frame, text=str(c[name]), foreground="#777")
+            else:
+                w = value_input(frame, ("range",) + rng, str, lambda n=name: c[n],
+                                lambda t, revert, n=name: self.commit(c, n, t, revert))
+            w.grid(row=row, column=1, sticky="w", pady=2)
+            ttk.Label(frame, text=camp.DESCRIPTIONS.get(name, ""), foreground="#555").grid(
+                row=row, column=2, sticky="w", padx=(12, 6))
+        self.trains = ttk.Label(box, text="", foreground="#555", wraplength=640, justify="left")
+        self.trains.pack(anchor="w", padx=8, pady=(0, 6))
+        self.show_training(c)
+        clubs = [club for town, club in camp.pairs(self.raw[1].data) if town == city]
+        ttk.Label(box, text="Clubs of the area (not edited): " + ", ".join(
+            "%s" % self.clubs.get(t, t) for t in clubs), foreground="#555",
+            wraplength=640, justify="left").pack(anchor="w", padx=8, pady=(0, 8))
+
+    def show_training(self, c):
+        """What the camp trains, from the Training tab's table 10 (edits
+        included): the row the retail game reads and the one with the fix."""
+        tr = self.app.training.tr
+        if tr is None:
+            return
+        t = training.BY_NAME["camp"]
+        lines = []
+        for fixed, what in ((True, "with the LMASTER camp-types fix"), (False, "retail")):
+            row = camp.training_row(c["type"], fixed)
+            if row is None:
+                lines.append("%s: past the training table" % what)
+                continue
+            vals = sorted(((tr.get(t, row, col), col) for col in range(training.ABILITIES)),
+                          reverse=True)[:6]
+            lines.append("%s, row %d: %s" % (what, row, ", ".join(
+                "%s %d" % (training.column_name(t, col), v) for v, col in vals if v)))
+        self.trains.configure(text="Trains most: " + "; ".join(lines))
+
+    # edits
+
+    def commit(self, c, name, text, revert):
+        what = "%s (city %d)" % (self.town(c["city"]), c["city"])
+        try:
+            value = int(text)
+        except ValueError:
+            return self.refuse("%s: %s must be a number" % (what, name), revert)
+        lo, hi = camp.edit_range(name)
+        if not lo <= value <= hi:
+            return self.refuse("%s: %s must be %d-%d" % (what, name, lo, hi), revert)
+        old = c[name]
+        c[name] = value
+        self.changes.pop(c["city"], None)
+        self.changes[c["city"]] = value
+        self.tree.item(str(c["city"]), values=(c["city"], self.town(c["city"]), value),
+                       tags=("edited",))
+        self.show_training(c)
+        self.app.status("%s: %s %d -> %d" % (what, name, old, value))
+        self.app.update_title()
+        return True
+
+    def refuse(self, message, revert):
+        revert()
+        self.app.status(message)
+        messagebox.showerror("Camps", message)
+        return False
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(CAMP_LIST)
+        temps = [(out + ".new", out)]
+        try:
+            data = camp.encode_file(self.buf, self.end, self.raw, self.camps)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Camps", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        args = []
+        for city, value in self.changes.items():
+            args += [str(city), "type=%d" % value]
+        cmd = ["python", "SRC/camp.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + args
+        n = len(self.changes)
+        lines = log_lines("Camps: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
 UNIFORM_LIST = "PLAYER/UNIFORM_LIST.TBB"
 UNIFORM_GK = "PLAYER/UNIFORM_GK.TBB"
 PLPACK = {"home": "PLAYER/PLPACK_HOME", "away": "PLAYER/PLPACK_AWAY"}   # .HED and .PAC
@@ -3782,8 +4006,9 @@ class App:
         self.free = FreeAgentsTab(self)
         self.regulations = RegulationsTab(self)
         self.training = TrainingTab(self)
+        self.camps = CampsTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free,
-                     self.regulations, self.training, self.kits, self.text]
+                     self.regulations, self.training, self.camps, self.kits, self.text]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)

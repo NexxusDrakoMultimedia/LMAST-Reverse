@@ -93,8 +93,8 @@ Each stage depends on the one before it.
    (`uniform.py`), Text (`mbb.py`), Season (swapping league clubs'
    places, `initteam.py`, and first-division sizes, `leaguesize.py`),
    Free agents (`plrsim.py`) and Regulations (the match regulations,
-   `regulation.py`, and the results, `clubresult.py`) and Training
-   (`training.py`). The first seven are tested in PCSX2; the Season
+   `regulation.py`, and the results, `clubresult.py`), Training
+   (`training.py`) and Camps (`camp.py`). The first seven are tested in PCSX2; the Season
    tab's size change is not yet (the same files from `leaguesize.py
    build` are), nor is a save from the Regulations tab (the same edit
    from `regulation.py set` is).

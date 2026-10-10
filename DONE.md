@@ -372,6 +372,12 @@ files. Each item keeps what was found, where, and how it was tested.
       the theme table (both releases), and PAL left seven English camps
       on the Japanese city numbers. `patch_disc.py --mod camp-types` and
       `--mod camp-cities` fix them; not tested in PCSX2 yet
+- [x] Editor: a Camps tab (the camp type edited, with a preview of what it
+      trains; town, description and area clubs shown). The camp switches
+      now also fix a `CAMP_LIST`/`CAMP_EXPLANE` target's own bytes
+      (target hooks), so a mod folder's camp edits and `--mod lmaster`
+      build together. Tested through the widgets; the save equals the
+      logged command
 - [x] The parameter tables a mod would tune first (TODO's "Next up"):
       `REGULATION.TBB`, `CLUBRESULT.TBB`, `TRAINING_LIST.TBB` and the
       camp tables have field-level writers, and the editor's

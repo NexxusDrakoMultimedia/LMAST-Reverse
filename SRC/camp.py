@@ -58,6 +58,7 @@ RECORD = 0xe                    # 0x4be34: + 0xe per record; 0x4be24: end at + 0
 FIELDS = ("region", "nation", "city", "unk06", "unk08", "unk0a", "type")
 CAMP_TYPES = 87                 # TRAINING_LIST table 10 rows; SLES 0x256980: type < 0x57
 CAMP_MESSAGES = 570             # the category CAMP_EXPLANE's ids are in (empirical)
+CITY_NAMES = 961                # city names (initteam.CITY_CATEGORY)
 
 # (Japanese city id, PAL city id) of the camps PAL left behind: the
 # Japanese release's English city names (message category 961) at the old
@@ -117,6 +118,50 @@ def load_explane(path):
     return pairs(raw[0].data)
 
 
+def messages(mes_path, category, lang=1):
+    """{id: text} of one message file in MES.PAC, read on its own (the
+    editor needs only the city names and the camps' descriptions)."""
+    import mbb
+    from pac import BinPac
+    with open(mes_path, "rb") as f:
+        buf = f.read()
+    for off, size, name, _ in BinPac(buf).entries:
+        if name == "%d_%d.mbb" % (category, lang):
+            m = mbb.Mbb(buf[off:off + size], name)
+            return {rid: mbb.decode(s, lang) for rid, s in m.records}
+    return {}
+
+
+# What an editor offers: only the camp type, whose readers are known; the
+# rest is shown. The camp list numbers the types 1-87 (one too many for
+# the game's tables, which the camp-types fix lowers), so 0-87 covers both.
+EDIT_RANGES = {"type": (0, CAMP_TYPES)}
+
+DESCRIPTIONS = {
+    "region": "the nation's display region",
+    "nation": "the camp's nation",
+    "city": "the camp's town; the key",
+    "unk06": "0-7; read, meaning unknown",
+    "unk08": "0 or 1; no reader found",
+    "unk0a": "0 or 1; read, meaning unknown",
+    "type": "the camp type: picks the training (TRAINING_LIST table 10) and the "
+            "themes it is judged by",
+}
+
+
+def edit_range(name):
+    """(low, high) an editor offers for a field, or None for one it shows."""
+    return EDIT_RANGES.get(name)
+
+
+def training_row(type_value, fixed):
+    """The TRAINING_LIST table 10 row a camp of this type trains with: the
+    type itself as the retail game reads it, one lower with the camp-types
+    fix; None past the table."""
+    row = type_value - 1 if fixed else type_value
+    return row if 0 <= row < CAMP_TYPES else None
+
+
 def check(camps):
     problems = []
     cities = [c["city"] for c in camps]
@@ -168,39 +213,61 @@ def fix_types(data):
     return encode_file(data, end, raw, new)
 
 
-def fix_cities(list_data, explane_data):
-    """(CAMP_LIST.TBB, CAMP_EXPLANE.TBB) bytes with the CITY_FIXES cities
-    moved to their PAL ids, or None when no camp uses an old id (fixed
-    before). Refuses a new id that is already a camp city."""
-    end, raw = tbb.parse(list_data)
+def _moves(cities):
+    """CITY_FIXES that apply to a set of city ids: {old: new}. Refuses a new
+    id that is already one of them."""
+    moves = {old: new for old, new in CITY_FIXES if old in cities}
+    clash = cities & set(moves.values())
+    if moves and clash:
+        raise ValueError("cities %s are already camps" % sorted(clash))
+    return moves
+
+
+def _move_pairs(data, moves):
+    """{u16 city, u16 x} pairs with their cities moved."""
+    out = bytearray(data)
+    for i in range(0, len(out) - 3, 4):
+        city = struct.unpack_from("<H", out, i)[0]
+        struct.pack_into("<H", out, i, moves.get(city, city))
+    return bytes(out)
+
+
+def fix_cities_list(data):
+    """CAMP_LIST.TBB bytes with the CITY_FIXES camps moved to their PAL
+    ids (records and the clubs table), or None when none is on an old id."""
+    end, raw = tbb.parse(data)
     camps = [Camp(i, raw[0].data[o:o + RECORD]) for i, o in
              enumerate(range(0, len(raw[0].data), RECORD))]
-    cities = {c["city"] for c in camps}
-    moves = {old: new for old, new in CITY_FIXES if old in cities}
+    moves = _moves({c["city"] for c in camps})
     if not moves:
         return None
-    clash = cities & set(moves.values())
-    if clash:
-        raise ValueError("cities %s are already camps" % sorted(clash))
     for c in camps:
         c["city"] = moves.get(c["city"], c["city"])
-    clubs = bytearray(raw[1].data)
-    for i in range(0, len(clubs) - 3, 4):
-        city = struct.unpack_from("<H", clubs, i)[0]
-        struct.pack_into("<H", clubs, i, moves.get(city, city))
-    raw[1].data = bytes(clubs)
-    new_list = encode_file(list_data, end, raw, camps)
-    xend, xraw = tbb.parse(explane_data)
-    ex = bytearray(xraw[0].data)
-    for i in range(0, len(ex) - 3, 4):
-        city = struct.unpack_from("<H", ex, i)[0]
-        struct.pack_into("<H", ex, i, moves.get(city, city))
-    xraw[0].data = bytes(ex)
-    new_explane = tbb.build(xraw, xend, tbb.trailer(explane_data, xraw))
-    if len(new_explane) != len(explane_data):
-        raise ValueError("rebuilt %s is %d bytes, not %d"
-                         % (EXPLANE_FILE, len(new_explane), len(explane_data)))
-    return new_list, new_explane
+    raw[1].data = _move_pairs(raw[1].data, moves)
+    return encode_file(data, end, raw, camps)
+
+
+def fix_cities_explane(data):
+    """CAMP_EXPLANE.TBB bytes with the CITY_FIXES cities moved, or None."""
+    end, raw = tbb.parse(data)
+    moves = _moves({c for c, _ in pairs(raw[0].data)})
+    if not moves:
+        return None
+    raw[0].data = _move_pairs(raw[0].data, moves)
+    out = tbb.build(raw, end, tbb.trailer(data, raw))
+    if len(out) != len(data):
+        raise ValueError("rebuilt %s is %d bytes, not %d" % (EXPLANE_FILE, len(out), len(data)))
+    return out
+
+
+def fix_cities(list_data, explane_data):
+    """(CAMP_LIST.TBB, CAMP_EXPLANE.TBB) bytes with the CITY_FIXES cities
+    moved to their PAL ids, or None when neither file has an old id; a
+    file already fixed comes back unchanged."""
+    a, b = fix_cities_list(list_data), fix_cities_explane(explane_data)
+    if a is None and b is None:
+        return None
+    return a or list_data, b or explane_data
 
 
 # --- commands ----------------------------------------------------------------

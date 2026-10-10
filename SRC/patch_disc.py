@@ -1469,11 +1469,32 @@ def read_file(f, img, file):
     return e.path, read_at(f, img, e.path, 0, e.size)
 
 
-def plan_camp_types(f, img):
+def target_camp_types(file, data):
+    """A CAMP_LIST.TBB target (the editor's Camps tab) with the camp-types
+    fix applied to its own bytes."""
+    import camp
+    if norm(file) != norm(CAMP_LIST_FILE):
+        return data
+    return camp.fix_types(data) or data
+
+
+def target_camp_cities(file, data):
+    """A CAMP_LIST.TBB or CAMP_EXPLANE.TBB target with the camp-cities fix
+    applied to its own bytes."""
+    import camp
+    fix = {norm(CAMP_LIST_FILE): camp.fix_cities_list,
+           norm(CAMP_EXPLANE_FILE): camp.fix_cities_explane}.get(norm(file))
+    return data if fix is None else (fix(data) or data)
+
+
+def plan_camp_types(f, img, adopted=()):
     """Jobs for --mod camp-types: CAMP_LIST's camp types lowered by one,
     so each camp gets its own row of TRAINING_LIST table 10 and of the
-    theme table at SLES 0x552cd0. A file already fixed is left alone."""
+    theme table at SLES 0x552cd0. A file already fixed is left alone, and
+    so is one a target writes (`adopted`, fixed by target_camp_types)."""
     import camp
+    if norm(CAMP_LIST_FILE) in adopted:
+        return [], ["note: camp-types: fixed the types in the target's %s" % CAMP_LIST_FILE]
     path, data = read_file(f, img, CAMP_LIST_FILE)
     new = camp.fix_types(data)
     if new is None:
@@ -1484,18 +1505,25 @@ def plan_camp_types(f, img):
                      gap=1), []
 
 
-def plan_camp_cities(f, img):
+def plan_camp_cities(f, img, adopted=()):
     """Jobs for --mod camp-cities: the seven English camps PAL left on the
-    Japanese city ids moved to their PAL ids, in CAMP_LIST and CAMP_EXPLANE."""
+    Japanese city ids moved to their PAL ids, in CAMP_LIST and CAMP_EXPLANE.
+    A file a target writes (`adopted`) was fixed by target_camp_cities."""
     import camp
-    lpath, ldata = read_file(f, img, CAMP_LIST_FILE)
-    xpath, xdata = read_file(f, img, CAMP_EXPLANE_FILE)
-    new = camp.fix_cities(ldata, xdata)
-    if new is None:
-        return [], ["note: %s has no camp on an old city id" % CAMP_LIST_FILE]
     why = "camp-cities: the English camps in their own towns"
-    return (diff_jobs(lpath, 0, ldata, new[0], why, gap=1) +
-            diff_jobs(xpath, 0, xdata, new[1], why, gap=1)), []
+    jobs, notes = [], []
+    for file, fix in ((CAMP_LIST_FILE, camp.fix_cities_list),
+                      (CAMP_EXPLANE_FILE, camp.fix_cities_explane)):
+        if norm(file) in adopted:
+            notes.append("note: camp-cities: moved the cities in the target's %s" % file)
+            continue
+        path, data = read_file(f, img, file)
+        new = fix(data)
+        if new is None:
+            notes.append("note: %s has no camp on an old city id" % file)
+        else:
+            jobs += diff_jobs(path, 0, data, new, why, gap=1)
+    return jobs, notes
 
 
 # --- the developer launcher (DOC/SQB_FORMAT.md#the-developer-launcher) --------
@@ -1551,9 +1579,12 @@ SWITCH_NAMES = [s[0] for s in SWITCHES]
 
 # Switches that also edit a target's own bytes, so that a file both write
 # (a league build's SCHEDULE_SYSTEM.PAC) takes the switch's change: name ->
-# (hook(file, data) -> data, the files the switch then leaves to the target).
-# The plan is called with those files as `adopted`.
-TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, STATION_FILE])}
+# (hook(file, data) -> data, the files it applies to, other files the switch
+# then leaves to the target's --copies). The plan is called with the files
+# targets wrote, and those others, as `adopted`.
+TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATION_FILE]),
+                "camp-types": (target_camp_types, [CAMP_LIST_FILE], []),
+                "camp-cities": (target_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE], [])}
 
 # Names --mod takes for several switches at once.
 SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
@@ -1749,7 +1780,7 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
     # Switches that edit a target's bytes do so before anything is planned,
     # so its copies (--copies) carry the change too.
     adopted = {}
-    for name, (hook, files) in TARGET_HOOKS.items():
+    for name, (hook, files, also) in TARGET_HOOKS.items():
         if name not in mods:
             continue
         for k, (target, src, data) in enumerate(pairs):
@@ -1758,7 +1789,7 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
             file = norm(img.entry(target).path)
             if file in {norm(p) for p in files}:
                 pairs[k] = (target, src, hook(file, data))
-                adopted[name] = {norm(p) for p in files}
+                adopted.setdefault(name, set()).update({file} | {norm(p) for p in also})
     index = Index(dat) if dat else None
     if write_copies and index is None:
         raise SystemExit("--copies needs the DAT index (--dat)")
