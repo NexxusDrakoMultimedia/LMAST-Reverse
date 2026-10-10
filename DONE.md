@@ -378,6 +378,13 @@ files. Each item keeps what was found, where, and how it was tested.
       (target hooks), so a mod folder's camp edits and `--mod lmaster`
       build together. Tested through the widgets; the save equals the
       logged command
+- [x] Unknown parameter tables: `GROUP2COMPE.TBB` (each UID's
+      competition, loaded but never read: its only getter is dead code;
+      checked by `schedule.py info`), `TOUR_LIST.TBB` (tour opponents by
+      region, `tour.py`), `TACTICS_FORMATION_SET.TBB` (the tactics
+      screen's eight national presets, seven tactics and a formation,
+      `formset.py`), and the camps' `+0x06` level and `+0x08` event-only
+      flag. `DOC/PARAM_DIR.md`
 - [x] The parameter tables a mod would tune first (TODO's "Next up"):
       `REGULATION.TBB`, `CLUBRESULT.TBB`, `TRAINING_LIST.TBB` and the
       camp tables have field-level writers, and the editor's

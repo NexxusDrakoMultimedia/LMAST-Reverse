@@ -140,6 +140,8 @@ disassemble as unrelated MIPS instructions.
 | [`clubresult.py`](SRC/clubresult.py) | how a final place is reported (`CLUBRESULT.TBB`), one row per schedule: league, cup or not ranked, the third-place match, and the clubs a cup's round names depend on ("Champion" to "Defeated 1st Rnd"); edits fields (`set`), round-trips | [`CLUBRESULT_FORMAT.md`](DOC/CLUBRESULT_FORMAT.md) |
 | [`training.py`](SRC/training.py) | the training tables (`TRAINING_LIST.TBB`): what each of the 139 practice menus trains and how tiring it is, the facility and camp bonuses, match growth by position, ability groups, the coaching staff ability per ability, and decline with age; edits values (`set`), round-trips | [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md) |
 | [`camp.py`](SRC/camp.py) | the training camps (`CAMP_LIST.TBB`, `CAMP_EXPLANE.TBB`): each camp's city, nation and type, the clubs of its area and its description; edits fields (`set`), and fixes the camp types (`fixtypes`) and PAL's seven misplaced English camps (`fixcities`), round-trips | [`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md) |
+| [`formset.py`](SRC/formset.py) | the tactics screen's eight national presets (`TACTICS_FORMATION_SET.TBB`): seven team tactics and a formation each; edits them (`set`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#tactics_formation_settbb-tactics-presets) |
+| [`tour.py`](SRC/tour.py) | tour opponents by region (`TOUR_LIST.TBB`); edits pairs (`set`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region) |
 | [`regulation.py`](SRC/regulation.py) | match regulations (`REGULATION.TBB`), one row per schedule: clubs, match grade, win bonus, prizes by position, yellow-card ban, matchday squad, foreign-player limit, substitutions, and the places up and down; edits fields (`set`), round-trips | [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md) |
 | [`gamedata.py`](SRC/gamedata.py) | `GAME/GAMEDATA.BIN`: checks the 4,131 records and prints them with the fields the match engine is known to read | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) |
 | [`bpb.py`](SRC/bpb.py) | the play books `GAME/PLAYBOOK.BPB` and `COMBINATION.BPB`: checks every play and prints one's paths (players and ball, in metres) | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) |
@@ -367,6 +369,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `clubresult.py` | `tbb.py`, and `regulation.py` and `schedule.py` for the club-count checks |
 | `training.py` | `tbb.py`, and `pbdata.py` for the ability names |
 | `camp.py` | `tbb.py` |
+| `formset.py`, `tour.py` | `tbb.py`, and `pbdata.py` (formations) or `camp.py` and `initteam.py` (club names) |
 | `leaguesize.py` | `schedule.py`, `initteam.py`, `regulation.py`, `clubresult.py` |
 | `uniform.py` | `pac.py`, `tbb.py`, `packdata.py` and `svr.py` (licensed kits), `sles_disasm.py` (the executable's copy), `initteam.py` (club names) |
 | `acrobata.py` | `pac.py`, `ninja.py`, `svr.py`, `snr2.py`, `sles_disasm.py` |

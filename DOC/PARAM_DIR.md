@@ -82,7 +82,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 166 × s16, each schedule UID's competition. Loaded but never read, see below |
 | `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170`, `0x4cab0` | 106 {region, club} pairs: the clubs a tour can play, by region. **confirmed**, see below |
 | `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#mapteam_listtbb). Reader not found |
-| `TACTICS_FORMATION_SET.TBB` | TBB, 1 table | entry 11 of the `GetPreLoadData` list (`SLES 0x55b560`), and `SLES 0x55b2d8` | 8 formations × 8 bytes |
+| `TACTICS_FORMATION_SET.TBB` | TBB, 1 table | entry 11 of the `GetPreLoadData` list (`SLES 0x55b560`), and `SLES 0x55b2d8` | the tactics screen's 8 national presets: seven team tactics and a formation each. **confirmed**, see below |
 | `SPONSOR_BOARD.TBB` | TBB, 1 table | **not referenced by name** | 132 bytes, `01 02 03 ...` |
 | `PLRESOURCECOMMON.PAC` | BINPAC, 5 TBB entries | `ePLRSRC` 0 | team facilities, formations, nations. See [`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md) |
 | `PLRESOURCESIM.PAC` | BINPAC, 16 entries | `ePLRSRC` 1 | cities and weather, club records, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ... See [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md) |
@@ -150,6 +150,44 @@ relocation names it. The same module's getters for the camps' `+0x06`
 and `+0x0a` (`0x4bea0`, `0x4bfd0`) are dead code too
 ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)).
 
+## `TACTICS_FORMATION_SET.TBB`: tactics presets
+
+The tactics screen's "Set Formation" menu offers eight national styles;
+this table holds them, one 8-byte row each. `python SRC/formset.py show
+DAT/PARAM/TACTICS_FORMATION_SET.TBB` lists them, and `set` edits them.
+
+**Confirmed from the code:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `SLES 0x2e334c` | `CTacticsManagerImplement` | takes the file as resource 11 of its list and hands it to `CTacticsLoader::setFormationData` (`0x2ed298`) |
+| `SLES 0x2eff28` | `l_create_formationset_list` | one menu line per row, named by category 492 message 10001 + row (`CTacticsMessage` group 3, entry `0x15`) |
+| `SLES 0x2f0318` | (the menu's cursor callback) | applies row *r* (`r × 8`) to the club's team style: byte 7 through `plTeam_FormationID2Formation` (the formation and its positions), bytes 0–3 to style `+0x5c`–`+0x5f`, byte 4 to `+0x61`, 5 to `+0x62`, 6 to `+0x60`; then shows message 20001 + *r*, the set's description |
+| `SLES 0x2efc4c` | `CTacticsMenuFormationSetImplement::Execute` | on opening, saves the current style for a cancel and shows row 0, where the cursor starts |
+| `SLES 0x3038e0`, `0x303938` | `CTacticsTeamTacticsEdit` | the tactics screen keeps its seven settings at `+0x584` + 4*i* and stores them to style `+0x5c`–`+0x62` in the same order; `0x3036c4` labels setting *i* with category 492 message *i* |
+
+So the row's bytes are the screen's settings in order:
+
+| Byte | Setting (message) |
+|---|---|
+| 0 | Attacking |
+| 1 | Attack Speed |
+| 2 | Attack Type |
+| 3 | Attack Side |
+| 4 | Pressure |
+| 5 | Offside |
+| 6 | Press Line |
+| 7 | formation, an index of the 35 formations (`pbdata.FORMATIONS`) |
+
+The team styles live in my-team data at `+0x4204` + style × `0x70`.
+**Empirical**: the formations and settings fit the descriptions (English
+4-4-2 "hi-tempo attacks" has Attack Speed 5; Italian 4-4-2 "breaking down
+attacks" has Attacking 1 and Pressure 5; Spanish 4-5-1 "precision
+passing" Attack Speed 1). Every setting is 1–5 except the Brazilian
+set's Attacking, 6; the screen's own limits haven't been traced. The
+Japanese file is the same. Copies sit in entry 0 of the
+`PRELOAD/TACTICS*` packs.
+
 ## `TOUR_LIST.TBB`: tour opponents by region
 
 One table of 106 `{u16 region, u16 club}` pairs. **Confirmed**: the camp
@@ -166,8 +204,10 @@ Scandinavia and the Baltic, 4 and 5 South America, 6 North Africa
 (with Newcastle, Monaco, Kaiserslautern and Roma), 7 and 8 West and
 southern Africa, 9 North America, 10 East Asia, 11 the Middle East and
 12 Oceania. Five groups end with clubs from the six leagues. `python
-SRC/plrcommon.py show DAT/PARAM 3.0` lists the 13 regions the game
-knows; whether these numbers are the same regions isn't confirmed.
+SRC/tour.py show DAT/PARAM/TOUR_LIST.TBB DAT/MESSAGE/MES.PAC` lists them,
+and `set` changes a pair. `python SRC/plrcommon.py show DAT/PARAM 3.0`
+lists the 13 regions the game knows; whether these numbers are the same
+regions isn't confirmed.
 
 ## `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`
 
@@ -179,8 +219,10 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- The fields of the tables without a doc of their own: `CLUBEVENT`,
-  `TACTICS_FORMATION_SET` and `CLUB_RANK_SYSTEM` tables 0, 1 and 4.
+- The fields of the tables without a doc of their own: `CLUBEVENT` and
+  `CLUB_RANK_SYSTEM` tables 0, 1 and 4.
+- The tactics sliders' limits, and which regions `TOUR_LIST`'s numbers
+  are.
 - What's still open in the files that have a doc is listed there, for
   example the schedule packs
   ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown)) and what each
