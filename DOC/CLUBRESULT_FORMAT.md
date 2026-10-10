@@ -43,7 +43,9 @@ All fields are u16 (read with `lhu`).
 ### The results list
 
 `SIMPRG.REL 0x9a870`–`0x9ab98` fills a list of up to five competitions
-with a club's place in each (rows `0x150` bytes apart). For each:
+with a club's place in each (rows `0x150` bytes apart). It is the end of
+tournament screen, where the prize money is paid (user report). For
+each:
 
 - A cup (`kind` 1) that hasn't finished (`AppScheCtrl::isCompetetionFinish`)
   shows "-" (`0x2256f0`).
@@ -114,7 +116,6 @@ the file rebuilds byte for byte. No edit has been tested in PCSX2.
 
 ## Still unknown
 
-- Which screen the results list is (`SIMPRG.REL 0x9a870`).
 - Which messages the prize texts `0x8ca0`–`0x8ca7` are.
 - Whether anything reads `+0x00`.
 
