@@ -7,7 +7,7 @@ A mod that restores content the PAL release cut or left broken. Each
 restoration is a separate `patch_disc.py` switch first, so it can be
 built and tested in PCSX2 on its own. Switches are named, and
 `--mod lmaster` turns on the mod's fixes together (sponsor-negotiation,
-rival-manager, national-cups); the editor's Build window has a box for
+rival-manager, national-cups, camp-types, camp-cities); the editor's Build window has a box for
 each. A test disc with all of them:
 
 ```bash

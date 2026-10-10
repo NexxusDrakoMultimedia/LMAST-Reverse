@@ -69,7 +69,8 @@ to the new last sector. Files outside DATA.CVM keep their size.
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 camp-types, camp-cities, launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
-(sponsor-negotiation, rival-manager, national-cups; DOC/LMASTER_MOD.md).
+(sponsor-negotiation, rival-manager, national-cups, camp-types,
+camp-cities; DOC/LMASTER_MOD.md).
 Each also works as a flag of its own (--skip-tutorial, ...). With
 switches and no targets, `patch <image> <out_image>` is enough.
 
@@ -1455,7 +1456,8 @@ SWITCH_NAMES = [s[0] for s in SWITCHES]
 TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, STATION_FILE])}
 
 # Names --mod takes for several switches at once.
-SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups")}
+SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
+                             "camp-types", "camp-cities")}
 
 
 def parse_mods(values):
