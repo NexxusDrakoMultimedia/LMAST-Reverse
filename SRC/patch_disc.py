@@ -68,9 +68,9 @@ to the new last sector. Files outside DATA.CVM keep their size.
 
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
-camp-types, camp-cities, launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
+camp-types, camp-cities, camp-santiago, camp-clubs, launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
-camp-cities; DOC/LMASTER_MOD.md).
+camp-cities, camp-santiago, camp-clubs; DOC/LMASTER_MOD.md).
 Each also works as a flag of its own (--skip-tutorial, ...). With
 switches and no targets, `patch <image> <out_image>` is enough.
 
@@ -117,7 +117,10 @@ with it as 0-86, so every camp trained and judged its themes as the next
 type (Parma, a goalkeeper camp, trained no keeping). camp-cities moves the
 seven English camps that PAL left on the Japanese city ids (Liverpool's
 camp was in Scunthorpe) to their PAL towns, in CAMP_LIST.TBB and
-CAMP_EXPLANE.TBB. See DOC/CAMP_FORMAT.md.
+CAMP_EXPLANE.TBB. camp-santiago keys Santiago's description in
+CAMP_EXPLANE.TBB to its camp's city (774, not 764), and camp-clubs (whole
+disc image only) makes the camp's clubs list (SIMPRG.REL 0x4c8f8) read all
+737 pairs of CAMP_LIST table 1, one instruction. See DOC/CAMP_FORMAT.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -1526,6 +1529,52 @@ def plan_camp_cities(f, img, adopted=()):
     return jobs, notes
 
 
+def target_camp_santiago(file, data):
+    """A CAMP_EXPLANE.TBB target with Santiago's description fixed."""
+    import camp
+    if norm(file) != norm(CAMP_EXPLANE_FILE):
+        return data
+    return camp.fix_santiago(data) or data
+
+
+def plan_camp_santiago(f, img, adopted=()):
+    """Jobs for --mod camp-santiago: Santiago's description (CAMP_EXPLANE,
+    keyed to city 764) moved to its camp's city, 774."""
+    import camp
+    if norm(CAMP_EXPLANE_FILE) in adopted:
+        return [], ["note: camp-santiago: fixed the target's %s" % CAMP_EXPLANE_FILE]
+    path, data = read_file(f, img, CAMP_EXPLANE_FILE)
+    new = camp.fix_santiago(data)
+    if new is None:
+        return [], ["note: %s already has Santiago's description on its camp"
+                    % CAMP_EXPLANE_FILE]
+    return diff_jobs(path, 0, data, new, "camp-santiago: Santiago's camp description",
+                     gap=1), []
+
+
+# The camp screen's list of a camp city's clubs (SIMPRG.REL 0x4c8f8) walks
+# CAMP_LIST table 1 with a count from 0x2de down to 0: 735 of its 737
+# pairs, so Canberra's last two clubs never appear (both releases).
+CAMP_CLUBS = (NEGO_FILE, 0x4c9d4, bytes.fromhex("de020424"),   # addiu $a0, $zero, 0x2de
+              bytes.fromhex("e0020424"))                       # addiu $a0, $zero, 0x2e0
+
+
+def plan_camp_clubs(f, img):
+    """Jobs for --mod camp-clubs: the clubs list reads all 737 pairs."""
+    file, off, old, new = CAMP_CLUBS
+    if img.kind != "disc image":
+        raise ValueError("--mod camp-clubs patches DLL/SIMPRG.REL, so it needs the whole "
+                         "disc image, not %s" % img.kind)
+    held = read_at(f, img, file, off, len(old))
+    if held == new:
+        return [], ["note: %s 0x%x already reads every camp club pair" % (file, off)]
+    if held != old:
+        raise ValueError("%s 0x%x doesn't hold the expected code; not the retail overlay?"
+                         % (file, off))
+    return [Job(file, off, new, "%s (0x%x)" % (file, off),
+                "camp-clubs: read all 737 camp club pairs")], []
+
+
 # --- the developer launcher (DOC/SQB_FORMAT.md#the-developer-launcher) --------
 
 # RootMainSeq.sqb runs Dummy.CheckLauncher (always 1) at 0x88 and at 0x98
@@ -1569,6 +1618,10 @@ SWITCHES = (
      "Training camps: each camp trains and checks its themes as its own type"),
     ("camp-cities", plan_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE],
      "Training camps: Liverpool, Manchester and five more English camps in their own towns"),
+    ("camp-santiago", plan_camp_santiago, [CAMP_EXPLANE_FILE],
+     "Training camps: Santiago's camp gets its description"),
+    ("camp-clubs", plan_camp_clubs, [NEGO_FILE],
+     "Training camps: Canberra's last two clubs appear in its list"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -1584,11 +1637,12 @@ SWITCH_NAMES = [s[0] for s in SWITCHES]
 # targets wrote, and those others, as `adopted`.
 TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATION_FILE]),
                 "camp-types": (target_camp_types, [CAMP_LIST_FILE], []),
-                "camp-cities": (target_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE], [])}
+                "camp-cities": (target_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE], []),
+                "camp-santiago": (target_camp_santiago, [CAMP_EXPLANE_FILE], [])}
 
 # Names --mod takes for several switches at once.
 SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
-                             "camp-types", "camp-cities")}
+                             "camp-types", "camp-cities", "camp-santiago", "camp-clubs")}
 
 
 def parse_mods(values):

@@ -44,7 +44,9 @@ Tottenham, Fulham, Charlton, Crystal Palace and West Ham, and one club
 from abroad). **Confirmed**: `SIMPRG.REL 0x4c8f8` collects up to 20
 clubs for the camp city chosen on screen (`+0x1e1c`), walking the pairs
 in order. Its loop runs 735 times (`0x2de` + 1, both releases), so the
-last two pairs, Canberra's Fukuoka and Kanagawa, are never offered.
+last two pairs, Canberra's Fukuoka and Kanagawa, are never offered. `patch_disc.py
+--mod camp-clubs` raises the bound to `0x2e0` (one instruction at
+`SIMPRG.REL 0x4c9d4`).
 
 ### When a camp is open
 
@@ -105,7 +107,9 @@ message, or 0 when no pair matches.
 Its cities equal `CAMP_LIST`'s except one: Santiago's description (6146,
 "The Chilean capital …") is keyed to city 764, the camp to 774. The
 Japanese release names both cities Santiago; PAL calls 764 Cruzeiro. So
-the lookup finds nothing for Santiago's camp, in both releases.
+the lookup finds nothing for Santiago's camp, in both releases. `python
+SRC/camp.py fixsantiago` (and `patch_disc.py --mod camp-santiago`) keys
+the description to city 774.
 
 ## Two bugs
 

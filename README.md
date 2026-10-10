@@ -330,7 +330,7 @@ commands. For a patch on its own the image is temporary and removed
 afterwards. Boxes add `patch_disc.py`'s switches, one per entry of its
 switch table (`--mod <name>,...`): skip the tutorial, main sponsor
 negotiation, the rival's manager, the national cups a turn earlier, the
-camp types and the English camps' towns, the debug menu and separate saves. Use the
+camp types, the English camps' towns, Santiago's description and Canberra's clubs, the debug menu and separate saves. Use the
 unmodified Redump image as the original, so the patch applies for
 everyone; the dialog warns if it isn't.
 

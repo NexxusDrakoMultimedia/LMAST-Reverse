@@ -44,12 +44,14 @@ Usage:
     python camp.py set       <in CAMP_LIST.TBB> <out.TBB> <city> <field>=<value> ... [<city> ...]
     python camp.py fixtypes  <in CAMP_LIST.TBB> <out.TBB>
     python camp.py fixcities <in DAT/PARAM> <out folder>
+    python camp.py fixsantiago <in CAMP_EXPLANE.TBB> <out.TBB>
     python camp.py roundtrip <CAMP_LIST.TBB>
 
 `set` edits the record fields by name (region, nation, level, event_only,
 unk0a, type). A same-size file goes on the disc with patch_disc.py;
-`patch_disc.py --mod camp-types` and `--mod camp-cities` apply
-`fixtypes` and `fixcities` to a disc.
+`patch_disc.py --mod camp-types`, `--mod camp-cities` and
+`--mod camp-santiago` apply `fixtypes`, `fixcities` and `fixsantiago`
+to a disc.
 """
 import os
 import struct
@@ -268,6 +270,28 @@ def fix_cities_explane(data):
     return out
 
 
+# Santiago's description (message 6146, "The Chilean capital ...") is keyed
+# to city 764, but the camp is city 774, so the lookup (SIMPRG.REL
+# 0xa4a80) finds none for it (both releases; the Japanese names both
+# cities Santiago).
+SANTIAGO_FIX = (764, 774)
+
+
+def fix_santiago(data):
+    """CAMP_EXPLANE.TBB bytes with Santiago's description moved to the
+    camp's city, or None when it is there already (or 764 isn't in it)."""
+    end, raw = tbb.parse(data)
+    old, new = SANTIAGO_FIX
+    cities = {c for c, _ in pairs(raw[0].data)}
+    if old not in cities or new in cities:
+        return None
+    raw[0].data = _move_pairs(raw[0].data, {old: new})
+    out = tbb.build(raw, end, tbb.trailer(data, raw))
+    if len(out) != len(data):
+        raise ValueError("rebuilt %s is %d bytes, not %d" % (EXPLANE_FILE, len(out), len(data)))
+    return out
+
+
 def fix_cities(list_data, explane_data):
     """(CAMP_LIST.TBB, CAMP_EXPLANE.TBB) bytes with the CITY_FIXES cities
     moved to their PAL ids, or None when neither file has an old id; a
@@ -418,6 +442,16 @@ def main(argv):
         cmd_set(args[0], args[1], args[2:])
     elif cmd == "fixtypes" and len(args) == 2:
         cmd_fixtypes(args[0], args[1])
+    elif cmd == "fixsantiago" and len(args) == 2:
+        if os.path.abspath(args[1]) == os.path.abspath(args[0]):
+            raise SystemExit("refusing to overwrite the input; write to a new file")
+        with open(args[0], "rb") as f:
+            out = fix_santiago(f.read())
+        if out is None:
+            raise SystemExit("%s: Santiago's description is already on its camp" % args[0])
+        with open(args[1], "wb") as f:
+            f.write(out)
+        print("wrote %s (Santiago's description: city %d -> %d)" % ((args[1],) + SANTIAGO_FIX))
     elif cmd == "fixcities" and len(args) == 2:
         cmd_fixcities(args[0], args[1])
     elif cmd == "roundtrip" and len(args) == 1:
