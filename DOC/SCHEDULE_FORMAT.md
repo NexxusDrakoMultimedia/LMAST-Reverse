@@ -615,7 +615,8 @@ turns a 42-day schedule would add.
   `+7`, and the first two team-entry header bytes.
 - `PeriodName.tbb`, the `make_list` source functions and tables 1–8, and
   the meaning of the `savectrl` values.
-- `CLUB_RANK_SYSTEM.TBB` tables 0, 1 and 4 (tables
+- How `CLUB_RANK_SYSTEM.TBB`'s tables are used in detail
+  ([`PARAM_DIR.md`](PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables); tables
   2 and 3 are the club ranking,
   [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)).
 

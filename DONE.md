@@ -385,6 +385,12 @@ files. Each item keeps what was found, where, and how it was tested.
       screen's eight national presets, seven tactics and a formation,
       `formset.py`), and the camps' `+0x06` level and `+0x08` event-only
       flag. `DOC/PARAM_DIR.md`
+- [x] The last unknown `PARAM` tables: `CLUBEVENT.TBB` (an older copy of
+      the executable's club events; no reader found) and
+      `CLUB_RANK_SYSTEM.TBB` tables 0, 1 and 4 (nation groups, points per
+      final place in each competition, the leagues the year end waits
+      for; readers at `SIMPRG.REL 0x151210`, `0x152178`, `0x150dd8`).
+      Every `TBB1` table in `PARAM/` now has a known layout
 - [x] The parameter tables a mod would tune first (TODO's "Next up"):
       `REGULATION.TBB`, `CLUBRESULT.TBB`, `TRAINING_LIST.TBB` and the
       camp tables have field-level writers, and the editor's

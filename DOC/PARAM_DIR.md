@@ -150,6 +150,26 @@ relocation names it. The same module's getters for the camps' `+0x06`
 and `+0x0a` (`0x4bea0`, `0x4bfd0`) are dead code too
 ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)).
 
+## `CLUB_RANK_SYSTEM.TBB`: the club ranking's tables
+
+Five tables, which the club ranking (`SIMPRG.REL`, loader `0x150c10`–
+`0x150d08`) keeps at object `+0x18`, `+0x20`, `+0x2c`, `+0x34` and
+`+0x3c`, each with its row count after it. Tables 2 and 3 are described
+with the ranking in [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far).
+`python SRC/tbb.py dump DAT/PARAM/CLUB_RANK_SYSTEM.TBB <table>` prints
+one. The Japanese file is the same.
+
+| Table | Rows | Row | Reader (**confirmed**) | What the rows hold (**empirical**) |
+|---|---|---|---|---|
+| 0 | 52 | `{u8 nation, u8 group}` | `0x151210` collects the rows whose group is the one asked for and sorts them (`qsort`) | nations 1–52; group 0 for the six league nations, 1–4 for the others (12, 12, 19 and 3 nations) |
+| 1 | 33 | `{s16 competition, s16 kind, s16 ?, u8 points[32]}` | `0x152178`: for the rows of one kind, a competition with a result this year (`0x1520e0`) gives each club the points for its final place (`pwkRec_GetCompePastRecord`, place *n* → byte *n*); a negative competition is skipped | kind 0: the European competitions 34–36; kind 1: the national cups 45 and 46; kind 2: the same three European ones again and each league nation's two divisions and two cups (first division winner 55 … 20th 25, second division 30 …, cup 25 …, league cup 10 …; European League 50, 35, 25, 25 …). One kind-2 row has competition −10, so it is never used. The third field is 1 or 2 |
+| 2 | 32 | s16 | `0x151568` | world rank points by club rank, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) |
+| 3 | 65 | 34 bytes | the club rank by position, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) | |
+| 4 | 18 | `{s16 UID, s16 nation, s16 division, s16 0}` | `0x150dd8`: for each row, the year schedule of the UID (`getYearSchedule`) and its nation (`getNationFromScheCompe`); when the walk finds them done it marks the year (`+0xc` = 2) and the divisions are shifted (`pwkRec_SetDivShift_TeamUserOnly`, `0x150ecc`) | the six league nations' league UIDs: each first division (division 0) and both versions of its second division (1) |
+
+Which pass uses which kind of table 1, and what its third field and the
+groups of table 0 change, aren't traced.
+
 ## `CLUBEVENT.TBB`: an older copy of the club events
 
 One table of 48 records of 20 bytes (10 s16; the TBB line size is 2).
@@ -241,8 +261,8 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- `CLUB_RANK_SYSTEM` tables 0, 1 and 4, and whether anything reads
-  `CLUBEVENT.TBB`; the executable's club-event records (`0x52ff58`,
+- What table 1's kinds and third field and table 0's groups change in
+  `CLUB_RANK_SYSTEM`, and whether anything reads `CLUBEVENT.TBB`; the executable's club-event records (`0x52ff58`,
   `0x530688`) field by field.
 - The tactics sliders' limits, and which regions `TOUR_LIST`'s numbers
   are.

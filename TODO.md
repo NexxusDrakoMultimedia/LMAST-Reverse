@@ -57,10 +57,11 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [ ] Test in PCSX2: a smaller first division (France at 18, from the
       editor's Season tab) and two nations changed in one save. Only
       England at 22 is tested in game
-- [ ] Parameter tables: name the fields of the other `TBB1` tables a mod
-      would tune (the others in
-      `DOC/PARAM_DIR.md#still-unknown`), so they can get field-level
-      writers. `tbb.py replace` only swaps a whole table
+- [ ] Parameter tables still without a field-level writer: the club
+      ranking's points (`CLUB_RANK_SYSTEM.TBB` tables 1-3,
+      `DOC/PARAM_DIR.md`), and the club events, which live in the
+      executable (`SLES 0x52ff58`, `0x530688`), not in `CLUBEVENT.TBB`.
+      `tbb.py replace` only swaps a whole table
 - [ ] `TRAINING_LIST.TBB` leftovers (`DOC/TRAINING_FORMAT.md`): the
       scale of a practice's values and fatigue, the names of the 87 camp
       types, 28 youth menus and the facility rows, whether anything reads
@@ -80,9 +81,9 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       division's past record, which the own-nation schedule (UID 1, 26
       slots) takes after the tutorial (`DOC/SCHEDULE_FORMAT.md`, user
       report)
-- [ ] Still open from the schedules: `CLUB_RANK_SYSTEM.TBB`
-      tables 0, 1 and 4 (tables 2 and 3 are the club ranking, `SAVE_FORMAT.md`),
-      `PeriodName.tbb`, the `make_list` source functions, game bits `w0`
+- [ ] Still open from the schedules: what `CLUB_RANK_SYSTEM.TBB` table
+      1's kinds and third field and table 0's groups change
+      (`DOC/PARAM_DIR.md`), `PeriodName.tbb`, the `make_list` source functions, game bits `w0`
       8–9 and competition header bytes `0x0A`–`0x0F`
 - [ ] Still open: club-record bytes `0x0b`-`0x0d`/`0x0f`, the reader of
       `MAPTEAM_LIST`, and `PLRRSRC_INITTEAMDATA` table 2's negative values

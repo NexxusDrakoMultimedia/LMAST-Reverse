@@ -523,7 +523,9 @@ thresholds at `0x557728` (56, 66, 76, 86, 92, 101).
 
 **How the club rank changes.** `SIMPRG.REL` ranks the clubs by their
 world rank points, using `PARAM/CLUB_RANK_SYSTEM.TBB`
-([`PARAM_DIR.md`](PARAM_DIR.md)). When in the season it runs isn't
+([`PARAM_DIR.md`](PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables):
+the points per final place in each competition, the nations' groups and
+the leagues the year end waits for). When in the season it runs isn't
 traced (`0x150680` updates the points, `0x150738` the ranks).
 **Confirmed:**
 
