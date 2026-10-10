@@ -79,6 +79,7 @@ COMPE_PAC = "SCHEDULE_COMPETITION.PAC"
 ENTRY_PAC = "SCHEDULE_TEAM_ENTRY.PAC"
 
 UID_COUNT = 164
+COMPE_COUNT = 72            # PLSCHE_COMPE 0-71: open_nation's 72 rows
 TURNS_PER_YEAR = 96         # get_open_turn: open turn = years * 0x60 + bit
 YEAR_ROW = 0x14             # year_schedule_data row size
 OPEN_NATION_ROW = 0x2c      # s16 compe, s16 start, s16 nation[20]
@@ -751,6 +752,58 @@ def cmd_info(root):
             print("  entry %3d  !! %s" % (uid, "; ".join(p)))
     print("%-45s %d team entries: %s" % (entp, len(entries), ", ".join(
         "%s %d" % (k, used[k]) for k in TeamEntry.KINDS)))
+    group_compe(root, uids)
+
+
+GROUP2COMPE = "GROUP2COMPE.TBB"
+
+
+def group_compe(root, uids):
+    """GROUP2COMPE.TBB against the schedules: entry n is the competition of
+    UID n - 1, except for the group stages, which give the competition
+    before theirs (empirical); entry 0 is 0 and the last 72, one past the
+    last competition. SIMPRG.REL loads it (list 0x1cdd30, kept at +0x8f8 by
+    0x47b18) but its only getter (0x4bf30) is never called."""
+    path = os.path.join(root, GROUP2COMPE)
+    if not os.path.exists(path):
+        return
+    try:
+        _, tables = tbb.parse(open(path, "rb").read())
+        v = struct.unpack("<%dh" % (len(tables[0].data) // 2), tables[0].data)
+    except (ValueError, struct.error) as e:
+        print("%-45s !! %s" % (path, e))
+        return
+    same, before, bad = [], [], []
+    for n in range(1, min(len(v), UID_COUNT + 1)):
+        row = uids.get(n - 1, (None, None))[0]
+        if row is None:
+            bad.append(n)
+        elif v[n] == row.compe:
+            same.append(n)
+        elif v[n] == row.compe - 1:
+            before.append(n - 1)
+        else:
+            bad.append(n)
+    line = "%-45s %d entries: entry n is UID n-1's competition for %d, the one before "            "it for UIDs %s" % (path, len(v), len(same), runs_text(before))
+    probs = ["entry 0 is %d" % v[0]] if v[0] else []
+    if len(v) != UID_COUNT + 2 or v[-1] != COMPE_COUNT:
+        probs.append("%d entries ending in %d, expected %d ending in %d"
+                     % (len(v), v[-1], UID_COUNT + 2, COMPE_COUNT))
+    if bad:
+        probs.append("entries %s fit neither" % " ".join(map(str, bad)))
+    print(line + ("  !! " + "; ".join(probs) if probs else ""))
+
+
+def runs_text(nums):
+    """1 2 3 5 -> '1-3 5'."""
+    out, i = [], 0
+    while i < len(nums):
+        j = i
+        while j + 1 < len(nums) and nums[j + 1] == nums[j] + 1:
+            j += 1
+        out.append("%d-%d" % (nums[i], nums[j]) if j > i else str(nums[i]))
+        i = j + 1
+    return " ".join(out)
 
 
 def cmd_roundtrip(root):

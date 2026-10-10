@@ -603,9 +603,9 @@ turns a 42-day schedule would add.
   similar turn bitmask) is **not referenced by name**. `CVS/ENTRIES` dates it
   January 2005, a year before these packs, so it is an older version of the
   schedule table.
-- `PARAM/GROUP2COMPE.TBB` holds 166 × s16 values. It matches neither the
-  `year_schedule_data` competition (91 of 164 differ) nor the header's
-  `+0x02` (93 differ). Only the `SIMPRG.REL` load list names it.
+- `PARAM/GROUP2COMPE.TBB`: each UID's competition, shifted by one entry,
+  with the group stages given the competition before theirs. Nothing
+  reads it ([`PARAM_DIR.md`](PARAM_DIR.md#group2competbb-each-schedules-competition-unread)).
 - `PARAM/SCHEDULE_LIST.TBB`: the national-team calendar, flags per turn
   for each year of the 4-year cycle ([`PARAM_DIR.md`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)).
 
@@ -615,7 +615,7 @@ turns a 42-day schedule would add.
   `+7`, and the first two team-entry header bytes.
 - `PeriodName.tbb`, the `make_list` source functions and tables 1–8, and
   the meaning of the `savectrl` values.
-- `GROUP2COMPE.TBB`, and `CLUB_RANK_SYSTEM.TBB` tables 0, 1 and 4 (tables
+- `CLUB_RANK_SYSTEM.TBB` tables 0, 1 and 4 (tables
   2 and 3 are the club ranking,
   [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)).
 

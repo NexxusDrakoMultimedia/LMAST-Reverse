@@ -79,7 +79,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8` | each camp city's description, message category 570, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
 | `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 960 bytes. Club events (`plClubEvent_*`) |
 | `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division. **confirmed**, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes"). Tables 0, 1 and 4 not traced |
-| `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 332 bytes (166 × u16?): schedule group to competition |
+| `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 166 × s16, each schedule UID's competition. Loaded but never read, see below |
 | `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170` | 424 bytes (212 × u16?) |
 | `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#mapteam_listtbb). Reader not found |
 | `TACTICS_FORMATION_SET.TBB` | TBB, 1 table | entry 11 of the `GetPreLoadData` list (`SLES 0x55b560`), and `SLES 0x55b2d8` | 8 formations × 8 bytes |
@@ -131,6 +131,25 @@ table 1, a Euro year (user report). Copies sit in
 national-cups` moves tables 1 and 3 a turn earlier
 ([`LMASTER_MOD.md`](LMASTER_MOD.md)).
 
+## `GROUP2COMPE.TBB`: each schedule's competition, unread
+
+One table of 166 s16. **Empirical** (`python SRC/schedule.py info
+DAT/PARAM`, last line; the Japanese file is the same): entry *n* is the
+competition of schedule UID *n* − 1 for 144 of the 164 UIDs. The other
+20 are the group stages of the European League (UIDs 59–66), the Euro
+National Cup (98–101) and the World National Cup (114–121), which give
+the competition before theirs: 33 (the European League Round), 44 and 46
+(the cups' primaries). Entry 0 is 0 and entry 165 is 72, one past the
+last competition.
+
+**Confirmed: nothing reads it.** The camp screen's module loads it (load
+list `0x1cdd30`, entry 4) and keeps its handle at `+0x8f8`
+(`SIMPRG.REL 0x47b18`). The only code that reads the table, the getter at
+`0x4bf30` (entry *n* as a u16), is never called: no `jal`, pointer or
+relocation names it. The same module's getters for the camps' `+0x06`
+and `+0x0a` (`0x4bea0`, `0x4bfd0`) are dead code too
+([`CAMP_FORMAT.md`](CAMP_FORMAT.md)).
+
 ## `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`
 
 Both are 531,050 bytes = 27,950 records of `char[19]`. Every record in
@@ -141,7 +160,7 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- The fields of the tables without a doc of their own: `CLUBEVENT`, `GROUP2COMPE`,
+- The fields of the tables without a doc of their own: `CLUBEVENT`,
   `TOUR_LIST`, `TACTICS_FORMATION_SET` and `CLUB_RANK_SYSTEM` tables 0, 1
   and 4.
 - What's still open in the files that have a doc is listed there, for
