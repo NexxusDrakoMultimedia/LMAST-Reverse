@@ -317,7 +317,7 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
 - [ ] Test in PCSX2: an archive rebuilt around a grown entry, with its
       `.HED` (a `PLAYER/NUMBER_*.PAC` number texture), and an Acrobata
       scene in a rebuilt pack
-- [ ] Test in PCSX2: a `MES.PAC` whose files moved (`LMAST-mestest.iso`:
+- [ ] Test in PCSX2: a `MES.PAC` whose files moved (`LMAST-test-camps-mes.iso`, with `--mod lmaster` and the skip:
       `3_6.mbb` grown past its slot, the welcome mail's body starting
       "MOVED FILE TEST." in `MES.PAC` only; the new-game popup should show
       it, the Mail screen the original from `MAIL1.PAC`)
