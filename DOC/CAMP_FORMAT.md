@@ -1,0 +1,144 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
+
+# `PARAM/CAMP_LIST.TBB` and `CAMP_EXPLANE.TBB`: training camps
+
+The 153 places a club can hold a training camp: where each is, what
+kind of camp it is, the clubs of its area, and the description shown
+for it. Both files are TBB1 files ([`TBB_FORMAT.md`](TBB_FORMAT.md)) of
+u16 values. Neither has a copy elsewhere on the disc.
+
+`python SRC/camp.py info DAT/PARAM` checks both files and
+`python SRC/camp.py show DAT/PARAM 604` prints a camp. The data has two
+bugs, [below](#two-bugs), which `patch_disc.py --mod camp-types` and
+`--mod camp-cities` fix.
+
+## Who reads them
+
+| Address | What it shows |
+|---|---|
+| `SIMPRG.REL 0x4bdd0` | finds the `CAMP_LIST` table 0 record whose `+0x04` is a city (records `0xe` bytes apart, up to `+0x85e`) and returns its `+0x0c` (`lbu`). **confirmed** |
+| `SIMPRG.REL 0x4bea0`, `0x4bfd0` | the same search, returning `+0x06` (`lbu`) and whether `+0x0a` is set. **confirmed** |
+| `SIMPRG.REL 0xa5488`–`0xa5558` | books a camp: the camp record (`pwkSche_GetCamp`, `PlPwork` task 6 `+0x1b00`) gets the week at `+0x0a`, 1 at `+0x1c`, the city at `+0x18` and `0x4bdd0`'s value at `+0x3c`. **confirmed** |
+| `pwkSche_GetCampType` (`0x255690`) | returns `+0x3c` of the running camp. Its callers are the training module (`SIMPRG.REL 0x1586b4`, the row of [`TRAINING_LIST`](TRAINING_FORMAT.md) table 10) and `pwkSche_CheckCampSucucess` (`0x256948`). **confirmed** |
+| `SIMPRG.REL` load lists `0x1cdd30` (entry 3), `0x23d618` | load `Camp_list.tbb` for the camp screen's module and for the training module during a camp |
+| `SIMPRG.REL` list `0x225df0` | loads `Camp_Explane.tbb`. The code that reads it hasn't been found |
+
+## `CAMP_LIST.TBB`
+
+**Table 0**: 153 records of 7 u16, one per camp.
+
+| Offset | Name (`camp.py`) | Meaning | Proof |
+|---|---|---|---|
+| `0x00` | `region` | the nation's display region, 0–12 | **empirical**: equals `PLRESOURCECOMMON` table 3.1 for the nation in all 153 |
+| `0x02` | `nation` | `PlNati` | **empirical** (1 for the English camps) |
+| `0x04` | `city` | `PlCity`, the key | **confirmed** (`0x4bdd0`) |
+| `0x06` | `unk06` | 0–7 | read by `0x4bea0`; meaning unknown |
+| `0x08` | `unk08` | 0 or 1 | no reader found |
+| `0x0a` | `unk0a` | 0 or 1 | `0x4bfd0` returns whether it is set; meaning unknown |
+| `0x0c` | `type` | the camp type, 1–87 on the disc | **confirmed** (`0x4bdd0`, the booking) |
+
+**Table 1**: 737 `{u16 city, u16 club}` pairs, 4 to 8 per camp city: the
+clubs of the camp's area (**empirical**: London lists Highbury, Chelsea,
+Tottenham, Fulham, Charlton, Crystal Palace and West Ham, and one club
+from abroad). Its reader hasn't been found.
+
+## `CAMP_EXPLANE.TBB`
+
+One table of 153 `{u16 city, u16 message}` pairs. The messages are
+6000–6152 of category 570, a sentence about each place (6007: "The famous
+produce of this city is ham, cheese and excellent goalkeepers.", Parma).
+**Empirical**; the reader hasn't been found.
+
+Its cities equal `CAMP_LIST`'s except one: Santiago's description (6146,
+"The Chilean capital …") is keyed to city 764, the camp to 774. The
+Japanese release names both cities Santiago; PAL calls 764 Cruzeiro.
+Whether the camp screen shows Santiago's description hasn't been
+checked.
+
+## Two bugs
+
+### The camp type is one too high (both releases)
+
+`CAMP_LIST` numbers the camp types 1–87, and the booking stores that
+number unchanged. Both readers number them 0–86:
+
+- `TRAINING_LIST` table 10 has 87 rows and is read at row `type`
+  ([`TRAINING_FORMAT.md`](TRAINING_FORMAT.md)).
+- `pwkSche_CheckCampSucucess` checks the chosen theme against three
+  bytes per type at `SLES 0x552cd0` (87 rows), and gives up on a type of
+  87 or more (`0x256980`).
+
+So every camp trains as the next type and is judged by the next type's
+themes, and the two camps of type 87 read past both tables. The data
+shows which numbering it was made for: the theme table's goalkeeper rows
+(theme 2) are 72–83, the same rows where table 10 trains saving,
+catching and keeping, and the goalkeeper camps' types are 81–84. With the
+game's reading Parma (type 84, "excellent goalkeepers") trains no keeper
+ability, only GK aptitude +1; with `type − 1` every goalkeeper camp falls in the keeper
+rows. The Japanese files and executable are the same.
+
+`python SRC/camp.py fixtypes` (and `patch_disc.py --mod camp-types`)
+lowers every type by one. Nothing else reads `+0x0c`, so the training row
+and the theme check both follow.
+
+### Seven English camps in the wrong town (PAL)
+
+The camp tables use the Japanese release's city numbers. PAL renumbered
+the English cities and moved the clubs with them (the club records put
+Liverpool's clubs in city 63 in the Japanese release and 66 in PAL,
+Manchester's in 38 and 40), but not the camp tables. In PAL these camps
+sit in a neighbouring town while keeping the description and clubs of
+the real one:
+
+| Camp | City (Japanese, the camp tables) | That id in PAL | PAL id |
+|---|---|---|---|
+| Liverpool | 63 | Scunthorpe | 66 |
+| Manchester | 38 | West London | 40 |
+| Newcastle | 85 | Gateshead | 86 |
+| Birmingham | 88 | Warwick | 89 |
+| Southampton | 44 | Basingstoke | 46 |
+| Blackburn | 51 | Newport | 54 |
+| Sheffield | 74 | Oakham | 78 |
+
+**Empirical**, from the city names (message category 961) of both
+releases and the club records. The other 146 camps have the same name in
+both, apart from spellings (Nates → Nantes, Malaga → Málaga, La Coruna →
+La Coruña). `python SRC/camp.py fixcities` (and `--mod camp-cities`)
+moves the seven in both files.
+
+Neither fix has been tested in PCSX2.
+
+## Editing
+
+```bash
+python SRC/camp.py set DAT/PARAM/CAMP_LIST.TBB out/CAMP_LIST.TBB 604 type=10
+python SRC/camp.py fixtypes DAT/PARAM/CAMP_LIST.TBB out/CAMP_LIST.TBB
+python SRC/camp.py fixcities DAT/PARAM out
+python SRC/patch_disc.py patch disc.iso modded.iso --mod camp-types,camp-cities
+```
+
+`set` takes a city, then `field=value` pairs (`type` 0–255, the other
+fields 0–65535). The files keep their size.
+`python SRC/camp.py roundtrip` re-encodes `CAMP_LIST` and checks it
+rebuilds byte for byte.
+
+## Still unknown
+
+- What `+0x06`, `+0x08` and `+0x0a` mean, and who reads table 1 and
+  `CAMP_EXPLANE`.
+- The names of the 87 camp types (the themes at `SLES 0x552cd0` are
+  numbers 1–6).
+- Whether the Santiago description shows.
+
+## Checking the claims
+
+```bash
+python SRC/camp.py info DAT/PARAM
+python SRC/camp.py show DAT/PARAM 330 604
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 4bdd0 40 --sles ISO/SLES_541.51   # the type lookup
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL a54d8 46 --sles ISO/SLES_541.51   # the booking
+python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkSche_GetCampType pwkSche_CheckCampSucucess
+python SRC/training.py show DAT/PARAM/TRAINING_LIST.TBB camp 83 84
+python SRC/mbb.py dump DAT/MESSAGE/MES.PAC --cat 961 --lang 1     # city names
+```

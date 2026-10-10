@@ -75,8 +75,8 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**: roof, level, capacity (thousands). **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`; readers in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) |
 | `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 national-team flags per turn. **confirmed**, see below |
 | `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | the training module (`SIMPRG.REL 0x159998`, lists `0x23d618`, `0x23d690`), `SLES 0x246540` (table 11) | what each practice trains and its fatigue, facility and camp bonuses, match growth by position, ability groups and coaching, decline with age. **confirmed**, see [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md) |
-| `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648` | training camps. Reader not traced |
-| `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8` | 612 bytes. Camp explanations (the name suggests message ids) |
+| `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648`; `0x4bdd0` | the 153 training camps: city, nation, camp type, and the clubs of each area. **confirmed** in part, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
+| `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8` | each camp city's description, message category 570, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
 | `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 960 bytes. Club events (`plClubEvent_*`) |
 | `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division. **confirmed**, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes"). Tables 0, 1 and 4 not traced |
 | `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 332 bytes (166 × u16?): schedule group to competition |
@@ -141,8 +141,7 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- The fields of the tables without a doc of their own:
-  the camp tables, `CLUBEVENT`, `GROUP2COMPE`,
+- The fields of the tables without a doc of their own: `CLUBEVENT`, `GROUP2COMPE`,
   `TOUR_LIST`, `TACTICS_FORMATION_SET` and `CLUB_RANK_SYSTEM` tables 0, 1
   and 4.
 - What's still open in the files that have a doc is listed there, for

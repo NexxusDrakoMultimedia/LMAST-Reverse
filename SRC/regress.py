@@ -83,6 +83,11 @@ def checks():
          ["DAT/PARAM/REGULATION.TBB"]),
         ("clubresult", ["clubresult.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("training", ["training.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("camp", ["camp.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("camp_roundtrip", ["camp.py", "roundtrip", "DAT/PARAM/CAMP_LIST.TBB"],
+         ["DAT/PARAM/CAMP_LIST.TBB"]),
+        # Every camp with its type, clubs and description.
+        ("camp_show", ["camp.py", "show", "DAT/PARAM"], ["DAT/PARAM"]),
         ("training_roundtrip", ["training.py", "roundtrip", "DAT/PARAM/TRAINING_LIST.TBB"],
          ["DAT/PARAM/TRAINING_LIST.TBB"]),
         # Every table's rows with their practices and abilities named.

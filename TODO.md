@@ -13,8 +13,10 @@ item in its section below.
 
 1. **The parameter tables' fields** (section 2). `REGULATION.TBB`,
    `CLUBRESULT.TBB` and `TRAINING_LIST.TBB` are done (`regulation.py`,
-   `clubresult.py`, `training.py`); next an editor tab for training and
-   the camp tables. `tbb.py replace` can only swap a whole table.
+   `clubresult.py`, `training.py`) and the camp tables (`camp.py`);
+   next an editor tab for training and camps, then the PCSX2 tests of the
+   new `camp-types` and `camp-cities` switches. `tbb.py replace` can only
+   swap a whole table.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -62,7 +64,7 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       editor's Season tab) and two nations changed in one save. Only
       England at 22 is tested in game
 - [ ] Parameter tables: name the fields of the other `TBB1` tables a mod
-      would tune (the camp tables and the others in
+      would tune (the others in
       `DOC/PARAM_DIR.md#still-unknown`), so they can get field-level
       writers. `tbb.py replace` only swaps a whole table
 - [ ] `TRAINING_LIST.TBB` leftovers (`DOC/TRAINING_FORMAT.md`): the
@@ -70,6 +72,10 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       types, 28 youth menus and the facility rows, whether anything reads
       the facility tables' columns 64-70, an editor tab, and a PCSX2 test
       of an edit (a practice made much stronger)
+- [ ] Camp leftovers (`DOC/CAMP_FORMAT.md`): `+0x06`, `+0x08`, `+0x0a`,
+      the readers of table 1 and `CAMP_EXPLANE`, the camp types' names,
+      and whether Santiago's description (keyed to city 764, the camp is
+      774) shows
 - [ ] `CLUBRESULT.TBB` leftovers (`DOC/CLUBRESULT_FORMAT.md`): the prize
       texts `0x8ca0`-`0x8ca7`, and a PCSX2 test of an edit (a cup given a
       third-place match shows "3rd"/"4th" on the end of tournament

@@ -363,6 +363,15 @@ files. Each item keeps what was found, where, and how it was tested.
       staff ability that coaches each ability, camps by camp type, match
       growth by pitch position and youth practices. The Japanese file
       differs in 11 recovery menus' fatigue (0 there, -10 in PAL)
+- [x] Camp tables: `DOC/CAMP_FORMAT.md` and `SRC/camp.py` (`info`,
+      `show`, `set`, `roundtrip`, in `regress.py`; `fixtypes`,
+      `fixcities`). `CAMP_LIST`'s 153 records (city and camp type
+      confirmed from `SIMPRG.REL 0x4bdd0` and the booking at `0xa5488`),
+      the clubs of each area and `CAMP_EXPLANE`'s descriptions. Found two
+      bugs: the camp types are one too high for the training table and
+      the theme table (both releases), and PAL left seven English camps
+      on the Japanese city numbers. `patch_disc.py --mod camp-types` and
+      `--mod camp-cities` fix them; not tested in PCSX2 yet
 
 ## 3. Ninja 3D models and motions
 

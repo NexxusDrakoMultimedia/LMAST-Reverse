@@ -68,7 +68,7 @@ to the new last sector. Files outside DATA.CVM keep their size.
 
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
-launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
+camp-types, camp-cities, launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups; DOC/LMASTER_MOD.md).
 Each also works as a flag of its own (--skip-tutorial, ...). With
 switches and no targets, `patch <image> <out_image>` is enough.
@@ -108,6 +108,15 @@ the call-up stays on turn 88 with the first group game. With a
 SCHEDULE_SYSTEM.PAC target (leaguesize.py build, a league of another size)
 the cups are moved in the target's bytes, and --copies carries them to
 STATIONFILE.PAC. See DOC/LMASTER_MOD.md.
+
+camp-types lowers every camp type in PARAM/CAMP_LIST.TBB by one. The
+camp booking stores the record's type (1-87), but the training table
+(TRAINING_LIST table 10) and the theme table at SLES 0x552cd0 are read
+with it as 0-86, so every camp trained and judged its themes as the next
+type (Parma, a goalkeeper camp, trained no keeping). camp-cities moves the
+seven English camps that PAL left on the Japanese city ids (Liverpool's
+camp was in Scunthorpe) to their PAL towns, in CAMP_LIST.TBB and
+CAMP_EXPLANE.TBB. See DOC/CAMP_FORMAT.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -1348,6 +1357,46 @@ def pack_copy_jobs(f, img, pack, entry, of, old, new, why):
     return diff_jobs(s.path, sh.entries[i][0], old, new, why)
 
 
+# --- training camps (DOC/CAMP_FORMAT.md) -------------------------------------------
+
+CAMP_LIST_FILE = "PARAM/CAMP_LIST.TBB"
+CAMP_EXPLANE_FILE = "PARAM/CAMP_EXPLANE.TBB"
+
+
+def read_file(f, img, file):
+    e = img.entry(file)
+    return e.path, read_at(f, img, e.path, 0, e.size)
+
+
+def plan_camp_types(f, img):
+    """Jobs for --mod camp-types: CAMP_LIST's camp types lowered by one,
+    so each camp gets its own row of TRAINING_LIST table 10 and of the
+    theme table at SLES 0x552cd0. A file already fixed is left alone."""
+    import camp
+    path, data = read_file(f, img, CAMP_LIST_FILE)
+    new = camp.fix_types(data)
+    if new is None:
+        return [], ["note: %s already has its camp types from 0" % CAMP_LIST_FILE]
+    # gap=1: only the type bytes, so camp-cities' jobs in the same table
+    # don't overlap these (each plan sees the original file).
+    return diff_jobs(path, 0, data, new, "camp-types: each camp trains as its own type",
+                     gap=1), []
+
+
+def plan_camp_cities(f, img):
+    """Jobs for --mod camp-cities: the seven English camps PAL left on the
+    Japanese city ids moved to their PAL ids, in CAMP_LIST and CAMP_EXPLANE."""
+    import camp
+    lpath, ldata = read_file(f, img, CAMP_LIST_FILE)
+    xpath, xdata = read_file(f, img, CAMP_EXPLANE_FILE)
+    new = camp.fix_cities(ldata, xdata)
+    if new is None:
+        return [], ["note: %s has no camp on an old city id" % CAMP_LIST_FILE]
+    why = "camp-cities: the English camps in their own towns"
+    return (diff_jobs(lpath, 0, ldata, new[0], why, gap=1) +
+            diff_jobs(xpath, 0, xdata, new[1], why, gap=1)), []
+
+
 # --- the developer launcher (DOC/SQB_FORMAT.md#the-developer-launcher) --------
 
 # RootMainSeq.sqb runs Dummy.CheckLauncher (always 1) at 0x88 and at 0x98
@@ -1387,6 +1436,10 @@ SWITCHES = (
      "Rival's manager: the rival gets the manager of its own style"),
     ("national-cups", plan_national_cups, [SCHEDULE_FILE, STATION_FILE, LIST_FILE] + LIST_PACKS,
      "National cups a turn earlier, so the World National Cup's results can be viewed"),
+    ("camp-types", plan_camp_types, [CAMP_LIST_FILE],
+     "Training camps: each camp trains and checks its themes as its own type"),
+    ("camp-cities", plan_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE],
+     "Training camps: Liverpool, Manchester and five more English camps in their own towns"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],

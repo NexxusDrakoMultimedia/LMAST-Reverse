@@ -117,7 +117,9 @@ but no reader of them has been found.
 ### Camps, matches and the youth team (tables 10–12)
 
 - Table 10's row is the camp type (`pwkSche_GetCampType`, `0x1586b4`),
-  used instead of the practice's own row while a camp runs.
+  used instead of the practice's own row while a camp runs. The camp
+  list numbers its types 1–87, one more than this table's rows, so every
+  camp reads the next row ([`CAMP_FORMAT.md`](CAMP_FORMAT.md#two-bugs)).
 - Table 11's row is the player's pitch position (`PlPinfo +4`): GK, LSB,
   RSB, CB, LWB, RWB, DM, LSM, RSM, OM, LWG, RWG, FW. **Empirical**: the
   keeper row trains saving and catching, the forward row shooting and
