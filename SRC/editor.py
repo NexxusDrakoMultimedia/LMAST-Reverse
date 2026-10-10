@@ -2058,22 +2058,23 @@ class TrainingTab(Tab):
 
 
 CAMP_LIST = "PARAM/CAMP_LIST.TBB"
-CAMP_FIELDS = ("city", "nation", "region", "type", "unk06", "unk08", "unk0a")
-CAMP_LABELS = {"unk06": "+0x06", "unk08": "+0x08", "unk0a": "+0x0a"}
+CAMP_FIELDS = ("city", "nation", "region", "type", "level", "event_only", "unk0a")
+CAMP_LABELS = {"event_only": "event only", "unk0a": "+0x0a"}
 
 
 class CampsTab(Tab):
     """The training camps (CAMP_LIST.TBB) through camp.set_field's checks
-    and camp.encode_file, as `camp.py set` does. Only the camp type is
-    edited (camp.edit_range); the rest, the clubs of the camp's area and
-    its description (CAMP_EXPLANE.TBB, message category 570) are shown.
+    and camp.encode_file, as `camp.py set` does. The type, level and
+    event-only flag are edited (camp.edit_range); the rest, the clubs of
+    the camp's area and its description (CAMP_EXPLANE.TBB, message
+    category 570) are shown.
     Names come from MES.PAC (cities, category 961; clubs, category 3)."""
     title = "Camps"
 
     def __init__(self, app):
         super().__init__(app)
         self.camps = None
-        self.changes = {}           # city -> type, in edit order
+        self.changes = {}           # (city, field) -> value, in edit order
         self.current = None
 
         bar = ttk.Frame(self.frame)
@@ -2151,7 +2152,8 @@ class CampsTab(Tab):
                 continue
             self.tree.insert("", "end", iid=str(c["city"]),
                              values=(c["city"], self.town(c["city"]), c["type"]),
-                             tags=("edited",) if c["city"] in self.changes else ())
+                             tags=("edited",) if any(k[0] == c["city"] for k in self.changes)
+                             else ())
             n += 1
         self.count_label.configure(text="%d camps" % n)
 
@@ -2226,9 +2228,9 @@ class CampsTab(Tab):
             return self.refuse("%s: %s must be %d-%d" % (what, name, lo, hi), revert)
         old = c[name]
         c[name] = value
-        self.changes.pop(c["city"], None)
-        self.changes[c["city"]] = value
-        self.tree.item(str(c["city"]), values=(c["city"], self.town(c["city"]), value),
+        self.changes.pop((c["city"], name), None)
+        self.changes[c["city"], name] = value
+        self.tree.item(str(c["city"]), values=(c["city"], self.town(c["city"]), c["type"]),
                        tags=("edited",))
         self.show_training(c)
         self.app.status("%s: %s %d -> %d" % (what, name, old, value))
@@ -2262,9 +2264,12 @@ class CampsTab(Tab):
             messagebox.showerror("Camps", "Can't save: %s" % e)
             return False
         replace_new(temps)
-        args = []
-        for city, value in self.changes.items():
-            args += [str(city), "type=%d" % value]
+        args, last = [], None
+        for (city, name), value in self.changes.items():
+            if city != last:
+                args.append(str(city))
+                last = city
+            args.append("%s=%d" % (name, value))
         cmd = ["python", "SRC/camp.py", "set", quote(shown_path(self.path)),
                quote(shown_path(out + ".new"))] + args
         n = len(self.changes)

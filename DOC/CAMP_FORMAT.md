@@ -33,15 +33,60 @@ bugs, [below](#two-bugs), which `patch_disc.py --mod camp-types` and
 | `0x00` | `region` | the nation's display region, 0–12 | **empirical**: equals `PLRESOURCECOMMON` table 3.1 for the nation in all 153 |
 | `0x02` | `nation` | `PlNati` | **empirical** (1 for the English camps) |
 | `0x04` | `city` | `PlCity`, the key | **confirmed** (`0x4bdd0`) |
-| `0x06` | `unk06` | 0–7 | read by `0x4bea0`; meaning unknown |
-| `0x08` | `unk08` | 0 or 1 | no reader found |
-| `0x0a` | `unk0a` | 0 or 1 | `0x4bfd0` returns whether it is set; meaning unknown |
+| `0x06` | `level` | 0–7: the popularity the club needs in the camp's region | `0x459a8`, [below](#when-a-camp-is-open). **confirmed** |
+| `0x08` | `event_only` | 1: hidden until an event frees the camp | `0x4c65c`, below. **confirmed** |
+| `0x0a` | `unk0a` | 0 or 1 | only `0x4bfd0` reads it, and nothing calls that. Unused |
 | `0x0c` | `type` | the camp type, 1–87 on the disc | **confirmed** (`0x4bdd0`, the booking) |
 
 **Table 1**: 737 `{u16 city, u16 club}` pairs, 4 to 8 per camp city: the
 clubs of the camp's area (**empirical**: London lists Highbury, Chelsea,
 Tottenham, Fulham, Charlton, Crystal Palace and West Ham, and one club
 from abroad). Its reader hasn't been found.
+
+### When a camp is open
+
+The camp map's list (`SIMPRG.REL 0x4c4e0`) takes the camps of one nation
+and, for each, shows it when the camp has been freed by an event
+(`pwkSche_CheckCampFree(city)`); otherwise it skips one with `event_only`
+set, and then asks `0x459a8(level, nation, 0)`. `0x4c288` builds the
+list for a region the same way, leaving out the six league nations
+(nation below 7). Both skip the club's own home town. **Confirmed.**
+
+`0x459a8`:
+
+- 15 camps have their own rule (two tables at `SIMPRG.REL 0x1cdca0`,
+  nations, and `0x1cdce0`, cities; Germany has two): asked about such a
+  camp (the map list passes the city), the answer is whether it has been
+  freed. Asked about a nation with no city (`0x4c288` passes 0), a
+  nation in the list counts as open when its listed camp is freed, and
+  Dakar's (80) and Sipan's (123) nations otherwise count as closed.
+- Otherwise the camp is open when the club's popularity in the camp's
+  region (`pwkTeam_Pop`; region 0 is the club's own nation, others the
+  nation's display region + 1) is at least the level's threshold (u16
+  table at `0x1cdd20`):
+
+  | Level | 0–3 | 4 | 5 | 6 | 7 |
+  |---|---|---|---|---|---|
+  | Popularity | 0 | 28,800 | 36,000 | 43,200 | 50,400 |
+
+**Who frees a camp (confirmed).** `SIMPRG.REL 0x13c418` goes through the
+club's sponsors (`pwkSponsor_GetMySponsors`), takes a city for each from
+`0x16a940`, and frees one that isn't free yet (`pwkSche_SetCampFree`,
+`0x13c4bc`), with an event message (`0x12c058`, kind `0x10`). So a
+sponsor opens its camp. Which city each sponsor gives isn't traced.
+
+The 15 cities are Liverpool, Lyon, Leverkusen, Barcelona, Munich, Turin,
+Eindhoven, Sydney, Rio de Janeiro, Buenos Aires, Johannesburg, Cairo,
+Dakar, Hawaii and Sipan. PAL's table gives Liverpool as city 66, the
+Japanese overlay's as 63: PAL renumbered this table along with the
+cities but not `CAMP_LIST`, where Liverpool's camp is still 63
+([below](#seven-english-camps-in-the-wrong-town-pal)).
+
+**Empirical**: levels 0–7 hold 14, 23, 29, 25, 22, 20, 9 and 11 camps;
+14 camps are event only. Those are the listed camps except Leverkusen
+and Barcelona, plus Valencia, in both releases: all three end up closed
+until freed, Leverkusen and Barcelona through the list, Valencia through
+the flag.
 
 ## `CAMP_EXPLANE.TBB`
 
@@ -130,8 +175,8 @@ rebuilds byte for byte.
 
 ## Still unknown
 
-- What `+0x06`, `+0x08` and `+0x0a` mean, and who reads table 1 and
-  `CAMP_EXPLANE`.
+- Who reads table 1 and `CAMP_EXPLANE`, and which city each sponsor
+  frees (`0x16a940`).
 - The names of the 87 camp types (the themes at `SLES 0x552cd0` are
   numbers 1–6).
 - Whether the Santiago description shows.

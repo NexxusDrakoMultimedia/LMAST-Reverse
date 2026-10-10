@@ -5,15 +5,20 @@ Let's Make a Soccer Team! (PS2).
 
 CAMP_LIST table 0 holds one 14-byte record per camp city (153); the camp
 screen's module (SIMPRG.REL, load list 0x1cdd30) finds a city's record by
-+0x04 (0x4bdd0, 0x4bea0, 0x4bfd0) and the training module loads the file
-too during a camp (list 0x23d618). See DOC/CAMP_FORMAT.md.
++0x04 (0x4bdd0; 0x4c288 and 0x4c4e0 walk the records) and the training
+module loads the file too during a camp (list 0x23d618). See
+DOC/CAMP_FORMAT.md.
 
   +0x00 u16 region   the nation's display region (empirical, all 153)
   +0x02 u16 nation   PlNati (empirical)
   +0x04 u16 city     the key every getter compares
-  +0x06 u16          0-7 (0x4bea0 returns the low byte); meaning unknown
-  +0x08 u16          0 or 1; no reader found
-  +0x0a u16          0 or 1 (0x4bfd0 returns whether it is set)
+  +0x06 u16 level    0-7: a camp is open once the club's popularity in
+                     the camp's region reaches the level's threshold
+                     (0x459a8: table at 0x1cdd20, 0 for levels 0-3, then
+                     28,800, 36,000, 43,200, 50,400)
+  +0x08 u16 event_only  1: hidden until an event frees it
+                     (pwkSche_CheckCampFree; 0x4c65c)
+  +0x0a u16          0 or 1; only an uncalled getter (0x4bfd0) reads it
   +0x0c u16 type     the camp type, 1-87 on the disc. 0x4bdd0 returns its
                      low byte and the booking (0xa5558) stores it in the
                      camp's +0x3c, which TRAINING_LIST table 10 (its row)
@@ -41,7 +46,7 @@ Usage:
     python camp.py fixcities <in DAT/PARAM> <out folder>
     python camp.py roundtrip <CAMP_LIST.TBB>
 
-`set` edits the record fields by name (region, nation, unk06, unk08,
+`set` edits the record fields by name (region, nation, level, event_only,
 unk0a, type). A same-size file goes on the disc with patch_disc.py;
 `patch_disc.py --mod camp-types` and `--mod camp-cities` apply
 `fixtypes` and `fixcities` to a disc.
@@ -55,7 +60,8 @@ import tbb
 LIST_FILE = "CAMP_LIST.TBB"
 EXPLANE_FILE = "CAMP_EXPLANE.TBB"
 RECORD = 0xe                    # 0x4be34: + 0xe per record; 0x4be24: end at + 0x85e
-FIELDS = ("region", "nation", "city", "unk06", "unk08", "unk0a", "type")
+FIELDS = ("region", "nation", "city", "level", "event_only", "unk0a", "type")
+LEVEL_POPULARITY = (0, 0, 0, 0, 28800, 36000, 43200, 50400)   # SIMPRG.REL 0x1cdd20
 CAMP_TYPES = 87                 # TRAINING_LIST table 10 rows; SLES 0x256980: type < 0x57
 CAMP_MESSAGES = 570             # the category CAMP_EXPLANE's ids are in (empirical)
 CITY_NAMES = 961                # city names (initteam.CITY_CATEGORY)
@@ -135,15 +141,17 @@ def messages(mes_path, category, lang=1):
 # What an editor offers: only the camp type, whose readers are known; the
 # rest is shown. The camp list numbers the types 1-87 (one too many for
 # the game's tables, which the camp-types fix lowers), so 0-87 covers both.
-EDIT_RANGES = {"type": (0, CAMP_TYPES)}
+EDIT_RANGES = {"type": (0, CAMP_TYPES), "level": (0, len(LEVEL_POPULARITY) - 1),
+               "event_only": (0, 1)}
 
 DESCRIPTIONS = {
     "region": "the nation's display region",
     "nation": "the camp's nation",
     "city": "the camp's town; the key",
-    "unk06": "0-7; read, meaning unknown",
-    "unk08": "0 or 1; no reader found",
-    "unk0a": "0 or 1; read, meaning unknown",
+    "level": "popularity the club needs in the camp's region: 0-3 none, "
+             "4-7 28,800 / 36,000 / 43,200 / 50,400",
+    "event_only": "1: hidden until an event frees the camp",
+    "unk0a": "0 or 1; nothing reads it",
     "type": "the camp type: picks the training (TRAINING_LIST table 10) and the "
             "themes it is judged by",
 }
@@ -291,7 +299,7 @@ def cmd_info(root):
         if lo == 1 else ""))
     if hi > CAMP_TYPES:
         print("  !! a type above %d" % CAMP_TYPES)
-    for name in ("region", "unk06", "unk08", "unk0a"):
+    for name in ("region", "level", "event_only", "unk0a"):
         print("  %-6s %s" % (name, " ".join(map(str, sorted(set(c[name] for c in camps))))))
     clubs = pairs(raw[1].data)
     cities = set(c["city"] for c in camps)
@@ -311,8 +319,9 @@ def cmd_show(root, cities):
     for c in camps:
         if cities and c["city"] not in cities:
             continue
-        print("city %3d  nation %3d  region %2d  type %2d  +6 %d  +8 %d  +a %d  message %s  clubs %s" % (
-            c["city"], c["nation"], c["region"], c["type"], c["unk06"], c["unk08"],
+        print("city %3d  nation %3d  region %2d  type %2d  level %d  event only %d  +a %d  "
+              "message %s  clubs %s" % (
+            c["city"], c["nation"], c["region"], c["type"], c["level"], c["event_only"],
             c["unk0a"], explane.get(c["city"], "-"),
             " ".join(str(t) for city, t in clubs if city == c["city"])))
 
