@@ -61,8 +61,9 @@ Each stage depends on the one before it.
    size, and `leaguesize.py build` uses it to change a first division's
    size (England at 22 clubs tested in PCSX2 through two seasons). Of the
    parameter tables, `regulation.py` edits the match regulations field by
-   field (squad size and win bonus tested in PCSX2); the others have no
-   field-level writer yet.
+   field (squad size and win bonus tested in PCSX2) and `clubresult.py`
+   how each schedule reports a final place (not tested in PCSX2 yet); the
+   others have no field-level writer yet.
 4. **Rebuild.** Put edited files back into `DATA.ISO`, re-encrypt it as
    `DATA.CVM`, and produce a disc image that boots. This includes repacking
    BINPAC/KC@P archives and PRS compression, and handling files that change
@@ -88,7 +89,7 @@ Each stage depends on the one before it.
    (`uniform.py`), Text (`mbb.py`), Season (swapping league clubs'
    places, `initteam.py`, and first-division sizes, `leaguesize.py`),
    Free agents (`plrsim.py`) and Regulations (the match regulations,
-   `regulation.py`). The first seven are tested in PCSX2; the Season
+   `regulation.py`, and the results, `clubresult.py`). The first seven are tested in PCSX2; the Season
    tab's size change is not yet (the same files from `leaguesize.py
    build` are), nor is a save from the Regulations tab (the same edit
    from `regulation.py set` is).
@@ -136,7 +137,7 @@ The "Still open" column is a summary. The full items are in
 | `GAME/` | match data: commentary, sound, models, tactics AI | partly | [`GAME_DIR.md`](DOC/GAME_DIR.md), `sounddat.py`, `ninja.py`, `bpb.py`, `gamedata.py` | the `.CBB` fields and combination commands, what the play books' paths mean, what a `GAMEDATA.BIN` record is, whether `AI_PARAM.BIN` is used, `CUTINPACK` blocks, the `RBD0` trailer, the `SHADOWCOLLI`/`WALLCOLLI` entries, `TEAM.TMB` |
 | `MESSAGE/` | all message text | done, with a writer | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md), `mbb.py` | which value the screen-set variables hold |
 | `NEWS/` | newspaper pictures and ranking months | done | [`NEWS_DIR.md`](DOC/NEWS_DIR.md), `news.py` | where ads and cartoons go on the page |
-| `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `leaguesize.py`, `plrsim.py`, `plrcommon.py`, `regulation.py` | the values in `PLRESOURCECOMMON.PAC` entries 1, 2 and 4, a few schedule tables, some player fields |
+| `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `leaguesize.py`, `plrsim.py`, `plrcommon.py`, `regulation.py`, `clubresult.py` | the values in `PLRESOURCECOMMON.PAC` entries 1, 2 and 4, a few schedule tables, some player fields |
 | `PLAYER/` | faces, kits, player models | most files, with a kit writer | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md), [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md), `packdata.py`, `uniform.py` | the face block-4 header, a few kit fields |
 | `PRELOAD/` | copies of other files for bulk loading | done, with a writer | [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md), `preload.py` | |
 | `SEQ/` | the root sequencer scripts | most files | [`SEQ_DIR.md`](DOC/SEQ_DIR.md), [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md), `sqb.py` | two unused 2004 scripts, `WPX` |

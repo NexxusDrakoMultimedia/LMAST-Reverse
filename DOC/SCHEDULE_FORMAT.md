@@ -488,11 +488,11 @@ rival).
 
 `python SRC/leaguesize.py plan DAT/PARAM England 22` shows the new slots
 and the checks. `build` writes the three schedule packs with their
-`.HED`, `PLRRSRC_INITTEAMDATA.TBB` and `REGULATION.TBB`, with the
-leagues' games (`set_league`), game days (`league_turns`) and club
-counts (the regulations' `clubs`,
-[`REGULATION_FORMAT.md`](REGULATION_FORMAT.md#place-slots)) for the new
-sizes, reads them back and plays out the first season again. It takes several
+`.HED`, `PLRRSRC_INITTEAMDATA.TBB`, `REGULATION.TBB` and
+`CLUBRESULT.TBB`, with the leagues' games (`set_league`), game days
+(`league_turns`) and club counts (`clubs` in
+[`REGULATION_FORMAT.md`](REGULATION_FORMAT.md#place-slots) and
+[`CLUBRESULT_FORMAT.md`](CLUBRESULT_FORMAT.md)) for the new sizes, reads them back and plays out the first season again. It takes several
 leagues at once (`build DAT/PARAM out England 22 France 18`), and with
 `--over <folder>` reads each file from that folder when it is there, as
 the editor's Season tab does with its mod folder.

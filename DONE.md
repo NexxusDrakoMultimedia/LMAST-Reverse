@@ -343,6 +343,16 @@ files. Each item keeps what was found, where, and how it was tested.
       (`plCompeData_getUID_FromNationDiv`, `PLRESOURCECOMMON` table 4.0,
       now decoded). With England at 22, UID 1 still said 26 for 24 clubs,
       so the game over could never come. Not tested in PCSX2
+- [x] `CLUBRESULT.TBB` fields: `DOC/CLUBRESULT_FORMAT.md` and
+      `SRC/clubresult.py` (`info`, `show`, `set`, `roundtrip`, in
+      `regress.py`), and the editor's Regulations tab. 165 rows of 4 u16,
+      one per schedule UID: how the results list reports a final place
+      (0 league, 1 cup, 2 not ranked), the third-place match (UID 122
+      only) and the clubs a cup's round names depend on
+      (`Msg::ConvertRankToString`, messages 650-656, "Champion" to
+      "Defeated 1st Rnd"). All confirmed from `SIMPRG.REL 0x167e90`-
+      `0x167fc8` and its callers; all 165 rows fit, PAL and Japanese.
+      `leaguesize.py build` keeps its `clubs` in step
 
 ## 3. Ninja 3D models and motions
 

@@ -51,8 +51,9 @@ Tabs:
              DOC/INITTEAM_FORMAT.md#swapping-clubs), and each first
              division's size, in the range leaguesize.py allows; a size
              change also rewrites the three schedule packs and their .HED
-             and the leagues' club counts in REGULATION.TBB, which the
-             Regulations tab then reads again (leaguesize.py build --over;
+             and the leagues' club counts in REGULATION.TBB and
+             CLUBRESULT.TBB, which the Regulations tab then reads again
+             (leaguesize.py build --over;
              DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from).
     Free agents
              the players without a club at the start of a career
@@ -63,10 +64,13 @@ Tabs:
     Regulations
              each schedule's match rules, win bonus, prizes and places
              (REGULATION.TBB, regulation.py set; DOC/REGULATION_FORMAT.md),
-             named from the schedule packs. The club count is shown, not
-             edited (it must match the schedule; the Season tab sets it),
-             and the squad's copy
-             follows the squad. Money shows in pounds.
+             named from the schedule packs, and how each reports a final
+             place: league, cup or not ranked, and the third-place match
+             (CLUBRESULT.TBB, clubresult.py set;
+             DOC/CLUBRESULT_FORMAT.md), with the names a cup's places
+             get. The club counts are shown, not edited (they must match
+             the schedule; the Season tab sets them), and the squad's
+             copy follows the squad. Money shows in pounds.
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
@@ -100,6 +104,7 @@ import mbb
 import patch_disc
 import pbdata
 import plrsim
+import clubresult
 import regulation
 import teaminit
 import uniform
@@ -1447,9 +1452,11 @@ class NewClubTab(Tab):
 
 
 REGULATION = "PARAM/REGULATION.TBB"
+CLUBRESULT = "PARAM/CLUBRESULT.TBB"
 RULE_FIELDS = ("grade", "clubs", "unk04", "ban_yellows", "squad", "squad2", "foreigners", "subs")
 RULE_LABELS = {"unk04": "+0x04", "ban_yellows": "ban at yellows", "squad2": "squad (copy)",
                "prize_kind": "prize kind", "win_bonus": "win bonus"}
+RESULT_LABELS = {"kind": "shown as", "third_place": "third-place match", "clubs": "clubs"}
 SLOT_NAMES = ("up1", "up2", "up3", "up4", "down1", "down2")
 PRIZE_COLUMNS = 4
 
@@ -1462,14 +1469,17 @@ def pounds(value):
 class RegulationsTab(Tab):
     """Match regulations, one row per schedule UID (REGULATION.TBB),
     through regulation.set_field and encode_file, as `regulation.py set`
-    does. The schedules' names come from the schedule packs
-    (regulation.uid_names)."""
+    does, and how each schedule reports a final place (CLUBRESULT.TBB,
+    through clubresult.set_field, as `clubresult.py set`). The schedules'
+    names come from the schedule packs (regulation.uid_names)."""
     title = "Regulations"
 
     def __init__(self, app):
         super().__init__(app)
         self.rows = None
+        self.results = None
         self.changes = {}           # (uid, field) -> value, in edit order
+        self.result_changes = {}    # the same for CLUBRESULT.TBB
         self.current = None
 
         bar = ttk.Frame(self.frame)
@@ -1510,6 +1520,9 @@ class RegulationsTab(Tab):
         try:
             self.path = mod.source(REGULATION)
             self.buf, self.end, self.raw, self.rows = regulation.load(self.path)
+            self.result_path = mod.source(CLUBRESULT)
+            (self.result_buf, self.result_end, self.result_raw,
+             self.results) = clubresult.load(self.result_path)
             # The schedule packs from the mod folder when the Season tab
             # has written them, as `leaguesize.py build --over` reads them.
             self.names = regulation.uid_names(os.path.join(mod.dat, "PARAM"),
@@ -1520,6 +1533,7 @@ class RegulationsTab(Tab):
             messagebox.showerror("Regulations", "Couldn't load the regulations:\n%s" % e)
             return
         self.changes = {}
+        self.result_changes = {}
         self.refresh_list()
         if self.current is not None:
             self.show(self.current)
@@ -1533,13 +1547,15 @@ class RegulationsTab(Tab):
         never touch `clubs`), so a save here doesn't undo the counts."""
         if what != "schedules" or self.rows is None:
             return
-        changes = self.changes
+        changes, result_changes = self.changes, self.result_changes
         self.load()
         if self.rows is None:
             return
         for (uid, name), value in changes.items():
             regulation.set_field(self.rows[uid], name, value)
-        self.changes = changes
+        for (uid, name), value in result_changes.items():
+            clubresult.set_field(self.results[uid], name, value)
+        self.changes, self.result_changes = changes, result_changes
         self.refresh_list()
         if self.current is not None:
             self.show(self.current)
@@ -1569,7 +1585,7 @@ class RegulationsTab(Tab):
         return (r.uid, self.name(r.uid), r["clubs"])
 
     def edited(self, uid):
-        return any(u == uid for u, _ in self.changes)
+        return any(u == uid for u, _ in list(self.changes) + list(self.result_changes))
 
     def select(self):
         sel = self.tree.selection()
@@ -1642,7 +1658,36 @@ class RegulationsTab(Tab):
                 self.input(frame, r, "%s_%s" % (slot, part), self.refresh_slots).grid(
                     row=row, column=col, sticky="w", padx=(0, 8), pady=1)
             show_gives()
+
+        self.show_results(box, uid)
         self.fit_detail()
+
+    def show_results(self, box, uid):
+        """CLUBRESULT.TBB's row: how the results list shows a final place."""
+        res = self.results[uid]
+        frame = ttk.LabelFrame(box, text="Results: how a club's final place is shown "
+                                         "(CLUBRESULT.TBB)")
+        frame.pack(fill="x", padx=8, pady=6)
+        for row, name in enumerate(("kind", "third_place", "clubs")):
+            ttk.Label(frame, text=RESULT_LABELS[name]).grid(row=row, column=0, sticky="w",
+                                                            padx=(6, 12), pady=2)
+            choices = clubresult.edit_choices(name)
+            if choices is None:
+                w = ttk.Label(frame, text=str(res[name]), foreground="#777")
+            else:
+                text = dict(choices)
+                w = value_input(frame, ("choice", [v for v, _ in choices]),
+                                lambda v, text=text: text.get(v, str(v)), lambda n=name: res[n],
+                                lambda t, revert, n=name: self.commit_result(res, n, t, revert))
+            w.grid(row=row, column=1, sticky="w", pady=2)
+            ttk.Label(frame, text=clubresult.DESCRIPTIONS.get(name, ""),
+                      foreground="#555").grid(row=row, column=2, sticky="w", padx=(12, 6))
+        if res["kind"] == 1:
+            places = ", ".join("%d %s" % (p, clubresult.place_name(res, p))
+                               for p in (1, 2, 3, 4, 5, 9, 17))
+            ttk.Label(frame, text="Places read: " + places, foreground="#555",
+                      wraplength=900, justify="left").grid(
+                row=3, column=0, columnspan=3, sticky="w", padx=6, pady=(4, 2))
 
     def refresh_slots(self):
         """Redraw the page after a slot edit: every slot's text depends on
@@ -1723,6 +1768,20 @@ class RegulationsTab(Tab):
         self.app.update_title()
         return True
 
+    def commit_result(self, res, name, text, revert):
+        what = "UID %d" % res.uid
+        try:
+            old = clubresult.set_field(res, name, int(text))
+        except ValueError as e:
+            return self.refuse(what, str(e), revert)
+        self.result_changes.pop((res.uid, name), None)
+        self.result_changes[res.uid, name] = res[name]
+        self.frame.after_idle(lambda: self.show(res.uid))     # the place names
+        self.tree.item(str(res.uid), tags=("edited",))
+        self.app.status("%s: %s %d -> %d" % (what, name, old, res[name]))
+        self.app.update_title()
+        return True
+
     def refuse(self, what, message, revert):
         revert()
         self.app.status("%s: %s" % (what, message))
@@ -1732,37 +1791,53 @@ class RegulationsTab(Tab):
     # saving
 
     def dirty(self):
-        return bool(self.changes)
+        return bool(self.changes or self.result_changes)
 
     def save(self):
-        if not self.changes:
+        """Each changed file through its writer's encoder, logged as its
+        own command."""
+        if not self.dirty():
             return True
         mod = self.app.mod
-        out = mod.target(REGULATION)
-        temps = [(out + ".new", out)]
+        files = []
+        if self.changes:
+            files.append((REGULATION, self.path, "SRC/regulation.py", self.changes,
+                          lambda: regulation.encode_file(self.buf, self.end, self.raw,
+                                                         self.rows)))
+        if self.result_changes:
+            files.append((CLUBRESULT, self.result_path, "SRC/clubresult.py",
+                          self.result_changes,
+                          lambda: clubresult.encode_file(self.result_buf, self.result_end,
+                                                         self.result_raw, self.results)))
+        temps = []
         try:
-            data = regulation.encode_file(self.buf, self.end, self.raw, self.rows)
-            os.makedirs(os.path.dirname(out), exist_ok=True)
-            with open(out + ".new", "wb") as f:
-                f.write(data)
+            for target, _, _, _, encode in files:
+                out = mod.target(target)
+                temps.append((out + ".new", out))
+                data = encode()
+                os.makedirs(os.path.dirname(out), exist_ok=True)
+                with open(out + ".new", "wb") as f:
+                    f.write(data)
         except (ValueError, OSError) as e:
             remove_new(temps)
             messagebox.showerror("Regulations", "Can't save: %s" % e)
             return False
         replace_new(temps)
-        args, last = [], None
-        for (uid, name), value in self.changes.items():
-            if uid != last:
-                args.append(str(uid))
-                last = uid
-            args.append("%s=%d" % (name, value))
-        cmd = ["python", "SRC/regulation.py", "set", quote(shown_path(self.path)),
-               quote(shown_path(out + ".new"))] + args
-        n = len(self.changes)
-        lines = log_lines("Regulations: %d changes" % n, [cmd], temps)
+        cmds = []
+        for (_, path, tool, changes, _), (new, _) in zip(files, temps):
+            args, last = [], None
+            for (uid, name), value in changes.items():
+                if uid != last:
+                    args.append(str(uid))
+                    last = uid
+                args.append("%s=%d" % (name, value))
+            cmds.append(["python", tool, "set", quote(shown_path(path)),
+                         quote(shown_path(new))] + args)
+        n = len(self.changes) + len(self.result_changes)
+        lines = log_lines("Regulations: %d changes" % n, cmds, temps)
         mod.log(lines)
         self.app.write_log(lines)
-        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        self.load("Saved %s: %d changes" % (", ".join(shown_path(f) for _, f in temps), n))
         return True
 
 

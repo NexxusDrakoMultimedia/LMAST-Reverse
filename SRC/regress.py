@@ -81,6 +81,12 @@ def checks():
         # Every row's fields and places by name.
         ("regulation_show", ["regulation.py", "show", "DAT/PARAM/REGULATION.TBB"],
          ["DAT/PARAM/REGULATION.TBB"]),
+        ("clubresult", ["clubresult.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("clubresult_roundtrip", ["clubresult.py", "roundtrip", "DAT/PARAM/CLUBRESULT.TBB"],
+         ["DAT/PARAM/CLUBRESULT.TBB"]),
+        # Every row, with the names a cup's places get.
+        ("clubresult_show", ["clubresult.py", "show", "DAT/PARAM/CLUBRESULT.TBB"],
+         ["DAT/PARAM/CLUBRESULT.TBB"]),
         # The new club's squads and staff, named from the player database.
         ("plrsim", ["plrsim.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         # The free-agent list through the encoder setfree uses.

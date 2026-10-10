@@ -11,10 +11,10 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **The parameter tables' fields** (section 2). `REGULATION.TBB` is
-   done (`regulation.py`, the editor's Regulations tab); next the tables
-   a mod would tune after it (`CLUBRESULT`, `TRAINING_LIST`, the camp
-   tables). `tbb.py replace` can only swap a whole table.
+1. **The parameter tables' fields** (section 2). `REGULATION.TBB` and
+   `CLUBRESULT.TBB` are done (`regulation.py`, `clubresult.py`, the
+   editor's Regulations tab); next `TRAINING_LIST` and the camp tables.
+   `tbb.py replace` can only swap a whole table.
 2. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
@@ -62,9 +62,13 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       editor's Season tab) and two nations changed in one save. Only
       England at 22 is tested in game
 - [ ] Parameter tables: name the fields of the other `TBB1` tables a mod
-      would tune (`CLUBRESULT`, `TRAINING_LIST`, the camp tables and the
-      others in `DOC/PARAM_DIR.md#still-unknown`), so they can get
-      field-level writers. `tbb.py replace` only swaps a whole table
+      would tune (`TRAINING_LIST`, the camp tables and the others in
+      `DOC/PARAM_DIR.md#still-unknown`), so they can get field-level
+      writers. `tbb.py replace` only swaps a whole table
+- [ ] `CLUBRESULT.TBB` leftovers (`DOC/CLUBRESULT_FORMAT.md`): which
+      screen the results list is (`SIMPRG.REL 0x9a870`), the prize texts
+      `0x8ca0`-`0x8ca7`, and a PCSX2 test of an edit (a cup given a
+      third-place match shows "3rd"/"4th")
 - [ ] `REGULATION.TBB` leftovers (`DOC/REGULATION_FORMAT.md`): `+0x04`,
       the reader of `squad2`, and what the place checks change on screen
 - [ ] How your club and the rival become ranks 25 and 26 of the second

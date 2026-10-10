@@ -71,7 +71,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `INITNATIDATA.TBB` | TBB, 1 table | `ePLRSRC` 6 | UEFA rank and points, world rating per nation, see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#initnatidatatbb-nations). **confirmed** |
 | `TEAM_INIT_DATA.TBB` | TBB, 9 tables | `CEDITPRG.REL` list `0x1b288` (`CSelectTeamStyleModule`) → `pwkTeam_Init2` (`0x25eae8`) | the player's new club by league and team style: squad, youth team, manager, coaches, scouts, staff lists and the rival club, see [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md). **confirmed** |
 | `REGULATION.TBB` | TBB, 1 table | `plRec_MatchRegulations` (`0x21dc60`), `SIMPRG.REL` list | 165 match regulations × **120 bytes**, indexed by `PLSCHE_GROUP`: clubs, win bonus, prizes, bans, squad and substitution limits, places. **confirmed**, see [`REGULATION_FORMAT.md`](REGULATION_FORMAT.md) |
-| `CLUBRESULT.TBB` | TBB, 1 table | `SIMPRG.REL 0x167e90` | 165 × **8 bytes** (u16 fields), same count as `REGULATION`. **confirmed** (`0x167f4c`: `i << 3`) |
+| `CLUBRESULT.TBB` | TBB, 1 table | `SIMPRG.REL 0x167e90` | 165 × **8 bytes**, one per schedule UID: how a final place is reported (league, cup round names, not ranked), the third-place match, the clubs. **confirmed**, see [`CLUBRESULT_FORMAT.md`](CLUBRESULT_FORMAT.md) |
 | `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**: roof, level, capacity (thousands). **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`; readers in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) |
 | `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 national-team flags per turn. **confirmed**, see below |
 | `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | `SLES 0x246540` (table 11), `SIMPRG.REL` lists | training menus. Table 11 (845 bytes) feeds `pwkMatchGrow_ClubRankCoe` (`0x246520`). Other tables not traced |
@@ -141,7 +141,7 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- The fields of the tables without a doc of their own: `CLUBRESULT`,
+- The fields of the tables without a doc of their own:
   `TRAINING_LIST`, the camp tables, `CLUBEVENT`, `GROUP2COMPE`,
   `TOUR_LIST`, `TACTICS_FORMATION_SET` and `CLUB_RANK_SYSTEM` tables 0, 1
   and 4.
