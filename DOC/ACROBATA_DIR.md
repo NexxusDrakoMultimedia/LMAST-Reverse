@@ -43,8 +43,8 @@ library version, the same value. All 875 scenes carry it.
 size from the copy in the executable. No code reading the header was
 found. The copy matches the header for all 875 entries (**empirical**,
 `acrobata.py scenes`). A rebuilt pack whose entries move or change size
-therefore needs the table at `SLES 0x3a3b08` patched, as `MES.PAC` needs
-its executable offset table ([`REBUILD.md`](REBUILD.md)).
+therefore needs the table at `SLES 0x3a3b08` patched; `patch_disc.py`
+does that on a whole disc image ([`REBUILD.md`](REBUILD.md#archives)).
 
 ## The entries
 

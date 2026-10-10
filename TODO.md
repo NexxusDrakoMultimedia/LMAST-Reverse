@@ -17,9 +17,9 @@ item in its section below.
 2. **What each PwkScript computes** (section 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
-3. **Archive repacking** (section 9). `MES.PAC` is done (a message file
-   can grow past its slot); next the archives with `.HED` copies, KC@P
-   packs and PRS recompression, which larger mods need for their edits.
+3. **Archive repacking** (section 9). `MES.PAC`, archives with `.HED`
+   copies and the Acrobata pack are done; next KC@P packs and PRS
+   recompression, which face and player-pack edits need.
 4. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
@@ -200,8 +200,7 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
 "unknown binary".
 
 - [ ] `ACROBATA/` leftovers: the `ABDT` scene layout, `ABRS` header table
-      and `+0x14`, which code plays which scene id. A rebuilt pack whose
-      entries move needs `SLES 0x3a3b08` patched (no tool does that yet)
+      and `+0x14`, which code plays which scene id
 - [ ] Still open in `STADIUM/`: which crowd figure group is which on
       screen, who sets request `+0x0e`-`+0x10` in a real match
 - [ ] `GAME/` tactics AI leftovers (`DOC/BPB_FORMAT.md`): the
@@ -312,8 +311,10 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       resource: whether its entries stand in for their originals
 - [ ] Test in PCSX2: a `PRELOAD` pack that a rebuild moves (the code path
       is the same as a moved file, but untested in game)
-- [ ] Repacking where something else holds the offsets (`.HED` copies),
-      KC@P repacking, and PRS recompression
+- [ ] KC@P repacking and PRS recompression
+- [ ] Test in PCSX2: an archive rebuilt around a grown entry, with its
+      `.HED` (a `PLAYER/NUMBER_*.PAC` number texture), and an Acrobata
+      scene in a rebuilt pack
 - [ ] Test in PCSX2: a `MES.PAC` whose files moved (`LMAST-mestest.iso`:
       `3_6.mbb` grown past its slot, the welcome mail's body starting
       "MOVED FILE TEST." in `MES.PAC` only; the new-game popup should show

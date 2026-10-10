@@ -7,10 +7,11 @@ This is stage 4 of [`GOALS.md`](../GOALS.md). Same-size patching works,
 and so does a size change that stays inside a file's last sector, which
 is enough to rebuild the `PRELOAD` packs around a grown message file. A
 file that needs more sectors is moved to the end of `DATA.ISO`
-([Moving files](#moving-files)). `MES.PAC` can be repacked with its
-files moved: `patch_disc.py` keeps the executable's index of them in step
-([`MBB_FORMAT.md`](MBB_FORMAT.md#size)). Repacking other archives is
-still to do.
+([Moving files](#moving-files)). Self-describing archives can be
+rebuilt with entries of another size, their `.HED` copies follow, and
+the two archives the executable indexes (`MES.PAC`, the Acrobata pack)
+get that index rewritten ([Archives](#archives)). KC@P packs and PRS
+recompression are still to do.
 
 `SRC/patch_disc.py` writes edited `DAT/` files into a copy of the disc
 image (or `DATA.CVM`, or `DATA.ISO`). The sections below go from the
@@ -176,6 +177,43 @@ re-encrypted directory record is exact (patching the originals back gives
 a byte-identical `DATA.CVM`), and both lengthened club names showed in VS
 mode Team Selection. The details are in
 [`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack).
+
+## Archives
+
+An archive entry that changes size can be put on the disc in two ways:
+the whole archive as a target (`pac.py replace`, `mbb.py`), or the entry
+as a `<path>#<entry>` target. `PRELOAD` packs are rebuilt as before
+([above](#size-changes-inside-the-last-sector)). For any other
+self-describing archive (`.PAC`, `.MRG`), `patch` rebuilds the archive
+as the image holds it with `pac.build_binpac` around the new entries,
+and from then on treats it as a whole-archive target:
+
+- **`.HED` copies.** The game loads an archive's `.HED` first and reads
+  entries from the archive by the offsets in it
+  ([`PAC_FORMAT.md`](PAC_FORMAT.md)). A rebuilt archive's header keeps
+  its size (the entry count doesn't change), so `--copies` writes the new
+  header into the `.HED` and into any `PRELOAD/GAMEFILE*` copy of it.
+- **Indexes in the executable.** Two archives are read through a copy of
+  their header held in `SLES_541.51`: `MES.PAC` (`0x34df50`,
+  [`MBB_FORMAT.md`](MBB_FORMAT.md#size)) and `AcrobataPackFile.pac`
+  (`0x3a3b08`, [`ACROBATA_DIR.md`](ACROBATA_DIR.md)). When either is a
+  target on a whole disc image, `patch` finds the table by the records of
+  the archive now on the disc (their offsets, and for `MES.PAC` the
+  category and language; sizes may differ) and rewrites the records that
+  change. The Acrobata loader opens exactly the stored byte range, so any
+  change there needs the executable; `MES.PAC` reads whole sectors, so
+  files grown inside their slots work with the old sizes. On `DATA.CVM`
+  or `DATA.ISO` alone a change the game needs is refused.
+- A rebuilt archive that needs more sectors is moved
+  ([below](#moving-files)).
+
+Checked on copies of the disc: `PLAYER/NUMBER_00.PAC#0` grown by 4,000
+bytes rebuilt the archive (203 sectors, moved), and `NUMBER_00.HED`
+equals the new header; `ACROBATAPACKFILE.PAC#3` grown by 64 bytes was
+refused on `DATA.CVM` and on the disc image rewrote one index record,
+after which the executable's table equals the new header; a grown
+`MES.PAC` moved 810 files and rewrote their records. A second run finds
+nothing to do in each case. None of these has been tested in PCSX2 yet.
 
 ## Moving files
 
@@ -395,9 +433,8 @@ patches out of the repo anyway, like everything built from the disc.
 - **Dual-layer images.** The disc can grow to a single-layer DVD's
   2,295,104 sectors (about 1.1 GB more). Past that would need a layer
   break.
-- **Archive repacking** outside `PRELOAD` and `MES.PAC`: `pac.py`
-  rebuilds any self-describing BINPAC byte for byte, but archives with
-  `.HED` copies of their header and KC@P packs aren't rebuilt by `patch`.
+- **KC@P packs** (the face and player packs) aren't rebuilt: their
+  offset table is a separate `.HED`, and their entries are PRS-compressed.
   PRS recompression.
 - **Compressed images.** Players who keep CSO or CHD images have to
   decompress them before patching. `vcdiff.py` could read CSO directly.

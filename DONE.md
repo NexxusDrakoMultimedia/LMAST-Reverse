@@ -726,6 +726,13 @@ files. Each item keeps what was found, where, and how it was tested.
       editor's Text tab no longer refuses such an edit. Directory records
       are now matched by name, since `MESSAGE/DUMMY.DAT` shares
       `MES.PAC`'s extent
+- [x] Archives with `.HED` copies and the Acrobata pack: a `#entry`
+      target that changes size rebuilds its archive and becomes a
+      whole-archive target, so `--copies` writes the new header into the
+      `.HED`; `patch_disc.py` rewrites the executable's index of
+      `AcrobataPackFile.pac` (`0x3a3b08`) as it does `MES.PAC`'s
+      (`EXE_INDEXED`). Checked on disc copies (`NUMBER_00.PAC#0`,
+      `ACROBATAPACKFILE.PAC#3`); not tested in PCSX2
 
 ## 10. Save data
 

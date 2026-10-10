@@ -155,12 +155,17 @@ end of its last sector, and one that needs more is moved (above). Entries of a P
 the image now, so a second run works on a rebuilt pack. Any other copy
 is a fixed-size slot and keeps the old data, with a warning.
 
-MES.PAC: the game finds each message file through the executable's own
-copy of the archive's index (SLES 0x34df50, CFcEuro_MsgResource::Execute
-0x10f4b0). When MES.PAC is a target and its files moved (mbb.py lets a
-file outgrow its slot), `patch` finds that table by the records of the
-archive on the disc and rewrites the ones that change; that needs the
-whole disc image. See DOC/MBB_FORMAT.md#writing.
+Other archives: a <path>#<entry> target of another self-describing
+archive that changes size rebuilds the archive (rebuild_entry_targets)
+and is then a whole-archive target, so --copies carries the new header
+to its .HED and the file moves if it outgrows its sectors.
+
+Indexes in the executable: the game finds MES.PAC's files through a
+copy of its index (SLES 0x34df50, CFcEuro_MsgResource::Execute 0x10f4b0)
+and the Acrobata scenes through one of AcrobataPackFile.pac's (0x3a3b08).
+When either archive is a target, `patch` finds that table by the records
+of the archive on the disc and rewrites the ones that change; that needs
+the whole disc image. See DOC/REBUILD.md#archives.
 """
 import os
 import shutil
@@ -1368,64 +1373,89 @@ def pack_copy_jobs(f, img, pack, entry, of, old, new, why):
     return diff_jobs(s.path, sh.entries[i][0], old, new, why)
 
 
-# --- MES.PAC's index in the executable (DOC/MBB_FORMAT.md#writing) -------------
+# --- archive indexes held by the executable (DOC/REBUILD.md#archives) ----------
 
 MES_FILE = "MESSAGE/MES.PAC"
+ACROBATA_FILE = "ACROBATA/ACROBATAPACKFILE.PAC"
+
+# Archives the game reads through a copy of their header in the executable,
+# not through the header: file -> (where, the byte ranges of a record that
+# identify it, whether the game reads the sizes as they are).
+# MES.PAC: CFcEuro_MsgResource::Execute (SLES 0x10f4b0) walks
+# {offset, size, category, language} at 0x34df50 and reads (size >> 11) + 1
+# sectors, so the old sizes still cover a file grown inside its slot.
+# AcrobataPackFile.pac: LOADER reads {offset, size, ABDA size, ABRS size}
+# at 0x3a3b08 (0x2fb050-0x2fb0b8) and opens exactly that byte range.
+EXE_INDEXED = {
+    MES_FILE: ("SLES 0x34df50", ((0, 4), (8, 16)), False),
+    ACROBATA_FILE: ("SLES 0x3a3b08", ((0, 4),), True),
+}
 
 
-def find_mes_index(exe, records):
-    """Where the executable holds MES.PAC's index: the one place whose
-    records have these offsets, categories and languages. Sizes may differ
-    (an image patched before the index was kept in step), so they aren't
-    compared. None if there isn't exactly one."""
-    n = len(records) // 16
+def pack_index(data):
+    """An archive's header rows as the executable copies them: {u32 offset,
+    u32 size, u32 extra columns...} per entry, in header order (equal to
+    the copies at 0x34df50 and 0x3a3b08 for all entries, empirical, PAL
+    and Japanese)."""
+    import pac
+    h = pac.BinPac(data)
+    return b"".join(struct.pack("<II%dI" % len(x), o, n, *x) for o, n, _, x in h.entries)
+
+
+def find_index(exe, records, stride, keys):
+    """Where the executable holds an index: the one place whose records
+    agree with `records` on the `keys` byte ranges (offsets, and for
+    MES.PAC category and language). Sizes may differ (an image patched
+    before the index was kept in step). None unless there is exactly one."""
+    n = len(records) // stride
     hits = []
     i = exe.find(records[0:4])
     while i >= 0:
         if i + len(records) <= len(exe) and all(
-                exe[i + 16 * k:i + 16 * k + 4] == records[16 * k:16 * k + 4] and
-                exe[i + 16 * k + 8:i + 16 * k + 16] == records[16 * k + 8:16 * k + 16]
-                for k in range(n)):
+                exe[i + stride * k + a:i + stride * k + b] ==
+                records[stride * k + a:stride * k + b]
+                for k in range(n) for a, b in keys):
             hits.append(i)
         i = exe.find(records[0:4], i + 1)
     return hits[0] if len(hits) == 1 else None
 
 
-def plan_mes_index(f, img, new_pac):
-    """Jobs that bring the executable's copy of MES.PAC's index (SLES
-    0x34df50, read by CFcEuro_MsgResource::Execute 0x10f4b0) to a new
-    archive's header. The table is found by its contents, the records of
-    the archive now on the disc, so this works on either build and a
-    second run finds nothing to do. Only offsets have to change: an
-    archive whose files kept their places (a file grown inside its slot)
-    works with the old sizes, so on DATA.CVM or DATA.ISO alone it is
-    left with a note."""
-    import mbb
-    e = img.entry(MES_FILE)
-    old = mbb.mes_index(read_at(f, img, e.path, 0, e.size))
-    new = mbb.mes_index(new_pac)
+def plan_exe_index(f, img, file, new_data):
+    """Jobs that bring the executable's copy of an archive's index
+    (EXE_INDEXED) to the archive's new header. The table is found by the
+    records of the archive now on the disc, so this works on either build
+    and a second run finds nothing to do. On DATA.CVM or DATA.ISO alone,
+    where the executable isn't, a change the game needs is refused."""
+    where, keys, sizes = EXE_INDEXED[norm(file)]
+    e = img.entry(file)
+    import pac
+    stride = 8 + 4 * len(pac.BinPac(new_data).entries[0][3])
+    old = pack_index(read_at(f, img, e.path, 0, e.size))
+    new = pack_index(new_data)
     if old == new:
         return [], []
     if len(old) != len(new):
-        raise SystemExit("%s: %d files, the disc's has %d; the executable's index can't "
-                         "change length" % (MES_FILE, len(new) // 16, len(old) // 16))
-    moved = any(old[i:i + 4] != new[i:i + 4] for i in range(0, len(old), 16))
+        raise SystemExit("%s: %d entries, the disc's has %d; the executable's index (%s) "
+                         "can't change length" % (file, len(new) // stride, len(old) // stride,
+                                                  where))
+    needed = sizes or any(old[i:i + 4] != new[i:i + 4] for i in range(0, len(old), stride))
     if img.kind != "disc image":
-        if moved:
-            raise SystemExit("%s: files moved, so the executable's copy of its index has to "
-                             "change too; patch the whole disc image" % MES_FILE)
+        if needed:
+            raise SystemExit("%s: entries moved or changed size, so the executable's copy of "
+                             "its index (%s) has to change too; patch the whole disc image"
+                             % (file, where))
         return [], ["note: %s: grown files keep their places; the executable's index keeps "
-                    "the old sizes, which the game reads whole sectors of" % MES_FILE]
+                    "the old sizes, which the game reads whole sectors of" % file]
     s = img.entry(SLES_FILE)
     exe = read_at(f, img, s.path, 0, s.size)
-    at = find_mes_index(exe, old)
+    at = find_index(exe, old, stride, keys)
     if at is None:
-        raise SystemExit("can't find the executable's copy of %s's index (its offsets "
-                         "should equal the disc's archive header)" % MES_FILE)
+        raise SystemExit("can't find the executable's copy of %s's index (%s; its offsets "
+                         "should equal the disc's archive header)" % (file, where))
     held = exe[at:at + len(new)]
     if held == new:
         return [], []
-    return diff_jobs(s.path, at, held, new, "MES.PAC's index in the executable", gap=1), []
+    return diff_jobs(s.path, at, held, new, "%s's index in the executable" % file, gap=1), []
 
 
 # --- training camps (DOC/CAMP_FORMAT.md) -------------------------------------------
@@ -1542,6 +1572,42 @@ def parse_mods(values):
             else:
                 raise SystemExit("--mod %s: no such switch (%s)" % (
                     name, ", ".join(SWITCH_NAMES + sorted(SWITCH_GROUPS))))
+    return out
+
+
+def rebuild_entry_targets(img, index, image, pairs):
+    """Entry targets of self-describing archives outside PRELOAD that change
+    size become one whole-archive target per archive: the archive as the
+    image holds it, rebuilt with pac.build_binpac around the new entries.
+    Its header then reaches its .HED copies (--copies), the file moves if
+    it needs more sectors, and an archive the executable indexes
+    (EXE_INDEXED) gets that index rewritten."""
+    import pac
+    groups, out = {}, []
+    for target, src, data in pairs:
+        if "#" in target:
+            u = index.resolve(target) if index is not None else None
+            if u is not None and u.kind == "entry" and not repackable(u.file) and                     len(data) != u.size:
+                groups.setdefault(norm(u.file), (u.file, []))[1].append((u, src, data))
+                continue
+        out.append((target, src, data))
+    whole = {norm(resolve_target(img, index, t)[0]) for t, _, _ in out if "#" not in t}
+    with open(image, "rb") as f:
+        for key, (file, edits) in groups.items():
+            if key in whole:
+                raise SystemExit("%s: written whole and as single entries in the same run; "
+                                 "patch one or the other" % file)
+            cur = read_at(f, img, file, 0, img.entry(file).size)
+            try:
+                h, blobs = pac.binpac_blobs(cur)
+            except (ValueError, struct.error):
+                raise SystemExit("%s isn't a self-describing archive, so %s can't change "
+                                 "size" % (file, edits[0][0].label))
+            for u, src, data in edits:
+                blobs[u.index] = data
+            new = pac.build_binpac(cur[:h.header_size], blobs)
+            out.append((file, "%s rebuilt around %s" % (file, ", ".join(
+                "%s (%s)" % (u.label, src) for u, src, _ in edits)), new))
     return out
 
 
@@ -1696,6 +1762,7 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
     index = Index(dat) if dat else None
     if write_copies and index is None:
         raise SystemExit("--copies needs the DAT index (--dat)")
+    pairs = rebuild_entry_targets(img, index, image, pairs)
 
     # Plan everything against the unmodified image before copying it.
     jobs, notes, packs = [], [], PackEdits()
@@ -1717,10 +1784,8 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
                 jobs.append(Job(file, 0, to_sector_end(data), label, src))
                 toc.add(img, file, len(data))
             elif "#" in target:
-                raise SystemExit(
-                    "%s is %d bytes but %s is %d bytes. Only entries of PRELOAD packs can "
-                    "change size; other archives keep their layout." % (
-                        src, len(data), label, size))
+                raise SystemExit("%s is %d bytes but %s is %d bytes" % (
+                    src, len(data), label, size))
             elif not file.startswith(DISC):
                 moves.add(file, data, label, src)   # needs more sectors
             else:
@@ -1785,10 +1850,11 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
             notes += snotes
         # After the switches, which may patch other bytes of the executable.
         for target, _, data in pairs:
-            if "#" not in target and norm(resolve_target(img, index, target)[0]) == norm(MES_FILE):
-                mjobs2, mnotes2 = plan_mes_index(f, img, data)
-                jobs += mjobs2
-                notes += mnotes2
+            file = norm(resolve_target(img, index, target)[0])
+            if "#" not in target and file in EXE_INDEXED:
+                ijobs, inotes = plan_exe_index(f, img, file, data)
+                jobs += ijobs
+                notes += inotes
         crc_before = None
         if img.kind == "disc image":
             e = img.entry(SLES_FILE)

@@ -121,12 +121,12 @@ only the header size and each entry's offset and size change.
 entries and gets the same bytes back (in `regress.py` as
 `pac_roundtrip`). `pac.py replace` puts new entries into an archive.
 
-A rebuilt archive is only safe where nothing else holds its offsets. A
-`.HED` copy of the header would go stale, `MES.PAC` entries are also
-found through the executable, and some archives are read entry by entry
-by offset. `patch_disc.py` therefore rebuilds only `PRELOAD` packs,
-whose entries are found through the pack's own header
-([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)).
+A rebuilt archive is only safe where everything that holds its offsets
+follows. `patch_disc.py` rebuilds an archive whose entry changes size and
+then writes the new header into its `.HED` copies (`--copies`), and for
+the two archives the executable indexes (`MES.PAC`,
+`AcrobataPackFile.pac`) rewrites that index on a whole disc image
+([`REBUILD.md`](REBUILD.md#archives)).
 
 ### Variants seen
 

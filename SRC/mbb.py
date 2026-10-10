@@ -460,20 +460,6 @@ def cmd_roundtrip(path):
 SECTOR = 0x800                  # MES.PAC entries start on sector boundaries
 
 
-def mes_index(pac_bytes):
-    """The executable's copy of MES.PAC's index for an archive: one
-    {u32 offset, u32 size, u32 category, u32 language} record per entry, in
-    header order. CFcEuro_MsgResource::Execute (SLES 0x10f4b0) walks it at
-    0x34df50; every record equals the disc's header (empirical, PAL and
-    Japanese), which is how patch_disc.py finds it in either build."""
-    pac = BinPac(pac_bytes)
-    out = []
-    for off, size, name, _ in pac.entries:
-        m = Mbb(pac_bytes[off:off + size], name)
-        out.append(struct.pack("<4I", off, size, m.category, m.lang))
-    return b"".join(out)
-
-
 class MesPack:
     """MES.PAC opened for editing: every file with its slot, edits applied
     to its records in memory, and the edited archive built from them.
@@ -490,7 +476,7 @@ class MesPack:
     and every later entry moves by that much: the archive grows, and the
     header's offsets and sizes change. The executable's copy of the index
     must then change too; patch_disc.py writes it when it puts the archive
-    on a whole disc image (mes_index). patch_disc.py --copies rebuilds the
+    on a whole disc image (EXE_INDEXED). patch_disc.py --copies rebuilds the
     PRELOAD packs holding a grown file."""
 
     def __init__(self, pac_path):
