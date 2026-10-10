@@ -7,8 +7,10 @@ This is stage 4 of [`GOALS.md`](../GOALS.md). Same-size patching works,
 and so does a size change that stays inside a file's last sector, which
 is enough to rebuild the `PRELOAD` packs around a grown message file. A
 file that needs more sectors is moved to the end of `DATA.ISO`
-([Moving files](#moving-files)). Repacking archives other than `PRELOAD`
-packs is still to do.
+([Moving files](#moving-files)). `MES.PAC` can be repacked with its
+files moved: `patch_disc.py` keeps the executable's index of them in step
+([`MBB_FORMAT.md`](MBB_FORMAT.md#size)). Repacking other archives is
+still to do.
 
 `SRC/patch_disc.py` writes edited `DAT/` files into a copy of the disc
 image (or `DATA.CVM`, or `DATA.ISO`). The sections below go from the
@@ -393,9 +395,9 @@ patches out of the repo anyway, like everything built from the disc.
 - **Dual-layer images.** The disc can grow to a single-layer DVD's
   2,295,104 sectors (about 1.1 GB more). Past that would need a layer
   break.
-- **Archive repacking** outside `PRELOAD`: `pac.py` rebuilds any
-  self-describing BINPAC byte for byte, but archives with `.HED` copies of
-  their header, `MES.PAC` and KC@P packs aren't rebuilt by `patch`. PRS
-  recompression.
+- **Archive repacking** outside `PRELOAD` and `MES.PAC`: `pac.py`
+  rebuilds any self-describing BINPAC byte for byte, but archives with
+  `.HED` copies of their header and KC@P packs aren't rebuilt by `patch`.
+  PRS recompression.
 - **Compressed images.** Players who keep CSO or CHD images have to
   decompress them before patching. `vcdiff.py` could read CSO directly.

@@ -49,10 +49,10 @@ archive header changes. The game finds each file through the executable's
 copy of the index (0x34df50, read by CFcEuro_MsgResource::Execute
 0x10f4b0) and reads (size >> 11) + 1 sectors of the original size, which
 covers the whole slot of every file on the disc. A file too big for its
-slot is refused. The output always has MES.PAC's size and every entry
-keeps its offset, so patch_disc.py can write it to a disc; --copies
-updates the PRELOAD copies, rebuilding a pack around a grown file
-(DOC/PRELOAD_DIR.md#rebuilding-a-pack).
+slot gets more sectors and the later files move: MES.PAC grows, and
+patch_disc.py, given it on a whole disc image, also rewrites the
+executable's index. --copies updates the PRELOAD copies, rebuilding a
+pack around a grown file (DOC/PRELOAD_DIR.md#rebuilding-a-pack).
 
 Languages (FC_EURO_LOCALIZE): 0 Japanese, 1 English, 2 French, 3 German,
 4 Italian, 5 Spanish, 6 unused slot (mostly English).
@@ -457,6 +457,23 @@ def cmd_roundtrip(path):
     return 0 if same else 1
 
 
+SECTOR = 0x800                  # MES.PAC entries start on sector boundaries
+
+
+def mes_index(pac_bytes):
+    """The executable's copy of MES.PAC's index for an archive: one
+    {u32 offset, u32 size, u32 category, u32 language} record per entry, in
+    header order. CFcEuro_MsgResource::Execute (SLES 0x10f4b0) walks it at
+    0x34df50; every record equals the disc's header (empirical, PAL and
+    Japanese), which is how patch_disc.py finds it in either build."""
+    pac = BinPac(pac_bytes)
+    out = []
+    for off, size, name, _ in pac.entries:
+        m = Mbb(pac_bytes[off:off + size], name)
+        out.append(struct.pack("<4I", off, size, m.category, m.lang))
+    return b"".join(out)
+
+
 class MesPack:
     """MES.PAC opened for editing: every file with its slot, edits applied
     to its records in memory, and the edited archive built from them.
@@ -467,18 +484,23 @@ class MesPack:
     0x800 boundaries and the gap after each is '0' filler, and the game
     reads (size >> 11) + 1 sectors of the original size from its own copy
     of the index (0x34df50), which covers the slot, so only the entry's
-    size field in the header changes. The archive keeps its size and
-    every other entry stays put. patch_disc.py --copies rebuilds the
-    PRELOAD packs holding a grown file. A file that doesn't fit its slot
-    can't be built."""
+    size field in the header changes and the archive keeps its size.
+
+    A file that outgrows its slot gets as many more sectors as it needs,
+    and every later entry moves by that much: the archive grows, and the
+    header's offsets and sizes change. The executable's copy of the index
+    must then change too; patch_disc.py writes it when it puts the archive
+    on a whole disc image (mes_index). patch_disc.py --copies rebuilds the
+    PRELOAD packs holding a grown file."""
 
     def __init__(self, pac_path):
         with open(pac_path, "rb") as f:
             self.buf = f.read()
         self.pac = BinPac(self.buf)
-        # An entry's slot runs to the next entry's data, or to the end of
-        # the archive (which can't grow).
-        starts = sorted(off for off, _, _, _ in self.pac.entries) + [len(self.buf)]
+        # An entry's slot runs to the next entry's data, or for the last one
+        # to the end of the archive's last sector, which the game reads too.
+        starts = sorted(off for off, _, _, _ in self.pac.entries) + [
+            -(-len(self.buf) // SECTOR) * SECTOR]
         self.files = {}                 # (category, lang) -> (index, off, size, slot, Mbb)
         for i, (off, size, name, _) in enumerate(self.pac.entries):
             m = Mbb(self.buf[off:off + size], name)
@@ -518,15 +540,24 @@ class MesPack:
         return True
 
     def room(self, cat, lang):
-        """(bytes the file needs now, its original size, its slot)."""
+        """(bytes the file needs now, its original size, its slot). A file
+        fits its slot while (need >> 11) + 1 sectors do (fits)."""
         _, _, size, slot, m = self.files[(cat, lang)]
         return len(m.build()), size, slot
 
+    @staticmethod
+    def fits(need, slot):
+        """Whether a file of `need` bytes stays in a slot: the game reads
+        (size >> 11) + 1 sectors of it."""
+        return ((need >> 11) + 1) * SECTOR <= slot
+
     def build(self):
         """(archive bytes, report lines, files grown, errors). Nothing may
-        be written while there are errors."""
-        out = bytearray(self.buf)
+        be written while there are errors. A file past its slot moves the
+        later entries (`moved` then counts the sectors added)."""
+        new = {}                        # entry index -> (bytes, padded to)
         report, grown, errors = [], 0, []
+        self.moved = 0
         for key in sorted(self.changed):
             i, off, size, slot, m = self.files[key]
             try:
@@ -536,18 +567,56 @@ class MesPack:
                 continue
             used = HEADER_SIZE + sum(4 + len(s) for _, s in m.records)
             if len(data) <= size:
-                out[off:off + size] = m.build(size)
+                new[i] = (m.build(size), slot)
                 report.append("%-16s %4d changed, %6d of %6d bytes used" % (
                     m.name, len(self.changed[key]), used, size))
-            elif len(data) <= slot:
-                out[off:off + slot] = data + b"0" * (slot - len(data))
-                struct.pack_into("<I", out, 0x20 + i * self.pac.stride + 4, len(data))
-                grown += 1
+                continue
+            grown += 1
+            # The game reads (size >> 11) + 1 sectors (0x10f590), so that
+            # many must fit, also once the index holds the new size.
+            reads = ((len(data) >> 11) + 1) * SECTOR
+            if self.fits(len(data), slot):
+                new[i] = (data, slot)
                 report.append("%-16s %4d changed, grew %d -> %d bytes (slot %d)" % (
                     m.name, len(self.changed[key]), size, len(data), slot))
             else:
-                errors.append("%s: %d bytes, %d more than its slot in the archive holds (%d)" % (
-                    m.name, len(data), len(data) - slot, slot))
+                wider = reads
+                new[i] = (data, wider)
+                self.moved += (wider - slot) // SECTOR
+                report.append("%-16s %4d changed, grew %d -> %d bytes past its slot (%d): "
+                              "%d more sector%s, later files move" % (
+                                  m.name, len(self.changed[key]), size, len(data), slot,
+                                  (wider - slot) // SECTOR, "" if wider - slot == SECTOR else "s"))
+        if errors or not self.moved:
+            out = bytearray(self.buf)
+            for i, (data, slot) in new.items():
+                off = self.pac.entries[i][0]
+                # Filler up to the slot's end, but not past the archive's
+                # end unless the file needs it (the last entry's slot runs
+                # to the end of its sector).
+                end = max(off + len(data), min(off + slot, len(out)))
+                out[off:end] = (data + b"0" * slot)[:end - off]
+                struct.pack_into("<I", out, 0x20 + i * self.pac.stride + 4, len(data))
+            return bytes(out), report, grown, errors
+        # Lay the entries out again in their order on the disc, each in its
+        # slot (wider for a file past it), so the later ones move by whole
+        # sectors; the header before the first entry is kept.
+        order = sorted(range(len(self.pac.entries)), key=lambda i: self.pac.entries[i][0])
+        first = self.pac.entries[order[0]][0]
+        out = bytearray(self.buf[:first])
+        starts = [self.pac.entries[i][0] for i in order] + [len(self.buf)]
+        # (the last entry keeps its bytes to the archive's end; a widened
+        # one is padded to its new slot)
+        for k, i in enumerate(order):
+            off, size = self.pac.entries[i][:2]
+            slot = starts[k + 1] - off
+            if i in new:
+                data, room = new[i]
+                size_now = len(data)
+            else:
+                data, room, size_now = self.buf[off:off + slot], slot, size   # filler and all
+            struct.pack_into("<II", out, 0x20 + i * self.pac.stride, len(out), size_now)
+            out += data + b"0" * (room - len(data))
         return bytes(out), report, grown, errors
 
 
@@ -577,6 +646,10 @@ def apply_edits(pac_path, out_path, edits):
         print("%d file%s grew: patch_disc.py --copies rebuilds the PRELOAD packs holding "
               "copies of those (python SRC/preload.py who DAT <name>)"
               % (grown, "" if grown == 1 else "s"))
+    if pack.moved:
+        print("MES.PAC grew by %d sector%s and later files moved: patch it onto a whole disc "
+              "image, so patch_disc.py also writes the executable's copy of the index"
+              % (pack.moved, "" if pack.moved == 1 else "s"))
 
 
 # What each range of categories holds (DOC/MBB_FORMAT.md#categories,

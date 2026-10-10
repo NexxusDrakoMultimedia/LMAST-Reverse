@@ -154,6 +154,13 @@ end of its last sector, and one that needs more is moved (above). Entries of a P
 <path>#<entry> targets, are located through the header the pack has in
 the image now, so a second run works on a rebuilt pack. Any other copy
 is a fixed-size slot and keeps the old data, with a warning.
+
+MES.PAC: the game finds each message file through the executable's own
+copy of the archive's index (SLES 0x34df50, CFcEuro_MsgResource::Execute
+0x10f4b0). When MES.PAC is a target and its files moved (mbb.py lets a
+file outgrow its slot), `patch` finds that table by the records of the
+archive on the disc and rewrites the ones that change; that needs the
+whole disc image. See DOC/MBB_FORMAT.md#writing.
 """
 import os
 import shutil
@@ -604,7 +611,10 @@ class TocEdits:
             pos = 0
             while pos < SECTOR and buf[pos]:
                 rec_len, ext, size, flags, name, _ = _parse_record(buf, pos)
-                if ext == e.extent and not flags & DIR_FLAG:
+                # By name too: an empty file can share the extent
+                # (MESSAGE/DUMMY.DAT and MES.PAC).
+                mine = name.split(b";")[0].decode("ascii", "replace").upper() ==                     e.path.rpartition("/")[2].upper()
+                if ext == e.extent and not flags & DIR_FLAG and mine:
                     if size != e.size or buf[pos + 1]:
                         raise ValueError("%s: directory record doesn't match (%d bytes, "
                                          "%d extended-attribute sectors)"
@@ -1358,6 +1368,66 @@ def pack_copy_jobs(f, img, pack, entry, of, old, new, why):
     return diff_jobs(s.path, sh.entries[i][0], old, new, why)
 
 
+# --- MES.PAC's index in the executable (DOC/MBB_FORMAT.md#writing) -------------
+
+MES_FILE = "MESSAGE/MES.PAC"
+
+
+def find_mes_index(exe, records):
+    """Where the executable holds MES.PAC's index: the one place whose
+    records have these offsets, categories and languages. Sizes may differ
+    (an image patched before the index was kept in step), so they aren't
+    compared. None if there isn't exactly one."""
+    n = len(records) // 16
+    hits = []
+    i = exe.find(records[0:4])
+    while i >= 0:
+        if i + len(records) <= len(exe) and all(
+                exe[i + 16 * k:i + 16 * k + 4] == records[16 * k:16 * k + 4] and
+                exe[i + 16 * k + 8:i + 16 * k + 16] == records[16 * k + 8:16 * k + 16]
+                for k in range(n)):
+            hits.append(i)
+        i = exe.find(records[0:4], i + 1)
+    return hits[0] if len(hits) == 1 else None
+
+
+def plan_mes_index(f, img, new_pac):
+    """Jobs that bring the executable's copy of MES.PAC's index (SLES
+    0x34df50, read by CFcEuro_MsgResource::Execute 0x10f4b0) to a new
+    archive's header. The table is found by its contents, the records of
+    the archive now on the disc, so this works on either build and a
+    second run finds nothing to do. Only offsets have to change: an
+    archive whose files kept their places (a file grown inside its slot)
+    works with the old sizes, so on DATA.CVM or DATA.ISO alone it is
+    left with a note."""
+    import mbb
+    e = img.entry(MES_FILE)
+    old = mbb.mes_index(read_at(f, img, e.path, 0, e.size))
+    new = mbb.mes_index(new_pac)
+    if old == new:
+        return [], []
+    if len(old) != len(new):
+        raise SystemExit("%s: %d files, the disc's has %d; the executable's index can't "
+                         "change length" % (MES_FILE, len(new) // 16, len(old) // 16))
+    moved = any(old[i:i + 4] != new[i:i + 4] for i in range(0, len(old), 16))
+    if img.kind != "disc image":
+        if moved:
+            raise SystemExit("%s: files moved, so the executable's copy of its index has to "
+                             "change too; patch the whole disc image" % MES_FILE)
+        return [], ["note: %s: grown files keep their places; the executable's index keeps "
+                    "the old sizes, which the game reads whole sectors of" % MES_FILE]
+    s = img.entry(SLES_FILE)
+    exe = read_at(f, img, s.path, 0, s.size)
+    at = find_mes_index(exe, old)
+    if at is None:
+        raise SystemExit("can't find the executable's copy of %s's index (its offsets "
+                         "should equal the disc's archive header)" % MES_FILE)
+    held = exe[at:at + len(new)]
+    if held == new:
+        return [], []
+    return diff_jobs(s.path, at, held, new, "MES.PAC's index in the executable", gap=1), []
+
+
 # --- training camps (DOC/CAMP_FORMAT.md) -------------------------------------------
 
 CAMP_LIST_FILE = "PARAM/CAMP_LIST.TBB"
@@ -1713,6 +1783,12 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
             sjobs, snotes = plan(f, img, mine) if name in TARGET_HOOKS else plan(f, img)
             jobs += sjobs
             notes += snotes
+        # After the switches, which may patch other bytes of the executable.
+        for target, _, data in pairs:
+            if "#" not in target and norm(resolve_target(img, index, target)[0]) == norm(MES_FILE):
+                mjobs2, mnotes2 = plan_mes_index(f, img, data)
+                jobs += mjobs2
+                notes += mnotes2
         crc_before = None
         if img.kind == "disc image":
             e = img.entry(SLES_FILE)

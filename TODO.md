@@ -17,9 +17,9 @@ item in its section below.
 2. **What each PwkScript computes** (section 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
-3. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
-   KC@P packs and PRS recompression. Larger mods need these to get their
-   edits onto a disc: a message file can only grow into its own slot.
+3. **Archive repacking** (section 9). `MES.PAC` is done (a message file
+   can grow past its slot); next the archives with `.HED` copies, KC@P
+   packs and PRS recompression, which larger mods need for their edits.
 4. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
@@ -312,8 +312,12 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
       resource: whether its entries stand in for their originals
 - [ ] Test in PCSX2: a `PRELOAD` pack that a rebuild moves (the code path
       is the same as a moved file, but untested in game)
-- [ ] Repacking where something else holds the offsets (`.HED` copies,
-      `MES.PAC`), KC@P repacking, and PRS recompression
+- [ ] Repacking where something else holds the offsets (`.HED` copies),
+      KC@P repacking, and PRS recompression
+- [ ] Test in PCSX2: a `MES.PAC` whose files moved (`LMAST-mestest.iso`:
+      `3_6.mbb` grown past its slot, the welcome mail's body starting
+      "MOVED FILE TEST." in `MES.PAC` only; the new-game popup should show
+      it, the Mail screen the original from `MAIL1.PAC`)
 - [ ] Optional: let `vcdiff.py`/`patch_disc.py` read CSO (and CHD) images,
       which many players keep instead of ISOs
 - [ ] Sponsor negotiation leftovers: whether Japan limited the number of

@@ -717,6 +717,16 @@ files. Each item keeps what was found, where, and how it was tested.
       refused sponsors leave the list, and the signed contract pays the
       negotiated fee (user report). `DOC/SPONSOR_NEGOTIATION.md`
 
+- [x] `MES.PAC` repacking: a message file may outgrow its slot
+      (`mbb.MesPack.build` moves the later files by whole sectors), and
+      `patch_disc.py` keeps the executable's copy of the index
+      (`0x34df50`, found by content, so the Japanese build too) in step
+      on a whole disc image. Checked on a copy of the retail disc (810
+      files moved; index equals the header; second run no change); the
+      editor's Text tab no longer refuses such an edit. Directory records
+      are now matched by name, since `MESSAGE/DUMMY.DAT` shares
+      `MES.PAC`'s extent
+
 ## 10. Save data
 
 - [x] Encryption (Blowfish, key `sakatsukue`), header, layout CRC; no

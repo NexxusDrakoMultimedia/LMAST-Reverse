@@ -85,8 +85,10 @@ Tabs:
              which the game draws from) and PLPACK_HOME/AWAY.PAC, as
              `uniform.py setexe` and `setlicence` do.
     Text     message text in MES.PAC, one message in all 7 language slots,
-             found by category, text or id (mbb.py; DOC/MBB_FORMAT.md). An
-             edit that would make its file too big for its slot is refused.
+             found by category, text or id (mbb.py; DOC/MBB_FORMAT.md). A
+             file that outgrows its slot makes MES.PAC grow and moves the
+             later files; Build disc then also updates the executable's
+             index of them.
 
 Usage:
     python SRC/editor.py open [<mod folder>] [--dat DAT] [--iso ISO]   # default: mod
@@ -2559,8 +2561,8 @@ TEXT_LIMIT = 1000
 
 class TextTab(Tab):
     """Message text in MES.PAC, all 7 language slots, through mbb.MesPack
-    (the code `mbb.py set` and `import` use). An edit that would make its
-    file too big for its slot is refused as it is made."""
+    (the code `mbb.py set` and `import` use). A file may outgrow its slot:
+    MES.PAC grows and the later files move (MesPack.build)."""
     title = "Text"
 
     def __init__(self, app):
@@ -2750,10 +2752,14 @@ class TextTab(Tab):
         if need <= size:
             label.configure(text="%s: %s of %s bytes used" % (name, format(need, ","),
                                                                format(size, ",")))
-        else:
+        elif mbb.MesPack.fits(need, slot):
             label.configure(text="%s: %s bytes, grown from %s into its slot of %s (the editor "
                                  "updates the PRELOAD copies when it builds a disc)" % (
                                      name, format(need, ","), format(size, ","), format(slot, ",")))
+        else:
+            label.configure(text="%s: %s bytes, past its slot of %s: MES.PAC grows and the "
+                                 "later files move (Build disc also updates the game's index "
+                                 "of them)" % (name, format(need, ","), format(slot, ",")))
 
     def commit(self, key, lang, text, widget, room):
         cat, rid, copy = key
@@ -2767,13 +2773,6 @@ class TextTab(Tab):
             self.pack.set(cat, lang, rid, copy, text)
         except ValueError as e:
             return self.refuse(str(e), revert)
-        need, size, slot = self.pack.room(cat, lang)
-        if need > slot:
-            self.pack.set(cat, lang, rid, copy, old)
-            return self.refuse("%s: the file would need %s bytes, %s more than its slot in "
-                               "MES.PAC holds (%s). Shorten this or another message of the "
-                               "file." % (what, format(need, ","), format(need - slot, ","),
-                                          format(slot, ",")), revert)
         self.changes.pop((cat, lang, rid, copy), None)
         self.changes[cat, lang, rid, copy] = text
         if lang in self.texts:

@@ -304,9 +304,8 @@ fill variables (`MakeVarList`).
 
 The editor's Text tab (`SRC/editor.py`) edits messages through
 `mbb.MesPack`, the same code `set` and `import` use: it finds a message by
-category, text or id, shows it in all 7 language slots, and refuses an
-edit as it is made if the file would no longer fit its slot (see Size
-below). `set` takes several messages in one command, each as `<category>
+category, text or id, and shows it in all 7 language slots. A file
+may outgrow its slot (see Size below). `set` takes several messages in one command, each as `<category>
 <id> <lang> "<text>"`, with `<id>:<copy>` for a repeated id.
 
 `mbb.py` writes text back. `set` changes one message and `import` applies
@@ -366,9 +365,10 @@ the unused rest of its slot in `MES.PAC`:
 
 - Entries start on `0x800` boundaries in header order. The gap after each
   entry up to the next one is filler, all ASCII `'0'` (`0x30`), in 3,737
-  of 3,737 gaps (empirical). The last entry ends at the end of the archive
-  and can't grow. The median slot has 1,544 spare bytes, and only 15 have
-  fewer than 64.
+  of 3,737 gaps (empirical). The last entry ends 1,648 bytes into the
+  archive's last sector, and its slot runs to that sector's end, which
+  the game reads too. The median slot has 1,544 spare bytes, and only 15
+  have fewer than 64.
 - The game doesn't read `MES.PAC`'s header. It finds a message file in
   the executable's own copy of the index (**confirmed**):
   `CFcEuro_MsgResource::Execute` (`0x10f4b0`) walks 3,738 (`0xe9a`)
@@ -387,9 +387,27 @@ So `mbb.py` writes the grown file at the same offset, fills the rest of
 the slot with `'0'` again, and changes only that entry's size field in the
 header, which keeps the archive self-consistent for the tools. The
 archive keeps its size and every other entry stays where it was. A file
-too big for its slot is refused, and the message says how many bytes
-over it is. Moving an entry would need the executable's table patched
-too, which no tool does.
+counts as fitting while `(size >> 11) + 1` sectors fit in its slot, so
+the read stays inside it once the index holds the new size too.
+
+**Growing past the slot.** A file that doesn't fit gets as many more
+sectors as `(size >> 11) + 1` needs, and every later entry moves by that
+much. `MES.PAC` grows, and the header gets the new offsets and sizes; the
+other files' bytes, filler included, are unchanged. The executable's
+index must then match: `patch_disc.py`, given `MESSAGE/MES.PAC` on a
+whole disc image, finds the table by the records of the archive on the
+disc (offsets, categories and languages; PAL `0x34df50`, the Japanese
+build `0x34b048`) and rewrites the records that change, so a second run
+finds nothing to do. `MES.PAC` itself, now bigger, is moved to the end of
+`DATA.ISO` ([`REBUILD.md`](REBUILD.md#moving-files)). On `DATA.CVM` or
+`DATA.ISO` alone, where the executable isn't, an archive whose files
+moved is refused; one whose files only grew in their slots is patched as
+before, since the old sizes still cover the slots.
+
+Checked on a copy of the retail disc: `3_1.mbb` grown by 5,000 bytes
+(2 sectors) moved 810 later files; the patched image's executable index
+equals the new header, the edited text reads back, and a second run
+changes nothing.
 
 A grown file's `PRELOAD` copies follow too. Every copy is what the game
 reads while its pack is loaded ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)), so a
