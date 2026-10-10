@@ -41,7 +41,10 @@ bugs, [below](#two-bugs), which `patch_disc.py --mod camp-types` and
 **Table 1**: 737 `{u16 city, u16 club}` pairs, 4 to 8 per camp city: the
 clubs of the camp's area (**empirical**: London lists Highbury, Chelsea,
 Tottenham, Fulham, Charlton, Crystal Palace and West Ham, and one club
-from abroad). Its reader hasn't been found.
+from abroad). **Confirmed**: `SIMPRG.REL 0x4c8f8` collects up to 20
+clubs for the camp city chosen on screen (`+0x1e1c`), walking the pairs
+in order. Its loop runs 735 times (`0x2de` + 1, both releases), so the
+last two pairs, Canberra's Fukuoka and Kanagawa, are never offered.
 
 ### When a camp is open
 
@@ -175,8 +178,8 @@ rebuilds byte for byte.
 
 ## Still unknown
 
-- Who reads table 1 and `CAMP_EXPLANE`, and which city each sponsor
-  frees (`0x16a940`).
+- Who reads `CAMP_EXPLANE`, and which city each sponsor frees
+  (`0x16a940`).
 - The names of the 87 camp types (the themes at `SLES 0x552cd0` are
   numbers 1–6).
 - Whether the Santiago description shows.

@@ -66,7 +66,7 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       types, 28 youth menus and the facility rows, whether anything reads
       the facility tables' columns 64-70, and a PCSX2 test of an edit
       (a practice made much stronger)
-- [ ] Camp leftovers (`DOC/CAMP_FORMAT.md`): the readers of table 1 and
+- [ ] Camp leftovers (`DOC/CAMP_FORMAT.md`): the reader of
       `CAMP_EXPLANE`, which camp each sponsor frees (`SIMPRG.REL
       0x16a940`), the camp types' names,
       and whether Santiago's description (keyed to city 764, the camp is

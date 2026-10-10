@@ -80,7 +80,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 960 bytes. Club events (`plClubEvent_*`) |
 | `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division. **confirmed**, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes"). Tables 0, 1 and 4 not traced |
 | `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 166 × s16, each schedule UID's competition. Loaded but never read, see below |
-| `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170` | 424 bytes (212 × u16?) |
+| `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170`, `0x4cab0` | 106 {region, club} pairs: the clubs a tour can play, by region. **confirmed**, see below |
 | `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#mapteam_listtbb). Reader not found |
 | `TACTICS_FORMATION_SET.TBB` | TBB, 1 table | entry 11 of the `GetPreLoadData` list (`SLES 0x55b560`), and `SLES 0x55b2d8` | 8 formations × 8 bytes |
 | `SPONSOR_BOARD.TBB` | TBB, 1 table | **not referenced by name** | 132 bytes, `01 02 03 ...` |
@@ -150,6 +150,25 @@ relocation names it. The same module's getters for the camps' `+0x06`
 and `+0x0a` (`0x4bea0`, `0x4bfd0`) are dead code too
 ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)).
 
+## `TOUR_LIST.TBB`: tour opponents by region
+
+One table of 106 `{u16 region, u16 club}` pairs. **Confirmed**: the camp
+and tour screens' module loads it (load list `0x1cdd30`, entry 27, handle
+at `+0x904`), and `SIMPRG.REL 0x4cab0(out, region)` clears 40 u16 slots
+and copies in the club of every pair whose region matches, in table
+order. Its caller (`0xa44d8`) takes the region from the screen's list
+(the module's `+0x2028` plus the chosen line, less one).
+
+**Empirical**: regions 0–12 hold 10, 8, 8, … 8 clubs: 0 Western Europe
+(Tottenham, Marseille, Dortmund, Lazio, Valencia, Feyenoord, Glasgow
+City, Porto, Basel, Brugge), 1 and 2 Central and Eastern Europe, 3
+Scandinavia and the Baltic, 4 and 5 South America, 6 North Africa
+(with Newcastle, Monaco, Kaiserslautern and Roma), 7 and 8 West and
+southern Africa, 9 North America, 10 East Asia, 11 the Middle East and
+12 Oceania. Five groups end with clubs from the six leagues. `python
+SRC/plrcommon.py show DAT/PARAM 3.0` lists the 13 regions the game
+knows; whether these numbers are the same regions isn't confirmed.
+
 ## `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`
 
 Both are 531,050 bytes = 27,950 records of `char[19]`. Every record in
@@ -161,8 +180,7 @@ unused placeholders for kit names.
 ## Still unknown
 
 - The fields of the tables without a doc of their own: `CLUBEVENT`,
-  `TOUR_LIST`, `TACTICS_FORMATION_SET` and `CLUB_RANK_SYSTEM` tables 0, 1
-  and 4.
+  `TACTICS_FORMATION_SET` and `CLUB_RANK_SYSTEM` tables 0, 1 and 4.
 - What's still open in the files that have a doc is listed there, for
   example the schedule packs
   ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown)) and what each
