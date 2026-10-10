@@ -82,6 +82,12 @@ def checks():
         ("regulation_show", ["regulation.py", "show", "DAT/PARAM/REGULATION.TBB"],
          ["DAT/PARAM/REGULATION.TBB"]),
         ("clubresult", ["clubresult.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("training", ["training.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        ("training_roundtrip", ["training.py", "roundtrip", "DAT/PARAM/TRAINING_LIST.TBB"],
+         ["DAT/PARAM/TRAINING_LIST.TBB"]),
+        # Every table's rows with their practices and abilities named.
+        ("training_show", ["training.py", "show", "DAT/PARAM/TRAINING_LIST.TBB"],
+         ["DAT/PARAM/TRAINING_LIST.TBB"]),
         ("clubresult_roundtrip", ["clubresult.py", "roundtrip", "DAT/PARAM/CLUBRESULT.TBB"],
          ["DAT/PARAM/CLUBRESULT.TBB"]),
         # Every row, with the names a cup's places get.

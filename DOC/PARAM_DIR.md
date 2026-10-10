@@ -74,7 +74,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `CLUBRESULT.TBB` | TBB, 1 table | `SIMPRG.REL 0x167e90` | 165 × **8 bytes**, one per schedule UID: how a final place is reported (league, cup round names, not ranked), the third-place match, the clubs. **confirmed**, see [`CLUBRESULT_FORMAT.md`](CLUBRESULT_FORMAT.md) |
 | `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**: roof, level, capacity (thousands). **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`; readers in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) |
 | `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 national-team flags per turn. **confirmed**, see below |
-| `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | `SLES 0x246540` (table 11), `SIMPRG.REL` lists | training menus. Table 11 (845 bytes) feeds `pwkMatchGrow_ClubRankCoe` (`0x246520`). Other tables not traced |
+| `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | the training module (`SIMPRG.REL 0x159998`, lists `0x23d618`, `0x23d690`), `SLES 0x246540` (table 11) | what each practice trains and its fatigue, facility and camp bonuses, match growth by position, ability groups and coaching, decline with age. **confirmed**, see [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md) |
 | `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648` | training camps. Reader not traced |
 | `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8` | 612 bytes. Camp explanations (the name suggests message ids) |
 | `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 960 bytes. Club events (`plClubEvent_*`) |
@@ -142,7 +142,7 @@ unused placeholders for kit names.
 ## Still unknown
 
 - The fields of the tables without a doc of their own:
-  `TRAINING_LIST`, the camp tables, `CLUBEVENT`, `GROUP2COMPE`,
+  the camp tables, `CLUBEVENT`, `GROUP2COMPE`,
   `TOUR_LIST`, `TACTICS_FORMATION_SET` and `CLUB_RANK_SYSTEM` tables 0, 1
   and 4.
 - What's still open in the files that have a doc is listed there, for

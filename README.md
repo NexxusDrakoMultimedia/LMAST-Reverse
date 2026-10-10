@@ -138,6 +138,7 @@ disassemble as unrelated MIPS instructions.
 | [`initteam.py`](SRC/initteam.py) | starting divisions, last season's order and computer-team squads (`PLRRSRC_INITTEAMDATA.TBB`, `OTEAMMEMBER.TBB`), with club names; club records, nations and stadiums; edits squad slots (`set`) and club records (`setteam`), and swaps two clubs' places in the starting divisions and last season's results (`swap`); all three files round-trip | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) |
 | [`teaminit.py`](SRC/teaminit.py) | the player's new club (`TEAM_INIT_DATA.TBB`) by league and team style: squad, youth team, staff, staff lists and the rival club, named from the player database; edits records (`set`), round-trips | [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) |
 | [`clubresult.py`](SRC/clubresult.py) | how a final place is reported (`CLUBRESULT.TBB`), one row per schedule: league, cup or not ranked, the third-place match, and the clubs a cup's round names depend on ("Champion" to "Defeated 1st Rnd"); edits fields (`set`), round-trips | [`CLUBRESULT_FORMAT.md`](DOC/CLUBRESULT_FORMAT.md) |
+| [`training.py`](SRC/training.py) | the training tables (`TRAINING_LIST.TBB`): what each of the 139 practice menus trains and how tiring it is, the facility and camp bonuses, match growth by position, ability groups, the coaching staff ability per ability, and decline with age; edits values (`set`), round-trips | [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md) |
 | [`regulation.py`](SRC/regulation.py) | match regulations (`REGULATION.TBB`), one row per schedule: clubs, match grade, win bonus, prizes by position, yellow-card ban, matchday squad, foreign-player limit, substitutions, and the places up and down; edits fields (`set`), round-trips | [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md) |
 | [`gamedata.py`](SRC/gamedata.py) | `GAME/GAMEDATA.BIN`: checks the 4,131 records and prints them with the fields the match engine is known to read | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) |
 | [`bpb.py`](SRC/bpb.py) | the play books `GAME/PLAYBOOK.BPB` and `COMBINATION.BPB`: checks every play and prints one's paths (players and ball, in metres) | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) |
@@ -363,6 +364,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `teaminit.py`, `plrcommon.py`, `plrsim.py` | `tbb.py` and `pbdata.py` for names; the last two `pac.py` |
 | `regulation.py` | `tbb.py`, and `schedule.py` for the team-entry check |
 | `clubresult.py` | `tbb.py`, and `regulation.py` and `schedule.py` for the club-count checks |
+| `training.py` | `tbb.py`, and `pbdata.py` for the ability names |
 | `leaguesize.py` | `schedule.py`, `initteam.py`, `regulation.py`, `clubresult.py` |
 | `uniform.py` | `pac.py`, `tbb.py`, `packdata.py` and `svr.py` (licensed kits), `sles_disasm.py` (the executable's copy), `initteam.py` (club names) |
 | `acrobata.py` | `pac.py`, `ninja.py`, `svr.py`, `snr2.py`, `sles_disasm.py` |
@@ -430,6 +432,7 @@ file names and counts from your disc. When an output change is intended,
 | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) | starting leagues and divisions, last season's order, computer-team squads, where club names come from |
 | [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) | the player's new club: what the league and team style choose (squad, youth team, staff, rival club) |
 | [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md) | match regulations per schedule: prizes and win bonus, bans, squad, foreigners and substitution limits, promotion and relegation places |
+| [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md) | the training tables: practices, facilities, camps, match growth and decline with age |
 | [`CLUBRESULT_FORMAT.md`](DOC/CLUBRESULT_FORMAT.md) | how each schedule reports a final place: a number, a cup round's name or nothing |
 | [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | plan for a separate save editor on top of `save.py`: pages, steps, and the decisions still open |
 | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) | `GAME/GAMEDATA.BIN`'s 0x30-byte records (partial) and the unread `AI_PARAM.BIN` |

@@ -353,6 +353,16 @@ files. Each item keeps what was found, where, and how it was tested.
       "Defeated 1st Rnd"). All confirmed from `SIMPRG.REL 0x167e90`-
       `0x167fc8` and its callers; all 165 rows fit, PAL and Japanese.
       `leaguesize.py build` keeps its `clubs` in step
+- [x] `TRAINING_LIST.TBB` fields: `DOC/TRAINING_FORMAT.md` and
+      `SRC/training.py` (`info`, `show`, `set`, `roundtrip`, in
+      `regress.py`). All 13 tables confirmed from the training module
+      (`SIMPRG.REL 0x159998` and its accessors) and `pwkMatchGrow_Grow`:
+      the 139 practice menus' growth per ability and fatigue (named from
+      `DEBUGPRG.REL 0x105b8`), ability groups, decline by growth type and
+      age, stadium, club-house and youth-house equipment bonuses, the
+      staff ability that coaches each ability, camps by camp type, match
+      growth by pitch position and youth practices. The Japanese file
+      differs in 11 recovery menus' fatigue (0 there, -10 in PAL)
 
 ## 3. Ninja 3D models and motions
 

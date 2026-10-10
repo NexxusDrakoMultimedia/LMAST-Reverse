@@ -26,7 +26,7 @@ with the names a cup's places get. `set` edits fields
 | `SIMPRG.REL 0x167f68` | returns `+0x06`. **confirmed** |
 
 The three accessors are the only callers of the loader. The file is also
-entry 10 of all seven `PRELOAD/SIMFILE*.PAC`, as `REGULATION.TBB` is
+entry 12 of all seven `PRELOAD/SIMFILE*.PAC`, as `REGULATION.TBB` is
 entry 9 ([`REBUILD.md`](REBUILD.md)).
 
 ## Row layout
