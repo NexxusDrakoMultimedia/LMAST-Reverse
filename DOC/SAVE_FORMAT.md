@@ -104,9 +104,13 @@ rate[from]`, with s16 rates at SLES `0x5314e8`: 12, 3, 2, 400. The stored
 unit is rate 12 and the pound is rate 2 (**empirical**: a save edited to
 2,000,000,000 shows £333,333,333, exactly ÷ 6). The euro is rate 3
 (**empirical**: in game, euro amounts are 1.5 times the pound amounts), so
-euros are the stored value ÷ 4 and the stored unit is worth €0.25. That
-400 is the yen is still a guess from 2005 exchange rates (€1 ≈ ¥133,
-£1 ≈ ¥200). The stored unit isn't the yen.
+euros are the stored value ÷ 4 and the stored unit is worth €0.25. The
+yen is rate 400 (**empirical**, Japanese release in PCSX2: one save shows
+£5,152,906, €7,729,360 and ¥1,030,581,366 (10億3058万1366円). All three
+are rounded down from a stored 30,917,441 and no other stored value
+gives that yen amount), so yen are the stored value × 100 ÷ 3 and £1 =
+¥200. The stored unit (rate 12) isn't one of the three currencies. The
+Japanese executable has the same four rates.
 
 **Finances.** Money moves through `pwkGen_Income` (`0x244570`) and
 `pwkGen_Pay` (`0x2445f8`). Both change the s64 at block 0 `+0x0` and

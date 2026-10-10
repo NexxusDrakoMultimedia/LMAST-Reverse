@@ -808,6 +808,9 @@ files. Each item keeps what was found, where, and how it was tested.
       `BESLES-54151-M000` and loads it again, doesn't list the original
       `-G` saves, keeps the D-pad fix, and PCSX2 shows its settings as
       `SLES-54151_3CB248D5` (user report)
+- [x] Which rate slot is which currency: pound 2, euro 3, yen 400
+      (Tested in PCSX2, Japanese release: one save shows £5,152,906,
+      €7,729,360 and ¥1,030,581,366, all from a stored 30,917,441)
 
 ## 11. Editor GUI
 

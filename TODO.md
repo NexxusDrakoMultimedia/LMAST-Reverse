@@ -325,8 +325,6 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
 
 See [`DOC/SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
 
-- [ ] Which rate slot is which currency: pound (2) and euro (3) seen in
-      game; 400 presumably the yen (the option screen's code)
 - [ ] Stats table 1, PlPinfo flags at `0x20c`, dissatisfaction, style
       icons, and what the 3 records at block 1 `+0xe290` are
 - [ ] Finance leftovers: the code that reads the per-type names
