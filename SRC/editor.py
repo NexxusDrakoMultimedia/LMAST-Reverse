@@ -71,6 +71,11 @@ Tabs:
              get. The club counts are shown, not edited (they must match
              the schedule; the Season tab sets them), and the squad's
              copy follows the squad. Money shows in pounds.
+    Training the training tables (TRAINING_LIST.TBB, training.py set;
+             DOC/TRAINING_FORMAT.md): pick a table, then a row (a practice,
+             camp type, pitch position, equipment item or growth type), and
+             edit its value for each ability, its fatigue or each age.
+             Columns the game doesn't read are shown, not edited.
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
@@ -106,6 +111,7 @@ import pbdata
 import plrsim
 import clubresult
 import regulation
+import training
 import teaminit
 import uniform
 
@@ -1838,6 +1844,208 @@ class RegulationsTab(Tab):
         mod.log(lines)
         self.app.write_log(lines)
         self.load("Saved %s: %d changes" % (", ".join(shown_path(f) for _, f in temps), n))
+        return True
+
+
+TRAINING = "PARAM/TRAINING_LIST.TBB"
+TRAINING_COLUMNS = 4        # value inputs per line of a row's page
+
+
+class TrainingTab(Tab):
+    """The training tables (TRAINING_LIST.TBB) through Training.set and
+    training.encode_file, as `training.py set` does: a table, then a row
+    (a practice, camp type, position, equipment item or growth type), then
+    its values. The writer says which columns the code reads and which
+    values each table allows (training.read_columns, edit_choices)."""
+    title = "Training"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.tr = None
+        self.changes = {}           # (table, row, column) -> value, in edit order
+        self.table = training.TABLES[0]
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Table").pack(side="left")
+        self.table_names = ["%d %s: %s" % (t.index, t.name, t.title) for t in training.TABLES]
+        self.table_var = tk.StringVar(value=self.table_names[0])
+        box = ttk.Combobox(bar, textvariable=self.table_var, values=self.table_names,
+                           state="readonly", width=60)
+        box.pack(side="left", padx=(4, 12))
+        box.bind("<<ComboboxSelected>>", lambda e: self.pick_table())
+        self.table_box = box
+        ttk.Label(bar, text="Growth per ability, fatigue, bonuses and decline "
+                            "(DOC/TRAINING_FORMAT.md).", foreground="#555").pack(side="left")
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        self.tree = ttk.Treeview(left, columns=("row",), show="headings", selectmode="browse")
+        self.tree.heading("row", text="Row")
+        self.tree.column("row", width=260)
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    # loading
+
+    def load(self, done=None):
+        try:
+            self.path = self.app.mod.source(TRAINING)
+            self.buf, self.end, self.raw, self.tr = training.load(self.path)
+        except (ValueError, struct.error, OSError) as e:
+            self.tr = None
+            self.app.status("Couldn't load the training tables: %s" % e)
+            messagebox.showerror("Training", "Couldn't load the training tables:\n%s" % e)
+            return
+        self.changes = {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    # the list
+
+    def pick_table(self):
+        self.table = training.TABLES[self.table_names.index(self.table_var.get())]
+        self.current = None
+        self.detail.clear()
+        self.refresh_list()
+
+    def rows(self):
+        t = self.table
+        return range(t.first, t.first + t.rows)
+
+    def row_label(self, row):
+        t = self.table
+        if t.name in ("group", "staff"):
+            return "all abilities"
+        name = t.row_name(row)
+        if t.name in ("stadium", "clubhouse", "youthhouse"):
+            name = "equipment %s" % name
+        elif t.name == "camp":
+            name = "camp type %s" % name
+        elif t.name == "youth":
+            name = "youth practice %s" % name
+        return name
+
+    def refresh_list(self):
+        if self.tr is None:
+            return
+        self.tree.delete(*self.tree.get_children())
+        t = self.table
+        for row in self.rows():
+            edited = any(k[0] == t.index and k[1] == row for k in self.changes)
+            self.tree.insert("", "end", iid=str(row), values=(self.row_label(row),),
+                             tags=("edited",) if edited else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    # the detail panel
+
+    def show(self, row):
+        self.current = row
+        t = self.table
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%s: %s" % (t.name, self.row_label(row)),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        if t.name in ("team", "practice"):
+            jp, _ = training.PRACTICE_NAMES[row]
+            ttk.Label(box, text="Menu item %d (%s). Each value adds to that ability's growth; "
+                                "fatigue is how tiring the practice is." % (row, jp),
+                      foreground="#555").pack(anchor="w", padx=8)
+        frame = ttk.LabelFrame(box, text=t.title)
+        frame.pack(fill="x", padx=8, pady=6)
+        readable = set(training.read_columns(t))
+        for col in range(t.cols):
+            r, c = divmod(col, TRAINING_COLUMNS)
+            ttk.Label(frame, text=training.column_name(t, col)).grid(
+                row=r, column=2 * c, sticky="w", padx=(8, 4), pady=1)
+            if col in readable:
+                w = self.input(frame, t, row, col)
+            else:
+                w = ttk.Label(frame, text="%d (not read)" % self.tr.get(t, row, col),
+                              foreground="#777")
+            w.grid(row=r, column=2 * c + 1, sticky="w", padx=(0, 12), pady=1)
+
+    def input(self, parent, t, row, col):
+        get = lambda: self.tr.get(t, row, col)
+        apply = lambda text, revert: self.commit(t, row, col, text, revert)
+        choices = training.edit_choices(t)
+        if choices is not None:
+            text = dict(choices)
+            return value_input(parent, ("choice", [v for v, _ in choices]),
+                               lambda v: text.get(v, str(v)), get, apply)
+        return value_input(parent, ("range", t.lo, t.hi), str, get, apply)
+
+    # edits
+
+    def commit(self, t, row, col, text, revert):
+        what = "%s %s, %s" % (t.name, self.row_label(row), training.column_name(t, col))
+        try:
+            old = self.tr.set(t, row, col, int(text))
+        except ValueError as e:
+            revert()
+            self.app.status("%s: %s" % (what, e))
+            messagebox.showerror("Training", "%s: %s" % (what, e))
+            return False
+        value = self.tr.get(t, row, col)
+        self.changes.pop((t.index, row, col), None)
+        self.changes[t.index, row, col] = value
+        self.tree.item(str(row), tags=("edited",))
+        self.app.status("%s: %d -> %d" % (what, old, value))
+        self.app.update_title()
+        return True
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(TRAINING)
+        temps = [(out + ".new", out)]
+        try:
+            data = training.encode_file(self.buf, self.end, self.raw, self.tr)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Training", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        args, last = [], None
+        for (index, row, col), value in self.changes.items():
+            t = training.TABLES[index]
+            if (index, row) != last:
+                args += [t.name, str(row)]
+                last = (index, row)
+            args.append("%s=%d" % (training.column_arg(t, col), value))
+        cmd = ["python", "SRC/training.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + args
+        n = len(self.changes)
+        lines = log_lines("Training: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
         return True
 
 
@@ -3574,8 +3782,9 @@ class App:
         self.season = SeasonTab(self)
         self.free = FreeAgentsTab(self)
         self.regulations = RegulationsTab(self)
+        self.training = TrainingTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free,
-                     self.regulations, self.kits, self.text]
+                     self.regulations, self.training, self.kits, self.text]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)

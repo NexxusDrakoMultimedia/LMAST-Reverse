@@ -372,6 +372,12 @@ files. Each item keeps what was found, where, and how it was tested.
       the theme table (both releases), and PAL left seven English camps
       on the Japanese city numbers. `patch_disc.py --mod camp-types` and
       `--mod camp-cities` fix them; not tested in PCSX2 yet
+- [x] The parameter tables a mod would tune first (TODO's "Next up"):
+      `REGULATION.TBB`, `CLUBRESULT.TBB`, `TRAINING_LIST.TBB` and the
+      camp tables have field-level writers, and the editor's
+      Regulations and Training tabs edit the first three. The rest
+      (`CLUBEVENT`, `GROUP2COMPE`, `TOUR_LIST`, `TACTICS_FORMATION_SET`,
+      `CLUB_RANK_SYSTEM` tables 0, 1 and 4) stay in section 2
 
 ## 3. Ninja 3D models and motions
 

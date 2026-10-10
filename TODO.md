@@ -11,26 +11,20 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **The parameter tables' fields** (section 2). `REGULATION.TBB`,
-   `CLUBRESULT.TBB` and `TRAINING_LIST.TBB` are done (`regulation.py`,
-   `clubresult.py`, `training.py`) and the camp tables (`camp.py`);
-   next an editor tab for training and camps, then the PCSX2 tests of the
-   new `camp-types` and `camp-cities` switches. `tbb.py replace` can only
-   swap a whole table.
-2. **Name the rest of the player fields** (section 2). The editor can only
+1. **Name the rest of the player fields** (section 2). The editor can only
    offer a field once it has a name and a range (stage 2 in
    [`GOALS.md`](GOALS.md)).
-3. **What each PwkScript computes** (section 7). The formulas
+2. **What each PwkScript computes** (section 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
    script edit could be tested in PCSX2.
-4. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
+3. **Archive repacking** (section 9). `MES.PAC` and the `.HED` copies,
    KC@P packs and PRS recompression. Larger mods need these to get their
    edits onto a disc: a message file can only grow into its own slot.
-5. **The `GAME/` tactics AI files** (section 6). The play books, the
+4. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
-   records. These are still the lead for the player fields in #2.
+   records. These are still the lead for the player fields in #1.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -70,8 +64,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [ ] `TRAINING_LIST.TBB` leftovers (`DOC/TRAINING_FORMAT.md`): the
       scale of a practice's values and fatigue, the names of the 87 camp
       types, 28 youth menus and the facility rows, whether anything reads
-      the facility tables' columns 64-70, an editor tab, and a PCSX2 test
-      of an edit (a practice made much stronger)
+      the facility tables' columns 64-70, and a PCSX2 test of an edit
+      (a practice made much stronger)
 - [ ] Camp leftovers (`DOC/CAMP_FORMAT.md`): `+0x06`, `+0x08`, `+0x0a`,
       the readers of table 1 and `CAMP_EXPLANE`, the camp types' names,
       and whether Santiago's description (keyed to city 764, the camp is

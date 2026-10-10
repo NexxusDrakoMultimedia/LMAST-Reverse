@@ -235,6 +235,32 @@ def find_column(table, text):
     return col
 
 
+def read_columns(table):
+    """The columns the code reads: an editor offers these and shows the
+    rest (the facility tables' 64-70, which no reader uses) read-only."""
+    if table.name in ("stadium", "clubhouse", "youthhouse"):
+        return range(ABILITIES)
+    return range(table.cols)
+
+
+def edit_choices(table):
+    """[(value, label)] for a table whose values are a choice, or None for
+    a number in table.lo..table.hi."""
+    if table.name == "group":
+        return [(0, "physical"), (1, "skill"), (2, "mental")]
+    if table.name == "staff":
+        import pbdata
+        return list(enumerate(pbdata.STAFF_ABILITY_NAMES))
+    return None
+
+
+def column_arg(table, col):
+    """A column as `set` takes it back, for a logged command."""
+    if table.name.startswith("decline"):
+        return "age%d" % (AGE_FIRST + col)
+    return "fatigue" if col == FATIGUE and table.cols == 65 else str(col)
+
+
 class Training:
     """The 13 tables as lists of rows of ints."""
 
