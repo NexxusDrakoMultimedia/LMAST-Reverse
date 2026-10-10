@@ -77,7 +77,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | the training module (`SIMPRG.REL 0x159998`, lists `0x23d618`, `0x23d690`), `SLES 0x246540` (table 11) | what each practice trains and its fatigue, facility and camp bonuses, match growth by position, ability groups and coaching, decline with age. **confirmed**, see [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md) |
 | `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648`; `0x4bdd0` | the 153 training camps: city, nation, camp type, and the clubs of each area. **confirmed** in part, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
 | `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8` | each camp city's description, message category 570, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
-| `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 960 bytes. Club events (`plClubEvent_*`) |
+| `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 48 × 20 bytes: an older copy of the club events, which the game takes from the executable instead. See below |
 | `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division. **confirmed**, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes"). Tables 0, 1 and 4 not traced |
 | `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 166 × s16, each schedule UID's competition. Loaded but never read, see below |
 | `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170`, `0x4cab0` | 106 {region, club} pairs: the clubs a tour can play, by region. **confirmed**, see below |
@@ -150,6 +150,28 @@ relocation names it. The same module's getters for the camps' `+0x06`
 and `+0x0a` (`0x4bea0`, `0x4bfd0`) are dead code too
 ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)).
 
+## `CLUBEVENT.TBB`: an older copy of the club events
+
+One table of 48 records of 20 bytes (10 s16; the TBB line size is 2).
+**Empirical**: field 2 is 30001 in most records, field 6 a cost (100 to
+10,000) and field 7 a small count (0–96).
+
+The club events the game runs come from the executable instead
+(**confirmed**): `plClubEvent_GetCost` (`SLES 0x20dee0`) reads a u32 at
+`+0x14` of 32-byte records at `0x52ff58` and multiplies it by 300, and
+`plClubEvent_GetTicket` (`0x20df00`) reads 28-byte records at `0x530688`.
+That table has 46 events. Its costs equal the TBB's field 6 for most
+records in the same order (500, 500, 500 … 3000, 2000, 5000, 1000, 1000,
+3000, 3000, 10000), but not all: the TBB has two records more and
+differs around records 3, 10 and 27–37. So the file looks like an
+earlier version of the executable's table.
+
+`SIMPRG.REL` loads it with `Camp_Explane.tbb` (list `0x225d78`, entry 2;
+handle at `+0x56c` of the module set up at `0xa4760`, which reads
+`CAMP_EXPLANE` at `0xa4a80`). No code reading its records has been
+found. Edits to club events belong in the executable's tables. The
+Japanese file is the same.
+
 ## `TACTICS_FORMATION_SET.TBB`: tactics presets
 
 The tactics screen's "Set Formation" menu offers eight national styles;
@@ -219,8 +241,9 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- The fields of the tables without a doc of their own: `CLUBEVENT` and
-  `CLUB_RANK_SYSTEM` tables 0, 1 and 4.
+- `CLUB_RANK_SYSTEM` tables 0, 1 and 4, and whether anything reads
+  `CLUBEVENT.TBB`; the executable's club-event records (`0x52ff58`,
+  `0x530688`) field by field.
 - The tactics sliders' limits, and which regions `TOUR_LIST`'s numbers
   are.
 - What's still open in the files that have a doc is listed there, for

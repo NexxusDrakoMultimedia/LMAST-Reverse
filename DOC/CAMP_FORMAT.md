@@ -98,11 +98,14 @@ One table of 153 `{u16 city, u16 message}` pairs. The messages are
 produce of this city is ham, cheese and excellent goalkeepers.", Parma).
 **Empirical**; the reader hasn't been found.
 
+**Confirmed reader**: `SIMPRG.REL 0xa4a80` (resource 3 of the list at
+`0x225d78`) walks the 153 pairs (`0x99`) for a city and returns its
+message, or 0 when no pair matches.
+
 Its cities equal `CAMP_LIST`'s except one: Santiago's description (6146,
 "The Chilean capital …") is keyed to city 764, the camp to 774. The
-Japanese release names both cities Santiago; PAL calls 764 Cruzeiro.
-Whether the camp screen shows Santiago's description hasn't been
-checked.
+Japanese release names both cities Santiago; PAL calls 764 Cruzeiro. So
+the lookup finds nothing for Santiago's camp, in both releases.
 
 ## Two bugs
 
@@ -178,11 +181,10 @@ rebuilds byte for byte.
 
 ## Still unknown
 
-- Who reads `CAMP_EXPLANE`, and which city each sponsor frees
-  (`0x16a940`).
+- Which city each sponsor frees (`0x16a940`), and what the camp screen
+  shows for Santiago (message 0).
 - The names of the 87 camp types (the themes at `SLES 0x552cd0` are
   numbers 1–6).
-- Whether the Santiago description shows.
 
 ## Checking the claims
 
