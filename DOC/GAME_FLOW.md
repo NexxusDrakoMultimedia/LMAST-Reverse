@@ -176,6 +176,8 @@ event 6.
 The manual lists four ways to lose: failing the playoffs, funds in the
 red in the first week of July, finishing in the 2nd league's bottom two
 two years running, and fewer than 8 players. Those match the four checks.
+The relegation check itself is `SIMPRG.REL 0x15d958`
+([`REGULATION_FORMAT.md`](REGULATION_FORMAT.md#place-slots)).
 Which `Sche.YearEnd` value is the relegation and which is the other end
 of a career (an ending?) hasn't been traced. The PlayAcrobata argument
 isn't a scene id (scene 7 is a clubhouse background); how the module

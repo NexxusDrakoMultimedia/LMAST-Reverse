@@ -20,7 +20,9 @@ constant arguments (SLES 0x21e9e0). See DOC/PLRESOURCECOMMON_FORMAT.md.
   3  nations       13 regions, 146 nations, 83 national teams, 460 clubs
                    (plMisc_DRegion2Region, Nati2DRegion, Nati2NatiTeam,
                    NatiTeam2Nati, Nati2EU, Club2Nati)
-  4  competitions  7 x 22 bytes (plCombi_GetCombinationGrow), 96 x 8 bytes
+  4  competitions  7 x 22 bytes, each nation's divisions and cups
+                   (0x20fbf0: plCompeData_getScheCompe_FromNationDiv,
+                   getUID_FromNationDiv), 96 x 8 bytes
                    (plCompeData_getCupUID_FromNation)
 
 Usage:
@@ -83,7 +85,7 @@ BYTES = {
     (3, 3): ("nation of each national team", "plMisc_NatiTeam2Nati", NATIONAL_TEAMS),
     (3, 4): ("EU member flag of each nation", "plMisc_Nati2EU", NATIONS),
     (3, 5): ("nation of each team", "plMisc_Club2Nati", CLUBS),
-    (4, 0): ("combination growth, 7 x 22", "plCombi_GetCombinationGrow", 154),
+    (4, 0): ("divisions and cups by nation, 7 x 22", "0x20fbf0, plCompeData_getUID_FromNationDiv", 154),
     (4, 1): ("cup UIDs by nation, 96 x 8", "plCompeData_getCupUID_FromNation", 768),
 }
 TABLE_COUNTS = (9, 7, 1, 6, 2)

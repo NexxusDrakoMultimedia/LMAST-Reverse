@@ -65,10 +65,6 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       would tune (`CLUBRESULT`, `TRAINING_LIST`, the camp tables and the
       others in `DOC/PARAM_DIR.md#still-unknown`), so they can get
       field-level writers. `tbb.py replace` only swaps a whole table
-- [ ] `leaguesize.py build` (and the Season tab) leaves `REGULATION.TBB`'s
-      `clubs` at the old size (England at 22 still says 20). Write the new
-      sizes there too, and check what the old count changed in the tested
-      22-club seasons (a message number, `SIMPRG.REL 0x15d8f0`)
 - [ ] `REGULATION.TBB` leftovers (`DOC/REGULATION_FORMAT.md`): `+0x04`,
       the reader of `squad2`, and what the place checks change on screen
 - [ ] How your club and the rival become ranks 25 and 26 of the second
@@ -130,8 +126,8 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
 - [ ] `PLRESOURCECOMMON.PAC` leftovers (`DOC/PLRESOURCECOMMON_FORMAT.md`):
       the first words of each facility record and the code that charges
       the build cost, the rest of the stadium record, the values in
-      entries 1 (formations), 2 (hexagon) and 4 (combination growth, cup
-      ids), and which messages name the facilities
+      entries 1 (formations), 2 (hexagon) and table 4.1 (cup ids), and
+      which messages name the facilities
 - [ ] `0SYSTEM` leftovers: what the `DETAILFLAG` flags switch (only the
       first 99 of 528 bytes are read), which UI element uses each colour,
       who the `V001`-`V032` crests are, whether `SPONSOR_TEXTURE_M`

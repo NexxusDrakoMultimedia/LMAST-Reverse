@@ -44,7 +44,7 @@ All fields are s16 (read with `lh`).
 | Offset | Name (`regulation.py`) | Meaning | Proof |
 |---|---|---|---|
 | `0x00` | `grade` | match grade, 0–5 (the game's `PlMatchGrade`). 0 is the top: the European and national-team competitions | `pwkSche_RecalcAudience` passes it as the `PlMatchGrade` of `pwkUnkei_GetAllAudience` (`0x255b1c`). `pwkDissatis_CompeEnd` indexes a 6-float table at `0x391c18` with it (`0x23a840`). Also read by `pwkOteam_GetTeamData`, `pwkTeam_PopUpdateTurnly`, `pwkTeam_GameCheck` and `plPinfo_UpDownKeymanCaptaion`. **confirmed** |
-| `0x02` | `clubs` | number of clubs | `SIMPRG.REL 0x960b0` puts it in a message as a number. **confirmed**. Equals the team-entry slot count for 163 of 164 UIDs (**empirical**, below) |
+| `0x02` | `clubs` | number of clubs | `SIMPRG.REL 0x960b0` puts it in a message as a number, and `0x15d8f0` takes the bottom places from it ([below](#place-slots)). **confirmed**. Equals the team-entry slot count for 163 of 164 UIDs (**empirical**, below); `leaguesize.py build` keeps it so |
 | `0x04` | `unk04` | values 0, 1, 2, 3, 14, 18, 19 | no reader found |
 | `0x06` | `prize_kind` | 2: the prizes are scaled by the UEFA rank of the player's nation | `plRec_GetMatchBonus` (`0x21e2ec`). **confirmed**, below |
 | `0x08` | `win_bonus` | the bonus for a win, × 10,000 in the game's money unit ([below](#money)) | `pwkUnkei_GetMatchIncome` (`0x2732b8`): `+0x08` × 10,000 into the match record's `+0xc`, booked by `pwkUnkei_BeforeReport` as income type 5 "Win bonus" ([`SAVE_FORMAT.md`](SAVE_FORMAT.md)). **confirmed**; tested in PCSX2 ([below](#tested-in-pcsx2)) |
@@ -122,9 +122,24 @@ The slots feed the game's checks of whether a club has clinched a place
 or is still within one (`CScheEuro::checkWinupFixedness`,
 `checkLosedownFixedness`, `checkWinupWithin`, `checkLosedownWithin`,
 `0x207ee8`–`0x208068`). `GAMEPRG.REL` (`0x9f5e8`, `0x1b44d4`, `0x1b4738`,
-`0x1b4ba8`) calls `plRec_getNextCompetitionData` too, and
+`0x1b4ba8`) calls `plRec_getNextCompetitionData` too.
+
 `SIMPRG.REL 0x15d8f0` takes the smallest `clubs − count` of the two down
-slots. Which clubs really change division next season comes from the
+slots: the last rank that stays up. The relegation game over (the
+manual's "bottom two of the 2nd league two years running") compares
+ranks with it. **Confirmed:**
+
+| Address | What it does |
+|---|---|
+| `SIMPRG.REL 0x15d958` | from 2007 (`pwkGen_GetDate`, year ≥ `0x7d7`), with your club in the second division (`pwkLg_GetMyDiv` 1): true when your rank (byte `+4` of `pwkRec_GetCompeConventionRecordVictoryTeam`) in each of the last two seasons is past `0x15d8f0`'s rank for that division's UID |
+| `SIMPRG.REL 0x15da60` | the same with this season's rank (`0x15d2d8`) and last season's: the warning before it, called from `0x122a70` |
+| `plCompeData_getUID_FromNationDiv` (`0x20fcb8`) | gives the second division's UID from [`PLRESOURCECOMMON`](PLRESOURCECOMMON_FORMAT.md#table-40-divisions-and-cups-by-nation) table 4.0: the own-nation version (England's UID 1, 26 clubs, 2 down: ranks 25 and 26) |
+
+So a division's `clubs` must match its real size: with England's first
+division at 22 and UID 1 still at 26 instead of 24, no rank is past 24
+and the game over never comes. `leaguesize.py build` writes the new
+counts. Which script command calls `0x15d958` hasn't been traced (no
+direct `jal`). Which clubs really change division next season comes from the
 `LAST_RANK` records of `SCHEDULE_TEAM_ENTRY`
 ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md)), not from these slots, so a
 changed count should be matched there.
@@ -179,8 +194,8 @@ win_bonus=200`, on a `--skip-tutorial` disc with `--copies`:
 - Who reads the match rule block's copy of `squad2` (`+0x18`).
 - Whether row 164 is ever read.
 - What the place checks change on screen or in the match (news, the
-  league table, the match's stakes), and what `SIMPRG.REL 0x15d958` does
-  with the down slots.
+  league table, the match's stakes), and what calls the relegation
+  game-over check (`SIMPRG.REL 0x15d958`).
 
 ## Checking the claims
 

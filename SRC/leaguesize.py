@@ -17,6 +17,11 @@ DOC/SCHEDULE_FORMAT.md#building-a-league-of-another-size):
                           the same clubs as the starting divisions.
   the games               schedule.set_league, a round robin of the new size.
   the game days           schedule.league_turns, one free turn per day.
+  the regulations         REGULATION.TBB's `clubs` of the three leagues
+                          (regulation.py). SIMPRG.REL 0x15d8f0 takes the
+                          second division's bottom places as clubs - the
+                          down slot's count: the game over for finishing
+                          there two seasons running (0x15d958).
 
 To grow the first division by d, the second division's ranks m+1..m+d
 move into the first division's past record at ranks k+1..k+d, above its
@@ -42,8 +47,8 @@ inside its season (its own turns and the free ones).
 
 `build` takes one or more leagues, each with its first division's new
 size, and writes SCHEDULE_SYSTEM, SCHEDULE_COMPETITION and
-SCHEDULE_TEAM_ENTRY (.PAC and .HED, which go together) and
-PLRRSRC_INITTEAMDATA.TBB to <outdir>, reads them back and checks them
+SCHEDULE_TEAM_ENTRY (.PAC and .HED, which go together),
+PLRRSRC_INITTEAMDATA.TBB and REGULATION.TBB to <outdir>, reads them back and checks them
 (the rebuilt leagues' games against their turns, and each changed
 nation's first season played out again), and prints the patch_disc.py
 targets. Patch with --copies: the game reads the .HED copies in
@@ -58,6 +63,7 @@ import os
 import sys
 
 import initteam
+import regulation
 import schedule
 
 LEAGUE_NAMES = ("England", "France", "Germany", "Italy", "Spain", "Netherlands")
@@ -326,13 +332,16 @@ def league_number(text):
 def build(root, sizes, over=None):
     """The changed files after giving each league's first division its new
     size ([(league, clubs)]): ({file name: bytes} for the three schedule
-    packs and their .HED and PLRRSRC_INITTEAMDATA.TBB, {UID: turns} of the
-    rebuilt leagues)."""
+    packs and their .HED, PLRRSRC_INITTEAMDATA.TBB and REGULATION.TBB,
+    {UID: turns} of the rebuilt leagues)."""
     data = load(root, over)
     system, compes, entries, init = data
     turns = {}
     for league, clubs in sizes:
         turns.update(resize(data, league, clubs))
+    reg_buf, reg_end, reg_raw, reg_rows = regulation.load(path(root, regulation.FILE, over))
+    for u in turns:
+        regulation.set_field(reg_rows[u], "clubs", compes[u].entrants)
     out = {}
     for name, blobs in ((schedule.SYSTEM_PAC, [b for _, b in system.encode()]),
                         (schedule.COMPE_PAC, [c.encode() for c in compes]),
@@ -340,6 +349,7 @@ def build(root, sizes, over=None):
         pac_bytes, hed_bytes = schedule.build_pack(path(root, name, over), blobs)
         out[name], out[name[:-4] + ".HED"] = pac_bytes, hed_bytes
     out[initteam.INIT_TBB] = init.encode()
+    out[regulation.FILE] = regulation.encode_file(reg_buf, reg_end, reg_raw, reg_rows)
     return out, turns
 
 
@@ -406,8 +416,12 @@ def verify(folder, sizes, turns):
     data = load(folder)
     system, compes, entries, init = data
     rows = schedule.year_turns(system)
+    regs = regulation.load(os.path.join(folder, regulation.FILE))[3]
     for u, t in turns.items():
         c = compes[u]
+        if regs[u]["clubs"] != c.entrants:
+            probs.append("UID %d: REGULATION.TBB says %d clubs, not %d"
+                         % (u, regs[u]["clubs"], c.entrants))
         probs += ["UID %d: %s" % (u, p) for p in c.problems()]
         probs += ["UID %d: %s" % (u, p) for p in schedule.league_stats(c)[0]]
         if rows[u][1] != t or len(t) != c.days:

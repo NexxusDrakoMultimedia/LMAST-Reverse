@@ -19,7 +19,7 @@ the named fields of the facility records and nation names for entry 3.
 | 1 | 7 | formations and pitch areas (byte tables) |
 | 2 | 1 | 512 bytes for the hexagon abilities |
 | 3 | 6 | nations, regions, national teams and each club's nation |
-| 4 | 2 | combination growth and cup ids by nation |
+| 4 | 2 | each league nation's divisions and cups, and cup ids by nation |
 
 ## Entry 0: facilities
 
@@ -118,10 +118,32 @@ uses 3.2 to name nations, and the club ranking in
 
 | Table | Bytes | Reader |
 |---|---|---|
-| 4.0 | 7 × 22 | `plCombi_GetCombinationGrow` |
+| 4.0 | 7 × 22 | `0x20fbf0`, below |
 | 4.1 | 96 × 8 | `plCompeData_getCupUID_FromNation` |
 
-Not decoded.
+### Table 4.0: divisions and cups by nation
+
+Seven records of 11 s16, one per league nation (`PlNati` 1–6, England to
+the Netherlands) after an empty record 0. `0x20fbf0` returns the record
+whose `+0x00` is the nation, or record 0 when none is (`0x20fc48`).
+**Confirmed** from its four callers:
+
+| Offset | Field | Reader |
+|---|---|---|
+| `0x00` | nation | `0x20fc48`, the lookup |
+| `0x02`, `0x04` | competition (`PLSCHE_COMPE`) of the first and second division | `plCompeData_getScheCompe_FromNationDiv` (`0x20fc80`): `+0x02 + 2 × div` |
+| `0x06`–`0x0a` | the nation's three cup competitions | `0x20fcf8` copies up to `plCompeData_getCupListSize` (3) of them from `+0x06` |
+| `0x0c`, `0x0e` | schedule UID of the first and second division | `plCompeData_getUID_FromNationDiv` (`0x20fcb8`): `+0x0c + 2 × div` |
+| `0x10`–`0x14` | the nation's three cup UIDs | `0x20fd88`, from `+0x10` |
+
+The second division's UID is the own-nation version, the one with your
+club and the rival (England: 0 and 1, competitions 0 and 1; France: 10
+and 11). The relegation game over reads that UID's regulations
+([`REGULATION_FORMAT.md`](REGULATION_FORMAT.md#place-slots)). The table
+was labelled `plCombi_GetCombinationGrow` before: that is the symbol
+just before `0x20fbf0`, which has no name of its own.
+
+Table 4.1 is not decoded.
 
 ## Still unknown
 
@@ -129,7 +151,7 @@ Not decoded.
   build cost.
 - The rest of the stadium record (`+0x0`–`+0x2f`, `+0x60`–`+0x7f`) and
   which stadium is which.
-- What the values in entries 1, 2 and 4 mean.
+- What the values in entries 1, 2 and table 4.1 mean.
 - The facility names: which message category names each record.
 
 ## Checking

@@ -51,7 +51,8 @@ Tabs:
              DOC/INITTEAM_FORMAT.md#swapping-clubs), and each first
              division's size, in the range leaguesize.py allows; a size
              change also rewrites the three schedule packs and their .HED
-             (leaguesize.py build --over;
+             and the leagues' club counts in REGULATION.TBB, which the
+             Regulations tab then reads again (leaguesize.py build --over;
              DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from).
     Free agents
              the players without a club at the start of a career
@@ -63,7 +64,8 @@ Tabs:
              each schedule's match rules, win bonus, prizes and places
              (REGULATION.TBB, regulation.py set; DOC/REGULATION_FORMAT.md),
              named from the schedule packs. The club count is shown, not
-             edited (it must match the schedule), and the squad's copy
+             edited (it must match the schedule; the Season tab sets it),
+             and the squad's copy
              follows the squad. Money shows in pounds.
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
@@ -293,7 +295,9 @@ class Tab:
 
     def changed(self, what):
         """Another tab saved or loaded something this one shows: "squads"
-        (OTEAMMEMBER.TBB) or "people" (the People tab's records)."""
+        (OTEAMMEMBER.TBB), "people" (the People tab's records) or
+        "schedules" (the Season tab's size change, which also writes
+        REGULATION.TBB)."""
         pass
 
 
@@ -1521,6 +1525,24 @@ class RegulationsTab(Tab):
             self.show(self.current)
         if done:
             self.app.status(done)
+        self.app.update_title()
+
+    def changed(self, what):
+        """The Season tab rebuilt the schedules and wrote new club counts:
+        read the file again and put any unsaved edits back on top (they
+        never touch `clubs`), so a save here doesn't undo the counts."""
+        if what != "schedules" or self.rows is None:
+            return
+        changes = self.changes
+        self.load()
+        if self.rows is None:
+            return
+        for (uid, name), value in changes.items():
+            regulation.set_field(self.rows[uid], name, value)
+        self.changes = changes
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
         self.app.update_title()
 
     # the list
@@ -2843,6 +2865,7 @@ class SeasonTab(Tab):
             moved="each file in %s" % shown_path(folder))
         mod.log(lines)
         self.app.write_log(lines)
+        self.app.notify(self, "schedules")
         return True
 
 

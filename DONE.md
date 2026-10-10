@@ -333,6 +333,16 @@ files. Each item keeps what was found, where, and how it was tested.
       team-entry slots for 163 of 164 UIDs. Tested in PCSX2: the Premier
       League at `squad=18` shows 7 on the bench, and `win_bonus=200` pays
       £333,333 a win (× 10,000 in the game's money unit, ÷ 6 for pounds)
+- [x] `leaguesize.py build` and the editor's Season tab write the new
+      sizes to `REGULATION.TBB`'s `clubs` (the three rebuilt leagues),
+      and `verify` checks them; the Regulations tab reads the file again
+      after a Season save, keeping its unsaved edits. What the old count
+      changed: the relegation game over (`SIMPRG.REL 0x15d958`, bottom
+      two of the second division two seasons running) takes its cut-off
+      from `clubs − down count` of the own-nation second division
+      (`plCompeData_getUID_FromNationDiv`, `PLRESOURCECOMMON` table 4.0,
+      now decoded). With England at 22, UID 1 still said 26 for 24 clubs,
+      so the game over could never come. Not tested in PCSX2
 
 ## 3. Ninja 3D models and motions
 
