@@ -338,7 +338,7 @@ GROUPS = {
             "moti_type", "cond_type", "potential", "growth", "travel", "injury_res",
             "recovery", "foul_avoid", "weak_foot", "policy", "adapt", "intelligence",
             "ball_touch", "dribble_style")),
-        ("Play", ("style", "skills", "flags")),
+        ("Play", ("style", "skills", "tendency", "flags")),
         ("Kit style", ("sleeves", "wristband", "gloves", "gk_gloves", "gk_pants", "boots")),
         ("Abilities", ("ability",)),
     ),

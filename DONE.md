@@ -397,6 +397,19 @@ files. Each item keeps what was found, where, and how it was tested.
       Regulations and Training tabs edit the first three. The rest
       (`CLUBEVENT`, `GROUP2COMPE`, `TOUR_LIST`, `TACTICS_FORMATION_SET`,
       `CLUB_RANK_SYSTEM` tables 0, 1 and 4) stay in section 2
+- [x] Player field `+0x66` (was `f_66`) named `tendency`: 11 levels,
+      0–4 with 2 neutral, of how readily the match AI dribbles, shoots,
+      carries, plays feed, side-change, back and killer passes and
+      one-twos, clears, presses and keeps goal. Found through the
+      match's second copy of the player parameters and its getter
+      (`GAMEPRG.REL 0x97b28`, `0x9bdb8`), which earlier scans had
+      missed. Each reader is an `fb::Intention`/`fb::Play` class named
+      by its type information, and most pick one of five entries of the
+      tuning table at `0x270000`. `dribble_style` picks a set of dribble
+      motions; ball touch (parameter 139) has no reader. `pbdata.py`
+      and the editor's People tab (Play) edit it, range 0–4; tested
+      through the widgets, and the save equals the logged command.
+      `DOC/PBDATA_FORMAT.md#the-tendencies`
 
 ## 3. Ninja 3D models and motions
 

@@ -105,8 +105,8 @@ also found.
 | 5 | 1 | `+0x52` | policy | the player's policy type, 0–24. **confirmed** (`pwkTeamType_PolicyInit` `0x27033c`, also `plCombi_*` and `pwkPromise_*`) |
 | 3 | 1 | `+0x53` | adapt | adaptability, 0–6. **confirmed**: `pwkTeamType_GetFit` (`0x270624`) looks it up in a table at `0x3996d8` (30, 33, 35, 38, 40, 45, 50) |
 | 4 | 1 | `+0x54` | intelligence | always 0 |
-| 2 | 1 | `+0x55` | ball_touch | ball-touch type, 0–2 |
-| 2 | 1 | `+0x56` | dribble_style | 0–3 |
+| 2 | 1 | `+0x55` | ball_touch | ball-touch type, 0–2. Becomes match parameter 139, which nothing in the match reads |
+| 2 | 1 | `+0x56` | dribble_style | 0–3: which of four sets of dribble motions the player uses. **confirmed**; see [The tendencies](#the-tendencies) |
 | 2 | 1 | `+0x57` | sleeves | 0 by season, 1 short, 2 long. **confirmed**; always 0. See [Kit style](#kit-style) |
 | 3 | 1 | `+0x58` | wristband | 0 none, 1–4 a colour. **confirmed**; 0 in 27,256 players |
 | 3 | 1 | `+0x59` | gloves | outfield gloves in cold weather: 0 none, 1–4 a glove texture. **confirmed**; 0 in 27,187 players |
@@ -117,7 +117,7 @@ also found.
 | 5 | 5 | `+0x5e` | style | play styles, 1–22, 0 for none. **confirmed**. See [Play styles](#play-styles) |
 | 3 | 1 | `+0x63` | flags | bit 1: EU passport. **confirmed**. Set in 19,333 players |
 | 16 | 1 | `+0x64` | skills | bit mask. **confirmed**. All 16 bits are used; see [Skills](#skills) |
-| 3 | 11 | `+0x66` | f_66 | 0–4. No label. `+0x67` is the row of the affinity table (see [Personality](#personality-and-condition-fields)). Team combos shift the other ten (`pwkPCombo_Add`, see [f_43 and f_66](#f_43-and-f_66)). All 11 become match-engine parameters 128–138 ([below](#the-match-engines-player-parameters)) |
+| 3 | 11 | `+0x66` | tendency | how readily the match AI picks each kind of play, 0–4 with 2 neutral: dribble, shoot, carry, feed pass, side change, back pass, killer pass, one-two, clear, press, goalkeeping. **confirmed**; see [The tendencies](#the-tendencies). No label in the developers' editor. `+0x67` is also the row of the affinity table (see [Personality](#personality-and-condition-fields)). Team combos shift the other ten (`pwkPCombo_Add`, see [f_43 and team combos](#f_43-and-team-combos)) |
 | 5 | 64 | `+0x74` | ability | 64 ratings (`PlAbilNo` 0–63), each mapped to 38–99. **confirmed**. See [Abilities](#abilities-and-the-detail-screen) |
 
 The 5 bits after the last field are zero in every record.
@@ -434,7 +434,7 @@ The players' `+0x30` is 0 in every record.
 | `loyalty` `+0x41` | `pwkTeam_GetYouthPromoteConyear` (`0x2714cc`) | value / 2 picks the row for a promoted youth player's contract years |
 | `star` `+0x42` | `plPinfo_GameCheck`, `MonthEndCheck`, `YearEndCheck`, `ClubTitleCheck`, `UpDownKeymanCaptaion` | added to the rank, capped at 30, picks the size of each popularity change (`plPinfo_ChangePop`) |
 | `moti_type` `+0x47` | `plPinfo_CalcMotiYear` (`0x21bfe4`) | yearly motivation gain from the table at `0x390860`: 3000, 4500, 1500, 4500, 1500, 1500, 3000, 4500 |
-| `moti_type`, `f_66` `+0x67` | `pwkDissatis_GetAffintyType` (`0x2370d0`) | how two people get on: an 8 × 8 table of u16 at `0x390fd0`, row = one person's `+0x67`, column = the other's `+0x47` (a manager's comes from his `PlMbase +0x2f`). Values 0–4 |
+| `moti_type`, `tendency` `+0x67` | `pwkDissatis_GetAffintyType` (`0x2370d0`) | how two people get on: an 8 × 8 table of u16 at `0x390fd0`, row = one person's `+0x67`, column = the other's `+0x47` (a manager's comes from his `PlMbase +0x2f`). Values 0–4 |
 | `travel` `+0x4d` | `plPinfo_CalcMatchMovePowerDecline` (`0x2197dc`) | with the age, the power lost to travelling for a match (the effect is read from the function's name) |
 | `injury_res` `+0x4e` | `plPinfo_CheckKega` (`0x21aa64`) | with the age, fatigue, power and motivation, the injury check |
 | `recovery` `+0x4f` | `plPinfo_CalcGTired`, `CalcPracTired`, `CalcRecover` | picks a pair of multipliers from `0x532870`: (1.1, 0.9), (1.1, 1.0), (1.0, 0.9), (1.0, 1.0), (1.0, 1.1), (0.9, 0.9), (0.9, 1.0), (0.7, 0.9) |
@@ -480,7 +480,7 @@ written directly:
 | 78–89 | 0.7 × aptitude 33–44 + 0.3 × a system fit (ability 45 + the third argument; `0x1435a8` passes 4, the 4-4-2) + 15. Parameter 85 uses the larger of aptitudes 40 and 41 | table `0x28c048`, `0x143228` |
 | 90–111 | 99 for the play style held in `PlPinfo +0x278` (compared with 1–22; presumably the style the player plays), 0 for the others | `0x1433e8` |
 | 112–127 | skill bits 0–15 (`plPinfo_IsSkill`), 0 or 1 | `0x143430` |
-| 128–138 | the 11 `f_66` values (`+0x66`), a value of 5 or more becomes 4 | `0x143490` |
+| 128–138 | the 11 `tendency` values (`+0x66`), a value of 5 or more becomes 4 | `0x143490` |
 | 139 | `ball_touch` (`+0x55`), 3 becomes 2 | `0x1434d8` |
 | 140 | `dribble_style` (`+0x56`), 4 or more becomes 2 | `0x1434f8` |
 | 141–149 | 1 if ability 1 (dribble skill) is at least 0x50 | `0x143518` |
@@ -492,16 +492,89 @@ copied. Neither are `tone`, `loyalty`, `star`, `f_43`, `moti_type`,
 `cond_type`, `potential`, `growth`, `travel`, `policy`, `adapt` and
 `intelligence`; those are only used outside the match.
 
-`f_66` is therefore read by the match: the team-combo bonuses
-(`pwkPCombo_Add`) feed parameters 128–138. No code was found that reads
-those parameters, or 139 and 140, at a fixed offset or through
-`0x146480`. The AI may index them from data tables, which aren't traced.
-Of the getter's 13 calls, `0x146560` picks a player's best play style
-from parameters `0x5a` + *n*.
+The team-combo bonuses (`pwkPCombo_Add`) reach the match through
+parameters 128–138.
 
 ```bash
 python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 4408     # Beckham: every field by name
 python SRC/snr2.py dis ISO/DLL/DEBUGPRG.REL 0x5ad0 400 --sles ISO/SLES_541.51
+```
+
+### Where the match reads the parameters
+
+**Confirmed from the code** (`GAMEPRG.REL`):
+
+| Address | What it shows |
+|---|---|
+| `0x97b28` | copies the 163 parameters (record `+0x37` on) to `+0x4` of the match's per-player object. `+0xa7` holds a modifier for each, cleared by `0x97af8` and changed by `0x97aa8` |
+| `0x9bdb8` | the getter the match uses: base (`+0x4` + *k*) plus modifier (`+0xa7` + *k*), plus situation bonuses for some parameters, clamped to 0–99. It has 240 calls, nearly all with a constant *k* |
+| `0xa84a0` | at match start, copies a tuning table of 1,951 8-byte entries (`u32` kind × 2²⁴ + index, then the value) from `0x270000` to the buffer at `*0x249194`. `0xa8578` returns entry *n*'s value |
+
+The record's own getter `0x146480` (above) is only used by its 13 calls
+in `0x146530`–`0x146c00`, where `0x146560` picks a player's best play
+style from parameters `0x5a` + *n*. Every parameter from 26 to 140 except
+61, 64 and 139 is read through `0x9bdb8`. Parameter 139, the ball touch,
+has no reader.
+
+```bash
+python SRC/snr2.py xref ISO/DLL/GAMEPRG.REL 0x9bdb8           # the 240 calls
+python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x9bdb8 120 --sles ISO/SLES_541.51
+```
+
+### The tendencies
+
+The match AI's decision classes read the 11 values at `+0x66`. Each class
+gives its name through its run-time type information (the `fb::` classes
+in `GAMEPRG.REL`, found from the vtable of each reading function). Most
+classes turn the level into one of five entries of the tuning table,
+which is then added to that kind of play's score, or multiplies it. Level
+2 is neutral in every set that is added. **Confirmed from the code:**
+
+| Item | Offset | Parameter | Read by | Tuning entries for levels 0–4 |
+|---|---|---|---|---|
+| 0 dribble | `+0x66` | 128 | `IntentionRWTB` (`0xe4320`, `0xe46b0`), `IntentionADribble` (`0xe7390`), `IntentionKeep` (`0xe6050`), `PlayBallKeep` (`0xf95c8`), and `0xe4948`, which the pass, cross and shoot intentions also call | `0x52d`: −0.15, −0.05, 0, +0.05, +0.15 (RWTB); `0x537`: −0.3, −0.1, 0, +0.05, +0.15 (ADribble); `0x532`: × 0.75, 0.9, 1.0, 3.0, 10.0 (`0xe4948`); `0x53c`: 20, 5, 2, 0.5, 0.01 (BallKeep) |
+| 1 shoot | `+0x67` | 129 | `0xec508`, called 10 times from the shoot intentions' code | `0x546`: × 0.6, 0.9, 1.0, 1.1, 1.35 |
+| 2 carry | `+0x68` | 130 | `IntentionRWTB`, `IntentionKeep`, `IntentionADribble`; and `0x117480`, inside a helper (`0x116ee8`) that off-ball roles call (`RoleFreeRunCommon`, `RoleMarkAssist`, `RoleSPDefender`) | `0x55a`: 0, 0, 0, +0.05, +0.15; `0x555`: × 0.2, 0.6, 1.0, 1.5, 3.0 (`0x117480`) |
+| 3 feed pass | `+0x69` | 131 | `IntentionFeedPass` (`0xde6e0`) | `0x519`: −0.1, −0.05, 0, +0.05, +0.15 |
+| 4 side change | `+0x6a` | 132 | `IntentionSideChangePass` (`0xe08b0`) | `0x51e`: −1.0, −0.5, 0, +0.05, +0.15 |
+| 5 back pass | `+0x6b` | 133 | `IntentionBackPass` (`0xe2688`) | `0x523`: 0, 0, 0, +0.05, +0.1 |
+| 6 killer pass | `+0x6c` | 134 | `IntentionKillerPass` (`0xdc1d8`) and `IntentionLinerCross` (`0xeafc0`) | `0x528`: 0, 0, 0, +0.05, +0.15 |
+| 7 one-two | `+0x6d` | 135 | `IntentionOneTwo` (`0xe8300`) | `0x542`–`0x545`: 0, 0, +0.05, +0.1 for levels 1–4 (level 0's entry isn't traced) |
+| 8 clear | `+0x6e` | 136 | `IntentionClear` (`0xf0448`, and `0xf0ab0` from it) | `0x550`: 0, 0, 0, +0.05, +0.15; `0x54b`: × 1.0, 1.0, 1.0, 1.2, 1.5 |
+| 9 press | `+0x6f` | 137 | `PlayBallCarrierMark` (`0xfcb48`, through `0x9a418` and `0x9a4c8`) | no tuning entries. The level is capped by a team value (match data `+0x9764`: 1 caps it at 0, 2 at 1, anything else at 4) and picks from the floats at `0x26e400` (rows 80, 70, 60, 50, 50 / 60, 50, 45, 30, 30 / 30 …) and `0x26e440` (5, 5, 10, 15, 20) |
+| 10 goalkeeping | `+0x70` | 138 | `PlayGoalKeep` (`0xff080`, through `0x1002b0` and `0x100c28`) | `0x594`–`0x59c`, every other entry: −0.3, −0.2, −0.1, +0.1, +0.3 |
+
+The item names are the ones `pbdata.py` uses. They come from the class
+names, not from the game's text: no screen in the game shows the
+tendencies (user report). "RWTB" is probably "run with the ball".
+The classes for dribble, shoot, clear, press and goalkeeping act for one
+player, the one on the ball or marking it. For carry in `0x117480` and for
+the four passes, the player is picked from a team slot, and whether it is
+the passer or the receiver isn't traced. Also not traced: what the press
+floats measure (they look like distances and a closing speed), and which
+tactics setting the team value at `+0x9764` is.
+
+**Empirical**, over all 27,950 players: every item uses 0–4, mostly 1–3,
+and items 0–9 each have 2,000–3,600 players at 4. Averaged by main
+position, the values fit the names. Goalkeepers average about 0.3 for
+dribble, shoot, killer pass and one-two, and about 2 for goalkeeping.
+Other players average about 0.45 for goalkeeping. Forwards (cells 10–12)
+average about 1 for clear and press, and defenders (cells 1–3) about 1.5
+for shoot and killer pass. `PBDATA_JP.PAC` has some values of 5 and 6,
+which the match reads as 4.
+
+`dribble_style` (parameter 140) has one reader, `0x9b540`, called from
+`0x8afdc`. The value goes to `0x13d710`/`0x13d780`, which pick one of four
+rows in the tables at `0x285888`, `0x285a08` and `0x285ab8`. These hold
+motion numbers (967–1026 in the first table): the four rows share their
+first 12 entries and differ in the dribbling ones. So the style chooses
+the player's set of dribble animations. Which style looks like what
+hasn't been checked in game.
+
+```bash
+python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 4408     # tendency, item 0 first
+python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0xdef30 40 --sles ISO/SLES_541.51   # feed pass: entries 0x519-0x51d
+python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x9a418 60 --sles ISO/SLES_541.51   # press
 ```
 
 ## Abilities and the detail screen
@@ -720,22 +793,22 @@ when a teammate or a staff member he likes or dislikes leaves.
 What `plGi_Get() +0x1f538` is (the help text says cold weather) isn't
 traced.
 
-### f_43 and f_66
+### f_43 and team combos
 
 No code was found that reads `+0x43`–`+0x46`. A scan of every load at
 their `PlPinfo` offsets (`+0x1db`–`+0x1de`) in `SLES_541.51` and the
 overlays found only other structures.
 
-Of the 11 values at `+0x66`, only `+0x67` is read (the affinity row).
+Outside the match, only `+0x67` of the 11 tendencies at `+0x66` is read
+(the affinity row).
 `pwkPCombo_Add` (`0x24e2e8`) adds a bonus to all 11 and to the 64
 abilities when the club reaches one of 45 "combos" (conditions at
 `0x54fbe8`, 0x34 bytes each, checked by `pwkPCombo_Recalc` `0x24e0e8`;
 bonuses at `0x550510`, 0x98 bytes each), clamped to 0–4. The bonus to
-`+0x67` is always 0. The match engine copies all 11 into its player
-parameters 128–138 ([above](#the-match-engines-player-parameters)), but
-what reads them there isn't found.
+`+0x67` is always 0. The match reads all 11
+([The tendencies](#the-tendencies)).
 
-They are not the tactics screen's combination lines, nor the heart, "…"
+The tendencies are not the tactics screen's combination lines, nor the heart, "…"
 and skull icons it shows next to each player when one is selected. Both
 are per pair of players: `CTacticsTeam::calculateCombinationLevel`
 (`0x2e6fb0`) reads each pair through `plCombi_Get` (`0x20f638`, team data
@@ -1130,18 +1203,25 @@ derived and ignored. `patch_disc.py` puts the edited pack on a disc
 ## Still unknown
 
 - What `+0x30` (always 0) and `+0x43`–`+0x46` mean; no reader was found.
-  What the ten `+0x66` values other than `+0x67` do in a match (they
-  become engine parameters 128 and 130–138).
+- Tendencies ([The tendencies](#the-tendencies)): whose value the pass
+  intentions and the carry helper `0x117480` read (passer or receiver),
+  what the press floats measure, which tactics setting the team value
+  at match data `+0x9764` is. No screen shows them (user report), so an
+  edit can only be seen in how a player plays; reading the match's
+  parameter copy over PINE during a match would at least confirm that an
+  edited value reaches it.
 - Kit style: what `+0x5a` is (value 3 showed no hat in a VS match), what
   turns the outfield gloves on (`plGi +0x1f538`; not a night match),
   and whether the dissatisfaction
   code's use of `+0x58`/`+0x59` is intended ([Kit style](#kit-style)).
-- What the match engine does with its player parameters
-  ([The match engine's player parameters](#the-match-engines-player-parameters)),
+- What the match does with most of its other player parameters (the
+  readers are listed by `snr2.py xref ISO/DLL/GAMEPRG.REL 0x9bdb8`, see
+  [Where the match reads the parameters](#where-the-match-reads-the-parameters)),
   and which attack pattern letter is which. Abilities 59–63 aren't
   copied into the match record, so their effect is outside it.
-- What each speech tone, condition type, ball-touch type and dribble
-  style value is.
+- What each speech tone and condition type value is, what the ball touch
+  does (match parameter 139 has no reader), and which dribble style
+  looks like what.
 - The hexagon labels are matched to indices from the data and VPF's
   pages. The label order in `GP::CHexWindowBase::DrawString` (`0x27c700`)
   comes from a screen layout and hasn't been traced.

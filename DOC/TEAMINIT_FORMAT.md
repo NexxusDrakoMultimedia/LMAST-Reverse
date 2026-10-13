@@ -264,7 +264,9 @@ matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
   it between a minimum and maximum from `getMinMaxData` (`0x246bb8`): a
   table at `0x5eb068` indexed by the currency option (`pwkOpt_GetMoney`),
   in units of 100. The table isn't in the executable's file, so it is
-  filled at run time and has to be read from memory (PINE).
+  filled at run time and has to be read from memory (PINE). User report:
+  the highest salary is £12 million, which at the pound rate above would
+  be a stored 72,000,000 (720,000 in the table's units of 100); unchecked.
 
 ## Checking the claims
 

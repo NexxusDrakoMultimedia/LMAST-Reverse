@@ -42,7 +42,11 @@ of any motion pack (`PLAYERMOTION.HED` has 1,008 entries, `OPTMOTION.PAC`
 ...). **Empirical:** no file name in `SLES_541.51` or any overlay refers to
 it, and none of them holds a copy of its data (four 32-byte samples were
 searched for). So no reader can be found. It may be unused by the retail
-game, but that isn't confirmed.
+game, but that isn't confirmed. It isn't a copy of the match's built-in
+tuning table either (`GAMEPRG.REL 0x270000`, 1,951 entries, see
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#where-the-match-reads-the-parameters)),
+whose values sit between kind words: at the best alignment only 41 of the
+467 values match.
 
 ## Still unknown
 

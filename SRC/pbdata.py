@@ -223,7 +223,10 @@ PLAYER_FIELDS = (
     ("style", 0x5e, 5, 5, None),         # play styles 1-22 (STYLES), 0 = none; pwkPlayStyle_Init
     ("flags", 0x63, 3, 1, None),         # bit 1: EU passport (plPinfo_IsEU)
     ("skills", 0x64, 16, 1, None),       # bit mask, plPinfo_IsSkill
-    ("f_66", 0x66, 3, 11, None),
+    # How readily the match AI picks each kind of play, 0-4 (2 neutral):
+    # match parameters 128-138, read by the fb::Intention/Play classes in
+    # GAMEPRG.REL (TENDENCY). +0x67 is also the affinity row.
+    ("tendency", 0x66, 3, 11, None),
     ("ability", 0x74, 5, 64, "ability"),
 )
 MANAGER_FIELDS = (
@@ -858,11 +861,18 @@ LEGS = ("left", "right", "left, two-footed", "right, two-footed")   # +0x2c, emp
 SLEEVES = ("by season", "short", "long")
 GROWTH = ("physical", "skill", "mental")
 
+# The 11 tendencies (+0x66-+0x70), named after the GAMEPRG.REL classes that
+# read each one through the parameter getter 0x9bdb8. Most pick one of five
+# entries of the overlay's tuning table (0x270000), from 0x519 on.
+TENDENCY = ("dribble", "shoot", "carry", "feed pass", "side change", "back pass",
+            "killer pass", "one-two", "clear", "press", "goalkeeping")
+
 EDIT_RANGES = {
     ("players", "rank"): (0, GROUP_ROWS - 1),       # build_ranking: 16 rank groups
     ("players", "height"): (150, 255),              # unconvert: the sum is a byte
     ("players", "shirt"): (1, 99),                  # the database's range, initteam SET_LIMITS
     ("players", "policy"): (0, 24),                 # the 25 policies (manager +0x34)
+    ("players", "tendency"): (0, 4),                # the match reads 5 or more as 4
     ("managers", "policy"): (0, 24),
     ("managers", "manager_drill"): (-1, DRILL_COUNT - 1),
     ("managers", "coach_drill"): (-1, DRILL_COUNT - 1),
@@ -888,6 +898,7 @@ EDIT_NAMES = {
 ITEM_NAMES = {
     ("players", "dissatis"): DISSATIS,
     ("players", "growth"): GROWTH,
+    ("players", "tendency"): TENDENCY,
     ("players", "ability"): ABILITY_NAMES,
     ("managers", "ability"): STAFF_ABILITY_NAMES,
     ("scouts", "ability"): SCOUT_ABILITY_NAMES,

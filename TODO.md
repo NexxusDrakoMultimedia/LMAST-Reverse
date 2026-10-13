@@ -24,7 +24,9 @@ item in its section below.
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
-   records. These are still the lead for the player fields in #1.
+   records. The match AI's `fb::` classes, which read the player
+   tendencies, are named by their type information, a way in for these
+   too.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -93,13 +95,21 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       time; `WithInRange_SM 0x246d18`, price kind 0, units of 100) over
       PINE, then give the New club tab's salaries that range
       (`DOC/TEAMINIT_FORMAT.md#still-unknown`)
-- [ ] Player fields still open: `+0x43`–`+0x46` (no reader found), what
-      the match AI does with its player parameters (the map from fields
-      to parameters is done; `f_66` is parameters 128–138, ball touch
-      139, dribble style 140), where abilities 59–63 are used (not in the
-      match record), and which attack pattern letter is which.
-      Lead: the AI's data tables that index parameters (`0x146560` reads
-      the play styles that way)
+- [ ] Player fields still open: `+0x43`–`+0x46` (no reader found; the
+      match's parameter copy at `GAMEPRG.REL 0x97b28` doesn't include
+      them), what the ball touch does (match parameter 139 has no
+      reader), where abilities 59–63 are used (not in the match record),
+      and which attack pattern letter is which. Lead: the 240 calls of
+      the match's parameter getter `0x9bdb8` (`snr2.py xref`), most with
+      a constant parameter number
+- [ ] Tendency leftovers (`DOC/PBDATA_FORMAT.md#the-tendencies`): whose
+      value the pass intentions and the carry helper `0x117480` read
+      (passer or receiver), what the press floats measure, which tactics
+      setting the team value at match data `+0x9764` is, which dribble
+      style looks like what. No screen shows the tendencies (user
+      report), so check an edit over PINE: read the edited player's
+      parameters 128-138 from the match's copy (`GAMEPRG.REL 0x97b28`,
+      object `+0x84`-`+0x8e`) during a match
 - [ ] Kit style leftovers: what `+0x5a` is (3 showed no hat), what sets
       `plGi +0x1f538` (outfield gloves; a night match didn't)
       (`DOC/PBDATA_FORMAT.md#kit-style`)
