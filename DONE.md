@@ -410,6 +410,19 @@ files. Each item keeps what was found, where, and how it was tested.
       and the editor's People tab (Play) edit it, range 0–4; tested
       through the widgets, and the save equals the logged command.
       `DOC/PBDATA_FORMAT.md#the-tendencies`
+- [x] Every player and staff field named (TODO's "Next up" #1), from
+      the developers' field table in the executable (`PwkEditTask`,
+      rows at `0x53c1e8`-`0x549a70`, about 170 structures): players
+      `castno` `+0x30`, `explodetype` `+0x43` (probably meant for the
+      `pwkExplo_*` growth spurts; no reader) and `gk_cap` `+0x5a`;
+      managers `rank`, `face`, `appeartype`, `comptype`; scouts `rank`,
+      `face`, `appeartype`. The staff "serial number" is the face
+      number, continuing the players' faces. `sles_disasm.py fields`
+      lists the table (by pattern, so it works on the Japanese build
+      too; regress `sles_fields`), and the editor's People tab edits
+      the new fields; a manager's rank was tested through the widgets
+      and the save equals the logged command.
+      `DOC/PBDATA_FORMAT.md#the-developers-field-names`
 
 ## 3. Ninja 3D models and motions
 

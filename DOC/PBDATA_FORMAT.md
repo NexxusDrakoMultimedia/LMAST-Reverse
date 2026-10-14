@@ -64,12 +64,13 @@ size of entry 1 in `PBDATA_EU.PAC`.
 Each record starts with a `char[19]` name (cp850, zero-padded), followed
 by bit fields read MSB first. The widths, order and destination offsets
 are all **confirmed** from the decoders. The destination offset is where
-the game keeps the value in memory, and it is also `pbdata.py`'s name for
-a field whose meaning is unknown (`f_30`, …). Meanings marked
-*empirical* come from the data alone. Player field names from `+0x34` on
-are the developers' own labels ([below](#the-developers-player-editor));
+the game keeps the value in memory. Meanings marked *empirical* come
+from the data alone. Player field names from `+0x34` on are the
+developers' own labels ([below](#the-developers-player-editor));
 **confirmed** on such a row means the game code that reads the field was
-also found.
+also found. Every field also has the developers' source name
+([The developers' field names](#the-developers-field-names)), which
+names the fields the editor labels leave out.
 
 ### Players (98 bytes, 779 bits used)
 
@@ -83,7 +84,7 @@ also found.
 | 7 | 1 | `+0x2a` | weight | stored − 45, in kg (48–100). *Empirical* |
 | 7 | 1 | `+0x2b` | shirt | preferred shirt number. **confirmed** |
 | 3 | 1 | `+0x2c` | leg | 0–3. Bit 0 set means right-footed, clear means left. *Empirical*: every well-known left-footer tested (Robben, Ashley Cole, Giggs, Messi, Roberto Carlos, Duff, Cech) has it clear. Bit 1 is set for famously two-footed players (Maldini, Henry, Rooney, Duff), and VPF's Player Edit screen shows Rooney (leg 3) as "Both(R)", so bit 1 is two-footed. The developers' editor names the four values 左, 右, 両左, 両右 (left, right, both-left, both-right). The detail screen shows a message from 100–103 (LEFT, RIGHT, LEFT, RIGHT), which fits `100 + leg`, but the copy into `PlPinfo +0x1c4` hasn't been traced. Tested in PCSX2: Van der Sar (250) set to 2 shows LEFT, as `100 + leg` predicts; the screen doesn't show two-footedness |
-| 16 | 1 | `+0x30` | f_30 | always 0 |
+| 16 | 1 | `+0x30` | castno | always 0. source name `castno`; no reader found |
 | 16 | 1 | `+0x32` | face | face number, 0–17,172. **confirmed**: `CDetailManager` passes it to `CDetailFace::Request` (`0x2869b4`) |
 | 16 | 1 | `+0x34` | req_status | required status: band 0–15, looked up in the status table (`0x55b970`). **confirmed**: `pwkTeam_UpdatePlayerCandidates` (`0x260cf8`) leaves a player out of a candidate list when it is above the club's `pwkTeam_Status()`. Managers (`+0x24`) and scouts (`+0x22`) have the same field. The BPINFO CHECK screen labels the 10,000 cutoff "1mil" ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)) |
 | 3 | 1 | `+0x36` | tone | speech tone, 0–3. Read by the event code in `SIMPRG.REL`; what each value sounds like isn't traced |
@@ -92,7 +93,7 @@ also found.
 | 4 | 1 | `+0x40` | pressure | pressure resistance. Read by the match engine (`GAMEPRG.REL`), not traced |
 | 4 | 1 | `+0x41` | loyalty | club loyalty; sets a promoted youth player's contract years. **confirmed** |
 | 4 | 1 | `+0x42` | star | star quality; scales popularity changes. **confirmed** |
-| 4 | 4 | `+0x43` | f_43 | no label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players), more often set for low-ranked players. No reader found |
+| 4 | 4 | `+0x43` | explodetype | source name `explodetype`, 0–15 ×4: probably meant for the growth spurts (`pwkExplo_*`, see [explodetype](#explodetype-and-team-combos)). No label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players), more often set for low-ranked players. No reader found |
 | 3 | 1 | `+0x47` | moti_type | motivation type, 0–7. **confirmed** |
 | 3 | 1 | `+0x48` | cond_type | condition type, 0–7. No reader found outside the debug and save code |
 | 5 | 1 | `+0x49` | potential | 0–7; read by `plPinfo_InitEditAbil` (`0x21b2b8`) |
@@ -110,14 +111,14 @@ also found.
 | 2 | 1 | `+0x57` | sleeves | 0 by season, 1 short, 2 long. **confirmed**; always 0. See [Kit style](#kit-style) |
 | 3 | 1 | `+0x58` | wristband | 0 none, 1–4 a colour. **confirmed**; 0 in 27,256 players |
 | 3 | 1 | `+0x59` | gloves | outfield gloves in cold weather: 0 none, 1–4 a glove texture. **confirmed**; 0 in 27,187 players |
-| 2 | 1 | `+0x5a` | f_5a | 0–3. By elimination the goalkeeper's hat, but no reader was found and value 3 showed no hat in PCSX2. 1 in 46 players |
+| 2 | 1 | `+0x5a` | gk_cap | the goalkeeper's cap, 0–3: source name `nicknack_gkcap`. No reader was found, and value 3 showed no cap in PCSX2. 1 in 46 players |
 | 3 | 1 | `+0x5b` | gk_gloves | goalkeeper's gloves, 0–5. **confirmed** |
 | 1 | 1 | `+0x5c` | gk_pants | 1: a goalkeeper wears long pants. **confirmed** |
 | 4 | 1 | `+0x5d` | boots | boot colours, 0–14. **confirmed** |
 | 5 | 5 | `+0x5e` | style | play styles, 1–22, 0 for none. **confirmed**. See [Play styles](#play-styles) |
 | 3 | 1 | `+0x63` | flags | bit 1: EU passport. **confirmed**. Set in 19,333 players |
 | 16 | 1 | `+0x64` | skills | bit mask. **confirmed**. All 16 bits are used; see [Skills](#skills) |
-| 3 | 11 | `+0x66` | tendency | how readily the match AI picks each kind of play, 0–4 with 2 neutral: dribble, shoot, carry, feed pass, side change, back pass, killer pass, one-two, clear, press, goalkeeping. **confirmed**; see [The tendencies](#the-tendencies). No label in the developers' editor. `+0x67` is also the row of the affinity table (see [Personality](#personality-and-condition-fields)). Team combos shift the other ten (`pwkPCombo_Add`, see [f_43 and team combos](#f_43-and-team-combos)) |
+| 3 | 11 | `+0x66` | tendency | how readily the match AI picks each kind of play, 0–4 with 2 neutral: dribble, shoot, carry, feed pass, side change, back pass, killer pass, one-two, clear, press, goalkeeping. **confirmed**; see [The tendencies](#the-tendencies). Source name `ai`; no label in the developers' editor. `+0x67` is also the row of the affinity table (see [Personality](#personality-and-condition-fields)). Team combos shift the other ten (`pwkPCombo_Add`, see [explodetype and team combos](#explodetype-and-team-combos)) |
 | 5 | 64 | `+0x74` | ability | 64 ratings (`PlAbilNo` 0–63), each mapped to 38–99. **confirmed**. See [Abilities](#abilities-and-the-detail-screen) |
 
 The 5 bits after the last field are zero in every record.
@@ -158,9 +159,9 @@ from `PwkCallbackCommand_PromotionEnd`) isn't traced.
 ### Managers and coaches (81 bytes, 642 bits used)
 
 `char[19]` name, then (bits × count at offset): 8 `+0x14` (nationality,
-*empirical*: same range and position as the players'), 5 `+0x18`,
-3 `+0x1c` (job, see below), 16 `+0x20`, 6 `+0x22` (age, see below), 16 `+0x24` (required status, **confirmed**
-table lookup), 4 ×4 `+0x26`, 2 ×5 `+0x2a`, 3 ×4 `+0x2f`, 2 `+0x33`,
+*empirical*: same range and position as the players'), 5 `+0x18` (rank),
+3 `+0x1c` (job, see below), 16 `+0x20` (face), 6 `+0x22` (age, see below), 16 `+0x24` (required status, **confirmed**
+table lookup), 4 ×4 `+0x26` (appeartype), 2 ×5 `+0x2a` (comptype), 3 ×4 `+0x2f`, 2 `+0x33`,
 6 `+0x34`, 3 ×8 `+0x35`, 8 ×3 `+0x3d`, 3 ×7 `+0x40`, 5 ×5 `+0x47`,
 signed 9 ×2 `+0x4c`, signed 9 ×4 `+0x54`, 1 ×2 `+0x64`, and 48 abilities
 (5 bits, mapped to 38–99) at `+0x66`. The 6 bits left over are zero.
@@ -170,7 +171,7 @@ The fields from `+0x2f` on are named in
 ### Scouts (71 bytes, 565 bits used)
 
 `char[19]` name, then 8 `+0x14` (nationality, *empirical*), 8 `+0x18`
-(age, see below), 5 `+0x1c`, 16 `+0x20`, 16 `+0x22` (required status), 4 ×4 `+0x24`, 1 `+0x28`,
+(age, see below), 5 `+0x1c` (rank), 16 `+0x20` (face), 16 `+0x22` (required status), 4 ×4 `+0x24` (appeartype), 1 `+0x28`,
 and 49 × 7 bits at `+0x29`. The first 4 are special searches and the last
 45 are abilities, clamped to 31 and mapped to 38–99. The 3 bits left over
 are zero. See
@@ -415,12 +416,68 @@ Star, Line Conductor, All-rounder, Ace Killer, Wall, Super Dribbler,
 Regista. In the database the first search is always set (0–35), and 322,
 579 and 816 scouts have none (36) in the other three.
 
-**Not labelled by either editor:** manager `+0x18` (0–15), `+0x20`,
-`+0x26` (always 0) and `+0x2a`–`+0x2e` (0–3 each), and scout `+0x1c`
-(0–15), `+0x20` and `+0x24` (always 0). **Empirical:** `+0x20` is a serial
-number, 17,173–20,172 for the 3,000 managers in order and 20,173–21,172
-for the 1,000 scouts, as if it continued a count that starts below them.
-The players' `+0x30` is 0 in every record.
+**Not labelled by either editor**, but named by the developers' field
+table ([below](#the-developers-field-names)): manager `+0x18` `rank`
+(0–15), `+0x20` `faceno`, `+0x26` `appeartype` (×4, always 0) and
+`+0x2a`–`+0x2e` `comptype` (×5, 0–3 each, like the players' eight
+dissatisfaction sensitivities `comptype` `+0x37`), and scout `+0x1c`
+`rank` (0–15), `+0x20` `faceno` and `+0x24` `appeartype` (×4, always 0).
+**Empirical:** the face numbers run 17,173–20,172 for the 3,000 managers
+in order and 20,173–21,172 for the 1,000 scouts, continuing the players'
+faces (0–17,172). Which code reads the staff ranks, faces, appear types
+and manager comptypes isn't traced. The players' `+0x30` (`castno`) is 0
+in every record.
+
+## The developers' field names
+
+`SLES_541.51` holds the field table of the developers' structure editor
+(`PwkEditTask`, reached from `pwkEdit_CallPwkEdit` `0x23c3f8`): rows of
+0x2c bytes naming the members of about 170 of the game's structures, with
+each member's offset, size, setter and getter (`0x23c420`–`0x242bc8`),
+range and count. **Confirmed** from the table: the player, manager and
+scout records start at `0x53dfe8`, `0x53fdd8` and `0x53f900`, and every
+offset and count matches the decoders. Two members group several of
+`pbdata.py`'s fields: the manager's `_policyset` and the scout's `abil`
+×49 (4 special searches, then 45 abilities). `pbdata.py`'s names follow
+the editors' labels where there are any, and these names otherwise:
+
+| Record | Offset | Source name | Range ×count | `pbdata.py` |
+|---|---|---|---|---|
+| player | `+0x14`, `+0x18`, `+0x1c` | nationality, rank, apos0 | 0–146, 0–16, 0–13 ×3 | nation, rank, position |
+| player | `+0x28`–`+0x2c` | age0, height, weight, unumber, leg | | age, height, weight, shirt, leg |
+| player | `+0x30` | castno | | castno |
+| player | `+0x32`, `+0x34` | faceno, needstatus | | face, req_status |
+| player | `+0x36` | tone | 0–6 | tone |
+| player | `+0x37` | comptype | 0–3 ×8 | dissatis |
+| player | `+0x3f`–`+0x42` | professional, pressure, loyalty, star | 0–15 | the same |
+| player | `+0x43` | explodetype | 0–15 ×4 | explodetype |
+| player | `+0x47`–`+0x49` | motitype, condtype, futuretype | 0–7, 0–7, 0–31 | moti_type, cond_type, potential |
+| player | `+0x4a`–`+0x4c` | pgrowtype, sgrowtype, mgrowtype | 0–15 | growth |
+| player | `+0x4d`–`+0x51` | awaytype, weaktype, tiredtype, wildtype, reverseaccuracy | 0–7 ×3, 0–15 ×2 | travel, injury_res, recovery, foul_avoid, weak_foot |
+| player | `+0x52`–`+0x56` | policy, envtype, intelligence, balltouch, dribblestyle | 0–31, 0–7, 0–15, 0–2, 0–3 | policy, adapt, intelligence, ball_touch, dribble_style |
+| player | `+0x57`–`+0x5d` | nicknack_sleeve, _wristband, _gloves, _gkcap, _gkglove, _pants, _spike | 0–2, 0–4, 0–4, 0–3, 0–5, 0–1, 0–14 | sleeves, wristband, gloves, gk_cap, gk_gloves, gk_pants, boots |
+| player | `+0x5e`, `+0x63`, `+0x64` | _pstyle_native, core_flag, skill_flag | 0–22 ×5, 0–7 | style, flags, skills |
+| player | `+0x66`, `+0x74` | ai, abil | 0–4 ×11, 0–100 ×64 | tendency, ability |
+| manager | `+0x18`, `+0x1c`, `+0x20`, `+0x22` | rank, coachtype0, faceno, age | 0–16, 0–7, –, 0–32 | rank, job, face, age |
+| manager | `+0x26`, `+0x2a` | appeartype, comptype | 0–9 ×4, 0–3 ×5 | appeartype, comptype |
+| manager | `+0x2f`–`+0x33` | motitype, plan_appoint, plan_game, plan_grow, prac_off | | moti_type, select_policy, match_policy, training_policy, rest_policy |
+| manager | `+0x34`, `+0x3d` | _policyset (a structure: policy, okrange ×4, goodrange ×4), _formation | ×3 | policy, policy_range, policy_best, formation |
+| manager | `+0x40`–`+0x46` | offensetype, possession, offensecenterside, offenseside, presspos, presshard, offsidehard | 0–7 | attacking … offside |
+| manager | `+0x47`, `+0x4c`, `+0x54` | _favoriteattackid, _mpraclist, _praclist | 0–29 ×5, −1–139 ×2, ×4 | attack_pattern, manager_drill, coach_drill |
+| manager | `+0x64`–`+0x66` | real_name_flag, model_pattern, abil | 0–1, 0–1, 0–100 ×48 | real_name, model_pattern, ability |
+| scout | `+0x1c`, `+0x20`, `+0x24` | rank, faceno, appeartype | 0–16, –, 0–10 ×4 | rank, face, appeartype |
+| scout | `+0x29` | abil | 0–100 ×49 | search, ability |
+
+The table's ranges are the developers' editor limits, not checks the game
+makes: the database stays inside them, often well inside (tone 0–3,
+policy 0–24). The same table names many other structures (`PlPinfo`,
+the team data, the club's finances, the schedule), so it is worth reading
+before decoding a new one.
+
+```bash
+python SRC/sles_disasm.py ISO/SLES_541.51 fields                # every structure, one block each
+python SRC/sles_disasm.py ISO/SLES_541.51 fields explodetype ai  # rows by name
+```
 
 ## Personality and condition fields
 
@@ -484,11 +541,11 @@ written directly:
 | 139 | `ball_touch` (`+0x55`), 3 becomes 2 | `0x1434d8` |
 | 140 | `dribble_style` (`+0x56`), 4 or more becomes 2 | `0x1434f8` |
 | 141–149 | 1 if ability 1 (dribble skill) is at least 0x50 | `0x143518` |
-| 153–155, 159–162 | the kit style: `boots`, `gloves`, `f_5a`, `wristband`, `gk_gloves`, `gk_pants`, `sleeves` | `0x143558` |
+| 153–155, 159–162 | the kit style: `boots`, `gloves`, `gk_cap`, `wristband`, `gk_gloves`, `gk_pants`, `sleeves` | `0x143558` |
 
 Parameters 150–152 and 156–158 are set to 0. Abilities 59–63 (the attack
 patterns) and 45–52 (the system fits, except through 78–89) are not
-copied. Neither are `tone`, `loyalty`, `star`, `f_43`, `moti_type`,
+copied. Neither are `tone`, `loyalty`, `star`, `explodetype`, `moti_type`,
 `cond_type`, `potential`, `growth`, `travel`, `policy`, `adapt` and
 `intelligence`; those are only used outside the match.
 
@@ -752,7 +809,7 @@ come from its `.svm` entries (`python SRC/svr.py info`).
 | `+0x57` | 0 | sleeves | 0 by season, 1 short all year, 2 long all year |
 | `+0x58` | 1 | wristband | 0 none, 1–4 a colour (shown only with short sleeves) |
 | `+0x59` | 2 | gloves | outfield players in cold weather: 0 none, 1–4 glove texture `fpglv_00`–`03` |
-| `+0x5a` | 3 | f_5a | 0–3. The GK Style page's hat is the only item left over, but no reader of byte 3 was found, and value 3 showed no hat in PCSX2. The cap texture `PLAYER/ACCE_CAP.SVR` is opened by `PlayerAssemblerBase::initialize` (`0x2c9264`) |
+| `+0x5a` | 3 | gk_cap | 0–3. The source name is `nicknack_gkcap`, and the GK Style page's hat is the only item left over, but no reader of byte 3 was found, and value 3 showed no cap in PCSX2. The cap texture `PLAYER/ACCE_CAP.SVR` is opened by `PlayerAssemblerBase::initialize` (`0x2c9264`) |
 | `+0x5b` | 4 | gk_gloves | goalkeeper's gloves `gkglv_00`–`05` |
 | `+0x5c` | 5 | gk_pants | goalkeeper only: 0 normal, 1 long |
 | `+0x5d` | 6 | boots | 0–14, one of 15 two-palette colourings |
@@ -765,9 +822,9 @@ come from its `.svm` entries (`python SRC/svr.py info`).
 - Sleeves: Ashley Cole with sleeves 2 wore long sleeves.
 - Wristband: Neville (1) and Ferdinand (4), both with short sleeves,
   wore wristbands.
-- `f_5a` = 3 showed no hat, neither on the keeper (Robinson) nor on an
-  outfield player (Owen). So either `f_5a` isn't the hat or something
-  else must enable it.
+- `gk_cap` = 3 showed no cap, neither on the keeper (Robinson) nor on an
+  outfield player (Owen). The source name says it is the cap, so
+  something else must enable it.
 - Outfield gloves (Terry 4, Beckham 1) didn't show in a night match, so
   night alone doesn't switch on `plGi +0x1f538`.
 - The keeper (`gk_pants` 1, `gk_gloves` 5) wore long pants and gloves
@@ -793,11 +850,25 @@ when a teammate or a staff member he likes or dislikes leaves.
 What `plGi_Get() +0x1f538` is (the help text says cold weather) isn't
 traced.
 
-### f_43 and team combos
+### explodetype and team combos
 
-No code was found that reads `+0x43`–`+0x46`. A scan of every load at
-their `PlPinfo` offsets (`+0x1db`–`+0x1de`) in `SLES_541.51` and the
-overlays found only other structures.
+No code was found that reads `+0x43`–`+0x46`. The decoder keeps them
+(`plBits_DecPlPbaseEx` stores four 4-bit values at `PlPbase +0x43`), and
+the developers' field table names them `explodetype`, 0–15, four of them
+([The developers' field names](#the-developers-field-names)). A scan of
+every byte load at their `PlPinfo` offsets (`+0x1db`–`+0x1de`) in
+`SLES_541.51` and the overlays, and at `+0x43`–`+0x46` in the executable,
+found only other structures (the manager record's tactics in the
+developers' editor, a youth candidate record at `0x25fd70`).
+
+"Explode" is the game's word for a growth spurt: the `pwkExplo_*`
+functions (`0x243348`–`0x2441c0`) check monthly and yearly triggers
+(`pwkExplo_Month` `0x243b80`), then `pwkExplo_SetExploExp` (`0x243348`)
+adds experience to all 64 abilities. Whether a player can have one
+depends on his age against a table picked by the skill growth type
+`+0x4b` (`0x243020`, table `0x54d6e0`), and on `PlPinfo +0x270`/`+0x271`,
+which `plPinfo_InitExplo` clears. So `explodetype` looks like a planned
+input to this system that the retail game doesn't use.
 
 Outside the match, only `+0x67` of the 11 tendencies at `+0x66` is read
 (the affinity row).
@@ -1202,7 +1273,8 @@ derived and ignored. `patch_disc.py` puts the edited pack on a disc
 
 ## Still unknown
 
-- What `+0x30` (always 0) and `+0x43`–`+0x46` mean; no reader was found.
+- Whether anything reads `castno` (`+0x30`, always 0) or `explodetype`
+  (`+0x43`–`+0x46`); no reader was found.
 - Tendencies ([The tendencies](#the-tendencies)): whose value the pass
   intentions and the carry helper `0x117480` read (passer or receiver),
   what the press floats measure, which tactics setting the team value
@@ -1210,7 +1282,8 @@ derived and ignored. `patch_disc.py` puts the edited pack on a disc
   edit can only be seen in how a player plays; reading the match's
   parameter copy over PINE during a match would at least confirm that an
   edited value reaches it.
-- Kit style: what `+0x5a` is (value 3 showed no hat in a VS match), what
+- Kit style: what makes the cap (`gk_cap`, `+0x5a`) show (value 3
+  showed no cap in a VS match), what
   turns the outfield gloves on (`plGi +0x1f538`; not a night match),
   and whether the dissatisfaction
   code's use of `+0x58`/`+0x59` is intended ([Kit style](#kit-style)).
@@ -1228,8 +1301,8 @@ derived and ignored. `patch_disc.py` puts the edited pack on a disc
 - What the play styles do in a match, beyond which abilities grow.
 - The code that turns the leg field into `PlPinfo +0x1c4`.
 - What sets job 5 when a manager is hired.
-- The staff fields neither editor labels (manager `+0x18`, `+0x20`,
-  `+0x26`, `+0x2a`–`+0x2e`; scout `+0x1c`, `+0x20`, `+0x24`), what the
+- What reads the staff fields only the source table names (rank, face,
+  appeartype, and the manager's comptype), what the
   manager's 25 policies (`+0x34`) and the policy ranges mean, and what
   the 1–5 tactical values and the model pattern do in a match.
 - Which game code reads the staff abilities that no bar shows (6–9,

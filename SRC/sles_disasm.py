@@ -26,6 +26,11 @@ Usage:
     python sles_disasm.py <SLES_541.51> dis    <substring> ...   # disassemble matching functions
     python sles_disasm.py <SLES_541.51> addr   <hex_addr> [n]    # disassemble n instructions at address
     python sles_disasm.py <SLES_541.51> relocs [substring ...]   # sites patched to overlay imports
+    python sles_disasm.py <SLES_541.51> fields [substring ...]   # the developers' field names
+
+`fields` lists the field table of the developers' structure editor
+(PwkEdit): each member's offset, original name, size, range and count,
+one structure per block. See DOC/PBDATA_FORMAT.md#the-developers-field-names.
 """
 import bisect
 import os
@@ -95,6 +100,54 @@ def recover_symbols(elf):
                 if s and len(s) > 2 and all(32 < ord(c) < 127 for c in s):
                     syms[s] = a
     return syms
+
+
+FIELD_ROW = 0x2C
+
+
+def edit_fields(elf):
+    """The developers' field table for PwkEdit (pwkEdit_CallPwkEdit): rows
+    of 0x2c bytes {u32 offset, u32 kind, u32 name, u32 setter, u32 getter,
+    s32 min, s32 max, u32, u32 count, ...} naming the members of most of
+    the game's structures. Kind's low half is the member's size; its top
+    half is 0xffff for a number, 0xfffe for a string, or for a member
+    that is itself a structure, that structure's number (such members
+    have no setter or getter, and their names start with "_"). Found by
+    that pattern, not by address, so it works on any build. Returns
+    [(row address, offset, size, type, name, min, max, count)], type
+    None for a number or string."""
+    d = elf.data
+    tx_lo, tx_size = elf.sections[".text"]
+
+    def code(v):
+        return v == 0 or tx_lo <= v < tx_lo + tx_size
+
+    def is_row(w, name):
+        kind, size = w[1] >> 16, w[1] & 0xFFFF
+        if not (name and all(c.isalnum() or c == "_" for c in name)):
+            return False
+        if kind in (0xFFFF, 0xFFFE):
+            return size in (1, 2, 4, 8) and code(w[3]) and code(w[4])
+        return kind < 0x200 and 0 < size and w[3] == w[4] == 0 and name[0] == "_"
+
+    rows = []
+    for va, off, size in elf.segments:
+        a = va
+        while a + FIELD_ROW <= va + size:
+            if tx_lo <= a < tx_lo + tx_size:
+                a = tx_lo + tx_size
+                continue
+            w = struct.unpack_from("<9I", d, off + a - va)
+            name = elf.cstr(w[2], 64) if elf.v2f(w[2]) is not None else None
+            if is_row(w, name):
+                mn, mx = struct.unpack("<ii", struct.pack("<II", w[5], w[6]))
+                kind = w[1] >> 16
+                rows.append((a, w[0], w[1] & 0xFFFF, None if kind >= 0xFFFE else kind,
+                             name, mn, mx, w[8]))
+                a += FIELD_ROW
+            else:
+                a += 4
+    return rows
 
 
 SYM_KINDS = {1: "import", 2: "export", 3: "weak", 4: "abs"}
@@ -240,7 +293,7 @@ class Disassembler:
 
 
 def main(argv):
-    if len(argv) < 3 or (argv[2] != "relocs" and len(argv) < 4):
+    if len(argv) < 3 or (argv[2] not in ("relocs", "fields") and len(argv) < 4):
         print(__doc__)
         return 1
     elf = Elf(argv[1])
@@ -260,6 +313,18 @@ def main(argv):
     elif cmd == "addr":
         count = int(args[1]) if len(args) > 1 else 64
         Disassembler(elf, syms, Links(elf)).range(int(args[0], 16), count)
+    elif cmd == "fields":
+        # Rows that follow each other are one structure; a gap starts the next.
+        prev = None
+        for a, off, size, kind, name, mn, mx, count in edit_fields(elf):
+            if prev is not None and a != prev + FIELD_ROW and not args:
+                print()
+            prev = a
+            if args and not any(p in name for p in args):
+                continue
+            what = "%d-%d" % (mn, mx) if kind is None else "structure %d" % kind
+            print("%#x  +%#-6x %-40s size %d  %s%s" % (
+                a, off, name, size, what, "  x%d" % count if count else ""))
     elif cmd == "relocs":
         links = Links(elf)
         if not links.symbols:

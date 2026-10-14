@@ -111,7 +111,7 @@ with, for example, `python SRC/tbb.py info DAT | grep '!!'`.
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`sles_disasm.py`](SRC/sles_disasm.py) | `ISO/SLES_541.51` | recovers about 12,600 symbol names from the `.sndata` export table and disassembles with labels, naming the 323 sites that call or reference overlay code (`relocs`) |
+| [`sles_disasm.py`](SRC/sles_disasm.py) | `ISO/SLES_541.51` | recovers about 12,600 symbol names from the `.sndata` export table and disassembles with labels, naming the 323 sites that call or reference overlay code (`relocs`), and lists the developers' field table: the source names, ranges and offsets of about 170 structures' members (`fields`) |
 | [`snr2.py`](SRC/snr2.py) | `ISO/DLL/*.REL` | parses the SN Systems overlays: header, symbols, relocations, xrefs, annotated disassembly |
 | [`gamever.py`](SRC/gamever.py) | `ISO/`, `ISO_JP/` | tells the builds apart and finds a PAL address or constant in another build's executable or overlay; `check` lists every address the tools use |
 

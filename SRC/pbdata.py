@@ -34,8 +34,10 @@ The kit style at +0x57-+0x5d (sleeves, wristband, gloves, goalkeeper's
 gloves and pants, boots) is named from the game's own Dressing and GK
 Style labels: GAMEPRG.REL 0x1e468 copies it to the player model, which
 clamps each byte (set_player_uniform_style_info, 0x2cd9c8); `info` flags
-values above those limits. Fields with no name keep their offset as a name
-(f_30, ...).
+values above those limits. The rest are the developers' own names, from the
+field table at 0x53dfe8 (players), 0x53fdd8 (managers) and 0x53f900
+(scouts): {offset, kind, name, setter, getter, min, max, ?, count, ...},
+0x2c bytes a row. Fields with no name would keep their offset as a name.
 
 The player detail screen's 14 bars (SPEED ... MARK, or SAVIN ... JUMP for
 goalkeepers) are averages of the first 33 abilities (ConvertPlayer_Bar,
@@ -185,7 +187,7 @@ PLAYER_FIELDS = (
     ("weight", 0x2a, 7, 1, ("add", 45)),   # adds 0x2d
     ("shirt", 0x2b, 7, 1, None),         # pwkTeam_SetUnumberOpinfo's preferred number
     ("leg", 0x2c, 3, 1, None),           # bit 0: right foot, else left; bit 1: two-footed (empirical)
-    ("f_30", 0x30, 16, 1, None),
+    ("castno", 0x30, 16, 1, None),       # always 0; no reader found
     ("face", 0x32, 16, 1, None),         # CDetailFace::Request (0x2869b4)
     ("req_status", 0x34, 16, 1, "status"),  # pwkTeam_UpdatePlayerCandidates vs pwkTeam_Status
     ("tone", 0x36, 3, 1, None),          # speech tone in events
@@ -194,7 +196,7 @@ PLAYER_FIELDS = (
     ("pressure", 0x40, 4, 1, None),      # pressure resistance
     ("loyalty", 0x41, 4, 1, None),       # club loyalty; pwkTeam_GetYouthPromoteConyear
     ("star", 0x42, 4, 1, None),          # star quality; popularity changes
-    ("f_43", 0x43, 4, 4, None),
+    ("explodetype", 0x43, 4, 4, None),   # no reader found; pwkExplo_* uses the growth types
     ("moti_type", 0x47, 3, 1, None),     # plPinfo_CalcMotiYear, affinity column
     ("cond_type", 0x48, 3, 1, None),     # condition type
     ("potential", 0x49, 5, 1, None),
@@ -216,7 +218,7 @@ PLAYER_FIELDS = (
     ("sleeves", 0x57, 2, 1, None),       # 0 by season, 1 short, 2 long (refresh_uniform_style)
     ("wristband", 0x58, 3, 1, None),     # 0 none, 1-4 colour of the "wristband" texture
     ("gloves", 0x59, 3, 1, None),        # outfield gloves: 0 none, 1-4 fpglv_00-03 (0x3a1dc8)
-    ("f_5a", 0x5a, 2, 1, None),          # 0-3; no reader found, and 3 showed no hat in PCSX2
+    ("gk_cap", 0x5a, 2, 1, None),        # nicknack_gkcap; no reader found, and 3 showed no cap in PCSX2
     ("gk_gloves", 0x5b, 3, 1, None),     # gkglv_00-05 (0x3a1de0)
     ("gk_pants", 0x5c, 1, 1, None),      # goalkeeper only: 1 long
     ("boots", 0x5d, 4, 1, None),         # 15 palette pairs for "spk_00" (0x3a2238)
@@ -231,13 +233,13 @@ PLAYER_FIELDS = (
 )
 MANAGER_FIELDS = (
     ("nation", 0x14, 8, 1, None),
-    ("f_18", 0x18, 5, 1, None),
+    ("rank", 0x18, 5, 1, None),
     ("job", 0x1c, 3, 1, None),           # PlMinfo +0xa0: which bars CalcManagerAbil shows
-    ("f_20", 0x20, 16, 1, None),
+    ("face", 0x20, 16, 1, None),         # faceno; continues the players' faces
     ("age", 0x22, 6, 1, None),           # stored as is; shown as the age (TEAM_INIT_DATA tests)
     ("req_status", 0x24, 16, 1, "status"),
-    ("f_26", 0x26, 4, 4, None),
-    ("f_2a", 0x2a, 2, 5, None),
+    ("appeartype", 0x26, 4, 4, None),
+    ("comptype", 0x2a, 2, 5, None),      # like the players' dissatis; no reader found
     # From moti_type on, names come from the developers' manager editor
     # (MinfoEditorTask, DEBUGPRG.REL 0x1c98-0x21f0), which reads each
     # field after drawing its label.
@@ -267,10 +269,10 @@ MANAGER_FIELDS = (
 SCOUT_FIELDS = (
     ("nation", 0x14, 8, 1, None),
     ("age", 0x18, 8, 1, None),           # stored as is; shown as the age (TEAM_INIT_DATA tests)
-    ("f_1c", 0x1c, 5, 1, None),
-    ("f_20", 0x20, 16, 1, None),
+    ("rank", 0x1c, 5, 1, None),
+    ("face", 0x20, 16, 1, None),         # faceno; continues the managers' faces
     ("req_status", 0x22, 16, 1, "status"),
-    ("f_24", 0x24, 4, 4, None),
+    ("appeartype", 0x24, 4, 4, None),
     # Names from the developers' scout editor (SinfoEditorTask, DEBUGPRG.REL
     # 0x97a0-0x98b0).
     ("real_name", 0x28, 1, 1, None),
@@ -281,7 +283,7 @@ FIELDS = dict(zip(KINDS, (PLAYER_FIELDS, MANAGER_FIELDS, SCOUT_FIELDS)))
 
 # PlayerAssemblerBase::set_player_uniform_style_info (0x2cd9c8) clamps each
 # kit-style byte to these maximums, so a larger stored value can't show.
-KIT_STYLE_MAX = (("sleeves", 2), ("wristband", 4), ("gloves", 4), ("f_5a", 3),
+KIT_STYLE_MAX = (("sleeves", 2), ("wristband", 4), ("gloves", 4), ("gk_cap", 3),
                  ("gk_gloves", 5), ("gk_pants", 1), ("boots", 14))
 
 # plPinfo_Abil2PSM (0x216f10): the growth group of each of the 64 player
@@ -852,7 +854,7 @@ def default_mes(pac_path):
 # --- editing -----------------------------------------------------------------
 # What an editor (SRC/editor.py) may offer for each field, so that it keeps
 # no copy of its own. Values are as shown, the same as `set` takes. Fields
-# with no name yet (f_30, ...) are read-only. A range here is the
+# with no name yet (f_<offset>) are read-only. A range here is the
 # documented one where that is narrower than the field's bits; `set`
 # itself only checks the bits.
 
@@ -869,6 +871,8 @@ TENDENCY = ("dribble", "shoot", "carry", "feed pass", "side change", "back pass"
 
 EDIT_RANGES = {
     ("players", "rank"): (0, GROUP_ROWS - 1),       # build_ranking: 16 rank groups
+    ("managers", "rank"): (0, 15),                  # the database's range, like the players'
+    ("scouts", "rank"): (0, 15),
     ("players", "height"): (150, 255),              # unconvert: the sum is a byte
     ("players", "shirt"): (1, 99),                  # the database's range, initteam SET_LIMITS
     ("players", "policy"): (0, 24),                 # the 25 policies (manager +0x34)
@@ -879,7 +883,7 @@ EDIT_RANGES = {
 }
 EDIT_RANGES.update((("managers", f), (1, 5)) for f in (
     "attacking", "possession", "centre_side", "left_right", "press_line", "press", "offside"))
-EDIT_RANGES.update((("players", f), (0, top)) for f, top in KIT_STYLE_MAX if f != "f_5a")
+EDIT_RANGES.update((("players", f), (0, top)) for f, top in KIT_STYLE_MAX)
 
 # Fields whose values have names: value n is names[n].
 EDIT_NAMES = {

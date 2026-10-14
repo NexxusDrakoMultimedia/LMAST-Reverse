@@ -209,6 +209,7 @@ def checks():
         ("sles_syms", ["sles_disasm.py", "ISO/SLES_541.51", "syms", "CMsgSubCategory"],
          ["ISO/SLES_541.51"]),
         ("sles_relocs", ["sles_disasm.py", "ISO/SLES_541.51", "relocs"], ["ISO/SLES_541.51"]),
+        ("sles_fields", ["sles_disasm.py", "ISO/SLES_541.51", "fields"], ["ISO/SLES_541.51"]),
         # Every executable and overlay address the tools use, found in the
         # build (in PAL each must come out as itself).
         ("gamever", ["gamever.py", "check", "ISO"], ["ISO/SLES_541.51", "ISO/DLL"]),

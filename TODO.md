@@ -11,22 +11,26 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **Name the rest of the player fields** (section 2). The editor can only
-   offer a field once it has a name and a range (stage 2 in
-   [`GOALS.md`](GOALS.md)).
-2. **What each PwkScript computes** (section 7). The formulas
+1. **What each PwkScript computes** (section 7). The formulas
    behind player points, spectators, season tickets and popularity, so a
-   script edit could be tested in PCSX2.
-3. **Archive repacking: tests in PCSX2** (section 9). Every archive
+   script edit could be tested in PCSX2. Lead: the developers' field
+   table (`sles_disasm.py fields`) is pwkEdit's own list of the values
+   it can read and write, with their source names.
+2. **Archive repacking: tests in PCSX2** (section 9). Every archive
    kind can now be rebuilt (`MES.PAC`, `.HED` archives, the Acrobata
    pack, KC@P packs, PRS); none of these rebuilds has been seen in game.
-4. **The `GAME/` tactics AI files** (section 6). The play books, the
+3. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
    records. The match AI's `fb::` classes, which read the player
    tendencies, are named by their type information, a way in for these
    too.
+4. **What the match's player parameters do** (section 2, "Player fields
+   still open"). The match's parameter getter (`GAMEPRG.REL 0x9bdb8`) has
+   240 calls, most with a constant parameter number; tracing each to its
+   `fb::` class, as for the tendencies, says what every ability and
+   personality field does in a match.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -95,9 +99,10 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       time; `WithInRange_SM 0x246d18`, price kind 0, units of 100) over
       PINE, then give the New club tab's salaries that range
       (`DOC/TEAMINIT_FORMAT.md#still-unknown`)
-- [ ] Player fields still open: `+0x43`–`+0x46` (no reader found; the
-      match's parameter copy at `GAMEPRG.REL 0x97b28` doesn't include
-      them), what the ball touch does (match parameter 139 has no
+- [ ] Player fields still open: whether anything reads `explodetype`
+      (`+0x43`-`+0x46`, named by the developers' field table; probably
+      meant for the `pwkExplo_*` growth spurts, no reader found), what
+      the ball touch does (match parameter 139 has no
       reader), where abilities 59–63 are used (not in the match record),
       and which attack pattern letter is which. Lead: the 240 calls of
       the match's parameter getter `0x9bdb8` (`snr2.py xref`), most with
@@ -110,12 +115,13 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       report), so check an edit over PINE: read the edited player's
       parameters 128-138 from the match's copy (`GAMEPRG.REL 0x97b28`,
       object `+0x84`-`+0x8e`) during a match
-- [ ] Kit style leftovers: what `+0x5a` is (3 showed no hat), what sets
+- [ ] Kit style leftovers: what makes `gk_cap` (`+0x5a`, source name
+      `nicknack_gkcap`) show (3 showed no cap), what sets
       `plGi +0x1f538` (outfield gloves; a night match didn't)
       (`DOC/PBDATA_FORMAT.md#kit-style`)
-- [ ] Staff fields neither developers' editor labels: manager `+0x18`,
-      `+0x20` (a serial number), `+0x26`, `+0x2a`-`+0x2e`; scout `+0x1c`,
-      `+0x20`, `+0x24`; and what the 25 manager policies (`+0x34`), the
+- [ ] Staff field leftovers: which code reads the fields only the
+      developers' field table names (rank, face, appeartype; the
+      manager's comptype), and what the 25 manager policies (`+0x34`), the
       policy ranges and the 1-5 tactical leanings do
       (`DOC/PBDATA_FORMAT.md#the-developers-staff-editors`)
 - [ ] What sets job 5 when a manager is hired, and how coaches and former

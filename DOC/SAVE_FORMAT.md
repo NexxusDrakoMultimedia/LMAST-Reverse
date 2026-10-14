@@ -426,7 +426,7 @@ bigger red heart. **Checked in game:** in save G000 (2024–25), all 22
 icons shown with J.Hartman selected match `save.py combi` (Galletti's
 skull, the four "…", and the blue, red and big red hearts). The line
 colours follow the same levels (see
-[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#f_43-and-team-combos)).
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#explodetype-and-team-combos)).
 
 **Empirical**, all 5 saves: the value never exceeds the cap (1,329
 pairs), the diagonal is 0, and the caps are 0 or 7,000 + 7,300 × *k* for
