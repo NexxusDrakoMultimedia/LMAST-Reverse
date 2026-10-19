@@ -36,7 +36,7 @@ game code. Everything else here (what the names mean, counts) is
 | `EDIT_UNIFORM_{ORG,GK}_{SHT,PNT}`, `EDIT_UNIFORM_ORG_SOX` `.PAC/.HED` | BINPAC v3 | edit-kit textures (`org_000_sht.svr`, `gk_000_sht.svr` ...) |
 | `EDIT_UNI_{SHT,PNT}_NUM.PAC/.HED` | BINPAC v3 | the same kits with numbers applied (`00/num_00_99.svr` ...) |
 | `EDIT_UNIFORM_CLUT{,_PRESS}.PAC/.HED` | BINPAC v3 | 96 kit palettes (`org_uni_A1.svp` ...) |
-| `NUMBER_00`–`_07{,_PRESS}.PAC/.HED`, `NUMBER_CLUT{,_PRESS}` | BINPAC v3 | 8 shirt-number fonts × 100 numbers (`num_00_00.svr` ... `num_00_99.svr`), 96 palettes |
+| `NUMBER_00`–`_07{,_PRESS}.PAC/.HED`, `NUMBER_CLUT{,_PRESS}` | BINPAC v3 | 8 shirt-number fonts × 100 numbers (`num_00_00.svr` ... `num_00_99.svr`), 96 palettes. The executable names only the `_PRESS` number packs (`number_00_press.pac` … `_07`, `number_clut_press.pac`, `SLES 0x45b0e8`); `SIMPRG.REL` names `number_clut.hed`/`.pac`. No code names the plain `NUMBER_0n.PAC` or its `.HED` (**empirical**, a string search of the executable and every overlay). In the `_PRESS` packs entry *n* is number *n*, a PRSH-compressed `PVMH` named `num_0f_nn` |
 | `COLOR_TBL.TBB` | TBB, 96 × 96 bytes | the kit colour clash table (`UniformList_CheckColor`). See [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md) |
 | `UNIFORM_LIST.TBB` | TBB, 661 × 64 bytes | every club's home and away kits (designs and colours), bit-packed, read by `UniformList_*` (`0x2d2b68`–`0x2d3608`). See [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md) |
 | `UNIFORM_GK.TBB` | TBB, 209 × 3 and 38 × 66 bytes | keeper kits of your club, the rival and the VS teams, chosen by outfield shirt design, with 6 colour schemes per keeper design ([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#uniform_gktbb-keeper-kits-made-from-the-outfield-kit)) |

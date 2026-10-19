@@ -14,6 +14,8 @@ item in its section below.
 1. **Archive repacking: tests in PCSX2** (section 9). Every archive
    kind can now be rebuilt (`MES.PAC`, `.HED` archives, the Acrobata
    pack, KC@P packs, PRS); none of these rebuilds has been seen in game.
+   The discs are built: `LMAST-test-archives.iso` (everything but
+   `MES.PAC`) and `LMAST-test-camps-mes.iso`.
 2. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
@@ -324,14 +326,28 @@ See [`DOC/REBUILD.md`](DOC/REBUILD.md).
 
 - [ ] `TACTICSPITCH.PAC` is loaded through `CLoader`, not as a registering
       resource: whether its entries stand in for their originals
-- [ ] Test in PCSX2: a `PRELOAD` pack that a rebuild moves (the code path
-      is the same as a moved file, but untested in game)
-- [ ] Test in PCSX2: a face changed in a rebuilt `FC_EURO_FACEPACK_01`
-      (`pac.py replace --prs`), and any PRS entry written by
-      `pac.prs_compress`
-- [ ] Test in PCSX2: an archive rebuilt around a grown entry, with its
-      `.HED` (a `PLAYER/NUMBER_*.PAC` number texture), and an Acrobata
-      scene in a rebuilt pack
+- [ ] Test in PCSX2: the archive rebuilds on `LMAST-test-archives.iso`
+      (with `--launcher` and `--skip-tutorial`; 11 files moved, the disc
+      grown). Each check:
+      - `PRELOAD` packs moved, and a `.HED` archive rebuilt around grown
+        entries: `NEWS/NEWS_TITLE.PAC` entries 0 and 1 (England's two
+        mastheads) hold Spain's (16, 17) plus 4,000 zero bytes; the
+        `.HED` and the seven `PRELOAD/NEWS*.PAC` copies were rebuilt and
+        the packs moved. An English career's newspaper should show a
+        Spanish paper's masthead
+      - KC@P and `prs_compress`: `FC_EURO_FACEPACK_01` entry 0
+        (`REFREE_01`) holds entry 214's head, expanded and recompressed;
+        the data file moved. SATO TEST ID 0 should look like ID 214, and
+        so may the first referee in a match
+      - a recompressed PRSH entry in a BINPAC without a `.HED`: in all
+        eight `NUMBER_0n_PRESS.PAC` (the number packs the game loads),
+        entry 3 holds number 8's texture under number 3's name. Shirt 3
+        should read 8 (Uniform Viewer, matches)
+      - the Acrobata index: `ACROBATAPACKFILE.PAC` entry 0 (`BG_CH_00_00`)
+        grown past its sector, so all 874 later scenes moved and the
+        executable's index was rewritten. The launcher's ACROBATA
+        VIEWER, the club house and other 3D scenes should play as
+        normal
 - [ ] Test in PCSX2: a `MES.PAC` whose files moved (`LMAST-test-camps-mes.iso`, with `--mod lmaster` and the skip:
       `3_6.mbb` grown past its slot, the welcome mail's body starting
       "MOVED FILE TEST." in `MES.PAC` only; the new-game popup should show

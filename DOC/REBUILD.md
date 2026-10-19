@@ -215,7 +215,11 @@ equals the new header; `ACROBATAPACKFILE.PAC#3` grown by 64 bytes was
 refused on `DATA.CVM` and on the disc image rewrote one index record,
 after which the executable's table equals the new header; a grown
 `MES.PAC` moved 810 files and rewrote their records. A second run finds
-nothing to do in each case. None of these has been tested in PCSX2 yet.
+nothing to do in each case. None of these has been tested in PCSX2 yet;
+`LMAST-test-archives.iso` and `LMAST-test-camps-mes.iso` are built for
+it (`TODO.md`). The plain `PLAYER/NUMBER_0n.PAC` and its `.HED` aren't
+loaded by name; the game reads the `_PRESS` packs
+([`PLAYER_DIR.md`](PLAYER_DIR.md)).
 
 ## Moving files
 
