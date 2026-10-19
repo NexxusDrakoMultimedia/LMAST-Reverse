@@ -11,22 +11,17 @@ The sections group the open items by area. Finished items move to
 What to work on next, most valuable first. Each line points to the full
 item in its section below.
 
-1. **What each PwkScript computes** (section 7). The formulas
-   behind player points, spectators, season tickets and popularity, so a
-   script edit could be tested in PCSX2. Lead: the developers' field
-   table (`sles_disasm.py fields`) is pwkEdit's own list of the values
-   it can read and write, with their source names.
-2. **Archive repacking: tests in PCSX2** (section 9). Every archive
+1. **Archive repacking: tests in PCSX2** (section 9). Every archive
    kind can now be rebuilt (`MES.PAC`, `.HED` archives, the Acrobata
    pack, KC@P packs, PRS); none of these rebuilds has been seen in game.
-3. **The `GAME/` tactics AI files** (section 6). The play books, the
+2. **The `GAME/` tactics AI files** (section 6). The play books, the
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
    records. The match AI's `fb::` classes, which read the player
    tendencies, are named by their type information, a way in for these
    too.
-4. **What the match's player parameters do** (section 2, "Player fields
+3. **What the match's player parameters do** (section 2, "Player fields
    still open"). The match's parameter getter (`GAMEPRG.REL 0x9bdb8`) has
    240 calls, most with a constant parameter number; tracing each to its
    `fb::` class, as for the tendencies, says what every ability and
@@ -280,10 +275,12 @@ The event tables, the procedures and the overlay loader are documented in
       argument (3, 4, 5, 7–10, 13–17) to a scene, the Dummy module with
       argument 15 at turn start, and whether the Option module's save is
       the one that loads as result 1
-- [ ] What each PwkScript computes (`PinfoInit`, `PinfoPoint`,
-      `seasonticket`, `spectator*`, `Plpop*`, the `*_syousai_nouryokuMS`
-      detail-screen scripts): name the `pwkEdit` value ids they read and
-      write. A script edit could then be tested in PCSX2
+- [ ] Test in PCSX2: an edited detail-screen comment script, for
+      example `manager_syousai_nouryokuMS` with its band table changed, so
+      a manager shows a different comment
+      (`DOC/SQB_FORMAT.md#the-detail-screen-comments`). Also open there:
+      which players have a fixed comment (`DETAILFLAG`), and when the
+      player page shows messages 120/121
 - [ ] Injury leftovers (`DOC/INJURIES.md`): how many game days an
       injury value lasts (practice slots per week, the injured player's
       practice number), the injury chance `0x219f90` and `PlPinfo

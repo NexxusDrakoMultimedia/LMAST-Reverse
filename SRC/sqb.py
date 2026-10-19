@@ -7,8 +7,10 @@ SQB1 scripts: {'SQB1', u32 data_offset 0x10, u32 size, u32 0} and then
 `size` bytes of commands. The game's sequencer (CSeqController in
 SLES_541.51) runs them one command per step. See DOC/SQB_FORMAT.md.
 PwkScript files also carry SQT1 data tables {'SQT1', 0x20, size, element
-size, flag, rows, columns, 0}, read by the Param table commands
-(CSeqController::GetTable 0x2007f8).
+size, flag, row length, rows, 0}, read by the Param table commands
+(CSeqController::GetTable 0x2007f8). The game runs a PwkScript by number
+(PwkScript::RunScript 0x256e60): PSCCOMMON.PAC entry n is script n + 1. Only
+the detail screens' comment scripts (4, 5, 15-20) are ever run.
 
   command    {u32 table, u32 cmd} + argc x {u32 type, s32 value}
              argc comes from the command table (UpdateCommand 0x1ffa90
@@ -39,6 +41,7 @@ neither set is a problem (`!!`); so is a missing or repeated label.
 Usage:
     python sqb.py info    <file | dir> ...        # check every script
     python sqb.py dis     <file.SQB | pack.PAC#entry.sqb | file.CSB#n> [root|pwk|combi]
+    python sqb.py tables  <pack.PAC#entry.sqb>    # a PwkScript's SQT1 data tables
     python sqb.py names   <SQBFILENAME.TBB>       # script id -> file
     python sqb.py globals <GLOBALMEMORY.TBB>      # {type, value, min, max}
     python sqb.py roundtrip <file | dir> ...      # re-encode every script, !! if not identical
@@ -143,16 +146,61 @@ ROOT_EVENT = list(zip(ROOT_EVENT_NAMES, (
 
 # Table 4 of the PwkScript set, FC_EURO_PARAM$pdwCmdParamNumParam 0x3a7860 /
 # ppfnCommandCbParam 0x3a78d8 (count 30). No symbols; named after what they
-# call where that is clear (DOC/SQB_FORMAT.md).
+# call (DOC/SQB_FORMAT.md). The Get/Set commands go through
+# PwkEditTask::GetValIdAdr/SetValIdAdr (0x23bf30/0x23bfd0) with a structure
+# of the developers' field table and a member number (below).
 PARAM = list(zip((
-    "Table.Get", "Table.Get2D", "Pinfo.Get2", "Pinfo.Get3", "Pinfo.Set4",
-    "Pinfo.GetExp5", "Pinfo.Set6", "Param7", "Param8", "AbilExp2Lv",
+    "Table.Get", "Table.Get2D", "Pinfo.GetCore", "Pinfo.Get", "Pinfo.Set",
+    "Pinfo.GetAbil", "Pinfo.SetAbil", "Min", "Max", "AbilExp2Lv",
     "AbilLv2Exp", "Edit.GetTotal", "Edit.SetTotal", "Rand", "RunScript",
-    "Table15", "Table16", "Table.Rand17", "Table.Rand18", "Pinfo.Apos2Pos",
-    "Pinfo.Apos2Epos", "Pinfo21", "Minfo.Get22", "Minfo.Get23", "Minfo.Set24",
-    "Minfo25", "Sinfo.Get26", "Sinfo.Get27", "Sinfo.Set28", "Sinfo29"),
+    "Table.Range", "Table.Range2D", "Table.Rand17", "Table.Rand18",
+    "Pinfo.Apos2Pos", "Pinfo.Apos2Epos", "Pinfo.Apos", "Minfo.GetCore",
+    "Minfo.Get", "Minfo.Set", "Minfo.Abil", "Sinfo.GetCore", "Sinfo.Get",
+    "Sinfo.Set", "Sinfo.Abil"),
     (3, 4, 2, 2, 3, 3, 4, 3, 3, 2, 3, 2, 3, 2, 3, 3, 4, 3, 4, 1, 1, 1, 2, 2,
      3, 2, 2, 2, 3, 2)))
+
+# Member names of the structures the Param Get/Set commands pass to
+# GetValIdAdr, in member order, from the developers' field table (structure
+# table 0x391d00: {u32 count, char *name, row *members}; `sles_disasm.py
+# fields`). The script's literal is the member number. Arrays read element 0.
+PL_CORE_INFO = (            # structure 33, PlPinfo +0x198 (the database record)
+    "_name", "nationality", "rank", "apos0", "age0", "height", "weight",
+    "unumber", "leg", "castno", "faceno", "needstatus", "tone", "comptype",
+    "professional", "pressure", "loyalty", "star", "explodetype", "motitype",
+    "condtype", "futuretype", "pgrowtype", "sgrowtype", "mgrowtype",
+    "awaytype", "weaktype", "tiredtype", "wildtype", "reverseaccuracy",
+    "policy", "envtype", "intelligence", "balltouch", "dribblestyle",
+    "nicknack_sleeve", "nicknack_wristband", "nicknack_gloves",
+    "nicknack_gkcap", "nicknack_gkglove", "nicknack_pants", "nicknack_spike",
+    "_pstyle_native", "core_flag", "skill_flag", "ai")
+PL_PINFO = (                # structure 46
+    "no", "apos", "age", "abil", "nowteam", "oldteam", "core", "_etcflag",
+    "changejob", "eval", "goal", "gamenum", "salary", "life", "conyear",
+    "_concond", "comp", "pop", "gtired", "status", "condition", "motivation",
+    "motiwork", "power", "kan", "kega", "injury_kind", "_lastgame_join",
+    "abroadnum", "captain_exp", "keyman_exp", "nextmatch_kind", "han_term",
+    "explo", "pstylework", "policywork", "fit", "slump")
+PL_ABIL = ("exp", "nowlimexp", "limlimexp")     # structure 1, PlPinfo +0xa + 6n
+PL_MINFO = (                # structure 56
+    "_cidx", "core", "no", "conyear", "_coachtype", "comp", "pop_supporter",
+    "pop_player", "status", "affection", "discountflag", "salary")
+PL_SBASE = (                # structure 52, PlSinfo +4
+    "_name", "nationality", "age", "rank", "faceno", "needstatus",
+    "appeartype", "real_name_flag", "abil")
+PL_SINFO = (                # structure 53
+    "index", "core", "no", "conyear", "mode", "validity", "term", "jobcount",
+    "searchregion", "pos", "searchteam", "searched_plno", "searched_turn",
+    "searchpidx", "searchplno", "salary")
+# Param command -> (argument holding the member number, member names).
+# Minfo.GetCore (0x3066d0) passes structure 33, PlCoreInfo, on the manager's
+# PlMbase (PlMinfo +4): a mismatch in the game code. Member 2, the only one
+# the scripts use, is rank in both (+0x18).
+FIELD_ARGS = {2: (1, PL_CORE_INFO), 3: (1, PL_PINFO), 4: (1, PL_PINFO),
+              5: (2, PL_ABIL), 6: (2, PL_ABIL), 22: (1, PL_CORE_INFO),
+              23: (1, PL_MINFO), 24: (1, PL_MINFO), 26: (1, PL_SBASE),
+              27: (1, PL_SINFO), 28: (1, PL_SINFO)}
+MINFO_ABIL, SINFO_ABIL = 25, 29     # PlMinfo +0x6a + n, PlSinfo +0x2d + n
 
 # Table 4 of the combination set (GAME/COMBINATION2.CSB): GAMEPRG.REL builds
 # the set at 0x29fc90 (code at 0xc5fc8): table 0 is Base (0x274770), tables
@@ -247,14 +295,15 @@ def sqb_tables(blob):
 
 
 def check_sqt(blob, o):
-    """SQT1: {magic, 0x20, size, element size, flag, rows, columns, 0}; the
-    Param table commands read element size +0xc (1 u8, 2 s16, else u32,
-    0x304f90) and the shape +0x14/+0x18 (0x306228)."""
-    _, doff, size, elem, flag, rows, cols, zero = struct.unpack_from("<4s7I", blob, o)
+    """SQT1: {magic, 0x20, size, element size, flag, row length, rows, 0};
+    the Param table commands read element size +0xc (1 u8, 2 s16, else u32,
+    0x304f90), step a row by +0x14 elements (Table.Get2D 0x305008) and
+    count rows with +0x18 (Table.Range 0x305b28)."""
+    _, doff, size, elem, flag, width, rows, zero = struct.unpack_from("<4s7I", blob, o)
     if doff != 0x20 or zero or flag > 1 or elem not in (1, 2, 4):
         raise ValueError("SQT1 at 0x%x has an unexpected header" % o)
-    if size != elem * rows * cols:
-        raise ValueError("SQT1 at 0x%x: size %d != %d x %d x %d" % (o, size, elem, rows, cols))
+    if size != elem * width * rows:
+        raise ValueError("SQT1 at 0x%x: size %d != %d x %d x %d" % (o, size, elem, width, rows))
 
 
 def decode(script, cmdset):
@@ -375,6 +424,26 @@ def comment(c, script_names):
         return "  ; module %s" % MODULES.get(v, "?")
     if c.cmd in SEQSUB_COMMANDS and 0 <= v < len(script_names):
         return "  ; %s" % script_names[v]
+    return ""
+
+
+def pwk_comment(c):
+    """The field or ability a Param command's literal names, for `dis`."""
+    if c.table != 4:
+        return ""
+    if c.cmd in FIELD_ARGS:
+        i, names = FIELD_ARGS[c.cmd]
+        t, v = c.args[i]
+        if t in LITERAL and 0 <= v < len(names):
+            return "  ; %s" % names[v]
+    if c.cmd in (MINFO_ABIL, SINFO_ABIL) and c.args[1][0] in LITERAL:
+        import pbdata
+        v = c.args[1][1]
+        if c.cmd == MINFO_ABIL and 0 <= v < len(pbdata.STAFF_ABILITY_NAMES):
+            return "  ; %s" % pbdata.STAFF_ABILITY_NAMES[v]
+        # The scout editor numbers the 45 named abilities 4-48.
+        if c.cmd == SINFO_ABIL and 4 <= v < 4 + len(pbdata.SCOUT_ABILITY_NAMES):
+            return "  ; %s" % pbdata.SCOUT_ABILITY_NAMES[v - 4]
     return ""
 
 
@@ -499,10 +568,32 @@ def cmd_dis(spec, cmdset=None):
         for c in cmds:
             if c.table == 0 and c.cmd == FUNCTION:
                 print("L%d:" % c.args[1][1])
-            print("  %04x  %d:%-3d %s%s" % (c.pos, c.table, c.cmd, fmt_command(c),
-                                            comment(c, names) if cmdset == "root" else ""))
+            note = (comment(c, names) if cmdset == "root" else
+                    pwk_comment(c) if cmdset == "pwk" else "")
+            print("  %04x  %d:%-3d %s%s" % (c.pos, c.table, c.cmd, fmt_command(c), note))
             if c.table == 0 and c.cmd == LABEL:
                 print("L%d:" % c.args[1][1])
+
+
+def cmd_tables(spec):
+    """Print a script's SQT1 tables, one line per row. Table.Get2D t, i, j
+    reads row i, element j (0x305008); Table.Range finds the row {low,
+    high, value} whose range holds its argument (0x305b28)."""
+    blob = load(spec)
+    offs, _ = tbb_tables(blob)
+    print("; %s" % spec)
+    for n, o in enumerate(offs):
+        magic = blob[o:o + 4]
+        if magic != SQT_MAGIC:
+            print("table %d  %s" % (n, magic.decode("latin1")))
+            continue
+        check_sqt(blob, o)
+        _, doff, size, elem, flag, width, rows, _ = struct.unpack_from("<4s7I", blob, o)
+        fmt = {1: "B", 2: "h", 4: "i"}[elem]
+        vals = struct.unpack_from("<%d%s" % (size // elem, fmt), blob, o + doff)
+        print("table %d  SQT1  %d rows of %d, element size %d, flag %d" % (n, rows, width, elem, flag))
+        for r in range(rows):
+            print("  %3d  %s" % (r, " ".join(str(v) for v in vals[r * width:(r + 1) * width])))
 
 
 def read_names(path):
@@ -635,6 +726,8 @@ def main(argv):
             print(__doc__)
             return 1
         cmd_dis(args[0], args[1] if len(args) == 2 else None)
+    elif cmd == "tables" and len(args) == 1:
+        cmd_tables(args[0])
     elif cmd == "names" and len(args) == 1:
         cmd_names(args[0])
     elif cmd == "globals" and len(args) == 1:

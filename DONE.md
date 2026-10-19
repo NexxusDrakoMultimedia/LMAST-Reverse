@@ -673,6 +673,17 @@ files. Each item keeps what was found, where, and how it was tested.
       panels showed in the margins. The three functions now clip to 4:3
       while the scissor is full width. Traced over PINE; tested in PCSX2
       (user report)
+- [x] What each PwkScript computes: the Param commands' field numbers are
+      member numbers in the developers' field table (`GetValIdAdr`
+      `0x23bf30`, structure array `0x391d00`), and `Edit.GetTotal` paths
+      come from `0x3927e0`. `RunScript` runs script *n* = `PSCCOMMON.PAC`
+      entry *n* − 1, and only the detail screens run any (scripts 4, 5,
+      15-20): they pick the player, manager, coach and scout comment lines
+      from categories 200-202 (best ability group, level band, rank).
+      `PinfoPoint`, `PinfoInit`, `seasonticket`, the spectator and
+      `Plpop*` scripts are never run, so editing them changes nothing.
+      `sqb.py dis` names fields and abilities, and `tables` prints the
+      data tables (`DOC/SQB_FORMAT.md#what-the-pwkscripts-compute`)
 
 ## 8. Housekeeping
 

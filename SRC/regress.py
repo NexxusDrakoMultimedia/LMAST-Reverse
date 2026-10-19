@@ -154,6 +154,14 @@ def checks():
         ("sqb_combi", ["sqb.py", "info", "DAT/GAME/COMBINATION2.CSB"],
          ["DAT/GAME/COMBINATION2.CSB"]),
         ("sqb_dis", ["sqb.py", "dis", "DAT/SEQ/ROOTMAINSEQ.SQB"], ["DAT/SEQ"]),
+        # Two PwkScripts the game runs (detail-screen comments): the scout
+        # script's ability names, the manager script's data tables.
+        ("sqb_pwk_dis", ["sqb.py", "dis",
+                         "DAT/PARAM/PSCCOMMON.PAC#PscCommon_scout_syousai_nouryokuMS.sqb"],
+         ["DAT/PARAM/PSCCOMMON.PAC"]),
+        ("sqb_tables", ["sqb.py", "tables",
+                        "DAT/PARAM/PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb"],
+         ["DAT/PARAM/PSCCOMMON.PAC"]),
         ("sqb_roundtrip", ["sqb.py", "roundtrip", "DAT/SEQ", "DAT/PARAM"], ["DAT/SEQ", "DAT/PARAM"]),
         ("svr", ["svr.py", "info", "DAT"], ["DAT"]),
         ("csp", ["csp.py", "info", "DAT"], ["DAT"]),

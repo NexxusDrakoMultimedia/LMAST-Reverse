@@ -137,7 +137,9 @@ lists them.
 
 One `TBL1` table of 528 bytes, line size 1. The values are 0 (197),
 1 (318), 2 (9) and 3 (4). `CDetailManager` only copies bytes 0–98, and the
-game code doesn't show what they switch. 528 = 16 × 33, and the manager
+game code doesn't show what they switch, except that a set byte lets a
+fixed comment replace a player's detail-screen comment
+([`SQB_FORMAT.md`](SQB_FORMAT.md#the-detail-screen-comments)). 528 = 16 × 33, and the manager
 clears a 33-byte array next to the copy, so the table may be 16 rows of 33
 flags. That is a guess.
 

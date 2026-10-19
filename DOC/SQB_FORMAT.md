@@ -12,8 +12,11 @@
   resources, play BGM and run the calendar: boot, main menu, club edit,
   month start and end, matches.
 - **PwkScript scripts** (`.sqb` entries in `DAT/PARAM/PSC*.PAC`) are small
-  formulas over player, manager and scout data, such as ability points,
-  popularity and spectators. They are run by `Param::PwkScript`.
+  formulas over player, manager and scout data. They are run by
+  `Param::PwkScript`. The retail game runs only the eight that pick the
+  comment lines of the detail screens; the ones named after points,
+  popularity, spectators and season tickets are never run
+  ([below](#what-the-pwkscripts-compute)).
 
 Both use the same container, command encoding and built-in commands, but a
 different set of game commands. `python SRC/sqb.py info DAT/SEQ DAT/PARAM`
@@ -52,7 +55,7 @@ Its tables are `SQB1` scripts and, in PwkScript files, `SQT1` data tables:
 ```
 SQB1: {'SQB1', u32 data_offset = 0x10, u32 size, u32 0} + size bytes of commands
 SQT1: {'SQT1', u32 data_offset = 0x20, u32 size, u32 element_size,
-       u32 flag, u32 rows, u32 columns, u32 0} + size bytes
+       u32 flag, u32 row_length, u32 rows, u32 0} + size bytes
 ```
 
 - **Confirmed.** `CRsrcManager::LoadScript` (`0x1fd9c0`) PRS-expands the
@@ -62,10 +65,13 @@ SQT1: {'SQT1', u32 data_offset = 0x20, u32 size, u32 element_size,
   (`0x1ff89c`).
 - **Confirmed.** `CSeqController::GetTable` (`0x2007f8`) returns table *n*
   of the script's container. The Param table commands read the element size
-  at `+0xc` (1 = u8, 2 = s16, anything else = u32, `0x304f90`) and the shape
-  at `+0x14`/`+0x18` (`0x306228`).
-- **Empirical.** All 68 `SQT1` tables have `size = element_size × rows ×
-  columns`. `flag` is 1 in 57 and 0 in 11. What it does isn't traced.
+  at `+0xc` (1 = u8, 2 = s16, anything else = u32, `0x304f90`). `Table.Get2D`
+  (`0x305008`) steps a row by `+0x14` elements, and `Table.Range`
+  (`0x305b28`) loops over `+0x18` rows, so `+0x14` is the row length and
+  `+0x18` the number of rows.
+- **Empirical.** All 68 `SQT1` tables have `size = element_size ×
+  row_length × rows`. `flag` is 1 in 57 and 0 in 11. What it does isn't
+  traced.
 - **Empirical.** Every PwkScript has exactly one `SQB1` table, table 0.
 
 The root scripts store the file size at `TBB1 +0xc`. The four files dated
@@ -252,27 +258,54 @@ the script name after `SeqSub.Create`. For example, the start of
 
 ### Param (PwkScript table 4)
 
-None of the 30 have a symbol. `sqb.py` names them after what they call;
-the remaining ones are numbered:
+None of the 30 have a symbol. `sqb.py` names them after what they call
+(**confirmed** from each callback, array `0x3a78d8`); 17 and 18 are
+numbered:
 
-| Cmd | `sqb.py` name | argc | Calls |
+| Cmd | `sqb.py` name | argc | What it does |
 |---|---|---|---|
 | 0 | `Table.Get` | 3 | `arg0` = element `arg2` of `SQT1` table `arg1` (`GetTable`, `0x304f10`) |
-| 1 | `Table.Get2D` | 4 | `SQT1` table `arg1`, two indices |
-| 2, 3 | `Pinfo.Get2`, `Pinfo.Get3` | 2 | `pwkEdit::GetValIdAdr` on the script's player (`PwkScript::GetPinfo`), field `arg1` |
-| 4, 6 | `Pinfo.Set4`, `Pinfo.Set6` | 3, 4 | `SetValIdAdr` on the player |
-| 5 | `Pinfo.GetExp5` | 3 | `GetValIdAdr`, then `plMisc_AbilLv2Exp` |
+| 1 | `Table.Get2D` | 4 | `arg0` = row `arg2`, element `arg3` of table `arg1` (`0x305008`) |
+| 2 | `Pinfo.GetCore` | 2 | member `arg1` of the player's database record (`PlPinfo +0x198`, structure `PlCoreInfo`) (`0x305130`) |
+| 3, 4 | `Pinfo.Get`, `Pinfo.Set` | 2, 3 | member `arg1` of the player's `PlPinfo`; `Set` writes `arg2` (`0x3051f8`, `0x3052b8`) |
+| 5, 6 | `Pinfo.GetAbil`, `Pinfo.SetAbil` | 3, 4 | member `arg2` (0 `exp`, 1 `nowlimexp`, 2 `limlimexp`) of ability `arg1` (`PlPinfo +0xa + 6 × arg1`); `SetAbil` writes `arg3`. `GetAbil` passes a value with the ability's `limlimexp` below 100 through `plMisc_AbilLv2Exp` first (`0x3053a0`, `0x3054d0`) |
+| 7, 8 | `Min`, `Max` | 3 | `arg0` = the smaller / larger of `arg1` and `arg2` (`0x3055f0`, `0x305690`) |
 | 9, 10 | `AbilExp2Lv`, `AbilLv2Exp` | 2, 3 | `plMisc_AbilExp2Lv` / `plMisc_AbilLv2Exp` |
-| 11, 12 | `Edit.GetTotal`, `Edit.SetTotal` | 2, 3 | `pwkEdit::GetValTotalTree` / `SetValTotalTree` |
+| 11, 12 | `Edit.GetTotal`, `Edit.SetTotal` | 2, 3 | `PwkEditTask::GetValTotalTree` / `SetValTotalTree`: a value of the save work by path number (below) |
 | 13 | `Rand` | 2 | `fcEuroRand_Get0toI` |
 | 14 | `RunScript` | 3 | `PwkScript::RunScript`: another script |
-| 15, 16 | `Table15`, `Table16` | 3, 4 | read `SQT1` tables |
+| 15 | `Table.Range` | 3 | table `arg1` is rows of `{low, high, value}`: `arg0` = the value of the first row with low ≤ `arg2` ≤ high, else 0 (`0x305b28`) |
+| 16 | `Table.Range2D` | 4 | table `arg1`: rows 0 and 1 hold each column's low and high, columns 0 and 1 each row's; `arg0` = the cell whose row range holds `arg2` and column range `arg3`. The code (`0x305d00`) makes both range tests; the layout is read from the tables of the 6 scripts that use it (**empirical**), none of which the game runs |
 | 17, 18 | `Table.Rand17`, `Table.Rand18` | 3, 4 | read `SQT1` tables and `fcEuroRand_Get0toI` |
-| 19, 20 | `Pinfo.Apos2Pos`, `Pinfo.Apos2Epos` | 1 | `plMisc_Apos2Pos` / `Apos2Epos` on the player |
-| 21, 25, 29 | `Pinfo21`, `Minfo25`, `Sinfo29` | 1–2 | touch the script's player / manager / scout record |
-| 22–24 | `Minfo.Get22/23`, `Minfo.Set24` | 2, 2, 3 | as 2–4, on the manager (`GetMinfo`) |
-| 26–28 | `Sinfo.Get26/27`, `Sinfo.Set28` | 2, 2, 3 | as 2–4, on the scout (`GetSinfo`) |
-| 7, 8 | `Param7`, `Param8` | 3 | read two arguments; not traced |
+| 19, 20 | `Pinfo.Apos2Pos`, `Pinfo.Apos2Epos` | 1 | `plMisc_Apos2Pos` / `Apos2Epos` on the player's position |
+| 21 | `Pinfo.Apos` | 1 | the player's position, `PlPinfo +4` (`0x306668`) |
+| 22 | `Minfo.GetCore` | 2 | member `arg1` of the manager's `PlMbase` (`PlMinfo +4`), but read with the player structure `PlCoreInfo` (`0x3066d0`). Member 2, the only one used, is `rank` at `+0x18` in both |
+| 23, 24 | `Minfo.Get`, `Minfo.Set` | 2, 3 | member `arg1` of the manager's `PlMinfo` (`0x306798`, `0x306858`) |
+| 25 | `Minfo.Abil` | 2 | manager ability `arg1` (0–47), `PlMinfo +0x6a + arg1` (`0x306940`) |
+| 26 | `Sinfo.GetCore` | 2 | member `arg1` of the scout's `PlSbase` (`PlSinfo +4`) (`0x3069f0`) |
+| 27, 28 | `Sinfo.Get`, `Sinfo.Set` | 2, 3 | member `arg1` of the scout's `PlSinfo` (`0x306ab8`, `0x306b78`) |
+| 29 | `Sinfo.Abil` | 2 | scout value `arg1` (0–47 of the 49 at `PlSbase +0x29`), `PlSinfo +0x2d + arg1` (`0x306c60`) |
+
+**Confirmed.** The Get and Set commands fill a `pwEdIdAdr` block {base,
+structure, member, ...} for `PwkEditTask::GetValIdAdr` / `SetValIdAdr`
+(`0x23bf30` / `0x23bfd0`). That looks the structure up in the developers'
+field table (structure array `0x391d00`, 12-byte entries {count, name,
+members}, see [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-field-names))
+and calls the member's own getter or setter. So a script's field number
+is the member's place in its structure: `PlCoreInfo` member 2 is `rank`,
+`PlPinfo` member 2 is `age`. `sqb.py dis` names them, and names the
+manager and scout abilities after `pbdata.py`. Arrays read element 0.
+
+**Confirmed.** `Edit.GetTotal`'s number picks a path from the table at
+`0x3927e0` (64 bytes each: up to 16 member numbers, −1 ending). The first
+number picks one of 11 save work blocks (`0x3927c8`: `PwkGeneric`,
+`PwkTeam`, `PwkOteam`, `PwkLeague`, `PwkTown`, `PwkRecord`, `PwkSche`,
+`PwkOption`, `PwkMail`, `PwkCheat`, `PwkNoSave`), and the rest walk
+members from there. Path 1 is `PwkGeneric.today.year`, for example. The
+only path a script uses, 202, is `PwkTeam.practice._autooff`; path 203
+next to it is the club's popularity rank `PwkTeam.popwork.poprank`, which
+fits the scripts that use it better. Those scripts are never run, so the
+difference never shows.
 
 **Confirmed.** `Param::PwkScript::RunScript` (`0x256e60`) is how the game
 runs these scripts. It sets the command table, creates a sequence for the
@@ -295,6 +328,122 @@ checked). `g[13]` is a PwkScript's result and `g[14]`–`g[24]` its
 arguments (**confirmed**, `RunScript` above; `PinfoPoint` reads
 `g[14]`–`g[17]` and writes `g[13]`). Run
 `python SRC/sqb.py globals DAT/SEQ/GLOBALMEMORY.TBB` to list them.
+
+## What the PwkScripts compute
+
+### Which scripts run
+
+**Confirmed.** A caller fills a `PwkScriptArg` block {set, script, 11
+arguments, player, manager, scout} and calls `RunScript` (`0x256e60`).
+Set 1 is `psccommon.pac` (the pack list at `0x35c908` gives it number 1
+and `pscgame.pac` 2), and script *n* of set 1 is `PSCCOMMON.PAC` entry
+*n* − 1. `RunScript` has three callers in the whole game: the
+`RunScript` command itself (`0x305adc`), the Inoue test module
+(`TESTPRG.REL 0x1e20`, script 3, `OtherScriptCallSample`), and one
+wrapper, `0x284a20`, which only the detail screens call:
+
+| Script | Entry | Run by | For |
+|---|---|---|---|
+| 4 | `sensyu_syousai_seicyoMS` | `CDetailManager::ConvertPlayer_Comment` (`0x285ed0`) | a player's growth comment |
+| 5 | `sensyu_syousai_nouryokuMS` | `Detail_GetAbilLevel` (`0x284b88`) | a player's ability comment |
+| 15, 19 | `manager_…`, `youth_…` | `ConvertManager` (`0x2876a0`; `0x2875a0`–`0x2875b8` pick 19 on the youth manager's page, 15 otherwise) | a manager's comment |
+| 16, 17, 18 | `assistant_…`, `GK_…`, `physical_…` | `ConvertCoach` (`0x287bf8`; `0x287af0`–`0x287b04` pick by job) | a coach's comment |
+| 20 | `scout_syousai_nouryokuMS` | `ConvertScout` (`0x288250`) | a scout's comment |
+
+No other code runs scripts 1, 2 and 6–14 (`PinfoPoint`, `PinfoInit`,
+`seasonticket`, the spectator scripts and the five `Plpop*` scripts),
+and no overlay imports `RunScript` except `TESTPRG.REL`. The game
+computes those values in C (for example `pwkTeam_ChangePop_*`,
+`0x268f20`–`0x269430`), so **editing those scripts changes nothing in
+the game**. They look unfinished: `seasonticket` and the five `Plpop*`
+scripts are the same 2,592 bytes, and `spectator` and `spectatorHome`
+the same 2,256 (**empirical**). `PSCGAME.PAC` and `PSCPRACTICE.PAC` (set
+2 and the practice copy) are never run either.
+
+### The detail-screen comments
+
+**Confirmed.** Each comment script returns a message number. The detail
+screen draws it from the message category of its page type
+(`GetMsgCategoryfromType` `0x283320`: player pages `+0x2fc`, manager and
+coach pages `+0x300`, scout pages `+0x304`). The texts match categories
+200, 201 and 202 (**empirical**; `python SRC/mbb.py dump
+DAT/MESSAGE/MES.PAC --cat 201`).
+
+**Players.** The player page shows two comment lines
+(`ConvertPlayer_Comment`, `0x285cd8`):
+
+- Line 1, ability (script 5): the 64 ability levels weighted by the
+  player's position (`Apos2Epos`, 9 position kinds), summed and divided
+  by 17. Each column of the weight table (table 1, 64 rows of 9, weights
+  0–2) adds up to 17, so this is a weighted average. `Detail_GetAbilLevel`
+  (`0x284ac8`) turns it into a level 0–7 with the thresholds 20, 30, 40,
+  50, 60, 70, 80, 100 at `0x5575a8` (the first one it doesn't exceed), and
+  the line is category 200 message 140 + level: "Still lacks ability",
+  "Needs to work harder", "Has average ability", "Has good ability", "Has
+  world class potential", "Is world class", "One of the best players in
+  the world", "Is a football icon".
+- Line 2, growth (script 4): table 1 (16 rows of 25) at row `sgrowtype`
+  (`PlCoreInfo +0x4b`), column age − 16, which is 200 + 10 ×
+  `sgrowtype` + (age − 16) / 3: category 200 messages 200–358, such as
+  "Improving greatly." or "Reaching the end of his career."
+
+In one case the first line is message 120 or 121 instead ("Transfer to
+… finalized.", "Loan to … finalized.", `0x285e30`–`0x285e4c`); what
+selects that branch isn't traced. And when one of `CDetailManager`'s
+`DETAILFLAG` bytes is set and a fixed message exists for the player
+(`CDetailConstMessage::ExistConstMessage`), that message replaces both
+lines (`0x285e68`–`0x285eac`); which players have one isn't traced.
+
+**Staff.** The six staff scripts share one pattern: take the best of a
+few ability groups (each group one ability or an average), then
+
+```
+row     = 4 × group + band(best)      band: 0–49 → 0, 50–69 → 1, 70–89 → 2, 90–100 → 3 (table 1)
+message = table 2 [row] [rank]        rank from Minfo.GetCore 2 / Sinfo.GetCore 3; 16 columns
+```
+
+Table 2 holds base + 6 × row + rank / 3 for ranks 0–15, so the rank picks
+one of six reputations ("Virtually unheard of", "Promising new", "Well
+known home-grown", "World class", "Leading world class",
+"World-renowned"), and bands 0 and 1 both say "good", 2 "very good" and 3
+"outstanding". The groups, in order, with the abilities named as in
+`pbdata.py`:
+
+| Script | Category 201/202 messages | Groups (row 4 × n) |
+|---|---|---|
+| manager (15) | 201:20–187 | 0 formations (average of the 8 system abilities 31–38), 1 tactics (average of 39–44), 2 attack-minded (45 attack patterns), 3 teamwork (46), 4 set pieces (47), 5 motivation (0 motivation care), 6 health management (1 physical care) |
+| assistant (16) | 201:200–271 | 0 forwards (27 FW), 1 midfield (average of 25 DM and 26 OM), 2 defence (24 DF) |
+| GK coach (17) | 201:280–327 | 0 shot-stopper (16 saving), 1 mobility (17 rushing out) |
+| physical coach (18) | 201:330–377 | 0 physical trainer (20 physical), 1 health management (1 physical care) |
+| youth manager (19) | 201:380–571 | 8 groups: formations, tactics, teamwork, physical training, goalkeeping, defence, midfield, forwards |
+| scout (20) | 202:0–167 | 0 club negotiation (value 4), 1 player negotiation (5), 2 transfer information (7 search: professionals), 3 youth (8 search: youth), 4 "good at his job" (average of the 13 position searches 12–24), 5 managers (25), 6 coaches (average of 26–29) |
+
+On a tie the first group wins. The scout's values are numbered as the
+scout editor numbers them, 4–48 for the 45 named abilities. Checked in
+game, before this was traced: S. Daerden and L. Lynch's comments call
+them an "outstanding forwards coach" and a "very good defence coach"
+(see [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars)).
+
+These scripts can be edited and tested in game: the thresholds in table
+1, the reputation and message numbers in table 2, or a group's
+abilities (with `setcmd` or a hex edit of a literal).
+
+```bash
+python SRC/sqb.py dis    "DAT/PARAM/PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb"
+python SRC/sqb.py tables "DAT/PARAM/PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb"
+python SRC/mbb.py dump   DAT/MESSAGE/MES.PAC --cat 201
+```
+
+### The scripts that never run
+
+For the record, what they would compute (**empirical**, from the
+listings). `PinfoPoint` adds table 1 [rank] to table 2 [`mgrowtype`]
+[age − 16]. `PinfoInit` sets each ability's three experience values from
+the growth types, the age and random numbers. `seasonticket`, the
+`Plpop*` copies and `spectator` combine their arguments (`g[14]`–`g[21]`)
+with year and money tables and a random 95–105 %, and the first six
+scale the result by `Table.Range2D` over the first argument and path 202.
+`SpectatorDistribution` splits a crowd by range tables.
 
 ## What doesn't decode
 
@@ -336,10 +485,12 @@ root set, which is tried first.
 
 ## Still unknown
 
-- What `SQT1 +0x10` (the flag) does, and the exact indexing of `Table15`,
-  `Table16`, `Table.Rand17/18` and `Table.Get2D`.
-- Base 35, root `Root9` and `Root13`, Param 7, 8, 21, 25 and 29. Also which
-  of 98/99 and 100/101 turns the feature on.
+- What `SQT1 +0x10` (the flag) does, and what `Table.Rand17/18` read.
+- Base 35 and root `Root9` and `Root13`. Also which of 98/99 and 100/101
+  turns the feature on.
+- Which players have a fixed detail comment (`DETAILFLAG`,
+  `CDetailConstMessage`), and when the player page shows messages
+  120/121.
 - What `BranchIf` does differently from `JumpIf`.
 - The command sets `INFORMATION.SQB` and `CHECKCLUBEDIT.SQB` were written
   for.
@@ -350,7 +501,8 @@ root set, which is tried first.
 ```bash
 python SRC/sqb.py info    DAT/SEQ DAT/PARAM            # check every script
 python SRC/sqb.py dis     DAT/SEQ/ROOTMAINSEQ.SQB      # listing with labels and module names
-python SRC/sqb.py dis     "DAT/PARAM/PSCCOMMON.PAC#PscCommon_PinfoPoint.sqb"
+python SRC/sqb.py dis     "DAT/PARAM/PSCCOMMON.PAC#PscCommon_PinfoPoint.sqb"   # with field names
+python SRC/sqb.py tables  "DAT/PARAM/PSCCOMMON.PAC#PscCommon_PinfoPoint.sqb"   # its SQT1 tables
 python SRC/sqb.py names   DAT/SEQ/SQBFILENAME.TBB      # script ids
 python SRC/sqb.py globals DAT/SEQ/GLOBALMEMORY.TBB     # global memory records
 python SRC/sqb.py roundtrip DAT/SEQ DAT/PARAM          # re-encode all 41 scripts byte for byte

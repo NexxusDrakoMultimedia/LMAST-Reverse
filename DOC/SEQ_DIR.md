@@ -25,7 +25,7 @@ format, the command sets and the global variables are documented in
 
 The details of each are in [`SQB_FORMAT.md`](SQB_FORMAT.md#files). No
 file here has a copy in `PRELOAD` or anywhere else on the disc
-(**empirical**). The PwkScript scripts that compute values (`PSC*.PAC`)
+(**empirical**). The PwkScript scripts (`PSC*.PAC`)
 are in `PARAM/`, not here ([`PARAM_DIR.md`](PARAM_DIR.md)).
 
 ## Confirmed from the game code
