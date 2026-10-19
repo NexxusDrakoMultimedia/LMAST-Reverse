@@ -21,9 +21,6 @@ item in its section below.
    records. The match AI's `fb::` classes are named by their type
    information, and `snr2.py classes` and `callers` now list them and
    which class makes each call, a way in for these too.
-3. **Test in PCSX2: an edited detail-screen comment script** (section
-   7). The disc is built (`LMAST-test-comments.iso`); it would be the
-   first PwkScript edit seen in game.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -277,18 +274,10 @@ The event tables, the procedures and the overlay loader are documented in
       argument (3, 4, 5, 7–10, 13–17) to a scene, the Dummy module with
       argument 15 at turn start, and whether the Option module's save is
       the one that loads as result 1
-- [ ] Test in PCSX2: an edited detail-screen comment script
-      (`DOC/SQB_FORMAT.md#the-detail-screen-comments`). Built:
-      `LMAST-test-comments.iso` (with `--skip-tutorial`; start in
-      England), `PSCCOMMON.PAC` and its `STATIONFILE.PAC` copy patched by
-      `sqb.py settable`: every cell of `seicyoMS` table 1 is 207, so every
-      player's second comment line should read "Reaching the end of his
-      career.", and every cell of `manager_syousai_nouryokuMS` table 2 is
-      186, so every manager's comment should read "A leading world class
-      manager with unsurpassed health management skills." Coaches and
-      scouts keep their own comments. Also open there:
-      which players have a fixed comment (`DETAILFLAG`), and when the
-      player page shows messages 120/121
+- [ ] Detail-screen comment leftovers
+      (`DOC/SQB_FORMAT.md#the-detail-screen-comments`): which players
+      have a fixed comment (`DETAILFLAG`), and when the player page shows
+      messages 120/121
 - [ ] Injury leftovers (`DOC/INJURIES.md`): how many game days an
       injury value lasts (practice slots per week, the injured player's
       practice number), the injury chance `0x219f90` and `PlPinfo

@@ -694,6 +694,14 @@ files. Each item keeps what was found, where, and how it was tested.
       `Plpop*` scripts are never run, so editing them changes nothing.
       `sqb.py dis` names fields and abilities, and `tables` prints the
       data tables (`DOC/SQB_FORMAT.md#what-the-pwkscripts-compute`)
+- [x] Test in PCSX2: an edited detail-screen comment script. With
+      `sqb.py settable`, every cell of `seicyoMS` table 1 set to 207 and
+      every cell of `manager_syousai_nouryokuMS` table 2 to 186
+      (`PSCCOMMON.PAC` and its `STATIONFILE.PAC` copy,
+      `LMAST-test-comments.iso` with `--skip-tutorial`): every player's
+      second comment line read "Reaching the end of his career." and the
+      manager's comment the "unsurpassed health management skills" line.
+      Tested in PCSX2 (user report); the first PwkScript edit seen in game
 
 ## 8. Housekeeping
 

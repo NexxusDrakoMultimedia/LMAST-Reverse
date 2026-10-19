@@ -426,8 +426,15 @@ them an "outstanding forwards coach" and a "very good defence coach"
 
 These scripts can be edited and tested in game: the thresholds in table
 1, the reputation and message numbers in table 2 (`sqb.py settable`), or
-a group's abilities (with `setcmd` or a hex edit of a literal). Not yet
-seen in game: `LMAST-test-comments.iso` is built for that (`TODO.md`).
+a group's abilities (with `setcmd` or a hex edit of a literal).
+
+**Tested in PCSX2** (user report): with every cell of `seicyoMS` table 1
+set to 207 and every cell of `manager_syousai_nouryokuMS` table 2 set to
+186 (`settable`, in `PSCCOMMON.PAC` and its `STATIONFILE.PAC` copy),
+every player's second comment line read "Reaching the end of his
+career." and the manager's comment read "A leading world class manager
+with unsurpassed health management skills." So these scripts are read
+from the disc and an edit to them shows in game.
 
 ```bash
 python SRC/sqb.py dis    "DAT/PARAM/PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb"
