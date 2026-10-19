@@ -89,7 +89,7 @@ stored, so a copy stored with different compression wouldn't be found.
 | Loose files with a copy elsewhere | 325 | `PARAM/REGULATION.TBB` is also entry 9 of all seven `PRELOAD/SIMFILE*.PAC` |
 | Archive headers repeated by a `.HED` | 193 | `BG/HUMAN_1000_PALETTE.HED` = the `.MRG`'s header |
 | `MES.PAC` message files also in a `PRELOAD` pack | 763 | `100001_0.mbb` is `PRELOAD/SIMLOCALMEM0.PAC` entry 34 |
-| `PRELOAD/*.PAC` packs holding copies | 139 | |
+| `PRELOAD/*.PAC` packs holding copies | 139 | – |
 
 The 14 PARAM files with copies are `CLUBRESULT`, `REGULATION`,
 `SCHEDULE_LIST`, `STADIUM_DATA`, `TACTICS_FORMATION_SET` and

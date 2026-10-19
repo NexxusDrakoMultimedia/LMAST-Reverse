@@ -89,12 +89,12 @@ Every escape in the archive follows this shape.
 
 | Opcode | n | Args | Meaning | `mbb.py` tag | Count |
 |---|---|---|---|---|---|
-| `0x2F` | 0 | | line break | `\n` | 35,747 |
+| `0x2F` | 0 | – | line break | `\n` | 35,747 |
 | `0x10` | 3 | u8 category, u16 variable | runtime variable (name, number, ...) | `{var:C:V}` | 50,920 |
 | `0x11` | 4 | u16 category, u16 variable | same, wider category | `{var:C:V}` | 7,376 |
 | `0x12` | 6 | u32 category, u16 variable | same | `{var:C:V}` | 126 |
 | `0x20` | 1 | u8 colour | start colour (index into the colour table) | `{color:N}` | 2,834 |
-| `0x21` | 0 | | restore the default colour | `{/color}` | 2,827 |
+| `0x21` | 0 | – | restore the default colour | `{/color}` | 2,827 |
 | `0xC1` | 2 | u16 name | speaker name shown on the message window | `{name:N}` | 4,167 |
 | `0xC2` | 4 | u16 slot, u16 expression | portrait expression | `{face:S:N}` | 30,086 |
 | `0xC3` | 2 | u16 reaction | the speaker's body reaction (motion), see below | `{react:N}` | 15,297 |
@@ -138,7 +138,7 @@ used in the English text (7,189 uses) are in the table. The most used:
 | 2058, 2076, 2079 | 238, 156, 152 | player, team, nation | the current event (`EVS::EvsWork`) |
 | 1102, 1104 | 172, 75 | number | screen-set slots |
 | 1000 | 146 | competition name | a competition of your club's, from the schedule (`GetScheEuro`, `getScheCompe` with your team data) |
-| 3, 5 / 4, 6 | | text | your / the rival's hometown (slots 11, 5 / 12, 6, `VarBuf_MakeMyHometown`, `VarBuf_MakeRivalHometown`) |
+| 3, 5 / 4, 6 | – | text | your / the rival's hometown (slots 11, 5 / 12, 6, `VarBuf_MakeMyHometown`, `VarBuf_MakeRivalHometown`) |
 | 11 | 31 | nation | your club's nation (`pwkLg_GetMyNati`) |
 | 101, 102 | 2, 18 | secretary's name | `pwkTeam_GetSecretary`, `GetSecretaryBefore` |
 | 106 | 58 | manager's name | your team data |
@@ -302,15 +302,13 @@ fill variables (`MakeVarList`).
 
 ## Writing
 
-The editor's Text tab (`SRC/editor.py`) edits messages through
-`mbb.MesPack`, the same code `set` and `import` use: it finds a message by
-category, text or id, and shows it in all 7 language slots. A file
-may outgrow its slot (see Size below). `set` takes several messages in one command, each as `<category>
-<id> <lang> "<text>"`, with `<id>:<copy>` for a repeated id.
-
-`mbb.py` writes text back. `set` changes one message and `import` applies
-a CSV in the format `csv` writes. Both write a new `MES.PAC`, which
-`patch_disc.py` puts on the disc (see [`REBUILD.md`](REBUILD.md)):
+`mbb.py` writes text back. `set` changes one or more messages, each given
+as `<category> <id> <lang> "<text>"` (`<id>:<copy>` for a repeated id),
+and `import` applies a CSV in the format `csv` writes. Both write a new
+`MES.PAC`, which `patch_disc.py` puts on the disc
+([`REBUILD.md`](REBUILD.md)). The editor's Text tab (`SRC/editor.py`)
+edits through the same code (`mbb.MesPack`): it finds a message by
+category, text or id and shows it in all 7 language slots.
 
 ```bash
 python SRC/mbb.py set DAT/MESSAGE/MES.PAC out/MES.PAC 30000 0 1 "{name:101}Welcome.\nSecond line."
@@ -402,77 +400,62 @@ finds nothing to do. `MES.PAC` itself, now bigger, is moved to the end of
 `DATA.ISO` ([`REBUILD.md`](REBUILD.md#moving-files)). On `DATA.CVM` or
 `DATA.ISO` alone, where the executable isn't, an archive whose files
 moved is refused; one whose files only grew in their slots is patched as
-before, since the old sizes still cover the slots.
+before, since the old sizes still cover the slots. Checked on a copy of
+the retail disc: `3_1.mbb` grown by 5,000 bytes (2 sectors) moved 810
+later files; the patched image's executable index equals the new header,
+the edited text reads back, and a second run changes nothing.
 
-Checked on a copy of the retail disc: `3_1.mbb` grown by 5,000 bytes
-(2 sectors) moved 810 later files; the patched image's executable index
-equals the new header, the edited text reads back, and a second run
-changes nothing.
+**`PRELOAD` copies.** A grown file's copies follow too. Every copy is
+what the game reads while its pack is loaded, so a stale one would show
+the old text on those screens: a grown `1_1.mbb` would show its old text
+everywhere, because `STATIONMES` stays loaded all game. The packs align
+entries to `0x40` and have no room inside, so `patch_disc.py --copies`
+rebuilds each pack holding a grown file, moving its later entries, and
+moves a pack that would need another sector
+([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)).
+`python SRC/preload.py info DAT` gives each pack's room, and
+`preload.py who DAT <name>` lists the packs holding a file.
 
-A grown file's `PRELOAD` copies follow too. Every copy is what the game
-reads while its pack is loaded ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)), so a
-stale one would show the old text on those screens: a grown `1_1.mbb`
-would show its old text everywhere, because `STATIONMES` stays loaded all
-game. The packs align entries to `0x40` and have no room inside, so
-`patch_disc.py --copies` rebuilds each pack holding a grown file, moving
-its later entries. The pack may grow to the end of its last sector,
-because the game reads whole sectors
-([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)). `python SRC/preload.py
-info DAT` gives each pack's room (4 to 2,032 bytes, median 1,244), and
-`preload.py who DAT <name>` lists the packs holding a file. A pack that
-would need another sector is moved to the end of `DATA.ISO`
-([`REBUILD.md`](REBUILD.md#moving-files)). Tested in PCSX2: two
-lengthened club names in a rebuilt `STATIONMES1.PAC` showed in VS mode.
-Also through the editor's Text tab (user report): seven English club
-names in `3_1.mbb` (Arsenal 2011, Man Utd 2013, Man City 2008, Aston
-Villa 2019, Schalke 2095, Sheffield W 2041, Cardiff 2025), the file kept
-at its size, built with Build disc (`--copies` updates the
-`STATIONMES1.PAC` copy): Arsenal, Man Utd, Man City, Aston Villa and
-Schalke showed in VS mode Team Selection.
+### Tested in PCSX2
 
-**Confirmed in the game (PCSX2).** The English subject (`563:11000`) and
-body (`563:1000`) of the first mail in a new game, "Welcome to Football
-E-mail", were set to "Test email, please ignore." and "Hacked by Nexxus
-Drako." with `import`. The shorter body left 381 bytes of zero padding
-in `563_1.mbb`, and every later record moved up. `patch --copies` wrote
-`MES.PAC` and its copy `PRELOAD/MAIL1.PAC#6`. In a new game the mail
-showed the new subject and body, with the sender (`{var:1:101}`) still
-filled in.
+Which copy of a message file each screen reads (`MES.PAC` or a `PRELOAD`
+pack) was worked out with these tests; the rule is in
+[`PRELOAD_DIR.md`](PRELOAD_DIR.md#which-copy-the-game-reads).
 
-**Which copy is read (tested in PCSX2).** A second disc got different
-text in each copy of `563_1.mbb`: "Copy A: MES.PAC" in `MES.PAC` and
-"Copy B: PRELOAD" in `PRELOAD/MAIL1.PAC#6`. The welcome mail showed
-**copy A**, so this mail is read from `MES.PAC`. The same disc changed
-the rival's lines 102 and 104 in `487_1.mbb`, which has no `PRELOAD` copy
-(the Big Bang street interview, 2005–2006 week 3 of June in a new game).
-They showed, and the window wrapped the long lines on its own.
-
-**Through the editor's Text tab** (user report): the welcome mail's
-body was rewritten with new text of six sentences, and the Mail screen
-(Check e-mails, Others) showed it with the sender filled in. The window
-wraps lines at its width, not at spaces, so a word can break across
-lines ("ju" / "mpscare"). A long edit needs its own line breaks where a
-word would otherwise split.
-
-The pop-up is the event code's own request, made while no mail pack is
-loaded. A later test opened the same mail from the Mail screen, which
-loads `MAIL1.PAC` first. It showed **copy B**. So both copies are read,
-on different screens, and `--copies` is needed. The rule for every pack
-is in [`PRELOAD_DIR.md`](PRELOAD_DIR.md#which-copy-the-game-reads).
-
-**Growth tested on a copy of `DATA.CVM`.** Growing `1_3.mbb` by 4 bytes
-and `487_1.mbb` by 12 changed only those two entries. `mbb.py info` and
-`pac.py info` pass on the result. `patch --copies` wrote `MES.PAC`, warned
-about `STATIONMES3.PAC#0`, and left it byte-identical. (That was before
-packs could be rebuilt. Now `--copies` rebuilds the pack; see
-[`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack) for that test.)
-
-**Growth confirmed in the game (PCSX2).** The rival's lines 102 and 104
-were rewritten about 60% longer. That made `487_1.mbb` grow from 9,636 to
-9,704 bytes inside its 10,240-byte slot. Every line showed in full in the
-Big Bang street interview. The game reads the original size's sectors
-from its own table (above), which already cover the whole slot, so the
-test confirms that it takes a grown file with a larger `data_size`.
+- **An edited message.** The English subject (`563:11000`) and body
+  (`563:1000`) of the first mail in a new game, "Welcome to Football
+  E-mail", were set to "Test email, please ignore." and "Hacked by Nexxus
+  Drako." with `import`. The shorter body left 381 bytes of zero padding
+  in `563_1.mbb`, and every later record moved up. `patch --copies` wrote
+  `MES.PAC` and its copy `PRELOAD/MAIL1.PAC#6`. In a new game the mail
+  showed the new subject and body, with the sender (`{var:1:101}`) still
+  filled in. The pop-up in a new game reads `MES.PAC`, the Mail screen
+  the `MAIL1.PAC` copy ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#tested-in-pcsx2)).
+- **A file grown inside its slot.** The rival's lines 102 and 104 in
+  `487_1.mbb` (no `PRELOAD` copy; the Big Bang street interview,
+  2005–2006 week 3 of June in a new game) were rewritten about 60%
+  longer, growing the file from 9,636 to 9,704 bytes inside its
+  10,240-byte slot. Every line showed in full, and the window wrapped the
+  long lines on its own. So the game takes a grown file with a larger
+  `data_size`.
+- **A file moved past its slot** (user report): on
+  `LMAST-test-camps-mes.iso`, `3_6.mbb` grown past its slot moved the
+  later files and the executable's index was rewritten; the welcome mail,
+  changed in `MES.PAC` only, showed "MOVED FILE TEST." in the new-game
+  pop-up ([`REBUILD.md`](REBUILD.md#archives)).
+- **A rebuilt `PRELOAD` copy.** Two lengthened club names in a rebuilt
+  `STATIONMES1.PAC` showed in VS mode
+  ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)).
+- **Through the editor's Text tab** (user reports). Seven English club
+  names in `3_1.mbb` (Arsenal 2011, Man Utd 2013, Man City 2008, Aston
+  Villa 2019, Schalke 2095, Sheffield W 2041, Cardiff 2025), the file kept
+  at its size, built with Build disc: Arsenal, Man Utd, Man City, Aston
+  Villa and Schalke showed in VS mode Team Selection, read from the
+  `STATIONMES1.PAC` copy. The welcome mail's body rewritten with six
+  sentences showed on the Mail screen (Check e-mails, Others) with the
+  sender filled in. The window wraps lines at its width, not at spaces,
+  so a word can break across lines ("ju" / "mpscare"); a long edit needs
+  its own line breaks where a word would otherwise split.
 
 ## Open questions
 
@@ -482,3 +465,9 @@ test confirms that it takes a grown file with a larger `data_size`.
   most of the 3000s) hold on each screen, and how variables 35 and 0
   outside category 1 are filled.
 - Which screens use the `1000xx` variant categories instead of the originals.
+- Whether the raw `0x0A`/`0x0D` bytes change how a line is displayed.
+- Which code picks the rival owner's name (one of four per league) into
+  the rival's work, and whether it is `league × 4 + rand(4)` like the
+  stadium name.
+- Whether `CLoader::l_get` bounds-checks a reaction number, and what the
+  pack entries without the `A` prefix are for.

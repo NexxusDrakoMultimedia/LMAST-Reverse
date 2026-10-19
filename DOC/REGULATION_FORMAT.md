@@ -178,6 +178,14 @@ It refuses values the code can't use (`grade` 0–5, `squad` and `squad2`
 after a count of 0. The file keeps its size. `--copies` also patches the
 seven `PRELOAD/SIMFILE*.PAC` copies. `python SRC/regulation.py roundtrip`
 re-encodes every row and checks that the file rebuilds byte for byte.
+
+The editor's Regulations tab edits every row through the same code
+(`regulation.set_field`, `edit_range`), with the schedules named by
+league and round (`regulation.uid_names`) and money in pounds. It shows
+`clubs` read-only (`leaguesize.py build` keeps it in step) and keeps
+`squad2` equal to `squad` (`regulation.FOLLOWS`). A save from the tab
+hasn't been tested in PCSX2; the same edit from `set` has (below).
+
 ### Tested in PCSX2
 
 The English first division (UID 0) edited to `squad=18 squad2=18

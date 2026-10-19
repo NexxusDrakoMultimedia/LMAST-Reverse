@@ -79,8 +79,8 @@ from the value distribution only.
 | `0x24`–`0x5c` | 5 × {u32, u32, u32} | ? | empirical | five groups at `0x24`/`0x30`/`0x3c`/`0x48`/`0x54`: (0–322, {0,2,46,47}, 0 or ~2000/3000/4000) |
 | `0x64` | u32 | dialogue (message ref) | confirmed: `0x1393d0` fetches the record with the EVENT getter, copies it to the stack and stores `+0x64` in the scene object at `+0x44` (unless the object's `+0x48` overrides it) | id is always 0; category 35000–36030 in 373 records, 0 in 8 (256, 311–315, 359, 361). The whole category is the scene's script |
 | `0xe0` | u32 | scene type | confirmed: `0x12a578` returns it; `0x12a690` switches on it (29 cases). What happens after the scene: see [Scene types](#scene-types) | 0–28 |
-| `0xe8`, `0xec` | u32 | scene type override A/B | confirmed: used instead of `0xe0` when the actor flag has bit `0x02`, picked by `EvsWork+0x1f8 == 1` | |
-| `0xf0`–`0x104` | 6 × u32 | scene type by variant | confirmed: used when the actor flag has bits `0x1c`, indexed by `EvsWork+0x1fc` (0–5) | |
+| `0xe8`, `0xec` | u32 | scene type override A/B | confirmed: used instead of `0xe0` when the actor flag has bit `0x02`, picked by `EvsWork+0x1f8 == 1` | – |
+| `0xf0`–`0x104` | 6 × u32 | scene type by variant | confirmed: used when the actor flag has bits `0x1c`, indexed by `EvsWork+0x1fc` (0–5) | – |
 
 ### Trigger conditions: `CheckCondition` at `0x12d530`
 
@@ -112,9 +112,9 @@ The date struct passed in starts with a u16 year (2005 = season 0).
 |---|---|---|---|
 | `0xd8` | u32 | flag to set | `SetEventFlag(value)` if non-zero |
 | `0xb4`, `0xb8` | u32, s32 | effect 1 (kind, value) | `0x1213d0(kind, value)`: switch over 20 kinds |
-| `0xbc`, `0xc0` | | effect 2 | same |
-| `0xc4`, `0xc8` | | effect 3 | same |
-| `0xcc`, `0xd0` | | effect 4 | same |
+| `0xbc`, `0xc0` | – | effect 2 | same |
+| `0xc4`, `0xc8` | – | effect 3 | same |
+| `0xcc`, `0xd0` | – | effect 4 | same |
 | `0x08` | u32 | handler type | then selects the handler (see above) |
 
 ### Effect kinds: `0x1213d0`
@@ -126,13 +126,13 @@ Money values are in units of **10,000** (the handler multiplies by
 
 | Kind | Handler | Effect | Used by (event: value) |
 |---|---|---|---|
-| 0 | `0x1210c0` | nothing | |
+| 0 | `0x1210c0` | nothing | – |
 | 1 | `0x1210c8` | income: `pwkGen_Income(value × 10000, PlIncomeType 11)`; skipped if value < 0 | 257: 900, 260: 300 |
 | 2 | `0x1210f8` | expense: `pwkGen_Pay(value × 10000, PlPaymentType 22)`; skipped if value < 0 | 166…189 (stadium, handler 33): 600/1500/3000; 255: 300 |
 | 3 | `0x121128` | popularity +value in region 0 (`pwkTeam_ChangePopByRegion(0, value)`) | 102, 103, 199, 262, 263, 308 |
 | 4 | `0x121148` | popularity +value in regions 1–13 | 102, 103, 199, 308 |
 | 5 | `0x121198` | popularity −value in region 0 | 242–254 (handler 6): 500 / 10 |
-| 6 | `0x1211b8` | popularity −value in regions 1–13 | |
+| 6 | `0x1211b8` | popularity −value in regions 1–13 | – |
 | 7 | `0x121288` | captain gains `value` exp in ability 26 (`pwkGUtl_AddExp`), unless the captain is unused/unplayable | 194: 1000 |
 | 8 | `0x121208` | for each of the 25 squad slots in use, clears `PlPinfo+0x23c` (u16). The value is ignored | 179, 190: 65535 |
 | 9 | `0x121310` | nothing in the dispatcher (see below) | 167: 500 |
@@ -227,7 +227,7 @@ and builds a manager through the jump table at `0x2150e0`:
 | 7 | `CTalkPromiseResult` | sitting |
 | 8 | `CTalkStaffRetire` | sitting |
 | 9 | `CTalkPlayerRetire` | sitting, standing on one path |
-| 10 and up | none | |
+| 10 and up | none | – |
 
 All 11 calls of `jmTalk_SetTalkType` are accounted for: 8 in the
 scene-type switch, 1 in handler types 10 and 13 (type 6), and 2 in the
@@ -264,12 +264,12 @@ with a speech from 36000–36008. It then plays the result with
 | Handler | `0x167f38` result | `+0x28` | `+0x24` | Category |
 |---|---|---|---|---|
 | type 18 | 0 | – | 2 | `36000` finished {2001}, "our share of the prize money" |
-| | 0 | – | other | `35508` (default) |
-| | 1 | ≠ 1 | 1 / 2 | `36001` / `36002` finished {4077}, "in prize money" / "our share" |
-| | 1 | 1 | 1 / 2 | `36006` / `36007` "knocked out in the first round", same prize wording |
-| | not 0 or 1 | – | – | `35508` (default) |
+| – | 0 | – | other | `35508` (default) |
+| – | 1 | ≠ 1 | 1 / 2 | `36001` / `36002` finished {4077}, "in prize money" / "our share" |
+| – | 1 | 1 | 1 / 2 | `36006` / `36007` "knocked out in the first round", same prize wording |
+| – | not 0 or 1 | – | – | `35508` (default) |
 | type 19 | 1 | ≠ 1 / 1 | – | `36003` finished {4077} / `36008` knocked out in the first round (no prize) |
-| | other | – | – | `35509` (default) |
+| – | other | – | – | `35509` (default) |
 
 The meanings are **empirical**, read from the message text: `+0x28 == 1` is
 a first-round exit, and `+0x24` picks between a whole prize (1) and a
@@ -315,7 +315,7 @@ condition check, then a type-specific check, before queueing the item.
 
 | Check | Helper | EVENT | NEWS (`0x12c220`) | MAIL (`0x128a48`) |
 |---|---|---|---|---|
-| timing (must equal the scan's timing) | | `0x68` | `0x74` | `0x2c` |
+| timing (must equal the scan's timing) | – | `0x68` | `0x74` | `0x2c` |
 | earliest season | `0x12e3b8` | `0x7c` | `0x88` | `0x38` |
 | season pattern | `0x12e3e0` | `0x80` | `0x8c` | `0x3c` |
 | date pattern A | `0x12e450` | `0x84` | `0x90` | `0x40` |
@@ -355,7 +355,7 @@ pick them. Other code presumably sends them directly.
 | `0x70` | s16 | ? | confirmed copied: `0x14c194` stores it at `PlNewsBody+0x10`; meaning unknown | 0, 4 ×20, 6 ×5 |
 | `0x74` | s32 | timing | see the condition block | 4 ×237, -1 ×55, 0 ×40, 9 ×32, 21 ×3 |
 | `0x78` | u32 | weight | confirmed (`0x12b0b8`); its low byte is also copied to `PlNewsBody+0x4` (`0x14c1a0`) | 100 ×164, 200 ×57, 140, 220, 180, … |
-| `0x7c`–`0xb8` | | condition block | see above | `0x80` and `0xb4` are 0 in every record |
+| `0x7c`–`0xb8` | – | condition block | see above | `0x80` and `0xb4` are 0 in every record |
 
 `0x14c0b0` builds a `Param::PlNewsBody` (at article `+0xc`) from the record.
 It takes the message categories from a table at `0x1d9b10` (`50833`,
@@ -386,7 +386,7 @@ read it.
 | `0x24` | u32 | body (message ref) | confirmed: `0x156d40`, `lhu +0x24` | category 563, ids 1000–1442 |
 | `0x28` | u32 | sender group | copied to the mail object's `+0x14` (`0x156c68`); empirical: groups mail by department (1 accounts, 2 facilities, 3 personnel/sales, 4 PR/sponsor, 5 secretary/other) | 0–5 |
 | `0x2c` | s32 | timing | see the condition block | 4 ×386, 0 ×41, -1 ×10, 2 ×6 |
-| `0x30`–`0x58` | | condition block | see above | `0x54` is 0 in every record |
+| `0x30`–`0x58` | – | condition block | see above | `0x54` is 0 in every record |
 | `0x5c` | u32 | weight | confirmed (`0x12b0b8`) | 100 in every record |
 | `0x60` | u32 | chance % | see the condition block | 100 ×269, 0 ×174 |
 

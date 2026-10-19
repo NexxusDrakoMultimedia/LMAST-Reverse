@@ -504,10 +504,18 @@ whose branch in `nnSetLight` (`0x17b330`) reads:
 - The node sphere/box fields (`+0x70` plain, `+0x80` extended) and
   extended node `+0xC0`.
 - Object type bits at `+0x44` and VU type bit `0x100`.
-- How the VU program fills the remaining weight of skinned VU vertices.
+- How the VU program fills the remaining weight of skinned VU vertices
+  (VU `0x21`), and the PX Plus skin words.
 - Submotion interpolation types (`0x20002`, `0x20004`, `0x20200`);
   `ninja.py gltf` bakes every track linearly, one sample per frame.
 - Node flags `0x1000`/`0x2000` (97 nodes), which glTF can't express.
+- Where the hair colour comes from: the hair textures are grey patterns
+  tinted at run time (not by `COLOR_TBL`, the kit clash table).
+- Which part files make up an in-game player (the `LMS_PLAYER.SNP`
+  skeleton, the body and limb `.snq` parts and a face-pack head), and how
+  a face-pack head's own 19-node skeleton binds to the player's (by node
+  name through `NSNN`?). Knowing both would let `ninja.py` export a
+  whole player in one go.
 
 ## Tools
 

@@ -67,7 +67,7 @@ team id (`ConvertFlag` `0x1057e8`, then `ConvertIndex` `0x105dc4`) is:
 
 | Team id | Entry | Names |
 |---|---|---|
-| 0–2 | none. These ids are the `NOT`/`USE`/`RIV` placeholders in the name table | |
+| 0–2 | none. These ids are the `NOT`/`USE`/`RIV` placeholders in the name table | – |
 | 3–459 (clubs) | id − 3 = 0–456 | `emb_C003`–`emb_C459` |
 | 460–542 (national teams) | `plMisc_NatiTeam2Nati(id)` + 459 − 3 = 457–601 | `emb_N001`–`emb_N145` |
 | 543 and up | id + 62 − 3 = 602–633 | `emb_V001`–`emb_V032` |

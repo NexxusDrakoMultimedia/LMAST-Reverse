@@ -615,6 +615,14 @@ turns a 42-day schedule would add.
   `+7`, and the first two team-entry header bytes.
 - `PeriodName.tbb`, the `make_list` source functions and tables 1–8, and
   the meaning of the `savectrl` values.
+- How your club and the rival become ranks 25 and 26 of the second
+  division's past record, which the own-nation UID 1 takes after the
+  tutorial.
+- Whether the save-buffer pools have room for bigger leagues than the
+  ones tested ([Building a league of another size](#building-a-league-of-another-size)),
+  and how other nations' and sizes' promotion and relegation play out in
+  game (only England at 22 is tested). What the game does with UID 117's
+  extra game days.
 - How `CLUB_RANK_SYSTEM.TBB`'s tables are used in detail
   ([`PARAM_DIR.md`](PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables); tables
   2 and 3 are the club ranking,

@@ -38,7 +38,8 @@ In that case:
   `ISO/DLL/SAVEPRG.REL`. `patch_disc.py` and `vcdiff.py` work on whole disc
   images.
 - Other ignored paths: `*.iso` and `*.xdelta` in the repo root (the
-  Redump dump, built discs and patches), `mod/` (the editor's default mod
+  Redump dump, built discs such as the `LMAST-test-*.iso` test discs,
+  and patches), `mod/` (the editor's default mod
   folder, which holds edited game files), `.regress/` (regression
   baselines, which list names and counts from the disc) and `.cache/`
   (`save.py`'s recorded field list).
@@ -57,23 +58,41 @@ In that case:
 3. Write `SRC/<name>.py`.
 4. Run its `info` over all of `DAT/` until it reports no problems, then add
    a check to `checks()` in `SRC/regress.py` and `bless` it.
-5. Update the README's tool table and doc index. Tick off the `TODO.md`
-   item and move it to the end of the same section in `DONE.md`. If part of
-   it is still open, leave that part in `TODO.md` as its own item. If the
-   item was in TODO's "Next up" list, take it off and suggest a
-   replacement to the user. If a
-   folder's status changes, update the coverage table in `GOALS.md`.
+5. Update the README's tool table, dependency table and doc index. Take
+   the answered questions off the doc's "Still unknown" list. Tick off
+   the `TODO.md` item and move it to the end of the same section in
+   `DONE.md` as a one- or two-line summary with a link to the doc (the
+   doc keeps the details and the test results). If part of it is still
+   open, leave that part in `TODO.md` as its own item. If the item was
+   in TODO's "Next up" list, take it off and suggest a replacement to
+   the user. If a folder's or a stage's status changes, update
+   `GOALS.md`.
+
+## Where things are recorded
+
+| File | Holds |
+|---|---|
+| `DOC/*.md` | every fact about a file or system, how it was shown, the in-game tests, and the questions still open (its "Still unknown" or "Open questions" section) |
+| `GOALS.md` | what the project is for, each stage's status in a few lines, and the coverage table |
+| `TODO.md` | tasks, ordered by the stages of `GOALS.md` (read, understand, write, rebuild, edit, distribute), then the in-game tests and the LMASTER Mod. Each links the doc that holds its details instead of repeating them |
+| `DONE.md` | finished items, one or two lines each, under the same section numbers as `TODO.md` |
+| `README.md` | setup, every tool with what it does, how the tools depend on each other, and the doc index |
+
+A new open question goes into the doc first; it gets a `TODO.md` item
+only when it is a task someone should pick up.
 
 Adding a writer (the write stage in `GOALS.md`) follows the same steps, plus
 a `roundtrip` command that re-encodes every file or record and marks any
 difference with `!!`. It goes into `regress.py` as `<name>_roundtrip`. The
-existing writers are `pac.py` (BINPACs), `tbb.py`, `pbdata.py`, `mbb.py`,
-`initteam.py` (`set`, `setteam`, `swap`), `teaminit.py`, `regulation.py`,
-`uniform.py`, `sqb.py` (`setcmd`, and `set_commands` for several edits
-checked together; `settable` for the PwkScript data tables), `plrsim.py` (`setfree`), `save.py` and `leaguesize.py`
-(`build`, which writes the schedule packs through `schedule.py`'s
-encoders). `schedule.py` itself has the encoders and `roundtrip` but no
-edit command.
+existing writers are `pac.py` (BINPACs, KC@P packs, PRS), `tbb.py`,
+`pbdata.py`, `mbb.py`, `initteam.py` (`set`, `setteam`, `swap`),
+`teaminit.py`, `regulation.py`, `clubresult.py`, `training.py`,
+`camp.py`, `formset.py`, `tour.py`, `uniform.py`, `sqb.py` (`setcmd`, and
+`set_commands` for several edits checked together; `settable` for the
+PwkScript data tables), `plrsim.py` (`setfree`), `save.py`,
+`schedule.py` (`shift`, and the encoders behind `roundtrip`) and
+`leaguesize.py` (`build`, which writes the schedule packs through
+`schedule.py`'s encoders).
 
 A writer can then get a tab in `editor.py` (stage 5). The tab edits through
 the writer's own `set` functions and asks the writer which values each
@@ -86,10 +105,11 @@ window off-screen (`geometry("1280x720+-4000+0")`) so nothing appears on
 the user's desktop.
 
 Some things can only be checked by a person: that an edit shows in the game
-(PCSX2), what a screen shows, or how audio sounds. Ask the user to check,
-then record the result in the doc and in `TODO.md` or `DONE.md` ("Tested
-in PCSX2: ...", "identified by ear"). The user doesn't write code, so don't hand code tasks
-to them.
+(PCSX2), what a screen shows, or how audio sounds. Ask the user to check
+(the pending checks are `TODO.md` section 7, each naming the disc or edit
+to build), then record the result in the doc ("Tested in PCSX2: ...",
+"identified by ear", "user report") and move the item to `DONE.md`. The
+user doesn't write code, so don't hand code tasks to them.
 
 After changing any tool, run `python SRC/regress.py run`. A diff is a
 regression unless the change was intended. Only then run `bless <name>`, and

@@ -6,9 +6,11 @@
 A separate window, `SRC/saveedit.py`, for editing a career save on a
 memory card, apart from the mod editor (`editor.py`). The mod editor
 changes the game's files on the disc, before a career starts; the save
-editor changes one career after it has started. Nothing here is built
-yet. This doc says what it would do, in what order, and what has to be
-decided first.
+editor changes one career after it has started. This doc is its plan:
+what it does, in what order it was built, and what is still to decide.
+Steps 1–3 are built (`python SRC/saveedit.py open <save>`); what is left
+is a PCSX2 test of each page's edit (step 4) and the player fields
+`save.py` can't set yet (step 5).
 
 ## Why a separate tool
 
@@ -64,7 +66,7 @@ Each page shows what `save.py` can already read, and edits only what
 1. **`save.edit_spec()`** and a `save.py` command that prints it. It also
    gets a check that every range it gives is one `cmd_set` accepts.
    *Done:* `save.py spec [<save>]`; `set`'s edits now go through
-   `apply_assigns`, which the editor will call too. Checked on saves G000
+   `apply_assigns`, which the editor calls too. Checked on saves G000
    and G003 with no problems.
 2. **Read-only window**: open a save, the pages above without inputs.
    Decoding runs in a background thread with a "Loading" status, as the
@@ -127,8 +129,8 @@ Still open:
   them back while the game runs. The editor could warn when the card's
   folder is in use, or the guide could just say to close the game
   first.
-- **Japanese saves.** `save.py` is PAL-only (`TODO.md` section 7). The
-  plan leaves them out.
+- **Japanese saves.** `save.py` is PAL-only (`TODO.md`). The plan leaves
+  them out.
 
 ## Still unknown
 

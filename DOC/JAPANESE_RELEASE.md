@@ -26,9 +26,10 @@ The tools take the Japanese folders wherever they take a path:
 present, `python SRC/regress.py run` also runs every check over them as
 `jp_<name>`.
 
-The built-in `patch_disc.py` switches (`--skip-tutorial`,
-`--sponsor-negotiation`, `--launcher`) are PAL-only. Each one checks the
-bytes it replaces and refuses a disc that doesn't hold them.
+Still PAL-only: the `patch_disc.py` switches (`--skip-tutorial`,
+`--mod lmaster` and the rest), which check the bytes they replace and
+refuse a disc that doesn't hold them; `save.py`, which takes no ISO
+folder and can't read a Japanese save yet (below); and the editor.
 
 ## How the tools find addresses: `gamever.py`
 

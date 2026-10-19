@@ -11,7 +11,9 @@ u16 values. Neither has a copy elsewhere on the disc.
 `python SRC/camp.py info DAT/PARAM` checks both files and
 `python SRC/camp.py show DAT/PARAM 604` prints a camp. The data has two
 bugs, [below](#two-bugs), which `patch_disc.py --mod camp-types` and
-`--mod camp-cities` fix.
+`--mod camp-cities` fix; `--mod camp-santiago` and `--mod camp-clubs`
+fix two smaller slips (Santiago's description and Canberra's clubs).
+All four are part of the [LMASTER Mod](LMASTER_MOD.md).
 
 ## Who reads them
 
@@ -22,7 +24,8 @@ bugs, [below](#two-bugs), which `patch_disc.py --mod camp-types` and
 | `SIMPRG.REL 0xa5488`–`0xa5558` | books a camp: the camp record (`pwkSche_GetCamp`, `PlPwork` task 6 `+0x1b00`) gets the week at `+0x0a`, 1 at `+0x1c`, the city at `+0x18` and `0x4bdd0`'s value at `+0x3c`. **confirmed** |
 | `pwkSche_GetCampType` (`0x255690`) | returns `+0x3c` of the running camp. Its callers are the training module (`SIMPRG.REL 0x1586b4`, the row of [`TRAINING_LIST`](TRAINING_FORMAT.md) table 10) and `pwkSche_CheckCampSucucess` (`0x256948`). **confirmed** |
 | `SIMPRG.REL` load lists `0x1cdd30` (entry 3), `0x23d618` | load `Camp_list.tbb` for the camp screen's module and for the training module during a camp |
-| `SIMPRG.REL` list `0x225df0` | loads `Camp_Explane.tbb`. The code that reads it hasn't been found |
+| `SIMPRG.REL` list `0x225df0` | loads `Camp_Explane.tbb` |
+| `SIMPRG.REL 0xa4a80` | walks `CAMP_EXPLANE`'s 153 pairs (`0x99`, resource 3 of the list at `0x225d78`) for a city and returns its message, or 0 when no pair matches. **confirmed** |
 
 ## `CAMP_LIST.TBB`
 
@@ -95,14 +98,10 @@ the flag.
 
 ## `CAMP_EXPLANE.TBB`
 
-One table of 153 `{u16 city, u16 message}` pairs. The messages are
-6000–6152 of category 570, a sentence about each place (6007: "The famous
-produce of this city is ham, cheese and excellent goalkeepers.", Parma).
-**Empirical**; the reader hasn't been found.
-
-**Confirmed reader**: `SIMPRG.REL 0xa4a80` (resource 3 of the list at
-`0x225d78`) walks the 153 pairs (`0x99`) for a city and returns its
-message, or 0 when no pair matches.
+One table of 153 `{u16 city, u16 message}` pairs, read by
+`SIMPRG.REL 0xa4a80` (**confirmed**, above). The messages are 6000–6152
+of category 570, a sentence about each place (6007: "The famous produce
+of this city is ham, cheese and excellent goalkeepers.", Parma).
 
 Its cities equal `CAMP_LIST`'s except one: Santiago's description (6146,
 "The Chilean capital …") is keyed to city 764, the camp to 774. The
@@ -162,7 +161,8 @@ both, apart from spellings (Nates → Nantes, Malaga → Málaga, La Coruna →
 La Coruña). `python SRC/camp.py fixcities` (and `--mod camp-cities`)
 moves the seven in both files.
 
-Neither fix has been tested in PCSX2.
+None of the four fixes has been tested in PCSX2 yet; all are on the test
+disc `LMAST-test-camps-mes.iso` ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
 
 ## Editing
 
@@ -170,7 +170,8 @@ Neither fix has been tested in PCSX2.
 python SRC/camp.py set DAT/PARAM/CAMP_LIST.TBB out/CAMP_LIST.TBB 604 type=10
 python SRC/camp.py fixtypes DAT/PARAM/CAMP_LIST.TBB out/CAMP_LIST.TBB
 python SRC/camp.py fixcities DAT/PARAM out
-python SRC/patch_disc.py patch disc.iso modded.iso --mod camp-types,camp-cities
+python SRC/camp.py fixsantiago DAT/PARAM/CAMP_EXPLANE.TBB out/CAMP_EXPLANE.TBB
+python SRC/patch_disc.py patch disc.iso modded.iso --mod camp-types,camp-cities,camp-santiago,camp-clubs
 ```
 
 `set` takes a city, then `field=value` pairs (`type` 0–255, the other

@@ -213,7 +213,7 @@ fields by following all 21 callers:
 | `0x08` | u8 | foreign | `GetCanBelongForeignPlayerNum`, `CAcquirePlayer::GetSearchNation` | 0–7: row of `PLRESOURCESIM` entry 6, table 1 (2 bytes: foreign players allowed, % chance to search abroad) |
 | `0x09` | u8 | newface | `CAcquirePlayer::IsAcquireNewfacePlayer` | 0–3: index into the % table at `0x533ff8` (chance to sign new faces) |
 | `0x0a` | u8 | search_region | `CAcquirePlayer::GetSearchNation` | 0–31: row of entry 6, table 4 (13 weights, one per scouting region) |
-| `0x0b`, `0x0c`, `0x0d`, `0x0f` | u8 | | none found | `0x0b` always equals `0x0a`; `0x0c` 1–87; `0x0d` 0–4; `0x0f` 0–25 in steps of 5 |
+| `0x0b`, `0x0c`, `0x0d`, `0x0f` | u8 | – | none found | `0x0b` always equals `0x0a`; `0x0c` 1–87; `0x0d` 0–4; `0x0f` 0–25 in steps of 5 |
 | `0x0e` | u8 | money | `plTeam_IsAgreeTransferChangeMoney`, `0x248140` | transfer sums × 1.0 below 60, × 0.95 for 60–79, × 0.9 from 80. 438 clubs have 0, 8 have 70, 11 have 85. Clubs without a record count as 50 |
 | `0x10` | u16 | city | `plTeam_GetCity` | home city |
 | `0x12` | u16 | list_state | `plState_GetEmblemDisplayTeamList` | the state the club is listed under in the emblem screens |
@@ -297,12 +297,25 @@ python SRC/sles_disasm.py ISO/SLES_541.51 dis plLg_EntryTeamSetToDiv UpdateConye
 python SRC/sles_disasm.py ISO/SLES_541.51 dis GetString__3MsgQ23Msg5eTYPEUib GlobalMsgSetup
 ```
 
-`python SRC/initteam.py set OTEAMMEMBER.TBB out.TBB 7:1 age=15` edits a
-squad slot (team 7, slot 1: Terry) and writes a same-size table that
-`patch_disc.py` can put on the disc. Shirt numbers are limited to 1–99,
-the range `pwkTeam_SetUnumberOpinfo` keeps. `set` and `setteam` write
-through the same encoders that `roundtrip` checks (all 10,975 squad slots
-and 457 club records re-encode, and both files rebuild byte for byte).
+## Writing
 
-A starting-season mod can change these tables with
-`python SRC/tbb.py extract` / `replace` ([`TBB_FORMAT.md`](TBB_FORMAT.md#tool)).
+`initteam.py` edits all three files into same-size copies that
+`patch_disc.py` puts on the disc:
+
+```bash
+python SRC/initteam.py set DAT/PARAM/OTEAMMEMBER.TBB out/OTEAMMEMBER.TBB 7:1 age=15   # team 7, slot 1: Terry
+python SRC/initteam.py setteam DAT/PARAM/PLRESOURCESIM.PAC out/PLRESOURCESIM.PAC 7 stadium=100
+python SRC/initteam.py swap DAT/PARAM/PLRRSRC_INITTEAMDATA.TBB out/PLRRSRC_INITTEAMDATA.TBB 7:41
+```
+
+Shirt numbers are limited to 1–99, the range `pwkTeam_SetUnumberOpinfo`
+keeps. `set`, `setteam` and `swap` write through the same encoders that
+`roundtrip` checks (all 10,975 squad slots and 457 club records
+re-encode, and all three files rebuild byte for byte). Changing a
+division's size needs new schedules: `leaguesize.py build`
+([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#where-the-clubs-come-from)).
+
+The editor's Clubs tab edits the club records and squads, refusing a
+player already in another squad, a repeated shirt number and a manager
+who already has a club; its Season tab swaps clubs and changes first
+division sizes. Both save through these functions.

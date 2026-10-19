@@ -7,6 +7,8 @@ u32 depth values, row-major, top-left first, not swizzled. It lines up
 pixel-for-pixel with the matching CSE/BG_xx_nn_00.CSP background texture
 (512x512, drawn squashed to the 512x448 screen). Only the low 24 bits
 count; larger = nearer. They live inside BG/BG_*.MRG - see DOC/ZBF_FORMAT.md.
+The game sends one straight into the Z buffer with nnuLoadImagePS2
+(0x1668f0, called from SIMPRG.REL 0xfc3a8) as a 512x448 PSMZ32 image.
 
 Usage:
     python zbf.py info <file.zbf | file.MRG | dir> ...

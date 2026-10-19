@@ -76,9 +76,9 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 national-team flags per turn. **confirmed**, see below |
 | `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | the training module (`SIMPRG.REL 0x159998`, lists `0x23d618`, `0x23d690`), `SLES 0x246540` (table 11) | what each practice trains and its fatigue, facility and camp bonuses, match growth by position, ability groups and coaching, decline with age. **confirmed**, see [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md) |
 | `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648`; `0x4bdd0` | the 153 training camps: city, nation, camp type, and the clubs of each area. **confirmed** in part, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
-| `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8` | each camp city's description, message category 570, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
+| `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8`; `0xa4a80` | each camp city's description, message category 570. **confirmed**, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
 | `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 48 × 20 bytes: an older copy of the club events, which the game takes from the executable instead. See below |
-| `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division. **confirmed**, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes"). Tables 0, 1 and 4 not traced |
+| `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division; tables 0, 1 and 4 are the nation groups, the points per final place and the leagues the year end waits for. **confirmed**, see [below](#club_rank_systemtbb-the-club-rankings-tables) and [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes") |
 | `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 166 × s16, each schedule UID's competition. Loaded but never read, see below |
 | `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170`, `0x4cab0` | 106 {region, club} pairs: the clubs a tour can play, by region. **confirmed**, see below |
 | `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#mapteam_listtbb). Reader not found |
@@ -98,8 +98,7 @@ The `uniform_name` string in `SLES` (`0x54ad98`) is a save-data field
 name next to `editplayer` and `pinfo`, not this file.
 
 The record layouts of the files with their own doc are in that doc. The
-sections below cover the two files whose layout is known and that have
-no doc of their own.
+sections below cover the files that have no doc of their own.
 
 ## `SCHEDULE_LIST.TBB`: the national-team calendar
 
@@ -164,7 +163,7 @@ one. The Japanese file is the same.
 | 0 | 52 | `{u8 nation, u8 group}` | `0x151210` collects the rows whose group is the one asked for and sorts them (`qsort`) | nations 1–52; group 0 for the six league nations, 1–4 for the others (12, 12, 19 and 3 nations) |
 | 1 | 33 | `{s16 competition, s16 kind, s16 ?, u8 points[32]}` | `0x152178`: for the rows of one kind, a competition with a result this year (`0x1520e0`) gives each club the points for its final place (`pwkRec_GetCompePastRecord`, place *n* → byte *n*); a negative competition is skipped | kind 0: the European competitions 34–36; kind 1: the national cups 45 and 46; kind 2: the same three European ones again and each league nation's two divisions and two cups (first division winner 55 … 20th 25, second division 30 …, cup 25 …, league cup 10 …; European League 50, 35, 25, 25 …). One kind-2 row has competition −10, so it is never used. The third field is 1 or 2 |
 | 2 | 32 | s16 | `0x151568` | world rank points by club rank, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) |
-| 3 | 65 | 34 bytes | the club rank by position, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) | |
+| 3 | 65 | 34 bytes | the club rank by position, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) | – |
 | 4 | 18 | `{s16 UID, s16 nation, s16 division, s16 0}` | `0x150dd8`: for each row, the year schedule of the UID (`getYearSchedule`) and its nation (`getNationFromScheCompe`); when the walk finds them done it marks the year (`+0xc` = 2) and the divisions are shifted (`pwkRec_SetDivShift_TeamUserOnly`, `0x150ecc`) | the six league nations' league UIDs: each first division (division 0) and both versions of its second division (1) |
 
 Which pass uses which kind of table 1, and what its third field and the
@@ -269,8 +268,6 @@ unused placeholders for kit names.
 - What's still open in the files that have a doc is listed there, for
   example the schedule packs
   ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown)).
-- The code that walks the `SIMPRG.REL` list holding `ClubEvent` and
-  `Camp_Explane` (entries at `0x225dd0`, `0x225df8`).
 
 ## Checking the claims
 

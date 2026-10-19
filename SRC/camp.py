@@ -35,8 +35,11 @@ Scunthorpe in PAL, Liverpool in the Japanese release). `fixcities` moves
 them to the PAL ids in both files (CITY_FIXES).
 
 CAMP_LIST table 1 is (u16 city, u16 club) pairs: the clubs of each camp's
-area (empirical). CAMP_EXPLANE is (u16 city, u16 message) pairs: the
-city's description, message category 570.
+area (empirical). Its reader (SIMPRG.REL 0x4c8f8) stops after 735 of the
+737 pairs; `patch_disc.py --mod camp-clubs` raises the bound.
+CAMP_EXPLANE is (u16 city, u16 message) pairs: the city's description,
+message category 570, read by SIMPRG.REL 0xa4a80. Santiago's is keyed to
+city 764, not its camp's 774; `fixsantiago` rekeys it.
 
 Usage:
     python camp.py info      <DAT/PARAM>

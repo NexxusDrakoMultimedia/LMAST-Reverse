@@ -42,7 +42,7 @@ Plaintext layout:
 | `0x4` | u32 | 0 |
 | `0x8` | u32 | layout CRC, `0xa225` for this build |
 | `0xc` | u32 | version, `0x69` |
-| `0x10` | | the bit stream: blocks 0–9 in order, MSB first (`PlBitsClass`, as in [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)) |
+| `0x10` | – | the bit stream: blocks 0–9 in order, MSB first (`PlBitsClass`, as in [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)) |
 
 The layout CRC checks that a save matches the build's block sizes. **Nothing
 checks the contents**, so an edited save only has to be re-encoded and
@@ -81,12 +81,12 @@ All **confirmed** by the accessor named. Offsets are within the block.
 |---|---|---|---|---|
 | 0 | `0x0` | s64 | `pwkGen_GetSikin` (`0x2444e0`) | club money, in the game's own unit (below) |
 | 0 | `0x88` | PlDate | `pwkGen_GetDate` (`0x244368`) | the current date |
-| 0 | `0x1344` | | `pwkGen_GetDifficultyPointer` (`0x244c78`) | difficulty settings (not decoded) |
+| 0 | `0x1344` | – | `pwkGen_GetDifficultyPointer` (`0x244c78`) | difficulty settings (not decoded) |
 | 1 | `0x4b4` | PlTeamData | `pwkTeam_GetMyTeamData` (`0x259898`) | your club |
 | 1 | `0x4b4 + 0x20` | 25 × PlPinfo | `pwkTeam_GetForeignCitizenNumber` (`0x266450`) | the squad, 0x2a0 bytes per player |
 | 1 | `0x4808` | 25 × 25 u16 | `plCombi_Get` (`0x20f638`): PlTeamData `+0x4354` | pair combinations: value above the diagonal, cap below (below) |
 | 1 | `0x4d08` | PlMinfo | `pwkTeam_GetCoachManager` (`0x26cdc8`): PlTeamData `+0x4854` | the manager |
-| 1 | `0x4e99` | | `pwkTeam_GetStadium` (`0x25d910`) | your stadium: which one, the one being built, stand level (see the season plan below) |
+| 1 | `0x4e99` | – | `pwkTeam_GetStadium` (`0x25d910`) | your stadium: which one, the one being built, stand level (see the season plan below) |
 | 1 | `0x4f00` | 24 × PlPinfo | `pwkTeam_GetYteamData` (`0x270c18`); `pwkTeamType_FitCalc` (`0x270b58`) walks them up to `+0x3f00` | the youth team (21 players in the save checked, 3-year contracts, no salary) |
 | 1 | `0x8e00` | PlMinfo | `pwkTeam_GetYManager` (`0x26bdd8`): `pwkTeam_GetYteamData` (`+0x4f00`) `+0x3f00` | the youth manager |
 | 1 | `0x8f8c` | 3 × PlSinfo | `pwkTeam_GetScouts` (`0x26d098`) | the scouts, 0x94 bytes each |
@@ -94,7 +94,7 @@ All **confirmed** by the accessor named. Offsets are within the block.
 | 1 | `0x9440`–`0x9cc4` | 5 lists | `pwkTeam_Add*Candidate` | the candidate lists: players, youth, managers, coaches, scouts (below) |
 | 1 | `0xe290` | 3 × 0x2a0 | `0x266600` | read like PlPinfo by one foreign-player count, but the save holds ids of 0 and no players there; not identified |
 | 1 | `0xec8e` | 25 × 0x11e | `pwkTeam_GetPlayerStats` (`0x265810`, indexes `0xec90 + slot × 0x11e`) | each squad slot's match statistics (below) |
-| 1 | `0x12470` | | `pwkUnkei_GetWork` (`0x271cf8`) | the season plan: ad budget, ticket prices, season tickets (below) |
+| 1 | `0x12470` | – | `pwkUnkei_GetWork` (`0x271cf8`) | the season plan: ad budget, ticket prices, season tickets (below) |
 | 2 | `0x0` | 440 × 0xa8 | `pwkOteam_GetPointer` (`0x24b788`) | the other clubs: squads, friendship, ranks (below) |
 | 5 | `0x0` | 2 × (12 + 23) s64 | `pwkRec_AddMonthlyIncome` (`0x252d88`), `AddMonthlyPayment` (`0x252de0`), `GetMonthlyReport` (`0x252e38`), `GetAnnualReport` (`0x253090`) | the accounts for this month (`+0x0`) and this season (`+0x130`) (below) |
 
@@ -153,17 +153,17 @@ name.
 | 9 | Player Transfer Fee | 9 | Player Annual Salary |
 | 10 | Rental Fee | 10 | Supervisor Annual Salary |
 | 11 | Other income | 11 | Coach Annual Salary |
-| | | 12 | Youth Supervisor Salary |
-| | | 13 | Scout Salary |
-| | | 14 | Player Transfer Fee |
-| | | 15 | Loan fees |
-| | | 16 | Pay for the Job |
-| | | 17 | Advertising Costs |
-| | | 18 | Overseas Investment |
-| | | 19 | Overseas club bases |
-| | | 20 | Match management |
-| | | 21 | Camp Tour |
-| | | 22 | Casual income (an expense: a translation slip) |
+| – | – | 12 | Youth Supervisor Salary |
+| – | – | 13 | Scout Salary |
+| – | – | 14 | Player Transfer Fee |
+| – | – | 15 | Loan fees |
+| – | – | 16 | Pay for the Job |
+| – | – | 17 | Advertising Costs |
+| – | – | 18 | Overseas Investment |
+| – | – | 19 | Overseas club bases |
+| – | – | 20 | Match management |
+| – | – | 21 | Camp Tour |
+| – | – | 22 | Casual income (an expense: a translation slip) |
 
 Media licensing fee is income 1–2 (league and individual TV contracts),
 Admission fee 3–4 (season tickets and tickets) and Winnings 5–6.
@@ -364,7 +364,7 @@ abilities at `+0x6a` (48) or `+0x31` (45).
 |---|---|---|---|---|
 | `0x9c` | `0x60` | s16 | database id; −1 = empty | confirmed, `plMinfo_CloseContract` (`0x216ef0`) / `plSinfo_CloseContract` (`0x218a10`) set it to −1 |
 | `0x9e` | `0x62` | u8 | contract years remaining | confirmed for managers: `pwkTeam_SignManager` (`0x269e20`) stores the contract length there; matches all five staff screens checked |
-| `0xa0` | | u32 | job: 0 balanced, 1 attacking and 2 defensive assistant coach, 3 physical coach, 4 GK coach (as in the database); once hired, 5 manager, 6 youth manager. Coaches and former players can also become managers | see [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars); `pwkTeam_SetYManager` (`0x26bd28`) sets 6 |
+| `0xa0` | – | u32 | job: 0 balanced, 1 attacking and 2 defensive assistant coach, 3 physical coach, 4 GK coach (as in the database); once hired, 5 manager, 6 youth manager. Coaches and former players can also become managers | see [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars); `pwkTeam_SetYManager` (`0x26bd28`) sets 6 |
 | `0xb8` | `0x90` | u32 | annual salary ÷ 100, stored money unit | empirical: £2,510,000, £950,000, £1,060,000, £990,000 and £460,000 match |
 
 `plMinfo_GetConyear` (`0x218dd8`) is something else: the longest contract
@@ -793,6 +793,26 @@ an old save.
 - Table 1 of the statistics, and the rest of PlPinfo (the flags at
   `0x20c`, dissatisfaction). The rest of the blocks: the accessors that
   call `get(i)` are the way in.
+- The 3 records at block 1 `+0xe290`.
+- Finances: the code that reads the per-type names (category 550
+  messages 217–251), the season plan's `+0x14` and `+0x16`, and where
+  the plan screen checks its limits (a user report so far).
+- The rest of the 32-byte player candidate record, the first u32 of the
+  staff candidate records, and what the youth limit of 4
+  (`pwkTeam_GetYouthPlayerMax`) counts.
+- Other clubs: bytes `+0x9b`, `+0xa1` and `+0xa6`–`+0xa7`, the
+  non-resident clubs (442 on), the first u32 of PlMinfo/PlSinfo, PlSinfo
+  `+0x64`–`+0x8f`, and how far the manager's popularity goes in play.
+- The club ranking: when in the season it runs, which competitions
+  `0x22`–`0x24` lower the status rank, what changes the status after a
+  match (`0x26ddd8`), the three weighted values behind the world rank
+  points (`SIMPRG.REL 0x151568`), and whether the club rank limits the
+  players an AI club signs.
+- The Special Mention texts of dissatisfaction kinds 0–3 (kind 4 is
+  confirmed in game).
+- A Japanese save: its block 1 is 16 bytes smaller (layout CRC `0x16da`,
+  [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)), and `save.py` reads
+  only PAL saves.
 - `info.bin` past the date, and `dm.bin`.
 - Whether the game checks `info.bin` against the main file.
 - The VS data (`BESLES-54151-C000`, main file 16,152 bytes). It uses the

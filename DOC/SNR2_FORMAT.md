@@ -46,7 +46,7 @@ loc_rel   packed local relocations, up to loc_rel_end (= EOF)
 | `0x30` | 0 | zeroed by the loader (runtime use) |
 | `0x34` | `0x2CD9B8` | local relocation list: the loader walks it from here |
 | `0x38` | `0x2CD9B8` | an offset (the loader rebases it); use unknown |
-| `0x3C` | 0 | |
+| `0x3C` | 0 | – |
 
 `0x20`, `0x34` and `0x38` are equal in every file, so the files alone
 can't tell them apart. The loader adds the load base to `0x04`, `0x0C`,
@@ -189,7 +189,7 @@ started with
 | Module ids | Table | Entries |
 |---|---|---|
 | 0–69 | `0x34d7e8 + 8 × id` | 70 |
-| 70 | the wild card (below) | |
+| 70 | the wild card (below) | – |
 | 71–129 (`0x47`–`0x81`) | `0x34d5f8 + 8 × (id − 0x47)` | 59 |
 | 171–173 (`0xab`–`0xad`) | `0x34d7d0 + 8 × (id − 0xab)` | 3 |
 

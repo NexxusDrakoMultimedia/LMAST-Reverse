@@ -129,7 +129,7 @@ Project (0x00)
 | 0x1A | u16 | varies (15, 100, 120, …). Possibly a default frame count; unconfirmed |
 | 0x1C | u16 | 60 in every file (frame rate?) |
 | 0x1E | u16 | 0 in the file; `0x4241` once relocated |
-| 0x20 | | zero padding |
+| 0x20 | – | zero padding |
 
 ### PicList
 

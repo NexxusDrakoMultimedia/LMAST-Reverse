@@ -61,13 +61,18 @@ resolution.
 - Ranges vary by scene. Most peak at `0xC3B9` (64 files) or `0xD3EE`
   (50). The RR, IP and TV rooms go up to `0x2D4C1`.
 
-## Not yet confirmed from code
+## Loading
 
-The loader lives in the overlays (`BGCONTROL_MODULE` in `DLL/SIMPRG.REL`,
-`BG_LIGHT_TEST_MODULE` in `DLL/TESTPRG.REL`), which `SRC/snr2.py`
-disassembles ([`SNR2_FORMAT.md`](SNR2_FORMAT.md)); it hasn't been traced
-yet. The executable holds no `zbf` string, and nothing in it references
-the `BG_%s_%02d.mrg` strings in its data section directly, so the
-PSMZ24/GEQUAL reading above comes from the data alone. Still unknown: the
-exact GS upload (probably a PSMZ32 transfer into a PSMZ24 buffer) and the
-projection that maps scene depth to these values.
+**Confirmed** (traced for the widescreen patch,
+[`WIDESCREEN.md`](WIDESCREEN.md#room-depth)): `SIMPRG.REL 0xfc3a8` takes
+the depth file through `CLoader::getBinary` and sends it with
+`nnuLoadImagePS2` (`0x1668f0`) as a 512×448 PSMZ32 image (`0x30`) of
+`0xe0000` bytes straight into the Z buffer. Other scenes' depth buffers
+go the same way (`SIMPRG.REL 0x408a8`, `0xcace4`; `CEDITPRG.REL
+0x1db8`, `0x6bb8`), and `CBackgroundManager` clears the Z buffer with a
+zero buffer of the same shape (`SIMPRG.REL 0xfe8c0`).
+
+So the upload is a plain PSMZ32 transfer. That the Z buffer itself is
+PSMZ24 with `ZTST = GEQUAL` still comes from the data alone (above):
+the frame's own Z buffer format and depth test weren't traced. Also
+unknown: the projection that maps scene depth to these values.

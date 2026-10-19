@@ -350,7 +350,9 @@ scheme.
 
 - The 3-bit flag, side fields 0, 1, 2 and 5, and the two unused bits.
 - Descriptor bytes 14 and 15, and what the pack's copy of the descriptor
-  is used for.
+  is used for: which copy a match reads (an edit to one copy only would
+  tell), and whether a front number can show at all (a front number
+  colour showed nothing on AC Milan's shirt, user report).
 - What the 121 rows with team id 0 are.
 - What the keeper kit stored with your club holds, and whether screens
   outside a match show it rather than the `UNIFORM_GK` kit (the code says

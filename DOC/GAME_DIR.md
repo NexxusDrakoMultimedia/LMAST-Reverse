@@ -28,7 +28,7 @@ BCB3, DTPK) are **empirical**, checked against every file on the disc.
 | `*.SVR` | `GBIX` + `PVRT` | textures. `GM_KEYHELP0-6` / `GM_TITLE0-6` are probably per-language sets; the code names only `gm_keyhelp.svr` / `gm_title.svr` |
 | `*.SVM`, `EF001.BIN`, `FLARE.BIN` | `PVMH` | texture archives |
 | `BALLMOTION`, `OPTMOTION*`, `PLAYERMOTION`, `SHADOWCOLLI`, `WALLCOLLI` | BINPAC | see `PAC_FORMAT.md` |
-| `CUTINPACK.BIN` + `_HEADER.BIN` | KC@P | see `PAC_FORMAT.md`. 168 of 277 entries hold `CIB0` blocks, 109 are empty |
+| `CUTINPACK.BIN` + `_HEADER.BIN` | KC@P of 277 `etc::PackData` entries | the match's cut-ins ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp), [`PLAYER_DIR.md`](PLAYER_DIR.md)). Every entry starts with a `CIB0` block (type 19); after it come Ninja models (types 20 and 24, 71 in all), `PVMH` textures (21, 71), motions (22, 3,357) and 7 `BMT1` blocks (23). 24 entries hold only the `CIB0` block (**empirical**, `packdata.py info --all`). `CIB0` and `BMT1` aren't decoded |
 | `PLAYBOOK.BPB`, `COMBINATION.BPB` | play books | the players' and ball's paths in each set play and move, in metres: see [`BPB_FORMAT.md`](BPB_FORMAT.md) (`Pwk::PlayBookData`) |
 | `COMBINATION2.CBB/.CSB` | 540 combination records / 540 PRS-packed `SQB1` scripts | the combinations' data and scripts: see [`BPB_FORMAT.md`](BPB_FORMAT.md#combination2cbb-and-csb) |
 | `BACK_MATCH.TBB`, `TACTICS_PLAYBOOK_EDIT.TBB` | TBB | see `TBB_FORMAT.md` |
@@ -36,7 +36,7 @@ BCB3, DTPK) are **empirical**, checked against every file on the disc.
 | `GAMEDATA.BIN` | 4,131 records of 0x30 bytes | the match engine's table (loader slot 10); a few fields read: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md) |
 | `TEAM.TMB` | `TMB1` | team names, 3-letter codes, stadiums (`Highbury`/`LON`). Dated Mar 2005, not referenced by name. Probably stale |
 | `CVS/` | CVS metadata | original lowercase names and revision numbers |
-| `DUMMY.DAT` (0 bytes), `VBNAME.VBN` (`test0`) | junk | |
+| `DUMMY.DAT` (0 bytes), `VBNAME.VBN` (`test0`) | junk | – |
 
 ## `SOUNDDAT.PAC`
 
@@ -228,8 +228,8 @@ Offsets are relative to the bank start:
 | `0x10` | u32 | `ps2_TBLD` size |
 | `0x18` | u32 | `ps2_VAGD` payload size |
 | `0x1C` | u32 | offset of `ps2_VAGD` (0x800, 0x1000 or 0x1800) |
-| `0x60` | | `ps2_TBLD` (tone tables) |
-| `0x98` | u32[10] | TBLD pointers. **[8] = sample table**, [9] = its end. The others aren't decoded |
+| `0x60` | – | `ps2_TBLD` (tone tables) |
+| `0x98` | u32[10] | TBLD pointers: [0] setups, [1] programs, [2] level curves ([Instruments](#instruments-tone-tables)), [3] the song area ([Songs](#songs-sequences)), **[8] the sample table**, [9] its end. 4–7 aren't decoded |
 
 Sample table at `ptr[8]`: `u32 last_index`, then `last_index + 1` entries:
 
@@ -307,7 +307,7 @@ otherwise a delay follows, 1–3 bytes of 7 bits, top bit = another byte
 
 Across the 41 songs: 116,442 note-ons, 21,458 note-offs, 6,280
 controllers, 49 pitch bends, 3 `0xAn` events, and no program changes (a
-channel's instrument comes from the bank's tone tables, not decoded yet).
+channel's instrument comes from the setup the song selects, below).
 Every stream ends exactly at its `0xFF`.
 
 | Banks | Songs | Length at 1 ms/tick |
@@ -317,8 +317,8 @@ Every stream ends exactly at its `0xFF`.
 | `MAP03`, `MAP04`, `MAP05` | 5 each (they share four) | 60–127 s |
 | `MAP06` | 6 | 10–57 s |
 | `MAP07`–`MAP10` | 3 each (`07`/`08` and `09`/`10` share two) | 30–94 s |
-| `MAP11`–`MAP23` | 1 each: one long note that plays the stereo sample pair | |
-| `PACK0` | 1 | |
+| `MAP11`–`MAP23` | 1 each: one long note that plays the stereo sample pair | – |
+| `PACK0` | 1 | – |
 
 `SOUNDDAT.PAC`'s crowd banks hold 27 more songs. `python SRC/sounddat.py
 midi DAT/SOUND/MAP01.DAT out/` writes each song as a MIDI file (General
@@ -439,6 +439,11 @@ slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
   selector pair, and what loads bank 39.
 - The BCR2 record layout and trailer, the BCB3 item fields and script
   opcodes, and the BCV records.
+- What the cut-in pack's `CIB0` and `BMT1` blocks hold.
+- The entries of `SHADOWCOLLI.PAC` and `WALLCOLLI.PAC` (both loaded into
+  `CStadiumCollision`, [`STADIUM_DIR.md`](STADIUM_DIR.md)), which
+  `TEST3D/SHADOWCOLLI.LBI` resembles ([`TEST3D_DIR.md`](TEST3D_DIR.md)).
+- `TEAM.TMB`'s layout, and confirming that nothing reads it.
 - The DTPK kinds `L`/`J`/`H`, TBLD pointers 4–7, the driver command
   `a00012`, the sound-effect entries, the SPU2 reverb preset the game
   sets, the pan table's exact law, and what each bank is for.

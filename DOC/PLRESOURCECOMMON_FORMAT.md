@@ -17,7 +17,7 @@ the named fields of the facility records and nation names for entry 3.
 |---|---|---|
 | 0 | 9 | facilities: sites, training-ground, stadium, club-house, youth-house and office equipment, club houses, stadiums, stadium adverts |
 | 1 | 7 | formations and pitch areas (byte tables) |
-| 2 | 1 | 512 bytes for the hexagon abilities |
+| 2 | 1 | which hexagon each ability counts towards, with a weight |
 | 3 | 6 | nations, regions, national teams and each club's nation |
 | 4 | 2 | each league nation's divisions and cups, and cup ids by nation |
 
@@ -95,7 +95,11 @@ The meanings of the values aren't traced; `show` prints them as bytes.
 
 ## Entry 2: hexagon abilities
 
-512 bytes read by `plPinfo_CalcHexAbil` (**confirmed**). Not decoded.
+512 bytes read by `plPinfo_CalcHexAbil` (**confirmed**): 8 bytes per
+ability, each 4-byte half two `{u8 hexagon, u8 weight}` pairs (`+0` the
+goalkeeper variant, `+4` the field-player one). The detail screen's
+hexagon is the weighted average; the layout and the six hexagons are in
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#abilities-and-the-detail-screen).
 
 ## Entry 3: nations
 
@@ -151,7 +155,7 @@ Table 4.1 is not decoded.
   build cost.
 - The rest of the stadium record (`+0x0`–`+0x2f`, `+0x60`–`+0x7f`) and
   which stadium is which.
-- What the values in entries 1, 2 and table 4.1 mean.
+- What the values in entry 1 and table 4.1 mean.
 - The facility names: which message category names each record.
 
 ## Checking

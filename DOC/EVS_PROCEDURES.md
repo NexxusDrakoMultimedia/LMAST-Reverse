@@ -57,25 +57,25 @@ A procedure sends a mail with
 |---|---|---|---|---|
 | 9 | `0x126208` | 295–297, 370–372, 412, 415 "Player search report" | `0x9e7d0` (calls `Param::pwkTeam_SetScoutModeNot`) | 10 or 12 |
 | 10 | `0x126540` | 298–305, 373, 374, 416, 420 "Player acquisition to cancel" | 9 | 11 |
-| 11 | `0x1268a0` | 306–310 ("Player negotiation report", ...), 421 | 10 | |
+| 11 | `0x1268a0` | 306–310 ("Player negotiation report", ...), 421 | 10 | – |
 | 12 | `0x126a50` | 300, 305, 398–400 ("Negotiating players", ...), 409 | 9 | 13 |
-| 13 | `0x126cd0` | 401, 402, 422, 423 | 12 | |
+| 13 | `0x126cd0` | 401, 402, 422, 423 | 12 | – |
 | 14 | `0x126e30` | 317–319 ("Player acquisition report", ...), 403, 404, 410 | `0x6b5f8`, kind 0 | 15 |
-| 15 | `0x1270a0` | 405 "Player acquisition report" | 14 | |
+| 15 | `0x1270a0` | 405 "Player acquisition report" | 14 | – |
 | 16 | `0x127198` | 323–325, 406, 407, 411 | `0x6b5f8`, kind 1 | 17 |
-| 17 | `0x127458` | 408 "Player acquisition report" | 16 | |
-| 18 | `0x127550` | 352, 443 "Contract withdrawal (Youth)" | `0x6b5f8`, kind 2 | |
+| 17 | `0x127458` | 408 "Player acquisition report" | 16 | – |
+| 18 | `0x127550` | 352, 443 "Contract withdrawal (Youth)" | `0x6b5f8`, kind 2 | – |
 | 19 | `0x127688` | 353 "Permanent Move Offer", 354, 386, 387 | the Event module's check (below) | 20 |
 | 20 | `0x127948` | 337–343 ("Cancel Player Transfer", ...), 388, 389, 424, 442 | 19 | 21 |
-| 21 | `0x127cf0` | 339, 340, 344–348, 425, 442 | 20 | |
+| 21 | `0x127cf0` | 339, 340, 344–348, 425, 442 | 20 | – |
 | 22 | `0x127ef8` | one of 314–316, 349–351, 334–336, 331–333, from a table (below) | `0x74418`, a scout request | itself |
 | 23 | `0x1281d0` | 363 "About players on a loan", 396, 397 | the Event module's check | 24 |
-| 24 | `0x128328` | 364 "Report to sell loaning player" | 23 | |
+| 24 | `0x128328` | 364 "Report to sell loaning player" | 23 | – |
 | 25 | `0x128440` | 359 "About Loaning player", 392, 393 | the Event module's check | 26 |
 | 26 | `0x128570` | 360 "Report to buy loaning player", 361, 394, 395 | 25 | 27 |
-| 27 | `0x128710` | 362 "Loaning player negotiation" | 26 | |
-| 28 | `0x128850` | 329 "Transfer negotiation", 330, 441 "Cancel Player Transfer" | `0x50e88`, a player-list screen (`0x12c058` argument 21) | |
-| 29 | `0x1289b0` | 356 "Contacting other club players" | the Event module's check | |
+| 27 | `0x128710` | 362 "Loaning player negotiation" | 26 | – |
+| 28 | `0x128850` | 329 "Transfer negotiation", 330, 441 "Cancel Player Transfer" | `0x50e88`, a player-list screen (`0x12c058` argument 21) | – |
+| 29 | `0x1289b0` | 356 "Contacting other club players" | the Event module's check | – |
 
 "Code" is the constructor. The MAIL column lists every MAIL ID built as a
 constant in the class's code, from its constructor up to the next one, so
@@ -123,7 +123,7 @@ int*)` (`SLES_541.51 0x260768`):
 
 | Block | Term | Search criterion |
 |---|---|---|
-| | `+0x00` | the scout (`PlSinfo*`) |
+| – | `+0x00` | the scout (`PlSinfo*`) |
 | `+0x04` (s16) | `+0x04` | country: when non-zero, only clubs whose `plMisc_Club2Nati` equals it |
 | `+0x06` (s16) | `+0x08` | region (`PlDRegion`, see [Regions](#regions)), used when no country is set (`plMisc_Nati2DRegion`) |
 | `+0x0a` (s8) | `+0x0c` | age bracket, if non-zero (`0x25f8a0`): 1 under 23, 2 23–29, 3 30 and over, 4 under 19, tested on the candidate's byte `+0x08` (the thresholds make it the age) |

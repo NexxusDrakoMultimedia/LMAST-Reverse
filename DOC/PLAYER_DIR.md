@@ -43,7 +43,7 @@ game code. Everything else here (what the names mean, counts) is
 | `*.SNO`, `*.SNM`, `*.SNP` | Ninja | loose models (`HUMAN_1200.SNO`, `L/M/S_PLAYER.SNO`), motions, one node tree |
 | `*.SVR`, `*.SVM` | textures | `ACCE_CAP`, `HUM1200_H`, `REF_000_*` (referee kit) ... |
 | `CVS/` | CVS metadata | original mixed-case names and revision numbers |
-| `DUMMY.DAT` | 0 bytes | |
+| `DUMMY.DAT` | 0 bytes | – |
 
 The `_PRESS` archives repack their sibling with 16-byte alignment and PRSH
 entries, as elsewhere on the disc.

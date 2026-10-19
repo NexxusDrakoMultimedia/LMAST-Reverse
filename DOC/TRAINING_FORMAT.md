@@ -153,7 +153,12 @@ an age (`age30`). It refuses values the code can't use (groups 0–2,
 staff abilities 0–47, signed bytes elsewhere). The file keeps its size;
 `--copies` also patches the seven `SIMFILE` copies.
 `python SRC/training.py roundtrip` re-encodes every table and checks that
-the file rebuilds byte for byte. No edit has been tested in PCSX2.
+the file rebuilds byte for byte. The editor's Training tab edits the
+practice, camp-type and youth rows, match growth, the facility bonuses,
+the coaching staff ability and decline with age through the same code,
+and its Camps tab previews a camp type's row of table 10. No edit has
+been tested in PCSX2 yet: a practice made much stronger would show in a
+player's growth after a few weeks.
 
 ## Still unknown
 

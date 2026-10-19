@@ -189,7 +189,7 @@ The data files have no header at all. Entries run back to back and are
 | `PLAYER/FC_EURO_FACEPACK_01.HED` | `FC_EURO_FACEPACK_01.BIN` | 215 | PRSH |
 | `PLAYER/EDITFACEPACK_BIN.HED` | `EDITFACEPACK.BIN` | 1 | raw |
 | `PLAYER/PLPACK_HOME.HED` / `_AWAY` | `PLPACK_HOME.PAC` / `_AWAY` | 116 | 184320-byte blocks starting `07 00 00 00` |
-| `GAME/CUTINPACK_HEADER.BIN` | `GAME/CUTINPACK.BIN` | 277 | raw, starts with a small u32 count (`0x0d`, `0x10`, ...) |
+| `GAME/CUTINPACK_HEADER.BIN` | `GAME/CUTINPACK.BIN` | 277 | raw `etc::PackData`: a block count (`0x0d`, `0x10`, ...), then blocks ([`GAME_DIR.md`](GAME_DIR.md#directory-overview)) |
 
 The `KC@P` magic doesn't appear as an immediate in the executable, so the
 loader probably doesn't check it. **Confirmed** how an entry is read:

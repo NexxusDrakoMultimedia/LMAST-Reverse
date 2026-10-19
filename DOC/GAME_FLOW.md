@@ -85,7 +85,7 @@ from the matching numbers):
 
 | Load result | Resumes at | Saved by |
 |---|---|---|
-| 0 | the title (cancelled) | |
+| 0 | the title (cancelled) | – |
 | 1 | `L9`: the turn's main menu | Option module (the manual's SAVE); `RootOwnerRoomSeq` also has Save 1 but never runs |
 | 2 | `L10`: the year start | `RootMainSeq` `0x1688`, after each season |
 | 3 | `RootClubEditSeq` `L2`: the start of the playoffs | `RootClubEditSeq` `0x0800` |
@@ -153,7 +153,7 @@ the menu, until 0 ends the turn (`Event.MenuEnd`, event 8):
 | 4 | Option (59); EXIT sets `m4[4]` and ends the menu | 11 | PersonnelAffairsMenu (15) |
 | 5 | Account (56) | 12 | Talk (31) |
 | 6 | Institution (42) | 13 | Youth (50) |
-| 7 | Business (57) | | |
+| 7 | Business (57) | – | – |
 
 ### A match day (`RootMatchSeq`)
 

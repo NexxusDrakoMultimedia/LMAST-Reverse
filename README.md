@@ -107,6 +107,13 @@ either files or directories, and `info` parses every matching file and marks
 anything that doesn't fit the documented layout with `!!`. Search for them
 with, for example, `python SRC/tbb.py info DAT | grep '!!'`.
 
+### Disc image
+
+| Tool | Reads | Does |
+|---|---|---|
+| [`extract_disc.py`](SRC/extract_disc.py) | a disc image | checks it against Redump (PAL or Japanese), extracts its files, decrypts `DATA.CVM` and extracts `DATA.ISO`, without mounting anything (`all`; `verify`, `list` and `extract` do one step each) |
+| [`rofs_decrypt.py`](SRC/rofs_decrypt.py) | `ISO/DATA.CVM` | decrypts the table of contents into a plain `DATA.ISO`, with the key derived from the `CVMH` header |
+
 ### Game code
 
 | Tool | Reads | Does |
@@ -279,11 +286,14 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   reads that copy whenever the pack is loaded, so an edit must reach
   both. `--copies` updates every copy and rebuilds the packs around
   entries that change size ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md)).
-- **Switches.** `--skip-tutorial` skips the opening playoffs on test
-  discs, `--launcher` boots into the developers' debug menu,
-  `--sponsor-negotiation` turns the cut main sponsor negotiation back on,
-  `--mod-saves` gives a modded disc its own saves, and `--rename` renames
-  a file outside `DATA.CVM`. Every patch of a whole image prints the
+- **Switches** (`--mod <name>,...`, or each as a flag of its own).
+  `skip-tutorial` skips the opening playoffs on test discs, `launcher`
+  boots into the developers' debug menu, and `mod-saves` gives a modded
+  disc its own saves. The LMASTER Mod's fixes (`--mod lmaster` for all of
+  them, [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) are
+  `sponsor-negotiation`, `rival-manager`, `national-cups`, `camp-types`,
+  `camp-cities`, `camp-santiago` and `camp-clubs`. `--rename` renames a
+  file outside `DATA.CVM`. Every patch of a whole image prints the
   executable's PCSX2 CRC.
 
 | Tool | Reads | Does |
@@ -346,7 +356,8 @@ over sessions.
 
 Tools reuse each other by importing the sibling script. The ones not
 listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
-`rofs_decrypt.py`, `svr.py`, `tbb.py`, `vcdiff.py`) stand alone.
+`rofs_decrypt.py`, `svr.py`, `tbb.py`, `vcdiff.py`) stand alone, and
+`regress.py` runs the others as commands.
 
 | Tool | Builds on |
 |---|---|
@@ -360,15 +371,15 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `packdata.py`, `ninja.py` | `pac.py` (KC@P entries, PRSH) and each other; `ninja.py` also `svr.py` for its exports |
 | `stadium.py`, `system.py`, `schedule.py` | `pac.py`, `tbb.py` |
 | `emblem.py`, `news.py` | `pac.py`, `tbb.py`, `svr.py` |
-| `mbb.py` | `pac.py` for `MES.PAC`; `sles_disasm.py`, `snr2.py` for `vars` |
-| `sqb.py` | `pac.py`, and `packdata.py` for `COMBINATION2.CSB` |
-| `pbdata.py` | `pac.py`, `tbb.py`, `initteam.py` (club names), `sles_disasm.py` (`--sles`) |
+| `mbb.py` | `pac.py` for `MES.PAC`; `sles_disasm.py`, `snr2.py`, `gamever.py` for `vars` |
+| `sqb.py` | `pac.py`, `packdata.py` for `COMBINATION2.CSB`, `pbdata.py` for field and ability names |
+| `pbdata.py` | `pac.py`, `tbb.py`, `initteam.py` (club names), `sles_disasm.py` and `gamever.py` (`--sles`) |
 | `initteam.py` | `pac.py`, `tbb.py`, `pbdata.py` and `mbb.py` for names |
 | `teaminit.py`, `plrcommon.py`, `plrsim.py` | `tbb.py` and `pbdata.py` for names; the last two `pac.py` |
-| `regulation.py` | `tbb.py`, and `schedule.py` for the team-entry check |
+| `regulation.py` | `tbb.py`, `schedule.py` for the team-entry check and `leaguesize.py` for the schedules' names |
 | `clubresult.py` | `tbb.py`, and `regulation.py` and `schedule.py` for the club-count checks |
 | `training.py` | `tbb.py`, and `pbdata.py` for the ability names |
-| `camp.py` | `tbb.py` |
+| `camp.py` | `tbb.py`, and `mbb.py` for city and club names |
 | `formset.py`, `tour.py` | `tbb.py`, and `pbdata.py` (formations) or `camp.py` and `initteam.py` (club names) |
 | `leaguesize.py` | `schedule.py`, `initteam.py`, `regulation.py`, `clubresult.py` |
 | `uniform.py` | `pac.py`, `tbb.py`, `packdata.py` and `svr.py` (licensed kits), `sles_disasm.py` (the executable's copy), `initteam.py` (club names) |
@@ -376,8 +387,8 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `sounddat.py` | `sles_disasm.py` for `music` |
 | `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables |
-| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding `PRELOAD` packs), `sqb.py` (`--skip-tutorial`) |
-| `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `training.py` (Training), `camp.py` (Camps), `uniform.py` (Kits), `mbb.py` (Text); `extract_disc.py` for Build disc's Redump check, `sles_disasm.py` and `pac.py` for the executable and pack headers |
+| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`), `camp.py` (the camp switches) |
+| `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `training.py` (Training), `camp.py` (Camps), `uniform.py` (Kits), `mbb.py` (Text); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `pbdata.py` and `initteam.py` for names |
 
 The disassemblers connect to the format tools through the docs: a
@@ -398,58 +409,105 @@ file names and counts from your disc. When an output change is intended,
 
 ## Documentation index
 
+Every format and folder doc labels its claims **confirmed** or **empirical** and ends with what is still unknown.
+
+### Disc, rebuilding and sharing
+
 | Doc | Covers |
 |---|---|
 | [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | the `DATA.CVM` container, how the ROFS key is derived from its header, regenerating `DATA.ISO` |
 | [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc (in-place patching, size changes inside a file's last sector, copies and rebuilt `PRELOAD` packs), sharing mods as xdelta patches, what's still needed for size changes |
-| [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
+| [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md) | `DAT/PRELOAD`: the bulk-load packs, the load lists and folder ids, and which copy of a file the game reads, and rebuilding a pack |
+| [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md) | the Japanese release (SLPM-66316): setting it up, how `gamever.py` finds addresses in it, and how its code and data differ from PAL |
 | [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | the original ROFS key recovery in PCSX2 and `cvm_tool` workflow (historical) |
+
+### Game code and game systems
+
+| Doc | Covers |
+|---|---|
 | [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md) | `DLL/*.REL` overlay format, the SN DLL loader, `SLES_541.51`'s imports, which overlay each sequencer module lives in, the wild-card module, C++ classes from their type information |
 | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) | `SEQ/*.SQB` and `PSC*.PAC` sequencer scripts: command encoding, argument types, labels, the root and PwkScript command sets, what the PwkScripts compute (only the detail-screen comments run), global memory, the tutorial skip and the developer launcher |
 | [`GAME_FLOW.md`](DOC/GAME_FLOW.md) | the root scripts as a flow chart: title routes, new game, loading, the season loop, year start, main menu, match day, game over, the event timings |
-| [`SPONSOR_NEGOTIATION.md`](DOC/SPONSOR_NEGOTIATION.md) | the Sponsor screen's main sponsor negotiation, switched off in PAL by a stub check, and the `patch_disc.py --sponsor-negotiation` patch that restores it |
+| [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events), scout-list search criteria, squad and loan limits, the 13 regions |
 | [`INJURIES.md`](DOC/INJURIES.md) | how injuries are rolled (fatigue and age pick the kind), the value table, recovery, and the condition-line messages, two of which were cut |
-| [`WIDESCREEN.md`](DOC/WIDESCREEN.md) | the PCSX2 16:9 patch (`PNACH/`): Hor+ 3D, and the UI fix that draws the HUD, menus and season-mode backdrops at 4:3 |
+| [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
+| [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | plan for a separate save editor on top of `save.py`: pages, steps, and the decisions still open |
+
+### Mods and patches
+
+| Doc | Covers |
+|---|---|
 | [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md) | the LMASTER Mod: cut or broken content to restore, with evidence and status |
-| [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md) | the Japanese release (SLPM-66316): setting it up, how `gamever.py` finds addresses in it, and how its code and data differ from PAL |
+| [`SPONSOR_NEGOTIATION.md`](DOC/SPONSOR_NEGOTIATION.md) | the Sponsor screen's main sponsor negotiation, switched off in PAL by a stub check, and the `patch_disc.py --sponsor-negotiation` patch that restores it |
+| [`WIDESCREEN.md`](DOC/WIDESCREEN.md) | the PCSX2 16:9 patch (`PNACH/`): Hor+ 3D, and the UI fix that draws the HUD, menus and season-mode backdrops at 4:3 |
+
+### Containers
+
+| Doc | Covers |
+|---|---|
 | [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md) | BINPAC, KC@P, PRSH, and how the packer laid BINPACs out (the writer) |
 | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) | TBB1/TBL1 tables, symbol recovery from `SLES_541.51` |
+
+### Folders of `DAT/` (and `ISO/AUDIO`)
+
+| Doc | Covers |
+|---|---|
+| [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) | `DAT/0SYSTEM`: UI colours, crest/badge/sponsor texture packs and how an id picks an entry, fonts by language, icons, leftovers |
+| [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md) | `DAT/ACROBATA`: the Acroarts event scenes, their chunk layout and resources, the executable's copy of the pack index, scene ids by language |
+| [`CVS_DIR.md`](DOC/CVS_DIR.md) | the `CVS/` folders left on the disc: original file names, commit dates, which files the build made |
+| [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) | `DAT/EMBLEM`: the club editor's crest and flag parts, its colour palette, the edit tables, and the player-editor tables |
+| [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
+| [`NEWS_DIR.md`](DOC/NEWS_DIR.md) | `DAT/NEWS`: newspaper mastheads, article pictures, ads and cartoons, and the monthly ranking flags |
+| [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: which code loads each file, record sizes, and the tables without a doc of their own |
+| [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
+| [`SEQ_DIR.md`](DOC/SEQ_DIR.md) | `DAT/SEQ`: the root sequencer scripts, which are loaded, their CVS history |
+| [`SOUND_DIR.md`](DOC/SOUND_DIR.md) | `DAT/SOUND`: which bank is which, the executable's bank table, and the music table (music id → song or stream) |
+| [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) | `DAT/STADIUM`: the 10 stadium models, `.PRI` draw priorities, crowds, adverts, `BUILD_STADIUM` |
+| [`TEST3D_DIR.md`](DOC/TEST3D_DIR.md) | `DAT/TEST3D`: test models, debug shapes, test kits, the launcher viewers' data |
+| [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md) | `ISO/AUDIO`: the AFS archives (music, commentary, chants, ambience), AFS and ADX layouts, `0FLIST.DIR` |
+
+### The starting season and parameter tables (`PARAM/`)
+
+| Doc | Covers |
+|---|---|
+| [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) | the player database: header, bit-packed player/manager/scout records, ability and money tables, the match's player parameters and which AI classes read each |
+| [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) | starting leagues and divisions, last season's order, computer-team squads, where club names come from |
+| [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) | the player's new club: what the league and team style choose (squad, youth team, staff, rival club) |
+| [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) | the season calendar: schedule UIDs, turns, games, pairings, where entrants come from |
+| [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md) | match regulations per schedule: prizes and win bonus, bans, squad, foreigners and substitution limits, promotion and relegation places |
+| [`CLUBRESULT_FORMAT.md`](DOC/CLUBRESULT_FORMAT.md) | how each schedule reports a final place: a number, a cup round's name or nothing |
+| [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md) | the training tables: practices, facilities, camps, match growth and decline with age |
+| [`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md) | the training camps: cities, types, clubs and descriptions, and two bugs in the data |
+| [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md) | the common resource pack: facility records (build time, upkeep, stadium capacity), formation and nation tables, and which code reads each |
+| [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) | the season-mode resource pack: what each of its 16 entries holds and which code reads it |
+
+### Text and events
+
+| Doc | Covers |
+|---|---|
+| [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) | message text, encodings and escape codes, talk-scene body reactions (`{react:N}`) |
+| [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md) | club-management event tables, event ID types, scene types (what happens after a scene), talk types |
+| [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md) | the unused turn-event prototype |
+
+### Graphics and the match
+
+| Doc | Covers |
+|---|---|
 | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) | textures and GS swizzling |
 | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) | `DAT/CSE` 2D layouts |
 | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) | pre-rendered Z buffers |
 | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) | Ninja (NN) models, skeletons, motions, VU/PX Plus vertex streams |
-| [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
-| [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md) | `ISO/AUDIO`: the AFS archives (music, commentary, chants, ambience), AFS and ADX layouts, `0FLIST.DIR` |
-| [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |
 | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) | club kits: `UNIFORM_LIST` bit layout, kit designs and colours, the 96 colours, the `COLOR_TBL` clash table, `UNIFORM_GK` keeper kits |
-| [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) | `DAT/0SYSTEM`: UI colours, crest/badge/sponsor texture packs and how an id picks an entry, fonts by language, icons, leftovers |
-| [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md) | `DAT/PRELOAD`: the bulk-load packs, the load lists and folder ids, and which copy of a file the game reads, and rebuilding a pack |
-| [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) | `DAT/STADIUM`: the 10 stadium models, `.PRI` draw priorities, crowds, adverts, `BUILD_STADIUM` |
-| [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) | `DAT/EMBLEM`: the club editor's crest and flag parts, its colour palette, the edit tables, and the player-editor tables |
-| [`NEWS_DIR.md`](DOC/NEWS_DIR.md) | `DAT/NEWS`: newspaper mastheads, article pictures, ads and cartoons, and the monthly ranking flags |
-| [`SOUND_DIR.md`](DOC/SOUND_DIR.md) | `DAT/SOUND`: which bank is which, the executable's bank table, and the music table (music id → song or stream) |
-| [`SEQ_DIR.md`](DOC/SEQ_DIR.md) | `DAT/SEQ`: the root sequencer scripts, which are loaded, their CVS history |
-| [`TEST3D_DIR.md`](DOC/TEST3D_DIR.md) | `DAT/TEST3D`: test models, debug shapes, test kits, the launcher viewers' data |
-| [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md) | `DAT/ACROBATA`: the Acroarts event scenes, their chunk layout and resources, the executable's copy of the pack index, scene ids by language |
-| [`CVS_DIR.md`](DOC/CVS_DIR.md) | the `CVS/` folders left on the disc: original file names, commit dates, which files the build made |
-| [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: which code loads each file, record sizes, and the tables without a doc of their own |
-| [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) | the player database: header, bit-packed player/manager/scout records, ability and money tables, the match's player parameters and which AI classes read each |
-| [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) | starting leagues and divisions, last season's order, computer-team squads, where club names come from |
-| [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) | the player's new club: what the league and team style choose (squad, youth team, staff, rival club) |
-| [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md) | match regulations per schedule: prizes and win bonus, bans, squad, foreigners and substitution limits, promotion and relegation places |
-| [`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md) | the training camps: cities, types, clubs and descriptions, and two bugs in the data |
-| [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md) | the training tables: practices, facilities, camps, match growth and decline with age |
-| [`CLUBRESULT_FORMAT.md`](DOC/CLUBRESULT_FORMAT.md) | how each schedule reports a final place: a number, a cup round's name or nothing |
-| [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | plan for a separate save editor on top of `save.py`: pages, steps, and the decisions still open |
-| [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) | `GAME/GAMEDATA.BIN`'s 0x30-byte ball-contact records (partial) and the unread `AI_PARAM.BIN` |
 | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) | the match AI's play books: records of player and ball paths, point coordinates, play ids |
-| [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md) | the common resource pack: facility records (build time, upkeep, stadium capacity), formation and nation tables, and which code reads each |
-| [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) | the season-mode resource pack: what each of its 16 entries holds and which code reads it |
-| [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) | the season calendar: schedule UIDs, turns, games, pairings, where entrants come from |
-| [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) | message text, encodings and escape codes, talk-scene body reactions (`{react:N}`) |
-| [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md) | club-management event tables, event ID types, scene types (what happens after a scene), talk types |
-| [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events), scout-list search criteria, squad and loan limits, the 13 regions |
-| [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md) | the unused turn-event prototype |
+| [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) | `GAME/GAMEDATA.BIN`'s 0x30-byte ball-contact records (partial) and the unread `AI_PARAM.BIN` |
+
+## Working on the project
+
+[`AGENTS.md`](AGENTS.md) has the conventions for docs and tools, the
+workflow for a new format or writer, and where each kind of record goes:
+facts and open questions in `DOC/`, tasks by stage in
+[`TODO.md`](TODO.md), finished items in [`DONE.md`](DONE.md). It is
+written for AI assistants but applies to anyone.
 
 ## License
 

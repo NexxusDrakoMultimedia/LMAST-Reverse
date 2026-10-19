@@ -84,9 +84,9 @@ jump table `0x298a50`) names these fields (**confirmed**):
 | `+0x06` | SEASON_ID | 0 spring, 1 summer, 2 autumn, 3 winter |
 | `+0x07` | LANDSCAPE_LEVEL | added to the `LANDSCAPE_A` part's entry (`lna01`–`04`) |
 | `+0x08` | NATION_ID | 0 England, 1 France, 2 Germany, 3 Italy, 4 Spain, 5 Holland |
-| `+0x09`, `+0x0a` | TEAM_COLOR1_16, TEAM_COLOR2_16 | |
+| `+0x09`, `+0x0a` | TEAM_COLOR1_16, TEAM_COLOR2_16 | – |
 | `+0x0b` | MONTH_ID | 0 January … 11 December (picks the pitch edge, table 1) |
-| `+0x11`, `+0x12` | HOME_TEAMCOLOR, AWAY_TEAMCOLOR | |
+| `+0x11`, `+0x12` | HOME_TEAMCOLOR, AWAY_TEAMCOLOR | – |
 | `+0x14`, `+0x18`, `+0x1c` (u32) | HOME_SUPPORTER, AWAY_SUPPORTER, CIVILIAN_VISITOR | crowd sizes (110000 each by default) |
 | `+0x20` | ADVERTISE_INDEX | the first of the 12 advert textures at `+0x20`–`+0x2b` ([Adverts](#adverts)) |
 | `+0x0c`, `+0x0d` | – | pitch edge (from table 1) and adverts on (below) |
@@ -128,7 +128,7 @@ these settings (see `SQB_FORMAT.md`).
 | `BUILD_STADIUM.TBB` | 1 | 3 tables | which model each of the 119 stadiums uses, and how it's dressed. See below |
 | `CONV_INFO_BUILD.TBB` | 1 | 6 × 25 bytes | stadium id by level. See [below](#conv_info_buildtbb) |
 | `TIME_CHECK.DAT` | 1 | 8 bytes (`ff ff 00 00 ff ff 00 00`) | read from `pfs0:Data/Stadium/` at `0x1cb0a0`, a development path |
-| `DUMMY.DAT` | 1 | 0 bytes | |
+| `DUMMY.DAT` | 1 | 0 bytes | – |
 
 The BINPAC name column is 16 bytes wide in the model packs. Longer names
 keep their **last** 16 characters, so `aw01a_d1_fen1.sno.prs` is stored as
@@ -222,19 +222,19 @@ in the [`.PRI` table](#pri-part-draw-priorities)):
 |---|---|---|---|
 | 1–3 | 0 | goal | the first enabled byte picks `STCMN` entry *k* − 1 |
 | 4–12 | 3 | pitch pattern 1–9 | the first enabled byte *k* picks `STCMN` entry season × 9 + *k* − 1 |
-| 13 | 4 | pitch edge | |
+| 13 | 4 | pitch edge | – |
 | 14, 16, 18 | 5 | bench 1–3 | first enabled |
-| 20 | 1 | corner flags | |
+| 20 | 1 | corner flags | – |
 | 25, 26 | 42, 43 | landscape A, B | the entry adds request byte `+7` (landscape level) / `+5` (weather) |
-| 27–31, 32 | 7, 8 | fences 1–5, fence shadow | |
-| 33, 35 / 34, 36 | 9 / 10 | nets 1–2 / their shadows | |
-| 37–41 | 11 | banners | |
-| 70–77 | 12–19 | stands and shadows | |
-| 78–84 | 20–26 | lights | |
-| 85–88 | 27–30 | spotlights | |
-| 89–93 | 31–35 | caps | |
+| 27–31, 32 | 7, 8 | fences 1–5, fence shadow | – |
+| 33, 35 / 34, 36 | 9 / 10 | nets 1–2 / their shadows | – |
+| 37–41 | 11 | banners | – |
+| 70–77 | 12–19 | stands and shadows | – |
+| 78–84 | 20–26 | lights | – |
+| 85–88 | 27–30 | spotlights | – |
+| 89–93 | 31–35 | caps | – |
 | 98–100 | 39–41 | advert rigs and the `_OP` part | only when request `+0x0d` is set (probably "adverts on") |
-| 107–109 | 36–38 | staff areas | |
+| 107–109 | 36–38 | staff areas | – |
 
 Bytes 15, 17, 19 (7 in 104, 3 and 12 rows), 21–24 (always 0) and 101–106
 (0 or 7) are set but never read. The benches' high-detail models

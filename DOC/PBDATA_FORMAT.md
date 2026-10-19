@@ -223,17 +223,17 @@ pairs `{label, ability number}`, numbers 0–63 in order:
 | 18 | 飛び出し rushing out | | 57 | オフサイド理解 offside |
 | 19 | スピード speed | | 58 | プレス理解 pressing |
 | 20 | ダッシュ dash | | 59–63 | 攻撃パターンA–E理解度 attack patterns A–E |
-| 21 | ジャンプ力 jump | | | |
-| 22 | レスポンス response | | | |
-| 23 | スタミナ stamina | | | |
-| 24 | キック力 kick strength | | | |
-| 25 | 当たりの強さ contact strength | | | |
-| 26 | 統率力 leadership | | | |
-| 27 | 度胸 nerve | | | |
-| 28 | 攻撃意識 attack minded | | | |
-| 29 | 守備意識 defence minded | | | |
-| 30 | サポート意識 supportiveness | | | |
-| 31 | 視野の広さ vision | | | |
+| 21 | ジャンプ力 jump | | – | – |
+| 22 | レスポンス response | | – | – |
+| 23 | スタミナ stamina | | – | – |
+| 24 | キック力 kick strength | | – | – |
+| 25 | 当たりの強さ contact strength | | – | – |
+| 26 | 統率力 leadership | | – | – |
+| 27 | 度胸 nerve | | – | – |
+| 28 | 攻撃意識 attack minded | | – | – |
+| 29 | 守備意識 defence minded | | – | – |
+| 30 | サポート意識 supportiveness | | – | – |
+| 31 | 視野の広さ vision | | – | – |
 
 This agrees with every ability the game code names (the bars, the
 position grid and the system growth) and with all four VPF players
@@ -296,13 +296,13 @@ all labels end in 指導力 "coaching ability", left out below:
 | 14 | インターセプト intercept | | 45 | 攻撃パターン attack patterns |
 | 15 | マーキング marking | | 46 | 連携 teamwork |
 | 16 | セービング saving | | 47 | セットプレイ set plays |
-| 17 | 飛び出し rushing out | | | |
-| 18 | スピード speed | | | |
-| 19 | スタミナ stamina | | | |
-| 20 | フィジカル physical | | | |
-| 21 | メンタル mental | | | |
-| 22 | 攻守意識 attack/defence awareness | | | |
-| 23 | GK | | | |
+| 17 | 飛び出し rushing out | | – | – |
+| 18 | スピード speed | | – | – |
+| 19 | スタミナ stamina | | – | – |
+| 20 | フィジカル physical | | – | – |
+| 21 | メンタル mental | | – | – |
+| 22 | 攻守意識 attack/defence awareness | | – | – |
+| 23 | GK | | – | – |
 
 All 31 abilities behind the manager and coach bars
 ([Manager, coach and scout bars](#manager-coach-and-scout-bars)) agree with
@@ -444,9 +444,9 @@ the editors' labels where there are any, and these names otherwise:
 | Record | Offset | Source name | Range ×count | `pbdata.py` |
 |---|---|---|---|---|
 | player | `+0x14`, `+0x18`, `+0x1c` | nationality, rank, apos0 | 0–146, 0–16, 0–13 ×3 | nation, rank, position |
-| player | `+0x28`–`+0x2c` | age0, height, weight, unumber, leg | | age, height, weight, shirt, leg |
-| player | `+0x30` | castno | | castno |
-| player | `+0x32`, `+0x34` | faceno, needstatus | | face, req_status |
+| player | `+0x28`–`+0x2c` | age0, height, weight, unumber, leg | – | age, height, weight, shirt, leg |
+| player | `+0x30` | castno | – | castno |
+| player | `+0x32`, `+0x34` | faceno, needstatus | – | face, req_status |
 | player | `+0x36` | tone | 0–6 | tone |
 | player | `+0x37` | comptype | 0–3 ×8 | dissatis |
 | player | `+0x3f`–`+0x42` | professional, pressure, loyalty, star | 0–15 | the same |
@@ -460,7 +460,7 @@ the editors' labels where there are any, and these names otherwise:
 | player | `+0x66`, `+0x74` | ai, abil | 0–4 ×11, 0–100 ×64 | tendency, ability |
 | manager | `+0x18`, `+0x1c`, `+0x20`, `+0x22` | rank, coachtype0, faceno, age | 0–16, 0–7, –, 0–32 | rank, job, face, age |
 | manager | `+0x26`, `+0x2a` | appeartype, comptype | 0–9 ×4, 0–3 ×5 | appeartype, comptype |
-| manager | `+0x2f`–`+0x33` | motitype, plan_appoint, plan_game, plan_grow, prac_off | | moti_type, select_policy, match_policy, training_policy, rest_policy |
+| manager | `+0x2f`–`+0x33` | motitype, plan_appoint, plan_game, plan_grow, prac_off | – | moti_type, select_policy, match_policy, training_policy, rest_policy |
 | manager | `+0x34`, `+0x3d` | _policyset (a structure: policy, okrange ×4, goodrange ×4), _formation | ×3 | policy, policy_range, policy_best, formation |
 | manager | `+0x40`–`+0x46` | offensetype, possession, offensecenterside, offenseside, presspos, presshard, offsidehard | 0–7 | attacking … offside |
 | manager | `+0x47`, `+0x4c`, `+0x54` | _favoriteattackid, _mpraclist, _praclist | 0–29 ×5, −1–139 ×2, ×4 | attack_pattern, manager_drill, coach_drill |
@@ -872,14 +872,14 @@ database fit), or **VPF** (VPF's name, with the values as shown).
 | 31 | vision | 60/59, 76/75, 99/99 | VPF + data (SUPPO bar) |
 | 32 | concentration | T 78, R 72, B 86 | developer label 集中力; no VPF counterpart (Attitude hexagon) |
 | 33–44 | position aptitudes | see below | code ([Positions](#positions-and-aptitude)) |
-| 45–52 | fit with systems 3-4-3, 3-5-2, 3-6-1, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1 | | code for "system *k*" (match growth); the order of the systems is empirical: the formation names (messages 801:0–7, 1:530–537) and their descriptions (700:270–293) are listed in this order |
+| 45–52 | fit with systems 3-4-3, 3-5-2, 3-6-1, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1 | – | code for "system *k*" (match growth); the order of the systems is empirical: the formation names (messages 801:0–7, 1:530–537) and their descriptions (700:270–293) are listed in this order |
 | 53 | counterattack | 82/82, 88/87, 82/81 | VPF + data |
 | 54 | possession | T 42, R 88, B 46 | developer label ポゼッション理解度; no VPF counterpart (Teamwork hexagon) |
 | 55 | attacks down wings | 80/79, 62/78, 40/39 | VPF + data (Rooney is the one outlier) |
 | 56 | attacks through middle | 38/34, 86/86, 56/55 | VPF + data |
 | 57 | line DF | 64/64, 58/57, 64/63 | VPF + data. Beckham settles the pair (line DF 63, pressing 59) |
 | 58 | pressing | 68/68, 58/57, 60/59 | VPF + data |
-| 59–63 | attack patterns A–E | | developer labels 攻撃パターンA–E理解度; 60 is in the Teamwork hexagon |
+| 59–63 | attack patterns A–E | – | developer labels 攻撃パターンA–E理解度; 60 is in the Teamwork hexagon |
 
 VPF's aptitude page names the position cells. Rooney and Beckham agree
 on 39 = OM (86/85, 72/70), 42 = centre (94/93, 88/87), 43 = left (82/82,
@@ -1173,8 +1173,8 @@ draws, and in which colour, hasn't been traced.
 | TEAMW | 46 | MOTIV | 0 | 3 | SPEED 18, PHYSI 20, STAMI 19, MENTA 21 |
 | FK | 47 | PHYSC | 1 | 4 | SAVIN 16, HND 17 |
 | TRAIN | 5 | COMMU | 3 | 5+ | FASTB 39, SLOWB 40, WINGP 41, DIREC 42, OFFSI 43, CLOSD 44 |
-| ATKDF | 22 | POPUL | 2 | | |
-| CENTA | 28 | ASSES | 4 | | |
+| ATKDF | 22 | POPUL | 2 | – | – |
+| CENTA | 28 | ASSES | 4 | – | – |
 
 The labels match the in-game help pages: 0–2 are assistant coaches, 3
 physical coaches, 4 goalkeeper coaches. The database holds jobs 0 (439),
@@ -1389,6 +1389,15 @@ CSV gives an identical file. The bar and `entry2`/`entry3` columns are
 derived and ignored. `patch_disc.py` puts the edited pack on a disc
 ([`REBUILD.md`](REBUILD.md)).
 
+The editor's People tab (`SRC/editor.py`) edits players, managers and
+scouts through the same code: `pbdata.edit_spec` gives each named field
+its range or named values, unnamed fields stay read-only, and a save
+that changes the ranking also writes the executable, as `--sles` does.
+**Tested in PCSX2:** Van der Sar (250) edited only in the People tab
+showed 255 cm, 45 kg, LEFT, full bars and every position cell lit on his
+detail screen; his age and shirt came from `OTEAMMEMBER.TBB`, as the
+tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
+
 ## Still unknown
 
 - Whether anything reads `castno` (`+0x30`, always 0) or `explodetype`
@@ -1407,10 +1416,12 @@ derived and ignored. `patch_disc.py` puts the edited pack on a disc
   code's use of `+0x58`/`+0x59` is intended ([Kit style](#kit-style)).
 - How much each parameter changes what its readers do
   ([Who reads each parameter](#who-reads-each-parameter) gives the
-  readers): the kick kinds behind helper `0x98a30`, the 45 calls with no
-  class, and the sources of parameters 16 and 24. Also which attack
-  pattern letter is which; abilities 59–63 aren't copied into the match
-  record, so their effect is outside it.
+  readers): which pass, cross, tackle and placekick kind is which
+  ([The kick kinds](#the-kick-kinds); most come from the intentions'
+  candidate records, `+0x18`), the run-time kind flags at `0x29f680`,
+  the 45 calls with no class, and the sources of parameters 5, 16 and
+  24. Also which attack pattern letter is which; abilities 59–63 aren't
+  copied into the match record, so their effect is outside it.
 - What each speech tone and condition type value is, what the ball touch
   does (match parameter 139 has no reader), and which dribble style
   looks like what.

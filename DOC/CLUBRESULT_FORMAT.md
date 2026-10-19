@@ -112,7 +112,10 @@ It edits `kind` (0–2), `third_place` (0–1) and `clubs` (0–65535); `uid`
 has no reader and stays as it is. The file keeps its size. `--copies`
 also patches the seven `PRELOAD/SIMFILE*.PAC` copies.
 `python SRC/clubresult.py roundtrip` re-encodes every row and checks that
-the file rebuilds byte for byte. No edit has been tested in PCSX2.
+the file rebuilds byte for byte. The editor's Regulations tab edits the
+same fields beside each schedule's regulations. No edit has been tested
+in PCSX2 yet: a cup given a third-place match should show "3rd" and
+"4th" on the end of tournament screen.
 
 ## Still unknown
 

@@ -118,7 +118,7 @@ there instead.
 | 4 | controller word `+0x198 + 4 × value`, 10 words | `m4[i]` |
 | 5 | controller word `+0x1c0 + 4 × value`, 10 words; cleared by `Function`, and `m5[0]` is the return value | `m5[i]` |
 | 6 | global memory record `value` (`CRsrcManager::GetGlobalMemory`, `0x1fdce8`), read only if the record's type is 0 | `g[i]` |
-| 1, 8 | error (-1) | |
+| 1, 8 | error (-1) | – |
 
 `Initialize` clears the four memories (`0xc8`, `0xc8`, `0x28` and `0x28`
 bytes). Scripts write `m3[0]` as a "don't care" result almost everywhere.
@@ -175,14 +175,14 @@ row.
 
 | Cmd | Name | argc | What it does |
 |---|---|---|---|
-| 0, 1 | `CreateSequenceController`, `DeleteSequenceController` | 2 | |
+| 0, 1 | `CreateSequenceController`, `DeleteSequenceController` | 2 | – |
 | 2 | `Nop`, used as **Label** | 2 | marks label `arg1` (above) |
 | 3 | `Function` | 2 | marks label `arg1`; see calls |
-| 4, 6 | `Return` | 1 | |
+| 4, 6 | `Return` | 1 | – |
 | 5 | `Call` | 2 | call label `arg1` |
-| 7, 8 | `GetControllerMemory`, `SetControllerMemory` | 3, 4 | |
+| 7, 8 | `GetControllerMemory`, `SetControllerMemory` | 3, 4 | – |
 | 9–14 | `JumpIfZero`, `NotZero`, `Minus`, `NotMinus`, `Plus`, `NotPlus` | 3 | test `arg1`, jump to label `arg2` |
-| 15, 16 | `CheckController`, `FindController` | 2, 3 | |
+| 15, 16 | `CheckController`, `FindController` | 2, 3 | – |
 | 17 | `End` | 1 | returns 3 |
 | 18 | `EndLoop` | 1 | returns 2 |
 | 19 | `Sub` | 3 | `arg0 = arg1 − arg2` (`0x31895c`) |
@@ -190,12 +190,12 @@ row.
 | 21 | `SetIf` | 4 | if `arg1 == arg2`: `arg0 = arg3` (`0x318cf0`) |
 | 22 | `SetIfRange` | 5 | if `arg1` is between `arg2` and `arg3` (either order): `arg0 = arg4` (`0x318e0c`) |
 | 23 | `Select` | 5 | `arg0 = arg1 == arg2 ? arg3 : arg4` (`0x318f64`) |
-| 24 | `SelectRange` | 6 | |
-| 25 | `Frame` | 2 | |
+| 24 | `SelectRange` | 6 | – |
+| 25 | `Frame` | 2 | – |
 | 26, 33, 34 | `Add`, `Multi`, `Div` | 3 | by name: `arg0 = arg1 op arg2` |
 | 27–32 | `BranchIfZero` … `BranchIfNotPlus` | 3 | as the jumps |
-| 35 | (no symbol, `0x304df0`), `sqb.py`: `Base35` | 1 | |
-| 36–38 | `Nop` | 4, 2, 2 | |
+| 35 | (no symbol, `0x304df0`), `sqb.py`: `Base35` | 1 | – |
+| 36–38 | `Nop` | 4, 2, 2 | – |
 
 The root scripts use 14 of these and the PwkScripts use 9. 25 of the 39
 are never used.
@@ -474,7 +474,7 @@ listed in `SQBFILENAME.TBB` or named in the code:
 |---|---|---|---|
 | root set | 16 (15 `Root*Seq`, `A001`) | 1,324 | 135 |
 | PwkScript set | 25 (24 pack entries, `SEQ/PINFOPOINT.SQB`) | 982 | 67 |
-| neither | 2 | | |
+| neither | 2 | – | – |
 
 A third set runs the 540 combination scripts in `GAME/COMBINATION2.CSB`
 (PRS blocks of an `etc::PackData`; `GAMEPRG.REL` builds the set at
@@ -503,6 +503,12 @@ root set, which is tried first.
 - The command sets `INFORMATION.SQB` and `CHECKCLUBEDIT.SQB` were written
   for.
 - `INFORMATION.WPX`.
+- Whether the tutorial skip works for leagues other than England (it
+  calls `pwkLg_Init(0)`), and whether the parts of `Sche.YearEnd` and
+  `Sche.MonthEnd` it skips (`pwkTeam_ChangePop_Year`) change anything.
+- The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG LIGHT
+  TEST; and why the blank test modules show nothing (missing data, or
+  waiting for input from the launcher).
 
 ## Tool
 
@@ -573,12 +579,12 @@ set) to run the won route's schedule steps without the playoff turns:
 | `ROOTMAINSEQ.SQB` | `0x6d8` | `4:89` | `4:88`, which writes 0: club creation stays |
 | `ROOTYEARSTARTSEQ.SQB` | `0x30` | `4:89` | `4:88`: year starts stay |
 | `ROOTCLUBEDITSEQ.SQB` | `0x868` | `Dummy.CheckFirstMatchSkip` | unchanged: it writes 0, so the script enters `L2` |
-| | `0x8b0` | `TutorialHelp.Effective100` | `Sche.InitializeFirstCheck` |
-| | `0x8c0` | `Sche.InitializeFirstCheck` | `Sche.YearStart` |
-| | `0x8d0` | `Sche.YearStart` | `Sche.MonthStart` |
-| | `0x8e0` | `Sche.MonthStart` | `Dummy.CheckClubEditSkip`: `pwkLg_Init(0)` and `ScheCallback_ProcPromotion`, which `Sche.FirstCheck` (`0x114174`) runs after a won playoff |
-| | `0x8f0` | `Label L3` | `Call L8`: `Sche.MonthEnd`, `Sche.YearEnd`, `Sche.Finalize`, then `L9` |
-| | `0xba8` | `BranchIfZero … L3` (turn loop) | jumps to `L8`, as `L3` no longer exists; never reached |
+| – | `0x8b0` | `TutorialHelp.Effective100` | `Sche.InitializeFirstCheck` |
+| – | `0x8c0` | `Sche.InitializeFirstCheck` | `Sche.YearStart` |
+| – | `0x8d0` | `Sche.YearStart` | `Sche.MonthStart` |
+| – | `0x8e0` | `Sche.MonthStart` | `Dummy.CheckClubEditSkip`: `pwkLg_Init(0)` and `ScheCallback_ProcPromotion`, which `Sche.FirstCheck` (`0x114174`) runs after a won playoff |
+| – | `0x8f0` | `Label L3` | `Call L8`: `Sche.MonthEnd`, `Sche.YearEnd`, `Sche.Finalize`, then `L9` |
+| – | `0xba8` | `BranchIfZero … L3` (turn loop) | jumps to `L8`, as `L3` no longer exists; never reached |
 
 That is the won route's order: initialise, year and month start,
 promotion, month end, year end, finalise. The script has no other
@@ -606,28 +612,19 @@ sub-sponsors, where a normal career gets sponsors around £2.5 million
 
 ### The first version
 
-The first version of the skip set the same flag but changed
-`RootClubEditSeq.sqb` `0x868` from `4:88` to `4:89`, which promotes the
-club and branches straight to `L9`, as the developers' switch does. The
-playoffs' year and month steps then never ran, and three things came out
-wrong (tested in PCSX2):
-
-- The playoff-period sponsors stayed ([below](#why-the-playoff-sponsors-stayed)).
-  The first version started them a year into their contracts (6 bytes at
-  `0x3994ac` + `0x14`·*n*).
-- The supplier stayed Doclla, because the club's status stayed 0
-  ([below](#the-supplier-and-the-clubs-status)). The first version
-  rewrote `Dummy.CheckClubEditSkip` (9 words at `0x108dac`) to call
-  `pwkTeam_YearEndCheck` as well.
-- Information → All Clubs Ranking listed every club as 65536, in no
-  order, and a club's detail screen showed world ranking 0 (user report):
-  the club-rank year end in `Sche.YearEnd` never ran. The club also
-  started with £1,785,000 instead of £3,350,000.
-
-The second version runs the real `Sche.YearStart` and `Sche.YearEnd`, so
-it needs neither workaround. `patch_disc.py` undoes both on an image
-that has them: an old skip disc re-patched comes out byte for byte the
-same as a fresh one.
+The first version of the skip changed `RootClubEditSeq.sqb` `0x868` to
+`4:89` instead, which promotes the club and branches straight to `L9`,
+as the developers' switch does. The playoffs' year and month steps then
+never ran, and three things came out wrong (tested in PCSX2): the
+playoff-period sponsors stayed ([below](#why-the-playoff-sponsors-stayed)),
+the supplier stayed Doclla because the club's status stayed 0
+([below](#the-supplier-and-the-clubs-status)), and the club-rank year end
+never ran (All Clubs Ranking listed every club as 65536, and the club
+started with £1,785,000 instead of £3,350,000). It worked around the
+first two with 6 bytes at `0x3994ac` + `0x14`·*n* and 9 words at
+`0x108dac`. The second version needs neither, and `patch_disc.py` undoes
+both on an image that has them: an old skip disc re-patched comes out
+byte for byte the same as a fresh one.
 
 ### Why the playoff sponsors stayed
 
@@ -819,8 +816,8 @@ The four viewers that work are the useful ones for modding:
 - **STADIUM VIEWER MK2**: the stadium build request of
   [`STADIUM_DIR.md`](STADIUM_DIR.md).
 - **Uniform Viewer**: the kit fields behind `UNIFORM_LIST`, `UNIFORM_GK`
-  and `COLOR_TBL` ([`PLAYER_DIR.md`](PLAYER_DIR.md)), with collar model
-  names like `l_nml_bdy_01_el`.
+  and `COLOR_TBL` ([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)), with collar
+  model names like `l_nml_bdy_01_el`.
 - **CHARACTER VIEWER**: player motions by name.
 - **SATO TEST**: the event-character heads.
 
