@@ -21,6 +21,7 @@ found. Neither has symbols to name its fields, so this is a partial decode.
 | `0x13abf0`, `0x13ac20`, `0x13ac58` | compare a record's s16 at `+0x4` with a given index and with another record's `+0x4` |
 | `0x13ab80` | reads the s8 at `+0x8` and multiplies it by π/32 (`0x3dc90fdc`): an angle |
 | `0x13ad00` | reads the s16 pair at `+0x20` / `+0x22` as a range a value is tested against |
+| `0x45f44`–`0x45f84`, `0x98e68`–`0x98e94` | a kick request's s16 at `+0x1c` is a record number. The record's byte `+0x25` picks an entry of the kick kind's variant list (`0x58000`), and bits 16–18 of its u32 at `+0xc` pick how the kick's rating is scaled: 0 and 1 by the foot (`0x97be0`), 2 and up by the header parameter ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-kick-kinds)) |
 
 **Empirical:** the file (198,288 bytes) is exactly 4,131 records. The
 `+0x8` angles run from −32 to 32 (−180° to 180°), mostly in steps of 8
@@ -32,7 +33,21 @@ to 10,208, so its meaning changes or isn't a record link there. The float
 at `+0x14` is mostly a multiple of 2.2 (4.4 in 1,117 records, 6.6 in 925,
 15.4, 2.2, 11.0). Many records are full of `0xff` and `0x00` filler.
 
-What a record stands for isn't known. 4,131 doesn't match the entry count
+A record describes a way of touching the ball. Over all 4,131 records
+(**empirical**), the body part at `+0xc` bits 16–18 and the surface at
+`+0x25` (an index into the variant names: 0 INSIDE, 1 OUTSIDE, 2 HEEL, 3
+SOLE, 4 TOE, 5 INSTEP, 6 INFRONT, 7 OUTFRONT, 8 CHEST, 9 HEAD_STRONG, 10
+HEAD_WEAK, 11 SLIDING, 12 CHIP, 13 OVERHEAD, 14 JUMPING_VOLLEY, 15
+HEEL_VOLLEY, 16 DIVING_HEAD) agree:
+
+| Part | Records | Surfaces |
+|---|---|---|
+| 0, 1 | 1,308, 1,086 | foot surfaces, in nearly the same mix (INSIDE 601 / 433, INSTEP 403 / 359, INFRONT 150 / 150): the two feet |
+| 2 | 353 | HEAD_STRONG 122, HEAD_WEAK 216, DIVING_HEAD 15: the head |
+| 3 | 40 | CHEST, all of them |
+| 4 | 1,344 | 255 (none) in 1,148, a foot surface in the rest |
+
+The rest of a record isn't decoded. 4,131 doesn't match the entry count
 of any motion pack (`PLAYERMOTION.HED` has 1,008 entries, `OPTMOTION.PAC`
 927, `BALLMOTION.PAC` 324).
 
@@ -50,7 +65,8 @@ whose values sit between kind words: at the best alignment only 41 of the
 
 ## Still unknown
 
-- What a `GAMEDATA.BIN` record is, and the rest of its fields.
+- The rest of a `GAMEDATA.BIN` record's fields, and which foot parts 0
+  and 1 are.
 - Who calls the record functions at `0x13abb8`–`0x13ad00`, and with what
   index.
 - Whether anything loads `AI_PARAM.BIN` by another route.

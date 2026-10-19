@@ -433,6 +433,14 @@ files. Each item keeps what was found, where, and how it was tested.
       61, 64, 113, 139 and 141-162 are never read through the getter. The
       aptitude parameters 78-89 follow the table's own order, now
       documented
+- [x] The kick kinds behind `GAMEPRG.REL 0x98a30`: a kick request's
+      kind byte (`+0x1a`, −1 to 41) picks a variant list (`0x58000`) and
+      a rating (`0x98a30`). The lists name the goalkeeper's throws,
+      kicks, catches and saves, the shots, kick-off, throw-ins and the
+      long throw; the ratings say which ability each kind uses (short or
+      long pass, crosses, saving, shot skill, tackle, placekick, a fixed
+      99), and a header or weaker-foot kick is scaled by header or weak
+      foot. `DOC/PBDATA_FORMAT.md#the-kick-kinds`
 
 ## 3. Ninja 3D models and motions
 
@@ -560,6 +568,11 @@ files. Each item keeps what was found, where, and how it was tested.
       `GAMEPRG.REL 0x13abb8`), with the angle at `+0x8` (π/32) and the range
       at `+0x20` read by the code. `AI_PARAM.BIN`: no reader by name or by
       content in any executable. `gamedata.py`, checked by `regress.py`
+- [x] `GAMEDATA.BIN` records are ball contacts: a kick request names one
+      (`+0x1c`), whose `+0xc` bits 16-18 are the body part (two feet,
+      head, chest, other) and `+0x25` the surface (INSIDE, INSTEP,
+      HEAD_STRONG, ...); checked over all 4,131 records, and
+      `gamedata.py info` tallies them
 
 ## 7. Event system and game code
 

@@ -143,7 +143,7 @@ disassemble as unrelated MIPS instructions.
 | [`formset.py`](SRC/formset.py) | the tactics screen's eight national presets (`TACTICS_FORMATION_SET.TBB`): seven team tactics and a formation each; edits them (`set`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#tactics_formation_settbb-tactics-presets) |
 | [`tour.py`](SRC/tour.py) | tour opponents by region (`TOUR_LIST.TBB`); edits pairs (`set`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region) |
 | [`regulation.py`](SRC/regulation.py) | match regulations (`REGULATION.TBB`), one row per schedule: clubs, match grade, win bonus, prizes by position, yellow-card ban, matchday squad, foreign-player limit, substitutions, and the places up and down; edits fields (`set`), round-trips | [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md) |
-| [`gamedata.py`](SRC/gamedata.py) | `GAME/GAMEDATA.BIN`: checks the 4,131 records and prints them with the fields the match engine is known to read | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) |
+| [`gamedata.py`](SRC/gamedata.py) | `GAME/GAMEDATA.BIN`: checks the 4,131 records (body part and surface of each ball contact) and prints them with the fields the match engine is known to read | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) |
 | [`bpb.py`](SRC/bpb.py) | the play books `GAME/PLAYBOOK.BPB` and `COMBINATION.BPB`: checks every play and prints one's paths (players and ball, in metres) | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) |
 | [`plrcommon.py`](SRC/plrcommon.py) | the common pack `PLRESOURCECOMMON.PAC`: checks all 25 tables (facilities, formations, nations, competitions) and prints any one, with the facility records' build time, upkeep and stadium capacity | [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md) |
 | [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database; replaces free agents (`setfree`) and checks that the pack rebuilds byte for byte (`roundtrip`) | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
@@ -441,7 +441,7 @@ file names and counts from your disc. When an output change is intended,
 | [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md) | the training tables: practices, facilities, camps, match growth and decline with age |
 | [`CLUBRESULT_FORMAT.md`](DOC/CLUBRESULT_FORMAT.md) | how each schedule reports a final place: a number, a cup round's name or nothing |
 | [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | plan for a separate save editor on top of `save.py`: pages, steps, and the decisions still open |
-| [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) | `GAME/GAMEDATA.BIN`'s 0x30-byte records (partial) and the unread `AI_PARAM.BIN` |
+| [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) | `GAME/GAMEDATA.BIN`'s 0x30-byte ball-contact records (partial) and the unread `AI_PARAM.BIN` |
 | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) | the match AI's play books: records of player and ball paths, point coordinates, play ids |
 | [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md) | the common resource pack: facility records (build time, upkeep, stadium capacity), formation and nation tables, and which code reads each |
 | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) | the season-mode resource pack: what each of its 16 entries holds and which code reads it |

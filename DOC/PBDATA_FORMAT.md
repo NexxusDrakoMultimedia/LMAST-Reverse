@@ -595,10 +595,66 @@ Four shared helpers do much of the reading:
 
 | Helper | What it is | Parameters |
 |---|---|---|
-| `0x98a30` | picks an ability by the kind of kick (a byte at `+0x1a` of its argument, 43 kinds, jump table `0x26e280`); behind every `DecisionFactor*_NonInterceptionRate` and `_NonDFBlockRate` class, the chance that a pass, cross or one-two isn't intercepted and a shot isn't blocked. Its sub-helpers `0x98f50`–`0x99280` each read one skill | 28 shot skill, 29 shot technique, 30 short pass, 31 long pass, 32/33 cross, 34 header, 46 saving, 59 weak foot; skills 116, 118, 120, 123–125, 127 |
+| `0x98a30` | rates a kick by its kind (the byte at `+0x1a` of its argument, kinds −1 to 41, jump table `0x26e280`; see [The kick kinds](#the-kick-kinds)); behind every `DecisionFactor*_NonInterceptionRate` and `_NonDFBlockRate` class, the chance that a pass, cross or one-two isn't intercepted and a shot isn't blocked. Its sub-helpers `0x98f50`–`0x99280` each read one skill. Several kinds share one call (`0x98e24`), so `callers` credits it only with 30 | 5, 28 shot skill, 29 shot technique, 30 short pass, 31 long pass, 32/33 cross, 34 header, 37 tackle, 42 placekick, 46 saving, 59 weak foot; skills 116–118, 120, 123–125, 127 |
 | `0x9bc38`, `0x9bcf8` | probably a duel: the first reads ball keeping and the second tackle, both with the two contact strength parameters | 36 ball keeping, 37 tackle, 54 and 57 contact strength |
 | `0x99520` | the player's value for play style *n* + 1: argument *n* (0–21) reads parameter 90 + *n*, −1 returns 0 (a switch, jump table `0x26e3a0`) | 90–111 |
 | `0x99340`, `0x99468` | the aptitude for a position: `0x992c8` maps it to one of 78–89 | 78–89 |
+
+### The kick kinds
+
+A kick request carries its kind as a signed byte at `+0x1a`. Two
+switches give each kind a meaning (**confirmed** from the code):
+
+- `0x58000` (kind, variant) returns an entry of the kind's variant
+  list, 12-byte entries `{char *name, ...}`. The variant is byte `+0x25`
+  of the `GAMEDATA.BIN` record the request names at `+0x1c`
+  (`0x45f44`–`0x45f84`, [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md)).
+  Most kinds list the foot and body surfaces
+  (INSIDE, OUTSIDE, HEEL, SOLE, TOE, INSTEP, INFRONT, OUTFRONT, CHEST,
+  HEAD_STRONG, HEAD_WEAK, SLIDING, CHIP), but some lists name the kind.
+- `0x98a30` rates the kick from the kicker's parameters, by kind + 1
+  through the jump table at `0x26e280`.
+
+| Kind | Variant list | Rated by |
+|---|---|---|
+| −1, 0, 5, 10, 27, 34, 36, 38, 41 | surfaces (10: UNDERHAND, OVERHAND, a goalkeeper's throw; 27: KICKOFF) | short pass (30) |
+| 1, 2 | surfaces | short pass × the playmaker skill (127) |
+| 3, 4, 11, 35 | surfaces (11: INSTEP, SOUTH_AMERICAN, a goalkeeper's kick) | long pass (31) |
+| 6–9 | surfaces (9: UNDERHAND, OVERHAND) | cross: 32 and 33 blended 0.9/0.1, 0.4/0.6, 0.7/0.3, 0.4/0.6. Both hold the cross ability, so the blends differ only by the parameters' match modifiers |
+| 12 | SINGLE_HAND, DOUBLE_HAND and their `_PK` forms: a catch | saving (46) × the one-on-one keeper skill (117) |
+| 13 | HAND, BODY, KICK and their `_PK` forms: a save | the same |
+| 14–18 | surfaces plus OVERHEAD, JUMPING_VOLLEY, HEEL_VOLLEY: shots | shot skill (28) × the factors of the one-on-one finisher, acrobatic shot, one-touch shot and goal machine skills (116, 123–125), kept to 0–99; kind 14 averages it with short pass, kinds 15, 16 and 18 with shot technique (29), kind 17 uses it alone |
+| 19–21 | surfaces | tackle (37) |
+| 22, 23, 30, 31, 33 | surfaces; 30, 31, 33: THROWIN | always 99 |
+| 32 | LONGTHROW | long pass × the long throw skill (118) |
+| 24–26 | surfaces; 25: LOST; 26: COLLISION | parameter 5 (source not traced) |
+| 28, 37, 39, 40 | 28: KICKOFF; 40: four foot surfaces only | placekick (42) |
+| 29 | surfaces plus WEAK | shot skill (28) alone |
+
+After the switch, unless a flag is set for the kind (bit 6 of `+8` in
+the 12-byte entries of a run-time table at `0x29f680`, not traced), the
+rating is scaled by how the ball is struck, read from the same
+`GAMEDATA.BIN` record (`+0xc` bits 16–18: 0 and 1 the feet, 2 the head,
+3 the chest): parts 2 and up by min(header (34) + 20, 100) / 100, so a
+chest touch counts as a header too, and a kick
+with one of the feet, chosen by `0x97be0` (probably the weaker one), by
+0.14 × parameter 59 (`weak_foot` / 2, 0–7). The multiplications use the
+R5900's three-operand `mult` (`0x98ed0`, `0x98f08`).
+
+Two kinds are stored as constants (**confirmed**): kind 38 by the
+corner and free-kick plays' code (`0x6f260`, reached from `PlayCKKick`
+and `PlayFKKick`), and kind 25 by `fb::Player`'s code (`0x8083c`,
+`0x8b78c`). Kinds 4 and 10 are stored at `0x6001c`–`0x601dc` and
+`0x6af40`–`0x6b170`, in code reached from the pass, clear and cross
+intentions. Most kinds are copied from a candidate record (`+0x18`) that
+the intentions choose from, so the names in the table above go no
+further than the variant lists and the abilities. Which pass, cross,
+tackle and placekick kind is which isn't known.
+
+```bash
+python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x58000 12      # the variant switch (table 0x268010)
+python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x98a30 260     # the rating switch and the scaling
+```
 
 The other readers:
 

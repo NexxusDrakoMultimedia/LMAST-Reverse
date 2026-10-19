@@ -95,10 +95,12 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       abilities 59–63 are used (not in the match record), and which
       attack pattern letter is which
 - [ ] Match parameters, after their readers
-      (`DOC/PBDATA_FORMAT.md#who-reads-each-parameter`): which kick kind
-      is which in helper `GAMEPRG.REL 0x98a30` (the byte at `+0x1a`, 43
-      kinds), the 45 getter calls with no class, the sources of
-      parameters 16 and 24, and whether any code reads leadership (61),
+      (`DOC/PBDATA_FORMAT.md#who-reads-each-parameter`): which pass,
+      cross, tackle and placekick kind is which
+      (`DOC/PBDATA_FORMAT.md#the-kick-kinds`; most kinds come from the
+      intentions' candidate records, `+0x18`), the run-time kind flags at
+      `0x29f680`, the 45 getter calls with no class, the sources of
+      parameters 5, 16 and 24, and whether any code reads leadership (61),
       pressure (64), the offside-line skill (113) or the ball touch (139)
       straight from the player object
 - [ ] Tendency leftovers (`DOC/PBDATA_FORMAT.md#the-tendencies`): whose
@@ -219,10 +221,11 @@ Needed for the [coverage goal](GOALS.md#coverage-of-datacvm): nothing left as
       (callbacks at `GAMEPRG.REL 0x249280`); in the play books the path
       kinds, point codes, which play is which, the `+0x20` block and
       `GetFormationData`
-- [ ] `GAME/GAMEDATA.BIN` leftovers (`DOC/GAMEDATA_FORMAT.md`): what a
-      record is (4,131 of 0x30 bytes), its fields past `+0x4`, `+0x8`,
-      `+0x14`, `+0x20`, and who calls the record functions at
-      `GAMEPRG.REL 0x13abb8`; whether anything reads `AI_PARAM.BIN`
+- [ ] `GAME/GAMEDATA.BIN` leftovers (`DOC/GAMEDATA_FORMAT.md`): a record
+      is a ball contact (a kick request names one; body part `+0xc`,
+      surface `+0x25`); still open are its other fields, which foot parts
+      0 and 1 are, the other callers of `GAMEPRG.REL 0x13abb8`, and
+      whether anything reads `AI_PARAM.BIN`
 - [ ] `TEST3D/SHADOWCOLLI.LBI` and `BG/HUMANID.BIN`. The `.LBI` starts
       like the 27 entries of `GAME/SHADOWCOLLI.PAC` but matches none and
       isn't named in the code (`DOC/TEST3D_DIR.md`); decode the format
