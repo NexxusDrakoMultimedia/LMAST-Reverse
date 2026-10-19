@@ -151,7 +151,9 @@ Pack 01's names say what the character is: `SUPPORTER` 80, `REFREE` 20,
 the texture `base_face_sc`). The 3 other entries, 212–214, are the
 untextured `HUMAN_head_9000/9500/9600.snj` and have no `.svr` name in the
 model. The last entry (214) has no hair and a two-texture `PVMH`
-(`camskin`, `came_hair`). `python SRC/packdata.py names` lists every
+(`camskin`, `came_hair`). Put in entry 0's place, it showed in SATO TEST
+as one of the rival's women companions (user report), so 214 is probably
+that character's head. `python SRC/packdata.py names` lists every
 entry's model and texture name.
 
 Hair-model names use the same style prefixes as `HAIR_PACK` and

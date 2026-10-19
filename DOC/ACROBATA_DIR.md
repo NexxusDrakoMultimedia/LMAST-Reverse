@@ -33,7 +33,7 @@ The pack isn't in any `PRELOAD` pack. It isn't listed in the folder's
 | `SIMPRG.REL 0x183208` | (Acroarts loader) | the same checks for an `ABRS` chunk, without the version |
 | `SIMPRG.REL 0x247848`–`0x2478b0` | (strings) | the errors name the format: "ABDA(Acroarts Native Data) Version is incorrect", and print the expected and found versions as "Ver%8d R%d" |
 | `SIMPRG.REL 0x1f408` | `PLAY_ACROBATA_MODULE` | sequencer module 36, PlayAcrobata, which the root scripts start with scene numbers ([`SQB_FORMAT.md`](SQB_FORMAT.md)) |
-| `TESTPRG.REL 0xf320` | `ACROBATA_VIEWER_MODULE` | launcher module 107, ACROBATA VIEWER, which shows the newspaper intro ([`SQB_FORMAT.md`](SQB_FORMAT.md)) |
+| `TESTPRG.REL 0xf320` | `ACROBATA_VIEWER_MODULE` | launcher module 107, ACROBATA VIEWER, which shows a club house room and nothing else (user report, [`SQB_FORMAT.md`](SQB_FORMAT.md)) |
 
 The version word `0x77831b45` is 2005080901, printed as "Ver 20050809 R1":
 a date stamp, 9 August 2005, revision 1. The code compares it with its own

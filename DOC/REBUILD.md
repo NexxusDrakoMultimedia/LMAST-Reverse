@@ -215,11 +215,32 @@ equals the new header; `ACROBATAPACKFILE.PAC#3` grown by 64 bytes was
 refused on `DATA.CVM` and on the disc image rewrote one index record,
 after which the executable's table equals the new header; a grown
 `MES.PAC` moved 810 files and rewrote their records. A second run finds
-nothing to do in each case. None of these has been tested in PCSX2 yet;
-`LMAST-test-archives.iso` and `LMAST-test-camps-mes.iso` are built for
-it (`TODO.md`). The plain `PLAYER/NUMBER_0n.PAC` and its `.HED` aren't
-loaded by name; the game reads the `_PRESS` packs
-([`PLAYER_DIR.md`](PLAYER_DIR.md)).
+nothing to do in each case.
+
+**Tested in PCSX2** (user report), on two discs:
+- `LMAST-test-archives.iso` (11 files moved, the disc grown past its
+  spare sectors): `NEWS/NEWS_TITLE.PAC` rebuilt around two mastheads
+  grown past their slots, with its `.HED` and the seven
+  `PRELOAD/NEWS*.PAC` copies rebuilt and moved, showed Spain's masthead
+  in an English career's newspaper. Entry 3 of all eight
+  `NUMBER_0n_PRESS.PAC`, number 8's texture recompressed by
+  `pac.prs_compress`, showed 8 for shirt 3 in the Uniform Viewer.
+  `FC_EURO_FACEPACK_01` (KC@P, data file moved) with entry 0 replaced by
+  entry 214's head, recompressed, showed a different head for SATO TEST
+  ID 0 (one of the rival's women companions, which fits 214's
+  `HUMAN_head_9600`; ID 214 itself couldn't be viewed). The Acrobata
+  pack with entry 0 (`BG_CH_00_00`) grown past its sector, so all 874
+  later scenes moved and the executable's index was rewritten, played
+  its scenes: the logo and title, the club house, and ACROBATA VIEWER's
+  club house room.
+- `LMAST-test-camps-mes.iso`: `MES.PAC` with `3_6.mbb` grown past its
+  slot (later files moved, the executable's index rewritten) and the
+  welcome mail's body changed in `MES.PAC` only. The new-game popup
+  showed "MOVED FILE TEST.", the Mail screen the original text from
+  `PRELOAD/MAIL1.PAC`.
+
+The plain `PLAYER/NUMBER_0n.PAC` and its `.HED` aren't loaded by name;
+the game reads the `_PRESS` packs ([`PLAYER_DIR.md`](PLAYER_DIR.md)).
 
 ## Moving files
 

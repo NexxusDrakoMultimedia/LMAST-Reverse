@@ -226,7 +226,10 @@ the end of `DATA.ISO`. The 1.1 GB `FC_EURO_FACEPACK_00.BIN` can only
 move while the disc has room for another copy of it (about 1.1 GB of
 the 1.1 GB a single-layer DVD has spare). Checked on a copy of
 `DATA.CVM`: face 5 of `FC_EURO_FACEPACK_01` grown by three sectors moved
-the data file and rewrote the header in all eight places.
+the data file and rewrote the header in all eight places. **Tested in
+PCSX2** (user report): a rebuilt `FC_EURO_FACEPACK_01` with entry 0
+recompressed and its data file moved loads in game
+([`REBUILD.md`](REBUILD.md#archives)).
 
 ## PRSH (compressed entry)
 

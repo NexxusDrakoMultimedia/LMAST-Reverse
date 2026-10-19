@@ -828,6 +828,18 @@ files. Each item keeps what was found, where, and how it was tested.
       101.3% of the original size; `prscheck`, `prs`, `replace --prs`).
       A grown face pack patched with `--copies` moved and updated its
       header in all eight places (checked on a copy of `DATA.CVM`)
+- [x] Test in PCSX2 the archive rebuilds (user report). On
+      `LMAST-test-archives.iso`: `NEWS_TITLE.PAC` rebuilt around grown
+      mastheads, with its `.HED` and the seven moved `PRELOAD/NEWS*`
+      packs, showed Spain's masthead; the `_PRESS` number packs with a
+      `prs_compress`ed entry showed 8 for shirt 3; the rebuilt, moved
+      `FC_EURO_FACEPACK_01` gave SATO TEST ID 0 a new head (entry 214's,
+      probably one of the rival's companions); the Acrobata pack with
+      every scene after entry 0 moved played as normal. On
+      `LMAST-test-camps-mes.iso`: `MES.PAC` with files moved showed
+      "MOVED FILE TEST." in the new-game popup and the original on the
+      Mail screen. Also found: the game loads only the `_PRESS` number
+      packs, and ACROBATA VIEWER only shows a club house room
 
 ## 10. Save data
 

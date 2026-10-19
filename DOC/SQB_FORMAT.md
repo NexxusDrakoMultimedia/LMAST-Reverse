@@ -790,7 +790,7 @@ the real game screen, opened on its own with the launcher's new game.
 | 102, 103 | TACTICS, TRAINING | menu tests |
 | 104 | CHARACTER VIEWER | **works.** A standing player (training kit) over the training ground, with the debug menu SET / PUSH / BLEND (a motion, e.g. `mendan_Asit_ang_001.snm`), LINK TIME, DO-LINK, DO-BLEND, DO-MIRROR, DO-REVERSE and CHARACTER (Player), and `Play = NULL`, `Play List Num = 0`. Setting CHARACTER to null shows a column of garbled Japanese and `(null)` entries. The motion names are in `DAT/TEST3D/VIEWERPLAYERMOTION.PAC` |
 | 105 | PLAYER CONTRACT | hangs |
-| 106, 107 | NEWS VIEWER, ACROBATA VIEWER | newspaper menu tests. ACROBATA VIEWER is the newspaper intro at the start of a game |
+| 106, 107 | NEWS VIEWER, ACROBATA VIEWER | NEWS VIEWER is a newspaper menu test. ACROBATA VIEWER shows a 3D club house room and does nothing else (user report) |
 | 108 | MEMORYCARD UTILITY | hangs |
 | 109 | MAIL VIEWER | the e-mail menu test |
 | 110 | GAME INCOME | goes straight back to the launcher |
