@@ -46,12 +46,19 @@ Usage:
     python sqb.py globals <GLOBALMEMORY.TBB>      # {type, value, min, max}
     python sqb.py roundtrip <file | dir> ...      # re-encode every script, !! if not identical
     python sqb.py setcmd  <in.SQB> <out.SQB> <offset> <table:cmd>
+    python sqb.py settable <in.sqb | pack.PAC#entry.sqb> <out> <table:row:element=value> ...
 
 `setcmd` replaces the command at a script offset (as `dis` prints it) with
 another of the same argument count, keeping its arguments, so the file
 keeps its size and every other command its place. E.g. `setcmd
 ROOTMAINSEQ.SQB out.SQB 0x98 0:27` turns the launcher check's
 BranchIfNotZero into BranchIfZero (DOC/SQB_FORMAT.md).
+
+`settable` changes cells of a PwkScript's SQT1 data tables, numbered as
+`tables` prints them; given a pack entry it writes the whole pack. E.g.
+`settable "PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb" out.PAC
+1:0:2=3` turns the manager comment's lowest band into "outstanding".
+`roundtrip` also writes every cell back and compares.
 """
 import os
 import struct
@@ -623,7 +630,7 @@ def cmd_globals(path):
 
 
 def cmd_roundtrip(paths):
-    ok = count = 0
+    ok = count = ncells = 0
     for label, blob in scripts(paths):
         label = label.replace("\\", "/")
         name, result = fit(blob)
@@ -632,11 +639,16 @@ def cmd_roundtrip(paths):
         count += 1
         tables = dict(sqb_tables(blob))
         bad = [o for o, cmds in result if encode(cmds) != tables[o]]
+        cells = table_cells(blob)
         if bad:
             print("%s  !! table @%s re-encodes differently" % (label, ", @".join("0x%x" % o for o in bad)))
+        elif set_table_values(blob, cells) != blob:
+            print("%s  !! its SQT1 cells write back differently" % label)
         else:
             ok += 1
-    print("%d/%d scripts re-encode byte for byte" % (ok, count))
+        ncells += len(cells)
+    print("%d/%d scripts re-encode byte for byte; %d SQT1 cells written back"
+          % (ok, count, ncells))
 
 
 def set_commands(data, edits):
@@ -701,6 +713,75 @@ def command_at(data, offset):
     return c.name, c.args
 
 
+# SQT1 element size -> struct format and range: 1 is read as u8 (lbu), 2 as
+# s16 (lh), anything else as a word (lw, used signed) (GetTable users,
+# 0x304f90).
+SQT_ELEM = {1: ("B", 0, 0xFF), 2: ("h", -0x8000, 0x7FFF), 4: ("i", -0x80000000, 0x7FFFFFFF)}
+
+
+def set_table_values(data, edits):
+    """New bytes of a script with SQT1 cells changed. Each edit is (table,
+    row, element, value): table as `tables` numbers it, row below +0x18,
+    element below +0x14, the value within the element size. The file
+    keeps its size."""
+    blob = bytearray(data)
+    offs, _ = tbb_tables(bytes(blob))
+    for table, row, elem, value in edits:
+        if not 0 <= table < len(offs) or blob[offs[table]:offs[table] + 4] != SQT_MAGIC:
+            raise ValueError("table %d is not an SQT1 table" % table)
+        o = offs[table]
+        check_sqt(bytes(blob), o)
+        _, doff, _, esize, _, width, rows, _ = struct.unpack_from("<4s7I", blob, o)
+        if not (0 <= row < rows and 0 <= elem < width):
+            raise ValueError("table %d has %d rows of %d" % (table, rows, width))
+        fmt, lo, hi = SQT_ELEM[esize]
+        if not lo <= value <= hi:
+            raise ValueError("table %d holds %d-byte values (%d..%d)" % (table, esize, lo, hi))
+        struct.pack_into("<" + fmt, blob, o + doff + (row * width + elem) * esize, value)
+    return bytes(blob)
+
+
+def table_cells(data):
+    """[(table, row, element, value)] for every SQT1 cell of a script."""
+    out = []
+    offs, _ = tbb_tables(data)
+    for n, o in enumerate(offs):
+        if data[o:o + 4] != SQT_MAGIC:
+            continue
+        _, doff, _, esize, _, width, rows, _ = struct.unpack_from("<4s7I", data, o)
+        fmt = SQT_ELEM[esize][0]
+        for i, v in enumerate(struct.unpack_from("<%d%s" % (width * rows, fmt), data, o + doff)):
+            out.append((n, i // width, i % width, v))
+    return out
+
+
+def cmd_settable(src, dst, specs):
+    """Change SQT1 cells (`table:row:element=value`) of a script, or of a
+    script inside a BINPAC (`pack.PAC#entry`, then dst is the whole pack;
+    the entry keeps its size, so no other entry moves)."""
+    edits = []
+    for spec in specs:
+        where, _, value = spec.partition("=")
+        t, r, e = (int(x, 0) for x in where.split(":"))
+        edits.append((t, r, e, int(value, 0)))
+    path, _, entry = src.partition("#")
+    data = open(path, "rb").read()
+    if entry:
+        hdr = pac.load_header(path)
+        hit = [(off, size) for off, size, name, _ in hdr.entries if name == entry]
+        if not hit:
+            raise ValueError("%s has no entry %r" % (path, entry))
+        off, size = hit[0]
+        new = data[:off] + set_table_values(data[off:off + size], edits) + data[off + size:]
+    else:
+        new = set_table_values(data, edits)
+    with open(dst, "wb") as f:
+        f.write(new)
+    for (t, r, e, v) in edits:
+        print("table %d row %d element %d = %d" % (t, r, e, v))
+    print("%d bytes changed (%s)" % (sum(a != b for a, b in zip(data, new)), dst))
+
+
 def cmd_setcmd(src, dst, offset, spec):
     """Swap one command's table:cmd for another with the same argc."""
     with open(src, "rb") as f:
@@ -715,6 +796,9 @@ def main(argv):
     cmd = argv[1] if len(argv) > 1 else ""
     if cmd == "roundtrip" and args:
         cmd_roundtrip(args)
+        return 0
+    if cmd == "settable" and len(args) >= 3:
+        cmd_settable(args[0], args[1], args[2:])
         return 0
     if cmd == "setcmd" and len(args) == 4:
         cmd_setcmd(args[0], args[1], int(args[2], 16), args[3])

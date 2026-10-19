@@ -425,8 +425,9 @@ them an "outstanding forwards coach" and a "very good defence coach"
 (see [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars)).
 
 These scripts can be edited and tested in game: the thresholds in table
-1, the reputation and message numbers in table 2, or a group's
-abilities (with `setcmd` or a hex edit of a literal).
+1, the reputation and message numbers in table 2 (`sqb.py settable`), or
+a group's abilities (with `setcmd` or a hex edit of a literal). Not yet
+seen in game: `LMAST-test-comments.iso` is built for that (`TODO.md`).
 
 ```bash
 python SRC/sqb.py dis    "DAT/PARAM/PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb"
@@ -507,7 +508,15 @@ python SRC/sqb.py names   DAT/SEQ/SQBFILENAME.TBB      # script ids
 python SRC/sqb.py globals DAT/SEQ/GLOBALMEMORY.TBB     # global memory records
 python SRC/sqb.py roundtrip DAT/SEQ DAT/PARAM          # re-encode all 41 scripts byte for byte
 python SRC/sqb.py setcmd  DAT/SEQ/ROOTMAINSEQ.SQB out/ROOTMAINSEQ.SQB 0x98 0:27
+python SRC/sqb.py settable "DAT/PARAM/PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb" out/PSCCOMMON.PAC 1:0:2=3
 ```
+
+`settable` changes cells of a PwkScript's `SQT1` tables
+(`table:row:element=value`, numbered as `tables` prints them), within
+the element size; given a pack entry it writes the whole pack, with the
+entry at its old size. `patch_disc.py --copies` then also updates the
+pack's copy in `PRELOAD/STATIONFILE.PAC`, which stays loaded all game.
+`roundtrip` writes every one of the 12,107 cells back and compares.
 
 `setcmd` is a minimal writer. It swaps one command for another with the
 same argument count, so the file keeps its size and can be patched onto the
