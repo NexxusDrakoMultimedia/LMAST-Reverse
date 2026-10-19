@@ -534,7 +534,7 @@ written directly:
 | 73 | 0.7 × ability 55 + 0.3 × ability 54 + 15 | `0x143148` |
 | 74 | 0.7 × ability 56 + 0.3 × ability 54 + 15 | `0x143180` |
 | 77 | `PlPinfo +0x294` (clamped to 25) | `0x1431c4` |
-| 78–89 | 0.7 × aptitude 33–44 + 0.3 × a system fit (ability 45 + the third argument; `0x1435a8` passes 4, the 4-4-2) + 15. Parameter 85 uses the larger of aptitudes 40 and 41 | table `0x28c048`, `0x143228` |
+| 78–89 | 0.7 × an aptitude + 0.3 × a system fit (ability 45 + the third argument; `0x1435a8` passes 4, the 4-4-2) + 15. The aptitudes, in parameter order: 33 GK, 35 CB, 34 SB, 36 WB, 37 DM, 39 OM, 38 SM, the larger of 40 WG and 41 FW, 40 WG, 42 centre, 43 left side, 44 right side | table `0x28c048`, `0x143228` |
 | 90–111 | 99 for the play style held in `PlPinfo +0x278` (compared with 1–22; presumably the style the player plays), 0 for the others | `0x1433e8` |
 | 112–127 | skill bits 0–15 (`plPinfo_IsSkill`), 0 or 1 | `0x143430` |
 | 128–138 | the 11 `tendency` values (`+0x66`), a value of 5 or more becomes 4 | `0x143490` |
@@ -570,13 +570,75 @@ python SRC/snr2.py dis ISO/DLL/DEBUGPRG.REL 0x5ad0 400 --sles ISO/SLES_541.51
 The record's own getter `0x146480` (above) is only used by its 13 calls
 in `0x146530`–`0x146c00`, where `0x146560` picks a player's best play
 style from parameters `0x5a` + *n*. Every parameter from 26 to 140 except
-61, 64 and 139 is read through `0x9bdb8`. Parameter 139, the ball touch,
-has no reader.
+61, 64, 113 and 139 is read through `0x9bdb8`
+([below](#who-reads-each-parameter)). Parameter 139, the ball touch, has
+no reader.
 
 ```bash
 python SRC/snr2.py xref ISO/DLL/GAMEPRG.REL 0x9bdb8           # the 240 calls
 python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x9bdb8 120 --sles ISO/SLES_541.51
 ```
+
+### Who reads each parameter
+
+`python SRC/snr2.py callers ISO/DLL/GAMEPRG.REL 0x9bdb8 fb` lists the 240
+calls with the parameter each passes (236 pass a constant) and the
+`fb::` class whose code makes the call, or reaches it through other
+calls. The classes come from their run-time type information
+([`SNR2_FORMAT.md`](SNR2_FORMAT.md#c-classes)). That a class reads a
+parameter is **confirmed**; what the class does is read from its name,
+and how much the value changes the outcome isn't traced. "Helper" is a
+`PlayerAI` function reached only through virtual calls. 109 calls have no
+`fb::` class this way, and 45 no class at all.
+
+Four shared helpers do much of the reading:
+
+| Helper | What it is | Parameters |
+|---|---|---|
+| `0x98a30` | picks an ability by the kind of kick (a byte at `+0x1a` of its argument, 43 kinds, jump table `0x26e280`); behind every `DecisionFactor*_NonInterceptionRate` and `_NonDFBlockRate` class, the chance that a pass, cross or one-two isn't intercepted and a shot isn't blocked. Its sub-helpers `0x98f50`–`0x99280` each read one skill | 28 shot skill, 29 shot technique, 30 short pass, 31 long pass, 32/33 cross, 34 header, 46 saving, 59 weak foot; skills 116, 118, 120, 123–125, 127 |
+| `0x9bc38`, `0x9bcf8` | probably a duel: the first reads ball keeping and the second tackle, both with the two contact strength parameters | 36 ball keeping, 37 tackle, 54 and 57 contact strength |
+| `0x99520` | the player's value for play style *n* + 1: argument *n* (0–21) reads parameter 90 + *n*, −1 returns 0 (a switch, jump table `0x26e3a0`) | 90–111 |
+| `0x99340`, `0x99468` | the aptitude for a position: `0x992c8` maps it to one of 78–89 | 78–89 |
+
+The other readers:
+
+| Parameters | Field | Read by |
+|---|---|---|
+| 26, 27, 35 | dribble pace, dribble skill, trap | `IntentionRWTB`, `IntentionKeep`, `PlayADribble`, `PlayRWTB`; 27 also by helpers `0x91438`, `0x9b560`, `0x9b768` |
+| 38, 39, 41, 52, 53 | intercept, ball winning, agility, jump, agility | intercept by `match::PlayerManipulator`; ball winning and agility (41) by helper `0x9b650`; jump by helper `0x9b7e0`; agility (53) by many roles (`RoleBallCarrierMarker`, `RoleFreeRunCommon`, …) |
+| 40 | marking | `RoleMarker`, `RoleBallCarrierMarker`, helper `0x9b650`, the set-piece assignment (`CSetPlayAssign`) |
+| 42, 43–45 | placekick, the placekick mixes | penalties (`PlayPKKick`) and free kicks and corners (`PlayFKKick`, `PlayCKKick`; `0x8e818` picks 44 or 45) |
+| 46–49, 115, 117, 122 | saving, catching, aerial ability, rushing out; skills penalty stopper, one-on-one keeper, reflex saves | saving by `PlayPKKeeper` and the kick helper; catching and aerial ability by `PlayGoalKeep`; rushing out and one-on-one keeper by `RoleBallCarrier`; penalty stopper by `PlayPKKeeper`; reflex saves by `match::MatchManager` (`0x190e40`) |
+| 50, 51, 55, 56 | pace, acceleration, stamina, kick strength | pace by the pass, cross and dribble rate classes; acceleration by `RoleBallCarrier`; stamina by `fb::Player`'s `0x7a898`; kick strength by the pass, clear and shot intentions and `PlayFKKick` |
+| 58, 60 | 7 − `injury_res`, `recovery` | `match::MatchManager` (`0x9b220`, `0x9b360`; `0x19db10`) |
+| 62 | (15 − `foul_avoid`) / 2 | `PlayBallCarrierMark` (fouls when challenging) and `0x9b020` |
+| 63 | `professionalism` / 2 | 20 reads, 19 of them in the out-of-play roles' code (`0x125980`–`0x128450`, after `RoleOutOfPlay`) |
+| 65, 66 | concentration / 14, nerve / 14 | the kick rate helpers; nerve also `PlayPKKick` |
+| 67, 68 | attack minded, defence minded | 12 and 15 reads: the positioning roles (`RoleSAAttacker`, `RoleSASupport`, `RoleFreeRunner`, `RoleMarker`, `RoleMarkAssist`, …), `PlayEffector` and the phases (`PhaseInPlay`, `PhaseSP`, `PhaseThrowIn`) |
+| 69, 70, 75, 76 | supportiveness, vision, pressing, line DF | `RoleSupporter` and `RoleSASupport`; `RoleBallCarrier`; `RoleMarkAssist`; `RoleSpaceMarker` |
+| 71 | `professionalism` ≥ 3 | `match::MatchManager` (`0x169670`) |
+| 72–74 | counterattack, the possession mixes | `fb::Combination`'s code (`0xc16b4`), the team's combination plays; 73 also `RoleSASupport` |
+| 77 | `PlPinfo +0x294` | collision code (`0x31998`) |
+| 93, 97, 99, 100, 106–108 | styles Dash out, Shadow striker, Dynamo, Man marker, Sweeper, Defensive Sweeper, Stopper | besides `0x99520`: 93, 97 and 99 by `0x99720` and `0x10df80` (roles); Man marker, the sweepers and Stopper by `RoleBallCarrierMarker` |
+| 112, 114, 118–121, 126 | skills covering, penalty taker, long throw, super sub, through balls, positioning, poacher | covering by `RoleBallCarrierMarker`; penalty taker by `PlayPKKick`; long throw by the throw-in taker `RoleTIThrower`; super sub by `match::StatisticTask` (`0x190c00`); through balls by `RoleFKKicker`; positioning by `RoleMarker` and `CSetPlayAssign`; poacher by helper `0x9a310` |
+| 128–138 | the tendencies | see [below](#the-tendencies) |
+| 140 | `dribble_style` | helper `0x9b540` (see below) |
+
+These fit the names in [`pbdata.py`](#ability-names) and the skill and
+style names closely (long throw read by the throw-in taker, penalty
+taker by the penalty kick, super sub by the statistics task), which is a
+check on those names. Also read, from outside the table above:
+parameter 16 (`0x193ce8`) and 24 (`0x9c518`), whose sources aren't
+traced, and 164 (`0xc1d00`, `fb::Combination`'s code), past the 163
+copied parameters: its base byte `+0xa8` is parameter 1's modifier.
+
+**Never read through `0x9bdb8`** (**confirmed**, no call passes them):
+61 leadership, 64 `pressure` / 2, 113 skill offside line, 139
+`ball_touch`, 141–149 (dribble skill ≥ 0x50), and the kit style and
+zeros 150–162. The kit style reaches the player model another way
+([Kit style](#kit-style)). Unless match code reads them straight from
+the player object, which wasn't searched for, leadership, pressure, the
+offside-line skill and the ball touch do nothing in a match.
 
 ### The tendencies
 
@@ -1287,18 +1349,20 @@ derived and ignored. `patch_disc.py` puts the edited pack on a disc
   turns the outfield gloves on (`plGi +0x1f538`; not a night match),
   and whether the dissatisfaction
   code's use of `+0x58`/`+0x59` is intended ([Kit style](#kit-style)).
-- What the match does with most of its other player parameters (the
-  readers are listed by `snr2.py xref ISO/DLL/GAMEPRG.REL 0x9bdb8`, see
-  [Where the match reads the parameters](#where-the-match-reads-the-parameters)),
-  and which attack pattern letter is which. Abilities 59–63 aren't
-  copied into the match record, so their effect is outside it.
+- How much each parameter changes what its readers do
+  ([Who reads each parameter](#who-reads-each-parameter) gives the
+  readers): the kick kinds behind helper `0x98a30`, the 45 calls with no
+  class, and the sources of parameters 16 and 24. Also which attack
+  pattern letter is which; abilities 59–63 aren't copied into the match
+  record, so their effect is outside it.
 - What each speech tone and condition type value is, what the ball touch
   does (match parameter 139 has no reader), and which dribble style
   looks like what.
 - The hexagon labels are matched to indices from the data and VPF's
   pages. The label order in `GP::CHexWindowBase::DrawString` (`0x27c700`)
   comes from a screen layout and hasn't been traced.
-- What the play styles do in a match, beyond which abilities grow.
+- What the play styles do in a match, beyond which abilities grow and
+  which roles read them ([Who reads each parameter](#who-reads-each-parameter)).
 - The code that turns the leg field into `PlPinfo +0x1c4`.
 - What sets job 5 when a manager is hired.
 - What reads the staff fields only the source table names (rank, face,

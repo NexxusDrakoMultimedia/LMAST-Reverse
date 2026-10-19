@@ -423,6 +423,16 @@ files. Each item keeps what was found, where, and how it was tested.
       the new fields; a manager's rank was tested through the widgets
       and the save equals the logged command.
       `DOC/PBDATA_FORMAT.md#the-developers-field-names`
+- [x] Who reads each match player parameter: `snr2.py classes` recovers
+      the overlays' C++ classes from their type information (408 in
+      `GAMEPRG.REL`) and `callers` names the class behind each call. All
+      240 calls of the parameter getter `0x9bdb8` are listed with their
+      parameter and class (`DOC/PBDATA_FORMAT.md#who-reads-each-parameter`):
+      for example the pass and shot success rates read the kick abilities
+      through `0x98a30`, the throw-in taker reads the long-throw skill, and
+      61, 64, 113, 139 and 141-162 are never read through the getter. The
+      aptitude parameters 78-89 follow the table's own order, now
+      documented
 
 ## 3. Ninja 3D models and motions
 

@@ -245,6 +245,12 @@ def checks():
         name = os.path.splitext(os.path.basename(r))[0].lower()
         p = "ISO/DLL/" + os.path.basename(r)
         out.append(("snr2_" + name, ["snr2.py", "info", p], [p]))
+    # The match's classes from their type information, and the readers of
+    # its player-parameter getter (DOC/PBDATA_FORMAT.md#who-reads-each-parameter).
+    out.append(("snr2_classes_gameprg", ["snr2.py", "classes", "ISO/DLL/GAMEPRG.REL"],
+                ["ISO/DLL/GAMEPRG.REL"]))
+    out.append(("snr2_callers_gameprg_param", ["snr2.py", "callers", "ISO/DLL/GAMEPRG.REL",
+                                               "9bdb8", "fb"], ["ISO/DLL/GAMEPRG.REL"]))
     return out + jp_checks(out)
 
 
@@ -257,8 +263,9 @@ def _jp(arg):
     return arg
 
 
-# The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15).
-JP_SKIP = {"plrsim_show_free", "plrsim_roundtrip"}
+# The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15), and its
+# GAMEPRG.REL has the parameter getter at another address.
+JP_SKIP = {"plrsim_show_free", "plrsim_roundtrip", "snr2_callers_gameprg_param"}
 
 
 def jp_checks(pal):

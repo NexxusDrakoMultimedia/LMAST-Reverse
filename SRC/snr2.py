@@ -14,10 +14,16 @@ Usage:
     python snr2.py relocs <REL> [hex_lo hex_hi]          # every relocation site in a range
     python snr2.py xref   <REL> <hex_addr | name>        # code/data referencing an address or symbol
     python snr2.py dis    <REL> <hex_addr> [n] [--sles SLES]  # annotated disassembly
+    python snr2.py classes <REL> [substr ...]            # C++ classes: vtable and methods
+    python snr2.py callers <REL> <hex_addr> [namespace]  # each call, its constant $a1, the class making it
 
 --sles resolves imports to their address in SLES_541.51 through its
 export table (names match; hashes are the same 16-bit value). Imports that
 SLES doesn't export are named after the sibling overlay that exports them.
+
+`classes` recovers the overlay's polymorphic classes from GCC 2.x type
+information (name strings, __tf functions, vtables); `callers` uses it to
+say which class's code makes each call (DOC/SNR2_FORMAT.md).
 
 Requires capstone for `dis`: pip install capstone
 """
@@ -258,6 +264,179 @@ def cmd_xref(m, what):
             print("%#08x  %s" % (o, L_NAMES[kinds[o]]))
 
 
+# --- C++ classes from run-time type information --------------------------------
+
+def demangle_type(s):
+    """'Q22fb6Player' -> 'fb::Player' (GCC 2.x nested type names)."""
+    if not s.startswith("Q"):
+        return s
+    n, rest, parts = int(s[1]), s[2:], []
+    for _ in range(n):
+        i = 0
+        while i < len(rest) and rest[i].isdigit():
+            i += 1
+        if not i:
+            return s                # template arguments and the like: left as is
+        size = int(rest[:i])
+        parts.append(rest[i:i + size])
+        rest = rest[i + size:]
+    return "::".join(parts) if not rest else s
+
+
+class Classes:
+    """The overlay's polymorphic classes, recovered from GCC 2.x type info.
+
+    A class's type-info function (__tf<name>, local to the overlay) passes
+    its name string to the type-info initialisers, after initialising its
+    base the same way, so the last name it loads is its own. The class's
+    vtable holds a pointer to that function in its second 8-byte entry
+    {u32 0, fn}; the entries after it are the virtual methods, with a null
+    or imported (__pure_virtual) entry for an abstract one. Only nested
+    names (Q<n>...) are looked for, which covers fb:: and the other
+    namespaced classes.
+
+    Functions are found as call targets, vtable entries and stack-frame
+    prologues (addiu $sp, $sp, -n); other code pointers are mostly
+    switch-table cases. owner(f) is the class whose vtable holds f (the
+    shortest vtable, i.e. the base class, when several do; the first by
+    name among equals)."""
+
+    def __init__(self, m):
+        import bisect
+        import collections
+        import re
+        self.m, d = m, m.data
+        tg, kinds, ext = m.targets(), dict(m.local), m.ext_by_site()
+        self.jal = {s: t for s, t in tg.items() if kinds.get(s) == L_J26}
+        w32 = {s: t for s, t in tg.items() if kinds.get(s) == L_W32}
+        self.code_end = max(self.jal) + 8           # data follows the last call site
+        word = lambda a: struct.unpack_from("<I", d, a)[0]
+        prolog = [o for o in range(0, self.code_end, 4)
+                  if word(o) >> 16 == 0x27BD and word(o) & 0x8000]
+        starts = set(t for t in self.jal.values() if t < self.code_end) | set(prolog)
+
+        def func_of(a):
+            i = bisect.bisect_right(self._starts, a) - 1
+            return self._starts[i] if i >= 0 else None
+        self._starts = sorted(starts)
+
+        names = {mm.start(1): mm.group(1).decode("latin1") for mm in
+                 re.finditer(rb"(?<=\x00)(Q[2-9](?:[0-9]+[A-Za-z_][A-Za-z_0-9]*){2,})(?=\x00)", d)}
+        last, tf = {}, {}
+        for s, t in tg.items():
+            if t in names and kinds.get(s) == L_LO16 and s < self.code_end:
+                f = func_of(s)
+                if s > last.get(f, -1):
+                    last[f], tf[f] = s, demangle_type(names[t])
+        self.typeinfo = tf                         # __tf function -> class
+        self.vtables, self.methods = {}, {}
+        for slot, t in sorted(w32.items()):
+            if t not in tf:
+                continue
+            meths, o = [], slot + 8
+            while True:
+                if o in w32 and w32[o] < self.code_end and w32[o] not in tf:
+                    meths.append(w32[o])
+                elif o in ext:
+                    pass
+                elif word(o) == 0 and word(o - 4) == 0 and w32.get(o + 8, -1) not in tf \
+                        and o + 8 in w32:
+                    pass                            # a pure virtual entry
+                else:
+                    break
+                o += 8
+            cls = tf[t]
+            if meths and len(meths) > len(self.methods.get(cls, [])):
+                self.vtables[cls], self.methods[cls] = slot - 0xC, meths   # entry 0 is {0, 0}
+        self._starts = sorted(starts | set(f for ms in self.methods.values() for f in ms))
+        self.func_of = func_of
+        owners = collections.defaultdict(set)
+        for cls, ms in self.methods.items():
+            for f in ms:
+                owners[f].add(cls)
+        self._owner = {f: min(cs, key=lambda c: (len(self.methods[c]), c)) for f, cs in owners.items()}
+        self._owned = sorted(self._owner)
+        self.callers = collections.defaultdict(set)
+        for site, t in self.jal.items():
+            self.callers[t].add(func_of(site))
+
+    def owner(self, f):
+        return self._owner.get(f)
+
+    def reached_from(self, f, prefix="", depth=8):
+        """(levels up, [classes]): the owning classes of f, else of its
+        callers, level by level, the first level that has any. With a
+        prefix ("fb::"), only classes whose name starts with it count."""
+        seen, level = {f}, {f}
+        for up in range(depth + 1):
+            found = sorted(set(self._owner[x] for x in level
+                               if x in self._owner and self._owner[x].startswith(prefix)))
+            if found:
+                return up, found
+            nxt = set()
+            for x in level:
+                nxt |= self.callers.get(x, set())
+            level = nxt - seen
+            seen |= level
+            if not level:
+                break
+        return None, []
+
+    def near(self, f):
+        """The nearest vtable method at or before f, and its class."""
+        import bisect
+        i = bisect.bisect_right(self._owned, f) - 1
+        return (self._owned[i], self._owner[self._owned[i]]) if i >= 0 else (None, None)
+
+
+def const_arg(d, site, reg=5):
+    """The constant a call passes in `reg` ($a1 by default): an addiu/ori
+    from $zero in the delay slot, or before the call with no other call or
+    write to the register in between. None if it isn't a constant."""
+    for o in [site + 4] + list(range(site - 4, max(site - 48, -4), -4)):
+        w = struct.unpack_from("<I", d, o)[0]
+        op = w >> 26
+        if op in (0x09, 0x0D) and (w >> 21) & 0x1F == 0 and (w >> 16) & 0x1F == reg:
+            return w & 0xFFFF
+        if o != site + 4 and (op == 3 or (op == 0 and w & 0x3F == 9)):
+            return None                     # an earlier call
+        if op == 0 and (w >> 11) & 0x1F == reg:
+            return None                     # written by a register op
+        if op not in (0, 1, 4, 5, 0x1F, 0x28, 0x29, 0x2B, 0x39, 0x3F) and (w >> 16) & 0x1F == reg:
+            return None                     # loaded otherwise
+    return None
+
+
+def cmd_classes(m, pats):
+    c = Classes(m)
+    for cls in sorted(c.methods):
+        if pats and not any(p.lower() in cls.lower() for p in pats):
+            continue
+        print("%-48s vtable %#08x  %3d methods  %s" % (
+            cls, c.vtables[cls], len(c.methods[cls]),
+            " ".join("%#x" % f for f in c.methods[cls])))
+    print("%d classes with a vtable, %d type-info functions" % (len(c.methods), len(c.typeinfo)))
+
+
+def cmd_callers(m, addr, prefix=""):
+    """Every call to addr, with the constant $a1 it passes and the class
+    whose code makes it (or, through how many calls, reaches it). A
+    namespace ("fb") limits the classes to that namespace."""
+    c = Classes(m)
+    prefix = prefix + "::" if prefix else ""
+    for site in sorted(s for s, t in c.jal.items() if t == addr):
+        f = c.func_of(site)
+        k = const_arg(m.data, site)
+        up, found = c.reached_from(f, prefix)
+        if found:
+            where = ", ".join(found[:4]) + (", ..." if len(found) > 4 else "")
+            where = where if up == 0 else "via %d call%s: %s" % (up, "s" if up > 1 else "", where)
+        else:
+            nf, nc = c.near(f)
+            where = "no class found (in %s's code, after %#x)" % (nc, nf) if nc else "no class found"
+        print("%#08x  a1=%-5s func %#08x  %s" % (site, "-" if k is None else k, f, where))
+
+
 def cmd_dis(m, addr, count, sles):
     sys.path.insert(0, __file__.rsplit("snr2.py", 1)[0] or ".")
     from sles_disasm import _RawInsn
@@ -315,6 +494,10 @@ def main(argv):
         cmd_relocs(m, lo, hi)
     elif cmd == "xref" and rest:
         cmd_xref(m, rest[0])
+    elif cmd == "classes":
+        cmd_classes(m, rest)
+    elif cmd == "callers" and rest:
+        cmd_callers(m, int(rest[0], 16), rest[1] if len(rest) > 1 else "")
     elif cmd == "dis" and rest:
         cmd_dis(m, int(rest[0], 16), int(rest[1]) if len(rest) > 1 else 64, sles)
     else:

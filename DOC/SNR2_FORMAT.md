@@ -280,6 +280,55 @@ example, the two loads of the SOUNDDAT offset table at `GAMEPRG:0x248540`
 Each overlay's main export is its sequencer entry point, e.g.
 `pSetupGameModule__11GAME_MODULE...` at `GAMEPRG:0x998`.
 
+## C++ classes
+
+The overlays' local functions have no names, but their polymorphic
+classes keep GCC 2.x run-time type information, which names them
+(**confirmed** from the code, for example `fb::IntentionFeedPass` in
+`GAMEPRG.REL`):
+
+- The class name is a mangled string such as `Q22fb17IntentionFeedPass`
+  (`fb::IntentionFeedPass`).
+- The class's type-info function (`0x22e3d0`) first initialises its
+  base's type info if needed (loading the base's name), then its own
+  (loading its own name), and returns the type-info object. So the last
+  name a type-info function loads is its class's.
+- The vtable is a list of 8-byte entries `{u32 0, u32 function}`. The
+  second entry points to the type-info function (`0x2546d4`); the entries
+  after it are the virtual methods (`0x2546ec` is `0xde6e0`, the reader
+  of the feed-pass tendency). An abstract method is a null entry or an
+  imported `__pure_virtual`.
+
+`snr2.py classes` lists every class found this way with its vtable and
+methods (**empirical** counts, the same in the Japanese release except
+where noted):
+
+| Overlay | Classes with a vtable | Type-info functions |
+|---|---|---|
+| CEDITPRG | 18 | 19 |
+| DEBUGPRG | 3 | 3 |
+| GAMEPRG | 408 | 419 |
+| MOVIEPRG | 8 | 9 |
+| NETPRG | 0 | 0 |
+| SAVEPRG | 38 (JP 37) | 42 (JP 41) |
+| SIMPRG | 382 (JP 385) | 405 (JP 404) |
+| TESTPRG | 40 | 40 |
+| VSPRG | 7 | 7 |
+| YRSTPRG | 35 | 39 |
+
+`snr2.py callers` uses them to say which class's code makes each call to
+a function: the class whose vtable holds the calling function, else the
+class of its callers, level by level (up to 8). Function starts are
+taken from call targets, vtable entries and stack-frame prologues; other
+pointers into code are mostly `switch` jump-table cases. A function
+that only virtual calls reach, or that sits in shared code, gets no
+class, and then the nearest vtable method before it is shown. An
+optional namespace (`fb`) keeps only that namespace's classes, so that a
+generic caller such as `match::MatchManager` doesn't hide them. It also
+shows the constant each call passes in `$a1`. See
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#who-reads-each-parameter) for its
+use on the match's parameter getter.
+
 ## Tool
 
 ```bash
@@ -289,6 +338,8 @@ python SRC/snr2.py relocs ISO/DLL/GAMEPRG.REL 9bd0 9c48            # every site 
 python SRC/snr2.py xref   ISO/DLL/GAMEPRG.REL 248540               # who references an address
 python SRC/snr2.py xref   ISO/DLL/GAMEPRG.REL g_pFileManager       # ... or an import
 python SRC/snr2.py dis    ISO/DLL/GAMEPRG.REL 9bd0 30 --sles ISO/SLES_541.51
+python SRC/snr2.py classes ISO/DLL/GAMEPRG.REL Intention           # classes, vtables, methods
+python SRC/snr2.py callers ISO/DLL/GAMEPRG.REL 9bdb8 fb            # each call, its $a1, the fb:: class
 ```
 
 `dis` labels imports as `%hi(name)` / `%lo(name)` / `name`, adding
@@ -305,4 +356,5 @@ site's resolved target.
 - What the overlay table's `+0x08`, `+0x10` (bit 30 set for `ceditprg` and
   `yrstprg`) and `+0x14` fields mean.
 - Local functions have no names; only exports and the call sites of imports
-  do.
+  do. Polymorphic classes are named through their type information
+  ([above](#c-classes)), but not their methods.

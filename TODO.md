@@ -18,14 +18,9 @@ item in its section below.
    combination scripts and `GAMEDATA.BIN`'s container are decoded
    (`BPB_FORMAT.md`, `GAMEDATA_FORMAT.md`); what's left is field meanings:
    the `.CBB` records, the 29 combination commands and `GAMEDATA.BIN`'s
-   records. The match AI's `fb::` classes, which read the player
-   tendencies, are named by their type information, a way in for these
-   too.
-3. **What the match's player parameters do** (section 2, "Player fields
-   still open"). The match's parameter getter (`GAMEPRG.REL 0x9bdb8`) has
-   240 calls, most with a constant parameter number; tracing each to its
-   `fb::` class, as for the tendencies, says what every ability and
-   personality field does in a match.
+   records. The match AI's `fb::` classes are named by their type
+   information, and `snr2.py classes` and `callers` now list them and
+   which class makes each call, a way in for these too.
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
@@ -96,12 +91,16 @@ database are decoded and editable (`initteam.py`, `schedule.py`,
       (`DOC/TEAMINIT_FORMAT.md#still-unknown`)
 - [ ] Player fields still open: whether anything reads `explodetype`
       (`+0x43`-`+0x46`, named by the developers' field table; probably
-      meant for the `pwkExplo_*` growth spurts, no reader found), what
-      the ball touch does (match parameter 139 has no
-      reader), where abilities 59–63 are used (not in the match record),
-      and which attack pattern letter is which. Lead: the 240 calls of
-      the match's parameter getter `0x9bdb8` (`snr2.py xref`), most with
-      a constant parameter number
+      meant for the `pwkExplo_*` growth spurts, no reader found), where
+      abilities 59–63 are used (not in the match record), and which
+      attack pattern letter is which
+- [ ] Match parameters, after their readers
+      (`DOC/PBDATA_FORMAT.md#who-reads-each-parameter`): which kick kind
+      is which in helper `GAMEPRG.REL 0x98a30` (the byte at `+0x1a`, 43
+      kinds), the 45 getter calls with no class, the sources of
+      parameters 16 and 24, and whether any code reads leadership (61),
+      pressure (64), the offside-line skill (113) or the ball touch (139)
+      straight from the player object
 - [ ] Tendency leftovers (`DOC/PBDATA_FORMAT.md#the-tendencies`): whose
       value the pass intentions and the carry helper `0x117480` read
       (passer or receiver), what the press floats measure, which tactics
