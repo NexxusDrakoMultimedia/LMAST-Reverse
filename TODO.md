@@ -18,6 +18,15 @@ item in its section below.
    records. The match AI's `fb::` classes are named by their type
    information, and `snr2.py classes` and `callers` now list them and
    which class makes each call, a way in for these too.
+2. **Test in PCSX2: the LMASTER Mod camp and national-cup switches**
+   (section 7, "LMASTER Mod"). `LMAST-test-camps-mes.iso` already has
+   them: the camp list's English towns, a keeper camp raising saving and
+   catching, Santiago's description, Canberra's last two clubs, and a
+   national cup final no longer on the year's last turn.
+3. **Which pass, cross, tackle and placekick kind is which** (section 2,
+   "Match parameters, after their readers"). The kick kinds' ratings are
+   known (`DOC/PBDATA_FORMAT.md#the-kick-kinds`); naming the remaining
+   kinds means tracing the intentions' candidate records (`+0x18`).
 
 ## 1. Message text (`DAT/MESSAGE/MES.PAC`)
 
