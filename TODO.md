@@ -43,11 +43,6 @@ item below.
 Stage 1, and the [coverage table](GOALS.md#coverage-of-datacvm): no file
 left as "unknown binary".
 
-- [ ] Write `DOC/BG_DIR.md`, the last `DAT/` folder without a folder doc:
-      the pre-rendered rooms' archives, textures, depth buffers and
-      models (already parsed by `pac.py`, `svr.py`, `zbf.py`,
-      `ninja.py`), the palette choice ([`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md)),
-      and `BG/HUMANID.BIN`, which nothing parses yet
 - [ ] `GAME/` leftovers ([`GAME_DIR.md`](DOC/GAME_DIR.md#open-questions)):
       the `SHADOWCOLLI.PAC` and `WALLCOLLI.PAC` entries, decoded together
       with `TEST3D/SHADOWCOLLI.LBI`
@@ -159,6 +154,9 @@ known range. Grouped by what a mod would change.
       instruction-age rows and the screens that start procedures 9,
       14/16/18, 22 and 28
       ([`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md#open-questions))
+- [ ] Rooms and people (`BG/`): the room table's fields, which palette
+      a room uses, what `HUMANID.BIN`'s object kinds select and which
+      role each id is ([`BG_DIR.md`](DOC/BG_DIR.md#still-unknown))
 - [ ] Game flow: which `Sche.YearEnd` value is which ending, how
       PlayAcrobata maps its argument to a scene, and the sequencer's
       remaining commands ([`GAME_FLOW.md`](DOC/GAME_FLOW.md#still-unknown),

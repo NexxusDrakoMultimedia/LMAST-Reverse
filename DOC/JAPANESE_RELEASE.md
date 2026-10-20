@@ -49,8 +49,8 @@ files in `ISO/` as the reference:
 4. **near**: as 2, from an address up to 0x800 bytes away.
 
 `gamever.imm` does the same for constants held in instructions (loop
-bounds, table sizes). `python SRC/gamever.py check ISO_JP` lists all 27
-addresses the tools use and how each was found. All 27 are found.
+bounds, table sizes). `python SRC/gamever.py check ISO_JP` lists all 28
+addresses the tools use and how each was found. All 28 are found.
 
 Each table's use in a tool checks it a second way (**empirical**, run on
 the Japanese disc):
@@ -62,6 +62,7 @@ the Japanese disc):
 | `sounddat.py music` | bank and music tables | every bank names its `SOUND/` file, with the right number of songs or effects |
 | `mbb.py vars` | global variables, switch tables, converters | each variable resolves to a function, as in PAL |
 | `save.py` | key, Blowfish tables, CRC table, block sizes | same key `sakatsukue`, same Blowfish P-array start |
+| `humanid.py objects` | the human database's object table | all 112 entries equal PAL's |
 
 ## Confirmed from the game code
 

@@ -167,6 +167,11 @@ def checks():
         ("csp", ["csp.py", "info", "DAT"], ["DAT"]),
         ("zbf", ["zbf.py", "info", "DAT"], ["DAT"]),
         ("ninja", ["ninja.py", "info", "DAT"], ["DAT"]),
+        # BG/HUMANID.BIN and its PRELOAD copies; the dump names each
+        # object's kind and index from the executable's table.
+        ("humanid", ["humanid.py", "info", "DAT"], ["DAT"]),
+        ("humanid_dump", ["humanid.py", "dump", "DAT/BG/HUMANID.BIN", "ISO"],
+         ["DAT/BG/HUMANID.BIN", "ISO/SLES_541.51"]),
         ("mbb", ["mbb.py", "info", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
         ("mbb_roundtrip", ["mbb.py", "roundtrip", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
         # The global variable table and the wildcard ids, read from the code.

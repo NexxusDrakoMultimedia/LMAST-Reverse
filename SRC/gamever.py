@@ -58,6 +58,7 @@ ADDRESSES = (
     ("acrobata", "NAME_DIRECT", "SIMPRG.REL", 0x40),
     ("acrobata", "NAME_LOCAL_INDEX", "SIMPRG.REL", 0x40),
     ("acrobata", "NAME_LOCAL", "SIMPRG.REL", 0x40),
+    ("humanid", "OBJECT_TABLE", "exe", 0x40),
     ("mbb", "GLOBAL_VARS", "SIMPRG.REL", 0x40),
     ("mbb", "STRING_CASES", "SIMPRG.REL", 0x40),
     ("mbb", "NUMBER_CASES", "SIMPRG.REL", 0x40),

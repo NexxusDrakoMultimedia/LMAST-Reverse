@@ -163,6 +163,7 @@ disassemble as unrelated MIPS instructions.
 | [`emblem.py`](SRC/emblem.py) | `DAT/EMBLEM`: the club editor's 96-colour palette and its 32/16-colour maps, crest masks, patterns and accessories, flag parts, and how the tables and packs line up | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) |
 | [`news.py`](SRC/news.py) | `DAT/NEWS`: the newspaper's picture packs (mastheads by league, article pictures, ads) and `NEWSMONTHFLAG` (which months print the best-player rankings) | [`NEWS_DIR.md`](DOC/NEWS_DIR.md) |
 | [`acrobata.py`](SRC/acrobata.py) | `DAT/ACROBATA`: the 875 Acroarts event scenes (`ABDA`/`ABRS`, `POF0` pointers, the Ninja and texture resources inside), and the executable's index copy and scene-id table | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md) |
+| [`humanid.py`](SRC/humanid.py) | `BG/HUMANID.BIN`, the human database: for each human id, the search function and the person (object) shown on a warm, mild or cold day; the executable's object table | [`BG_DIR.md`](DOC/BG_DIR.md#humanidbin) |
 | [`cvs.py`](SRC/cvs.py) | the developers' `CVS/` folders: each file's original name, revision and date, and which files the build added | [`CVS_DIR.md`](DOC/CVS_DIR.md) |
 
 ```bash
@@ -366,6 +367,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `extract_disc.py` | `rofs_decrypt.py` |
 | `csp.py` | `svr.py` for the textures inside CSP packs |
 | `zbf.py` | `pac.py`, to read depth buffers straight from `BG_*.MRG` |
+| `humanid.py` | `pac.py` for the `PRELOAD` copies; `sles_disasm.py` and `gamever.py` for the object table |
 | `eventdata_turn.py` | `tbb.py` |
 | `evsdatabin.py` | `mbb.py` for `--text` |
 | `packdata.py`, `ninja.py` | `pac.py` (KC@P entries, PRSH) and each other; `ninja.py` also `svr.py` for its exports |
@@ -454,6 +456,7 @@ Every format and folder doc labels its claims **confirmed** or **empirical** and
 |---|---|
 | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) | `DAT/0SYSTEM`: UI colours, crest/badge/sponsor texture packs and how an id picks an entry, fonts by language, icons, leftovers |
 | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md) | `DAT/ACROBATA`: the Acroarts event scenes, their chunk layout and resources, the executable's copy of the pack index, scene ids by language |
+| [`BG_DIR.md`](DOC/BG_DIR.md) | `DAT/BG`: the rooms' archives and room codes, the 103 people and their heads, hair and palettes, hands and props, trophies, `HUMANID.BIN` |
 | [`CVS_DIR.md`](DOC/CVS_DIR.md) | the `CVS/` folders left on the disc: original file names, commit dates, which files the build made |
 | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) | `DAT/EMBLEM`: the club editor's crest and flag parts, its colour palette, the edit tables, and the player-editor tables |
 | [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |

@@ -78,6 +78,9 @@ history holds the rest.
 - [x] `GAME/CUTINPACK`: all 277 entries are `etc::PackData` starting with
       a `CIB0` block; none is empty, as the folder doc had said
       ([`GAME_DIR.md`](DOC/GAME_DIR.md#directory-overview))
+- [x] `DAT/BG`, the last folder doc: the room codes and slots, people,
+      hands, props and trophies, and `HUMANID.BIN` read by `humanid.py`
+      ([`BG_DIR.md`](DOC/BG_DIR.md))
 
 ## 2. Understand: field meanings an edit needs
 

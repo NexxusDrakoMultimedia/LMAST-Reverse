@@ -39,8 +39,8 @@ the stages, and [`TODO.md`](TODO.md) what is left.
    ([`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md)).
 1. **Read.** Document every file format and every folder in `DATA.CVM` in
    `DOC/`, and parse each format in `SRC/`, checked against every file on
-   the disc. *Nearly done:* every folder but `BG/` has a doc, and the
-   few files still unparsed are in the
+   the disc. *Nearly done:* every folder has a doc, and the few files
+   still unparsed are in the
    [coverage table](#coverage-of-datacvm) below.
 2. **Understand.** Know what each field *means* in the game, not just its
    type and offset. A field can't be offered for editing until it has a
@@ -115,7 +115,7 @@ has the full list, and [`TODO.md`](TODO.md) the tasks.
 |---|---|---|---|---|
 | `0SYSTEM/` | UI colours, crest/badge/sponsor textures, fonts | done | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md), `system.py` | what `DETAILFLAG` switches, which UI element uses each colour |
 | `ACROBATA/` | 875 Acroarts event scenes | most files | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md), `acrobata.py` | the `ABDT` scene layout, which code plays which scene |
-| `BG/` | pre-rendered rooms: archives, textures, Z buffers, models | most files | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md), `zbf.py`, `ninja.py`; no folder doc yet | a folder doc, `HUMANID.BIN` |
+| `BG/` | pre-rendered rooms' data, people, hands and props, trophies, the human database | done | [`BG_DIR.md`](DOC/BG_DIR.md), [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md), `zbf.py`, `ninja.py`, `humanid.py` | the room table's fields, what `HUMANID.BIN`'s object kinds select, `OR2` and `IS` |
 | `CSE/` | 2D screen layouts | done | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md), `csp.py` | – |
 | `EMBLEM/` | the club editor's crest and flag parts | most files | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md), `emblem.py` | preset and crest records, `EDIT_PLAYER.TBB` |
 | `EVENT/` | the event, news and mail tables | done | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md), `evsdatabin.py` | three NEWS columns |
