@@ -128,6 +128,11 @@ history holds the rest.
       stadium build requests, crowds and adverts
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md))
 
+- [x] The kick kinds' table (`GAMEPRG.REL 0x29f680`, filled at
+      `0x704f0`): flags for all 41 kinds, sorting them into passes,
+      through passes, long balls, crosses, shots, throw-ins and restarts
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-kind-table))
+
 ## 3. Write: a writer for every format a mod changes
 
 - [x] `tbb.py`: all 70 `.TBB`/`.BCR`/`.BCB` files round-trip; `replace`

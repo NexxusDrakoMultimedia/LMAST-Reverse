@@ -631,9 +631,9 @@ switches give each kind a meaning (**confirmed** from the code):
 | 28, 37, 39, 40 | 28: KICKOFF; 40: four foot surfaces only | placekick (42) |
 | 29 | surfaces plus WEAK | shot skill (28) alone |
 
-After the switch, unless a flag is set for the kind (bit 6 of `+8` in
-the 12-byte entries of a run-time table at `0x29f680`, not traced), the
-rating is scaled by how the ball is struck, read from the same
+After the switch, unless the kind has flag `0x40` (the throw-ins,
+[below](#the-kind-table)), the rating is scaled by how the ball is
+struck, read from the same
 `GAMEDATA.BIN` record (`+0xc` bits 16–18: 0 and 1 the feet, 2 the head,
 3 the chest): parts 2 and up by min(header (34) + 20, 100) / 100, so a
 chest touch counts as a header too, and a kick
@@ -646,14 +646,96 @@ corner and free-kick plays' code (`0x6f260`, reached from `PlayCKKick`
 and `PlayFKKick`), and kind 25 by `fb::Player`'s code (`0x8083c`,
 `0x8b78c`). Kinds 4 and 10 are stored at `0x6001c`–`0x601dc` and
 `0x6af40`–`0x6b170`, in code reached from the pass, clear and cross
-intentions. Most kinds are copied from a candidate record (`+0x18`) that
-the intentions choose from, so the names in the table above go no
-further than the variant lists and the abilities. Which pass, cross,
-tackle and placekick kind is which isn't known.
+intentions. Most kinds are copied from a candidate record (`+0x18`, a
+halfword) that the intentions choose from; the candidates get theirs in
+the intentions' large builder functions (`0x60738` front and killer
+passes, `0x650d0` liner and pinpoint crosses, `0x67c20` shots), which
+weren't traced further.
 
 ```bash
 python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x58000 12      # the variant switch (table 0x268010)
 python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x98a30 260     # the rating switch and the scaling
+```
+
+#### The kind table
+
+**Confirmed**: `GAMEPRG.REL 0x29f680` holds 41 entries of 12 bytes,
+`{s32 kind, f32, u32 flags}`, one per kind. The table is zero in the
+file. The overlay's static initialiser `0x704f0` fills it in kind order:
+it builds kinds 0–4, 6–10, 14–18 and 30–40 in code, and copies kinds 5,
+11–13 and 19–29 from preset records at `0x2696cc`–`0x269774`. The float
+is either 1/(0.5994 × `mg::video_vsync_multiplier`) or a much smaller
+value (0.0417 at a multiplier of 1); what it scales wasn't traced. About
+150 places in the match code read the flags with the kind as the index.
+
+| Kind | Flags | Kind | Flags | Kind | Flags | Kind | Flags |
+|---|---|---|---|---|---|---|---|
+| 0 | `0x3001` | 11 | `0x2100` | 22 | `0x5200` | 33 | `0x00c4` |
+| 1 | `0x3004` | 12 | `0x3d20` | 23 | `0x5200` | 34 | `0x2081` |
+| 2 | `0x2104` | 13 | `0x3c20` | 24 | `0x3200` | 35 | `0x2182` |
+| 3 | `0x2102` | 14 | `0x3810` | 25 | `0x1e00` | 36 | `0x0081` |
+| 4 | `0x2102` | 15 | `0x3810` | 26 | `0x3e00` | 37 | `0x018a` |
+| 5 | `0x3920` | 16 | `0x3910` | 27 | `0x2081` | 38 | `0x2081` |
+| 6 | `0x2108` | 17 | `0x3810` | 28 | `0x2890` | 39 | `0x218a` |
+| 7 | `0x2008` | 18 | `0x3910` | 29 | `0x2890` | 40 | `0x2890` |
+| 8 | `0x2108` | 19 | `0x6e20` | 30 | `0x00c1` | | |
+| 9 | `0x2008` | 20 | `0x6e20` | 31 | `0x00c1` | | |
+| 10 | `0x2001` | 21 | `0x6e20` | 32 | `0x01ca` | | |
+
+What the bits mean. Where a class is named, it reads that bit
+(**confirmed**). Each meaning comes from the kinds that carry the bit,
+their variant lists and their ratings (**empirical**):
+
+| Bit | Kinds | Meaning |
+|---|---|---|
+| `0x1` | 0, 10, 27, 30, 31, 34, 36, 38 | a short pass (rated by short pass, or a throw) |
+| `0x2` | 3, 4, 32, 35, 37, 39 | a long ball (rated by long pass, the long throw or placekick) |
+| `0x4` | 1, 2, 33 | a through pass (rated by short pass × the playmaker skill) |
+| `0x8` | 6–9, 32, 37, 39 | a cross: read by `DecisionFactorCross_PositionNearnessToEndLine`, `_NearGoalTeammates`, `IntentionPinPointCross` and `IntentionLinerCross` |
+| `0x10` | 14–18, 28, 29, 40 | a shot (rated by shot skill or placekick) |
+| `0x20` | 5, 12, 13, 19–21 | – (the keeper's catch and save, the tackles, kind 5) |
+| `0x40` | 30–33 | a throw-in (the `THROWIN` and `LONGTHROW` variant lists); turns off the scaling above |
+| `0x80` | 27–40 | a restart: kick-off, throw-ins, set pieces |
+| `0x100` | 2–6, 8, 11, 12, 16, 18, 32, 35, 37, 39 | probably a ball in the air: of each pair of otherwise equal kinds, only one has it (crosses 6 and 8, not 7 and 9; shots 16 and 18, not 14, 15 and 17; through pass 2, not 1) |
+| `0x4000` | 19–23 | the tackles and the two kinds rated 99 |
+| `0x200`, `0x400`, `0x800`, `0x1000`, `0x2000` | many | not worked out |
+
+`fb::RoleCombination` (`0x128de8`) treats a kick with any of bits
+`0x1`–`0x10` the same way: a pass, a cross or a shot (**confirmed**).
+`fb::PlayEffector`'s handlers send a different event to `0x94018` for
+kinds 36 and 37 (`0x68`, `0x69`) and for each throw-in kind 30–33
+(`0x6a`–`0x6d`) (**confirmed**). What those events start wasn't traced.
+
+So the kinds are, combining the table above with the ratings:
+
+| Kind | What it is | How sure |
+|---|---|---|
+| 0 | short pass | flags and rating |
+| 1, 2 | through pass, on the ground and in the air | flags and rating |
+| 3, 4 | long pass in the air. Their flags are the same; 4 is the kind the pass, clear and cross intentions' shared code stores | flags and rating |
+| 5 | – (rated by short pass; flags like a keeper's) | – |
+| 6, 8 / 7, 9 | crosses in the air / low crosses | flags |
+| 10 | goalkeeper's throw | variant list and flags |
+| 11 | goalkeeper's kick, in the air | variant list (INSTEP, SOUTH_AMERICAN) and flags |
+| 12, 13 | goalkeeper's catch, save | variant lists |
+| 14, 15, 17 / 16, 18 | shots / shots in the air | flags and rating |
+| 19–21 | tackles | rating and flags |
+| 22, 23 | always rated 99; flags like the tackles | – |
+| 24–26 | 25 the ball lost, 26 a collision | variant lists |
+| 27 | kick-off pass | variant list and flags |
+| 28, 29, 40 | shots at a restart; 28 and 40 rated by placekick, 29 by shot skill | flags and rating |
+| 30, 31 / 32 / 33 | throw-ins: short / long (rated by the long throw skill) / through | flags and rating |
+| 34, 36, 38 | short passes at a restart; 38 is the kind the corner and free-kick plays store | flags and code |
+| 35 | long pass in the air at a restart | flags and rating |
+| 37, 39 | crosses at a restart, rated by placekick: probably corners and free kicks | flags and rating |
+
+Still open: which of 3 and 4, 6 and 8, 7 and 9, the five shots, the
+three tackles, and the restart kinds 28, 34–40 is which situation
+(corner, free kick, penalty, goal kick).
+
+```bash
+python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x704f0 700     # builds the kind table
+python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0x128de8 40     # RoleCombination: bits 0x1-0x10
 ```
 
 The other readers:
@@ -1416,9 +1498,9 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
   code's use of `+0x58`/`+0x59` is intended ([Kit style](#kit-style)).
 - How much each parameter changes what its readers do
   ([Who reads each parameter](#who-reads-each-parameter) gives the
-  readers): which pass, cross, tackle and placekick kind is which
-  ([The kick kinds](#the-kick-kinds); most come from the intentions'
-  candidate records, `+0x18`), the run-time kind flags at `0x29f680`,
+  readers): which of the kick kinds in a family is which situation
+  ([The kind table](#the-kind-table): 3 and 4, the crosses, shots and
+  tackles, the restart kinds), flag bits `0x200`–`0x2000` and kind 5,
   the 45 calls with no class, and the sources of parameters 5, 16 and
   24. Also which attack pattern letter is which; abilities 59–63 aren't
   copied into the match record, so their effect is outside it.
