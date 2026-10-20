@@ -32,7 +32,7 @@ The pack isn't in any `PRELOAD` pack. It isn't listed in the folder's
 | `SIMPRG.REL 0x1a69b0` | (Acroarts loader) | checks an `ABDA` chunk: the magic, the flag at `+0x0c` (bit `0x100` = already relocated), the version word at `+0x10`, which must be `0x77831b45`, and the `POF0` chunk at `+0x18`; then relocates the pointers (`0x1aaff8`) and sets the flag |
 | `SIMPRG.REL 0x183208` | (Acroarts loader) | the same checks for an `ABRS` chunk, without the version |
 | `SIMPRG.REL 0x247848`–`0x2478b0` | (strings) | the errors name the format: "ABDA(Acroarts Native Data) Version is incorrect", and print the expected and found versions as "Ver%8d R%d" |
-| `SIMPRG.REL 0x1f408` | `PLAY_ACROBATA_MODULE` | sequencer module 36, PlayAcrobata, which the root scripts start with scene numbers ([`SQB_FORMAT.md`](SQB_FORMAT.md)) |
+| `SIMPRG.REL 0x1f408` | `PLAY_ACROBATA_MODULE` | sequencer module 36, PlayAcrobata, which the root scripts start with a number that isn't a scene id (scene 7 is a club house background); how it maps to a scene is open ([`GAME_FLOW.md`](GAME_FLOW.md#game-over)) |
 | `TESTPRG.REL 0xf320` | `ACROBATA_VIEWER_MODULE` | launcher module 107, ACROBATA VIEWER, which shows a club house room and nothing else (user report, [`SQB_FORMAT.md`](SQB_FORMAT.md)) |
 
 The version word `0x77831b45` is 2005080901, printed as "Ver 20050809 R1":
@@ -45,6 +45,9 @@ found. The copy matches the header for all 875 entries (**empirical**,
 `acrobata.py scenes`). A rebuilt pack whose entries move or change size
 therefore needs the table at `SLES 0x3a3b08` patched; `patch_disc.py`
 does that on a whole disc image ([`REBUILD.md`](REBUILD.md#archives)).
+**Tested in PCSX2** (user report): the pack with entry 0 grown past its
+sector, so all 874 later scenes moved and the executable's index was
+rewritten, played its scenes as normal.
 
 ## The entries
 
@@ -115,7 +118,9 @@ scene are `ACROBATA::CAckManager`, `CAckDiamante` and `CAckLight`
 
 The game asks for scenes by id, 1–719 (**confirmed**, the two tables
 above). 693 ids have one entry, and 26 have one entry per language in the
-order Japanese, English, French, German, Italian, Spanish, Dutch: 26 × 7 =
+order of the language slots (Japanese, English, French, German, Italian,
+Spanish, and slot 6, which the language menu never picks,
+[`MBB_FORMAT.md`](MBB_FORMAT.md#languages)): 26 × 7 =
 182 entries. 693 + 182 = 875, so every entry belongs to exactly one id and
 language, and the executable's table agrees with `getAckName` for every id
 (**empirical**, `acrobata.py scenes`). The language-dependent scenes are
@@ -145,5 +150,5 @@ each), test versions of a room background.
 
 - The `ABDT` scene layout, and so what a scene does.
 - `+0x14` of the chunk header, and the table in larger `ABRS` headers.
-- Which code asks for which scene id, beyond the root scripts' few
-  `PlayAcrobata` calls.
+- Which code asks for which scene id, and how PlayAcrobata turns the
+  root scripts' arguments (0, 1, 3–5, 7–17) into scenes.

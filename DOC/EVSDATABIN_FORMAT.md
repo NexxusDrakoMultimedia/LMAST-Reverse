@@ -133,8 +133,8 @@ Money values are in units of **10,000** (the handler multiplies by
 | 4 | `0x121148` | popularity +value in regions 1–13 | 102, 103, 199, 308 |
 | 5 | `0x121198` | popularity −value in region 0 | 242–254 (handler 6): 500 / 10 |
 | 6 | `0x1211b8` | popularity −value in regions 1–13 | – |
-| 7 | `0x121288` | captain gains `value` exp in ability 26 (`pwkGUtl_AddExp`), unless the captain is unused/unplayable | 194: 1000 |
-| 8 | `0x121208` | for each of the 25 squad slots in use, clears `PlPinfo+0x23c` (u16). The value is ignored | 179, 190: 65535 |
+| 7 | `0x121288` | captain gains `value` exp in ability 26, leadership (`pwkGUtl_AddExp`), unless the captain is unused/unplayable | 194: 1000 |
+| 8 | `0x121208` | for each of the 25 squad slots in use, clears `PlPinfo+0x23c` (u16), the player's fatigue ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)): the whole squad is rested. The value is ignored | 179, 190: 65535 |
 | 9 | `0x121310` | nothing in the dispatcher (see below) | 167: 500 |
 | 10 | `0x121318` | popularity +value for the squad player with ID `0x7cce` (31950) (`plPinfo_ChangePop`, kind 0) | 308: 50 |
 | 11 | `0x121358` | same, −value | 307: 50 |
@@ -261,6 +261,10 @@ Each handler loads its record's category as a default (`lui $s1, 0x8ab4` /
 with a speech from 36000–36008. It then plays the result with
 `0x12d350(object, 0x1c6150, message ref)`.
 
+`0x167f38` returns `CLUBRESULT.TBB`'s `kind` for the schedule UID at
+`+0x1c` (**confirmed**, [`CLUBRESULT_FORMAT.md`](CLUBRESULT_FORMAT.md#who-reads-it)):
+0 a league, 1 a cup, 2 not ranked.
+
 | Handler | `0x167f38` result | `+0x28` | `+0x24` | Category |
 |---|---|---|---|---|
 | type 18 | 0 | – | 2 | `36000` finished {2001}, "our share of the prize money" |
@@ -271,11 +275,11 @@ with a speech from 36000–36008. It then plays the result with
 | type 19 | 1 | ≠ 1 / 1 | – | `36003` finished {4077} / `36008` knocked out in the first round (no prize) |
 | – | other | – | – | `35509` (default) |
 
-The meanings are **empirical**, read from the message text: `+0x28 == 1` is
-a first-round exit, and `+0x24` picks between a whole prize (1) and a
-shared one (2). What `0x167f38` returns isn't traced. The results with 1
-use `{var:1:4077}` for the placing instead of `{var:1:2001}`, so it may
-tell a cup from a league. The type-18 handler also pays
+So a cup (result 1) is reported with `{var:1:4077}`, a cup round's name,
+and a league (0) with `{var:1:2001}`, a place number. The other meanings
+are **empirical**, read from the message text: `+0x28 == 1` is a
+first-round exit, and `+0x24` picks between a whole prize (1) and a
+shared one (2). The type-18 handler also pays
 `+0x22 × 10000` as `pwkGen_Income(…, PlIncomeType 6)`, the prize money.
 
 For editing, the dialogue reference on records 72 and 73 is only the
@@ -399,8 +403,8 @@ column with data now has a name.
   handler types (`0x238a40`). The timings and the effect kinds are
   decoded above.
 - Which regions `PlTeam_Region` 0 and 1–13 are (0 is presumably the
-  club's home region), who squad player `0x7cce` is, and what
-  `PlPinfo+0x23c` holds.
+  club's home region), and who squad player `0x7cce` (31,950, the first
+  edit-mode player id) is.
 - Which handler types consume `effect1_value` directly, and so what
   kinds 9/16/18/19 mean.
 - What EVENT `+0x0c`, `+0x1c` and the five triplets at `+0x24`–`+0x5c`
@@ -412,9 +416,8 @@ column with data now has a name.
 - NEWS `+0x20`, `+0x60` and `+0x70`; the NEWS/MAIL check types, handler
   types and article-variable kinds; and why no code reads NEWS `+0x68`
   (caption).
-- What `0x167f38` returns for the season-result handlers (types 18/19),
-  and so what `+0x1c` holds. Its result chooses between the {2001} and
-  {4077} placings.
+- What sets the season-result handlers' `+0x1c` (the schedule UID),
+  `+0x24` and `+0x28`.
 - Whether any of the 32 unreferenced dialogue categories is reached by an
   arithmetic category (base + offset), which the immediate/data search
   can't see.

@@ -223,7 +223,7 @@ names are descriptive, not symbols:
 
 | Cmd | `sqb.py` name | Calls (confirmed by address unless marked) |
 |---|---|---|
-| 0 | `Module.Start` | `fcEuroModule_Entry` after looking up module `arg1` (wild card aware), `0x10b198`. `arg2` is passed on (**empirical**: `PlayAcrobata` gets scene numbers 0, 1, 11, 12) |
+| 0 | `Module.Start` | `fcEuroModule_Entry` after looking up module `arg1` (wild card aware), `0x10b198`. `arg2` is passed on (**empirical**: `PlayAcrobata` gets arguments such as 0, 1, 11 and 12, which aren't scene ids, [`GAME_FLOW.md`](GAME_FLOW.md#game-over)) |
 | 1, 2 | `Module.Wait`, `Module.GetBranch` | `CFcEuro_ModuleController::Wait` / `GetBranch` for module `arg1` |
 | 3, 4 | `Module.Activate`, `Module.Deactivate` | `SetActive(1)` (`0x10b500`), `SetActive(0)` (`0x10b588`) |
 | 5, 6 | `Module.Delete`, `Module.Get` | `fcEuroModule_Delete`, `GetModule` |

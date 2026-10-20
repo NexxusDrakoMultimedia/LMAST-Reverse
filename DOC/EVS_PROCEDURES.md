@@ -183,7 +183,7 @@ int*)` (`0x261d10`) walks 3,000 staff records (`getMbase`, ids from
 |---|---|---|
 | `+0x04` | `+0x04` | country |
 | `+0x06` | `+0x08` | region (scout byte `+0x50` + region) |
-| `+0x0f` | `+0x0c` | coach type (590:900–903): allowed if the byte table at `0x553860` has a 1 at `type × 7 + kind`, where kind is the coach's byte `+0x1c`. 0 none (kinds 0–4), 1 assistant coaches (kinds 0–2), 2 fitness coaches (kind 3), 3 goalkeeping coaches (kind 4) |
+| `+0x0f` | `+0x0c` | coach type (590:900–903): allowed if the byte table at `0x553860` has a 1 at `type × 7 + kind`, where kind is the coach's byte `+0x1c`, the job ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors); 5 and 6, manager and youth manager, are never accepted). 0 none (kinds 0–4), 1 assistant coaches (kinds 0–2), 2 fitness coaches (kind 3), 3 goalkeeping coaches (kind 4) |
 | `+0x0a` | `+0x10` | instruction age (590:950–954), if non-zero: the coach's byte `0x66` + (7, 8, 9, 6)[value − 1], from the table at `0x399600`, must be at least 70 |
 | `+0x14` | `+0x18` | salary limit (590:164), if positive: compared with `0x260fc0(coach +0x18, 7)` |
 
@@ -328,9 +328,7 @@ happen. The offers they react to come from `Param` code.
 - How `0x260590` decides that a player is available for loan.
 - How the instruction-age screen rows map to values 1–4 (the labels
   suggest 1 16–22 … 4 youth), which tactical approach is which grid half,
-  and what each of the 25 manager policies (`+0x34`) is. Coach kinds 5
-  and 6 are the manager and the youth manager (the manager editor's coach
-  types).
+  and what each of the 25 manager policies (`+0x34`) is.
 - Which screens own the start functions for 9 (`0x9e7d0`), 14/16/18
   (`0x6b5f8`), 22 and 28. They're `WS::CPlateWindow` dialogs created through
   tables, so the usual symbol and caller searches don't name them.

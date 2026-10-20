@@ -22,7 +22,7 @@ DAT/TEST3D` (models and motions), `python SRC/svr.py info DAT/TEST3D`
 | `.SVM` | 9 | texture archives: six test kits, a player's face set, `ERR`, `TEST_SEAT` |
 | `.SVP` | 12 | palettes `TST000_01FAC_*` and `TST001_01SKN_*` (face and skin, three tones × two) |
 | `.SNO` | 16 | models: rooms, people, debug shapes |
-| `.SNJ` | 23 | models: `HO02A_D1_*` (21 small untextured models), `M_TST000_01_1`, `MIP_TEST_PLANE01` |
+| `.SNJ` | 23 | models: `HO02A_D1_*` (21 old advert boards), `M_TST000_01_1`, `MIP_TEST_PLANE01` |
 | `.SNM` | 9 | motions |
 | `.SNA` | 3 | node-name lists for `CAMERON`, `CLUBHOUSE`, `SUITMANDUMMY` |
 | `.SND` | 1 | `CAM_INT1.SND`, a camera (`NSCA`) |
@@ -77,7 +77,7 @@ looked at in a viewer):
 | `MOJI_OYA.SNO` (+ `.SNM`) | a figure in a kimono with a headband (`KIMONO_257`, `HATIMAKI128`) |
 | `ARG_00_DIEGO_SIMEONE.SNO`, `ENG_00_MICHAEL_OWEN.SNO` | two real players' heads (2 meshes, about 1,240 vertices each) |
 | `M_TST000_01_1.SNJ` | a test player body (41 nodes) |
-| `HO02A_D1_*.SNJ` (21) | small untextured models, 16–608 vertices. Not identified |
+| `HO02A_D1_*.SNJ` (21) | small untextured models, 16–608 vertices: advert boards of the `ho02a` stadium. Their names are board names of `STADIUM/ADVERTISE_MODELPACK.TBB` (`agc1`, `ata3`, ...), and like the retail boards they use node flag `0x1000`, but none equals an entry of `ADT_HO02A_D1.PAC`, so they are an older version ([`STADIUM_DIR.md`](STADIUM_DIR.md#adverts)) |
 | `MIP_TEST_PLANE01.SNJ` | a mipmap test plane |
 | `SHC3.SNO` | 4 meshes, 32 vertices |
 | the debug shapes | sphere, cube, tetrahedron, cylinder, triangle, circle, square |
@@ -97,9 +97,9 @@ looked at in a viewer):
 | `DATABASE_FILETABLE.TBB` | 4 tables of 64-byte rows. Tables 0–2 each hold a row with `0x37` and a row with a file name (`M_tst000_01_1.snj`, `MILAN_01.svm`, `run_loop_run_run.snm`); table 3 is empty. Its header's total-size field is 0. Not named in the code |
 
 The 14 `TXCMN_ADT_*.SVR` textures (`010`–`017`, `A001`–`A004`, `LED`,
-`SCR`) are advert boards. The retail adverts are
-`0SYSTEM/SPONSOR_TEXTURE_M.PAC` (`txcmn_adt_000`–`231`) and the `STADIUM`
-packs; these are not named anywhere.
+`SCR`) are advert boards. The retail boards take their textures from
+`STADIUM/ADT_TEXCMN.PAC` ([`STADIUM_DIR.md`](STADIUM_DIR.md#adverts));
+these are not named anywhere.
 
 ## `SHADOWCOLLI.LBI`
 

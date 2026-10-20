@@ -10,12 +10,15 @@ of the Dreamcast PVR/PVM/PVP files:
 |---|---|---|
 | `.SVR` | `GBIX` + `PVRT` | one texture (407 files in `DAT/`) |
 | `.SVM` | `PVMH` + n × `PVRT` | texture archive (22 loose, 256 more inside `.MRG`s) |
-| `.SVP` | `PVPL`          | external palette for the `0x62`–`0x65` data formats |
+| `.SVP` | `PVPL`          | external palette for the `0x62`–`0x65` data formats (14 loose files, more inside archives) |
 
 All values are little-endian. `python SRC/svr.py info DAT` parses every
-file, and `python SRC/svr.py png DAT out/` decodes all 474 loose textures
-to PNG. The 801 textures inside `.MRG`s decode the same way after
-`python SRC/pac.py extract` (see [`PAC_FORMAT.md`](PAC_FORMAT.md)).
+file, and `python SRC/svr.py png DAT out/` decodes all 475 loose textures
+to PNG. Textures inside archives (the 801 in `.MRG`s, and the `.PAC`
+packs of `STADIUM/`, `PLAYER/`, `NEWS/`, `EMBLEM/` and `0SYSTEM/`) decode
+the same way after `python SRC/pac.py extract` (see
+[`PAC_FORMAT.md`](PAC_FORMAT.md)); `csp.py png` handles the ones in CSP
+packs ([`CSE_FORMAT.md`](CSE_FORMAT.md)).
 
 ## Confirmed from the game code
 

@@ -131,7 +131,7 @@ Flags (confirmed at `0x16c274`–`0x16c41c`):
 | `0x4` | no scale |
 | `0x8` | palette entry is the world matrix itself; otherwise world × inverse bind (`+0x30`) |
 | `0xf00` | rotation order: `0` XYZ, `0x100` XZY, `0x400` ZXY |
-| `0x1000`, `0x2000` | copy the parent's 3×3 / transform the translation (not seen used) |
+| `0x1000`, `0x2000` | copy the parent's 3×3 / transform the translation. `0x1000` is set only in the advert board models (**empirical**: 482 nodes in the 40 `STADIUM/ADT_*` packs, 97 in `TEST3D/HO02A_D1_*`); `0x2000` isn't seen |
 | `0x40000`, `0x80000`, `0x100000` | normalise matrix column 0 / 1 / 2 |
 
 A meshset is drawn with its matrix palette entry (meshset `+0x14`, read
@@ -508,7 +508,8 @@ whose branch in `nnSetLight` (`0x17b330`) reads:
   (VU `0x21`), and the PX Plus skin words.
 - Submotion interpolation types (`0x20002`, `0x20004`, `0x20200`);
   `ninja.py gltf` bakes every track linearly, one sample per frame.
-- Node flags `0x1000`/`0x2000` (97 nodes), which glTF can't express.
+- How node flag `0x1000` (the advert boards) should be exported: glTF
+  can't express it, so `gltf` ignores it.
 - Where the hair colour comes from: the hair textures are grey patterns
   tinted at run time (not by `COLOR_TBL`, the kit clash table).
 - Which part files make up an in-game player (the `LMS_PLAYER.SNP`

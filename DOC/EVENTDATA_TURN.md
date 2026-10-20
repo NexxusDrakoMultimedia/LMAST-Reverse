@@ -34,7 +34,7 @@ byte in all 218 records, and no string overruns its slot.
 
 | Offset | Size | Type | Name (inferred) | Values seen |
 |---|---|---|---|---|
-| `0x00` | 4  | char[4] | category | always `TURN` (the shipped data splits events into EVENT / NEWS / MAIL, cf. `lastEventDate_TURN/NEWS/MAIL` in the ELF) |
+| `0x00` | 4  | char[4] | category | always `TURN` (the shipped data splits events into EVENT / NEWS / MAIL, cf. the strings `lastEventDate_TURN`, `_NEWS` and `_MAIL` in `SLES_541.51`, file offset `0x44cb30`) |
 | `0x04` | 4  | s32 | end marker | `0`, or `-1` on the last row only |
 | `0x08` | 8  | – | padding | always 0 |
 | `0x10` | 32 | char[32] | event id | `TUT000`, `OSA0006_001`, `OHI039`, `LOC0110`, `STA001` ... (prefix ≈ location/series; some IDs repeat with different `item`s) |

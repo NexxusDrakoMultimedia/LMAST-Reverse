@@ -86,14 +86,14 @@ jump table `0x298a50`) names these fields (**confirmed**):
 | `+0x08` | NATION_ID | 0 England, 1 France, 2 Germany, 3 Italy, 4 Spain, 5 Holland |
 | `+0x09`, `+0x0a` | TEAM_COLOR1_16, TEAM_COLOR2_16 | – |
 | `+0x0b` | MONTH_ID | 0 January … 11 December (picks the pitch edge, table 1) |
-| `+0x11`, `+0x12` | HOME_TEAMCOLOR, AWAY_TEAMCOLOR | – |
-| `+0x14`, `+0x18`, `+0x1c` (u32) | HOME_SUPPORTER, AWAY_SUPPORTER, CIVILIAN_VISITOR | crowd sizes (110000 each by default) |
-| `+0x20` | ADVERTISE_INDEX | the first of the 12 advert textures at `+0x20`–`+0x2b` ([Adverts](#adverts)) |
 | `+0x0c`, `+0x0d` | – | pitch edge (from table 1) and adverts on (below) |
 | `+0x0e` | – | advert board style: 1 makes boards 43 and 52 electric (sets bit 8, `0x1cd9c8`); 2 replaces boards 43–45 and 52–54 with 46–50 and 55–59 (`0x1cda28`, lists at `0x2997a0`, `0x2997a8`). Each applies only if the boards it starts from are on |
 | `+0x0f` | – | advert board level: clears boards 95–97, then turns on board 95 at level ≥ 2 and 96 at ≥ 3 for `ho01a`/`ho01b`, 95 at ≥ 4 for `ho02a` and 95 at ≥ 5 for `ho03a` (`0x1cd8c8`, `{model, level, byte}` list at `0x299788`) |
 | `+0x10` | – | when set, the 11 advert textures at `+0x20` move up one and `+0x20` becomes 232 (`0x1cd618`), which the texture clamp at `0x1d31b8` turns into the last advert texture |
+| `+0x11`, `+0x12` | HOME_TEAMCOLOR, AWAY_TEAMCOLOR | – |
 | `+0x13` | – | not read by the stadium code |
+| `+0x14`, `+0x18`, `+0x1c` (u32) | HOME_SUPPORTER, AWAY_SUPPORTER, CIVILIAN_VISITOR | crowd sizes (110000 each by default) |
+| `+0x20` | ADVERTISE_INDEX | the first of the 12 advert textures at `+0x20`–`+0x2b` ([Adverts](#adverts)) |
 | `+0x2c`–`+0x35` | – | the stand node lists (table 2) |
 | `+0x36`–`+0xb6` | – | the stadium's `BUILD_STADIUM` row |
 
@@ -111,13 +111,13 @@ these settings (see `SQB_FORMAT.md`).
 | `<MODEL>_OP.PAC/.HED` | 10 | 1 PRSH `.sno` | one extra part per model (`01a_avm1.sno`) |
 | `<MODEL>.PRI` | 10 | – | draw priority of each part slot, see below |
 | `STCMN_{D1,D2,N1,N2}.PAC/.HED` | 4 | 55 each | parts shared by all models: goals (`d1_gol01.sno`), pitches (`pit01_sp.sno`), ... |
-| `STCMN_SK.PAC/.HED` | 1 | 20 | skies (`f_sky_sp.sno`, `c_sky_su.sno`: clear, cloudy, rain × season?) |
+| `STCMN_SK.PAC/.HED` | 1 | 20 | skies: five per season (`sp`, `su`, `au`, `wi`), day fine, cloudy and rain (`f_`, `c_`, `r_sky`), then night fine and cloudy; entry season × 5 + *k*, [above](#the-10-models) |
 | `STADIUM_SVR.PAC` | 1 | 635 PRSH `.svr` | shared textures (`sky_cloud3.svr`, `txcmn_fen1_01.svr`, ...). The only pack here with no `.HED`. Also named in `GAMEPRG.REL 0x26651a` (`CMatchStadium`) |
 | `SEAT_CLUT.PAC/.HED` | 1 | 16 `.svp` | seat colour palettes (`_seat_00.svp` ...) |
 | `STAND_NODE_NAME.PAC/.HED` | 1 | 58 `.sna` | node-name lists for the stands |
 | `STAFF_NODE_NAME.PAC/.HED` | 1 | 11 `.sna` | node-name lists for the bench area, one per model (`aw01a` twice) |
 | `ADT_<MODEL>_{D1,D2,N1,N2}.PAC/.HED` | 40 | 32 PRSH `.snj` | advertising boards ("ADT"). Loaded at `0x1d2e74` by `CAdvertiseLoader` |
-| `ADT_TEXCMN.PAC/.HED` | 1 | 419 `.svr` | advert textures |
+| `ADT_TEXCMN.PAC/.HED` | 1 | 419 `.svr` | advert textures. Entries 7–211 are PRSH-compressed copies of sponsor logos 0–204 of `0SYSTEM/SPONSOR_TEXTURE_M.PAC` ([`0SYSTEM_DIR.md`](0SYSTEM_DIR.md)), identical once expanded (**empirical**), which fits the `+ 7` of the advert texture index below |
 | `BUILD_ADVERTISE.TBB` | 1 | 32 × 8 bytes | one row per advert board. Loaded at `0x1d2f2c`. See [Adverts](#adverts) |
 | `ADVERTISE_MODELPACK.TBB` | 1 | 32 × `char[8]` | board names (`agc1` ...), one per `BUILD_ADVERTISE` row |
 | `AUD_MODEL_<MODEL>_{D1,D2,N1,N2}.PAC/.HED` | 40 | 70 NSIF `.snj` | crowd models (`aw01a_d1_aud_0a.snj`). Name built with `%s_%s_%s_%s.snj` at `0x1d5b2c` |

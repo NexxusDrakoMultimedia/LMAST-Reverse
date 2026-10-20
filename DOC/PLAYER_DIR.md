@@ -12,8 +12,10 @@ Every archive here is either a BINPAC or a KC@P pack (see
 [`PAC_FORMAT.md`](PAC_FORMAT.md)), and `python SRC/pac.py info DAT/PLAYER`
 parses all of them. This doc covers what the entries hold. Most are Ninja
 models (`NSIF`) or textures (`PVMH`/`GBIX`/`PVPL`, see
-[`SVR_FORMAT.md`](SVR_FORMAT.md)). The three KC@P packs wrap each entry in
-a second container, **`etc::PackData`**, which is described below.
+[`SVR_FORMAT.md`](SVR_FORMAT.md)). The KC@P packs (the two face packs,
+the edit-face pack and the two licensed-kit packs, and `GAME/CUTINPACK`
+outside this folder) wrap each entry in a second container,
+**`etc::PackData`**, which is described below.
 
 The `PackData` layout and the role of each block are **confirmed** from the
 game code. Everything else here (what the names mean, counts) is
@@ -92,7 +94,8 @@ Each block:
 
 None of the three realizers calls `GetPackBlockType`. They take blocks by
 index, so the type is informational. The values seen (0–3, 16, 25–28) are
-listed per pack below.
+listed per pack below; `GAME/CUTINPACK` uses 19–24
+([`GAME_DIR.md`](GAME_DIR.md#directory-overview)).
 
 **Empirical:** in every entry on the disc the blocks are packed back to
 back: block 0 is at offset 0, and each next block starts at the previous
@@ -127,9 +130,9 @@ the face is built in the face editor instead. `LoadRequestEvent` (`0x103770`) lo
 All 21,171 + 215 entries have exactly this shape: 5 blocks, types
 `0,1,2,3,0`, and a 0x426-byte block 4. Blocks 2 and 3 are empty in 891
 entries of pack 00 and 22 of pack 01. The first four bytes of block 4 are
-small values such as `00 03 02 02`, or `ff ff ff ff`. In pack 01 the 22
-`ff ff ff ff` entries are exactly the 22 without hair. Pack 00 has not been
-checked for the same match. The meaning of the 0x18-byte header is
+small values such as `00 03 02 02`, or `ff ff ff ff`. The `ff ff ff ff`
+entries are exactly the ones without hair, in both packs (**empirical**,
+all 891 + 22), so those four bytes probably describe the hair. The meaning of the 0x18-byte header is
 unknown. It also holds three u32s that are usually 1000 (`0x3e8`).
 
 Pack 00's head-texture names fall into groups:
@@ -205,7 +208,7 @@ case (`NED_280`).
 `SRC/packdata.py` parses `PackData` in every KC@P pack it finds. Its
 `info` check covers the layout and the packing rule. The same check also
 passes on `GAME/CUTINPACK.BIN`, whose 277 entries are `PackData` with block
-types 19–24. `FC_EURO_FACEPACK_00` is sampled (494 of 21,171 entries)
+types 19–24 ([`GAME_DIR.md`](GAME_DIR.md#directory-overview)). `FC_EURO_FACEPACK_00` is sampled (494 of 21,171 entries)
 unless `--all` is given. The full scan used for the counts above took
 several minutes.
 
@@ -219,7 +222,9 @@ python SRC/svr.py info out/face                                 # the texture bl
 
 ## Open questions
 
-- The 0x18-byte header of face block 4, and whether its palette is skin.
+- The 0x18-byte header of face block 4 (its first four bytes are
+  `ff ff ff ff` exactly when the head has no hair), and whether its
+  palette is skin.
 - Bytes 14–15 of the `PLPACK` kit descriptor (the rest is decoded in
   [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#licensed-kits)), and what the
   pack's copy is used for, since the viewer draws numbers from the

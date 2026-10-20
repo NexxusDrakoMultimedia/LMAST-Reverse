@@ -99,8 +99,10 @@ competition id from `ScheEuro_SubCtrl::getScheCompe_FromTBB`
 (`0x105d50`), except for the language-dependent badges
 (`0x105d64`–`0x105da4`):
 
-- Competition `0x31`, and 56–71: entry 56 + language (`EXHIBITION_0`–`6`).
-- Competition `0x30`: entry 63 + language (`YOUTH_LEAGUE_0`–`6`).
+- Competition 49 (`0x31`, the exhibition) and 56–71 (VS mode): entry 56
+  + language (`EXHIBITION_0`–`6`).
+- Competition 48 (`0x30`, the Youth League): entry 63 + language
+  (`YOUTH_LEAGUE_0`–`6`).
 
 Entries 48 (`YOUTH_LEAGUE_0`) and 49 (`EXHIBITION_0`) are therefore never
 used. Some badges appear twice (`CHAMPIONS_DIVISION`, `ENGLISH_CUP`,
@@ -121,7 +123,12 @@ sponsor id − 1, and id 0 also gives entry 0 (`0x105db4`). The kit loader
 uses types 5 and 7. Type 6 (`txcmn_adt_*`, advert boards by the name) has
 no caller: the constructors are called at the sites above, from the season
 load list, and from the Uniform Viewer (`TESTPRG.REL 0x14da8`, type 0),
-and none of them asks for type 6.
+and none of them asks for type 6. The stadium's advert boards read their
+own copies instead: `STADIUM/ADT_TEXCMN.PAC` entries 7–211 are logos
+0–204 of this pack, PRS-compressed and identical once expanded
+([`STADIUM_DIR.md`](STADIUM_DIR.md#adverts)). A sponsor logo edit meant
+for the stadium boards has to go there; `patch_disc.py --copies`
+compares stored bytes, so it doesn't find these copies.
 
 ## `COLORDATATABLE.TBB`
 

@@ -38,7 +38,11 @@ and `news_art.hed`, with the two newspaper layouts and the article text.
 the pictures are read from the disc one at a time. `NEWSMONTHFLAG.TBB` is
 in `SIMLOCALMEM0`–`6`. The `.HED` files of the ad, cartoon and other packs
 are in no pack. Patch edits with `patch_disc.py --copies`
-([`REBUILD.md`](REBUILD.md#copies)).
+([`REBUILD.md`](REBUILD.md#copies)). **Tested in PCSX2** (user report):
+`NEWS_TITLE.PAC` rebuilt around two mastheads grown past their slots,
+with its `.HED` and the seven `PRELOAD/NEWS*.PAC` copies rebuilt and
+moved, showed Spain's masthead in an English career's paper
+([`REBUILD.md`](REBUILD.md#archives)).
 
 ## Confirmed from the game code
 

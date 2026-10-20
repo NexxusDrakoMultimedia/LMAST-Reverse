@@ -90,7 +90,12 @@ which of the 96 they are, and going up and back (32 → 96 → 32, 16 → 96 →
 checked by `emblem.py info`).
 
 This is a different table from `0SYSTEM/COLORDATATABLE.TBB`, the 77 UI
-colours, which stores R, G, B, A in byte order.
+colours, which stores R, G, B, A in byte order. Its near twin is
+`PARAM/PLRESOURCESIM.PAC` entry 9, which the same `EDIT::CColor` wraps for
+the season-mode screens ([`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-9-the-edit-screens-colour-palette)):
+the same size and the same 96 colours, but 10 bytes of the maps differ
+(8 in table 1, one each in tables 3 and 5; **empirical**). Which screens
+use which copy is listed in each doc; a palette edit has to reach both.
 
 ## `EDIT_EMBLEM.TBB`
 

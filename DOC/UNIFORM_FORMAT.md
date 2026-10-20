@@ -25,8 +25,9 @@ The layout is **confirmed** from the readers in `SLES_541.51` (addresses
 below). The field names come from the developer Uniform Viewer
 (`TESTPRG.REL`, see [`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)),
 which prints them. A few small fields are still unknown. **Tested in
-PCSX2**: an edited kit colour and an edited licensed number colour both
-show in the Uniform Viewer (below).
+PCSX2**: edited club kits, licensed number colours and keeper schemes
+show in the Uniform Viewer and in matches, including edits made in the
+editor's Kits tab ([below](#tested-in-pcsx2)).
 
 ## `UNIFORM_LIST.TBB`
 

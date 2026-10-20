@@ -185,6 +185,11 @@ by 8 screens in `SIMPRG.REL` and by `PlGiTask::InitStadium`.
 255, alpha bit set when A ≠ 0). So the 32- and 16-colour palettes are
 subsets of the 96.
 
+`EMBLEM/COLOR_TABLE.TBB` is the same table for the club editor, the
+uniform editor and the match ([`EMBLEM_DIR.md`](EMBLEM_DIR.md#color_tabletbb)).
+**Empirical:** the 96 colours are identical, and 10 bytes of the maps
+differ (8 in table 1, one each in tables 3 and 5).
+
 ## Entries 11 and 12: scouts' exclusive players
 
 A stream of s16. A negative value starts a scout (its negation is the

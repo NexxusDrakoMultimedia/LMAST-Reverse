@@ -3,7 +3,7 @@
 
 # `DAT/CSE`: 2D screens (`*.CSP`, `*.CSE`)
 
-`DAT/CSE` (689 files, 80 MB) holds the game's 2D graphics: every menu screen,
+`DAT/CSE` (688 files, 80 MB, plus `CVS/`) holds the game's 2D graphics: every menu screen,
 window, icon set and pre-rendered room background. Nearly all of it is
 `.CSP` packs. Each one holds a **CSE** layout (sprites, a node hierarchy and
 keyframe animation) and the SVR textures the layout uses.
@@ -25,7 +25,7 @@ dumps one layout, `extract` splits packs into `.cse` + `.svr`, and `png
 | `INST_SVR.HED/.PAC` | 2 | BINPAC of `nst_tex_*.svr` (see [`PAC_FORMAT.md`](PAC_FORMAT.md)) |
 | `ADIDAS_BALL.PRS` | 1 | PRS-compressed texture |
 | `TACTICSTEXTURE.SVM` | 1 | PVMH texture set (tactics arrows) |
-| `CVS/` | 3 | left over from development, see below |
+| `CVS/` | 3 files | left over from development, see below |
 
 ### Name prefixes
 
@@ -248,10 +248,11 @@ A typical bank from `SLIDE_MAIN.CSE`: bank 1 slides node 0 in from x = -274
 to 320 over frames 0–15. Bank 2 slides it back out and fades the colour
 from `ffffffff` to `ffffff00`.
 
-## Not done yet
+## Still unknown
 
 - Scene `+0x0C…`, Node `+0x1C/+0x24/+0x28/+0x2C`, Face `+0x04/+0x1E`
   are only described from the data.
+- The animation track kinds of mask bits 11 and 14.
 - Project `+0x1A`, and how it relates to `AnimBank.frames`.
 - Which BG palette (`.svp`) is picked for the 41 backgrounds without
   their own (see [`ZBF_FORMAT.md`](ZBF_FORMAT.md)).
