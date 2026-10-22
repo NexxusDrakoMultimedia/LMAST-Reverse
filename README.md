@@ -295,7 +295,10 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   `sponsor-negotiation`, `rival-manager`, `national-cups`, `camp-types`,
   `camp-cities`, `camp-santiago`, `camp-clubs` and `drill-names`. Its
   improvements stay out of `lmaster`: `league-balance` rebuilds the
-  league schedules that send a club to one venue up to 9 times running.
+  league schedules that send a club to one venue up to 9 times running,
+  and `--mod harder-economy` is `facility-tiers` (dearer facilities,
+  much dearer at the top), `wider-tickets` (up to £80) and `dearer-ads`
+  ([`ECONOMY.md`](DOC/ECONOMY.md)).
   `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
   image prints the executable's PCSX2 CRC.
 
@@ -393,7 +396,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `sounddat.py` | `sles_disasm.py` for `music` |
 | `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables |
-| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches) |
+| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches), `plrcommon.py` (`facility-tiers`) |
 | `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `training.py` (Training), `camp.py` (Camps), `uniform.py` (Kits), `mbb.py` (Text); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `pbdata.py` and `initteam.py` for names |
 | `pmplayer.py` | `save.py` (cipher, CRC, and career saves for `check`), `pbdata.py` for field names, `gamever.py` |

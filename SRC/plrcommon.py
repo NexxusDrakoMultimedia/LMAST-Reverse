@@ -135,7 +135,10 @@ def load(path):
     if os.path.isdir(path):
         path = os.path.join(path, FILE)
     with open(path, "rb") as f:
-        data = f.read()
+        return load_bytes(f.read(), path)
+
+
+def load_bytes(data, path=FILE):
     _, blobs = pac.binpac_blobs(data)
     if len(blobs) != len(TABLE_COUNTS):
         raise ValueError("%d entries, expected %d" % (len(blobs), len(TABLE_COUNTS)))
@@ -300,6 +303,52 @@ def cmd_show(path, entry, table):
     width = {(4, 0): 22, (4, 1): 8}.get(key, 16)
     for i in range(0, len(data), width):
         print("  %4d  %s" % (i // width if key[0] == 4 else i, data[i:i + width].hex(" ")))
+
+
+# The LMASTER Mod's facility tiers (DOC/LMASTER_MOD.md#improvements): the
+# bigger club houses, sites and stadiums cost much more to build and keep
+# up, everything else costs twice as much. (table, record): (build cost x,
+# upkeep x); records not named take FLAT. Fields holding 0 or -1 (what a
+# club starts with, upkeep the game never charges) are left alone. The
+# stand costs of a stadium (+0x5c, not traced in full) are left alone too.
+FLAT = (2, 2)
+TIERS = {
+    (0, 0): {1: (2, 2), 2: (4, 4)},                     # grounds (sites)
+    (0, 3): {0: (1, 2), 1: (2, 2), 2: (4, 4)},          # club houses
+    (0, 7): {2: (2, 2), 3: (2, 2), 4: (2, 2), 5: (2, 2),    # 15,000-25,000
+             6: (3, 3), 7: (5, 4), 8: (3.5, 6)},        # 30,000-40,000; 50,000-60,000; 110,000
+}
+TIER_COST = ("cost", "cost2", "cost_b", "cost2_b")
+TIER_UPKEEP = ("upkeep", "upkeep_b")
+# Club house 1's build cost on the retail disc and with the tiers.
+TIER_MARK = ((0, 3), 1, "cost", 45000000, 90000000)
+
+
+def facility_tiers(data):
+    """PLRESOURCECOMMON.PAC with the facility tiers applied; None when it
+    already has them. Raises ValueError for a pack that is neither."""
+    _, entries = load_bytes(data)
+    tables = [bytearray(t) for t in entries[0]]
+    key, record, name, retail, tiered = TIER_MARK
+    held = get_field(tables, key, record, name)
+    if held == tiered:
+        return None
+    if held != retail:
+        raise ValueError("%s: club house 1 costs %d, expected %d; not the retail pack?"
+                         % (FILE, held, retail))
+    for key in sorted(FACILITY):
+        fields = [f for f, _ in FACILITY[key][4].values()]
+        size = FACILITY[key][2]
+        for record in range(len(tables[key[1]]) // size):
+            if key in TIERS and record not in TIERS[key]:
+                continue
+            cost_x, upkeep_x = TIERS.get(key, {}).get(record, FLAT)
+            for name in fields:
+                x = cost_x if name in TIER_COST else upkeep_x if name in TIER_UPKEEP else 1
+                value = get_field(tables, key, record, name)
+                if x != 1 and value > 0:
+                    set_field(tables, key, record, name, int(value * x))
+    return encode(data, tables)
 
 
 def parse_edit(text):

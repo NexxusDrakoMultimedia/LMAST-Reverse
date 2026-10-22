@@ -21,10 +21,11 @@ item below.
 
 1. **The harder economy** (section 8). The research
    ([`ECONOMY.md`](DOC/ECONOMY.md)) and the facility writer
-   (`plrcommon.py set`, tested in PCSX2) are done. Next: choose the
-   values with the user, then the LMASTER Mod switches ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). The
-   ticket and ad switches are code and table edits that need no writer.
-   The end is a change players notice.
+   (`plrcommon.py set`, tested in PCSX2) are done, and the chosen
+   values are built as `--mod harder-economy`. Next: its PCSX2 test
+   (section 7), then the income side for the late game
+   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). The end is a
+   change players notice.
 2. **`.ps2` memory card images** (section 5, "Save editor"). PCSX2 keeps
    saves in these by default, so the save editor can't reach most
    players' saves without them. The scratch reader needs a writer (with
@@ -294,6 +295,11 @@ names the disc or the edit to build; the result goes into the doc.
       abilities should show as written, and `pmplayer.py check` on the
       career's save should report no differences
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
+- [ ] `--mod harder-economy` (`LMAST-test-economy.iso`): the facility
+      window shows the tiered costs, the plan screen and the other
+      competitions' ticket screen go to £80 and the ad budget to £10M,
+      and a home match at £80 still draws a crowd
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
       ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
 
 ## 8. LMASTER Mod and other patches
@@ -310,10 +316,11 @@ tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
       ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets)).
       The "two months"/"nine months" injury lines need thresholds
       chosen first
-- [ ] Improvement: a harder economy (dearer facilities, a wider ticket
-      price range, dearer advertising). The code and tables each change
-      touches are in [`ECONOMY.md`](DOC/ECONOMY.md); a wider ticket range
-      needs new rows in the ticket demand table as well as new screen
-      limits. More ideas (overseas bases, merchandise, reputation,
+- [ ] Improvement: a harder economy, built as `--mod harder-economy`
+      (`facility-tiers`, `wider-tickets`, `dearer-ads`; the values in
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)); waits for its
+      PCSX2 test (section 7) and a season played through. Making the
+      late game harder needs the income side (sponsors, TV, season
+      tickets), not yet chosen. More ideas (overseas bases, merchandise, reputation,
       player prices up to £250M, a third tier with a one-season game
       over) are in [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)

@@ -69,11 +69,13 @@ to the new last sector. Files outside DATA.CVM keep their size.
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
-drill-names, launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
+drill-names, facility-tiers, wider-tickets, dearer-ads, launcher,
+mod-saves. --mod lmaster is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
 camp-cities, camp-santiago, camp-clubs, drill-names; DOC/LMASTER_MOD.md).
-league-balance is one of the mod's improvements, so it stays out of
-lmaster and is chosen on its own.
+league-balance and the harder economy (--mod harder-economy:
+facility-tiers, wider-tickets, dearer-ads) are the mod's improvements, so
+they stay out of lmaster and are chosen on their own.
 Each also works as a flag of its own (--skip-tutorial, ...). With
 switches and no targets, `patch <image> <out_image>` is enough.
 
@@ -142,6 +144,20 @@ training trained shooting. The names move one message later in
 jackknife name goes to 1045, the dummy drill 74 no coach teaches. A
 MES.PAC target gets the fix in its own bytes. The Japanese release has
 the right numbering and is left alone. See DOC/TRAINING_FORMAT.md.
+
+facility-tiers (plrcommon.facility_tiers) doubles every facility's build
+costs and upkeep, and more for the bigger levels: grounds x2 and x4,
+club houses x2 and x4 (the starting one's upkeep x2), stadiums x2 for
+15,000-25,000, x3 for 30,000-40,000, x5 (upkeep x4) for 50,000-60,000 and
+x3.5 (upkeep x6) for 110,000. It writes PARAM/PLRESOURCECOMMON.PAC and its
+copy in PRELOAD/STATIONFILE.PAC. wider-tickets (whole disc image only)
+lets both ticket screens go up to 480 (£80; SIMPRG.REL 0x3ef98, 0x3d1e4)
+and respaces the ticket demand table (SLES 0x556120, 0x556250) over
+60-480, with crowds above 300 falling so 480 draws half of 300's.
+dearer-ads (whole disc image only) halves what the ad budget buys and
+doubles its maximum to 60,000,000 (£10M): the plan screen's limit and
+the popularity and ticket demand steps (SLES 0x268ce0, 0x2719e0,
+0x271a88, 0x271aa0). See DOC/ECONOMY.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -1713,6 +1729,143 @@ def plan_launcher(f, img):
             for i, (a, b) in enumerate(zip(data, new)) if a != b], []
 
 
+# --- the harder economy (DOC/ECONOMY.md, DOC/LMASTER_MOD.md#improvements) ------
+
+COMMON_FILE, COMMON_ENTRY = "PARAM/PLRESOURCECOMMON.PAC", "plresourcecommon.pac"
+
+
+def plan_facility_tiers(f, img, adopted=()):
+    """Jobs for --mod facility-tiers: plrcommon.facility_tiers in
+    PLRESOURCECOMMON.PAC and its PRELOAD/STATIONFILE.PAC copy, which the
+    game also reads."""
+    import plrcommon
+    why = "facility-tiers: bigger facilities cost much more to build and keep up"
+    path, data = read_file(f, img, COMMON_FILE)
+    new = plrcommon.facility_tiers(data)
+    if new is None:
+        return [], ["note: %s already has the facility tiers" % COMMON_FILE]
+    return (diff_jobs(path, 0, data, new, why)
+            + pack_copy_jobs(f, img, STATION_FILE, COMMON_ENTRY, COMMON_FILE, data, new, why)), []
+
+
+def word_jobs(f, img, switch, words):
+    """Jobs for a switch that rewrites known words: (file, offset, old, new,
+    label) each, offsets into the file. All already new is a note; any word
+    holding neither is refused."""
+    if img.kind != "disc image":
+        raise ValueError("%s patches the executable and SIMPRG.REL, so it needs the whole "
+                         "disc image, not %s" % (switch, img.kind))
+    held = [read_at(f, img, file, off, len(old)) for file, off, old, _, _ in words]
+    if all(h == new for h, (_, _, _, new, _) in zip(held, words)):
+        return [], ["note: %s is already applied" % switch]
+    jobs = []
+    for h, (file, off, old, new, label) in zip(held, words):
+        if h != old:
+            raise ValueError("%s: %s doesn't hold the expected bytes; not the retail disc?"
+                             % (switch, label))
+        jobs.append(Job(file, off, new, label, switch))
+    return jobs, []
+
+
+def sles_word(addr, old, new, what):
+    """A word of SLES_541.51 at address `addr` (the file is 0xff000 before)."""
+    return (SLES_FILE, addr - 0xff000, struct.pack("<I", old), struct.pack("<I", new),
+            "%s 0x%x (%s)" % (SLES_FILE, addr, what))
+
+
+def simprg_word(off, old, new, what):
+    return (NEGO_FILE, off, struct.pack("<I", old), struct.pack("<I", new),
+            "%s 0x%x (%s)" % (NEGO_FILE, off, what))
+
+
+# wider-tickets: ticket prices up to 480 (£80) on both ticket screens, and a
+# ticket demand table (pwkUnkei_GetTicketHosei 0x2719c8) that covers them:
+# 21 rows, the price thresholds at 0x556120 (300 down to 60 in 12s) and the
+# s32 rows at 0x556250 (11 budget columns each). The new thresholds run 480
+# down to 60 in 21s. Rows up to 300 are the old curve read at the new
+# threshold (linear between the old rows); above it, crowds fall as
+# (300 / price)^TICKET_FALL, so 480 draws half of 300's crowd.
+TICKET_ROWS, TICKET_COLS = 21, 11
+TICKET_THRESHOLDS, TICKET_TABLE = 0x556120, 0x556250
+TICKET_MAX, TICKET_MAX_NEW, TICKET_MIN = 300, 480, 60
+TICKET_FALL = 1.4748                # log 2 / log 1.6
+
+
+def ticket_tables(sles):
+    """(old thresholds, old rows, new thresholds, new rows) as bytes, from the
+    retail executable; ValueError if its table isn't the retail one."""
+    off = TICKET_THRESHOLDS - 0xff000
+    old_t = sles[off:off + 4 * TICKET_ROWS]
+    if list(struct.unpack("<%di" % TICKET_ROWS, old_t)) != \
+            [TICKET_MAX - 12 * i for i in range(TICKET_ROWS)]:
+        raise ValueError("SLES 0x%x: not the retail ticket thresholds" % TICKET_THRESHOLDS)
+    off = TICKET_TABLE - 0xff000
+    old_r = sles[off:off + 4 * TICKET_ROWS * TICKET_COLS]
+    rows = [struct.unpack_from("<%di" % TICKET_COLS, old_r, 4 * TICKET_COLS * i)
+            for i in range(TICKET_ROWS)]
+    step = (TICKET_MAX_NEW - TICKET_MIN) // (TICKET_ROWS - 1)
+    new_t = [TICKET_MAX_NEW - step * i for i in range(TICKET_ROWS)]
+
+    def demand(price, c):
+        if price >= TICKET_MAX:
+            return rows[0][c] * (TICKET_MAX / price) ** TICKET_FALL
+        i = (TICKET_MAX - price) // 12                  # old row at or above the price
+        hi, lo = TICKET_MAX - 12 * i, TICKET_MAX - 12 * (i + 1)
+        if price == hi or i + 1 >= TICKET_ROWS:
+            return rows[i][c]
+        return rows[i][c] + (rows[i + 1][c] - rows[i][c]) * (hi - price) / (hi - lo)
+
+    new_r = b"".join(struct.pack("<%di" % TICKET_COLS,
+                                 *[max(1, round(demand(p, c))) for c in range(TICKET_COLS)])
+                     for p in new_t)
+    return old_t, old_r, struct.pack("<%di" % TICKET_ROWS, *new_t), new_r
+
+
+def plan_wider_tickets(f, img):
+    """Jobs for --mod wider-tickets."""
+    if img.kind != "disc image":
+        raise ValueError("wider-tickets patches SLES_541.51, so it needs the whole disc "
+                         "image, not %s" % img.kind)
+    e = img.entry(SLES_FILE)
+    sles = read_at(f, img, SLES_FILE, 0, e.size)
+    if struct.unpack_from("<i", sles, TICKET_THRESHOLDS - 0xff000)[0] == TICKET_MAX_NEW:
+        return [], ["note: wider-tickets is already applied"]
+    old_t, old_r, new_t, new_r = ticket_tables(sles)
+    words = [
+        simprg_word(0x3ef98, 0x2403012c, 0x240301e0, "plan screen: ticket price up to 480"),
+        simprg_word(0x3d1e4, 0x2404012c, 0x240401e0, "ticket set screen: up to 480"),
+        (SLES_FILE, TICKET_THRESHOLDS - 0xff000, old_t, new_t,
+         "%s 0x%x (ticket demand price thresholds)" % (SLES_FILE, TICKET_THRESHOLDS)),
+        (SLES_FILE, TICKET_TABLE - 0xff000, old_r, new_r,
+         "%s 0x%x (ticket demand table)" % (SLES_FILE, TICKET_TABLE)),
+    ]
+    return word_jobs(f, img, "wider-tickets", words)
+
+
+# dearer-ads: the ad budget buys half as much per pound, up to twice the old
+# maximum, so the full effect costs 60,000,000 (£10,000,000) a season. The
+# plan screen's maximum (SIMPRG 0x3eec0), the popularity divisor (0x268ce0,
+# 600,000 -> 1,200,000) and the ticket demand table's column step (0x2719e0
+# and 0x271a88, 3,000,000 -> 6,000,000, with the interpolation's 1/100th of
+# a step at 0x271aa0, 30,000 -> 60,000, which needs ori to fit).
+DEARER_ADS = (
+    simprg_word(0x3eec0, 0x3c0301c9, 0x3c030393, "plan screen: ad budget up to 60,000,000"),
+    simprg_word(0x3eec4, 0x3463c380, 0x34638700, "plan screen: ad budget up to 60,000,000"),
+    sles_word(0x268ce0, 0x3c030009, 0x3c030012, "popularity: budget / 1,200,000"),
+    sles_word(0x268ce4, 0x346327c0, 0x34634f80, "popularity: budget / 1,200,000"),
+    sles_word(0x2719e0, 0x3c05002d, 0x3c05005b, "ticket demand: a column per 6,000,000"),
+    sles_word(0x2719e4, 0x34a5c6c0, 0x34a58d80, "ticket demand: a column per 6,000,000"),
+    sles_word(0x271a88, 0x3c05002d, 0x3c05005b, "ticket demand: a column per 6,000,000"),
+    sles_word(0x271a8c, 0x34a5c6c0, 0x34a58d80, "ticket demand: a column per 6,000,000"),
+    sles_word(0x271aa0, 0x24057530, 0x3405ea60, "ticket demand: interpolation step 60,000"),
+)
+
+
+def plan_dearer_ads(f, img):
+    """Jobs for --mod dearer-ads."""
+    return word_jobs(f, img, "dearer-ads", DEARER_ADS)
+
+
 # --- the switch table ----------------------------------------------------------
 
 # (name, plan, files it edits, description), in the order they run. A
@@ -1739,6 +1892,13 @@ SWITCHES = (
      "Training camps: Canberra's last two clubs appear in its list"),
     ("drill-names", plan_drill_names, [MES_FILE] + DRILL_PACKS,
      "Training: drills 75-86 show their own names (PAL's were one early, with a jackknife)"),
+    ("facility-tiers", plan_facility_tiers, [COMMON_FILE, STATION_FILE],
+     "Harder economy: bigger stadiums, club houses and grounds cost much more to build "
+     "and keep up; other facilities twice as much"),
+    ("wider-tickets", plan_wider_tickets, [NEGO_FILE, SLES_FILE],
+     "Harder economy: ticket prices up to £80, with crowds falling off above £50"),
+    ("dearer-ads", plan_dearer_ads, [NEGO_FILE, SLES_FILE],
+     "Harder economy: advertising buys half as much per pound, up to £10M a season"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -1762,7 +1922,8 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATIO
 # Names --mod takes for several switches at once.
 SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
                              "camp-types", "camp-cities", "camp-santiago", "camp-clubs",
-                             "drill-names")}
+                             "drill-names"),
+                 "harder-economy": ("facility-tiers", "wider-tickets", "dearer-ads")}
 
 
 def parse_mods(values):
