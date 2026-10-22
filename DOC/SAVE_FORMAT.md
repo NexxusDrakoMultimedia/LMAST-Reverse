@@ -792,8 +792,8 @@ an old save.
 0–100 and turns anything higher into 0 (**confirmed**). `save.py copy
 <folder> [<slot>]` copies a game save to another slot on the same card,
 the lowest free one unless a slot is given, with the same name fixes as
-`rename`. Nothing found in the main file names its slot, but whether
-the game lists and loads a copied slot isn't tested yet.
+`rename`. Whether the save's own files name their slot wasn't checked,
+and whether the game lists and loads a copied slot isn't tested yet.
 
 ## Still unknown
 
