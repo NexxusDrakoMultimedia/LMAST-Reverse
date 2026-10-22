@@ -112,6 +112,15 @@ in the facility window; `payment_Equip` doesn't charge it.
 The file has copies in `PRELOAD` packs ([`REBUILD.md`](REBUILD.md)), so
 patch an edit onto a disc with `patch_disc.py --copies`.
 
+The mod editor's **Facilities** tab edits the same fields through
+`set_field` and `edit_spec`, money shown in pounds, and logs the
+matching `plrcommon.py set`. Tested through the widgets, off-screen: a
+club house's cost (shown as £10,000,000) and build time, a refused build
+time of 300, and a stadium capacity, saved and equal to the logged
+command's file. A disc built from a mod folder with these edits can't
+also take `--mod facility-tiers`, which writes the same file;
+`patch_disc.py` refuses the pair.
+
 `plrcommon.py roundtrip` rebuilds the pack unchanged, then edits each of
 the 494 fields of the 113 records on its own and checks that only that
 field's word changes and reads back. It passes on the PAL and Japanese

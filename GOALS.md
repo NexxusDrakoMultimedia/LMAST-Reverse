@@ -80,7 +80,7 @@ the stages, and [`TODO.md`](TODO.md) what is left.
    (for example, a message reference that no longer resolves). *Started:*
    `SRC/editor.py`, one window with a tab per kind of data (People,
    Clubs, New club, Season, Free agents, Regulations, Training, Camps,
-   Kits, Text), saving to a mod folder laid out like `DAT/`; each tab
+   Facilities, Kits, Text), saving to a mod folder laid out like `DAT/`; each tab
    edits through its writer and takes the allowed values from it.
    File > Build disc puts the mod folder on a disc image and makes the
    patch of stage 6. `SRC/saveedit.py` edits a career save. Still to

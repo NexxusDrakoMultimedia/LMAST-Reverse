@@ -81,6 +81,11 @@ Tabs:
              clubs of its area, and its camp type, the one field edited,
              with what that type trains (from the Training tab, as the
              retail game reads it and with the LMASTER camp-types fix).
+    Facilities the facility records (PLRESOURCECOMMON.PAC entry 0,
+             plrcommon.py set; DOC/PLRESOURCECOMMON_FORMAT.md): pick a
+             table (sites, equipment, club houses, stadiums, adverts), then
+             a record, and edit its build costs, upkeep, build times and
+             stadium capacities. Money shows in pounds.
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
@@ -115,6 +120,7 @@ import leaguesize
 import mbb
 import patch_disc
 import pbdata
+import plrcommon
 import plrsim
 import camp
 import clubresult
@@ -2288,6 +2294,221 @@ class CampsTab(Tab):
         return True
 
 
+FACILITY_HELP = {
+    plrcommon.MONEY: "the game charges a build cost x the business cycle (75-125%) x any "
+                     "sponsor discount; upkeep is monthly",
+    plrcommon.TURNS: "turns (8 a month)",
+    plrcommon.CAPACITY: "seats",
+}
+STORED_PER_POUND = 6
+
+
+class FacilitiesTab(Tab):
+    """The facility records of PLRESOURCECOMMON.PAC entry 0 through
+    plrcommon.set_field and plrcommon.encode, as `plrcommon.py set` does:
+    a table, then a record, then its build costs, upkeep, build times and
+    (stadiums) capacities, in the ranges plrcommon.edit_spec gives. Money is
+    the stored unit, shown in pounds beside it."""
+    title = "Facilities"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.tables = None
+        self.changes = {}           # (table key, record, field) -> value, in edit order
+        self.key = sorted(plrcommon.FACILITY)[0]
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Table").pack(side="left")
+        self.keys = sorted(plrcommon.FACILITY)
+        self.table_names = ["%d.%d %s" % (k + (plrcommon.FACILITY[k][0],)) for k in self.keys]
+        self.table_var = tk.StringVar(value=self.table_names[0])
+        box = ttk.Combobox(bar, textvariable=self.table_var, values=self.table_names,
+                           state="readonly", width=34)
+        box.pack(side="left", padx=(4, 12))
+        box.bind("<<ComboboxSelected>>", lambda e: self.pick_table())
+        self.table_box = box
+        ttk.Label(bar, text="Build costs, upkeep, build times and stadium capacities "
+                            "(DOC/PLRESOURCECOMMON_FORMAT.md, DOC/ECONOMY.md).",
+                  foreground="#555").pack(side="left")
+
+        panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("record", "cost", "time")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, head, width in zip(cols, ("Record", "Build cost", "Build time"), (70, 130, 80)):
+            self.tree.heading(c, text=head)
+            self.tree.column(c, width=width, anchor="w" if c == "record" else "e")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=2)
+
+    # loading
+
+    def load(self, done=None):
+        try:
+            self.path = self.app.mod.source(COMMON)
+            with open(self.path, "rb") as f:
+                self.data = f.read()
+            _, entries = plrcommon.load_bytes(self.data, self.path)
+            self.tables = [bytearray(t) for t in entries[0]]
+        except (ValueError, struct.error, OSError) as e:
+            self.tables = None
+            self.app.status("Couldn't load the facility records: %s" % e)
+            messagebox.showerror("Facilities", "Couldn't load the facility records:\n%s" % e)
+            return
+        self.changes = {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    # the list
+
+    def pick_table(self):
+        self.key = self.keys[self.table_names.index(self.table_var.get())]
+        self.current = None
+        self.detail.clear()
+        self.refresh_list()
+
+    def count(self):
+        return len(self.tables[self.key[1]]) // plrcommon.FACILITY[self.key][2]
+
+    def first_time(self):
+        return "time0" if self.key == (0, 7) else "time"
+
+    def row(self, record):
+        cost = plrcommon.get_field(self.tables, self.key, record, "cost")
+        time_ = plrcommon.get_field(self.tables, self.key, record, self.first_time())
+        return (record, money_text(cost) if cost > 0 else "-", time_ if time_ >= 0 else "-")
+
+    def refresh_list(self):
+        if self.tables is None:
+            return
+        self.tree.delete(*self.tree.get_children())
+        for record in range(self.count()):
+            edited = any(k[:2] == (self.key, record) for k in self.changes)
+            self.tree.insert("", "end", iid=str(record), values=self.row(record),
+                             tags=("edited",) if edited else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    # the detail panel
+
+    def show(self, record):
+        self.current = record
+        name = plrcommon.FACILITY[self.key][0]
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%s, record %d" % (name, record), font=self.app.title_font).pack(
+            anchor="w", padx=8, pady=(8, 2))
+        if plrcommon.get_field(self.tables, self.key, record, self.first_time()) <= 0:
+            ttk.Label(box, text="Build time 0 or none: a level clubs start with, so its build "
+                                "cost is never charged.", foreground="#555").pack(
+                anchor="w", padx=8)
+        frame = ttk.Frame(box)
+        frame.pack(anchor="w", padx=8, pady=6)
+        self.pound_labels = {}
+        fields = sorted(plrcommon.FACILITY[self.key][4].items())
+        for r, (_, (fname, kind)) in enumerate(fields):
+            ttk.Label(frame, text=fname.replace("_", " ")).grid(row=r, column=0, sticky="w",
+                                                                padx=(0, 8), pady=1)
+            self.input(frame, record, fname).grid(row=r, column=1, sticky="w", pady=1)
+            extra = ttk.Label(frame, foreground="#555")
+            extra.grid(row=r, column=2, sticky="w", padx=(8, 0))
+            if kind == plrcommon.MONEY:
+                self.pound_labels[fname] = extra
+            lo, hi = plrcommon.edit_spec(self.key, fname)[1:]
+            ttk.Label(frame, text="%d-%d %s" % (lo, hi, "stored unit" if kind == plrcommon.MONEY
+                                                  else FACILITY_HELP[kind]),
+                      foreground="#777").grid(row=r, column=3, sticky="w", padx=(12, 0))
+        self.update_pounds(record)
+        ttk.Label(box, text="Money is in the game's stored unit (£1 = 6, €1 = 4); "
+                            + FACILITY_HELP[plrcommon.MONEY] + ".", foreground="#555",
+                  wraplength=700, justify="left").pack(anchor="w", padx=8, pady=(4, 8))
+
+    def update_pounds(self, record):
+        for fname, label in self.pound_labels.items():
+            v = plrcommon.get_field(self.tables, self.key, record, fname)
+            label.configure(text=money_text(v) if v >= 0 else "")
+
+    def input(self, parent, record, fname):
+        get = lambda: plrcommon.get_field(self.tables, self.key, record, fname)
+        apply = lambda text, revert: self.commit(record, fname, text, revert)
+        return value_input(parent, plrcommon.edit_spec(self.key, fname), str, get, apply)
+
+    # edits
+
+    def commit(self, record, fname, text, revert):
+        key = self.key
+        what = "%s %d, %s" % (plrcommon.FACILITY[key][0], record, fname)
+        try:
+            old = plrcommon.set_field(self.tables, key, record, fname, int(text))
+        except ValueError as e:
+            revert()
+            self.app.status("%s: %s" % (what, e))
+            messagebox.showerror("Facilities", "%s: %s" % (what, e))
+            return False
+        value = plrcommon.get_field(self.tables, key, record, fname)
+        self.changes.pop((key, record, fname), None)
+        self.changes[key, record, fname] = value
+        self.tree.item(str(record), values=self.row(record), tags=("edited",))
+        self.update_pounds(record)
+        self.app.status("%s: %d -> %d" % (what, old, value))
+        self.app.update_title()
+        return True
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(COMMON)
+        temps = [(out + ".new", out)]
+        try:
+            data = plrcommon.encode(self.data, self.tables)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, struct.error, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Facilities", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        args = ["%d.%d:%d:%s=%d" % (key + (record, fname, value))
+                for (key, record, fname), value in self.changes.items()]
+        cmd = ["python", "SRC/plrcommon.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + args
+        n = len(self.changes)
+        lines = log_lines("Facilities: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
+def money_text(value):
+    """A stored money value in pounds."""
+    return "£%s" % format(value // STORED_PER_POUND, ",")
+
+
 UNIFORM_LIST = "PLAYER/UNIFORM_LIST.TBB"
 UNIFORM_GK = "PLAYER/UNIFORM_GK.TBB"
 PLPACK = {"home": "PLAYER/PLPACK_HOME", "away": "PLAYER/PLPACK_AWAY"}   # .HED and .PAC
@@ -4020,8 +4241,10 @@ class App:
         self.regulations = RegulationsTab(self)
         self.training = TrainingTab(self)
         self.camps = CampsTab(self)
+        self.facilities = FacilitiesTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free,
-                     self.regulations, self.training, self.camps, self.kits, self.text]
+                     self.regulations, self.training, self.camps, self.facilities, self.kits,
+                     self.text]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)
