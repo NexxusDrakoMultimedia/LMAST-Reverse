@@ -27,12 +27,18 @@ item below.
    PCSX2. Next: a season played through on it
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). The end is a
    change players notice.
-2. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
+2. **The editor's facility-records tab** (section 5, "Tabs for the
+   writers that have none"): build costs, upkeep, build times and
+   stadium capacities through `plrcommon.py set` and its `edit_spec`
+   ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records)).
+   The writer is tested in PCSX2, so the tab lets people change
+   facility costs without the command line.
+3. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
    VPF numbers a new edit player, so `pmplayer.py` can fill an empty
    slot ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#still-unknown)).
    It follows straight on from the `pmplayer.py` and `save.py` edit
    player work.
-3. **The `GAME/` tactics AI files** (section 2, "The match"). The play
+4. **The `GAME/` tactics AI files** (section 2, "The match"). The play
    books, the combination scripts and `GAMEDATA.BIN`'s container are
    decoded, and so are the `.CBB` record layout and what each
    combination command does ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md),
