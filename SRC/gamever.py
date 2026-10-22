@@ -66,6 +66,8 @@ ADDRESSES = (
     ("mbb", "VARBUF_SETTERS", "exe", 0x40),
     ("pbdata", "GROUP_TABLE", "exe", 0x40),
     ("teaminit", "MINMAX_INIT", "exe", 0x40),
+    ("pmplayer", "NATION_MAP", "SAVEPRG.REL", 0x40),
+    ("pmplayer", "SHIRT_MAP", "SAVEPRG.REL", 0x4),
     ("save", "BF_P", "SAVEPRG.REL", 0x40),
     ("save", "BF_S", "SAVEPRG.REL", 0x40),
     ("save", "KEY_OFF", "SAVEPRG.REL", 0x10),

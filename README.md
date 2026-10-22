@@ -312,15 +312,17 @@ python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
 | Tool | Reads | Does |
 |---|---|---|
 | [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers, shows the date, money, squad, youth team and staff, edits money, your club's status, abilities, fatigue, condition, motivation the pair combinations behind the tactics screen's hearts (`combi`), staff abilities and the manager's dissatisfaction, the candidate lists (`candidates`), the accounts and season plan (`finances`; ad budget, ticket prices and season tickets can be set), and other clubs' friendship and club rank, with each club's reputation text (`clubs`), and re-encodes byte for byte; copies a save between the original game's names and a modded disc's (`rename`) or to the card's next free slot (`copy`) |
+| [`pmplayer.py`](SRC/pmplayer.py) | Virtua Pro Football's `pmplayer.bin`, `ISO/DLL/SAVEPRG.REL` | the edit players a career can import: decrypts and checks the file, shows each field and what the import makes of it, edits names, height, weight, abilities, skills, styles and the rest (`set`), round-trips byte for byte, and compares a career's imported player with its record (`check`) |
 
 ```bash
 python SRC/save.py show <card>/BESLES-54151-G003
 python SRC/save.py player <card>/BESLES-54151-G003 3
 python SRC/save.py set <card>/BESLES-54151-G003 edited.bin money=2000000000 0:all=99
 python SRC/save.py rename <card>/BESLES-54151-G003 <card>    # to BESLES-54151-M003, for a --mod-saves disc
+python SRC/pmplayer.py show <card>/BESLES-54153FASYS00/pmplayer.bin
 ```
 
-See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
+See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) and [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md).
 
 ### Editor
 
@@ -394,6 +396,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches) |
 | `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `training.py` (Training), `camp.py` (Camps), `uniform.py` (Kits), `mbb.py` (Text); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `pbdata.py` and `initteam.py` for names |
+| `pmplayer.py` | `save.py` (cipher, CRC, and career saves for `check`), `pbdata.py` for field names, `gamever.py` |
 
 The disassemblers connect to the format tools through the docs: a
 format is found in the code, documented in `DOC/`, implemented in
@@ -435,6 +438,7 @@ Every format and folder doc labels its claims **confirmed** or **empirical** and
 | [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events), scout-list search criteria, squad and loan limits, the 13 regions |
 | [`INJURIES.md`](DOC/INJURIES.md) | how injuries are rolled (fatigue and age pick the kind), the value table, recovery, and the condition-line messages, two of which were cut |
 | [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
+| [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md) | Virtua Pro Football's edit players (`pmplayer.bin`): file layout, CRC, each record field and what the career import makes of it, and its play-style bug |
 | [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | plan for a separate save editor on top of `save.py`: pages, steps, and the decisions still open |
 
 ### Mods and patches

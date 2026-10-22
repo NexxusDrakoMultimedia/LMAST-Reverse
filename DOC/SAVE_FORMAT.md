@@ -696,17 +696,16 @@ player ids (0–27,949) and its staff ids.
 `BESLES-54153FASYS00` (the category 2 name, below). All its files decrypt
 with Blowfish and the key `_FC_ACT_2005`, the same cipher as this game's
 saves. **Empirical**, from one card: `file.inf` starts with the save date
-as u32s (2025, 3, 26, 22, 25, 13); `pmplayer.bin` (8,192 bytes) holds the
-edit players: a list of their ids at `0x0` (`0x4e21`, `0x4e22`, padded
-with `0xff`) and a record of about 0x154 bytes each, with the short name
-("G.Binns"), the surname, height and weight as floats (180.0 and 75.0,
-as the player screen shows) and the ability bytes. The career's copy
-holds the same short name and abilities, without one value VPF has and
-this game doesn't. How the import converts the rest isn't traced.
+as u32s (2025, 3, 26, 22, 25, 13). The edit players are in
+`pmplayer.bin`; its layout and how the import converts each record are
+in [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md), and `pmplayer.py` reads
+and writes it.
 
-Seen in a career (RAM of a PCSX2 save state, user's import G.Binns): the
-edit work holds `0x7cce`, then "G.Binns" at `+0x6`; the squad player in
-slot 13 has id `0x7cce`, and its own Pbase copy carries the name too.
+Seen in a career (save G000, user's import G.Binns): the edit work holds
+`0x7cce`, then "G.Binns" at `+0x4`, the start of its `PlPbase`; the squad
+player in slot 13 has id `0x7cce`, and its own Pbase copy carries the
+name too. `pmplayer.py check` compares an edit work with the
+`pmplayer.bin` record it came from.
 
 ## Editing
 

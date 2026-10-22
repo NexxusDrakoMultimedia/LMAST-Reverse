@@ -181,12 +181,10 @@ known range. Grouped by what a mod would change.
       statistics table 1, the candidate records, the other clubs' and
       staff's untraced bytes, and when the club ranking runs
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-- [ ] The edit player: the layout of a Virtua Pro Football edit-player
-      record in `pmplayer.bin` (about 0x154 bytes; names, height, weight
-      and abilities are placed), the rest of `BESLES-54153FASYS00`, and
-      how the import (`SAVEPRG.REL` `GetEditPlayerData` `0x40650`,
-      `getEditPlayerData` `0x41938`) converts a record into the career's
-      edit work at block 1 `+0x12600` ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
+- [ ] The rest of Virtua Pro Football's save: how VPF numbers a new
+      edit player (so `pmplayer.py` can fill an empty slot), the record
+      bytes the import doesn't read, and `file.inf`'s check
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#still-unknown))
 
 ## 3. Write: a writer for every format a mod changes
 
@@ -205,11 +203,9 @@ Stage 3. Every writer round-trips every file on the disc and goes into
       exclusives 11–12, combinations 13–14), the overseas branch costs
       (entry 1), and the nation and stadium tables `initteam.py` reads
       (`INITNATIDATA.TBB`, `STADIUM_DATA.TBB`)
-- [ ] Virtua Pro Football's edit players: a reader and writer for
-      `pmplayer.bin` (Blowfish, key `_FC_ACT_2005`), with `roundtrip`, so
-      a custom player can be made and brought into any career through
-      the game's own import; and `save.py` fields for the career's edit
-      work, once the record is decoded (section 2, [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
+- [ ] `save.py` fields for a career's edit player (block 1 `+0x12600`,
+      a `PlPbase` at `+0x4`), so an imported player can be changed in
+      the save editor ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
 - [ ] `SCHEDULE_LIST.TBB` (the national-team calendar): a field-level
       writer; only `patch_disc.py --mod national-cups` changes it now
 - [ ] The `STADIUM/` tables and `EMBLEM/` edit tables, once their fields
@@ -289,10 +285,12 @@ names the disc or the edit to build; the result goes into the doc.
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01`
-- [ ] A Virtua Pro Football edit player made or changed with the
-      `pmplayer.bin` writer (section 3), imported into a career through
-      the player editor: the name, height, weight and abilities should
-      show as written ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
+- [ ] A Virtua Pro Football edit player changed with `pmplayer.py set`
+      (copied over `pmplayer.bin` on a test card), imported into a new
+      career through the player editor: the name, height, weight and
+      abilities should show as written, and `pmplayer.py check` on the
+      career's save should report no differences
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
 
 ## 8. LMASTER Mod and other patches
 
@@ -301,8 +299,11 @@ tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
 - [ ] Candidates: the kind-6 injury value 1600 (`0x532d70`), the injury
       kind row past fatigue 1000, the short `EDIT_EMBLEM` tables
-      93/101/105. The "two months"/"nine months" injury lines need
-      thresholds chosen first
+      93/101/105, the edit-player import's play-style sort (its compare
+      at `SAVEPRG.REL 0x3df00` subtracts pointers, so only 4 of the 22
+      VPF styles can come in; [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record)).
+      The "two months"/"nine months" injury lines need thresholds
+      chosen first
 - [ ] Improvement: a harder economy (dearer facilities, a wider ticket
       price range, dearer advertising) once the research in section 2
       is done. More ideas (overseas bases, merchandise, reputation,

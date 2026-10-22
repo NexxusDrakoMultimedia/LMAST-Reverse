@@ -142,6 +142,9 @@ history holds the rest.
       `0x24a140`, not run-time data. Salaries are £10,000–£12,000,000 in
       steps of £10,000 (`teaminit.py limits`;
       [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md#salary-limits))
+- [x] Virtua Pro Football's `pmplayer.bin` and how the import converts
+      each record field into the career's edit player, checked against
+      save G000 ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
 
 ## 3. Write: a writer for every format a mod changes
 
@@ -168,6 +171,10 @@ history holds the rest.
       `settable` (the PwkScript data tables)
 - [x] `save.py set`: money, status, abilities, condition, combinations,
       staff, other clubs and the season plan; every save round-trips
+- [x] `pmplayer.py`: Virtua Pro Football's edit players, `set` and
+      `roundtrip` (both cards' files rebuild byte for byte), `check`
+      against a career, and `selftest` in `regress.py`
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
 
 ## 4. Rebuild: edits back on a bootable disc
 
