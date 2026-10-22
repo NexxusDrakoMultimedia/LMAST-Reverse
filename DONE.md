@@ -294,6 +294,9 @@ Each result is recorded in the doc named.
 - [x] `--mod harder-economy` (`LMAST-test-economy.iso`): tiered facility
       costs, tickets to £80 on both screens, ad budget to £10M, and a
       crowd at the new prices ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] The harder economy's income cuts (`sponsor-fees`, `tv-fees`,
+      `season-demand`, on `LMAST-test-economy.iso` with all six):
+      as on the test sheet ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 
 ## 8. LMASTER Mod and other patches
 
