@@ -10,7 +10,7 @@ The repo layout and the one-command setup are in the
 
 ## Format
 
-`DATA.CVM` is a Konami "ROFSBLD Ver.1.52" container: a 3-sector (0x1800
+`DATA.CVM` is a CRI ROFS container built with "ROFSBLD Ver.1.52": a 3-sector (0x1800
 byte) `CVMH`/`ZONE` header followed by a plain ISO9660 image. Only the
 ISO's table of contents is encrypted: the primary volume descriptor at
 sector 16 and the directory record sectors reachable from its root,

@@ -4,7 +4,7 @@
 
 Reimplements roxfan's CRI ROFS decryption algorithm (see
 DOC/DATA_CVM_EXTRACTION.md) in pure Python so no C++ toolchain is
-needed. Parses the CVMH/ZONE chunk header written by Konami's
+needed. Parses the CVMH/ZONE chunk header written by CRI's
 "ROFSBLD" tool, decrypts the encrypted ISO9660 table-of-contents
 (the primary volume descriptor and directory records) with the 8-byte
 ROFS key, and writes out a plain, mountable DATA.ISO. The key was first
