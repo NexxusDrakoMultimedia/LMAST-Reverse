@@ -278,15 +278,10 @@ names the disc or the edit to build; the result goes into the doc.
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01`
-- [ ] A Virtua Pro Football edit player changed with `pmplayer.py set`,
-      with `--mod vpf-styles` (`LMAST-test-vpfstyles.iso`, card
-      `LMAST-vpftest.ps2`: V. Drake at 190 cm, rated 95/90/88/80 in
-      styles 5, 12, 17 and 3): imported into a new career (England) through
-      the player editor, he should show 190 cm and play styles Second
-      Striker, Covering, Sweeper and Postplayer (retail: Postplayer only),
-      and `pmplayer.py check` on the career's save should report no
-      differences and the fixed import
-      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
+- [ ] `pmplayer.py check` on a career saved after importing the edited
+      V. Drake (`LMAST-vpftest.ps2`; the import itself is tested): it
+      should report no differences and the fixed import's styles
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record))
 
 ## 8. LMASTER Mod and other patches
 

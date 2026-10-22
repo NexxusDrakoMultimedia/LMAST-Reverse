@@ -116,11 +116,17 @@ numbering, not this bug.
 
 `pmplayer.styles(rec, fixed)` gives either import's slots, and
 `pmplayer.py check` says which one a career's styles match (equally
-rated styles may come in either order). **Not yet tested in PCSX2**
-(`LMAST-test-vpfstyles.iso` with the `LMAST-vpftest.ps2` card, whose
-V. Drake is rated 95/90/88/80 in styles 5, 12, 17 and 3: the retail
-import gives Postplayer only, the fixed one Second Striker, Covering,
-Sweeper and Postplayer).
+rated styles may come in either order).
+
+**Tested in PCSX2** (user screenshot, `LMAST-test-vpfstyles.iso` with
+the `LMAST-vpftest.ps2` card): V. Drake, edited with `pmplayer.py set`
+to 190 cm and rated 95/90/88/80 in styles 5, 12, 17 and 3 (84 in byte
+`+0xb9`), was imported into career G000 at the 2012–2013 season break
+(after G.Binns, its earlier edit player, was released). The player
+editor's result showed 190 cm and style icons in slots 1, 2, 3 and 5,
+slot 4 empty: the fixed import's `[5, 12, 17, 0, 3]`, with byte `+0xb9`
+(84, style 0, "none") ranked fourth. The retail import would give one
+style, in slot 4. So the edited file imports, and the sort works.
 
 ## Tested
 
