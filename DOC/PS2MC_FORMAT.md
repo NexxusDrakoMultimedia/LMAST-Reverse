@@ -139,10 +139,9 @@ money; 23 bytes of the card changed.
 47-byte file put into it): the game loaded G000 from the card, at
 2011–2012 week 4 weekend June, with € 30,864 on the top bar (123,456 ÷
 4). So a card written by `ps2mc.py` is read by the game, through a
-folder whose root directory and cluster chains `ps2mc.py` grew.
-
-**Not yet tested in PCSX2:** that the card's other saves still load, and
-that the `LMAST-TEST` folder shows in the PS2 browser.
+folder whose root directory and cluster chains `ps2mc.py` grew. The
+card's other saves still loaded, and the PS2 browser listed the
+`LMAST-TEST` folder `mkdir` made (user report).
 
 ## Still unknown
 

@@ -28,9 +28,9 @@ item below.
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). The end is a
    change players notice.
 2. **`.ps2` memory card images in the save editor** (section 5, "Save
-   editor"). `ps2mc.py` now reads and writes card images; the save
-   editor should open and save careers on them directly, and a card it
-   writes needs its PCSX2 test (section 7).
+   editor"). `ps2mc.py` reads and writes card images (tested in
+   PCSX2); the save editor should open and save careers on them
+   directly.
 3. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
    VPF numbers a new edit player, so `pmplayer.py` can fill an empty
    slot ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#still-unknown)).
@@ -284,9 +284,6 @@ names the disc or the edit to build; the result goes into the doc.
       age, injury value 0 on an injured player, captain and keyman
       experience, and the Edit player page on a career with one); the manager's Special Mention texts for dissatisfaction
       kinds 0–3, a save edit per kind
-- [ ] The rest of `LMAST-cardtest.ps2` (G000 with its edit is tested):
-      the card's other saves still load, and the PS2 browser shows the
-      `LMAST-TEST` folder ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
       ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
