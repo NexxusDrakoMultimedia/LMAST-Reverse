@@ -28,9 +28,6 @@ item below.
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
    match AI's `fb::` classes and which class makes each call, a way in
    for these too.
-2. **Test the league-balance switch** (sections 7 and 8):
-   `LMAST-test-leagues.iso` is built; a new career's home and away
-   games should alternate ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 
 ## 1. Read: every file parsed and checked
 
@@ -283,14 +280,6 @@ names the disc or the edit to build; the result goes into the doc.
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01`
-- [ ] League schedules (`LMAST-test-leagues.iso`, `--mod league-balance`
-      and the tutorial skip): start a career in England and read your
-      club's first 16 league games, home or away, on the Schedule
-      screen. Retail gives `HHAHAAHHAHHHHHAA` (slot 24) or
-      `AAAAHHAAAAAAAHHH` (slot 25); the test disc gives `AHAHAHAH…`.
-      Then play a game day or two, to check that the matches and the
-      league table work. The retail pattern also tells which slot your
-      club gets ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 
 ## 8. LMASTER Mod and other patches
 
@@ -301,10 +290,6 @@ tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
       kind row past fatigue 1000, the short `EDIT_EMBLEM` tables
       93/101/105. The "two months"/"nine months" injury lines need
       thresholds chosen first
-- [ ] Improvement: the badly balanced league schedules. `--mod
-      league-balance` is built (not in `--mod lmaster`); it needs the
-      PCSX2 test in section 7
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] Improvement: a harder economy (dearer facilities, a wider ticket
       price range, dearer advertising) once the research in section 2
       is done. More ideas (overseas bases, merchandise, reputation,

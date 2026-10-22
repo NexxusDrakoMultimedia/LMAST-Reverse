@@ -255,6 +255,9 @@ Each result is recorded in the doc named.
       Save to new slot does): G003 to G002 with a money edit is listed,
       loads with the edit, and G003 is unchanged
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#decisions))
+- [x] `--mod league-balance` (`LMAST-test-leagues.iso`): the Schedule
+      screen shows the club's league games alternating home and away,
+      and the games' details agree ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 
 ## 8. LMASTER Mod and other patches
 
@@ -273,7 +276,8 @@ Each result is recorded in the doc named.
       switch moves the names. Tested in PCSX2: drill 76 reads "Dribble
       training" on retail and "Pass training." with the switch
       ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early))
-- [x] Built: `--mod league-balance` (`schedule.py balance`) rebuilds the
-      22- and 26-club leagues and the 8-club VS leagues at their own size,
-      to no more than two games running at one venue; its PCSX2 test is in
-      TODO section 7 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] `--mod league-balance` (`schedule.py balance`, not in `--mod
+      lmaster`) rebuilds the 22- and 26-club leagues and the 8-club VS
+      leagues at their own size, to no more than two games running at one
+      venue. Tested in PCSX2: a new England career's league games
+      alternate `AHAH…` ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
