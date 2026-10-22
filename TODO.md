@@ -28,6 +28,11 @@ item below.
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
    match AI's `fb::` classes and which class makes each call, a way in
    for these too.
+2. **Salary limits** (section 2, "The starting season and the tables"):
+   read the min/max table at `0x5eb068`, filled at run time and indexed
+   by the currency option, over PINE, so the New club tab (section 5)
+   can offer the game's range
+   ([`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md#still-unknown)).
 
 ## 1. Read: every file parsed and checked
 
