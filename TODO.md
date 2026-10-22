@@ -28,11 +28,6 @@ item below.
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
    match AI's `fb::` classes and which class makes each call, a way in
    for these too.
-2. **Salary limits** (section 2, "The starting season and the tables"):
-   read the min/max table at `0x5eb068`, filled at run time and indexed
-   by the currency option, over PINE, so the New club tab (section 5)
-   can offer the game's range
-   ([`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md#still-unknown)).
 
 ## 1. Read: every file parsed and checked
 
@@ -74,9 +69,6 @@ known range. Grouped by what a mod would change.
       [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size)),
       and how your club and the rival become ranks 25 and 26 of the
       second division's past record
-- [ ] Salary limits: read the min/max table at `0x5eb068` (filled at run
-      time) over PINE, so the New club tab can offer the game's range
-      ([`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md#still-unknown))
 - [ ] The remaining schedule and club-ranking fields: `PeriodName.tbb`,
       the `make_list` sources, `CLUB_RANK_SYSTEM` tables 0, 1 and 4's
       effects ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#still-unknown),
@@ -244,8 +236,6 @@ allowed values; tests go through the widgets, off-screen.
       (`formset.py`), the tour opponents (`tour.py`), the detail-screen
       comment tables (`sqb.py settable`), and later the facility records
       and the club ranking once they have writers (section 3)
-- [ ] New club tab: offer the game's salary range once it is read
-      (section 2)
 - [ ] Save editor ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)):
       step 5, the player fields `save.py` reads but can't set yet
       (salary, contract years, age, injury, captain and keyman

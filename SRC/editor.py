@@ -1196,7 +1196,6 @@ class ClubsTab(Tab):
 
 TEAMINIT = "PARAM/TEAM_INIT_DATA.TBB"
 RIVAL_STYLE = (1, 0, 3, 2)      # 0x5531e0: Counter-Attack <-> Possession, Individual <-> Teamwork
-SALARY_RATE = 6                 # salaries show in pounds as value / 6 (TEAMINIT_FORMAT.md)
 
 
 class NewClubTab(Tab):
@@ -1304,9 +1303,15 @@ class NewClubTab(Tab):
         for row, (ti, ri, name, text) in enumerate(rows):
             ttk.Label(frame, text=text).grid(row=row, column=0, sticky="w", padx=(6, 12), pady=2)
             self.value(frame, t[ti], ri, name).grid(row=row, column=1, sticky="w", pady=2)
-        ttk.Label(box, text="Salaries show in game in pounds as the value / %d. The game keeps "
-                            "them within a range per currency that hasn't been read yet "
-                            "(TEAMINIT_FORMAT.md)." % SALARY_RATE,
+        lo, hi, step = teaminit.SALARY_LIMITS[teaminit.POUND]
+        ttk.Label(box, text="Salaries are %s-%s (£%s-£%s). The game rounds a salary up to a "
+                            "multiple of %s (£%s); the pound amount next to each is what the "
+                            "game shows. In euros the step is 40,000 (€10,000) "
+                            "(TEAMINIT_FORMAT.md)." % (
+                                format(lo, ","), format(hi, ","),
+                                format(teaminit.shown_money(lo), ","),
+                                format(teaminit.shown_money(hi), ","), format(step, ","),
+                                format(teaminit.shown_money(step), ",")),
                   foreground="#555", wraplength=900, justify="left").pack(anchor="w", padx=8,
                                                                        pady=(4, 12))
 
@@ -1340,7 +1345,8 @@ class NewClubTab(Tab):
                     pounds.pack(side="left", padx=4)
 
                     def show_pounds(ri=ri, k=t.fields.index("salary"), pounds=pounds):
-                        pounds.configure(text="£%s" % format(t.records[ri][k] // SALARY_RATE, ","))
+                        pounds.configure(text="£%s" % format(teaminit.shown_money(
+                            teaminit.salary_in_game(t.records[ri][k])), ","))
                     show_pounds()
                     self.salary_labels[t.index, ri] = show_pounds
 

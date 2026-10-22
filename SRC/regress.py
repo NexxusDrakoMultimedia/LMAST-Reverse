@@ -125,6 +125,8 @@ def checks():
          ["DAT/PARAM/PLRESOURCESIM.PAC"]),
         ("teaminit_show", ["teaminit.py", "show", "DAT/PARAM/TEAM_INIT_DATA.TBB"],
          ["DAT/PARAM/TEAM_INIT_DATA.TBB", "DAT/PARAM/PBDATA_EU.PAC"]),
+        # The money limits (salaries, transfer and loan fees) from their initializer.
+        ("teaminit_limits", ["teaminit.py", "limits", "ISO"], ["ISO/SLES_541.51"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),
         # The 215 event-character heads by name.
         ("packdata_names", ["packdata.py", "names", "DAT/PLAYER/FC_EURO_FACEPACK_01.HED"],

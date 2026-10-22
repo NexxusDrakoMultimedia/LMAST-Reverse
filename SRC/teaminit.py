@@ -45,10 +45,14 @@ Usage:
     python teaminit.py show      <TEAM_INIT_DATA.TBB> [table ...] [--pbdata PBDATA.PAC]
     python teaminit.py set       <in.TBB> <out.TBB> <table>:<record> <field>=<value> ... [<table>:<record> ...]
     python teaminit.py roundtrip <TEAM_INIT_DATA.TBB>
+    python teaminit.py limits    <ISO folder>
 
 `show` names players and staff from PBDATA_EU.PAC next to the file (or
 --pbdata). `set` writes a same-size table for patch_disc.py; records are
-numbered from 0 within a table, as `show` prints them.
+numbered from 0 within a table, as `show` prints them. `limits` decodes
+the money limits from the executable (either build): salaries are
+rounded up to a step and kept within a minimum and maximum per currency,
+the table at 0x5eb068 that the initializer at 0x24a140 fills.
 """
 import os
 import struct
@@ -226,15 +230,97 @@ def encode_file(buf, end, raw, tables):
     return out
 
 
+# Every salary in the file goes through SM2MoneySave_WithInRange (0x246f90)
+# with price kind 0 (0x25df08 squad, 0x25f370 manager, 0x25ee14 youth
+# manager, 0x25ee7c coaches, 0x25ef48 scouts, 0x25ec24/0x25ecfc candidate
+# lists). WithInRange_SM (0x246d18) rounds the value up to a multiple of
+# the step (EvenUpCalcMove 0x246c00), raises a non-zero value to the
+# minimum and lowers it to the maximum; the result / 100 is stored.
+# getMinMaxData (0x246bb8) picks the MinMaxData {min, max, step} at
+# 0x5eb068 + kind * 0x30 + currency * 0xc, in units of 100 (getMinSM
+# 0x246b58). The table is in .bss: the static initializer at 0x24a140
+# fills it from constants, and MinMaxData's constructor (0x246b08) rounds
+# min and max up to the step. The currency option (pwkOpt_GetMoney
+# 0x24a4c8) starts as 2 for language 0, else 1 (0x24a360); its values
+# index plMisc_MoneyRate's rates (SAVE_FORMAT.md).
+CURRENCIES = (("stored unit", 12), ("euro", 3), ("pound", 2), ("yen", 400))
+POUND = 2
+# Kinds 1 and 2 from their callers (pwkMoney_CalcMove*, pwkMoney_CalcRental*);
+# kind 3's (pwkTeam_SetSalary, pwkTeam_ArrivePlayer) hasn't been traced.
+PRICE_KINDS = ("salary", "transfer fee", "loan fee", "unknown")
+MINMAX_INIT = 0x24a140      # fills the MinMaxData table
+MINMAX_TABLE = 0x5eb068
+MINMAX_UNIT = 100
+# Kind 0, decoded by `limits`: (min, max, step) in the stored unit.
+SALARY_LIMITS = ((10000, 72000000, 10000), (40000, 72000000, 40000),
+                 (60000, 72000000, 60000), (30000, 72000000, 30000))
+
+
+def salary_in_game(value, currency=POUND):
+    """The salary the game stores for a table value (before the / 100),
+    as WithInRange_SM computes it; 0 stays 0."""
+    lo, hi, step = SALARY_LIMITS[currency]
+    v = -(-value // step) * step
+    if v and v < lo:
+        v = lo
+    return min(v, hi)
+
+
+def shown_money(value, currency=POUND):
+    """A stored amount in a currency, as plMisc_MoneyRate (0x215660) gives it."""
+    return value * CURRENCIES[currency][1] // CURRENCIES[0][1]
+
+
+def read_limits(exe):
+    """{(kind, currency): (min, max, step)} in the stored unit, from the
+    MinMaxData initializer in an executable (either build): the arguments
+    of each constructor call, tracked through lui/ori/addiu."""
+    import gamever
+    import sles_disasm
+    elf = sles_disasm.Elf(exe)
+    pc = gamever.at(exe, MINMAX_INIT)
+    regs = {0: 0}
+    out = {}
+    call = False
+    base = None
+    for _ in range(0x100):
+        w = struct.unpack_from("<I", elf.data, elf.v2f(pc))[0]
+        op, rs, rt, imm = w >> 26, w >> 21 & 31, w >> 16 & 31, w & 0xffff
+        if op == 0x0f:                          # lui
+            regs[rt] = imm << 16
+        elif op == 0x0d:                        # ori
+            regs[rt] = regs.get(rs, 0) | imm
+        elif op == 0x09:                        # addiu
+            regs[rt] = (regs.get(rs, 0) + (imm ^ 0x8000) - 0x8000) & 0xffffffff
+        elif op == 0 and w & 0x3f in (0x21, 0x25, 0x2d):     # move (addu/or/daddu)
+            regs[w >> 11 & 31] = regs.get(rs, 0) | regs.get(rt, 0)
+        elif op == 0x03:                        # jal: the delay slot runs first
+            call = True
+            pc += 4
+            continue
+        elif w == 0x03e00008:                   # jr $ra
+            break
+        if call:
+            call = False
+            a0, lo, hi, step = (regs.get(r) for r in (4, 5, 6, 7))
+            if base is None:
+                base = a0                       # the first call is entry 0
+            off = a0 - base
+            # The constructor's rounding (0x246b08).
+            lo, hi = (-(-lo // step) * step, -(-hi // step) * step)
+            out[off // 0x30, off % 0x30 // 0xc] = tuple(v * MINMAX_UNIT for v in (lo, hi, step))
+        pc += 4
+    return out, base
+
+
 # What an editor (SRC/editor.py) offers, narrower than set_field allows:
 # the values on the disc and those tested in PCSX2. Ages: the players' byte
 # is PlOpinfo +2, as in OTEAMMEMBER (initteam.SQUAD_EDIT_RANGES: 15-40);
 # staff ages are the database's staff ages (managers 35-55, scouts 35-58,
 # the same byte, TEAMINIT_FORMAT.md). Contracts: 1-6 covers this file's
 # (2-4 players, 1-3 staff) and OTEAMMEMBER's 2-6.
-# Salaries keep the field's range: the game clamps them to a minimum and
-# maximum per currency (WithInRange_SM 0x246d18, price kind 0, table at
-# 0x5eb068 filled at run time), which hasn't been read yet.
+# Salaries: the game's range in pounds (SALARY_LIMITS below), the PAL
+# English default currency; euros allow down to 40,000.
 EDIT_RANGES = {
     ("players", "age"): (15, 40),
     ("managers", "age"): (35, 58),
@@ -246,6 +332,9 @@ EDIT_RANGES = {
     ("rival", "newface"): (0, 3),
     ("rival", "search_region"): (0, 31),
     ("rival", "stadium"): (0, STADIUMS - 1),
+    ("players", "salary"): SALARY_LIMITS[POUND][:2],
+    ("managers", "salary"): SALARY_LIMITS[POUND][:2],
+    ("scouts", "salary"): SALARY_LIMITS[POUND][:2],
 }
 
 
@@ -376,6 +465,25 @@ def cmd_roundtrip(path):
         print("%s: %s" % (path, "rebuilt file identical" if out == buf else "!! rebuilt file differs"))
 
 
+def cmd_limits(iso_dir):
+    import gamever
+    exe = gamever.exe_path(iso_dir)
+    limits, base = read_limits(exe)
+    print("%s: MinMaxData table at %#x, filled by %#x" % (
+        os.path.basename(exe), base, gamever.at(exe, MINMAX_INIT)))
+    for (kind, cur), (lo, hi, step) in sorted(limits.items()):
+        name, _ = CURRENCIES[cur]
+        line = "kind %d %-12s %-11s min %11s  max %13s  step %9s  (in %s: %s-%s, step %s)" % (
+            kind, PRICE_KINDS[kind], name, format(lo, ","), format(hi, ","), format(step, ","),
+            name, format(shown_money(lo, cur), ","), format(shown_money(hi, cur), ","),
+            format(shown_money(step, cur), ","))
+        if kind == 0 and SALARY_LIMITS[cur] != (lo, hi, step):
+            line += "  !! teaminit.SALARY_LIMITS has %s" % (SALARY_LIMITS[cur],)
+        print(line)
+    if len(limits) != len(PRICE_KINDS) * len(CURRENCIES):
+        print("  !! %d entries, not %d" % (len(limits), len(PRICE_KINDS) * len(CURRENCIES)))
+
+
 def _opt(args, flag, default=None):
     if flag in args:
         i = args.index(flag)
@@ -397,6 +505,8 @@ def main(argv):
         cmd_set(args[0], args[1], args[2:])
     elif cmd == "roundtrip" and len(args) == 1:
         cmd_roundtrip(args[0])
+    elif cmd == "limits" and len(args) == 1:
+        cmd_limits(args[0])
     else:
         print(__doc__)
         return 1

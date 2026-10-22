@@ -80,7 +80,7 @@ from there.
 | `+0x08` | u16 (`lhu`) | id | players: database index (`getPbase`). Staff: the game adds `0x6d2e` (managers, 27,950) or `0x78e6` (scouts, 30,950) |
 | `+0x0c` | u8 (`lbu`) | age | players: `PlOpinfo +2`, the age, as in `OTEAMMEMBER`. Staff: the slot's byte that the fallback fills from manager-record byte `0x22` (`0x25eff4`) or scout-record byte `0x18` (`0x25f038`) |
 | `+0x10` | u8 | contract | players: `PlOpinfo +4` and `PlPinfo +0x21d`, the contract years (fallback 3). Staff: the 4th argument of `plMinfo_InitDb`/`plSinfo_InitDb` (fallback 3) |
-| `+0x14` | u32 | salary | passed through `SM2MoneySave_WithInRange` (`0x246f90`) and stored as the salary (`PlPinfo +0x218`; coaches `PlMinfo +0xb8`). Fallback for players 150,000 (`0x249f0`) |
+| `+0x14` | u32 | salary | in the stored money unit; `SM2MoneySave_WithInRange` (`0x246f90`) rounds it and keeps it within the [salary limits](#salary-limits), and the result ÷ 100 is the salary (`PlPinfo +0x218`; coaches `PlMinfo +0xb8`). Fallback for players 150,000 (`0x249f0`) |
 
 Table 3 has only the first four fields, and player `0xffffffff` is an
 empty slot: `getPbase` finds no player and the slot stays empty
@@ -138,6 +138,58 @@ records, with the table's ages and contracts, after the club's own coach
 or scout. The **Manager Candidate List** doesn't come from this file. Its
 "List criteria" column showed "7 Training cycle" for every candidate;
 whether that counts down from the entry's last byte (8) is a guess.
+
+### Salary limits
+
+Every salary in the file goes through `SM2MoneySave_WithInRange` with
+price kind 0: the squad (`0x25df08`), the manager (`0x25f370`), the
+youth-team manager (`0x25ee14`), the coaches (`0x25ee7c`), the scouts
+(`0x25ef48`) and the two candidate lists (`0x25ec24`, `0x25ecfc`). The
+game then:
+
+1. rounds the value up to a multiple of the currency's step
+   (`EvenUpCalcMove`, `0x246c00`);
+2. raises a non-zero value below the minimum to the minimum, and lowers
+   a value above the maximum to the maximum (`WithInRange_SM`,
+   `0x246d18`). 0 stays 0.
+
+The limits are a table of 12-byte `MinMaxData {min, max, step}` entries
+at `0x5eb068 + kind × 0x30 + currency × 0xc`, in units of 100
+(`getMinMaxData` `0x246bb8`, `getMinSM` `0x246b58`). The table is in
+`.bss`, so it isn't in the executable's file: the static initializer at
+`0x24a140` (called from `pwk_money.cpp`'s global constructor
+`0x24a2f0`) fills it from constants in its code, and the constructor
+(`0x246b08`) rounds min and max up to the step. The currency is the
+money option (`pwkOpt_GetMoney`, `0x24a4c8`); it starts as 2 for
+language 0 and as 1 otherwise (`0x24a360`). Its values index the money
+rates in [`SAVE_FORMAT.md`](SAVE_FORMAT.md): 0 the stored unit, 1 the
+euro, 2 the pound, 3 the yen.
+
+**Confirmed from the game code** (`teaminit.py limits ISO`, which
+decodes the initializer), in the stored unit:
+
+| Kind | Currency | Min | Max | Step | As shown |
+|---|---|---|---|---|---|
+| 0 salary | stored unit | 10,000 | 72,000,000 | 10,000 | – |
+| 0 salary | euro | 40,000 | 72,000,000 | 40,000 | €10,000–€18,000,000, steps of €10,000 |
+| 0 salary | pound | 60,000 | 72,000,000 | 60,000 | £10,000–£12,000,000, steps of £10,000 |
+| 0 salary | yen | 30,000 | 72,000,000 | 30,000 | ¥1,000,000–¥2,400,000,000, steps of ¥1,000,000 |
+| 1 transfer fee | (same pattern) | 100,000–600,000 | 720,000,000 | = min | £100,000–£120,000,000 |
+| 2 loan fee | (as kind 0) | 10,000–60,000 | 72,000,000 | = min | £10,000–£12,000,000 |
+| 3 not traced | (same pattern) | 1,000–6,000 | 300,000 | = min | £1,000–£50,000 |
+
+Kinds 1 and 2 are named from their callers (`pwkMoney_CalcMove*` and
+`pwkMoney_CalcRental*`). Kind 3 is used by `pwkTeam_SetSalary` and
+`pwkTeam_ArrivePlayer` (`0x2663bc`, `0x265450`), for an amount not yet
+identified. The Japanese executable has the same table (at `0x5e8c68`,
+filled by `0x24a5a8`).
+
+So in pounds a salary from this file shows as the value rounded up to a
+multiple of 60,000, ÷ 6, at least £10,000 and at most £12,000,000. This
+explains the tests below: Dale's 450,000 became 480,000, £80,000, and
+the user's report that the highest salary is £12 million. The editor's
+New club tab offers 60,000–72,000,000 and shows each salary in pounds
+as the game will show it.
 
 ### The rival club (tables 6, 7 and 8)
 
@@ -251,28 +303,22 @@ matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
   tests; the code that adds the year hasn't been traced).
 - Salaries show in pounds as the table's value ÷ 6, the pound rate in
   [`SAVE_FORMAT.md`](SAVE_FORMAT.md): Hodgson 900,000 showed £150,000
-  and Reily 540,000 £90,000. Dale showed £80,000, not £75,000, maybe
-  after a raise during the season.
+  and Reily 540,000 £90,000. Dale's 450,000 showed £80,000: the game
+  rounds it up to 480,000 ([salary limits](#salary-limits)).
 
 ## Still unknown
 
 - Whether the candidate lists' "List criteria" counts down from the
   entry's last byte.
-- Why H.Dale's salary showed £80,000 rather than 450,000 ÷ 6.
-- The salary limits. Every salary goes through `SM2MoneySave_WithInRange`
-  (`0x246f90`) with price kind 0, and `WithInRange_SM` (`0x246d18`) clamps
-  it between a minimum and maximum from `getMinMaxData` (`0x246bb8`): a
-  table at `0x5eb068` indexed by the currency option (`pwkOpt_GetMoney`),
-  in units of 100. The table isn't in the executable's file, so it is
-  filled at run time and has to be read from memory (PINE). User report:
-  the highest salary is £12 million, which at the pound rate above would
-  be a stored 72,000,000 (720,000 in the table's units of 100); unchecked.
+- What price kind 3 of the [salary limits](#salary-limits) table limits.
 
 ## Checking the claims
 
 ```bash
 python SRC/teaminit.py info DAT/PARAM
 python SRC/teaminit.py show DAT/PARAM/TEAM_INIT_DATA.TBB 1 6 7 8
+python SRC/teaminit.py limits ISO                              # the salary limits
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 24a140 110      # their initializer
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_Init2
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 25dc50 38      # squad lookup
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 25e4a8 220     # rival club, table 6 quirk at 0x25e6d0

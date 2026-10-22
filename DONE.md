@@ -138,6 +138,10 @@ history holds the rest.
 - [x] The `COMBINATION2.CBB` record layout (`bpb.py cbb`), the
       combination roles' eight modes and what each of the 29 combination
       commands does ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#cbb-records))
+- [x] The money limits at `0x5eb068`: constants in the initializer at
+      `0x24a140`, not run-time data. Salaries are £10,000–£12,000,000 in
+      steps of £10,000 (`teaminit.py limits`;
+      [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md#salary-limits))
 
 ## 3. Write: a writer for every format a mod changes
 
@@ -201,6 +205,8 @@ history holds the rest.
 - [x] Save editor: File > Save to new slot, and `save.py copy`, which
       copy a save to the card's next free slot and leave the original as
       it is ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#decisions))
+- [x] New club tab: salaries limited to the game's range, with each one
+      shown in pounds as the game will show it
 
 ## 6. Distribute: sharing a mod
 
