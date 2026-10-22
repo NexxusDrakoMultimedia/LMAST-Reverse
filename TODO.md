@@ -41,11 +41,6 @@ item below.
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
    match AI's `fb::` classes and which class makes each call, a way in
    for these too.
-4. **A short guide for players** (section 6): checking the disc against
-   Redump, applying an xdelta patch, what the mod switches do
-   (`--mod lmaster`, `--mod harder-economy`), and what happens to saves
-   (`--mod-saves`, the save editor on folder cards and card files).
-   Much is ready to share, and nothing explains it to a player yet.
 
 ## 1. Read: every file parsed and checked
 
@@ -249,9 +244,6 @@ Stage 6. See [`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod).
       many players keep instead of ISOs
 - [ ] Decode a patch that xdelta3 itself made with `vcdiff.py apply`
       (only the other direction is tested)
-- [ ] A short guide for players: check the disc against Redump, apply an
-      xdelta patch, what the mod switches do, and what happens to saves
-      (`--mod-saves`, the save editor on folder cards and card files)
 
 ## 7. Tests in PCSX2
 

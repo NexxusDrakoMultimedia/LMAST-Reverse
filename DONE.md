@@ -251,6 +251,9 @@ history holds the rest.
       (and so PCSX2's GameDB fixes), `save.py rename` moves a save, and
       every patch prints the executable's PCSX2 CRC
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
+- [x] A players' guide, [`INSTALL.md`](INSTALL.md): checking the disc
+      against Redump, applying a patch, the mod switches, saves on a
+      modded disc and the save editor, and building a patch
 
 ## 7. Tests in PCSX2
 

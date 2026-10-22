@@ -77,6 +77,7 @@ In that case:
 | `TODO.md` | tasks, ordered by the stages of `GOALS.md` (read, understand, write, rebuild, edit, distribute), then the in-game tests and the LMASTER Mod. Each links the doc that holds its details instead of repeating them |
 | `DONE.md` | finished items, one or two lines each, under the same section numbers as `TODO.md` |
 | `README.md` | setup, every tool with what it does, how the tools depend on each other, and the doc index |
+| `INSTALL.md` | the players' guide: checking the disc, applying a patch, saves, and building a patch. Update it when a `--mod` switch or group is added or changes what it does |
 
 A new open question goes into the doc first; it gets a `TODO.md` item
 only when it is a task someone should pick up.
