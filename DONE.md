@@ -310,7 +310,8 @@ Each result is recorded in the doc named.
       crowd at the new prices ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [x] A Virtua Pro Football edit player edited with `pmplayer.py set`,
       imported with `--mod vpf-styles`: 190 cm as written, and four play
-      styles where the retail import gives one
+      styles in slots 1–4 (with "none" kept out) where the retail import
+      gives one
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record))
 - [x] The save editor's Save to new slot on a card file (`Mcd001.ps2`,
       `ps2mc.py copy`): the new slot showed in the load list and loaded

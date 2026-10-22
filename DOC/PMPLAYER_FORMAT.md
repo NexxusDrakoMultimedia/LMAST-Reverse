@@ -132,8 +132,10 @@ slot 4 empty: the fixed import's `[5, 12, 17, 0, 3]`, with byte `+0xb9`
 style, in slot 4. So the edited file imports, and the sort works. That
 test ran the compare fix alone; with the fifth word (rating byte
 `+0xb9` as 0) V. Drake should come in as Second Striker, Covering,
-Sweeper and Postplayer in slots 1–4, slot 5 empty. **Not yet tested in
-PCSX2** (the same disc, updated).
+Sweeper and Postplayer in slots 1–4, slot 5 empty. **Tested in PCSX2**
+(user screenshot, the same disc updated with the fifth word, the same
+route): V. Drake came in at 190 cm with style icons in slots 1–4 and
+slot 5 empty, Postplayer moved up from slot 5 to slot 4.
 
 ## Tested
 
