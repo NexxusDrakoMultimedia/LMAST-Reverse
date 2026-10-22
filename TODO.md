@@ -32,11 +32,6 @@ item below.
    list's English towns, a keeper camp raising saving and catching,
    Santiago's description, Canberra's last two clubs, and a national cup
    final no longer on the year's last turn.
-3. **Which restart kick kind is corner, free kick, penalty and goal
-   kick** (section 2, "The match"). The kind table sorts all 41 kinds
-   into families ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-kind-table));
-   telling the members of a family apart means tracing the intentions'
-   candidate builders or the set plays' events (`0x94018`).
 
 ## 1. Read: every file parsed and checked
 
@@ -130,9 +125,9 @@ known range. Grouped by what a mod would change.
       0 and 1 are, the other callers of `GAMEPRG.REL 0x13abb8`, and
       whether anything reads `AI_PARAM.BIN`
       ([`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md#still-unknown))
-- [ ] Match parameters: which kick kind in a family is which situation
-      (3 and 4, the crosses, shots, tackles and restart kinds) and kind
-      5, flag bits `0x200`–`0x2000`, the 45 getter calls
+- [ ] Match parameters: where the kick-off, penalty and goal kick kinds
+      (27–29, 31, 34, 35) are first set, what tells apart 3 and 4, the
+      in-play pairs and the tackles, kind 5, flag bits `0x200`–`0x2000`, the 45 getter calls
       with no class, the sources of parameters 5, 16 and 24, and whether
       any code reads leadership, pressure, the offside-line skill or the
       ball touch straight from the player object

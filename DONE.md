@@ -132,6 +132,9 @@ history holds the rest.
       `0x704f0`): flags for all 41 kinds, sorting them into passes,
       through passes, long balls, crosses, shots, throw-ins and restarts
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-kind-table))
+- [x] Where each kick kind is made: the corner (36, 37), free-kick (38–40)
+      and throw-in kinds, and the intention behind each in-play pass,
+      cross and shot kind ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#where-each-kind-is-made))
 
 ## 3. Write: a writer for every format a mod changes
 
