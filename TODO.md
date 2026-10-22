@@ -285,6 +285,10 @@ names the disc or the edit to build; the result goes into the doc.
       experience, and the Edit player page on a career with one); the manager's Special Mention texts for dissatisfaction
       kinds 0–3, a save edit per kind
       ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
+- [ ] `--mod season-status` (`LMAST-test-seasonstatus.iso`): G000 with
+      80,000 season tickets on sale in the plan should sell 80% (48% on
+      the retail game), read from the save with `save.py finances`
+      ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST
@@ -307,9 +311,7 @@ tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
       kind row past fatigue 1000, the short `EDIT_EMBLEM` tables
       93/101/105, the edit-player import's play-style sort (its compare
       at `SAVEPRG.REL 0x3df00` subtracts pointers, so only 4 of the 22
-      VPF styles can come in; [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record)),
-      the season-ticket status factor that stops at 0.6
-      ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets)).
+      VPF styles can come in; [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record)).
       The "two months"/"nine months" injury lines need thresholds
       chosen first
 - [ ] Improvement: a harder economy, built as `--mod harder-economy`

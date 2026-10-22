@@ -293,7 +293,8 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   disc its own saves. The LMASTER Mod's fixes (`--mod lmaster` for all of
   them, [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) are
   `sponsor-negotiation`, `rival-manager`, `national-cups`, `camp-types`,
-  `camp-cities`, `camp-santiago`, `camp-clubs` and `drill-names`. Its
+  `camp-cities`, `camp-santiago`, `camp-clubs`, `drill-names` and
+  `season-status`. Its
   improvements stay out of `lmaster`: `league-balance` rebuilds the
   league schedules that send a club to one venue up to 9 times running,
   and `--mod harder-economy` is `facility-tiers` (dearer facilities,

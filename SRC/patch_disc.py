@@ -69,10 +69,11 @@ to the new last sector. Files outside DATA.CVM keep their size.
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
-drill-names, facility-tiers, wider-tickets, dearer-ads, sponsor-fees,
-tv-fees, season-demand, launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
-(sponsor-negotiation, rival-manager, national-cups, camp-types,
-camp-cities, camp-santiago, camp-clubs, drill-names; DOC/LMASTER_MOD.md).
+drill-names, season-status, facility-tiers, wider-tickets, dearer-ads,
+sponsor-fees, tv-fees, season-demand, launcher, mod-saves. --mod lmaster
+is the LMASTER Mod's fixes (sponsor-negotiation, rival-manager,
+national-cups, camp-types, camp-cities, camp-santiago, camp-clubs,
+drill-names, season-status; DOC/LMASTER_MOD.md).
 league-balance and the harder economy (--mod harder-economy:
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand) are the mod's improvements, so
@@ -145,6 +146,12 @@ training trained shooting. The names move one message later in
 jackknife name goes to 1045, the dummy drill 74 no coach teaches. A
 MES.PAC target gets the fix in its own bytes. The Japanese release has
 the right numbering and is left alone. See DOC/TRAINING_FORMAT.md.
+
+season-status (whole disc image only) restores the season-ticket status
+factor: pwkUnkei_GetExpectSeat scales demand by club status in bands of
+10,000 (0.5 up to 1.0 above 50,000), but its tests gave every status over
+10,000 the 0.6 band. 31 words of SLES_541.51 from 0x272840 rewrite the
+ladder. See DOC/ECONOMY.md#season-tickets.
 
 facility-tiers (plrcommon.facility_tiers) doubles every facility's build
 costs and upkeep, and more for the bigger levels: grounds x2 and x4,
@@ -1734,6 +1741,49 @@ def plan_launcher(f, img):
             for i, (a, b) in enumerate(zip(data, new)) if a != b], []
 
 
+# --- the season-ticket status factor (DOC/ECONOMY.md#season-tickets) -----------
+
+# pwkUnkei_GetExpectSeat (SLES 0x2727c8) scales season-ticket demand by
+# club status in bands of 10,000: 0.5, 0.6, 0.7, 0.8, 0.9 and 1.0 above
+# 50,000. Its tests (0x272840-0x2728d8) take the first band for every status
+# over 10,000, so no club gets more than 0.6. The fix rewrites the ladder
+# as a straight run: load each band's value, keep it while the status is
+# below the band's top (sltiu, or ori and sltu past 0x7fff), then
+# mtc1 $at, $f20 and on to 0x2728dc with $v0 = 0x10000, as before. The last
+# 8 words of the old ladder become unreachable and stay.
+SEASON_STATUS_OLD = (
+    0x3c013f00, 0x4481a000, 0x0040182d, 0x28622711, 0x14400006, 0x28624e21, 0x3c013f19,
+    0x3421999a, 0x4481a000, 0x1000001d, 0x3c020001, 0x14400006, 0x28627531, 0x3c013f33,
+    0x34213333, 0x4481a000, 0x10000016, 0x3c020001, 0x14400006, 0x34029c40, 0x3c013f4c,
+    0x3421cccd, 0x4481a000, 0x1000000f, 0x3c020001, 0x0043102a, 0x10400006, 0x3c020001,
+    0x3c013f66, 0x34216666, 0x4481a000)
+SEASON_STATUS_NEW = (
+    0x0040182d,                                         # move $v1, $v0 (the status)
+    0x3c013f00,                                         # $at = 0.5
+    0x2c622711, 0x14400018, 0x00000000,                 # < 10,001: keep
+    0x3c013f19, 0x3421999a,                             # 0.6
+    0x2c624e21, 0x14400013, 0x00000000,                 # < 20,001
+    0x3c013f33, 0x34213333,                             # 0.7
+    0x2c627531, 0x1440000e, 0x00000000,                 # < 30,001
+    0x3c013f4c, 0x3421cccd,                             # 0.8
+    0x34029c41, 0x0062102b, 0x14400008, 0x00000000,     # < 40,001
+    0x3c013f66, 0x34216666,                             # 0.9
+    0x3402c351, 0x0062102b, 0x14400002, 0x00000000,     # < 50,001
+    0x3c013f80,                                         # 1.0
+    0x4481a000,                                         # mtc1 $at, $f20
+    0x10000009, 0x3c020001)                             # b 0x2728dc; lui $v0, 1
+SEASON_STATUS_AT = 0x272840
+
+
+def plan_season_status(f, img):
+    """Jobs for --mod season-status."""
+    words = [(SLES_FILE, SEASON_STATUS_AT - 0xff000,
+              struct.pack("<%dI" % len(SEASON_STATUS_OLD), *SEASON_STATUS_OLD),
+              struct.pack("<%dI" % len(SEASON_STATUS_NEW), *SEASON_STATUS_NEW),
+              "%s 0x%x (season-ticket status ladder)" % (SLES_FILE, SEASON_STATUS_AT))]
+    return word_jobs(f, img, "season-status", words)
+
+
 # --- the harder economy (DOC/ECONOMY.md, DOC/LMASTER_MOD.md#improvements) ------
 
 COMMON_FILE, COMMON_ENTRY = "PARAM/PLRESOURCECOMMON.PAC", "plresourcecommon.pac"
@@ -1976,6 +2026,9 @@ SWITCHES = (
      "Training camps: Canberra's last two clubs appear in its list"),
     ("drill-names", plan_drill_names, [MES_FILE] + DRILL_PACKS,
      "Training: drills 75-86 show their own names (PAL's were one early, with a jackknife)"),
+    ("season-status", plan_season_status, [SLES_FILE],
+     "Season tickets: bigger clubs sell more of them, as the status bands intend "
+     "(every club over 10,000 status was stuck at the second band)"),
     ("facility-tiers", plan_facility_tiers, [COMMON_FILE, STATION_FILE],
      "Harder economy: bigger stadiums, club houses and grounds cost much more to build "
      "and keep up; other facilities twice as much"),
@@ -2012,7 +2065,7 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATIO
 # Names --mod takes for several switches at once.
 SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
                              "camp-types", "camp-cities", "camp-santiago", "camp-clubs",
-                             "drill-names"),
+                             "drill-names", "season-status"),
                  "harder-economy": ("facility-tiers", "wider-tickets", "dearer-ads",
                                     "sponsor-fees", "tv-fees", "season-demand")}
 

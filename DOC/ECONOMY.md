@@ -244,7 +244,13 @@ and otherwise gives 0.6. Its later steps (0.7, 0.8, 0.9, 1.0 above
 20,000, 30,000, 40,000 and 50,000) sit behind tests that can't succeed,
 because the first test already took every status above 10,000
 (`0x272838`–`0x2728dc`). A top club sells season tickets as if it were
-an average one.
+an average one. The Japanese executable has the same 31 words (at
+`0x2728f0`). `patch_disc.py --mod season-status` (in `--mod lmaster`)
+rewrites them as the intended ladder: 0.5 up to 10,000, then 0.6, 0.7,
+0.8 and 0.9 a band of 10,000, and 1.0 above 50,000. Checked by running
+both versions in a small MIPS simulator over the band edges. G000
+(status 65,326) with 80,000 season tickets on sale should sell 48% on
+the retail game and 80% with the fix.
 
 The money comes in at the start of the season through the event
 command that books income 3 (`SIMPRG.REL 0x121258`,
