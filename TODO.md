@@ -267,7 +267,8 @@ names the disc or the edit to build; the result goes into the doc.
 
 - [ ] The LMASTER Mod's camp switches on `LMAST-test-camps-mes.iso`: the
       English camps' towns, a keeper camp (Parma) raising saving and
-      catching, Santiago's description, Canberra's last two clubs
+      catching, Santiago's description, Canberra's last two clubs; needs
+      a career in its second season at least
       ([`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md))
 - [ ] A smaller first division (France at 18, from the Season tab) and
       two nations changed in one build; only England at 22 is tested
