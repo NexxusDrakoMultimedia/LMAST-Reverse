@@ -291,6 +291,9 @@ Each result is recorded in the doc named.
       window showed the edited costs, building charged the right
       account, and club house 1 took the edited 3 turns
       ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
+- [x] `--mod harder-economy` (`LMAST-test-economy.iso`): tiered facility
+      costs, tickets to £80 on both screens, ad budget to £10M, and a
+      crowd at the new prices ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 
 ## 8. LMASTER Mod and other patches
 
