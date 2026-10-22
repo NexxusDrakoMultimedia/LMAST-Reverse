@@ -273,8 +273,6 @@ names the disc or the edit to build; the result goes into the doc.
       age, injury value 0 on an injured player, captain and keyman
       experience, and the Edit player page on a career with one); the manager's Special Mention texts for dissatisfaction
       kinds 0–3, a save edit per kind
-      ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
-      ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST
@@ -286,7 +284,6 @@ names the disc or the edit to build; the result goes into the doc.
       abilities should show as written, and `pmplayer.py check` on the
       career's save should report no differences
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
-      ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
 
 ## 8. LMASTER Mod and other patches
 
