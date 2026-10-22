@@ -285,7 +285,9 @@ names the disc or the edit to build; the result goes into the doc.
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] A save written by the save editor's File > Save to new slot (or
       `save.py copy`): the game lists the new slot and loads it, with the
-      edit ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
+      edit ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)). Test card
+      `memcards/LMAST-SlotTest.ps2`: G002 is G003 copied by `save.py copy`
+      with `money=999999996` (£166,666,666; G003 has £2,511,807)
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
