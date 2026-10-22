@@ -246,8 +246,8 @@ def encode_file(buf, end, raw, tables):
 CURRENCIES = (("stored unit", 12), ("euro", 3), ("pound", 2), ("yen", 400))
 POUND = 2
 # Kinds 1 and 2 from their callers (pwkMoney_CalcMove*, pwkMoney_CalcRental*);
-# kind 3's (pwkTeam_SetSalary, pwkTeam_ArrivePlayer) hasn't been traced.
-PRICE_KINDS = ("salary", "transfer fee", "loan fee", "unknown")
+# kind 3 is a contract condition's money (PlPinfo +0x224, pwkTeam_SetSalary 0x2663bc).
+PRICE_KINDS = ("salary", "transfer fee", "loan fee", "condition")
 MINMAX_INIT = 0x24a140      # fills the MinMaxData table
 MINMAX_TABLE = 0x5eb068
 MINMAX_UNIT = 100

@@ -176,12 +176,14 @@ decodes the initializer), in the stored unit:
 | 0 salary | yen | 30,000 | 72,000,000 | 30,000 | ¥1,000,000–¥2,400,000,000, steps of ¥1,000,000 |
 | 1 transfer fee | (same pattern) | 100,000–600,000 | 720,000,000 | = min | £100,000–£120,000,000 |
 | 2 loan fee | (as kind 0) | 10,000–60,000 | 72,000,000 | = min | £10,000–£12,000,000 |
-| 3 not traced | (same pattern) | 1,000–6,000 | 300,000 | = min | £1,000–£50,000 |
+| 3 contract condition | (same pattern) | 1,000–6,000 | 300,000 | = min | £1,000–£50,000 |
 
 Kinds 1 and 2 are named from their callers (`pwkMoney_CalcMove*` and
-`pwkMoney_CalcRental*`). Kind 3 is used by `pwkTeam_SetSalary` and
-`pwkTeam_ArrivePlayer` (`0x2663bc`, `0x265450`), for an amount not yet
-identified. The Japanese executable has the same table (at `0x5e8c68`,
+`pwkMoney_CalcRental*`). Kind 3 limits the money of a contract
+condition: `pwkTeam_SetSalary` (`0x266350`) stores a `PlPCont_Cond` at
+`PlPinfo +0x220` and keeps its amount at `+0x224` within kind 3
+(`0x2663bc`); `pwkTeam_ArrivePlayer` (`0x265450`) does the same. Which
+condition it is (a bonus?) isn't traced. The Japanese executable has the same table (at `0x5e8c68`,
 filled by `0x24a5a8`).
 
 So in pounds a salary from this file shows as the value rounded up to a
@@ -310,7 +312,7 @@ matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
 
 - Whether the candidate lists' "List criteria" counts down from the
   entry's last byte.
-- What price kind 3 of the [salary limits](#salary-limits) table limits.
+- Which contract condition the money of price kind 3 is (`PlPinfo +0x220`, `+0x224`).
 
 ## Checking the claims
 

@@ -316,7 +316,7 @@ class SquadPage(ListPage):
                 db["shirt"], db["nation"])),
             ("Team fit", "%d%% (the game works it out from the vision below and the "
                          "manager's)" % p["team_fit"]),
-            ("Injury", "kind %d, %d days" % (p["injury"], p["injury_days"])),
+            ("Injury", "kind %d, value %d (not days)" % (p["injury"], p["injury_value"])),
             ("Captain, keyman exp", "%d, %d" % (p["captain_exp"], p["keyman_exp"])),
             ("Play style", "%s; learned: %s; to learn: %s (progress %d)" % (
                 save.style_name(p["play_style"]),
@@ -328,7 +328,7 @@ class SquadPage(ListPage):
                 money(p["salary"] * 100))),
         ))
 
-        cond = ttk.LabelFrame(box, text="Condition")
+        cond = ttk.LabelFrame(box, text="Condition, contract and experience")
         cond.pack(anchor="w", fill="x", padx=8, pady=4)
         fields = [t[len("<slot>:"):] for t, *_ in save.edit_spec(s)
                   if t.startswith("<slot>:") and t != "<slot>:<ability>"]

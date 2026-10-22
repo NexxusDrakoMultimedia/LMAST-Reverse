@@ -818,7 +818,9 @@ PBASE_COPY, PBASE_COPY_SIZE = 0x198, 0x74
 # Game state after it. (name, offset, struct format, settable range, source)
 PINFO_FIELDS = (
     ("position", 0x4, "<I", None, "grid cell; 0 = GK (ConvertPlayer_Bar)"),
-    ("age", 0x8, "<B", None, "current age; plPinfo_kanLowLimit(age) via ChangeKan 0x21c840"),
+    ("age", 0x8, "<B", (16, 40),
+     "current age; the decline-with-age table is read at age - 16 and only below 41 "
+     "(TRAINING_FORMAT.md); plPinfo_kanLowLimit 0x21c488 clamps to 15-32"),
     ("team", 0x190, "<I", None, "plPinfo_Team 0x218358"),
     ("fatigue", 0x23c, "<H", (0, 1000), "ChangeGtired clamps 0-1000; GetGTiredLevel 0x21b090"),
     ("status", 0x23e, "<H", None, "plPinfo_ChangeStatus"),
@@ -828,10 +830,16 @@ PINFO_FIELDS = (
     ("form", 0x24e, "<H", (0, 1000),
      "the game's 'kan': ChangeKan 0x21c840 clamps to an age limit-1000; below 400 the "
      "condition line says he has lost form (ConvertPlayer_Condition 0x285728)"),
-    ("injury_days", 0x250, "<H", None, "_plPinfo_SetKega, KegaRecoverDaysChno"),
-    ("injury", 0x254, "<I", None, "_plPinfo_SetKega kind, IsHkegaFunou"),
-    ("captain_exp", 0x25a, "<H", None, "plPinfo_ChangeCaptainExp"),
-    ("keyman_exp", 0x25c, "<H", None, "plPinfo_ChangeKeymanExp"),
+    ("injury_value", 0x250, "<H", (0, 0xffff),
+     "what's left of an injury, not days (INJURIES.md); plPinfo_CheckRecover 0x21ae30 "
+     "heals the player when recovery takes it to 0, so 0 heals him at the next practice; "
+     "no effect on a fit player"),
+    ("injury", 0x254, "<I", None,
+     "kind 0-8; read-only: _plPinfo_SetKega 0x2172f8 sets flags at +0x20c with it"),
+    ("captain_exp", 0x25a, "<H", (0, 10000),
+     "plPinfo_ChangeCaptainExp clamps 0-10000 (plMisc_OFcheck 0x21c97c)"),
+    ("keyman_exp", 0x25c, "<H", (0, 10000),
+     "plPinfo_ChangeKeymanExp clamps 0-10000 (0x21c9e4)"),
     ("play_style", 0x278, "<I", None, "plPinfo_GetPStyle / SetPStyle"),
     ("policy_type", 0x294, "<B", None, "pwkTeamType_PolicyInit 0x270328: from PlPbase +0x52"),
     ("policy_counter", 0x296, "<H", (0, 65535),
@@ -844,10 +852,32 @@ PINFO_FIELDS = (
     ("styles_learned", 0x290, "<B", None,
      "how many of the style path at +0x27c are learned (ConvertPlayer_PlayStyle 0x285238)"),
     ("style_progress", 0x292, "<H", None, "towards the next style (pwkPlayStyle_GetExp)"),
-    ("salary", 0x218, "<I", None, "annual salary / 100, stored money unit (pwkTeam_ArrivePlayer)"),
-    ("contract_years", 0x21d, "<B", None, "years remaining (pwkMoney_*, CheckRentalMoveEnable)"),
+    ("salary", 0x218, "<I", "salary",
+     "annual salary / 100 in the stored unit (pounds x 600); pwkTeam_SetSalary 0x266350 "
+     "keeps it within the salary limits for the save's currency (TEAMINIT_FORMAT.md)"),
+    ("contract_years", 0x21d, "<B", (1, 5),
+     "years left; 1-5 in every save (empirical). At 0 or less the year end opens renewal "
+     "talks (pwkTeam_ContractUpdatePlayers 0x266060), which add the years agreed"),
 )
 PINFO_OFFSET = {name: off for name, off, _, _, _ in PINFO_FIELDS}
+# Block 7, the options: pwkOpt_GetMoney (0x24a4c8) reads the u32 at +0x3c,
+# which the options' init sets to 2 for language 0, else 1 (0x24a360).
+OPTIONS_BLOCK, MONEY_OPTION_OFF = 7, 0x3c
+
+
+def salary_range(s=None):
+    """(low, high, step) of PlPinfo +0x218, in its units of 100: the salary
+    limits (teaminit.SALARY_LIMITS) for the save's currency. Without a
+    save the low end and step are None; the high end is the same in every
+    currency."""
+    import teaminit
+    if s is None:
+        return None, teaminit.SALARY_LIMITS[0][1] // 100, None
+    cur = s.currency()
+    if not 0 <= cur < len(teaminit.SALARY_LIMITS):
+        raise ValueError("money option %d isn't 0-3" % cur)
+    lo, hi, step = teaminit.SALARY_LIMITS[cur]
+    return lo // 100, hi // 100, step // 100
 # Staff, block 1. PlMinfo (0xbc bytes) and PlSinfo (0x94) are 4 bytes and
 # then a copy of the PlMbase / PlSbase (pbdata.py's struct offsets, + 4).
 # (role, offset, count, kind): the manager is PlTeamData +0x4854
@@ -1178,11 +1208,17 @@ class Save:
                        for c in range(len(COMPETITIONS))]
                 for t, name in enumerate(STATS_TABLES)}
 
+    def currency(self):
+        """The money option: 0 stored unit, 1 euro, 2 pound, 3 yen."""
+        return struct.unpack_from("<I", self.blocks, self.at(OPTIONS_BLOCK, MONEY_OPTION_OFF))[0]
+
     def set_field(self, o, fname, value):
         for name, off, fmt, rng, _ in PINFO_FIELDS:
             if name == fname:
                 if rng is None:
-                    raise ValueError("%s is read-only (its meaning isn't pinned down)" % fname)
+                    raise ValueError("%s is read-only (save.py spec lists what set takes)" % fname)
+                if rng == "salary":
+                    rng = salary_range(self)[:2]
                 if not rng[0] <= value <= rng[1]:
                     raise ValueError("%s must be %d-%d" % (fname, rng[0], rng[1]))
                 struct.pack_into(fmt, self.blocks, o + off, value)
@@ -1511,8 +1547,8 @@ def cmd_player(game, path, slot):
     print("  fatigue %d/1000, condition %d%%, motivation %d%%, team fit %d%%, form %d/1000, "
           "power %d/1000" % (p["fatigue"], p["condition"] * 100 // 65535,
                              p["motivation"] * 100 // 65535, p["team_fit"], p["form"], p["power"]))
-    print("  injury %d, %d days; captain exp %d, keyman exp %d; play style %d; status %d" % (
-        p["injury"], p["injury_days"], p["captain_exp"], p["keyman_exp"], p["play_style"],
+    print("  injury kind %d, value %d; captain exp %d, keyman exp %d; play style %d; status %d" % (
+        p["injury"], p["injury_value"], p["captain_exp"], p["keyman_exp"], p["play_style"],
         p["status"]))
     learned, later = ([style_name(x) for x in xs] for xs in s.style_path(o))
     print("  style %s; learned: %s; still to learn: %s (progress %d)" % (
@@ -1783,7 +1819,10 @@ def edit_spec(s=None):
         out.append(("plan:" + field, lo, hi, step, "season plan"))
     out.append(("<slot>:<ability>", 0, 99, 1, "ability level; <slot>:all sets all 64"))
     for name, _, _, rng, note in PINFO_FIELDS:
-        if rng is not None:
+        if rng == "salary":
+            lo, hi, step = salary_range(s)
+            out.append(("<slot>:" + name, lo, hi, step or 1, note))
+        elif rng is not None:
             out.append(("<slot>:" + name, rng[0], rng[1], 1, note))
     out.append(("combi:<a>:<b>", 0, 0xffff, 1,
                 "pair combination; combi:<a>:all sets a slot's pairs"))

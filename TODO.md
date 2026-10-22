@@ -232,10 +232,6 @@ allowed values; tests go through the widgets, off-screen.
       (`formset.py`), the tour opponents (`tour.py`), the detail-screen
       comment tables (`sqb.py settable`), and later the facility records
       and the club ranking once they have writers (section 3)
-- [ ] Save editor ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)):
-      step 5, the player fields `save.py` reads but can't set yet
-      (salary, contract years, age, injury, captain and keyman
-      experience), each first as a `save.py set` field
 - [ ] Save editor: `.ps2` memory card images (PCSX2's default), which
       need a reader and writer for the card's file system. A scratch
       reader (superblock, indirect FAT, 528-byte pages with ECC) listed
@@ -278,7 +274,9 @@ names the disc or the edit to build; the result goes into the doc.
 - [ ] The crest editor: whether the three short `EDIT_EMBLEM` layer
       tables lose visible parts
 - [ ] Save editor step 4: one save edited on each page (the Club page is
-      tested); the manager's Special Mention texts for dissatisfaction
+      tested), including the new player fields (salary, contract years,
+      age, injury value 0 on an injured player, captain and keyman
+      experience); the manager's Special Mention texts for dissatisfaction
       kinds 0–3, a save edit per kind
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG

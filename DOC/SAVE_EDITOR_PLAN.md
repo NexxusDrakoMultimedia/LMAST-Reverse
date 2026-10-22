@@ -8,9 +8,8 @@ memory card, apart from the mod editor (`editor.py`). The mod editor
 changes the game's files on the disc, before a career starts; the save
 editor changes one career after it has started. This doc is its plan:
 what it does, in what order it was built, and what is still to decide.
-Steps 1–3 are built (`python SRC/saveedit.py open <save>`); what is left
-is a PCSX2 test of each page's edit (step 4) and the player fields
-`save.py` can't set yet (step 5).
+Steps 1–3 and 5 are built (`python SRC/saveedit.py open <save>`); what
+is left is a PCSX2 test of each page's edit (step 4).
 
 ## Why a separate tool
 
@@ -98,11 +97,16 @@ Each page shows what `save.py` can already read, and edits only what
 4. **PCSX2 test** (by the user): one save edited in each page, loaded in
    game, the change seen on its screen. The Club page is tested. Recorded in
    [`SAVE_FORMAT.md`](SAVE_FORMAT.md) and `DONE.md`.
-5. **Later**: player fields that `save.py` reads but doesn't let `set`
-   change (`PINFO_FIELDS` with no range: salary, contract years, age,
-   injury days and kind, captain and keyman experience), each first as a
-   `save.py set` field with its range from the game code, then on the
-   Squad page.
+5. **More player fields** (done 2026-10-23): salary, contract years,
+   age, the injury value, and captain and keyman experience are `save.py
+   set` fields, each with its range from the game code (contract years
+   from the saves), and show on the Squad page with the rest. The salary
+   range follows the save's money option (block 7 `+0x3c`). The injury
+   kind stays read-only. The fields and their sources are in
+   [`SAVE_FORMAT.md`](SAVE_FORMAT.md). Tested through the widgets on a
+   copy of G003: five edits, two refusals (a salary below the pound
+   minimum, age 15), File > Save, and the logged command giving the
+   saved bytes. Not yet loaded in game.
 
 ## Decisions
 

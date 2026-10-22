@@ -272,19 +272,19 @@ Season Ticket Sales 50,000 (€7,500,000, €55, 100 and 39,000 before), with
 |---|---|---|---|
 | `0x0` | s16 | database id; negative = empty slot | confirmed, `0x2664d0` |
 | `0x4` | u32 | position (grid cell, as `pbdata.py`'s `POSITION_NAMES`) | empirical: GKs are 0, and a GK's bars depend on it (`PBDATA_FORMAT.md`) |
-| `0x8` | u8 | current age | confirmed: `plPinfo_ChangeKan` (`0x21c840`) passes it to `plPinfo_kanLowLimit`; matches the screen |
+| `0x8` | u8 | current age | confirmed: `plPinfo_ChangeKan` (`0x21c840`) passes it to `plPinfo_kanLowLimit` (`0x21c488`, which clamps it to 15–32); matches the screen. `set` takes 16–40: the decline-with-age table is read at age − 16 and only below 41 ([`TRAINING_FORMAT.md`](TRAINING_FORMAT.md)) |
 | `0xa` | 64 × {u16 exp, u16 limit, u16 cap} | abilities (below) | confirmed, `plPinfo_ConvAbilLv` (`0x216c90`), `pwkGUtl_AddExp` (`0x246028`) |
 | `0x190` | u32 | team | confirmed, `plPinfo_Team` (`0x218358`) |
 | `0x198` | 0x74 bytes | a copy of the player's database record header (`PlPbase`, the offsets in [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)): name, nation, database age, height, weight, shirt, leg, skills | confirmed: `plPinfo_IsForeigner` reads `+0x1ac` (`PlPbase +0x14`), `plPinfo_SetUnumber` `+0x1c3` (`+0x2b`), `plPinfo_IsEU` `+0x1fb` (`+0x63`), `plPinfo_IsSkill` `+0x1fc` (`+0x64`). Height, weight, leg and shirt match the screen |
-| `0x218` | u32 | annual salary ÷ 100, in the stored money unit | empirical: Carson 75,600 → £1,260,000, Aiblinger 72,000 → £1,200,000 (× 100 ÷ 6) |
-| `0x21d` | u8 | contract years remaining | empirical: 1 and 3, as on screen. Read by the `pwkMoney_*` transfer prices |
+| `0x218` | u32 | annual salary ÷ 100, in the stored money unit | empirical: Carson 75,600 → £1,260,000, Aiblinger 72,000 → £1,200,000 (× 100 ÷ 6). Confirmed: `pwkTeam_SetSalary` (`0x266350`) keeps it within the [salary limits](TEAMINIT_FORMAT.md#salary-limits) (kind 0) for the money option, so `set` takes the save's currency minimum (600 in pounds, 400 in euros) to 720,000 |
+| `0x21d` | u8 | contract years remaining | empirical: 1 and 3, as on screen; 1–5 in all five saves, the range `set` takes. Read signed by the `pwkMoney_*` transfer prices; at 0 or less, the year end opens renewal talks (`pwkTeam_ContractUpdatePlayers`, `0x266060`), which add the years agreed (`SIMPRG.REL 0x8cd20`) |
 | `0x23c` | u16 | fatigue, 0–1000 | confirmed: `plPinfo_ChangeGtired` clamps to 1000; `plPinfo_GetGTiredLevel` (`0x21b090`) gives level 0 up to 400, 1 up to 700, else 2 |
 | `0x240` | u16 | condition, 0–65535 | confirmed, `plPinfo_Cond5` (`0x217800`); the bar matches (Aiblinger 88%, "fully fit") |
 | `0x242` | u16 | motivation, 0–65535 | confirmed, `plPinfo_Moti2Lv` (`0x217b88`): ÷ `0x3333` gives 5 levels |
 | `0x24c` | u16 | "power", 0–1000 | confirmed range, `plPinfo_ChangePower` (`0x21c8c0`). Not the T-FIT bar |
 | `0x24e` | u16 | form (the game's "kan"), an age-dependent minimum to 1000 | confirmed: `plPinfo_ChangeKan` clamps it; below 400 the condition line says the player has lost form (`ConvertPlayer_Condition`, below) |
-| `0x250`, `0x254` | u16, u32 | injury value (what's left of the injury, not days) and injury kind, see [`INJURIES.md`](INJURIES.md) | `_plPinfo_SetKega`, `plPinfo_KegaRecoverDaysChno`, `plPinfo_IsHkegaFunou` |
-| `0x25a`, `0x25c` | u16 | captain and keyman experience | `plPinfo_ChangeCaptainExp`, `plPinfo_ChangeKeymanExp` |
+| `0x250`, `0x254` | u16, u32 | injury value (what's left of the injury, not days) and injury kind, see [`INJURIES.md`](INJURIES.md) | `_plPinfo_SetKega`, `plPinfo_KegaRecoverDaysChno`, `plPinfo_IsHkegaFunou`. `set` takes the value (`injury_value`), not the kind: `plPinfo_CheckRecover` (`0x21ae30`) heals the player once recovery takes the value to 0, so 0 heals him at the next practice. The kind goes with flags at `+0x20c` that `_plPinfo_SetKega` sets |
+| `0x25a`, `0x25c` | u16 | captain and keyman experience, 0–10,000 | confirmed: `plPinfo_ChangeCaptainExp` and `plPinfo_ChangeKeymanExp` clamp the sum with `plMisc_OFcheck(…, 10000)` (`0x21c97c`, `0x21c9e4`) |
 | `0x278` | u32 | current play style (below) | `plPinfo_GetPStyle` / `SetPStyle` |
 | `0x27c` | 5 × u32 | the style path: styles in the order the player learns them | confirmed, `ConvertPlayer_PlayStyle` (`0x285238`) |
 | `0x290` | u8 | how many of the path are learned | confirmed, the same function draws the current style and this many from the path (skipping repeats and 0) as the style icons |

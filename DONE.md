@@ -214,6 +214,10 @@ history holds the rest.
       it is ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#decisions))
 - [x] New club tab: salaries limited to the game's range, with each one
       shown in pounds as the game will show it
+- [x] Save editor step 5: salary (by the save's currency), contract
+      years, age, injury value, and captain and keyman experience as
+      `save.py set` fields and on the Squad page
+      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
 
 ## 6. Distribute: sharing a mod
 
