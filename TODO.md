@@ -22,9 +22,10 @@ item below.
 1. **The harder economy** (section 8). The research
    ([`ECONOMY.md`](DOC/ECONOMY.md)) and the facility writer
    (`plrcommon.py set`, tested in PCSX2) are done, and the chosen
-   values are built as `--mod harder-economy` and tested in PCSX2.
-   Next: a season played through on it, then the income side for the
-   late game (sponsors, TV, season tickets)
+   values are built as `--mod harder-economy`: the costs (tested in
+   PCSX2) and the late game's income cuts (sponsors, TV, season
+   tickets). Next: the income cuts' PCSX2 test (section 7), then a
+   season played through
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). The end is a
    change players notice.
 2. **`.ps2` memory card images** (section 5, "Save editor"). PCSX2 keeps
@@ -296,6 +297,11 @@ names the disc or the edit to build; the result goes into the doc.
       abilities should show as written, and `pmplayer.py check` on the
       career's save should report no differences
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
+- [ ] The income cuts (`LMAST-test-economy.iso`, all of
+      `--mod harder-economy`): sponsor candidates over £2M show the cut
+      fee (a £10M one about £6M), TV offers likewise, and the season
+      plan's season tickets sell about half as well for a big club
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
       ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
 
 ## 8. LMASTER Mod and other patches
@@ -313,10 +319,10 @@ tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
       The "two months"/"nine months" injury lines need thresholds
       chosen first
 - [ ] Improvement: a harder economy, built as `--mod harder-economy`
-      (`facility-tiers`, `wider-tickets`, `dearer-ads`; the values in
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)); tested in
-      PCSX2, still to be played through a season. Making the
-      late game harder needs the income side (sponsors, TV, season
-      tickets), not yet chosen. More ideas (overseas bases, merchandise, reputation,
+      (`facility-tiers`, `wider-tickets`, `dearer-ads`, `sponsor-fees`,
+      `tv-fees`, `season-demand`; the values in
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). The first
+      three are tested in PCSX2, the income cuts wait for theirs
+      (section 7), and the whole set for a season played through. More ideas (overseas bases, merchandise, reputation,
       player prices up to £250M, a third tier with a one-season game
       over) are in [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)

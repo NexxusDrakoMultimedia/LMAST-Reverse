@@ -69,12 +69,13 @@ to the new last sector. Files outside DATA.CVM keep their size.
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
-drill-names, facility-tiers, wider-tickets, dearer-ads, launcher,
-mod-saves. --mod lmaster is the LMASTER Mod's fixes
+drill-names, facility-tiers, wider-tickets, dearer-ads, sponsor-fees,
+tv-fees, season-demand, launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
 camp-cities, camp-santiago, camp-clubs, drill-names; DOC/LMASTER_MOD.md).
 league-balance and the harder economy (--mod harder-economy:
-facility-tiers, wider-tickets, dearer-ads) are the mod's improvements, so
+facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
+season-demand) are the mod's improvements, so
 they stay out of lmaster and are chosen on their own.
 Each also works as a flag of its own (--skip-tutorial, ...). With
 switches and no targets, `patch <image> <out_image>` is enough.
@@ -157,7 +158,11 @@ and respaces the ticket demand table (SLES 0x556120, 0x556250) over
 dearer-ads (whole disc image only) halves what the ad budget buys and
 doubles its maximum to 60,000,000 (£10M): the plan screen's limit and
 the popularity and ticket demand steps (SLES 0x268ce0, 0x2719e0,
-0x271a88, 0x271aa0). See DOC/ECONOMY.md.
+0x271a88, 0x271aa0). sponsor-fees and tv-fees (whole disc image only)
+keep sponsor fees and TV offers up to £2M and halve the part above
+(SIMPRG.REL 0x23d978, 212 sponsors; 0x241780, 19 TV offers).
+season-demand (whole disc image only) halves season-ticket demand
+(pwkUnkei_GetExpectSeat's divisor, SLES 0x272a10). See DOC/ECONOMY.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -1866,6 +1871,85 @@ def plan_dearer_ads(f, img):
     return word_jobs(f, img, "dearer-ads", DEARER_ADS)
 
 
+# sponsor-fees and tv-fees cut the big amounts only: up to INCOME_KEEP
+# (£2,000,000; amounts are paid x 100 in the stored unit) an amount stays,
+# above it half of the rest goes. The sponsors are 212 records of 0x48 at
+# SIMPRG.REL 0x23d978, ids 1-212 (plSponsor_GetDb 0x160dc0), with fees at
+# +0x14 and +0x18; the TV offers are 19 records of 0x1c at 0x241780 with
+# the base at +0x8 (DOC/ECONOMY.md). Each table's mark is one fee before
+# and after.
+INCOME_KEEP = 120000
+
+
+def income_cut(value):
+    return value if value <= INCOME_KEEP else INCOME_KEEP + (value - INCOME_KEEP) // 2
+
+
+# name: (offset, record size, first id, records, fee offsets, mark offset, retail mark)
+INCOME_TABLES = {
+    "sponsor-fees": (0x23d978, 0x48, 1, 212, (0x14, 0x18), 0x48 + 0x14, 1350000),
+    "tv-fees": (0x241780, 0x1c, 0, 19, (0x8,), 0x1c * 17 + 0x8, 3000000),
+}
+
+
+def income_table(data, switch):
+    """(old, new) bytes of the switch's table in SIMPRG.REL `data`, or None
+    when it is already cut; ValueError when it is neither."""
+    off, size, first, count, fields, mark, retail = INCOME_TABLES[switch]
+    held = struct.unpack_from("<i", data, off + mark)[0]
+    if held == income_cut(retail):
+        return None
+    if held != retail:
+        raise ValueError("%s: SIMPRG.REL 0x%x holds %d, expected %d; not the retail overlay?"
+                         % (switch, off + mark, held, retail))
+    start, end = off + size * first, off + size * (first + count)
+    new = bytearray(data[start:end])
+    for i in range(count):
+        for field in fields:
+            at = size * i + field
+            value = struct.unpack_from("<i", new, at)[0]
+            if value > 0:
+                struct.pack_into("<i", new, at, income_cut(value))
+    return data[start:end], bytes(new)
+
+
+def plan_income(f, img, switch, why):
+    if img.kind != "disc image":
+        raise ValueError("%s patches DLL/SIMPRG.REL, so it needs the whole disc image, not %s"
+                         % (switch, img.kind))
+    data = read_at(f, img, NEGO_FILE, 0, img.entry(NEGO_FILE).size)
+    got = income_table(data, switch)
+    if got is None:
+        return [], ["note: %s is already applied" % switch]
+    old, new = got
+    off, size, first = INCOME_TABLES[switch][:3]
+    return diff_jobs(NEGO_FILE, off + size * first, old, new, why), []
+
+
+def plan_sponsor_fees(f, img):
+    """Jobs for --mod sponsor-fees."""
+    return plan_income(f, img, "sponsor-fees",
+                       "sponsor-fees: sponsor fees over £2M lose half the rest")
+
+
+def plan_tv_fees(f, img):
+    """Jobs for --mod tv-fees."""
+    return plan_income(f, img, "tv-fees", "tv-fees: TV offers over £2M lose half the rest")
+
+
+# season-demand halves season-ticket demand: pwkUnkei_GetExpectSeat divides
+# by the float 60,000,000 (SLES 0x272a10/0x272a14, lui/ori); 120,000,000
+# only changes the lui. The ticket forecast and match crowds don't use it.
+SEASON_DEMAND = (
+    sles_word(0x272a10, 0x3c014c64, 0x3c014ce4, "season tickets: demand / 120,000,000"),
+)
+
+
+def plan_season_demand(f, img):
+    """Jobs for --mod season-demand."""
+    return word_jobs(f, img, "season-demand", SEASON_DEMAND)
+
+
 # --- the switch table ----------------------------------------------------------
 
 # (name, plan, files it edits, description), in the order they run. A
@@ -1899,6 +1983,12 @@ SWITCHES = (
      "Harder economy: ticket prices up to £80, with crowds falling off above £50"),
     ("dearer-ads", plan_dearer_ads, [NEGO_FILE, SLES_FILE],
      "Harder economy: advertising buys half as much per pound, up to £10M a season"),
+    ("sponsor-fees", plan_sponsor_fees, [NEGO_FILE],
+     "Harder economy: sponsor fees over £2M keep only half of the rest"),
+    ("tv-fees", plan_tv_fees, [NEGO_FILE],
+     "Harder economy: TV offers over £2M keep only half of the rest"),
+    ("season-demand", plan_season_demand, [SLES_FILE],
+     "Harder economy: half as many fans buy season tickets"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -1923,7 +2013,8 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATIO
 SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
                              "camp-types", "camp-cities", "camp-santiago", "camp-clubs",
                              "drill-names"),
-                 "harder-economy": ("facility-tiers", "wider-tickets", "dearer-ads")}
+                 "harder-economy": ("facility-tiers", "wider-tickets", "dearer-ads",
+                                    "sponsor-fees", "tv-fees", "season-demand")}
 
 
 def parse_mods(values):

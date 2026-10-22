@@ -297,8 +297,9 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   improvements stay out of `lmaster`: `league-balance` rebuilds the
   league schedules that send a club to one venue up to 9 times running,
   and `--mod harder-economy` is `facility-tiers` (dearer facilities,
-  much dearer at the top), `wider-tickets` (up to £80) and `dearer-ads`
-  ([`ECONOMY.md`](DOC/ECONOMY.md)).
+  much dearer at the top), `wider-tickets` (up to £80), `dearer-ads`,
+  and for the late game `sponsor-fees`, `tv-fees` (amounts over £2M
+  halved above it) and `season-demand` ([`ECONOMY.md`](DOC/ECONOMY.md)).
   `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
   image prints the executable's PCSX2 CRC.
 
