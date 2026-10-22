@@ -230,6 +230,10 @@ history holds the rest.
       years, age, injury value, and captain and keyman experience as
       `save.py set` fields and on the Squad page
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
+- [x] `ps2mc.py`: PCSX2's memory card image files read and written
+      (pages with ECC, FAT, folders and files; `put`, `mkdir`), checked
+      on three real cards that write back identical, and `selftest` in
+      `regress.py` ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md))
 
 ## 6. Distribute: sharing a mod
 

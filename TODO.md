@@ -27,10 +27,10 @@ item below.
    PCSX2. Next: a season played through on it
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). The end is a
    change players notice.
-2. **`.ps2` memory card images** (section 5, "Save editor"). PCSX2 keeps
-   saves in these by default, so the save editor can't reach most
-   players' saves without them. The scratch reader needs a writer (with
-   the pages' ECC) and a place in `SRC/`.
+2. **`.ps2` memory card images in the save editor** (section 5, "Save
+   editor"). `ps2mc.py` now reads and writes card images; the save
+   editor should open and save careers on them directly, and a card it
+   writes needs its PCSX2 test (section 7).
 3. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
    VPF numbers a new edit player, so `pmplayer.py` can fill an empty
    slot ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#still-unknown)).
@@ -239,11 +239,10 @@ allowed values; tests go through the widgets, off-screen.
       comment tables (`sqb.py settable`), the facility records
       (`plrcommon.py set`, with `edit_spec`), and later the club ranking
       once it has a writer (section 3)
-- [ ] Save editor: `.ps2` memory card images (PCSX2's default), which
-      need a reader and writer for the card's file system. A scratch
-      reader (superblock, indirect FAT, 528-byte pages with ECC) listed
-      and extracted the saves of an 8 MB card; it needs a writer and a
-      place in `SRC/`
+- [ ] Save editor: open and save careers on a `.ps2` memory card image
+      through `ps2mc.py` (it reads and writes the card;
+      [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md)), so players with a
+      file card needn't copy saves off it by hand
 - [ ] The editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
@@ -285,6 +284,10 @@ names the disc or the edit to build; the result goes into the doc.
       age, injury value 0 on an injured player, captain and keyman
       experience, and the Edit player page on a career with one); the manager's Special Mention texts for dissatisfaction
       kinds 0–3, a save edit per kind
+- [ ] A memory card image written by `ps2mc.py`: a career save edited
+      with `save.py set` and put back with `ps2mc.py put` loads in the
+      game with the edit, and the card's other saves still load
+      ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST

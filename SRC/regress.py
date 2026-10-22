@@ -222,6 +222,9 @@ def checks():
         # file's CRC, and a player made through `set` read back.
         ("pmplayer_selftest", ["pmplayer.py", "selftest", "--iso", "ISO"],
          ["ISO/DLL/SAVEPRG.REL"]),
+        # Memory card images, without a card: a blank one built in memory,
+        # files and folders created, grown, shrunk and written back.
+        ("ps2mc_selftest", ["ps2mc.py", "selftest"], []),
         # VCDIFF encoder/decoder round trips (shrink, grow, identical).
         ("vcdiff_roundtrip", ["vcdiff.py", "roundtrip", "DAT/PARAM/PBDATA_EU.PAC",
                               "DAT/PARAM/PBDATA_JP.PAC"], ["DAT/PARAM"]),
