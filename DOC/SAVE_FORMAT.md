@@ -205,7 +205,7 @@ gives a new career's values. **Confirmed:**
 | `0x8` | u32 | season-ticket rate (`GetSeatRate`) | 100 |
 | `0xc` | u32 | season-ticket price (`GetSeatPrice`) | 0 |
 | `0x10` | u32 | season tickets on sale (`GetSeatNum`) | 0 |
-| `0x14` | u8 | not traced | 0 |
+| `0x14` | u8 | share of the season tickets sold, 0–100 (`pwkUnkei_CalcSeat`, `0x2733a0`; [`ECONOMY.md`](ECONOMY.md#season-tickets)) | 0 |
 | `0x16` | u16 | not traced | 7,000 |
 | `0x18` | 8 × u32 | ticket prices for other competitions (`GetOtherTicket`) | 0 |
 | `0x38` | 8 × u16 | their competition ids, `0xffff` for none | `0xffff` |
@@ -221,10 +221,15 @@ the ad budget, ticket price, rate and season tickets, and sets the
 season-ticket price to ticket price × rate ÷ 100. So the rate is the
 season-ticket price as a percentage of the ticket price.
 
-**The plan screen's limits** (user report): the ad budget runs from 0
+**The plan screen's limits** (user report, then **confirmed** from
+the screen's set-up at `SIMPRG.REL 0x3eda0`, which holds them as
+constants: [`ECONOMY.md`](ECONOMY.md#the-season-plan-screens-limits)):
+the ad budget runs from 0
 to £5,000,000 in steps of £10,000, the ticket price from £10 to £50, the
 rate from 50 to 150 in steps of 10, and season tickets in steps of 100
 up to 80% of the stadium's capacity (also in help message 1085:22).
+What each value does to attendance, income and popularity is in
+[`ECONOMY.md`](ECONOMY.md).
 In euros the steps are the same and the values 1.5 times as large. In
 the stored unit (£1 = 6, €1 = 4) both give the same ranges: ad budget
 0–30,000,000 and ticket price 60–300. Only the money steps differ
@@ -853,8 +858,7 @@ own files name their slot wasn't checked.
   call `get(i)` are the way in.
 - The 3 records at block 1 `+0xe290`.
 - Finances: the code that reads the per-type names (category 550
-  messages 217–251), the season plan's `+0x14` and `+0x16`, and where
-  the plan screen checks its limits (a user report so far).
+  messages 217–251), and the season plan's `+0x16`.
 - The rest of the 32-byte player candidate record, the first u32 of the
   staff candidate records, and what the youth limit of 4
   (`pwkTeam_GetYouthPlayerMax`) counts.

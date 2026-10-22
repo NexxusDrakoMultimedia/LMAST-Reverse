@@ -57,13 +57,21 @@ as a u32:
 | 0.7 stadiums | `+0x30` + level × 0x10 | `plTeam_BuildStadium` (`0x229fc4`), `BuildStadiumStand` (`0x22a0c0`) | `+0x64` (per stand) |
 | 0.8 stadium adverts | `+0xc` | `plTeam_BuildStadiumEquip` (advert form, `0x22a4a0`) | `+0x10` |
 
-**Empirical:** the u32 just before the build time is the build cost: it
-is 0 or −1 where the build time is 0 (what a club starts with), and it
-grows with the facility (club houses 0, 45,000,000 and 90,000,000; sites
-0, 60,000,000 and 120,000,000; stadium equipment 900,000 to 90,000,000).
-The code that charges it isn't traced. The first words of each record
-hold −1 or small numbers (requirements, by the look of them); they aren't
-traced either.
+**Build cost (confirmed).** The u32 just before the build time is the
+build cost: the cost getters behind `SIMPRG.REL 0x154b78` read it (sites
+`+0x8`, office equipment `+0x8`, the other equipment and club houses
+`+0xc`, stadiums `+0x2c`). The game scales it by the business cycle and
+any sponsor discount before charging it ([`ECONOMY.md`](ECONOMY.md#build-costs)).
+It is 0 or −1 where the build time is 0 (what a club starts with), and
+it grows with the facility (club houses 0, 45,000,000 and 90,000,000;
+sites 0, 60,000,000 and 120,000,000; stadium equipment 900,000 to
+90,000,000). The stadium, training-ground, club-house and youth-house
+equipment records hold a second cost at `+0x1c` (training ground also
+`+0x30`), charged by its own build kind. **Empirical:** it is a tenth of
+the build cost. The upkeep the facility window shows is the upkeep
+column above; for sites it is `+0x10`, which `payment_Equip` doesn't
+read. The first words of each record hold −1 or small numbers
+(requirements, by the look of them); they aren't traced.
 
 **Stadiums.** The stand levels are 16-byte records at `+0x30`,
 `+0x40` and `+0x50`, each starting with its build time; the capacity of
@@ -151,8 +159,7 @@ Table 4.1 is not decoded.
 
 ## Still unknown
 
-- The first words of each facility record, and which code charges the
-  build cost.
+- The first words of each facility record.
 - The rest of the stadium record (`+0x0`–`+0x2f`, `+0x60`–`+0x7f`) and
   which stadium is which.
 - What the values in entry 1 and table 4.1 mean.

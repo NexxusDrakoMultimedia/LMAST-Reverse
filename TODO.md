@@ -19,13 +19,12 @@ list. A finished item moves to the end of the same section in
 What to work on next, most valuable first. Each line points to the full
 item below.
 
-1. **The economy, then the facility writer** (sections 2, 3 and 8).
-   The research in section 2's "The economy" item (the build cost
-   charge, the plan screen's limits, what the ad budget and ticket
-   prices do), then the `PLRESOURCECOMMON.PAC` entry 0 writer, then the
-   LMASTER Mod's harder economy
-   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). Each step
-   needs the one before it, and the end is a change players notice.
+1. **The facility writer, then the harder economy** (sections 3 and
+   8). The research is done ([`ECONOMY.md`](DOC/ECONOMY.md)): next the
+   `PLRESOURCECOMMON.PAC` entry 0 writer, then the LMASTER Mod's harder
+   economy ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)), whose
+   ticket and ad switches are code and table edits that need no writer.
+   The end is a change players notice.
 2. **`.ps2` memory card images** (section 5, "Save editor"). PCSX2 keeps
    saves in these by default, so the save editor can't reach most
    players' saves without them. The scratch reader needs a writer (with
@@ -101,11 +100,6 @@ known range. Grouped by what a mod would change.
       [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#still-unknown),
       [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#still-unknown),
       [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md#still-unknown)
-- [ ] The economy, for the LMASTER Mod's harder economy (section 8): the
-      code that charges a facility's build cost, where the plan screen
-      checks its limits, and what the ad budget, ticket prices and season
-      tickets do to income and popularity
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 
 ### Players and staff
 
@@ -213,8 +207,9 @@ Stage 3. Every writer round-trips every file on the disc and goes into
       `0x530688`), not in `CLUBEVENT.TBB`: decode the records field by
       field, then a writer
 - [ ] `PLRESOURCECOMMON.PAC` entry 0: a writer for the facility records'
-      build time, upkeep, build cost and stadium capacity (the harder
-      economy needs it)
+      build time, upkeep, build cost, second cost (`+0x1c`) and stadium
+      capacity (the harder economy needs it;
+      [`ECONOMY.md`](DOC/ECONOMY.md#build-costs))
 - [ ] `PLRESOURCESIM.PAC`: writers for the streams (affiliations 5,
       exclusives 11–12, combinations 13–14), the overseas branch costs
       (entry 1), and the nation and stadium tables `initteam.py` reads
@@ -312,11 +307,15 @@ tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
       kind row past fatigue 1000, the short `EDIT_EMBLEM` tables
       93/101/105, the edit-player import's play-style sort (its compare
       at `SAVEPRG.REL 0x3df00` subtracts pointers, so only 4 of the 22
-      VPF styles can come in; [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record)).
+      VPF styles can come in; [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record)),
+      the season-ticket status factor that stops at 0.6
+      ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets)).
       The "two months"/"nine months" injury lines need thresholds
       chosen first
 - [ ] Improvement: a harder economy (dearer facilities, a wider ticket
-      price range, dearer advertising) once the research in section 2
-      is done. More ideas (overseas bases, merchandise, reputation,
+      price range, dearer advertising). The code and tables each change
+      touches are in [`ECONOMY.md`](DOC/ECONOMY.md); a wider ticket range
+      needs new rows in the ticket demand table as well as new screen
+      limits. More ideas (overseas bases, merchandise, reputation,
       player prices up to £250M, a third tier with a one-season game
       over) are in [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)

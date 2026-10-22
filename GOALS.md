@@ -48,8 +48,9 @@ the stages, and [`TODO.md`](TODO.md) what is left.
    *Most of the work now:* the player database, the starting season,
    the parameter tables and saves are named field by field (with the
    edit player a career imports from Virtua Pro Football, whose save
-   decrypts with its own key); the match
-   AI's files, the economy and the remaining fields listed in each doc's
+   decrypts with its own key), and so is the economy's code (build
+   costs, the plan's limits, attendance and popularity); the match
+   AI's files and the remaining fields listed in each doc's
    "Still unknown" section are open.
 3. **Write.** Add a writer for each format. A writer must round-trip:
    reading a file and writing it back unchanged gives the original

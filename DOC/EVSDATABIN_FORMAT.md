@@ -138,7 +138,7 @@ Money values are in units of **10,000** (the handler multiplies by
 | 9 | `0x121310` | nothing in the dispatcher (see below) | 167: 500 |
 | 10 | `0x121318` | popularity +value for the squad player with ID `0x7cce` (31950), the edit player imported from Virtua Pro Football ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)) (`plPinfo_ChangePop`, kind 0) | 308: 50 |
 | 11 | `0x121358` | same, −value | 307: 50 |
-| 12 | `0x121258` | gate income: seat price × seats sold × a factor of 17–25 picked by `0x15cff8`, as `PlIncomeType 3`. The value is ignored | – |
+| 12 | `0x121258` | season-ticket income: season-ticket price × season tickets sold × your division's home league matches (17–25, by competition), as `PlIncomeType 3` ([`ECONOMY.md`](ECONOMY.md#season-tickets)). The value is ignored | – |
 | 13–19 | `0x121398`–`0x1213c8` | nothing in the dispatcher | 16: 261; 18: 102, 103, 241, 257, 262, 263; 19: 287 |
 
 **Handler-read values.** Some handler modules read `effect1_value`

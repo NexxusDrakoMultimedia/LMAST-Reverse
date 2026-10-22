@@ -145,6 +145,10 @@ history holds the rest.
 - [x] Virtua Pro Football's `pmplayer.bin` and how the import converts
       each record field into the career's edit player, checked against
       save G000 ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
+- [x] The economy: what charges a build (record cost × business cycle ×
+      sponsor discount), the plan screen's limits in code, and how the ad
+      budget, ticket price and season tickets set attendance, income and
+      popularity ([`ECONOMY.md`](DOC/ECONOMY.md))
 
 ## 3. Write: a writer for every format a mod changes
 

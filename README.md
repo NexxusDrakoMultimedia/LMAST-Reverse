@@ -437,6 +437,7 @@ Every format and folder doc labels its claims **confirmed** or **empirical** and
 | [`GAME_FLOW.md`](DOC/GAME_FLOW.md) | the root scripts as a flow chart: title routes, new game, loading, the season loop, year start, main menu, match day, game over, the event timings |
 | [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events), scout-list search criteria, squad and loan limits, the 13 regions |
 | [`INJURIES.md`](DOC/INJURIES.md) | how injuries are rolled (fatigue and age pick the kind), the value table, recovery, and the condition-line messages, two of which were cut |
+| [`ECONOMY.md`](DOC/ECONOMY.md) | the club's economy: what a build costs (record cost × business cycle × sponsor discount), the plan screen's limits, attendance, ticket, shop and season-ticket income, and the ad budget's effect on popularity |
 | [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
 | [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md) | Virtua Pro Football's edit players (`pmplayer.bin`): file layout, CRC, each record field and what the career import makes of it, and its play-style bug |
 | [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | plan for a separate save editor on top of `save.py`: pages, steps, and the decisions still open |

@@ -1,0 +1,280 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
+
+# The club's economy
+
+How the game charges for facilities, where the season plan's limits are
+set, and what the ad budget, ticket price and season tickets do to
+attendance, income and popularity. The research behind the LMASTER Mod's
+harder economy ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)).
+
+Money is in the game's stored unit (£1 = 6, €1 = 4); the accounts, the
+season plan and the income and payment types are in
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far). All addresses
+are PAL. Overlay addresses are in `SIMPRG.REL`, the rest in
+`SLES_541.51`.
+
+## The business cycle
+
+The town has a business cycle (*keiki*, 景気), a value 0–4 at the start
+of Pwork block 4 (`pwkTown_Keiki`, `0x2718e0`). `pwkTown_Init`
+(`0x271868`) picks it at random, and `pwkTown_UpdateAnnualy` (`0x2718b0`
+→ `0x271740`) moves it each season along random patterns (tables at
+`0x555f88`–`0x556000`). It scales every build cost (below) and is read
+by about 25 other functions, among them transfer fees and the staff
+candidates. What it does there isn't traced.
+
+**Empirical:** saves G000, G001 and G006 are in state 1, G002 and G003
+in state 2.
+
+## Build costs
+
+**Confirmed from the game code.** The facility window
+(`WP::CInstDetailWnd`) starts a build through `0x153c28`. That function
+calls the build kind's own build function (jump table at `0x23ce40`),
+then pays the cost from `0x154b78` with `pwkGen_Pay` (`0x153de0`), as
+the payment type that the table at `0x23cdf0` gives the kind. A kind
+whose type is 23 is paid nothing.
+
+`0x154b78` (kind, slot, mode) has two modes. Mode 1 returns the
+facility's monthly upkeep, unscaled, for the screen (getters at
+`0x23d000`). Any other mode returns the build cost:
+
+> cost = base × cycle% ÷ 100 × (100 − sponsor discount) ÷ 100, and at least 0
+
+- **base** comes from the kind's getter (table at `0x23d098`), which
+  reads the facility record in `PLRESOURCECOMMON.PAC` entry 0
+  ([`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md#entry-0-facilities)).
+- **cycle%** is 125, 110, 100, 90 or 75 for business cycle 0–4 (s32
+  table at `0x23cc90`).
+- **sponsor discount** is `pwkSponsor_GetDiscount` (`0x16c5e0`) for the
+  category that `0x1563e8` picks for the kind and slot. It applies only
+  when it is above 0.
+
+| Kind | Facility | Base (record offset) | Getter | Payment type |
+|---|---|---|---|---|
+| 0 | stadium | `+0x2c` | `0x154f48` | 0 Stadium purchase & rebuild |
+| 1 | stadium stands | `+0x2c`, `+0x5c` and the advert record's `+0x8` (not traced in full) | `0x154f78` | 0 |
+| 2 | stadium equipment | `+0xc` | `0x155090` | 1 Stadium facilities |
+| 3 | stadium equipment | `+0x1c` | `0x155238` | 1 |
+| 4, 5, 9, 16–18 | – | none (`0x1c85d0` returns 0) | – | none (23) |
+| 6 | site | `+0x8` | `0x1550b8` | 4 Practice ground expansion |
+| 7 | training-ground equipment | `+0xc` | `0x1550f0` | 5 Practice ground facilities |
+| 8 | training-ground equipment | `+0x1c` (`+0x30` past the first group) | `0x155260` | 6 Practice ground maintenance |
+| 10 | club house | `+0xc` | `0x155140` | 2 Club house extension |
+| 11 | club-house equipment | `+0xc` | `0x155178` | 3 Club house facilities |
+| 12 | office equipment | `+0x8` | `0x1551a0` | 3 |
+| 13 | youth-house equipment | `+0xc` | `0x1551e8` | 3 |
+| 14 | club-house equipment | `+0x1c` | `0x155300` | 3 |
+| 15 | youth-house equipment | `+0x1c` | `0x155380` | 3 |
+
+Kinds 3, 8, 14 and 15 charge a second cost at `+0x1c`. **Empirical:**
+it is a tenth of the build cost in every record that has one (stadium
+equipment 0: 4,500,000 and 450,000). Kind 8 is booked as "Practice
+ground maintenance", so this is probably a repair. What the window calls
+it isn't traced.
+
+**Empirical,** two saves: G001 (cycle 1) booked 3,300,000, 1,650,000,
+9,900,000 and 14,850,000 under payments 0, 1, 3 and 5. Those are 110% of
+table costs (1,650,000 is stadium equipment 4's 1,500,000). G003
+(cycle 2) booked 2,400,000 and 6,000,000 under payments 1 and 3. Those
+are 100% (2,400,000 is stadium equipment 1). So a mod that changes a
+facility's cost only edits the record. The cycle and any sponsor
+discount still apply on top.
+
+## The season plan screen's limits
+
+**Confirmed:** the plan screen's set-up at `0x3eda0` gives its four
+spin controls their limits as constants in its code, in the stored unit.
+The step depends on the currency; the three values are for the euro,
+the pound and the yen. The setters (`pwkUnkei_SetPR`, `SetTicket`,
+`SetSeatNum`, `0x271d50`…) store whatever they are given, so these
+instructions are the only check.
+
+| Control | Min | Max | Steps (€, £, ¥) | Set at |
+|---|---|---|---|---|
+| ad budget | 0 | 30,000,000 (£5,000,000) | 40,000, 60,000, 300,000 | max `0x3eec0`/`0x3eec4` (`lui`/`ori`), steps `0x3ee8c`–`0x3ee98` |
+| ticket price | 60 (£10) | 300 (£50) | 4, 6, 3 | min `0x3ef94`, max `0x3ef98`, steps `0x3ef64`–`0x3ef6c` |
+| season-ticket rate | 50 | 150 | 10 | min `0x3f05c`, max `0x3f060`, step `0x3f034` |
+| season tickets | 0 | capacity × 0.8 | 100 | factor `0x3f17c`/`0x3f180` (float 0.8), step `0x3f154` |
+
+This confirms the limits the user reported in
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far). The ticket
+minimum's register also fills a second field of the control (`+0x478`),
+so a patch should change only the immediate at `0x3ef94` and check that
+screen.
+
+## What the ad budget does
+
+The ad budget (`pwkUnkei_GetPR`) is read in four places:
+
+| Reader | Effect |
+|---|---|
+| `0x251f38`, from the monthly costs (`0x2528c0`) | payment 17, a twelfth of the budget each month ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)) |
+| `pwkUnkei_GetTicketHosei` (`0x2719c8`) | the ticket demand value behind attendance and season-ticket sales (below) |
+| `pwkSche_UpdateMonthly` (`0x255428`) | each month, the expected attendance of the next 8 turns (`GetExpectTicket`, stored with `pwkSche_SetTicket`) |
+| `0x268b00`, from `pwkTeam_ChangePop_Month` (`0x269350`) | supporter popularity: budget ÷ 600,000 points a month (below) |
+
+### Supporter popularity
+
+**Confirmed.** Each month `pwkTeam_ChangePop_Month` works out a change
+for your home region and for each of the 13 overseas regions where you
+have a branch. It adds the change to the region's popularity
+(`pwkTeam_PopChange`, `0x267ff8`): a u16 per region at block 1
+`+0x11248`, floored at 0 and capped by the popularity rank at `+0x11228`
+(caps 65,535, 50,000, 40,000, 30,000, 15,000, 10,000 for ranks 0–5,
+table at `0x554df0`). The change from `0x268b00` is the sum of:
+
+| Term | Value |
+|---|---|
+| star players | your five most popular players' average popularity (`PlPinfo +0x238`, or `+0x23a` overseas, `plPinfo_ChangePop`) ÷ 10,000, clamped to 0–6, through the table 0, 10, 20, 40, 60, 80, 100 (`0x554eb0`) |
+| ad budget | budget ÷ 600,000: 0 to 50 within the screen's limits |
+| stadium | 0, 4, 7, 10 or 14 by stadium level (`plTeam_Stadium2StadiumLv`, `0x554eb8`); home region only |
+| TV | `pwkTv_DoesCoverSpecificArea`; overseas regions only |
+| years | 4 × (season − 2006) from 2007 on |
+| new kit | −20 when `pwkGd_DoesChangedUniType` |
+| supporter complaints | minus the largest `pwkSupCom_GetSupporterComp` of 9 kinds ÷ 2,622 |
+
+Overseas regions multiply the result by two factors from the branch
+(`0x268e18`, `0x268e70`).
+
+## Attendance and ticket income
+
+### The ticket demand value
+
+`pwkUnkei_GetTicketHosei` (ticket price, ad budget), **confirmed**:
+
+- The price picks a row of a 21 × 11 s32 table (`0x556250`). Row
+  *i* is for prices up to 300 − 12 × *i* (thresholds at `0x556120`), so
+  a price is rounded up to the next multiple of 12. A price under 60 uses
+  row 20 and a price over 300 uses row 0.
+- The budget picks a column, budget ÷ 3,000,000 (at most 10). The value
+  is interpolated linearly towards the next column, so the budget counts
+  smoothly up to 30,000,000. A higher budget adds nothing.
+
+| Price (stored) | Budget 0 | 15,000,000 | 30,000,000 |
+|---|---|---|---|
+| 300 (£50) | 10 | 90 | 165 |
+| 180 (£30) | 27 | 240 | 440 |
+| 60 (£10) | 100 | 900 | 1,650 |
+
+So a cheap ticket brings in up to 10 times the crowd of a £50 one, and
+the ad budget multiplies demand by up to 16. A wider ticket range needs
+new rows in this table as well as new screen limits. Without them every
+price outside 60–300 behaves like the nearest end.
+
+### A home match
+
+`pwkUnkei_GetAllAudience` (`0x272128`), **confirmed**, for your home
+match:
+
+> walk-ups = (home popularity ÷ 10 × 130 + (*k* + 1) × 3,000) × demand × (grade + importance) × weather × (95–104) ÷ 60,000,000
+
+The result is capped at the stadium's capacity. Home popularity is the
+region value above. *k* is the function's u8 argument, 0–32 by its
+tables (the club rank would fit; not traced). Grade is 11, 10, 9, 8, 8,
+8, 5, 0 by `PlMatchGrade` (`0x556218`). Importance is 11, 13, 12, 11,
+11, 40 by `IMPORTANT_MATCH` (`0x556238`). Weather is 10, 10, 5, 5, or
+10, 10, 8, 8 for the other table (`0x5561f8`, `0x556208`). The game's
+own random number gives the 95–104.
+
+For a league home match it then adds the season-ticket holders:
+
+1. Holders who come = season tickets × sold% (plan `+0x14`) × a turn-up
+   rate (`pwkUnkei_GetTodayRate`, `0x2720a8`, at most 100%) ÷ 10,000.
+2. The walk-ups are cut by the share of the ground the sold season
+   tickets take, and the holders who came are added.
+3. That sum is multiplied by (100 + club event bonus − cut) ÷ 100. The
+   cut is 5%, or 15%, 30% or 50% once 60%, 80% or 95% of the season
+   tickets on sale are unsold. It is 0 with no season tickets on sale.
+   The club event bonus is `plClubEvent_GetTicket` during a successful
+   club event.
+4. The total is capped at the capacity. The paying crowd is the total
+   minus the holders who came.
+
+An away match's crowd is capacity × (70–95% by *k*, `0x5561d8`, plus 0–5)
+× (95–104) ÷ 10,000.
+
+### Match income
+
+`pwkUnkei_GetMatchIncome` (`0x273008`) fills the match record that
+`pwkUnkei_BeforeReport` (`0x272ef8`) books, **confirmed**:
+
+| Record | Value | Booked as |
+|---|---|---|
+| `+0x8` | paying crowd × the competition's ticket price (`GetOtherTicket`) | income 4 Ticket price |
+| `+0x10` | `pwkUnkei_GetShopIncome` (below) | income 8 Stadium facilities |
+| `+0xc` | the competition rule's `+0x22` × 10,000, when you win | income 5 Win bonus |
+| `+0x18` | total crowd × 15 × (95–104) ÷ 100 | payment 20 Match management |
+| `+0x1c` | `0x272fd0`: a per-competition sum (22 `{competition, amount}` records at `0x3997c0`) | income 11 |
+| `+0x20` | player bonuses (`pwkPromise_MatchBounus`, `0x272ca8`) | payment 16 |
+
+After booking, the schedule stores the crowd as a percentage of the
+capacity (`pwkSche_SetTicket`) and adds it to the season's attendance
+(`pwkSche_AddAudience`).
+
+**Shop income** (`pwkUnkei_GetShopIncome`, `0x272ab8`) walks 16
+stadium equipment slots, the bytes at your stadium data
+(`pwkTeam_GetStadium`) `+0xf` + 2 × slot. Each set slot adds: slots 1
+and 2 crowd × 15, slot 3 crowd × 30, slot 9 crowd × 45, and slot 15 club
+status × 30, each × (90–109) ÷ 100. The other slots add nothing.
+
+## Season tickets
+
+**Confirmed.** The plan's season-ticket price is ticket price × rate ÷
+100 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)).
+`pwkUnkei_CalcSeat` (`0x2733a0`) stores the share sold, 0–100, at plan
+`+0x14` from `pwkUnkei_GetExpectSeat` (`0x2727c8`):
+
+> demand = (home popularity ÷ 10 × 130 + 27,000) × ticket demand(season-ticket price, budget) × status factor ÷ (rate ÷ 100) × 18,000 ÷ 60,000,000
+>
+> sold% = demand × `pwkUnkei_GetSeasonRate`(popularity, club status) ÷ season tickets on sale, at most 100
+
+(27,000 and 18,000 are for the bool argument `CalcSeat` passes, false;
+true gives 66,000 and 19,000.)
+
+`GetSeasonRate` (`0x271ae8`) is a 15 × 15 byte table (`0x5565f0`) indexed
+by popularity ÷ 4,369 and club status ÷ 4,369, from 10 (both low) to 80
+(both high). The demand is 0 when its first part is below 2,501.
+
+The status factor has a bug. The code tests status ≤ 10,000 for 0.5
+and otherwise gives 0.6. Its later steps (0.7, 0.8, 0.9, 1.0 above
+20,000, 30,000, 40,000 and 50,000) sit behind tests that can't succeed,
+because the first test already took every status above 10,000
+(`0x272838`–`0x2728dc`). A top club sells season tickets as if it were
+an average one.
+
+The money comes in at the start of the season through the event
+command that books income 3 (`SIMPRG.REL 0x121258`,
+[`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)). It pays season-ticket
+price × tickets sold (`pwkUnkei_GetSaleSeatNum`: on sale × sold% ÷ 100)
+× a factor that `0x15eeb8` picks by your league's competition (jump
+table at `0x23d890`). **Empirical:** the factor is the division's home
+league matches. It is 19 for competitions 0, 10, 20, 28 and 38, 25 for
+1 (the English second division with your club, 26 clubs), 21 for 11 and
+48, 17 for 19 and 47, and 23 for every other. The table is fixed per
+competition, so a league resized with `leaguesize.py` keeps its old
+factor.
+
+## Still unknown
+
+- What the business cycle changes besides build costs, and its random
+  patterns.
+- The cost of kind 1 (stands) in full, and what the window calls the
+  `+0x1c` cost of kinds 3, 8, 14 and 15.
+- Which sponsor category `0x1563e8` gives each kind and slot.
+- *k* in the attendance formula, and what the turn-up rate's four tables
+  are indexed by.
+- Plan `+0x16` (7,000 in every save).
+- Merchandise (income 7, `pwkGd_GoodsMonthlySales`) isn't traced.
+
+## Checking
+
+```bash
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 153c28 160 --sles ISO/SLES_541.51
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 154b78 240 --sles ISO/SLES_541.51
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 3eda0 230 --sles ISO/SLES_541.51
+python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkUnkei_GetTicketHosei pwkUnkei_GetAllAudience pwkUnkei_GetExpectSeat
+python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_ChangePop_Month pwkTeam_PopChange
+python SRC/save.py finances <save>
+```
