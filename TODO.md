@@ -19,7 +19,23 @@ list. A finished item moves to the end of the same section in
 What to work on next, most valuable first. Each line points to the full
 item below.
 
-1. **The `GAME/` tactics AI files** (section 2, "The match"). The play
+1. **The economy, then the facility writer** (sections 2, 3 and 8).
+   The research in section 2's "The economy" item (the build cost
+   charge, the plan screen's limits, what the ad budget and ticket
+   prices do), then the `PLRESOURCECOMMON.PAC` entry 0 writer, then the
+   LMASTER Mod's harder economy
+   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). Each step
+   needs the one before it, and the end is a change players notice.
+2. **`.ps2` memory card images** (section 5, "Save editor"). PCSX2 keeps
+   saves in these by default, so the save editor can't reach most
+   players' saves without them. The scratch reader needs a writer (with
+   the pages' ECC) and a place in `SRC/`.
+3. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
+   VPF numbers a new edit player, so `pmplayer.py` can fill an empty
+   slot ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#still-unknown)).
+   It follows straight on from the `pmplayer.py` and `save.py` edit
+   player work.
+4. **The `GAME/` tactics AI files** (section 2, "The match"). The play
    books, the combination scripts and `GAMEDATA.BIN`'s container are
    decoded, and so are the `.CBB` record layout and what each
    combination command does ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md),
