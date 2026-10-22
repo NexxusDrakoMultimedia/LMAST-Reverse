@@ -285,9 +285,12 @@ names the disc or the edit to build; the result goes into the doc.
       experience, and the Edit player page on a career with one); the manager's Special Mention texts for dissatisfaction
       kinds 0–3, a save edit per kind
       ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
-- [ ] `--mod season-status` (`LMAST-test-seasonstatus.iso`): G000 with
-      80,000 season tickets on sale in the plan should sell 80% (48% on
-      the retail game), read from the save with `save.py finances`
+- [ ] `--mod season-status` (`LMAST-test-seasonstatus.iso`): G000 is on
+      the season's last turn; one Proceed reaches the next season's plan
+      (the plan can only be set at a season's start). Set 80,000 season
+      tickets, save to a new slot, and compare the share sold in the save
+      with the formula under 0.6 and under the fixed band, from that
+      save's own popularity, status and prices
       ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
