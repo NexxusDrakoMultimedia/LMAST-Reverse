@@ -36,6 +36,14 @@ The command lists every accepted edit in order, repeats included: some
 edits raise a hidden value as they go (an ability's growth limit and
 cap, a pair's cap), so only the full sequence gives the same file.
 
+File > Save to new slot keeps the original instead: it copies the save
+folder to the card's lowest free slot (save.copy_save; slots 0-100, the
+same letter, -G or -M), writes the edited save into the copy and opens
+it. The log gets the two commands that do the same:
+
+    python SRC/save.py copy <save folder> <slot>
+    python SRC/save.py set <original main file> <new main file>.new ...
+
 Close the game in PCSX2 before saving, so it doesn't write the card
 over the edit.
 
@@ -44,6 +52,7 @@ Usage:
 """
 import datetime
 import os
+import shutil
 import sys
 import threading
 
@@ -638,6 +647,7 @@ class App:
         file_menu = tk.Menu(menu, tearoff=False)
         file_menu.add_command(label="Open save...", accelerator="Ctrl+O", command=self.ask_open)
         file_menu.add_command(label="Save", accelerator="Ctrl+S", command=self.write)
+        file_menu.add_command(label="Save to new slot...", command=self.write_new_slot)
         file_menu.add_separator()
         file_menu.add_command(label="Quit", command=self.quit)
         menu.add_cascade(label="File", menu=file_menu)
@@ -818,6 +828,67 @@ class App:
             f.write("\n".join(lines) + "\n\n")
         self.open(main, "Saved %s: %d changes (backup %s)" % (
             editor.shown_path(main), n, editor.shown_path(backup)))
+        return True
+
+    def write_new_slot(self):
+        """Copy the save folder to the card's next free slot (save.copy_save)
+        and write the edited save into the copy, leaving the original as it
+        is. Logs `save.py copy` and the `save.py set` that writes the same
+        bytes from the original, then opens the copy."""
+        if self.save is None:
+            return False
+        s = self.save
+        main = s.path
+        src = os.path.dirname(os.path.abspath(main))
+        card = os.path.dirname(src)
+        try:
+            prefix, letter, _ = save.save_name(src)
+            n = save.free_slot(card, letter)
+        except ValueError as e:
+            messagebox.showerror("Save editor", "Can't save to a new slot: %s" % e)
+            return False
+        name = "%s%s%03d" % (prefix, letter, n)
+        if not messagebox.askokcancel("Save to new slot", "Save as %s on this card?\n%s stays "
+                                      "as it is." % (name, os.path.basename(src))):
+            return False
+        dst = os.path.join(card, name)
+        dst_main = os.path.join(dst, name)
+        new = dst_main + ".new"
+        copied = False
+        try:
+            # With no edits the copy is the save as it is: nothing to encode.
+            data = s.encode() if self.changes else None
+            with open(main, "rb") as f:
+                if f.read() != s.file:
+                    raise ValueError("the file changed on disk since it was opened (was the "
+                                     "game running?); open it again")
+            save.copy_save(src, dst)
+            copied = True
+            if data is not None:
+                with open(new, "wb") as f:
+                    f.write(data)
+                os.replace(new, dst_main)
+        except (ValueError, OSError) as e:
+            if copied:
+                shutil.rmtree(dst, ignore_errors=True)
+            messagebox.showerror("Save editor", "Can't save to a new slot: %s" % e)
+            return False
+        cmds = [["python", "SRC/save.py", "copy", editor.quote(editor.shown_path(src)), str(n)]]
+        n_changes = len(self.changes)
+        if self.changes:
+            cmds.append(["python", "SRC/save.py", "set", editor.quote(editor.shown_path(main)),
+                         editor.quote(editor.shown_path(new))]
+                        + ["%s=%d" % kv for kv in self.changes])
+        lines = editor.log_lines("%s -> %s: %d changes" % (os.path.basename(src), name, n_changes),
+                                 cmds, [(new, dst_main)], moved="the .new file")
+        if not self.changes:
+            lines = [line for line in lines if not line.startswith("# then ")]
+        log_dir = card + ".bak"
+        os.makedirs(log_dir, exist_ok=True)
+        with open(os.path.join(log_dir, "saveedit.log"), "a", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n\n")
+        self.open(dst, "Saved %s: %d changes; %s is unchanged" % (
+            editor.shown_path(dst), n_changes, os.path.basename(src)))
         return True
 
     def keep_changes(self):

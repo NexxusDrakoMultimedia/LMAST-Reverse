@@ -121,7 +121,23 @@ Decided (user, 2026-10-09):
   `<card folder>.bak/saveedit.log` gets `python SRC/save.py set <backup>
   <main file>.new ...`, which writes the same bytes. The editor also
   refuses to save when the main file changed on disk since it was
-  opened. Writing to a new slot instead is a later item in `TODO.md`.
+  opened.
+- **Or to a new slot** (added 2026-10-22). File > Save to new slot
+  copies the save folder to the card's lowest free slot with the same
+  letter (`-G`, or `-M` for a modded disc), writes the edited save into
+  the copy and opens it; the original isn't touched, so it needs no
+  backup. The game takes slots 0–100 (`MC::CFcEuroIF::setNo`, `SLES
+  0x12aea0`). The copy goes through `save.copy_save`, which also fixes
+  the name in PCSX2's `_pcsx2_meta_directory` and `_pcsx2_index`, as
+  `save.py rename` does. The log gets `python SRC/save.py copy <save
+  folder> <slot>` and `python SRC/save.py set <original main file> <new
+  main file>.new ...`; with no edits, only the copy. Tested through the
+  widgets on a copy of the user's card (G000, G001, G003): a money edit
+  saved from G003 to G002, G003 unchanged, the two logged commands giving
+  the same folder byte for byte, a second copy without edits to G004
+  identical to G002, and a refusal when the main file changed on disk.
+  Whether the game lists and loads a copied slot is a PCSX2 test in
+  `TODO.md`.
 
 Still open:
 

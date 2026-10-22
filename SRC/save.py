@@ -72,6 +72,7 @@ Usage:
     python save.py blocks                                 # block sizes and offsets in .bin
     python save.py fields    [rounds]                     # re-record and check the field list
     python save.py rename    <save folder> <parent>        # copy a save between -G/-C and a modded disc's -M/-D
+    python save.py copy      <save folder> [slot]          # copy a save to the card's next free slot (0-100)
 
 <save> is a BESLES-54151-Gnnn (or a modded disc's -Mnnn) folder or the main file inside it (on a
 PCSX2 folder memory card these are plain files). Each run decodes the whole
@@ -1871,26 +1872,39 @@ def cmd_spec(game, path=None):
 # --mod-saves moves a modded disc's saves to "-M" and its VS data to "-D"
 # (patch_disc.MOD_SAVES); `rename` copies a save between the two.
 SAVE_LETTERS = {"G": "M", "C": "D", "M": "G", "D": "C"}
+SAVE_NAME = r"(BESLES-54151-)([GCMD])(\d*)"
+# MC::CFcEuroIF::setNo (0x12aea0) takes slots 0-100 (0x65 and up become 0).
+SLOT_MAX = 100
 
 
-def cmd_rename(src, parent):
-    """Copy a save folder between the original game's names and a modded
-    disc's (patch_disc.py --mod-saves): BESLES-54151-G003 becomes
-    <parent>/BESLES-54151-M003 and back, -C and -D likewise, main file
-    included. The game opens <folder>/<folder>, so both names change.
-    PCSX2 folder memory cards also keep the name in _pcsx2_meta_directory
-    (+0x40) and _pcsx2_index."""
+def save_name(folder):
+    """The (prefix, letter, slot digits) of a save folder's name."""
     import re
+    name = os.path.basename(os.path.normpath(folder))
+    m = re.fullmatch(SAVE_NAME, name)
+    if not m:
+        raise ValueError("expected a BESLES-54151-G/C/M/Dnnn folder, got %s" % name)
+    return m.groups()
+
+
+def free_slot(card, letter="G"):
+    """The lowest game save slot 0-SLOT_MAX with no folder on the card."""
+    for n in range(SLOT_MAX + 1):
+        if not os.path.exists(os.path.join(card, "BESLES-54151-%s%03d" % (letter, n))):
+            return n
+    raise ValueError("no free %s slot on %s (0-%d are taken)" % (letter, card, SLOT_MAX))
+
+
+def copy_save(src, dst):
+    """Copy the save folder src to the folder dst, main file included. The
+    game opens <folder>/<folder>, so both names change. PCSX2 folder memory
+    cards also keep the name in _pcsx2_meta_directory (+0x40) and
+    _pcsx2_index. Raises ValueError when dst exists."""
     import shutil
     src = os.path.normpath(src)
-    old = os.path.basename(src)
-    m = re.fullmatch(r"(BESLES-54151-)([GCMD])(\d*)", old)
-    if not m:
-        raise SystemExit("expected a BESLES-54151-G/C/M/Dnnn folder, got %s" % old)
-    new = m.group(1) + SAVE_LETTERS[m.group(2)] + m.group(3)
-    dst = os.path.join(parent, new)
+    old, new = os.path.basename(src), os.path.basename(os.path.normpath(dst))
     if os.path.exists(dst):
-        raise SystemExit("%s already exists" % dst)
+        raise ValueError("%s already exists" % dst)
     shutil.copytree(src, dst)
     if os.path.exists(os.path.join(dst, old)):
         os.rename(os.path.join(dst, old), os.path.join(dst, new))
@@ -1907,7 +1921,37 @@ def cmd_rename(src, parent):
             text = f.read()
         with open(index, "w", encoding="latin1", newline="") as f:
             f.write(text.replace(old + ":", new + ":"))
-    print("%s -> %s" % (src, dst))
+
+
+def cmd_rename(src, parent):
+    """Copy a save folder between the original game's names and a modded
+    disc's (patch_disc.py --mod-saves): BESLES-54151-G003 becomes
+    <parent>/BESLES-54151-M003 and back, -C and -D likewise."""
+    try:
+        prefix, letter, digits = save_name(src)
+        dst = os.path.join(parent, prefix + SAVE_LETTERS[letter] + digits)
+        copy_save(src, dst)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    print("%s -> %s" % (os.path.normpath(src), dst))
+
+
+def cmd_copy(src, slot=None):
+    """Copy a game save to another slot on the same card: the next free one,
+    or `slot`. The letter (-G or a modded disc's -M) stays."""
+    try:
+        prefix, letter, _ = save_name(src)
+        if letter not in "GM":
+            raise ValueError("only game saves (-G, -M) have slots")
+        card = os.path.dirname(os.path.normpath(src))
+        n = free_slot(card, letter) if slot is None else slot
+        if not 0 <= n <= SLOT_MAX:
+            raise ValueError("slot %d is outside 0-%d" % (n, SLOT_MAX))
+        dst = os.path.join(card, "%s%s%03d" % (prefix, letter, n))
+        copy_save(src, dst)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    print("%s -> %s" % (os.path.normpath(src), dst))
 
 
 def cmd_fields(game, rounds):
@@ -1941,6 +1985,9 @@ def main(argv):
     cmd, args = argv[1], argv[2:]
     if cmd == "rename" and len(args) == 2:
         cmd_rename(*args)
+        return 0
+    if cmd == "copy" and len(args) in (1, 2):
+        cmd_copy(args[0], int(args[1]) if len(args) == 2 else None)
         return 0
     game = Game()
     if cmd == "info" and args:

@@ -198,6 +198,9 @@ history holds the rest.
 - [x] Save editor steps 1–3: `save.py spec` and `saveedit.py`, with every
       page that `save.py set` can write; the Club page is tested in PCSX2
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
+- [x] Save editor: File > Save to new slot, and `save.py copy`, which
+      copy a save to the card's next free slot and leave the original as
+      it is ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#decisions))
 
 ## 6. Distribute: sharing a mod
 

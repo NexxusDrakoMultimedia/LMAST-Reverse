@@ -28,10 +28,7 @@ item below.
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
    match AI's `fb::` classes and which class makes each call, a way in
    for these too.
-2. **Save editor: write an edited save to a new slot** (section 5): the
-   next free `-Gnnn` instead of over the original, so a player keeps
-   the unedited save ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)).
-3. **Rebuild the badly balanced league schedules** (section 8): the 22-
+2. **Rebuild the badly balanced league schedules** (section 8): the 22-
    and 26-club leagues and the 8-club VS league at the same size, with
    `schedule.set_league`, as a `patch_disc.py` switch
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
@@ -243,8 +240,6 @@ allowed values; tests go through the widgets, off-screen.
       experience), each first as a `save.py set` field
 - [ ] Save editor: `.ps2` memory card images (PCSX2's default), which
       need a reader and writer for the card's file system
-- [ ] Save editor: an option to write an edited save to a new slot (the
-      next free `-Gnnn`) instead of over the original
 - [ ] The editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
@@ -286,6 +281,9 @@ names the disc or the edit to build; the result goes into the doc.
       tested); the manager's Special Mention texts for dissatisfaction
       kinds 0–3, a save edit per kind
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
+- [ ] A save written by the save editor's File > Save to new slot (or
+      `save.py copy`): the game lists the new slot and loads it, with the
+      edit ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and

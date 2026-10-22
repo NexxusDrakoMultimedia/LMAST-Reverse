@@ -788,6 +788,13 @@ cards. That carries a career into a mod that keeps the save layout; a
 mod that changes the season (a division of another size) shouldn't take
 an old save.
 
+**Slots.** `MC::CFcEuroIF::setNo` (`SLES 0x12aea0`) takes a slot of
+0–100 and turns anything higher into 0 (**confirmed**). `save.py copy
+<folder> [<slot>]` copies a game save to another slot on the same card,
+the lowest free one unless a slot is given, with the same name fixes as
+`rename`. Nothing found in the main file names its slot, but whether
+the game lists and loads a copied slot isn't tested yet.
+
 ## Still unknown
 
 - Table 1 of the statistics, and the rest of PlPinfo (the flags at
