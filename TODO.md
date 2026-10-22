@@ -32,6 +32,9 @@ item below.
    and 26-club leagues and the 8-club VS league at the same size, with
    `schedule.set_league`, as a `patch_disc.py` switch
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
+3. **Test in PCSX2: a `TRAINING_LIST.TBB` edit** (section 7). The disc
+   `LMAST-test-training.iso` is built; save states before and after a
+   week of the edited practice show the growth exactly.
 
 ## 1. Read: every file parsed and checked
 
@@ -260,8 +263,13 @@ names the disc or the edit to build; the result goes into the doc.
 
 - [ ] A smaller first division (France at 18, from the Season tab) and
       two nations changed in one build; only England at 22 is tested
-- [ ] A `TRAINING_LIST.TBB` edit (a practice made much stronger) and a
-      `CLUBRESULT.TBB` edit (a cup given a third-place match shows
+- [ ] A `TRAINING_LIST.TBB` edit on `LMAST-test-training.iso` (the
+      camps disc plus practice 32, shooting, with shot skill raised from
+      +10 to +100 and shot technique left at +10): a player on that
+      practice for a week should gain about ten times as much shot skill
+      experience as shot technique. Compare save states made on that
+      disc before and after ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md))
+- [ ] A `CLUBRESULT.TBB` edit (a cup given a third-place match shows
       "3rd"/"4th" on the end of tournament screen)
 - [ ] A save from the Regulations tab (the same edit from
       `regulation.py set` is tested)
