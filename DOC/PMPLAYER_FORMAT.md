@@ -12,6 +12,12 @@ into a career as the edit player, id `0x7cce`
 This doc covers the file and what the import makes of each field.
 `SRC/pmplayer.py` reads and writes it.
 
+VPF's own program, which writes this file, is the subject of the sister
+project [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse).
+The questions below that only VPF's code can answer (how it numbers a
+new player, the bytes this game's import doesn't read, `file.inf`) are
+for that project; this doc stays the reference for the file itself.
+
 ## Who reads it
 
 All in `SAVEPRG.REL`. **Confirmed from the game code:**

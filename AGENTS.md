@@ -12,6 +12,13 @@ the tool list, and the doc index. See `GOALS.md` for what the project is
 working towards, `TODO.md` for what to work on next, and `DONE.md` for the
 finished items.
 
+The sister project VPF-Reverse (`../VPF-Reverse`,
+github.com/NexxusDrakoMultimedia/VPF-Reverse) covers *Virtua Pro
+Football*, which shares this game's engine. Formats both games use are
+documented here first, and VPF-Reverse builds on them. Work on VPF's
+own code (its Player Edit, its save) belongs there; bring back here
+only what this game's tools need, such as `pmplayer.py`'s fields.
+
 ## If you can't run commands or edit files
 
 Some assistants only see the files they're given and can't run anything.

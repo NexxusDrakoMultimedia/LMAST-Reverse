@@ -30,8 +30,9 @@ item below.
 2. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
    VPF numbers a new edit player, so `pmplayer.py` can fill an empty
    slot ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#still-unknown)).
-   It follows straight on from the `pmplayer.py` and `save.py` edit
-   player work.
+   The answer is in VPF's own code, which the sister project
+   [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
+   has extracted; the finding comes back here for `pmplayer.py`.
 3. **The `GAME/` tactics AI files** (section 2, "The match"). The play
    books, the combination scripts and `GAMEDATA.BIN`'s container are
    decoded, and so are the `.CBB` record layout and what each
@@ -192,7 +193,8 @@ known range. Grouped by what a mod would change.
 - [ ] The rest of Virtua Pro Football's save: how VPF numbers a new
       edit player (so `pmplayer.py` can fill an empty slot), the record
       bytes the import doesn't read, and `file.inf`'s check
-      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#still-unknown))
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#still-unknown)),
+      from VPF's code in the sister project VPF-Reverse
 
 ## 3. Write: a writer for every format a mod changes
 

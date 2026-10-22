@@ -22,6 +22,12 @@ No game data is included. You need your own copy of the disc.
 **Just want to play a mod?** See [`INSTALL.md`](INSTALL.md): checking
 your disc, applying a patch, and keeping your saves safe.
 
+**Sister project:** [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
+reverse-engineers *Virtua Pro Football* (`SLES_541.53`), which runs on the
+same engine and whose edit players this game imports
+([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md)). Formats the two games
+share are documented here first, and VPF-Reverse builds on them.
+
 The long-term aim is GUI tools for editing the game's data to build mods.
 See [`GOALS.md`](GOALS.md) for the plan, [`TODO.md`](TODO.md) for the
 next tasks and [`DONE.md`](DONE.md) for what's finished.
