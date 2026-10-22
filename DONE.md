@@ -308,6 +308,9 @@ Each result is recorded in the doc named.
 - [x] `--mod harder-economy` (`LMAST-test-economy.iso`): tiered facility
       costs, tickets to £80 on both screens, ad budget to £10M, and a
       crowd at the new prices ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] Virtua Pro Football itself loads a `pmplayer.bin` edited with
+      `pmplayer.py set` (a name change, on `Pyra.ps2`)
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
 - [x] A Virtua Pro Football edit player edited with `pmplayer.py set`,
       imported with `--mod vpf-styles`: 190 cm as written, and four play
       styles in slots 1–4 (with "none" kept out) where the retail import

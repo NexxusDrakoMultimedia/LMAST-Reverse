@@ -166,7 +166,15 @@ the ranges the import handles (abilities 1–99, 0–7 ratings, kit styles
 as in `pbdata.py`), and writes a new file with its CRC. The ids and the
 bytes the import doesn't read are kept. To use the file, copy it over
 `pmplayer.bin` in the card's `BESLES-54153FASYS00` folder (keep a
-backup); PCSX2 folder memory cards hold it as a plain file.
+backup); PCSX2 folder memory cards hold it as a plain file. On a card
+file, put it with `ps2mc.py put` ([`PS2MC_FORMAT.md`](PS2MC_FORMAT.md)).
+
+**Tested in PCSX2** (user screenshot, 2026-10-23): on the user's folder
+card `Pyra.ps2`, `set 0 name=V.Drake` (was `V. Drake`), copied over
+`pmplayer.bin` with `file.inf` and `pmplayer.inf` unchanged. Virtua Pro
+Football's Develop Players list showed V.Drake with his other values as
+before (Australia, 179 cm, 80 kg). So VPF itself accepts a file edited
+outside its editor, at least for a name change.
 
 Once a player is in a career, `save.py set edit:<field>=...` and the
 save editor's Edit player page change the career's copy
@@ -185,12 +193,14 @@ same edits as `set` and reads every field back.
   bytes `0x2e`–`0x5b` and the tail `0x1bf8`–`0x1c37`: VPF's own data.
 - What the `+0x78` value and the 0x32 bytes copied to the edit work
   `+0xb8` do in this game (face or body data from VPF's editor?).
-- Whether VPF itself accepts a file edited outside its editor (the CRC
-  is the same, but VPF may check its own ranges).
+- Whether VPF checks its own ranges on fields other than the name (a
+  name edit loads; see Editing).
 - How VPF numbers a new player's id, so a player could be added to an
   empty slot.
 - `file.inf`'s check: its CRC over the first 0x20 bytes doesn't match
-  the u32 after them, so it may use another length.
+  the u32 after them, so it may use another length. It doesn't cover
+  `pmplayer.bin`'s contents: VPF loaded an edited file with `file.inf`
+  unchanged.
 
 ## Checking the claims
 
