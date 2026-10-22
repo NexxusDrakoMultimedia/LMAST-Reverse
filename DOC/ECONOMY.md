@@ -79,7 +79,9 @@ it isn't traced.
 table costs (1,650,000 is stadium equipment 4's 1,500,000). G003
 (cycle 2) booked 2,400,000 and 6,000,000 under payments 1 and 3. Those
 are 100% (2,400,000 is stadium equipment 1). So a mod that changes a
-facility's cost only edits the record. The cycle and any sponsor
+facility's cost only edits the record. **Tested in PCSX2** with
+`plrcommon.py set`: edited costs showed in the facility window and were
+charged ([`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records)). The cycle and any sponsor
 discount still apply on top.
 
 ## The season plan screen's limits

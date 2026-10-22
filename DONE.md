@@ -287,6 +287,10 @@ Each result is recorded in the doc named.
 - [x] `--mod league-balance` (`LMAST-test-leagues.iso`): the Schedule
       screen shows the club's league games alternating home and away,
       and the games' details agree ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] A facility cost edit (`LMAST-test-facility.iso`): the facility
+      window showed the edited costs, building charged the right
+      account, and club house 1 took the edited 3 turns
+      ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
 
 ## 8. LMASTER Mod and other patches
 

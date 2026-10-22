@@ -117,8 +117,14 @@ the 494 fields of the 113 records on its own and checks that only that
 field's word changes and reads back. It passes on the PAL and Japanese
 packs.
 
-**Not yet tested in PCSX2:** that an edited cost shows in the facility
-window and is charged.
+**Tested in PCSX2** (user report, `LMAST-test-facility.iso`: every
+build cost set to (record + 1) × 120,000, club houses 1 and 2 to 3 and
+4 turns, patched with `--copies`): in a career, the facility window
+showed £40,000 for club house 1 and for training ground 2 (record 1,
+240,000 stored, so a 100% season with no discount), and every other
+cost shown was one of the new small amounts. Building charged the money
+to the right account, and club house 1 was finished in 3 turns. So the
+game reads costs and build times from this file.
 
 ## Entry 1: formations
 
