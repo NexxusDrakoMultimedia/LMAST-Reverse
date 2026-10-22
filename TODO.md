@@ -275,10 +275,6 @@ names the disc or the edit to build; the result goes into the doc.
       kinds 0–3, a save edit per kind
       ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
       ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets))
-- [ ] The save editor on a card file: a save it copies to a new slot on
-      `Mcd001.ps2` (`ps2mc.py copy`, then the edit) shows in the game's
-      load list and loads with the edit
-      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#decisions))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST

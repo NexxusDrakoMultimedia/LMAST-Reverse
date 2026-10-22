@@ -308,6 +308,9 @@ Each result is recorded in the doc named.
 - [x] `--mod harder-economy` (`LMAST-test-economy.iso`): tiered facility
       costs, tickets to £80 on both screens, ad budget to £10M, and a
       crowd at the new prices ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] The save editor's Save to new slot on a card file (`Mcd001.ps2`,
+      `ps2mc.py copy`): the new slot showed in the load list and loaded
+      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#decisions))
 - [x] `--mod season-status` (`LMAST-test-seasonstatus.iso`): a
       top-status club sold 72% of 88,000 season tickets, the fixed
       band's value (43% on retail) ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets))

@@ -135,7 +135,10 @@ Decided (user, 2026-10-09):
   money edit saved (111,111 on the card), then another saved to a new
   slot, G003 (222,222 there, G002 unchanged, all five files in the new
   folder); after each, the logged commands gave the same card byte for
-  byte, and the card passed `ps2mc.py info`'s checks.
+  byte, and the card passed `ps2mc.py info`'s checks. **Tested in
+  PCSX2** (user report, 2026-10-23): a save the editor copied to a new
+  slot on `Mcd001.ps2` (Save to new slot, through `ps2mc.py copy`)
+  showed in the game's load list and loaded.
 - **Where an edit goes: over the save, after a backup.** Before each
   save, the editor copies the save's main file to
   `<card folder>.bak/<save folder>/<main file>.<date and time>.bak`,
