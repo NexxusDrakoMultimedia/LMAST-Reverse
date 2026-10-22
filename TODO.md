@@ -31,6 +31,13 @@ item below.
 2. **Test in PCSX2: the LMASTER Mod's keeper camp** (section 7).
    `LMAST-test-camps-mes.iso` has it: a camp in Parma or Málaga should
    raise the keepers' saving and catching.
+3. **Save editor: write an edited save to a new slot** (section 5): the
+   next free `-Gnnn` instead of over the original, so a player keeps
+   the unedited save ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)).
+4. **Rebuild the badly balanced league schedules** (section 8): the 22-
+   and 26-club leagues and the 8-club VS league at the same size, with
+   `schedule.set_league`, as a `patch_disc.py` switch
+   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
 ## 1. Read: every file parsed and checked
 
