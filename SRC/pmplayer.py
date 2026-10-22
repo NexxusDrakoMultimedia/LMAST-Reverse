@@ -261,11 +261,13 @@ def styles(rec, fixed=False):
     not the ratings, so the order stays as it was: slot t gets style t when
     byte t is rated 70 or more, and slot 0 stays empty. With
     `patch_disc.py --mod vpf-styles` (fixed) the sort works: the 5 best
-    rated, each kept when rated 70 or more. Style 0 is "none", so a top
-    rating in byte 0 comes in as an empty slot either way. Ties here go to
-    the lower style; the game's qsort may order them otherwise
-    (style_matches allows for that)."""
+    rated, each kept when rated 70 or more. Style 0 is "none", so the fix
+    also rates byte 0 at 0 in the sorted copy, and it never takes a slot.
+    Ties here go to the lower style; the game's qsort may order them
+    otherwise (style_matches allows for that)."""
     r = [rec[STYLE_OFF + k] for k in range(STYLE_COUNT)]
+    if fixed:
+        r[0] = 0
     if not fixed:
         return [t if t and r[t] >= STYLE_KEEP else 0 for t in range(5)]
     best = sorted(range(STYLE_COUNT), key=lambda k: -r[k])[:5]
@@ -278,6 +280,7 @@ def style_matches(rec, got, fixed):
     if not fixed:
         return list(got) == styles(rec)
     r = [rec[STYLE_OFF + k] for k in range(STYLE_COUNT)]
+    r[0] = 0
     want = styles(rec, True)
     if len(got) != 5 or any(w == 0 and g != 0 for w, g in zip(want, got)):
         return False

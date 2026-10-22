@@ -110,9 +110,12 @@ executable never moves, and no relocation covers these words) to the
 tail of the executable's `strcmp` at `SLES 0x31a5b4`, `lbu $v0,0($a1);
 jr $ra; subu $v0,$v1,$v0`. Checked in a small MIPS simulator with that
 tail read from the executable: the result is rating b − rating a, ties
-0. Style 0 is "none" in the game's list, so a top rating in byte
-`+0xb9` still comes in as an empty slot; that is the import's own
-numbering, not this bug.
+0. Style 0 is "none" in the game's list, so with the sort working a high
+rating in byte `+0xb9` took a slot as an empty one, leaving a gap before
+the real styles (seen in the test below). The switch's fifth word stops
+that: where the import copies the ratings for the sort, `0x3dfe0`
+stores 0 for byte `+0xb9` (`sb $s6` → `sb $zero`; `$s6` holds nothing
+else), so "none" sorts last and never reaches 70.
 
 `pmplayer.styles(rec, fixed)` gives either import's slots, and
 `pmplayer.py check` says which one a career's styles match (equally
@@ -126,7 +129,11 @@ to 190 cm and rated 95/90/88/80 in styles 5, 12, 17 and 3 (84 in byte
 editor's result showed 190 cm and style icons in slots 1, 2, 3 and 5,
 slot 4 empty: the fixed import's `[5, 12, 17, 0, 3]`, with byte `+0xb9`
 (84, style 0, "none") ranked fourth. The retail import would give one
-style, in slot 4. So the edited file imports, and the sort works.
+style, in slot 4. So the edited file imports, and the sort works. That
+test ran the compare fix alone; with the fifth word (rating byte
+`+0xb9` as 0) V. Drake should come in as Second Striker, Covering,
+Sweeper and Postplayer in slots 1–4, slot 5 empty. **Not yet tested in
+PCSX2** (the same disc, updated).
 
 ## Tested
 

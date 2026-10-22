@@ -278,9 +278,11 @@ names the disc or the edit to build; the result goes into the doc.
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01`
-- [ ] `pmplayer.py check` on a career saved after importing the edited
-      V. Drake (`LMAST-vpftest.ps2`; the import itself is tested): it
-      should report no differences and the fixed import's styles
+- [ ] `--mod vpf-styles` with its "none" word (`LMAST-test-vpfstyles.iso`,
+      updated; card `LMAST-vpftest.ps2`): V. Drake imported at G000's
+      season break should show Second Striker, Covering, Sweeper and
+      Postplayer in slots 1–4, slot 5 empty. Saved, `pmplayer.py check`
+      on the career should report no differences and the fixed import
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record))
 
 ## 8. LMASTER Mod and other patches

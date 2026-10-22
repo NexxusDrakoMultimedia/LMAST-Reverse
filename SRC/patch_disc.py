@@ -154,7 +154,9 @@ kinds before it end; see DOC/INJURIES.md. vpf-styles (whole disc image
 only) fixes the Virtua Pro Football import's play-style sort: its compare
 (DLL/SAVEPRG.REL 0x3df00) subtracted pointers, so only styles 1-4 could
 come in; 4 words make it compare the ratings, best first (through the
-tail of the executable's strcmp, 0x31a5b4). See DOC/PMPLAYER_FORMAT.md.
+tail of the executable's strcmp, 0x31a5b4), and one more (0x3dfe0) rates
+style 0, "none", at 0 in the sorted copy, so it never takes a slot. See
+DOC/PMPLAYER_FORMAT.md.
 
 season-status (whole disc image only) restores the season-ticket status
 factor: pwkUnkei_GetExpectSeat scales demand by club status in bands of
@@ -1779,20 +1781,31 @@ def plan_injury_value(f, img):
 # executable's strcmp (SLES 0x31a5b4: lbu $v0,0($a1); jr $ra; subu
 # $v0,$v1,$v0), which the overlay reaches with an absolute j (the
 # executable doesn't move; no relocation covers these 4 words).
+#
+# Rating n becomes game style n, and style 0 is "none": with the sort
+# working, a high rating in byte +0xb9 would take a slot as an empty one,
+# leaving a gap before the real styles. So the copy that is sorted gets 0
+# for that rating (0x3dfe0, sb $s6 -> sb $zero; $s6 holds nothing else),
+# and "none" sorts last and stays under 70.
 SAVE_FILE = DISC + "DLL/SAVEPRG.REL"
-VPF_STYLES = (0x3df00,
-              (0x8c830000, 0x8ca20000, 0x03e00008, 0x00621023),  # lw;lw;jr $ra;subu (pointers)
-              (0x8ca20000,                                        # lw  $v0, 0($a1)  pointer b
-               0x8c850000,                                        # lw  $a1, 0($a0)  pointer a
-               0x080c696d,                                        # j   0x31a5b4
-               0x90430000))                                       # lbu $v1, 0($v0)  rating b
+VPF_STYLES = (
+    (0x3df00, "play-style compare",
+     (0x8c830000, 0x8ca20000, 0x03e00008, 0x00621023),   # lw;lw;jr $ra;subu (pointers)
+     (0x8ca20000,                                         # lw  $v0, 0($a1)  pointer b
+      0x8c850000,                                         # lw  $a1, 0($a0)  pointer a
+      0x080c696d,                                         # j   0x31a5b4
+      0x90430000)),                                       # lbu $v1, 0($v0)  rating b
+    (0x3dfe0, "style 0 (none) rated 0",
+     (0xa3b60000,),                                       # sb $s6, 0($sp)
+     (0xa3a00000,)),                                      # sb $zero, 0($sp)
+)
 
 
 def plan_vpf_styles(f, img):
     """Jobs for --mod vpf-styles."""
-    off, old, new = VPF_STYLES
-    words = [(SAVE_FILE, off, struct.pack("<4I", *old), struct.pack("<4I", *new),
-              "%s 0x%x (play-style compare)" % (SAVE_FILE, off))]
+    words = [(SAVE_FILE, off, struct.pack("<%dI" % len(old), *old),
+              struct.pack("<%dI" % len(new), *new), "%s 0x%x (%s)" % (SAVE_FILE, off, what))
+             for off, what, old, new in VPF_STYLES]
     return word_jobs(f, img, "vpf-styles", words)
 
 
@@ -1860,16 +1873,19 @@ def plan_facility_tiers(f, img, adopted=()):
 
 def word_jobs(f, img, switch, words):
     """Jobs for a switch that rewrites known words: (file, offset, old, new,
-    label) each, offsets into the file. All already new is a note; any word
-    holding neither is refused."""
+    label) each, offsets into the file. All already new is a note; words
+    already new are left alone (a disc from an earlier version of the
+    switch); any word holding neither is refused."""
     if img.kind != "disc image":
-        raise ValueError("%s patches the executable and SIMPRG.REL, so it needs the whole "
-                         "disc image, not %s" % (switch, img.kind))
+        raise ValueError("%s patches the game's code, so it needs the whole disc image, "
+                         "not %s" % (switch, img.kind))
     held = [read_at(f, img, file, off, len(old)) for file, off, old, _, _ in words]
     if all(h == new for h, (_, _, _, new, _) in zip(held, words)):
         return [], ["note: %s is already applied" % switch]
     jobs = []
     for h, (file, off, old, new, label) in zip(held, words):
+        if h == new:
+            continue
         if h != old:
             raise ValueError("%s: %s doesn't hold the expected bytes; not the retail disc?"
                              % (switch, label))
