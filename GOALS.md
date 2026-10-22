@@ -46,7 +46,9 @@ the stages, and [`TODO.md`](TODO.md) what is left.
    type and offset. A field can't be offered for editing until it has a
    name and a known range. Fields that are still unknown stay read-only.
    *Most of the work now:* the player database, the starting season,
-   the parameter tables and saves are named field by field; the match
+   the parameter tables and saves are named field by field (with the
+   edit player a career imports from Virtua Pro Football, whose save
+   decrypts with its own key); the match
    AI's files, the economy and the remaining fields listed in each doc's
    "Still unknown" section are open.
 3. **Write.** Add a writer for each format. A writer must round-trip:
@@ -58,8 +60,9 @@ the stages, and [`TODO.md`](TODO.md) what is left.
    club, free agents, kits, schedules and division sizes, regulations,
    results, training, camps, tactics presets, tours, sequencer scripts
    and saves. Edits through most of them are tested in PCSX2. Still to
-   come: the club ranking, the club events, the facility records and the
-   rest of the resource packs.
+   come: the club ranking, the club events, the facility records, the
+   rest of the resource packs, and Virtua Pro Football's edit players
+   (a way to bring a fully custom player into a career).
 4. **Rebuild.** Put edited files back on a disc image that boots. *Done:*
    `SRC/patch_disc.py` patches files of any size: same-size files in
    place (only the table of contents is encrypted), a size change inside

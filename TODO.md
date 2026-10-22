@@ -189,6 +189,12 @@ known range. Grouped by what a mod would change.
       statistics table 1, the candidate records, the other clubs' and
       staff's untraced bytes, and when the club ranking runs
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
+- [ ] The edit player: the layout of a Virtua Pro Football edit-player
+      record in `pmplayer.bin` (about 0x154 bytes; names, height, weight
+      and abilities are placed), the rest of `BESLES-54153FASYS00`, and
+      how the import (`SAVEPRG.REL` `GetEditPlayerData` `0x40650`,
+      `getEditPlayerData` `0x41938`) converts a record into the career's
+      edit work at block 1 `+0x12600` ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
 
 ## 3. Write: a writer for every format a mod changes
 
@@ -207,6 +213,11 @@ Stage 3. Every writer round-trips every file on the disc and goes into
       exclusives 11–12, combinations 13–14), the overseas branch costs
       (entry 1), and the nation and stadium tables `initteam.py` reads
       (`INITNATIDATA.TBB`, `STADIUM_DATA.TBB`)
+- [ ] Virtua Pro Football's edit players: a reader and writer for
+      `pmplayer.bin` (Blowfish, key `_FC_ACT_2005`), with `roundtrip`, so
+      a custom player can be made and brought into any career through
+      the game's own import; and `save.py` fields for the career's edit
+      work, once the record is decoded (section 2, [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
 - [ ] `SCHEDULE_LIST.TBB` (the national-team calendar): a field-level
       writer; only `patch_disc.py --mod national-cups` changes it now
 - [ ] The `STADIUM/` tables and `EMBLEM/` edit tables, once their fields
@@ -240,7 +251,10 @@ allowed values; tests go through the widgets, off-screen.
       (salary, contract years, age, injury, captain and keyman
       experience), each first as a `save.py set` field
 - [ ] Save editor: `.ps2` memory card images (PCSX2's default), which
-      need a reader and writer for the card's file system
+      need a reader and writer for the card's file system. A scratch
+      reader (superblock, indirect FAT, 528-byte pages with ECC) listed
+      and extracted the saves of an 8 MB card; it needs a writer and a
+      place in `SRC/`
 - [ ] The editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
@@ -285,6 +299,10 @@ names the disc or the edit to build; the result goes into the doc.
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01`
+- [ ] A Virtua Pro Football edit player made or changed with the
+      `pmplayer.bin` writer (section 3), imported into a career through
+      the player editor: the name, height, weight and abilities should
+      show as written ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
 
 ## 8. LMASTER Mod and other patches
 
