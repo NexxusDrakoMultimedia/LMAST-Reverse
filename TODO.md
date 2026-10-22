@@ -203,9 +203,6 @@ Stage 3. Every writer round-trips every file on the disc and goes into
       exclusives 11–12, combinations 13–14), the overseas branch costs
       (entry 1), and the nation and stadium tables `initteam.py` reads
       (`INITNATIDATA.TBB`, `STADIUM_DATA.TBB`)
-- [ ] `save.py` fields for a career's edit player (block 1 `+0x12600`,
-      a `PlPbase` at `+0x4`), so an imported player can be changed in
-      the save editor ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
 - [ ] `SCHEDULE_LIST.TBB` (the national-team calendar): a field-level
       writer; only `patch_disc.py --mod national-cups` changes it now
 - [ ] The `STADIUM/` tables and `EMBLEM/` edit tables, once their fields
@@ -276,7 +273,7 @@ names the disc or the edit to build; the result goes into the doc.
 - [ ] Save editor step 4: one save edited on each page (the Club page is
       tested), including the new player fields (salary, contract years,
       age, injury value 0 on an injured player, captain and keyman
-      experience); the manager's Special Mention texts for dissatisfaction
+      experience, and the Edit player page on a career with one); the manager's Special Mention texts for dissatisfaction
       kinds 0–3, a save edit per kind
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG

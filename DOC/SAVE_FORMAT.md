@@ -707,6 +707,19 @@ player in slot 13 has id `0x7cce`, and its own Pbase copy carries the
 name too. `pmplayer.py check` compares an edit work with the
 `pmplayer.bin` record it came from.
 
+**Editing.** `save.py editplayer <save>` prints the edit player, and
+`save.py set` takes `edit:<field>` for every named `PlPbase` field
+(`edit:<field>.<i>` for one item of a multi-value field,
+`edit:ability.<n>` and `edit:ability.all`) and `edit:name=<text>`. The
+ranges are `pbdata.py`'s decoded ones, abilities 1–99 as the import
+gives them; castno, face and req_status stay read-only. A field in the
+first 0x74 bytes is also written to the squad player's copy at
+`PlPinfo +0x198`, which the game reads for nationality, shirt and skills
+(above). The squad player's playing abilities are his slot's
+(`<slot>:<n>`); `edit:ability` changes the record's. Tested on a copy
+of G000: name, height, nation, skills, a style and an ability set, read
+back from both copies; not yet loaded in game.
+
 ## Editing
 
 `save.py set <save> <out> field=value ...` writes an edited main file.

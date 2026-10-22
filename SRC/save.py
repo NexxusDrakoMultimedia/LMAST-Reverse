@@ -47,6 +47,7 @@ Usage:
     python save.py staff     <save>                       # manager, youth manager, coaches, scouts
     python save.py finances  <save>                       # season plan, accounts by income/payment type
     python save.py candidates <save>                      # scouted players and youth, staff candidates
+    python save.py editplayer <save>                      # the edit player from Virtua Pro Football
     python save.py set       <save> <out> money=N         # edit into a new main file
     python save.py set       <save> <out> status=30000 status_rank=4  # your club's standing
     python save.py set       <save> <out> plan:ticket_price=120 plan:season_tickets=5000
@@ -953,6 +954,44 @@ CLUB_PLAYERS, CLUB_PLAYER = 4, "<hBbBB"
 CLUB_FRIENDSHIP, CLUB_LEAGUE = 0x9a, 0x9c
 CLUB_RANK, CLUB_POINTS, CLUB_WORLD_RANK = 0xa0, 0xa2, 0xa4
 CLUB_RANK_MAX = 31
+# Block 1 +0x12600: the edit player imported from Virtua Pro Football
+# (PMPLAYER_FORMAT.md), 0x100 bytes (SLES 0x25d478). s16 id at +0 (-1 none,
+# pwkTeam_InitEditWork 0x25d558; 0x7cce in a career, pwkTeam_IsEditWork
+# 0x25d818), then the player's decoded PlPbase (pwkTeam_GetEditWorkPBase
+# 0x25d768), which getPbase (0x20c700) returns for that id instead of a
+# PBDATA record. Its first 0x74 bytes are also in the squad player's copy
+# at PlPinfo +0x198, so edits go to both.
+EDIT_WORK, EDIT_ID, EDIT_PBASE = 0x12600, 0x7cce, 0x4
+# Fields `set` leaves alone: the import sets castno (>= 22,542) and face for
+# Virtua Pro Football's model, and req_status is a candidate-list rule.
+EDIT_READ_ONLY = ("castno", "face", "req_status")
+EDIT_ABIL_RANGE = (1, 99)       # the import copies VPF's 1-99 as they are
+TEXT_KEYS = ("edit:name",)      # the `set` keys that take text, not a number
+
+
+def edit_fields():
+    """[(key, struct offset, size, low, high, note)] for the edit player's
+    PlPbase: pbdata.PLAYER_FIELDS with their decoded ranges; key is
+    "edit:<field>", with ".<i>" for each item of a multi-value field."""
+    import pbdata
+    out = []
+    for fname, off, bits, count, _ in pbdata.PLAYER_FIELDS:
+        spec = pbdata.edit_spec("players", fname)
+        if spec is None or fname in EDIT_READ_ONLY:
+            continue
+        size = 2 if bits > 8 else 1
+        if fname == "ability":
+            lo, hi = EDIT_ABIL_RANGE
+        elif spec[0] == "bits":
+            lo, hi = 0, (1 << spec[1]) - 1
+        elif spec[0] == "choice":
+            lo, hi = min(spec[1]), max(spec[1])
+        else:
+            lo, hi = spec[1], min(spec[2], 0xff if size == 1 else 0xffff)
+        for i in range(count):
+            key = "edit:%s" % fname + (".%d" % i if count > 1 else "")
+            out.append((key, off + i * size, size, lo, hi, fname))
+    return out
 # SLES_541.51: the club's reputation text (message 203:n) is n = how many of
 # these 6 s32 thresholds the club rank reaches (CDetailManager::ConvertTeam,
 # 0x288a9c). National teams use 203:100+n instead.
@@ -1200,6 +1239,56 @@ class Save:
         else:
             raise ValueError("unknown staff field %r" % field)
 
+    def edit_player(self):
+        """The edit player: {"name", "slot" (its squad slot or None), and
+        every edit_fields() key}, or None when the career has none."""
+        o = self.at(1, EDIT_WORK)
+        if struct.unpack_from("<h", self.blocks, o)[0] != EDIT_ID:
+            return None
+        base = o + EDIT_PBASE
+        out = {"name": bytes(self.blocks[base:base + NAME_LEN]).split(b"\0")[0].decode("cp850"),
+               "slot": next((label for label, po in self.squad()
+                             if struct.unpack_from("<h", self.blocks, po)[0] == EDIT_ID), None)}
+        for key, off, size, _, _, _ in edit_fields():
+            out[key] = int.from_bytes(self.blocks[base + off:base + off + size], "little")
+        return out
+
+    def _edit_targets(self, off):
+        """Where a PlPbase offset lives: the edit work, and the squad
+        player's copy when the offset is inside it."""
+        out = [self.at(1, EDIT_WORK) + EDIT_PBASE + off]
+        ep = self.edit_player()
+        if ep["slot"] is not None and off < PBASE_COPY_SIZE:
+            out.append(dict(self.squad())[ep["slot"]] + PBASE_COPY + off)
+        return out
+
+    def set_edit(self, key, value):
+        """Set an edit_fields() key, or edit:ability.all for all 64."""
+        if self.edit_player() is None:
+            raise ValueError("this career has no edit player")
+        fields = {f[0]: f for f in edit_fields()}
+        keys = ([k for k in fields if k.startswith("edit:ability.")]
+                if key == "edit:ability.all" else [key])
+        for k in keys:
+            if k not in fields:
+                raise ValueError("unknown edit player field %r (save.py spec lists them)" % k)
+            _, off, size, lo, hi, _ = fields[k]
+            if not lo <= value <= hi:
+                raise ValueError("%s must be %d-%d" % (k, lo, hi))
+            for o in self._edit_targets(off):
+                self.blocks[o:o + size] = value.to_bytes(size, "little")
+
+    def set_edit_name(self, text):
+        """The edit player's name (cp850, up to 19 bytes), in the edit work
+        and the squad player's copy."""
+        if self.edit_player() is None:
+            raise ValueError("this career has no edit player")
+        raw = text.encode("cp850")
+        if not raw or len(raw) > NAME_LEN:
+            raise ValueError("the name is 1-%d characters" % NAME_LEN)
+        for o in self._edit_targets(0):
+            self.blocks[o:o + NAME_LEN + 1] = raw.ljust(NAME_LEN + 1, b"\0")
+
     def stats(self, slot):
         """{table: [(goals, assists, games, games2, mom, points x 100, red,
         yellow) per competition]} for a squad slot."""
@@ -1378,6 +1467,13 @@ class Save:
         if key.startswith("club:"):
             _, team, field = key.split(":")
             return self.club(int(team, 0))[field]
+        if key.startswith("edit:"):
+            ep = self.edit_player()
+            if key == "edit:name":
+                return ep["name"]
+            if key == "edit:ability.all":
+                return mean(v for k, v in ep.items() if k.startswith("edit:ability."))
+            return ep[key]
         who, _, field = key.partition(":")
         staff = {lb: st for lb, _, _, st in self.staff_labels()}
         if who in staff:
@@ -1603,6 +1699,28 @@ def cmd_staff(game, path):
         print("      " + "  ".join("%s %d" % b for b in bars))
 
 
+def cmd_editplayer(game, path):
+    """The edit player's PlPbase, as `set` takes it (edit:<field>)."""
+    s = Save(game, path)
+    ep = s.edit_player()
+    if ep is None:
+        print("no edit player in this career")
+        return
+    print("edit player %r, id %#x, %s" % (ep["name"], EDIT_ID, "squad slot %s" % ep["slot"]
+                                           if ep["slot"] is not None else "not in your squad"))
+    import pbdata
+    line = []
+    for key, _, _, _, _, fname in edit_fields():
+        if fname == "ability":
+            continue
+        line.append("%s=%d" % (key[5:], ep[key]))
+    print("  " + "  ".join(line))
+    abil = [ep["edit:ability.%d" % k] for k in range(ABIL_COUNT)]
+    for k in range(0, ABIL_COUNT, 8):
+        print("  " + "  ".join("%2d %-16s %2d" % (i, pbdata.ABILITY_NAMES[i][:16], abil[i])
+                               for i in range(k, k + 8)))
+
+
 def cmd_candidates(game, path):
     """The candidate lists: players, youth players, managers, coaches, scouts."""
     import pbdata
@@ -1710,6 +1828,12 @@ def apply_assigns(s, assigns):
         key, _, val = a.partition("=")
         if not val:
             raise ValueError("expected field=value, got %r" % a)
+        if key == "edit:name":
+            try:
+                s.set_edit_name(val)
+            except ValueError as e:
+                raise ValueError("%s: %s" % (a, e))
+            continue
         try:
             value = int(val, 0)
         except ValueError:
@@ -1718,6 +1842,12 @@ def apply_assigns(s, assigns):
             if not MONEY_MIN <= value <= MONEY_MAX:
                 raise ValueError("%s: money is %d to %d" % (a, MONEY_MIN, MONEY_MAX))
             s.money = value
+            continue
+        if key.startswith("edit:"):
+            try:
+                s.set_edit(key, value)
+            except ValueError as e:
+                raise ValueError("%s: %s" % (a, e))
             continue
         if key.startswith("plan:"):
             try:
@@ -1834,13 +1964,26 @@ def edit_spec(s=None):
         out.append(("<mstaff>:" + name, 0, 0xffff, 1, "popularity, managers and coaches"))
     out.append(("club:<team>:friendship", 0, 100, 1, "another club's friendship"))
     out.append(("club:<team>:rank", 0, CLUB_RANK_MAX, 1, "another club's rank"))
+    if s is None or s.edit_player() is not None:
+        # The edit player (edit:name=<text> sets the name, 1-19 characters).
+        seen = set()
+        for key, _, _, lo, hi, fname in edit_fields():
+            if fname == "ability":
+                key = "edit:ability.<n>"
+            elif "." in key:
+                key = "edit:%s.<i>" % fname
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append((key, lo, hi, 1, "edit player, PlPbase %s%s" % (
+                fname, "; edit:ability.all sets all 64" if fname == "ability" else "")))
     return out
 
 
 SPEC_PATTERNS = {"<slot>": r"(?:\d+|y\d+)", "<ability>": r"(?:\d+|all)", "<a>": r"\d+",
                  "<b>": r"(?:\d+|all)", "<staff>": r"(?:manager|ymanager|coach\d|scout\d)",
                  "<mstaff>": r"(?:manager|ymanager|coach\d)", "<n>": r"(?:\d+|all)",
-                 "<kind>": r"\d+", "<team>": r"\d+"}
+                 "<kind>": r"\d+", "<team>": r"\d+", "<i>": r"\d+"}
 
 
 def edit_range(s, key):
@@ -1868,7 +2011,7 @@ def spec_keys(s, key):
     subs = {"<slot>": filled[:1] + [x for x in squad if x.startswith("y")][:1],
             "<ability>": ["0", str(ABIL_COUNT - 1)], "<a>": filled[:1], "<b>": filled[1:2],
             "<staff>": staff, "<mstaff>": mstaff, "<n>": ["0"], "<kind>": ["0", "4"],
-            "<team>": ["3"]}
+            "<team>": ["3"], "<i>": ["0"]}
     keys = [key]
     for ph, values in subs.items():
         if ph in key:
@@ -2039,6 +2182,8 @@ def main(argv):
         return cmd_roundtrip(game, args)
     elif cmd == "candidates" and len(args) == 1:
         cmd_candidates(game, args[0])
+    elif cmd == "editplayer" and len(args) == 1:
+        cmd_editplayer(game, args[0])
     elif cmd == "finances" and len(args) == 1:
         cmd_finances(game, args[0])
     elif cmd == "show" and len(args) == 1:

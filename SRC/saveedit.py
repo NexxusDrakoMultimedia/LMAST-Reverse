@@ -102,6 +102,15 @@ def grid_rows(parent, rows, start=0):
         ttk.Label(parent, text=value).grid(row=r, column=1, sticky="nw", pady=1)
 
 
+def assignment(key, value):
+    """A save.py set assignment: key=value, the name as text."""
+    return "%s=%s" % (key, value)
+
+
+def shown(value):
+    return value if isinstance(value, str) else format(value, ",")
+
+
 def range_text(s, key):
     lo, hi, step, _ = save.edit_range(s, key)
     text = "%s-%s" % (format(lo, ","), format(hi, ","))
@@ -624,7 +633,72 @@ def backup_dir(main):
     return os.path.join(card + ".bak", os.path.basename(folder))
 
 
-PAGES = (ClubPage, FinancesPage, SquadPage, CombiPage, StaffPage, ClubsPage, CandidatesPage)
+class EditPlayerPage(Page):
+    title = "Edit player"
+
+    def fill(self, s, names):
+        self.clear()
+        ep = s.edit_player()
+        if ep is None:
+            ttk.Label(self.frame, text="This career has no edit player. The game's player "
+                                       "editor imports one from Virtua Pro Football "
+                                       "(PMPLAYER_FORMAT.md).", foreground=GREY).pack(
+                anchor="w", padx=8, pady=8)
+            return
+        detail = editor.Scrolled(self.frame)
+        detail.outer.pack(fill="both", expand=True)
+        box = detail.inner
+        ttk.Label(box, text="%s  (id %#x, %s)" % (
+            ep["name"], save.EDIT_ID, "squad slot %s" % ep["slot"] if ep["slot"] is not None
+            else "not in your squad"), font=self.app.title_font).pack(anchor="w", padx=8,
+                                                                       pady=(8, 2))
+        ttk.Label(box, text="The player's database record, which a career keeps in the save "
+                            "instead of PBDATA. The first fields are also in the squad "
+                            "player's own copy, and an edit changes both. His abilities in "
+                            "matches and training are the Squad page's; these are the "
+                            "record's.", foreground=GREY, wraplength=900,
+                  justify="left").pack(anchor="w", padx=8, pady=(0, 6))
+        top = ttk.Frame(box)
+        top.pack(anchor="w", padx=8, pady=4)
+        ttk.Label(top, text="name", foreground=GREY).grid(row=0, column=0, sticky="w",
+                                                         padx=(6, 12), pady=1)
+        var = tk.StringVar(value=ep["name"])
+        entry = ttk.Entry(top, textvariable=var, width=24)
+        entry.grid(row=0, column=1, sticky="w", pady=1)
+
+        def commit_name(event=None):
+            if var.get() != self.app.save.get("edit:name"):
+                self.app.commit("edit:name", var.get(),
+                                lambda: var.set(self.app.save.get("edit:name")), self.refresh)
+        entry.bind("<Return>", commit_name)
+        entry.bind("<FocusOut>", commit_name)
+        self.name_entry = entry
+        ttk.Label(top, text="1-%d characters" % save.NAME_LEN, foreground=GREY).grid(
+            row=0, column=2, sticky="w", padx=(12, 6))
+        fields = [f for f in save.edit_fields() if f[5] != "ability"]
+        per_col = (len(fields) + 2) // 3
+        for i, (key, _, _, _, _, _) in enumerate(fields):
+            r, c = 1 + i % per_col, (i // per_col) * 3
+            ttk.Label(top, text=key[5:].replace("_", " "), foreground=GREY).grid(
+                row=r, column=c, sticky="w", padx=(6, 8), pady=1)
+            self.app.input(top, key).grid(row=r, column=c + 1, sticky="w", pady=1)
+            ttk.Label(top, text=range_text(s, key), foreground=GREY).grid(
+                row=r, column=c + 2, sticky="w", padx=(4, 12))
+        abil = ttk.LabelFrame(box, text="Abilities (%d-%d)" % save.EDIT_ABIL_RANGE)
+        abil.pack(anchor="w", padx=8, pady=4)
+        all_row = ttk.Frame(abil)
+        all_row.grid(row=0, column=0, columnspan=12, sticky="w", padx=6, pady=(2, 6))
+        ttk.Label(all_row, text="all 64 (the mean shown)", foreground=GREY).pack(side="left")
+        self.app.input(all_row, "edit:ability.all", self.refresh).pack(side="left", padx=8)
+        for k in range(save.ABIL_COUNT):
+            r, c = 1 + k % ABIL_ROWS, (k // ABIL_ROWS) * 2
+            ttk.Label(abil, text="%d %s" % (k, pbdata.ABILITY_NAMES[k]), foreground=GREY).grid(
+                row=r, column=c, sticky="e", padx=(10, 4))
+            self.app.input(abil, "edit:ability.%d" % k).grid(row=r, column=c + 1, sticky="w")
+
+
+PAGES = (ClubPage, FinancesPage, SquadPage, CombiPage, StaffPage, ClubsPage, CandidatesPage,
+         EditPlayerPage)
 
 
 # --- the window --------------------------------------------------------------
@@ -759,14 +833,17 @@ class App:
             lambda text, revert: self.commit(key, text, revert, after))
 
     def commit(self, key, text, revert, after=None):
-        try:
-            value = int(text)
-        except ValueError:
-            return self.refuse("%s must be a number" % key, revert)
+        if key in save.TEXT_KEYS:
+            value = text
+        else:
+            try:
+                value = int(text)
+            except ValueError:
+                return self.refuse("%s must be a number" % key, revert)
         old = self.save.get(key)
         before = bytes(self.save.blocks)
         try:
-            save.apply_assigns(self.save, ["%s=%d" % (key, value)])
+            save.apply_assigns(self.save, [assignment(key, value)])
         except ValueError as e:
             self.save.blocks[:] = before
             return self.refuse(str(e), revert)
@@ -777,7 +854,7 @@ class App:
             # Redraw after the widget's own event has finished.
             self.root.after_idle(after)
         self.update_title()
-        self.status("%s: %s -> %s" % (key, format(old, ","), format(value, ",")))
+        self.status("%s: %s -> %s" % (key, shown(old), shown(value)))
         return True
 
     def refuse(self, message, revert):
@@ -819,7 +896,7 @@ class App:
             return False
         cmd = ["python", "SRC/save.py", "set", editor.quote(editor.shown_path(backup)),
                editor.quote(editor.shown_path(new))]
-        cmd += ["%s=%d" % kv for kv in self.changes]
+        cmd += [editor.quote(assignment(*kv)) for kv in self.changes]
         n = len(self.changes)
         lines = editor.log_lines("%s: %d changes" % (os.path.basename(main), n),
                                  [cmd], [(new, main)], moved="the .new file")
@@ -878,7 +955,7 @@ class App:
         if self.changes:
             cmds.append(["python", "SRC/save.py", "set", editor.quote(editor.shown_path(main)),
                          editor.quote(editor.shown_path(new))]
-                        + ["%s=%d" % kv for kv in self.changes])
+                        + [editor.quote(assignment(*kv)) for kv in self.changes])
         lines = editor.log_lines("%s -> %s: %d changes" % (os.path.basename(src), name, n_changes),
                                  cmds, [(new, dst_main)], moved="the .new file")
         if not self.changes:

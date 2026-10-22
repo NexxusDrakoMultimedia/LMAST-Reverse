@@ -131,6 +131,10 @@ bytes the import doesn't read are kept. To use the file, copy it over
 `pmplayer.bin` in the card's `BESLES-54153FASYS00` folder (keep a
 backup); PCSX2 folder memory cards hold it as a plain file.
 
+Once a player is in a career, `save.py set edit:<field>=...` and the
+save editor's Edit player page change the career's copy
+([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)).
+
 `pmplayer.py roundtrip` re-encodes every field of every record and
 rebuilds the encrypted file. `pmplayer.py selftest` (in `regress.py`)
 builds an empty file and checks its CRC, then makes a player through the

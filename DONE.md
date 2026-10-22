@@ -175,6 +175,10 @@ history holds the rest.
       `roundtrip` (both cards' files rebuild byte for byte), `check`
       against a career, and `selftest` in `regress.py`
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
+- [x] `save.py set edit:<field>` and `editplayer`: a career's imported
+      edit player, kept in step with the squad player's copy; the save
+      editor's Edit player page
+      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
 
 ## 4. Rebuild: edits back on a bootable disc
 

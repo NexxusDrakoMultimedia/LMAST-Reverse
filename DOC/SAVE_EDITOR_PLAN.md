@@ -107,6 +107,11 @@ Each page shows what `save.py` can already read, and edits only what
    copy of G003: five edits, two refusals (a salary below the pound
    minimum, age 15), File > Save, and the logged command giving the
    saved bytes. Not yet loaded in game.
+   An **Edit player** page (added 2026-10-23) edits the career's
+   imported Virtua Pro Football player through `save.py set edit:...`:
+   the name, every named database field and the 64 abilities. Tested
+   through the widgets on a copy of G000 (a name with a space, three
+   fields, one refusal, the logged command giving the saved bytes).
 
 ## Decisions
 
