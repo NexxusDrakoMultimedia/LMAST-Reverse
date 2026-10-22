@@ -135,6 +135,9 @@ history holds the rest.
 - [x] Where each kick kind is made: the corner (36, 37), free-kick (38–40)
       and throw-in kinds, and the intention behind each in-play pass,
       cross and shot kind ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#where-each-kind-is-made))
+- [x] The `COMBINATION2.CBB` record layout (`bpb.py cbb`), the
+      combination roles' eight modes and what each of the 29 combination
+      commands does ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#cbb-records))
 
 ## 3. Write: a writer for every format a mod changes
 

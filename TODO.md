@@ -21,9 +21,10 @@ item below.
 
 1. **The `GAME/` tactics AI files** (section 2, "The match"). The play
    books, the combination scripts and `GAMEDATA.BIN`'s container are
-   decoded ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md),
-   [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md)); what's left is field
-   meanings: the `.CBB` records, the 29 combination commands and
+   decoded, and so are the `.CBB` record layout and what each
+   combination command does ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md),
+   [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md)); what's left is
+   what the `.CBB` blocks and the commands' area types select, and
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
    match AI's `fb::` classes and which class makes each call, a way in
    for these too.
@@ -116,14 +117,14 @@ known range. Grouped by what a mod would change.
 
 ### The match
 
-- [ ] The tactics AI files: the `COMBINATION2.CBB` record fields and the
-      29 combination commands (callbacks at `GAMEPRG.REL 0x249280`); in
+- [ ] The tactics AI files: what the `COMBINATION2.CBB` blocks and slot
+      types select, the area types the combination commands make; in
       the play books the path kinds, point codes, which play is which,
       the `+0x20` block and `GetFormationData`
       ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
 - [ ] `GAMEDATA.BIN`: the rest of a ball-contact record, which foot parts
-      0 and 1 are, the other callers of `GAMEPRG.REL 0x13abb8`, and
-      whether anything reads `AI_PARAM.BIN`
+      0 and 1 are, what sets a player's record (`+0x520`), and whether
+      anything reads `AI_PARAM.BIN`
       ([`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md#still-unknown))
 - [ ] Match parameters: where the kick-off, penalty and goal kick kinds
       (27–29, 31, 34, 35) are first set, what tells apart 3 and 4, the

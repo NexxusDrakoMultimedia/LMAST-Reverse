@@ -151,7 +151,7 @@ disassemble as unrelated MIPS instructions.
 | [`tour.py`](SRC/tour.py) | tour opponents by region (`TOUR_LIST.TBB`); edits pairs (`set`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region) |
 | [`regulation.py`](SRC/regulation.py) | match regulations (`REGULATION.TBB`), one row per schedule: clubs, match grade, win bonus, prizes by position, yellow-card ban, matchday squad, foreign-player limit, substitutions, and the places up and down; edits fields (`set`), round-trips | [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md) |
 | [`gamedata.py`](SRC/gamedata.py) | `GAME/GAMEDATA.BIN`: checks the 4,131 records (body part and surface of each ball contact) and prints them with the fields the match engine is known to read | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) |
-| [`bpb.py`](SRC/bpb.py) | the play books `GAME/PLAYBOOK.BPB` and `COMBINATION.BPB`: checks every play and prints one's paths (players and ball, in metres) | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) |
+| [`bpb.py`](SRC/bpb.py) | the play books `GAME/PLAYBOOK.BPB` and `COMBINATION.BPB`: checks every play and prints one's paths (players and ball, in metres); checks and prints the `COMBINATION2.CBB` records (blocks, slots, areas) | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) |
 | [`plrcommon.py`](SRC/plrcommon.py) | the common pack `PLRESOURCECOMMON.PAC`: checks all 25 tables (facilities, formations, nations, competitions) and prints any one, with the facility records' build time, upkeep and stadium capacity | [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md) |
 | [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database; replaces free agents (`setfree`) and checks that the pack rebuilds byte for byte (`roundtrip`) | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
 | [`leaguesize.py`](SRC/leaguesize.py) | a nation's two divisions: checks that the first season plays out with each club once (`nations`), and changes the first division's size, moving clubs to or from the second (`plan`, which also gives the sizes each nation allows; `build`, for one or more leagues: the slots, last season's records, the games, the game days and the club counts in `REGULATION.TBB` and `CLUBRESULT.TBB`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from) |
@@ -501,7 +501,7 @@ Every format and folder doc labels its claims **confirmed** or **empirical** and
 | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) | pre-rendered Z buffers |
 | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) | Ninja (NN) models, skeletons, motions, VU/PX Plus vertex streams |
 | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) | club kits: `UNIFORM_LIST` bit layout, kit designs and colours, the 96 colours, the `COLOR_TBL` clash table, `UNIFORM_GK` keeper kits |
-| [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) | the match AI's play books: records of player and ball paths, point coordinates, play ids |
+| [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) | the match AI's play books: records of player and ball paths, point coordinates, play ids; the `COMBINATION2.CBB` records and the 29 combination commands |
 | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) | `GAME/GAMEDATA.BIN`'s 0x30-byte ball-contact records (partial) and the unread `AI_PARAM.BIN` |
 
 ## Working on the project

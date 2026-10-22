@@ -90,13 +90,110 @@ look like the timing of each combination. The 29 commands have no
 symbols and are named `Combi0`–`Combi28`. `python SRC/sqb.py dis
 "DAT/GAME/COMBINATION2.CSB#2"` prints one.
 
-The `.CBB`'s 540 records end exactly at the end of the file and are 52,
-56, 60 or 68 bytes. Each starts `{u16 size, u16 4, bytes 3, 8, 12, 16,
-40, 48}` (the same in every record), and the rest is full of `0xcd`,
-`0xbb`, `0xaa` and `0x97` bytes, the fill patterns of uninitialised
-memory, so the records are C structs written with their padding. The
-code at `0xc7f00` reads small items as a type byte and s8 values × 10.0
-(positions in units of 10?). The fields aren't decoded.
+### `.CBB` records
+
+**Confirmed** from `fb::CombinationSequencer`'s reader (`GAMEPRG.REL
+0xc7a78`). Offsets in the header are bytes counted from the record +
+the u16 at `+0x02`, which is 4 in every record:
+
+| Offset | Type | What |
+|---|---|---|
+| `+0x00` | u16 | record size |
+| `+0x02` | u16 | the base the offsets below count from (4) |
+| `+0x04` | u8 | *n*, the number of slots |
+| `+0x05`, `+0x06` | u8 | offsets of blocks A and B |
+| `+0x07` + *i* | u8 | offset of slot *i*; slot 0 is block C |
+
+| Block | Layout |
+|---|---|
+| A | u8 kind; kind 1 is followed by two u8 values |
+| B | u8 kind; kind 2 is followed by one u8 value |
+| C | u16, 2 pad bytes, 4 × u32, then 2 × u16 each × 10.0; when the first is non-zero and the second zero, the second becomes 1055.6 (`0xc7bc8`) |
+| slot 1 … *n* − 1 | u8 type 0–7 (jump table `0x274a60`). Type 0: two u8, the second × 10. Types 1, 3, 4, 5: an area. Types 2 and 6: a u8, then an area. Type 7: three u8, the last × 10 |
+| area (`0xc7f00`) | u8 shape, s8 x, s8 y, then for shape 0 an s8 radius, for others s8 x2, s8 y2; all × 10.0 |
+
+`fb::COMBINATION::AreaPosition` (`0xc2cd8`) tests a point against an
+area: shape 0 by distance against one value (a circle), others against
+bounds (a box).
+
+**Empirical**, over all 540 records (`python SRC/bpb.py info DAT/GAME`):
+277 have 4 slots, 253 three and 10 two; the slot types are 2 (835
+slots), 1 (474), 3 and 4 (18 each), 0 and 6 (one each), and 5 and 7
+never appear. Only records 0–59 fill blocks A and B (A kind 0 or 1, B
+kind 0 or 2); in the other 480 both kinds are 3 and the u32s of block C
+are 0. The bytes between fields are `0xcd`, `0xbb`, `0xaa` and `0x97`,
+the fill patterns of uninitialised memory, so the records are C structs
+written with their padding. The areas are mostly circles of radius 100
+or 150 at offsets such as (±100, −50) and (0, 150).
+
+`python SRC/bpb.py cbb DAT/GAME/COMBINATION2.CBB 0 3` prints records.
+
+### The combination commands
+
+A combination's script moves up to three participants (0–2) through
+`fb::RoleCombination`. **Confirmed:** each command's first argument is
+where its result goes (`m3[0]` when it's dropped); its other arguments
+start at the argument record's `+0x10`. A command returns 0 when done,
+2 while it is waiting on a participant, and −1 on an error. The
+participants' role objects have type `0x2f` (`fb::RoleCombination`).
+Areas live in an array of 0x140-byte records (`0xc37f8`); a command that
+makes one stores its index in the result, and the area's `+0x130` holds
+the player sent there.
+
+`fb::RoleCombination` keeps a pending mode at `+0x2c` (set by
+`0x1296e0`) and the running one at `+0x30`; `0x128b98` switches on it
+(jump table `0x27b890`):
+
+| Mode | Handler | What it does |
+|---|---|---|
+| 0 | `0x128ff0` | pass to the player in the target area (`+0x180`) |
+| 1 | – | nothing |
+| 2 | `0x1292a0` | run to an area (`0x129748`, which takes the offsets at `+0x20`/`+0x24`) |
+| 3 | `0x1293a8` | switch to the player's play at `+0x108` |
+| 4 | `0x128fd0` | pass to another participant (`+0x184`) |
+| 5 | `0x129128` | a kick at the target that `0x1049b8` picks (the set plays' helper; probably the shot) |
+| 6 | `0x1291f0` | set the player's target (`+0x180`) |
+| 7 | `0x128c80` | clear a flag in the player's `+0x1f0` |
+
+Modes 0 and 4 build the kick with the set plays' pass builder
+(`0x56f68`), which writes the kick kind at `+0x1a`. The pass type in
+`+0x28` picks it (`0x128f68`): 0 a through pass (kind 1), 1 a short pass
+(kind 0), 2 a long pass (kind 3), any other value a short pass. See
+[the kick kinds](PBDATA_FORMAT.md#the-kick-kinds).
+
+The 29 commands (argument counts at `0x274790`, including the result):
+
+| Command | Arguments after the result | What it does |
+|---|---|---|
+| `Combi0` | *p* | participant *p* runs to area 0 (mode 2) |
+| `Combi1` | *p*, *a* | *p* runs to area *a* |
+| `Combi27` | *p*, *x*, *y* | *p* runs to area 0, with offsets *x*, *y* |
+| `Combi28` | *p*, *a*, *x*, *y* | *p* runs to area *a*, with offsets |
+| `Combi2` | *t* | makes an area of type *t*: 6 and 7 by `0xc5f30`, 0–5 by `0xc5bc8` with a direction pair from `0x2746f8` ((0,0), (0,1), (1,0), (1,1), (−1,0), (−1,1)) |
+| `Combi3` | *n* | makes preset area *n* through the table at `0x249370`; entries 13–15, 17, 18 and 21 are empty, so those *n* do nothing |
+| `Combi4` | *p*, *k* | *p* passes to area 0 with pass type *k* (mode 0) |
+| `Combi5` | *p*, *a*, *k* | *p* passes to area *a* |
+| `Combi6` | *p*, *x*, *k* | *p* passes to a point it builds from *x* |
+| `Combi7` | *p*, *q*, *k* | *p* passes straight to participant *q* (mode 4) |
+| `Combi9` | *p*, *q* | the same as `Combi7` (`0xc4fd0` calls it) |
+| `Combi8` | *p* | mode 7 for *p* |
+| `Combi10` | *p* | 0 if *p* is still a combination role, else −1 |
+| `Combi11` | *p* | mode 3; waits until *p*'s player holds the ball (`*0x249058 +0xc`) |
+| `Combi12` | *p* | mode 6, with a target from `0x36c78`; waits on `0x128da0` |
+| `Combi13` | *p* | mode 5, the kick; waits until it's done (`+0x188`) |
+| `Combi14` | *x* | stores 1 in the result |
+| `Combi15` | *p* | stores 1 if *p*'s player holds the ball, else 0 |
+| `Combi16` | *x* | makes an area through `0xc62a8` |
+| `Combi17`–`Combi24` | – | each makes an area around participant 0 by `0xc6150` with a fixed value: 5, 1, 3, 7, 4, 6, 2 and 8 in command order |
+| `Combi25` | *c* | stores 1 with a chance of *c* % (`fcEuroRand_Get0to1`, the game's seeded random numbers), else 0 |
+| `Combi26` | *p*, *d* | makes an area *d* × 10 from participant *p*, trying sideways offsets of 20, 30 or 50 until `0xc63a8` accepts one |
+
+So script 0, `Combi3 8; Combi0 1; Combi3 13; Combi0 2; Combi12 0`, makes
+preset area 8, sends participants 1 and 2 to area 0 (`Combi3 13` returns
+−1 without doing anything), and sets participant 0's target. Whether
+area 0 is the area just made (`0xc3878` stores it) wasn't checked. What the
+block A, B and C fields and the slot types select isn't traced: the
+reader stores them in the sequencer, and their users weren't followed.
 
 ## Still unknown
 
@@ -105,8 +202,15 @@ code at `0xc7f00` reads small items as a type byte and s8 values × 10.0
 - What the path kinds and point codes mean, and which play is which
   (the id ranges, and `TACTICS_PLAYBOOK_EDIT.TBB`'s link to them).
 - `CPlayBookDataBase::GetFormationData` (`0x2e7d88`, `IFORM`).
-- The fields of the `.CBB` records, and what the 29 combination commands
-  do (their callbacks at `GAMEPRG.REL 0x249280` have no symbols).
+- What the `.CBB` blocks A, B and C and the slot types mean: who reads
+  the fields `0xc7a78` stores, and whether the slots are the
+  participants' starting areas.
+- The area types of `Combi2`, `Combi3` and `Combi17`–`Combi24`
+  (directions around the ball holder?), what `Combi12`'s target and
+  mode 7's flag are, and the plays at the player's `+0xfc`, `+0x100`
+  and `+0x108` that modes 2 and 3 switch to.
+- Why records 60–539 leave blocks A and B empty: whether those
+  combinations run differently.
 
 ## Checking
 

@@ -23,11 +23,27 @@ Confirmed from Pwk::PlayBookData::CPlayBookDataBase in SLES_541.51:
 
 COMBINATION2.CBB has the same container (u32 count, size-prefixed records,
 GAMEPRG.REL 0xc7e84): 540 records, one per combination; its scripts are the
-540 SQB1 scripts in COMBINATION2.CSB (sqb.py). `info` checks its container.
+540 SQB1 scripts in COMBINATION2.CSB (sqb.py). A record (read by
+fb::CombinationSequencer, GAMEPRG.REL 0xc7a78):
+
+  +0x00   u16 size; u16 base (4): the offsets below are from the record + base
+  +0x04   u8 n, the slots; +0x05/+0x06 u8 offsets of blocks A and B; +0x07
+          + i u8 offset of slot i (slot 0 is the header block C)
+  A       u8 kind; kind 1: two u8 values
+  B       u8 kind; kind 2: one u8 value
+  C       u16, 2 bytes pad, 4 x u32, 2 x u16 (each x 10.0; a zero second one
+          with a non-zero first becomes 1055.6)
+  slot i  u8 type (0-7), then by type: 0 two u8 (the second x 10); 1, 3,
+          4, 5 an area; 2 and 6 a u8 and an area; 7 three u8 (the last x 10)
+  area    u8 shape, s8 x, s8 y (x 10.0), then shape 0 s8 radius, else s8 x2,
+          s8 y2 (x 10.0) (0xc7f00)
+
+`info` checks every record against this layout; `cbb` prints records.
 
 Usage:
     python bpb.py info <file.BPB | file.CBB | dir> ...
     python bpb.py dump <file.BPB> <record>
+    python bpb.py cbb  <file.CBB> [first [last]]
 """
 import os
 import struct
@@ -36,6 +52,12 @@ import sys
 BALL_KIND = 0xfe                 # path kind high byte of the ball's path
 COORD_SHIFT, COORD_SCALE, COORD_SIGN = 3, 64.0, 4
 ROUTE_OFF, ROUTE_LEN, NONE = 0x18, 4, 0xff
+
+CBB_SCALE = 10.0                 # 0xc7f00 and 0xc7b64 multiply by 10.0
+CBB_DEFAULT_LIMIT = 1055.6       # 0xc7bc8: 0x4483f3d7
+CBB_SLOT_TYPES = 8               # the jump table at 0x274a60
+CBB_AREA_TYPES = (1, 3, 4, 5)    # slot types whose bytes are an area right away
+CBB_BYTE_AREA_TYPES = (2, 6)     # a u8, then an area
 
 
 def coord(v):
@@ -117,6 +139,58 @@ def cbb_records(data):
     return out
 
 
+def cbb_area(raw, o):
+    """An area at raw[o] (0xc7f00): (shape, x, y, radius) for shape 0, else
+    (shape, x, y, x2, y2), the coordinates already x 10."""
+    shape = raw[o]
+    x, y, a, b = struct.unpack_from("<4b", raw, o + 1)
+    if shape == 0:
+        return (shape, x * CBB_SCALE, y * CBB_SCALE, a * CBB_SCALE)
+    return (shape, x * CBB_SCALE, y * CBB_SCALE, a * CBB_SCALE, b * CBB_SCALE)
+
+
+class Combination:
+    """A COMBINATION2.CBB record, read the way GAMEPRG.REL 0xc7a78 reads it."""
+
+    def __init__(self, raw):
+        self.raw = raw
+        self.size, self.base, self.n = struct.unpack_from("<HHB", raw, 0)
+        b = self.base
+        self.a_kind = raw[b + raw[5]]
+        self.a_values = tuple(raw[b + raw[5] + 1:b + raw[5] + 3]) if self.a_kind == 1 else ()
+        self.b_kind = raw[b + raw[6]]
+        self.b_value = raw[b + raw[6] + 1] if self.b_kind == 2 else None
+        c = b + raw[7]
+        (self.c_u16,) = struct.unpack_from("<H", raw, c)
+        self.c_words = struct.unpack_from("<4I", raw, c + 4)
+        l1, l2 = struct.unpack_from("<HH", raw, c + 0x14)
+        self.limits = (l1 * CBB_SCALE, l2 * CBB_SCALE if l2 or not l1 else CBB_DEFAULT_LIMIT)
+        self.slots = []
+        for i in range(1, self.n):
+            o = b + raw[7 + i]
+            t = raw[o]
+            if t == 0:
+                v = (raw[o + 1], raw[o + 2] * CBB_SCALE)
+            elif t in CBB_AREA_TYPES:
+                v = (cbb_area(raw, o + 1),)
+            elif t in CBB_BYTE_AREA_TYPES:
+                v = (raw[o + 1], cbb_area(raw, o + 2))
+            elif t == 7:
+                v = (raw[o + 1], raw[o + 2], raw[o + 3] * CBB_SCALE)
+            else:
+                v = ()
+            self.slots.append((t, v))
+
+    def problems(self):
+        out = []
+        ends = [self.base + self.raw[k] for k in range(5, 8 + self.n - 1)]
+        if any(e >= self.size for e in ends):
+            out.append("a block offset past the record")
+        if any(t >= CBB_SLOT_TYPES for t, _ in self.slots):
+            out.append("slot type past %d" % (CBB_SLOT_TYPES - 1))
+        return out
+
+
 def files(paths):
     for p in paths:
         if os.path.isdir(p):
@@ -139,8 +213,22 @@ def cmd_info(paths):
                 print("%s  !! %s" % (path, e))
                 continue
             sizes = sorted(set(len(r) for r in recs))
-            print("%s  %d combination records, sizes %s" % (
-                path, len(recs), ", ".join("%d" % s for s in sizes)))
+            bad, slots = [], {}
+            for i, r in enumerate(recs):
+                try:
+                    c = Combination(r)
+                    probs = c.problems()
+                except (ValueError, struct.error, IndexError) as e:
+                    probs = [str(e)]
+                    c = None
+                if probs:
+                    bad.append("%d: %s" % (i, "; ".join(probs)))
+                for t, _ in (c.slots if c else []):
+                    slots[t] = slots.get(t, 0) + 1
+            print("%s  %d combination records, sizes %s, slot types %s%s" % (
+                path, len(recs), ", ".join("%d" % s for s in sizes),
+                " ".join("%d:%d" % kv for kv in sorted(slots.items())),
+                "  !! " + "; ".join(bad[:3]) if bad else ""))
             continue
         try:
             plays = parse(data)
@@ -176,6 +264,26 @@ def cmd_dump(path, index):
             " ".join("(%.1f,%.1f c%d)" % pt for pt in pts)))
 
 
+def fmt_area(a):
+    if a[0] == 0:
+        return "circle (%g,%g) r%g" % a[1:]
+    return "box%d (%g,%g)-(%g,%g)" % a
+
+
+def cmd_cbb(path, first, last):
+    with open(path, "rb") as f:
+        recs = cbb_records(f.read())
+    for i in range(first, min(last, len(recs) - 1) + 1):
+        c = Combination(recs[i])
+        print("%4d  A %d%s  B %d%s  C %#06x words %s limits %g %g" % (
+            i, c.a_kind, " %s" % (c.a_values,) if c.a_values else "",
+            c.b_kind, " %d" % c.b_value if c.b_value is not None else "",
+            c.c_u16, " ".join("%#x" % w for w in c.c_words), c.limits[0], c.limits[1]))
+        for k, (t, v) in enumerate(c.slots, 1):
+            parts = [fmt_area(x) if isinstance(x, tuple) else "%g" % x for x in v]
+            print("        slot %d  type %d  %s" % (k, t, "  ".join(parts)))
+
+
 def main(argv):
     if len(argv) < 3:
         print(__doc__)
@@ -185,6 +293,10 @@ def main(argv):
         cmd_info(args)
     elif cmd == "dump" and len(args) == 2:
         cmd_dump(args[0], int(args[1], 0))
+    elif cmd == "cbb" and 1 <= len(args) <= 3:
+        first = int(args[1], 0) if len(args) > 1 else 0
+        last = int(args[2], 0) if len(args) > 2 else (first if len(args) > 1 else 1 << 30)
+        cmd_cbb(args[0], first, last)
     else:
         print(__doc__)
         return 1

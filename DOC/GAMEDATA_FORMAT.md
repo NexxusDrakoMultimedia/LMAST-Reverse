@@ -23,6 +23,21 @@ found. Neither has symbols to name its fields, so this is a partial decode.
 | `0x13ad00` | reads the s16 pair at `+0x20` / `+0x22` as a range a value is tested against |
 | `0x45f44`–`0x45f84`, `0x98e68`–`0x98e94` | a kick request's s16 at `+0x1c` is a record number. The record's byte `+0x25` picks an entry of the kick kind's variant list (`0x58000`), and bits 16–18 of its u32 at `+0xc` pick how the kick's rating is scaled: 0 and 1 by the foot (`0x97be0`), 2 and up by the header parameter ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-kick-kinds)) |
 
+**Who looks records up** (**confirmed**): `0x13abb8` has 78 call sites,
+in the player loader (`player::CPlayerLoadHandleInterface`'s code,
+`0x26bf0`–`0x293bc`), `fb::Player` and `fb::PlayerCore`, the pass and
+shot `DecisionFactor*` rate classes, the intentions, `PlayEffector`,
+`PlayBallCarrierMark`, `PlayFollowBall`, `match::MatchManager`,
+`match::PlayerManipulator`, `match::BallTask` and
+`match::StatisticTask`. At `0x28478` the index is a player's word at
+`+0x520`, in the per-player block of `*0x2a2344` (team × 0x3c80 + slot ×
+0x580 + 0x30), so each player has a current record (probably the move
+the player is making); bit 15 of the record's `+0xc` then sets a flag at
+`+0xc8` of the loader's object (`0x28480`). Five calls pass the
+constant 1408 (`PlayADribble` twice, `fb::Player`, `match::MatchManager`
+twice).
+`python SRC/snr2.py callers ISO/DLL/GAMEPRG.REL 0x13abb8` lists them.
+
 **Empirical:** the file (198,288 bytes) is exactly 4,131 records. The
 `+0x8` angles run from −32 to 32 (−180° to 180°), mostly in steps of 8
 (45°). In records 0–41 the `+0x4` values pair records up (4 ↔ 5, 6 ↔ 7,
@@ -67,8 +82,8 @@ whose values sit between kind words: at the best alignment only 41 of the
 
 - The rest of a `GAMEDATA.BIN` record's fields, and which foot parts 0
   and 1 are.
-- Who calls the record functions at `0x13abb8`–`0x13ad00`, and with what
-  index.
+- What sets a player's action word (`+0x520`), what record 1408 is, and
+  which callers use `0x13ab80`–`0x13ad00`'s comparisons for what.
 - Whether anything loads `AI_PARAM.BIN` by another route.
 
 ## Checking
