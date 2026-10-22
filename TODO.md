@@ -28,10 +28,9 @@ item below.
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
    match AI's `fb::` classes and which class makes each call, a way in
    for these too.
-2. **Rebuild the badly balanced league schedules** (section 8): the 22-
-   and 26-club leagues and the 8-club VS league at the same size, with
-   `schedule.set_league`, as a `patch_disc.py` switch
-   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
+2. **Test the league-balance switch** (sections 7 and 8):
+   `LMAST-test-leagues.iso` is built; a new career's home and away
+   games should alternate ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 3. **Test the drill-names fix** (sections 7 and 8): PAL's names of
    drills 75–86 are one message early, so "Pass training." trains
    shooting; `--mod drill-names` moves them, and `LMAST-test-drills.iso`
@@ -296,6 +295,14 @@ names the disc or the edit to build; the result goes into the doc.
       technique (+15 each in its row). On the test disc the same drill
       shows "Shot training.", and "Pass training." trains short and long
       pass and cross ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early))
+- [ ] League schedules (`LMAST-test-leagues.iso`, `--mod league-balance`
+      and the tutorial skip): start a career in England and read your
+      club's first 16 league games, home or away, on the Schedule
+      screen. Retail gives `HHAHAAHHAHHHHHAA` (slot 24) or
+      `AAAAHHAAAAAAAHHH` (slot 25); the test disc gives `AHAHAHAH…`.
+      Then play a game day or two, to check that the matches and the
+      league table work. The retail pattern also tells which slot your
+      club gets ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 
 ## 8. LMASTER Mod and other patches
 
@@ -311,9 +318,10 @@ tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
       drill-names` is built and in `--mod lmaster`; it needs the PCSX2
       test in section 7
       ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early))
-- [ ] Improvement: rebuild the badly balanced league schedules (22 and
-      26 clubs, the 8-club VS league) at the same size with
-      `schedule.set_league`
+- [ ] Improvement: the badly balanced league schedules. `--mod
+      league-balance` is built (not in `--mod lmaster`); it needs the
+      PCSX2 test in section 7
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] Improvement: a harder economy (dearer facilities, a wider ticket
       price range, dearer advertising) once the research in section 2
       is done. More ideas (overseas bases, merchandise, reputation,

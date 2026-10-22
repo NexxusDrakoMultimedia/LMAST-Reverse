@@ -68,10 +68,12 @@ to the new last sector. Files outside DATA.CVM keep their size.
 
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
-camp-types, camp-cities, camp-santiago, camp-clubs, drill-names, launcher,
-mod-saves. --mod lmaster is the LMASTER Mod's fixes (sponsor-negotiation,
-rival-manager, national-cups, camp-types, camp-cities, camp-santiago,
-camp-clubs, drill-names; DOC/LMASTER_MOD.md).
+league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
+drill-names, launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
+(sponsor-negotiation, rival-manager, national-cups, camp-types,
+camp-cities, camp-santiago, camp-clubs, drill-names; DOC/LMASTER_MOD.md).
+league-balance is one of the mod's improvements, so it stays out of
+lmaster and is chosen on its own.
 Each also works as a flag of its own (--skip-tutorial, ...). With
 switches and no targets, `patch <image> <out_image>` is enough.
 
@@ -110,6 +112,15 @@ the call-up stays on turn 88 with the first group game. With a
 SCHEDULE_SYSTEM.PAC target (leaguesize.py build, a league of another size)
 the cups are moved in the target's bytes, and --copies carries them to
 STATIONFILE.PAC. See DOC/LMASTER_MOD.md.
+
+league-balance rebuilds the league schedules that send a club to one
+venue up to 9 times running: the 22-club leagues (UIDs 11, 30, 40, 48),
+the 26-club English second division (1) and the 8-club VS leagues
+(154-155), with schedule.balance_pack at their own size, so no club plays
+more than two games running at home or away. Same clubs, game days and
+turns; only PARAM/SCHEDULE_COMPETITION.PAC changes, and its .HED doesn't.
+A SCHEDULE_COMPETITION.PAC target (leaguesize.py build) is balanced in
+its own bytes. See DOC/SCHEDULE_FORMAT.md#writing.
 
 camp-types lowers every camp type in PARAM/CAMP_LIST.TBB by one. The
 camp booking stores the record's type (1-87), but the training table
@@ -1375,6 +1386,40 @@ def plan_national_cups(f, img, adopted=()):
     return jobs, notes
 
 
+# --- the league schedules (DOC/SCHEDULE_FORMAT.md#writing) ---------------------
+
+# league-balance rebuilds the league templates that send a club to one
+# venue up to 9 times running (schedule.balance_pack). Each entry keeps
+# its size, so SCHEDULE_COMPETITION.HED and its STATIONFILE copy stay as
+# they are, and the game reads the entries from the pack itself.
+COMPE_FILE = "PARAM/SCHEDULE_COMPETITION.PAC"
+
+
+def target_league_balance(file, data):
+    """A SCHEDULE_COMPETITION.PAC target (leaguesize.py build) with its
+    leagues balanced; the ones the build rebuilt already are."""
+    import schedule
+    if norm(file) != norm(COMPE_FILE):
+        return data
+    return schedule.balance_pack(data)[0]
+
+
+def plan_league_balance(f, img, adopted=()):
+    """Jobs for --mod league-balance. A pack already balanced is left alone,
+    and so is one a target writes (`adopted`, balanced by
+    target_league_balance)."""
+    import schedule
+    if norm(COMPE_FILE) in adopted:
+        return [], ["note: league-balance: rebuilt the leagues in the target's %s"
+                    % COMPE_FILE]
+    path, data = read_file(f, img, COMPE_FILE)
+    new, done = schedule.balance_pack(data)
+    if not done:
+        return [], ["note: %s already has its leagues balanced" % COMPE_FILE]
+    return diff_jobs(path, 0, data, new, "league-balance: no more than two games running "
+                     "at one venue (UIDs %s)" % " ".join(map(str, done))), []
+
+
 def pack_copy_jobs(f, img, pack, entry, of, old, new, why):
     """diff_jobs for the copy of `of` stored as `entry` in BINPAC `pack`."""
     import pac
@@ -1682,6 +1727,8 @@ SWITCHES = (
      "Rival's manager: the rival gets the manager of its own style"),
     ("national-cups", plan_national_cups, [SCHEDULE_FILE, STATION_FILE, LIST_FILE] + LIST_PACKS,
      "National cups a turn earlier, so the World National Cup's results can be viewed"),
+    ("league-balance", plan_league_balance, [COMPE_FILE],
+     "League schedules: no club plays more than two games running at home or away"),
     ("camp-types", plan_camp_types, [CAMP_LIST_FILE],
      "Training camps: each camp trains and checks its themes as its own type"),
     ("camp-cities", plan_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE],
@@ -1706,6 +1753,7 @@ SWITCH_NAMES = [s[0] for s in SWITCHES]
 # then leaves to the target's --copies). The plan is called with the files
 # targets wrote, and those others, as `adopted`.
 TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATION_FILE]),
+                "league-balance": (target_league_balance, [COMPE_FILE], []),
                 "camp-types": (target_camp_types, [CAMP_LIST_FILE], []),
                 "camp-cities": (target_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE], []),
                 "camp-santiago": (target_camp_santiago, [CAMP_EXPLANE_FILE], []),

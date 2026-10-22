@@ -272,3 +272,7 @@ Each result is recorded in the doc named.
       of drills 74–86 are right; PAL's names are one message early, so
       the switch moves the names, and its PCSX2 test is in TODO section 7
       ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early))
+- [x] Built: `--mod league-balance` (`schedule.py balance`) rebuilds the
+      22- and 26-club leagues and the 8-club VS leagues at their own size,
+      to no more than two games running at one venue; its PCSX2 test is in
+      TODO section 7 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))

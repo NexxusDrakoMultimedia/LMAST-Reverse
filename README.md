@@ -155,7 +155,7 @@ disassemble as unrelated MIPS instructions.
 | [`plrcommon.py`](SRC/plrcommon.py) | the common pack `PLRESOURCECOMMON.PAC`: checks all 25 tables (facilities, formations, nations, competitions) and prints any one, with the facility records' build time, upkeep and stadium capacity | [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md) |
 | [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database; replaces free agents (`setfree`) and checks that the pack rebuilds byte for byte (`roundtrip`) | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
 | [`leaguesize.py`](SRC/leaguesize.py) | a nation's two divisions: checks that the first season plays out with each club once (`nations`), and changes the first division's size, moving clubs to or from the second (`plan`, which also gives the sizes each nation allows; `build`, for one or more leagues: the slots, last season's records, the games, the game days and the club counts in `REGULATION.TBB` and `CLUBRESULT.TBB`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from) |
-| [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources; re-encodes all three packs and their `.HED` byte for byte (`roundtrip`); builds and checks league schedules of 2–32 clubs (`league`) and finds free turns for their game days (`turns`); moves schedules' game days (`shift`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
+| [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources; re-encodes all three packs and their `.HED` byte for byte (`roundtrip`); builds and checks league schedules of 2–32 clubs (`league`) and finds free turns for their game days (`turns`); moves schedules' game days (`shift`); rebuilds the badly balanced leagues at their own size (`balance`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
 | [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command, module and field names, prints and edits a PwkScript's data tables (`tables`, `settable`), re-encodes every script byte for byte (`roundtrip`) and patches a command (`setcmd`); `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
 | [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, the 116 licensed kits' descriptors (`PLPACK` and the executable's copy), and the keeper kit table `UNIFORM_GK.TBB`; edits kits (`set`, `setlicence`, `setexe`, `setgk`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
 | [`stadium.py`](SRC/stadium.py) | `DAT/STADIUM`: `.PRI` draw priorities, `BUILD_STADIUM.TBB` (which model each of the 119 stadiums uses), packs per model | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) |
@@ -293,7 +293,9 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   disc its own saves. The LMASTER Mod's fixes (`--mod lmaster` for all of
   them, [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) are
   `sponsor-negotiation`, `rival-manager`, `national-cups`, `camp-types`,
-  `camp-cities`, `camp-santiago`, `camp-clubs` and `drill-names`.
+  `camp-cities`, `camp-santiago`, `camp-clubs` and `drill-names`. Its
+  improvements stay out of `lmaster`: `league-balance` rebuilds the
+  league schedules that send a club to one venue up to 9 times running.
   `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
   image prints the executable's PCSX2 CRC.
 
@@ -389,7 +391,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `sounddat.py` | `sles_disasm.py` for `music` |
 | `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables |
-| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`), `camp.py` (the camp switches) |
+| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches) |
 | `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `training.py` (Training), `camp.py` (Camps), `uniform.py` (Kits), `mbb.py` (Text); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `pbdata.py` and `initteam.py` for names |
 
