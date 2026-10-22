@@ -278,11 +278,14 @@ names the disc or the edit to build; the result goes into the doc.
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01`
-- [ ] A Virtua Pro Football edit player changed with `pmplayer.py set`
-      (copied over `pmplayer.bin` on a test card), imported into a new
-      career through the player editor: the name, height, weight and
-      abilities should show as written, and `pmplayer.py check` on the
-      career's save should report no differences
+- [ ] A Virtua Pro Football edit player changed with `pmplayer.py set`,
+      with `--mod vpf-styles` (`LMAST-test-vpfstyles.iso`, card
+      `LMAST-vpftest.ps2`: V. Drake at 190 cm, rated 95/90/88/80 in
+      styles 5, 12, 17 and 3): imported into a new career (England) through
+      the player editor, he should show 190 cm and play styles Second
+      Striker, Covering, Sweeper and Postplayer (retail: Postplayer only),
+      and `pmplayer.py check` on the career's save should report no
+      differences and the fixed import
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
 
 ## 8. LMASTER Mod and other patches
@@ -290,13 +293,10 @@ names the disc or the edit to build; the result goes into the doc.
 Cut or broken content to restore, each as a `patch_disc.py` switch
 tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
-- [ ] Candidates: the kind-6 injury value 1600 (`0x532d70`), the injury
-      kind row past fatigue 1000, the short `EDIT_EMBLEM` tables
-      93/101/105, the edit-player import's play-style sort (its compare
-      at `SAVEPRG.REL 0x3df00` subtracts pointers, so only 4 of the 22
-      VPF styles can come in; [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record)).
-      The "two months"/"nine months" injury lines need thresholds
-      chosen first
+- [ ] Candidates: the injury kind row past fatigue 1000, the short
+      `EDIT_EMBLEM` tables 93/101/105
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status)). The "two
+      months"/"nine months" injury lines need thresholds chosen first
 - [ ] Improvement: a harder economy, built as `--mod harder-economy`
       (`facility-tiers`, `wider-tickets`, `dearer-ads`, `sponsor-fees`,
       `tv-fees`, `season-demand`; the values in

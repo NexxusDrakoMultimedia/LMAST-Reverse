@@ -255,6 +255,37 @@ def f32(x):
     return struct.unpack("<f", struct.pack("<f", x))[0]
 
 
+def styles(rec, fixed=False):
+    """The 5 style slots the import gives. 0x3df10 means to keep the 5 best
+    rated styles, but its qsort compare (0x3df00) subtracts the pointers,
+    not the ratings, so the order stays as it was: slot t gets style t when
+    byte t is rated 70 or more, and slot 0 stays empty. With
+    `patch_disc.py --mod vpf-styles` (fixed) the sort works: the 5 best
+    rated, each kept when rated 70 or more. Style 0 is "none", so a top
+    rating in byte 0 comes in as an empty slot either way. Ties here go to
+    the lower style; the game's qsort may order them otherwise
+    (style_matches allows for that)."""
+    r = [rec[STYLE_OFF + k] for k in range(STYLE_COUNT)]
+    if not fixed:
+        return [t if t and r[t] >= STYLE_KEEP else 0 for t in range(5)]
+    best = sorted(range(STYLE_COUNT), key=lambda k: -r[k])[:5]
+    return [k if r[k] >= STYLE_KEEP else 0 for k in best]
+
+
+def style_matches(rec, got, fixed):
+    """Whether a career's 5 style slots are what the import gives, with
+    ties among equally rated styles in any order for the fixed sort."""
+    if not fixed:
+        return list(got) == styles(rec)
+    r = [rec[STYLE_OFF + k] for k in range(STYLE_COUNT)]
+    want = styles(rec, True)
+    if len(got) != 5 or any(w == 0 and g != 0 for w, g in zip(want, got)):
+        return False
+    if len({g for g in got if g}) != len([g for g in got if g]):
+        return False
+    return all(r[g] == r[w] for w, g in zip(want, got) if w or g)
+
+
 def imported(rec, tables):
     """[(PlPbase field, value)] the import computes from a record; the
     random fields and the position aren't included."""
@@ -275,11 +306,7 @@ def imported(rec, tables):
            ("intelligence", 0),
            ("ball_touch", g(0xea)), ("dribble_style", g(0xeb))]
     out += [(name, g(KIT_OFF + i)) for i, (name, _) in enumerate(pbdata.KIT_STYLE_MAX)]
-    # 0x3df10 means to keep the 5 best rated styles, but its qsort compare
-    # (0x3df00) subtracts the pointers, not the ratings, so the order stays
-    # as it was: slot t gets style t when byte t is rated 70 or more, and
-    # slot 0 stays empty.
-    out.append(("style", [t if t and g(STYLE_OFF + t) >= STYLE_KEEP else 0 for t in range(5)]))
+    out.append(("style", styles(rec)))
     out.append(("skills", sum(1 << i for i in range(16) if g(SKILL_OFF + i))))
     out.append(("tendency", [g(TENDENCY_OFF + i) for i in range(11)]))
     ability = [None] * 64
@@ -483,7 +510,8 @@ def cmd_check(path, save_dir, tables):
         return
     offs = {f[0]: f[1] for f in pbdata.PLAYER_FIELDS}
     same = bad = 0
-    for field, want in imported(pm.record(slot), tables):
+    rec = pm.record(slot)
+    for field, want in imported(rec, tables):
         if field == "name":
             got = name
         elif field == "castno":
@@ -498,6 +526,18 @@ def cmd_check(path, save_dir, tables):
             got = [pb[offs[field] + k] if want[k] is not None else None for k in range(64)]
         else:
             got = pb[offs[field]]
+        if field == "style":
+            retail, fixed = style_matches(rec, got, False), style_matches(rec, got, True)
+            if retail != fixed:
+                print("  %-14s as the %s import gives" % (
+                    field, "retail" if retail else "fixed (--mod vpf-styles)"))
+            if retail or fixed:
+                same += 1
+            else:
+                bad += 1
+                print("  %-14s import gives %s (fixed: %s), career holds %s  !!" % (
+                    field, want, styles(rec, True), got))
+            continue
         if got == want:
             same += 1
         else:

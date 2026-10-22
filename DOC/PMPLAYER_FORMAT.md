@@ -100,6 +100,28 @@ style t when byte `+0xb9 + t` is 70 or more, slot 0 stays empty, and
 the other 17 ratings are never imported. G.Binns (below) is rated 86 in
 byte `+0xb9` and came into the career with no styles.
 
+The 22 elements are pointers to the rating bytes, and the slot loop
+after the sort (`0x3e050`–`0x3e0bc`) takes the first five whose rating
+is 70 or more, so the sort is meant to put the best first.
+`patch_disc.py --mod vpf-styles` (in `--mod lmaster`) rewrites the
+compare's 4 words to load both ratings and return b − a: it loads the
+two pointers and the second rating, then jumps (an absolute `j`; the
+executable never moves, and no relocation covers these words) to the
+tail of the executable's `strcmp` at `SLES 0x31a5b4`, `lbu $v0,0($a1);
+jr $ra; subu $v0,$v1,$v0`. Checked in a small MIPS simulator with that
+tail read from the executable: the result is rating b − rating a, ties
+0. Style 0 is "none" in the game's list, so a top rating in byte
+`+0xb9` still comes in as an empty slot; that is the import's own
+numbering, not this bug.
+
+`pmplayer.styles(rec, fixed)` gives either import's slots, and
+`pmplayer.py check` says which one a career's styles match (equally
+rated styles may come in either order). **Not yet tested in PCSX2**
+(`LMAST-test-vpfstyles.iso` with the `LMAST-vpftest.ps2` card, whose
+V. Drake is rated 95/90/88/80 in styles 5, 12, 17 and 3: the retail
+import gives Postplayer only, the fixed one Second Striker, Covering,
+Sweeper and Postplayer).
+
 ## Tested
 
 **Checked against a career** (`pmplayer.py check`): save G000 on the

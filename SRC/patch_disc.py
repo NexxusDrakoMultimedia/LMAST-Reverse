@@ -69,11 +69,12 @@ to the new last sector. Files outside DATA.CVM keep their size.
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
-drill-names, season-status, facility-tiers, wider-tickets, dearer-ads,
-sponsor-fees, tv-fees, season-demand, launcher, mod-saves. --mod lmaster
-is the LMASTER Mod's fixes (sponsor-negotiation, rival-manager,
-national-cups, camp-types, camp-cities, camp-santiago, camp-clubs,
-drill-names, season-status; DOC/LMASTER_MOD.md).
+drill-names, injury-value, vpf-styles, season-status, facility-tiers,
+wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand,
+launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
+(sponsor-negotiation, rival-manager, national-cups, camp-types,
+camp-cities, camp-santiago, camp-clubs, drill-names, injury-value,
+vpf-styles, season-status; DOC/LMASTER_MOD.md).
 league-balance and the harder economy (--mod harder-economy:
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand) are the mod's improvements, so
@@ -146,6 +147,14 @@ training trained shooting. The names move one message later in
 jackknife name goes to 1045, the dummy drill 74 no coach teaches. A
 MES.PAC target gets the fix in its own bytes. The Japanese release has
 the right numbering and is left alone. See DOC/TRAINING_FORMAT.md.
+
+injury-value (whole disc image only) sets the first minimum of kind-6
+injuries in the value table (SLES 0x532d70) from 1600 to 16001, where the
+kinds before it end; see DOC/INJURIES.md. vpf-styles (whole disc image
+only) fixes the Virtua Pro Football import's play-style sort: its compare
+(DLL/SAVEPRG.REL 0x3df00) subtracted pointers, so only styles 1-4 could
+come in; 4 words make it compare the ratings, best first (through the
+tail of the executable's strcmp, 0x31a5b4). See DOC/PMPLAYER_FORMAT.md.
 
 season-status (whole disc image only) restores the season-ticket status
 factor: pwkUnkei_GetExpectSeat scales demand by club status in bands of
@@ -1741,6 +1750,52 @@ def plan_launcher(f, img):
             for i, (a, b) in enumerate(zip(data, new)) if a != b], []
 
 
+# --- the kind-6 injury value (DOC/INJURIES.md#the-value-table-0x532cf8) ----------
+
+# calcKegav (SLES 0x21a120) gives an injury of kind k a value of
+# min + random(max - min + 1) from one of the kind's (min, max) pairs in the
+# u16 table at 0x532cf8 (0x14 bytes a kind). Every kind starts where the one
+# before ends, except kind 6, whose first pair is 1600-19000 where
+# 16001-19000 fits (a dropped digit, in both releases): so a kind-6 injury,
+# shown as 18 months, could be as short as a light one.
+INJURY_VALUE = (0x532d70, 1600, 16001)
+
+
+def plan_injury_value(f, img):
+    """Jobs for --mod injury-value."""
+    addr, old, new = INJURY_VALUE
+    words = [(SLES_FILE, addr - 0xff000, struct.pack("<H", old), struct.pack("<H", new),
+              "%s 0x%x (kind-6 injury value %d -> %d)" % (SLES_FILE, addr, old, new))]
+    return word_jobs(f, img, "injury-value", words)
+
+
+# --- Virtua Pro Football play styles (DOC/PMPLAYER_FORMAT.md#the-record) --------
+
+# The edit-player import (SAVEPRG.REL 0x3df10) sorts pointers to the 22
+# play-style ratings with _plUty_qsort and keeps the first five rated 70 or
+# more, but its compare (0x3df00) returns the difference of the two
+# pointers, not of the ratings, so nothing moves. The fixed compare loads
+# both ratings and returns b - a (best first), using the tail of the
+# executable's strcmp (SLES 0x31a5b4: lbu $v0,0($a1); jr $ra; subu
+# $v0,$v1,$v0), which the overlay reaches with an absolute j (the
+# executable doesn't move; no relocation covers these 4 words).
+SAVE_FILE = DISC + "DLL/SAVEPRG.REL"
+VPF_STYLES = (0x3df00,
+              (0x8c830000, 0x8ca20000, 0x03e00008, 0x00621023),  # lw;lw;jr $ra;subu (pointers)
+              (0x8ca20000,                                        # lw  $v0, 0($a1)  pointer b
+               0x8c850000,                                        # lw  $a1, 0($a0)  pointer a
+               0x080c696d,                                        # j   0x31a5b4
+               0x90430000))                                       # lbu $v1, 0($v0)  rating b
+
+
+def plan_vpf_styles(f, img):
+    """Jobs for --mod vpf-styles."""
+    off, old, new = VPF_STYLES
+    words = [(SAVE_FILE, off, struct.pack("<4I", *old), struct.pack("<4I", *new),
+              "%s 0x%x (play-style compare)" % (SAVE_FILE, off))]
+    return word_jobs(f, img, "vpf-styles", words)
+
+
 # --- the season-ticket status factor (DOC/ECONOMY.md#season-tickets) -----------
 
 # pwkUnkei_GetExpectSeat (SLES 0x2727c8) scales season-ticket demand by
@@ -2026,6 +2081,12 @@ SWITCHES = (
      "Training camps: Canberra's last two clubs appear in its list"),
     ("drill-names", plan_drill_names, [MES_FILE] + DRILL_PACKS,
      "Training: drills 75-86 show their own names (PAL's were one early, with a jackknife)"),
+    ("injury-value", plan_injury_value, [SLES_FILE],
+     "Injuries: an 18-month injury can't come out as short as a light one "
+     "(kind 6's value 1600 -> 16001)"),
+    ("vpf-styles", plan_vpf_styles, [SAVE_FILE],
+     "Virtua Pro Football import: an edit player's best play styles come in "
+     "(the import's sort never sorted)"),
     ("season-status", plan_season_status, [SLES_FILE],
      "Season tickets: bigger clubs sell more of them, as the status bands intend "
      "(every club over 10,000 status was stuck at the second band)"),
@@ -2065,7 +2126,7 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATIO
 # Names --mod takes for several switches at once.
 SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
                              "camp-types", "camp-cities", "camp-santiago", "camp-clubs",
-                             "drill-names", "season-status"),
+                             "drill-names", "injury-value", "vpf-styles", "season-status"),
                  "harder-economy": ("facility-tiers", "wider-tickets", "dearer-ads",
                                     "sponsor-fees", "tv-fees", "season-demand")}
 

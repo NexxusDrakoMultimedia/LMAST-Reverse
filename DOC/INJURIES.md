@@ -108,7 +108,12 @@ makes of a row that doesn't add up to 100 hasn't been traced.
 Every kind starts where the one before ends, except kind 6. Its first
 pair starts at 1600 where 16001 would fit, so a kind-6 injury can be as
 short as a light one. It looks like a dropped digit (**empirical**: a
-reading of the table, not proven).
+reading of the table, not proven). **Confirmed** how the table is used:
+`calcKegav` (`0x21a120`) picks one of the kind's pairs at random and
+returns min + random(max − min + 1), so a kind-6 injury runs from 1600
+up. `patch_disc.py --mod injury-value` (in `--mod lmaster`) makes that
+minimum 16001, one u16 at `0x532d70`. Not checked in the game: kind-6
+injuries are rare and their value is random.
 
 ### The condition line
 
