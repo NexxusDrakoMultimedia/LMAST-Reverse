@@ -672,6 +672,42 @@ every value on both pages matches for Carson and Aiblinger). Table 3 looks
 like last season (38 league games for a regular). Table 1 is empty in
 every slot checked. The Total lines are computed by the screen.
 
+### The edit player (from Virtua Pro Football)
+
+A career holds at most one edit player, a player made in Virtua Pro
+Football's Player Edit and brought in through this game's player editor.
+In the squad it has the id `0x7cce` (31,950), above the database's
+player ids (0–27,949) and its staff ids.
+
+**Confirmed from the game code:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x25d478` | (edit work address) | the edit work is block 1 `+0x12600`, 0x100 bytes (`PlEditWorkSet`) |
+| `0x25d510`, `pwkTeam_InitEditWork` `0x25d558` | – | clears the 0x100 bytes and sets the id at `+0x0` to −1 (none) |
+| `0x25d4c8`, `pwkTeam_IsEditWork` `0x25d818` | – | an id is the edit player when it equals the s16 at `+0x0` |
+| `pwkTeam_GetEditWorkPBase` `0x25d768` | – | copies the 0xb4-byte `PlPbase` at `+0x4` (the database record, name included) |
+| `pwkTeam_GetEditWorkUniformName` `0x25d7e0` | – | the shirt name is at `+0xec` |
+| `getPbase` `0x20c700` | `Param::PlBpinfoTask::getPbase` | for ids from `0x7cce` it asks `pwkTeam_IsEditWork(0x7cce)` and takes the record from the edit work, not `PBDATA` |
+| `SAVEPRG.REL 0x40650`, `0x41938` | `WP3::CMemoryCardEditPlayerList_Task::GetEditPlayerData`, `WP1::CMemoryCardLoad::getEditPlayerData` | read the edit player from the memory card; the player editor (`YRSTPRG.REL`) and `SIMPRG.REL` import them with `pwkTeam_SetEditWork` |
+| `SAVEPRG.REL 0x3edd8` | (decrypt call) | decrypts with the key string at `0x547f0`, `_FC_ACT_2005` |
+
+**Virtua Pro Football's save** is the memory-card folder
+`BESLES-54153FASYS00` (the category 2 name, below). All its files decrypt
+with Blowfish and the key `_FC_ACT_2005`, the same cipher as this game's
+saves. **Empirical**, from one card: `file.inf` starts with the save date
+as u32s (2025, 3, 26, 22, 25, 13); `pmplayer.bin` (8,192 bytes) holds the
+edit players: a list of their ids at `0x0` (`0x4e21`, `0x4e22`, padded
+with `0xff`) and a record of about 0x154 bytes each, with the short name
+("G.Binns"), the surname, height and weight as floats (180.0 and 75.0,
+as the player screen shows) and the ability bytes. The career's copy
+holds the same short name and abilities, without one value VPF has and
+this game doesn't. How the import converts the rest isn't traced.
+
+Seen in a career (RAM of a PCSX2 save state, user's import G.Binns): the
+edit work holds `0x7cce`, then "G.Binns" at `+0x6`; the squad player in
+slot 13 has id `0x7cce`, and its own Pbase copy carries the name too.
+
 ## Editing
 
 `save.py set <save> <out> field=value ...` writes an edited main file.

@@ -136,7 +136,7 @@ Money values are in units of **10,000** (the handler multiplies by
 | 7 | `0x121288` | captain gains `value` exp in ability 26, leadership (`pwkGUtl_AddExp`), unless the captain is unused/unplayable | 194: 1000 |
 | 8 | `0x121208` | for each of the 25 squad slots in use, clears `PlPinfo+0x23c` (u16), the player's fatigue ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)): the whole squad is rested. The value is ignored | 179, 190: 65535 |
 | 9 | `0x121310` | nothing in the dispatcher (see below) | 167: 500 |
-| 10 | `0x121318` | popularity +value for the squad player with ID `0x7cce` (31950) (`plPinfo_ChangePop`, kind 0) | 308: 50 |
+| 10 | `0x121318` | popularity +value for the squad player with ID `0x7cce` (31950), the edit player imported from Virtua Pro Football ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)) (`plPinfo_ChangePop`, kind 0) | 308: 50 |
 | 11 | `0x121358` | same, −value | 307: 50 |
 | 12 | `0x121258` | gate income: seat price × seats sold × a factor of 17–25 picked by `0x15cff8`, as `PlIncomeType 3`. The value is ignored | – |
 | 13–19 | `0x121398`–`0x1213c8` | nothing in the dispatcher | 16: 261; 18: 102, 103, 241, 257, 262, 263; 19: 287 |
@@ -403,8 +403,7 @@ column with data now has a name.
   handler types (`0x238a40`). The timings and the effect kinds are
   decoded above.
 - Which regions `PlTeam_Region` 0 and 1–13 are (0 is presumably the
-  club's home region), and who squad player `0x7cce` (31,950, the first
-  edit-mode player id) is.
+  club's home region).
 - Which handler types consume `effect1_value` directly, and so what
   kinds 9/16/18/19 mean.
 - What EVENT `+0x0c`, `+0x1c` and the five triplets at `+0x24`–`+0x5c`

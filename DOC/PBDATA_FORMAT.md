@@ -21,7 +21,7 @@ names on the squads.
 | `0x110d50`, `0x11034c` | `PwkCallbackCommand_BpDataReadFile` and its caller | loads the pack and calls `plBp_Create(work, entry0, entry1, entry2, entry3)` with the four BINPAC entries in order |
 | `0x20dd78`, `0x20c5d8` | `plBp_Create`, `PlBpinfoTask::init` | entry 0 is the header, entry 1 the records, entry 2 and entry 3 are kept at `0x390670` / `0x390674`. If the header's first byte is `'0'`, it isn't parsed |
 | `0x20da58` | `PlBpinfoTask::initBpmaster` | the header layout below |
-| `0x20c700` | `getPbase(id)` | player *id* (0 to count−1) is at `records + id × 98`. It is decoded by `plBits_DecPlPbaseEx`. Ids from `0x7cce` are edit-mode players, held elsewhere |
+| `0x20c700` | `getPbase(id)` | player *id* (0 to count−1) is at `records + id × 98`. It is decoded by `plBits_DecPlPbaseEx`. Ids from `0x7cce` are the edit player imported from Virtua Pro Football, held in the save ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)) |
 | `0x20c808` | `getMbase(id)` | ids from `0x6d2e`, at `records + players×98 + (id − 0x6d2e) × 81`, decoded by `plBits_DecPlMbaseEx` |
 | `0x20c9b8` | `getSbase(id)` | ids from `0x78e6`, decoded by `plBits_DecPlSbaseEx` |
 | `0x20bd28` | `PlBitsClass::readBits(n)` | reads *n* bits, most significant first. Bits are taken from each byte starting at `0x80`, and bytes in order |
