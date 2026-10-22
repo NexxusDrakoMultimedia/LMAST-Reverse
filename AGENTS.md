@@ -89,7 +89,8 @@ existing writers are `pac.py` (BINPACs, KC@P packs, PRS), `tbb.py`,
 `teaminit.py`, `regulation.py`, `clubresult.py`, `training.py`,
 `camp.py`, `formset.py`, `tour.py`, `uniform.py`, `sqb.py` (`setcmd`, and
 `set_commands` for several edits checked together; `settable` for the
-PwkScript data tables), `plrsim.py` (`setfree`), `save.py`,
+PwkScript data tables), `plrsim.py` (`setfree`), `plrcommon.py` (`set`,
+the facility records), `save.py`,
 `schedule.py` (`shift`, and the encoders behind `roundtrip`) and
 `leaguesize.py` (`build`, which writes the schedule packs through
 `schedule.py`'s encoders).

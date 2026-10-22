@@ -114,6 +114,8 @@ def checks():
         # The free-agent list through the encoder setfree uses.
         ("plrsim_roundtrip", ["plrsim.py", "roundtrip", "DAT/PARAM"], ["DAT/PARAM"]),
         ("plrcommon", ["plrcommon.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        # The facility records through the encoder `set` uses, one field at a time.
+        ("plrcommon_roundtrip", ["plrcommon.py", "roundtrip", "DAT/PARAM"], ["DAT/PARAM"]),
         ("bpb", ["bpb.py", "info", "DAT/GAME"], ["DAT/GAME"]),
         ("gamedata", ["gamedata.py", "info", "DAT/GAME"], ["DAT/GAME"]),
         # Combinations and free agents by name, cities and weather.

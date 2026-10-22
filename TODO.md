@@ -19,10 +19,11 @@ list. A finished item moves to the end of the same section in
 What to work on next, most valuable first. Each line points to the full
 item below.
 
-1. **The facility writer, then the harder economy** (sections 3 and
-   8). The research is done ([`ECONOMY.md`](DOC/ECONOMY.md)): next the
-   `PLRESOURCECOMMON.PAC` entry 0 writer, then the LMASTER Mod's harder
-   economy ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)), whose
+1. **The harder economy** (section 8). The research
+   ([`ECONOMY.md`](DOC/ECONOMY.md)) and the facility writer
+   (`plrcommon.py set`) are done. Next: test one cost edit in PCSX2
+   (section 7), choose the values with the user, then the LMASTER Mod
+   switches ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). The
    ticket and ad switches are code and table edits that need no writer.
    The end is a change players notice.
 2. **`.ps2` memory card images** (section 5, "Save editor"). PCSX2 keeps
@@ -206,10 +207,6 @@ Stage 3. Every writer round-trips every file on the disc and goes into
 - [ ] The club events, which live in the executable (`SLES 0x52ff58`,
       `0x530688`), not in `CLUBEVENT.TBB`: decode the records field by
       field, then a writer
-- [ ] `PLRESOURCECOMMON.PAC` entry 0: a writer for the facility records'
-      build time, upkeep, build cost, second cost (`+0x1c`) and stadium
-      capacity (the harder economy needs it;
-      [`ECONOMY.md`](DOC/ECONOMY.md#build-costs))
 - [ ] `PLRESOURCESIM.PAC`: writers for the streams (affiliations 5,
       exclusives 11–12, combinations 13–14), the overseas branch costs
       (entry 1), and the nation and stadium tables `initteam.py` reads
@@ -238,8 +235,9 @@ allowed values; tests go through the widgets, off-screen.
 
 - [ ] Tabs for the writers that have none: the tactics presets
       (`formset.py`), the tour opponents (`tour.py`), the detail-screen
-      comment tables (`sqb.py settable`), and later the facility records
-      and the club ranking once they have writers (section 3)
+      comment tables (`sqb.py settable`), the facility records
+      (`plrcommon.py set`, with `edit_spec`), and later the club ranking
+      once it has a writer (section 3)
 - [ ] Save editor: `.ps2` memory card images (PCSX2's default), which
       need a reader and writer for the card's file system. A scratch
       reader (superblock, indirect FAT, 528-byte pages with ECC) listed
@@ -297,6 +295,11 @@ names the disc or the edit to build; the result goes into the doc.
       abilities should show as written, and `pmplayer.py check` on the
       career's save should report no differences
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
+- [ ] A facility cost edit: `plrcommon.py set` a club-house or stadium
+      equipment cost, patched with `patch_disc.py --copies`; the facility
+      window should show the new cost × the business cycle, and building
+      it should book that under its payment type
+      ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
 
 ## 8. LMASTER Mod and other patches
 

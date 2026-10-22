@@ -26,12 +26,29 @@ constant arguments (SLES 0x21e9e0). See DOC/PLRESOURCECOMMON_FORMAT.md.
                    (plCompeData_getCupUID_FromNation)
 
 Usage:
-    python plrcommon.py info <PLRESOURCECOMMON.PAC | DAT/PARAM>
-    python plrcommon.py show <PLRESOURCECOMMON.PAC | DAT/PARAM> <entry>.<table>
+    python plrcommon.py info      <PLRESOURCECOMMON.PAC | DAT/PARAM>
+    python plrcommon.py show      <PLRESOURCECOMMON.PAC | DAT/PARAM> <entry>.<table>
+    python plrcommon.py set       <in.PAC> <out.PAC> <table>:<record>:<field>=<value> ...
+    python plrcommon.py roundtrip <PLRESOURCECOMMON.PAC | DAT/PARAM>
 
 `show` prints one table: records with their named fields for entry 0, nation
 names (from PBDATA_EU.PAC and DAT/MESSAGE/MES.PAC) for entry 3, and the raw
 rows otherwise.
+
+`set` edits the facility records of entry 0, for example
+`0.3:1:cost=60000000` (club house 1's build cost). The fields:
+    cost, cost2, cost_b, cost2_b   build costs, in the stored money unit
+                                   (pound = 6), 0-2147483647. The game charges
+                                   them x the business cycle (75-125%) x any
+                                   sponsor discount (DOC/ECONOMY.md); cost2 is
+                                   the second, smaller cost of the equipment
+    upkeep, upkeep_b               monthly upkeep, same unit and range
+    time, time0-time2              build time in turns, 0-255
+    capacity0-capacity2            a stadium level's capacity, 1-2147483647
+Training-ground equipment (0.1) has the _b fields for the slots past the
+club's first group; stadiums (0.7) have cost, time0-2, capacity0-2 and the
+per-stand upkeep. `roundtrip` rebuilds the pack, then edits each field of
+each record on its own and checks that only that field's word changes.
 """
 import os
 import struct
@@ -43,30 +60,52 @@ import tbb
 FILE = "PLRESOURCECOMMON.PAC"
 NATIONS, NATIONAL_TEAMS, REGIONS, CLUBS = 146, 83, 13, 460
 
-# (entry, table): (name, reader, record size, documented size, {offset: field})
-# Record sizes are the getters' index scaling; fields marked "?" are inferred
-# from the data (see the doc), the rest are read by the code named there.
+# The kinds of editable field, with the values `set` allows. Money is in the
+# stored unit, read with lw (signed), so it stays below 2^31; the build is
+# charged as cost x business cycle (up to 125%) x sponsor discount in 64
+# bits (SIMPRG 0x154b78). Build times are read with lbu (plTeam_BuildSite
+# 0x229d74, plTeam_BuildChouse 0x22a928). A capacity of 0 would divide by
+# zero in pwkUnkei_BeforeReport (0x272f9c).
+MONEY, TURNS, CAPACITY = "money", "turns", "capacity"
+RANGES = {MONEY: (0, 0x7fffffff), TURNS: (0, 0xff), CAPACITY: (1, 0x7fffffff)}
+
+# (entry, table): (name, reader, record size, documented size,
+#                  {offset: (field, kind)})
+# Record sizes are the getters' index scaling. Every field is read by the code
+# named in DOC/PLRESOURCECOMMON_FORMAT.md and DOC/ECONOMY.md: the build cost
+# getters behind SIMPRG 0x154b78 (cost, cost2), its upkeep mode (upkeep, as
+# the facility window shows it; payment_Equip 0x251fb8 charges the same word
+# where it charges one), plTeam_Build* (time) and
+# pwkUnkei_GetStandAllCapacity 0x271b48 (capacity). Training-ground equipment
+# past the club's first group of slots uses the _b fields (0x1550f0).
 FACILITY = {
     (0, 0): ("sites", "plTeam_GetSiteDb", 0x1c, 84,
-             {0x8: "cost?", 0xc: "build time"}),
+             {0x8: ("cost", MONEY), 0xc: ("time", TURNS), 0x10: ("upkeep", MONEY)}),
     (0, 1): ("training-ground equipment", "plTeam_GetGrEquipsDb", 0x34, 520,
-             {0xc: "cost?", 0x10: "build time"}),
+             {0xc: ("cost", MONEY), 0x10: ("time", TURNS), 0x14: ("upkeep", MONEY),
+              0x1c: ("cost2", MONEY), 0x20: ("cost_b", MONEY),
+              0x28: ("upkeep_b", MONEY), 0x30: ("cost2_b", MONEY)}),
     (0, 2): ("stadium equipment", "plTeam_GetStEquipsDb", 0x20, 512,
-             {0xc: "cost?", 0x10: "build time", 0x14: "upkeep"}),
+             {0xc: ("cost", MONEY), 0x10: ("time", TURNS), 0x14: ("upkeep", MONEY),
+              0x1c: ("cost2", MONEY)}),
     (0, 3): ("club houses", "plTeam_GetChouseDb", 0x28, 120,
-             {0xc: "cost?", 0x10: "build time", 0x14: "upkeep"}),
+             {0xc: ("cost", MONEY), 0x10: ("time", TURNS), 0x14: ("upkeep", MONEY)}),
     (0, 4): ("club-house equipment", "plTeam_GetDChEquipsDb", 0x20, 1152,
-             {0xc: "cost?", 0x10: "build time", 0x14: "upkeep"}),
+             {0xc: ("cost", MONEY), 0x10: ("time", TURNS), 0x14: ("upkeep", MONEY),
+              0x1c: ("cost2", MONEY)}),
     (0, 5): ("youth-house equipment", "plTeam_GetDAcEquipsDb", 0x20, 576,
-             {0xc: "cost?", 0x10: "build time", 0x14: "upkeep"}),
+             {0xc: ("cost", MONEY), 0x10: ("time", TURNS), 0x14: ("upkeep", MONEY),
+              0x1c: ("cost2", MONEY)}),
     (0, 6): ("office equipment", "plTeam_GetOfEquipsDb", 0x18, 288,
-             {0x8: "cost?", 0xc: "build time", 0x10: "upkeep"}),
+             {0x8: ("cost", MONEY), 0xc: ("time", TURNS), 0x10: ("upkeep", MONEY)}),
     (0, 7): ("stadiums", "plTeam_GetStadiumDb", 0x80, 1152,
-             {0x30: "level 0 build time", 0x38: "level 0 capacity",
-              0x40: "level 1 build time", 0x48: "level 1 capacity",
-              0x50: "level 2 build time", 0x58: "level 2 capacity"}),
+             {0x2c: ("cost", MONEY),
+              0x30: ("time0", TURNS), 0x38: ("capacity0", CAPACITY),
+              0x40: ("time1", TURNS), 0x48: ("capacity1", CAPACITY),
+              0x50: ("time2", TURNS), 0x58: ("capacity2", CAPACITY),
+              0x64: ("upkeep", MONEY)}),
     (0, 8): ("stadium adverts", "plTeam_GetStAdvertiseDb", 0x14, 120,
-             {0x8: "cost?", 0xc: "build time", 0x10: "upkeep"}),
+             {0x8: ("cost", MONEY), 0xc: ("time", TURNS), 0x10: ("upkeep", MONEY)}),
 }
 STADIUM_LEVELS, STADIUM_LEVEL, STADIUM_CAPACITY = 3, 0x10, 0x38
 # Byte tables: (entry, table): (name, reader, size)
@@ -105,6 +144,68 @@ def load(path):
 
 def records(data, size):
     return [data[i:i + size] for i in range(0, len(data), size)]
+
+
+def facility_key(text):
+    """(0, table) from "0.<table>" (or "<table>"), for a facility table."""
+    e, sep, t = text.partition(".")
+    if not sep:
+        e, t = "0", e
+    if not (e.isdigit() and t.isdigit()) or (int(e), int(t)) not in FACILITY:
+        raise ValueError("no facility table %r: they are 0.0-0.8" % text)
+    return int(e), int(t)
+
+
+def field(key, name):
+    """(offset, kind) of the facility field `name` in table `key`."""
+    for off, (fname, kind) in FACILITY[key][4].items():
+        if fname == name:
+            return off, kind
+    raise ValueError("table %d.%d has no field %r; it has %s" % (
+        key + (name, ", ".join(f for f, _ in FACILITY[key][4].values()))))
+
+
+def edit_spec(key, name):
+    """How an editor may change a facility field: ("range", low, high)."""
+    return ("range",) + RANGES[field(key, name)[1]]
+
+
+def get_field(tables, key, record, name):
+    off, _ = field(key, name)
+    size = FACILITY[key][2]
+    return struct.unpack_from("<i", tables[key[1]], record * size + off)[0]
+
+
+def set_field(tables, key, record, name, value):
+    """Write `value` into one field of entry 0's `tables` (bytearrays, as
+    load gives them after copying). Returns the old value. Raises
+    ValueError for a record, field or value out of range."""
+    off, kind = field(key, name)
+    size = FACILITY[key][2]
+    count = len(tables[key[1]]) // size
+    if not 0 <= record < count:
+        raise ValueError("table %d.%d has records 0-%d" % (key + (count - 1,)))
+    lo, hi = RANGES[kind]
+    if not lo <= value <= hi:
+        raise ValueError("%s %d: allowed %d-%d" % (name, value, lo, hi))
+    old = get_field(tables, key, record, name)
+    struct.pack_into("<i", tables[key[1]], record * size + off, value)
+    return old
+
+
+def encode(data, tables):
+    """The pack `data` with entry 0's tables replaced by `tables`, each the
+    size of the table it replaces. The other entries are kept as they are."""
+    h, blobs = pac.binpac_blobs(data)
+    end, raw = tbb.parse(blobs[0])
+    if len(tables) != len(raw):
+        raise ValueError("%d tables for %d in entry 0" % (len(tables), len(raw)))
+    for t, new in zip(raw, tables):
+        if len(new) != len(t.data):
+            raise ValueError("table 0.%d: %d bytes, not %d" % (t.index, len(new), len(t.data)))
+        t.data = bytes(new)
+    blobs[0] = tbb.build(raw, end, tbb.trailer(blobs[0], raw))
+    return pac.build_binpac(data[:h.header_size], blobs)
 
 
 def check(entries):
@@ -171,7 +272,7 @@ def cmd_show(path, entry, table):
         print("%d.%d %s (%s), 0x%x bytes each" % (entry, table, name, reader, size))
         for i, r in enumerate(records(data, size)):
             words = struct.unpack("<%di" % (size // 4), r)
-            named = ", ".join("%s %d" % (fields[o], words[o // 4]) for o in sorted(fields))
+            named = ", ".join("%s %d" % (fields[o][0], words[o // 4]) for o in sorted(fields))
             print("  %2d  %s" % (i, named))
             print("      words: %s" % " ".join("%d" % w for w in words))
         return
@@ -201,11 +302,88 @@ def cmd_show(path, entry, table):
         print("  %4d  %s" % (i // width if key[0] == 4 else i, data[i:i + width].hex(" ")))
 
 
+def parse_edit(text):
+    """(key, record, field, value) from "<table>:<record>:<field>=<value>"."""
+    target, sep, value = text.partition("=")
+    parts = target.split(":")
+    if not sep or len(parts) != 3 or not parts[1].isdigit():
+        raise ValueError("expected <table>:<record>:<field>=<value>, got %r" % text)
+    try:
+        value = int(value)
+    except ValueError:
+        raise ValueError("%r: the value must be a whole number" % text)
+    key = facility_key(parts[0])
+    field(key, parts[2])
+    return key, int(parts[1]), parts[2], value
+
+
+def cmd_set(src, dst, edits):
+    if os.path.abspath(src) == os.path.abspath(dst):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    with open(src, "rb") as f:
+        data = f.read()
+    _, entries = load(src)
+    tables = [bytearray(t) for t in entries[0]]
+    for text in edits:
+        try:
+            key, record, name, value = parse_edit(text)
+            old = set_field(tables, key, record, name, value)
+        except ValueError as e:
+            raise SystemExit(str(e))
+        print("%d.%d %s %d %s: %d -> %d" % (key + (FACILITY[key][0], record, name, old, value)))
+    out = encode(data, tables)
+    if len(out) != len(data):
+        raise SystemExit("rebuilt pack is %d bytes, not %d" % (len(out), len(data)))
+    with open(dst, "wb") as f:
+        f.write(out)
+    print("wrote %s" % dst)
+
+
+def cmd_roundtrip(path):
+    """Rebuild the pack unchanged, then change every editable field of every
+    record on its own and check that the rebuilt pack differs in that field's
+    word only and reads back the new value."""
+    try:
+        path, entries = load(path)
+        with open(path, "rb") as f:
+            data = f.read()
+        out = encode(data, entries[0])
+    except (ValueError, struct.error, OSError) as e:
+        print("%s  !! %s" % (path, e))
+        return
+    print("%s: %s" % (path, "rebuilt pack identical" if out == data else "!! rebuilt pack differs"))
+    base = pac.binpac_blobs(data)[1][0]
+    start = data.index(base)
+    for key in sorted(FACILITY):
+        name, _, size, _, fields = FACILITY[key]
+        count, probs = len(entries[0][key[1]]) // size, []
+        table_at = start + tbb.parse(base)[1][key[1]].offset + tbb.HEADER_SIZE
+        for record in range(count):
+            for off, (fname, kind) in sorted(fields.items()):
+                tables = [bytearray(t) for t in entries[0]]
+                lo = RANGES[kind][0]
+                new = lo if get_field(tables, key, record, fname) != lo else lo + 1
+                set_field(tables, key, record, fname, new)
+                out = encode(data, tables)
+                at = table_at + record * size + off
+                back = struct.unpack_from("<i", out, at)[0]
+                if len(out) != len(data) or out[:at] != data[:at] or out[at + 4:] != data[at + 4:]:
+                    probs.append("%d %s: other bytes changed" % (record, fname))
+                elif back != new:
+                    probs.append("%d %s: reads back %d, not %d" % (record, fname, back, new))
+        line = "%d.%d %-26s %3d records x %d fields" % (key + (name, count, len(fields)))
+        print("  %s  %s" % (line, "!! " + "; ".join(probs[:5]) if probs else "each edit changes its own word only"))
+
+
 def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
     if cmd == "info" and len(args) == 1:
         cmd_info(args[0])
+    elif cmd == "roundtrip" and len(args) == 1:
+        cmd_roundtrip(args[0])
+    elif cmd == "set" and len(args) >= 3:
+        cmd_set(args[0], args[1], args[2:])
     elif cmd == "show" and len(args) == 2:
         try:
             entry, table = (int(x) for x in args[1].split("."))

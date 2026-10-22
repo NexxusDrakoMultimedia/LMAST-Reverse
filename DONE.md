@@ -183,6 +183,10 @@ history holds the rest.
       edit player, kept in step with the squad player's copy; the save
       editor's Edit player page
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football))
+- [x] `plrcommon.py set` and `roundtrip`: the facility records' costs,
+      upkeep, build times and stadium capacities, each of the 494 fields
+      checked on its own
+      ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
 
 ## 4. Rebuild: edits back on a bootable disc
 

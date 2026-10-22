@@ -60,11 +60,11 @@ the stages, and [`TODO.md`](TODO.md) what is left.
    database, the message text, the starting leagues and squads, the new
    club, free agents, kits, schedules and division sizes, regulations,
    results, training, camps, tactics presets, tours, sequencer scripts,
-   saves and Virtua Pro Football's edit players (a way to bring a fully
-   custom player into a career; its in-game import is still to test).
+   saves, Virtua Pro Football's edit players (a way to bring a fully
+   custom player into a career; its in-game import is still to test) and
+   the facility records (costs, upkeep, build times, stadium capacity).
    Edits through most of them are tested in PCSX2. Still to come: the
-   club ranking, the club events, the facility records and the rest of
-   the resource packs.
+   club ranking, the club events and the rest of the resource packs.
 4. **Rebuild.** Put edited files back on a disc image that boots. *Done:*
    `SRC/patch_disc.py` patches files of any size: same-size files in
    place (only the table of contents is encrypted), a size change inside

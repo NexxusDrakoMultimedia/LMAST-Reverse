@@ -12,6 +12,7 @@ It is a BINPAC of 5 TBB1 files. Every reader calls
 `python SRC/plrcommon.py info DAT/PARAM` checks every table.
 `python SRC/plrcommon.py show DAT/PARAM <entry>.<table>` prints one, with
 the named fields of the facility records and nation names for entry 3.
+`set` edits the facility records ([Editing](#editing-the-facility-records)).
 
 | Entry | Tables | Contents |
 |---|---|---|
@@ -84,6 +85,40 @@ and 1 (the starting ones) hold 8,000 with no other levels; stadiums 2–5
 hold 15,000, 20,000 and 25,000; 6 holds 30,000, 35,000 and 40,000; 7
 holds 50,000–60,000; 8 holds 110,000 at every level. Which stadium is
 which, and the rest of the record, aren't traced.
+
+### Editing the facility records
+
+`plrcommon.py set <in.PAC> <out.PAC> <table>:<record>:<field>=<value> ...`
+writes a new pack. Only the edited words change; the pack keeps its
+size. Every field it offers is read by the code named above or in
+[`ECONOMY.md`](ECONOMY.md#build-costs):
+
+| Field | Tables | What | Range |
+|---|---|---|---|
+| `cost` | all | build cost (stadiums: `+0x2c`, the stadium's price) | 0–2,147,483,647 |
+| `cost2` | 0.1, 0.2, 0.4, 0.5 | the second cost at `+0x1c` | as `cost` |
+| `cost_b`, `cost2_b`, `upkeep_b` | 0.1 | `+0x20`, `+0x30`, `+0x28`: what training-ground slots past the club's first group use (`0x1550f0`) | as `cost` |
+| `upkeep` | all | monthly upkeep (stadiums: `+0x64`, per stand) | as `cost` |
+| `time`, `time0`–`time2` | all; 0.7 per level | build time in turns, read as a u8 | 0–255 |
+| `capacity0`–`capacity2` | 0.7 | a stadium level's capacity | 1–2,147,483,647 |
+
+Money is in the stored unit (£1 = 6, €1 = 4) and read as a signed
+word, so it stays below 2^31. A capacity of 0 would divide by zero
+after a home match (`pwkUnkei_BeforeReport`, `0x272f9c`). The game still
+scales a build cost by the business cycle and any sponsor discount.
+The upkeep of sites (0.0) and the training ground (0.1) is only shown
+in the facility window; `payment_Equip` doesn't charge it.
+
+The file has copies in `PRELOAD` packs ([`REBUILD.md`](REBUILD.md)), so
+patch an edit onto a disc with `patch_disc.py --copies`.
+
+`plrcommon.py roundtrip` rebuilds the pack unchanged, then edits each of
+the 494 fields of the 113 records on its own and checks that only that
+field's word changes and reads back. It passes on the PAL and Japanese
+packs.
+
+**Not yet tested in PCSX2:** that an edited cost shows in the facility
+window and is charged.
 
 ## Entry 1: formations
 
@@ -170,6 +205,7 @@ Table 4.1 is not decoded.
 ```bash
 python SRC/plrcommon.py info DAT/PARAM
 python SRC/plrcommon.py show DAT/PARAM 0.3
+python SRC/plrcommon.py roundtrip DAT/PARAM
 python SRC/plrcommon.py show DAT/PARAM 3.3
 python SRC/sles_disasm.py ISO/SLES_541.51 dis plTeam_GetChouseDb plTeam_BuildChouse payment_Equip
 ```
