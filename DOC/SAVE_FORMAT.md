@@ -792,8 +792,11 @@ an old save.
 0–100 and turns anything higher into 0 (**confirmed**). `save.py copy
 <folder> [<slot>]` copies a game save to another slot on the same card,
 the lowest free one unless a slot is given, with the same name fixes as
-`rename`. Whether the save's own files name their slot wasn't checked,
-and whether the game lists and loads a copied slot isn't tested yet.
+`rename`. **Tested in PCSX2** (user report): G003 copied to the free
+slot G002 with `money=999999996` showed in the load list and loaded with
+£166,666,666, and G003 still loaded with £2,511,807. So the game takes a
+save in a slot other than the one it was written to; whether the save's
+own files name their slot wasn't checked.
 
 ## Still unknown
 

@@ -251,6 +251,10 @@ Each result is recorded in the doc named.
 - [x] A `TRAINING_LIST.TBB` edit: shooting at shot skill +100 is read,
       giving 6–7 times the shot technique gain, from save states
       ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#editing))
+- [x] A save copied to a new slot (`save.py copy`, as the save editor's
+      Save to new slot does): G003 to G002 with a money edit is listed,
+      loads with the edit, and G003 is unchanged
+      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#decisions))
 
 ## 8. LMASTER Mod and other patches
 

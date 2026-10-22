@@ -136,8 +136,10 @@ Decided (user, 2026-10-09):
   saved from G003 to G002, G003 unchanged, the two logged commands giving
   the same folder byte for byte, a second copy without edits to G004
   identical to G002, and a refusal when the main file changed on disk.
-  Whether the game lists and loads a copied slot is a PCSX2 test in
-  `TODO.md`.
+  **Tested in PCSX2** (user report, 2026-10-22): on a test card holding
+  G000, G001 and G003, G003 copied to G002 by `save.py copy` with
+  `money=999999996` showed in the load list, loaded, and had
+  £166,666,666; G003 still loaded with £2,511,807.
 
 Still open:
 
