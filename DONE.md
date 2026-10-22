@@ -242,8 +242,9 @@ Each result is recorded in the doc named.
 - [x] `--mod national-cups`: the World Cup final (season 4) moved to
       turn 94 taken to work, since the retail Euro final on 94 shows its
       results afterwards ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [x] The camp switches `camp-cities`, `camp-santiago` and `camp-clubs`
-      ([`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md))
+- [x] The camp switches `camp-cities`, `camp-santiago` and `camp-clubs`,
+      and `camp-types` (a keeper camp trains keeping, read from save
+      states) ([`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md))
 
 ## 8. LMASTER Mod and other patches
 

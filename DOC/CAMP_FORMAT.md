@@ -167,8 +167,16 @@ Blackburn and Sheffield on the England list, the three that need no
 popularity, in place of Basingstoke, Newport and Oakham; `camp-santiago`
 gives Santiago's camp its "The Chilean capital …" description; and
 `camp-clubs` lists Canberra's clubs as South Melbourne, Aichi, Fukuoka
-and Kanagawa. `camp-types` (a keeper camp raising saving and catching)
-is still to test ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
+and Kanagawa. `camp-types` passes too: over one keeper camp the three
+keepers' saving, aerial ability and GK aptitude gained 559–617
+experience each, catching and rushing out 444–488, while pace and
+acceleration, which only the retail row 84 trains, didn't move. That is
+row 83's pattern (weights 10, 10, 10, 8, 8), about 60 experience per
+point ([`TRAINING_FORMAT.md`](TRAINING_FORMAT.md#still-unknown)). The
+experience was read from PCSX2 save states made just before and just
+after the camp (the squad's PlPinfo array in RAM, at `0x1e2d2a4` in that
+career). On the bars the gain is about one level, too little to see.
+See [`LMASTER_MOD.md`](LMASTER_MOD.md#status).
 
 ## Editing
 

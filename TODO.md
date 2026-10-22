@@ -28,13 +28,10 @@ item below.
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
    match AI's `fb::` classes and which class makes each call, a way in
    for these too.
-2. **Test in PCSX2: the LMASTER Mod's keeper camp** (section 7).
-   `LMAST-test-camps-mes.iso` has it: a camp in Parma or Málaga should
-   raise the keepers' saving and catching.
-3. **Save editor: write an edited save to a new slot** (section 5): the
+2. **Save editor: write an edited save to a new slot** (section 5): the
    next free `-Gnnn` instead of over the original, so a player keeps
    the unedited save ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)).
-4. **Rebuild the badly balanced league schedules** (section 8): the 22-
+3. **Rebuild the badly balanced league schedules** (section 8): the 22-
    and 26-club leagues and the 8-club VS league at the same size, with
    `schedule.set_league`, as a `patch_disc.py` switch
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
@@ -266,10 +263,6 @@ Stage 6. See [`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod).
 Checks that only a person can make (see [`AGENTS.md`](AGENTS.md)). Each
 names the disc or the edit to build; the result goes into the doc.
 
-- [ ] `--mod camp-types` on `LMAST-test-camps-mes.iso`: a keeper camp
-      (Parma, or Málaga, which needs no popularity) raising saving and
-      catching; needs a career in its second season at least
-      ([`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md))
 - [ ] A smaller first division (France at 18, from the Season tab) and
       two nations changed in one build; only England at 22 is tested
 - [ ] A `TRAINING_LIST.TBB` edit (a practice made much stronger) and a

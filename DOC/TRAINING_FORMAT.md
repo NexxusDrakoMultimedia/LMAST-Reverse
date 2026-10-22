@@ -163,7 +163,10 @@ player's growth after a few weeks.
 ## Still unknown
 
 - The scale of a practice's values (how much growth one point is) and of
-  the fatigue column.
+  the fatigue column. One data point: a week-long keeper camp (camp row
+  83) gave about 60 ability experience per point to three keepers in
+  PCSX2 ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)); how condition, age, the
+  coaches and the facilities change that isn't known.
 - The names of the 87 camp types and 28 youth menus, and of the facility
   rows.
 - Whether anything reads columns 64–70 of the facility tables.
