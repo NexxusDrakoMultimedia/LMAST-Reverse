@@ -248,6 +248,9 @@ Each result is recorded in the doc named.
 - [x] The camp switches `camp-cities`, `camp-santiago` and `camp-clubs`,
       and `camp-types` (a keeper camp trains keeping, read from save
       states) ([`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md))
+- [x] A `TRAINING_LIST.TBB` edit: shooting at shot skill +100 is read,
+      giving 6–7 times the shot technique gain, from save states
+      ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#editing))
 
 ## 8. LMASTER Mod and other patches
 

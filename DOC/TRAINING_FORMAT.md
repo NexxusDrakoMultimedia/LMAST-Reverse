@@ -71,7 +71,41 @@ reads my-team data `+0x489f` + (number − 12) and uses row 12 + (value −
 **Empirical**, checked against the labels: the drills raise the
 abilities their names say (shooting raises shot skill, acceleration
 training pace and acceleration, leadership leadership), and every row
-with negative fatigue is a rest, recovery or therapy menu.
+with negative fatigue is a rest, recovery or therapy menu. The
+exception is 13 of the individual drills, below.
+
+#### Drills 74–86 train the drill before them (both releases)
+
+The in-game description of practice *n* is message 971 + *n* of category
+801 (1003 "Shot training." is practice 32, 1045 "Shot training." is 74,
+1055 "\"Cannon Shot\" training." is 84). The descriptions follow the
+labels' order, but rows 74–86 of table 1 don't:
+
+| Practice | Description | What its row trains |
+|---|---|---|
+| 74 pinpoint shooting | Shot training. | nothing (all zero, no fatigue) |
+| 75 velvet pass | Pass training. | shot skill and technique +15 (shooting) |
+| 76 technical dribbling | Dribble training | short and long pass, cross +10 (passing) |
+| 77 free kick attack | Set pieces training. | dribble pace and skill +15 (dribbling) |
+| 78 all-round attack | Train all aspects. | placekick +20, cross +10 (set pieces) |
+| 79 long shots | Long-range shot training. | +2 to +5 in most attacking abilities (all-round) |
+| 80 first-time shots | Direct shot training. | kick strength, shot skill +15 (long shots) |
+| 81 post play | Target man training. | shot technique +15, nerve +5 (first-time shots) |
+| 82 pull away | Train for the drifting run. | ball keeping +15, contact strength +10 (target man) |
+| 83 1-on-1 shooting | One-on-one finishing. | vision, acceleration +10 (the drifting run) |
+| 84 cannon shot | "Cannon Shot" training. | shot skill +20, technique +10 (finishing) |
+| 85 king of dribbling | "King of Dribble" training. | kick strength +15, shot technique +10 (cannon shot) |
+| 86 jackknife | "Jackknife" training. | dribble skill +20, dribble pace +10 (king of dribbling, or its own) |
+
+From 87 (ball touch: ball keeping, trap and dribble skill +10) every row
+matches its description again. So the rows look shifted down by one, as
+if an empty row was put in at 74, and one drill's own values (85's or
+86's) are missing. The accessor reads row *n* − 29 with no offset
+(`0x15a070`), and the Japanese file has the same rows 74–86, so a player
+who picks pinpoint shooting trains nothing in both releases. `python
+SRC/training.py show DAT/PARAM/TRAINING_LIST.TBB practice` prints the
+rows; the descriptions are in `MESSAGE/MES.PAC` `801_1.mbb`. Not yet
+checked in game by picking one of these drills.
 
 ### Groups and staff (tables 2 and 9)
 
@@ -156,17 +190,31 @@ staff abilities 0–47, signed bytes elsewhere). The file keeps its size;
 the file rebuilds byte for byte. The editor's Training tab edits the
 practice, camp-type and youth rows, match growth, the facility bonuses,
 the coaching staff ability and decline with age through the same code,
-and its Camps tab previews a camp type's row of table 10. No edit has
-been tested in PCSX2 yet: a practice made much stronger would show in a
-player's growth after a few weeks.
+and its Camps tab previews a camp type's row of table 10.
+
+**Tested in PCSX2** (disc `LMAST-test-training.iso`: practice 32,
+shooting, with shot skill +100 instead of +10 and shot technique left at
++10). Two players got "Shot training." from an assistant coach for one
+turn on which the team trained set pieces (team row 25). Read from save
+states before and after: the team session gave about 3–4 experience per
+point (placekick, header and jump), and after taking that off (and one
+player's age decline), the shooting practice added about 77–87 to shot
+skill and 12–14 to shot technique. On the retail row the two would be
+equal, so the edit is read; the ratio is 6–7 rather than 10, so growth
+seems to rise less than linearly with the value. Training runs when the
+turn advances, not when "Conduct Training" is chosen (user report).
 
 ## Still unknown
 
 - The scale of a practice's values (how much growth one point is) and of
   the fatigue column. One data point: a week-long keeper camp (camp row
   83) gave about 60 ability experience per point to three keepers in
-  PCSX2 ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)); how condition, age, the
-  coaches and the facilities change that isn't known.
+  PCSX2 ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)), a team session about 3–4
+  per point, and an individual practice raised to +100 only 6–7 times
+  what +10 gives ([Editing](#editing)); how condition, age, the coaches
+  and the facilities change that isn't known.
+- Which drill's own values are missing from rows 74–86 (85's or 86's),
+  and what row 74 should hold ([above](#drills-7486-train-the-drill-before-them-both-releases)).
 - The names of the 87 camp types and 28 youth menus, and of the facility
   rows.
 - Whether anything reads columns 64–70 of the facility tables.
