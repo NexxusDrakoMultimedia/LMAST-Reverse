@@ -121,8 +121,12 @@ them isn't traced).
 messages 1045–1056 to 1046–1057 in `801_1`–`6.mbb` and their copies in
 `PRELOAD/SIMFILE1`–`6.PAC` (entry 28), so each drill shows its own
 name; the jackknife name goes to 1045, which is never shown, and the
-files keep their sizes ([`LMASTER_MOD.md`](LMASTER_MOD.md)). Not yet
-checked in game. `python SRC/training.py show DAT/PARAM/TRAINING_LIST.TBB
+files keep their sizes ([`LMASTER_MOD.md`](LMASTER_MOD.md)).
+**Tested in PCSX2** (user report): coach R.Bloemzaad teaches drills 76
+and 62; drill 76, whose row trains short pass, long pass and cross +10,
+reads "Dribble training" on the retail disc and "Pass training." on
+`LMAST-test-drills.iso`. The coach was found in a career's staff
+candidate list read from a save state (block 1 `+0x9ac8`). `python SRC/training.py show DAT/PARAM/TRAINING_LIST.TBB
 practice` prints the rows; `python SRC/mbb.py dump DAT/MESSAGE/MES.PAC
 --cat 801` the names.
 

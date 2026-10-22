@@ -268,9 +268,10 @@ Each result is recorded in the doc named.
 - [x] Widescreen: a PCSX2 pnach for Hor+ 16:9 3D with the HUD, menus,
       backdrops, room changes, room depth and cut-ins kept at 4:3, tested
       in PCSX2 ([`WIDESCREEN.md`](DOC/WIDESCREEN.md))
-- [x] Built: `--mod drill-names` (in `--mod lmaster`). The training rows
-      of drills 74–86 are right; PAL's names are one message early, so
-      the switch moves the names, and its PCSX2 test is in TODO section 7
+- [x] `--mod drill-names` (in `--mod lmaster`). The training rows of
+      drills 74–86 are right; PAL's names are one message early, so the
+      switch moves the names. Tested in PCSX2: drill 76 reads "Dribble
+      training" on retail and "Pass training." with the switch
       ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early))
 - [x] Built: `--mod league-balance` (`schedule.py balance`) rebuilds the
       22- and 26-club leagues and the 8-club VS leagues at their own size,

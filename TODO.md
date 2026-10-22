@@ -31,11 +31,6 @@ item below.
 2. **Test the league-balance switch** (sections 7 and 8):
    `LMAST-test-leagues.iso` is built; a new career's home and away
    games should alternate ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **Test the drill-names fix** (sections 7 and 8): PAL's names of
-   drills 75–86 are one message early, so "Pass training." trains
-   shooting; `--mod drill-names` moves them, and `LMAST-test-drills.iso`
-   is built
-   ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early)).
 
 ## 1. Read: every file parsed and checked
 
@@ -288,13 +283,6 @@ names the disc or the edit to build; the result goes into the doc.
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01`
-- [ ] Drill names (`LMAST-test-drills.iso`, `--mod drill-names`): on
-      the retail disc, give one player the drill named "Pass training."
-      (practice 75; needs a coach who teaches it) and compare save
-      states before and after a few turns: it trains shot skill and
-      technique (+15 each in its row). On the test disc the same drill
-      shows "Shot training.", and "Pass training." trains short and long
-      pass and cross ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early))
 - [ ] League schedules (`LMAST-test-leagues.iso`, `--mod league-balance`
       and the tutorial skip): start a career in England and read your
       club's first 16 league games, home or away, on the Schedule
@@ -313,11 +301,6 @@ tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
       kind row past fatigue 1000, the short `EDIT_EMBLEM` tables
       93/101/105. The "two months"/"nine months" injury lines need
       thresholds chosen first
-- [ ] Text fix: PAL's names of drills 75–86 are one message early (an
-      added "Jackknife"); the training rows are right. `--mod
-      drill-names` is built and in `--mod lmaster`; it needs the PCSX2
-      test in section 7
-      ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early))
 - [ ] Improvement: the badly balanced league schedules. `--mod
       league-balance` is built (not in `--mod lmaster`); it needs the
       PCSX2 test in section 7
