@@ -26,6 +26,7 @@ Usage:
     python ps2mc.py get       <card.ps2> <folder>[/<file>] <out>
     python ps2mc.py put       <card.ps2> <out.ps2> <folder>/<file>=<local file> ... [--touch]
     python ps2mc.py mkdir     <card.ps2> <out.ps2> <folder> ...
+    python ps2mc.py copy      <card.ps2> <out.ps2> <folder> <new folder>
     python ps2mc.py roundtrip <card.ps2> ...
     python ps2mc.py selftest
 
@@ -35,7 +36,10 @@ used twice, chains too short for their entry) and marks problems with !!.
 `put` replaces a file (any size: clusters are added or freed) or creates
 it in an existing folder, and writes a new image; --touch sets the
 modified time of the file and its folder to now (a new file always gets
-it). `mkdir` adds an empty save folder. Neither changes the input image.
+it). `mkdir` adds an empty save folder, and `copy` copies a save folder
+to a new name on the same card, keeping every file's mode and times (a
+file named like the folder, a game's main file, is renamed with it).
+None of them changes the input image.
 `roundtrip` writes every file back with its own data and checks that the
 image comes out identical. `selftest` builds a blank card in memory and
 creates, grows, shrinks and reads files and folders on it.
@@ -365,6 +369,47 @@ class Card:
             self.write_entry(folder)
         return done
 
+    def folders(self):
+        """The names of the save folders in the root."""
+        return [e.name for e in self.root_entries()[2:] if e.exists and e.is_dir]
+
+    def copy_folder(self, src, dst):
+        """Copy save folder `src` to a new folder `dst`, every file with its
+        mode and times; a file named like the folder (a game's main file)
+        takes the new name."""
+        if not dst or "/" in dst or len(dst) > NAME_MAX:
+            raise ValueError("bad folder name %r" % dst)
+        if dst in self.folders():
+            raise ValueError("%s is already on the card" % dst)
+        folder = self.folder(src)
+        inner = self.folder_entries(folder)
+        files = [e for e in inner[2:] if e.exists and not e.is_dir]
+        dot = self.root_dot()
+
+        def set_count(n):
+            dot.set(length=n)
+            self.write_entry(dot)
+        index = self._slot(self.root, dot.length, set_count)
+        count = 2 + len(files)
+        chain = self.resize_chain(None, -(-count * ENTRY // self.csize))
+        body = bytearray(inner[0].raw + inner[1].raw)
+        struct.pack_into("<I", body, 0x14, index)           # "." holds the folder's index
+        for e in files:
+            data = self.read_file(e)
+            fchain = self.resize_chain(None, -(-len(data) // self.csize))
+            self.write_chain(fchain, data)
+            raw = bytearray(e.raw)
+            struct.pack_into("<I", raw, 0x10, fchain[0])
+            if e.name == src:
+                raw[0x40:0x60] = dst.encode("latin-1").ljust(0x20, b"\0")
+            body += raw
+        self.write_chain(chain, bytes(body) + bytes(len(chain) * self.csize - len(body)))
+        raw = bytearray(folder.raw)
+        struct.pack_into("<I", raw, 4, count)
+        struct.pack_into("<I", raw, 0x10, chain[0])
+        raw[0x40:0x60] = dst.encode("latin-1").ljust(0x20, b"\0")
+        self.write_entry(Entry(raw, self.root, index))
+
     def mkdir(self, name):
         if not name or "/" in name or len(name) > NAME_MAX:
             raise ValueError("bad folder name %r" % name)
@@ -596,6 +641,16 @@ def cmd_mkdir(src, dst, names):
     _write_out(src, dst, card)
 
 
+def cmd_copy(src, dst, folder, new):
+    card = load(src)
+    try:
+        card.copy_folder(folder, new)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    print("copied %s to %s" % (folder, new))
+    _write_out(src, dst, card)
+
+
 def cmd_roundtrip(paths):
     for path in paths:
         try:
@@ -652,10 +707,18 @@ def cmd_selftest():
              for i in range(7))
     report("7 more files: the folder grows a cluster", ok and folder.length == 11,
            "%d entries" % folder.length)
+    card.copy_folder("BESLES-54151-G000", "BESLES-54151-G001")
+    card = Card(card.flush())
+    a, b = (card.folder_entries(card.folder(n)) for n in ("BESLES-54151-G000",
+                                                          "BESLES-54151-G001"))
+    same = [(e.name.replace("G000", "G001"), card.read_file(e), e.mode, e.modified)
+            for e in a[2:]] == [(e.name, card.read_file(e), e.mode, e.modified) for e in b[2:]]
+    report("folder copied, its main file renamed", same and b[0].raw[0x14] == 3,
+           "%d files" % (len(b) - 2))
     for i in range(30):
         card.mkdir("FOLDER%02d" % i)
     card = Card(card.flush())
-    report("30 more folders: the root grows", card.root_dot().length == 33,
+    report("30 more folders: the root grows", card.root_dot().length == 34,
            "%d entries" % card.root_dot().length)
     data = card.flush()
     notes, probs = Card(data).check()
@@ -684,6 +747,8 @@ def main(argv):
         cmd_put(args[0], args[1], args[2:], touch)
     elif cmd == "mkdir" and len(args) >= 3:
         cmd_mkdir(args[0], args[1], args[2:])
+    elif cmd == "copy" and len(args) == 4:
+        cmd_copy(*args)
     elif cmd == "roundtrip" and args:
         cmd_roundtrip(args)
     elif cmd == "selftest" and not args:

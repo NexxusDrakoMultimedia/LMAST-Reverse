@@ -117,9 +117,25 @@ Each page shows what `save.py` can already read, and edits only what
 
 Decided (user, 2026-10-09):
 
-- **Memory card format: folder cards.** `save.py` reads PCSX2 folder
-  memory cards, where a save is a plain folder. `.ps2` card images
-  (PCSX2's default) are a later item in `TODO.md`.
+- **Memory card format: folder cards, and card files** (card files added
+  2026-10-23). `save.py` reads PCSX2 folder memory cards, where a save is
+  a plain folder. A card file (`.ps2`) opens with File > Open save on a
+  card file, which lists its `-G` and `-M` saves; the window edits a copy
+  of the main file, `<card>.bak/<folder>/<folder>.card`. Save writes the
+  edit into the card through `ps2mc.py`
+  ([`PS2MC_FORMAT.md`](PS2MC_FORMAT.md)), after backing up the whole
+  card and the main file in `<card>.bak`, and only while the save on the
+  card is still the one opened. The log gets `save.py set <main backup>
+  <folder>.new ...` and `ps2mc.py put <card backup> <card>.new
+  <folder>/<folder>=<folder>.new`. Save to new slot copies the folder on
+  the card to its lowest free slot (`ps2mc.py copy`, every file with its
+  mode and times, the main file renamed) and writes the edit there,
+  logging the copy first. Tested through the widgets, off-screen, on a
+  copy of the user's `Mcd001.ps2`: G002 opened through the card dialog, a
+  money edit saved (111,111 on the card), then another saved to a new
+  slot, G003 (222,222 there, G002 unchanged, all five files in the new
+  folder); after each, the logged commands gave the same card byte for
+  byte, and the card passed `ps2mc.py info`'s checks.
 - **Where an edit goes: over the save, after a backup.** Before each
   save, the editor copies the save's main file to
   `<card folder>.bak/<save folder>/<main file>.<date and time>.bak`,

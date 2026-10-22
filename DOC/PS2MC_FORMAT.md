@@ -108,8 +108,11 @@ and stays counted.
 
 ## Writing
 
-`ps2mc.py put` replaces a file or creates one in an existing folder, and
-`mkdir` adds a folder. Each writes a new image and never touches the
+`ps2mc.py put` replaces a file or creates one in an existing folder,
+`mkdir` adds a folder, and `copy` copies a save folder to a new name on
+the same card: the entries keep their modes and times, the `.` entry gets
+the new folder's index, and a file named like the folder (a game's main
+file) takes the new name. Each writes a new image and never touches the
 input:
 
 - A file that changes size gains clusters (the lowest free ones) or frees

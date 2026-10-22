@@ -27,16 +27,12 @@ item below.
    PCSX2. Next: a season played through on it
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)). The end is a
    change players notice.
-2. **`.ps2` memory card images in the save editor** (section 5, "Save
-   editor"). `ps2mc.py` reads and writes card images (tested in
-   PCSX2); the save editor should open and save careers on them
-   directly.
-3. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
+2. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
    VPF numbers a new edit player, so `pmplayer.py` can fill an empty
    slot ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#still-unknown)).
    It follows straight on from the `pmplayer.py` and `save.py` edit
    player work.
-4. **The `GAME/` tactics AI files** (section 2, "The match"). The play
+3. **The `GAME/` tactics AI files** (section 2, "The match"). The play
    books, the combination scripts and `GAMEDATA.BIN`'s container are
    decoded, and so are the `.CBB` record layout and what each
    combination command does ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md),
@@ -239,10 +235,6 @@ allowed values; tests go through the widgets, off-screen.
       comment tables (`sqb.py settable`), the facility records
       (`plrcommon.py set`, with `edit_spec`), and later the club ranking
       once it has a writer (section 3)
-- [ ] Save editor: open and save careers on a `.ps2` memory card image
-      through `ps2mc.py` (it reads and writes the card;
-      [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md)), so players with a
-      file card needn't copy saves off it by hand
 - [ ] The editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
@@ -286,6 +278,10 @@ names the disc or the edit to build; the result goes into the doc.
       kinds 0–3, a save edit per kind
       ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
       ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets))
+- [ ] The save editor on a card file: a save it copies to a new slot on
+      `Mcd001.ps2` (`ps2mc.py copy`, then the edit) shows in the game's
+      load list and loads with the edit
+      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#decisions))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST

@@ -44,11 +44,25 @@ it. The log gets the two commands that do the same:
     python SRC/save.py copy <save folder> <slot>
     python SRC/save.py set <original main file> <new main file>.new ...
 
+A save on a memory card file (.ps2, PCSX2's single-file cards) opens with
+File > Open save on a card file, which lists the card's career saves.
+The window edits a copy of the main file (<card>.bak/<folder>/<folder>.card);
+Save writes it into the card with ps2mc.py (DOC/PS2MC_FORMAT.md), after
+backing up the card and the main file in <card>.bak, and logs:
+
+    python SRC/save.py set <main backup> <folder>.new ...
+    python SRC/ps2mc.py put <card backup> <card>.new <folder>/<folder>=<folder>.new
+
+Save to new slot copies the folder on the card (ps2mc copy_folder) and
+writes the edit into the copy, logging `ps2mc.py copy` before those two.
+Either way the save on the card must still be the one opened.
+
 Close the game in PCSX2 before saving, so it doesn't write the card
 over the edit.
 
 Usage:
     python SRC/saveedit.py open [<save folder or main file>]
+    python SRC/saveedit.py open <card.ps2> [<save folder>]
 """
 import datetime
 import os
@@ -62,6 +76,7 @@ from tkinter import filedialog, messagebox, ttk
 import editor
 import initteam
 import pbdata
+import ps2mc
 import save
 
 WINDOW = (1280, 720)
@@ -633,6 +648,28 @@ def backup_dir(main):
     return os.path.join(card + ".bak", os.path.basename(folder))
 
 
+def card_bak(card):
+    """<card>.bak beside a memory card file: its backups and log."""
+    return os.path.abspath(card) + ".bak"
+
+
+def card_work(card, folder):
+    """The copy of a card file's save that the window edits."""
+    return os.path.join(card_bak(card), folder, folder + ".card")
+
+
+def card_saves(card):
+    """The career saves (-G and -M folders) on a card file, in name order."""
+    names = []
+    for name in card.folders():
+        try:
+            if save.save_name(name)[1] in "GM":
+                names.append(name)
+        except ValueError:
+            pass
+    return sorted(names)
+
+
 class EditPlayerPage(Page):
     title = "Edit player"
 
@@ -704,7 +741,7 @@ PAGES = (ClubPage, FinancesPage, SquadPage, CombiPage, StaffPage, ClubsPage, Can
 # --- the window --------------------------------------------------------------
 
 class App:
-    def __init__(self, path=None):
+    def __init__(self, path=None, folder=None):
         try:        # sharp text on Windows with display scaling
             import ctypes
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -720,6 +757,7 @@ class App:
         menu = tk.Menu(self.root)
         file_menu = tk.Menu(menu, tearoff=False)
         file_menu.add_command(label="Open save...", accelerator="Ctrl+O", command=self.ask_open)
+        file_menu.add_command(label="Open save on a card file...", command=self.ask_open_card)
         file_menu.add_command(label="Save", accelerator="Ctrl+S", command=self.write)
         file_menu.add_command(label="Save to new slot...", command=self.write_new_slot)
         file_menu.add_separator()
@@ -741,10 +779,18 @@ class App:
         for page in self.pages:
             self.notebook.add(page.frame, text=page.title)
         self.game = self.names = self.save = None
+        self.card = None            # (card file, save folder) for a save from a card file
+        self.card_dialog = None
         self.root.title("LMAST save editor")
         self.status("Open a save folder (BESLES-54151-G000 and so on) on a PCSX2 folder "
-                    "memory card: File > Open save.")
-        if path:
+                    "memory card: File > Open save. For a card file (.ps2): File > Open "
+                    "save on a card file.")
+        if path and os.path.isfile(path) and path.lower().endswith(".ps2"):
+            if folder:
+                self.open_card(path, folder)
+            else:
+                self.choose_card_save(path)
+        elif path:
             self.open(path)
 
     def status(self, text):
@@ -767,9 +813,78 @@ class App:
         if path:
             self.open(path)
 
-    def open(self, path, done=None):
+    def ask_open_card(self):
+        if not self.keep_changes():
+            return
+        path = filedialog.askopenfilename(title="Open a PCSX2 memory card file",
+                                          filetypes=[("PS2 memory card", "*.ps2"),
+                                                     ("All files", "*.*")])
+        if path:
+            self.choose_card_save(path)
+
+    def choose_card_save(self, path):
+        """A small window listing the card file's career saves."""
+        try:
+            names = card_saves(ps2mc.load(path))
+        except (ValueError, OSError) as e:
+            messagebox.showerror("Save editor", "Can't read %s:\n%s" % (path, e))
+            return
+        if not names:
+            messagebox.showerror("Save editor", "%s holds no career saves (BESLES-54151-G or "
+                                                "-M folders)." % path)
+            return
+        top = tk.Toplevel(self.root)
+        top.title("Saves on %s" % os.path.basename(path))
+        top.transient(self.root)
+        ttk.Label(top, text="Career saves on %s:" % editor.shown_path(path)).pack(
+            anchor="w", padx=8, pady=(8, 4))
+        box = tk.Listbox(top, height=min(12, len(names)), width=36, exportselection=False)
+        for name in names:
+            box.insert("end", name)
+        box.selection_set(0)
+        box.pack(fill="both", expand=True, padx=8)
+        buttons = ttk.Frame(top)
+        buttons.pack(anchor="e", padx=8, pady=8)
+
+        def choose(event=None):
+            picked = box.curselection()
+            if picked:
+                top.destroy()
+                self.card_dialog = None
+                self.open_card(path, names[picked[0]])
+        ttk.Button(buttons, text="Open", command=choose).pack(side="left", padx=4)
+        ttk.Button(buttons, text="Cancel", command=top.destroy).pack(side="left")
+        box.bind("<Double-Button-1>", choose)
+        self.card_dialog = (top, box, choose)
+
+    def open_card(self, path, folder, done=None):
+        """Open save `folder` on a card file: its main file is copied to
+        <card>.bak/<folder>/<folder>.card, which the window edits."""
+        work = card_work(path, folder)
+        try:
+            card = ps2mc.load(path)
+            _, e = card.find("%s/%s" % (folder, folder))
+            if e is None:
+                raise ValueError("%s has no main file %s" % (folder, folder))
+            os.makedirs(os.path.dirname(work), exist_ok=True)
+            with open(work, "wb") as f:
+                f.write(card.read_file(e))
+        except (ValueError, OSError) as e:
+            messagebox.showerror("Save editor", "Can't open %s on %s:\n%s" % (folder, path, e))
+            return
+        self.open(work, done or "Opened %s on %s." % (folder, editor.shown_path(path)),
+                  card=(os.path.abspath(path), folder))
+
+    def where(self):
+        """The open save, as the title and messages show it."""
+        if self.card:
+            return "%s on %s" % (self.card[1], editor.shown_path(self.card[0]))
+        return editor.shown_path(self.save.path)
+
+    def open(self, path, done=None, card=None):
         """Decode the save (and the names, the first time) in a thread; the
-        first decode of a session records save.py's field list."""
+        first decode of a session records save.py's field list. `card` is
+        (card file, save folder) when `path` is a save copied off a card file."""
         self.status("Loading %s ..." % path)
         self.root.configure(cursor="watch")
         result = {}
@@ -799,6 +914,7 @@ class App:
                 return
             self.game = result.get("game") or self.game
             self.names = result.get("names") or self.names
+            self.card = card
             self.loaded(result["save"], done)
         poll()
 
@@ -812,13 +928,13 @@ class App:
                 page.current = None
             page.fill(s, self.names)
         self.update_title()
-        self.status(done or "Opened %s." % editor.shown_path(s.path))
+        self.status(done or "Opened %s." % self.where())
 
     def update_title(self):
         if self.save is None:
             return
         self.root.title("LMAST save editor - %s%s" % (
-            editor.shown_path(self.save.path), "  (unsaved: %d changes)" % len(self.changes)
+            self.where(), "  (unsaved: %d changes)" % len(self.changes)
             if self.changes else ""))
 
     # edits
@@ -870,6 +986,8 @@ class App:
         save.py set command that gives the same bytes from the backup."""
         if self.save is None or not self.changes:
             return True
+        if self.card:
+            return self.write_card()
         s = self.save
         main = s.path
         folder = backup_dir(main)
@@ -914,6 +1032,8 @@ class App:
         bytes from the original, then opens the copy."""
         if self.save is None:
             return False
+        if self.card:
+            return self.write_card_new_slot()
         s = self.save
         main = s.path
         src = os.path.dirname(os.path.abspath(main))
@@ -968,6 +1088,136 @@ class App:
             editor.shown_path(dst), n_changes, os.path.basename(src)))
         return True
 
+    # saving to a card file
+
+    def read_card(self):
+        """The card file as it is now, and the open save's main file on it,
+        which must still be the bytes the window opened."""
+        path, folder = self.card
+        with open(path, "rb") as f:
+            raw = f.read()
+        card = ps2mc.Card(raw)
+        _, e = card.find("%s/%s" % (folder, folder))
+        if e is None or card.read_file(e) != self.save.file:
+            raise ValueError("the save changed on the card since it was opened (was the game "
+                             "running?); open it again")
+        return raw, card
+
+    def replace_card(self, raw, card, backup):
+        """Check the edited card, back the old one up and write the new one
+        over it (<card>.new, then moved)."""
+        path = self.card[0]
+        out = card.flush()
+        _, probs = ps2mc.Card(out).check()
+        if probs:
+            raise ValueError("the edited card fails its checks: %s" % "; ".join(probs))
+        os.makedirs(os.path.dirname(backup), exist_ok=True)
+        with open(backup, "wb") as f:
+            f.write(raw)
+        with open(path + ".new", "wb") as f:
+            f.write(out)
+        os.replace(path + ".new", path)
+
+    def log_card(self, title, cmds):
+        path = self.card[0]
+        lines = editor.log_lines(title, cmds, [(path + ".new", path)], moved="the .new card")
+        with open(os.path.join(card_bak(path), "saveedit.log"), "a", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n\n")
+
+    def write_card(self):
+        """Write the edited save into its card file. The card and the save's
+        main file are backed up in <card>.bak first, and the log gets the
+        save.py set and ps2mc.py put that give the same card from them."""
+        path, folder = self.card
+        s = self.save
+        stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        bak = card_bak(path)
+        card_backup = os.path.join(bak, "%s.%s.bak" % (os.path.basename(path), stamp))
+        main_backup = os.path.join(bak, folder, "%s.%s.bak" % (folder, stamp))
+        new_main = os.path.join(bak, folder, folder + ".new")
+        try:
+            data = s.encode()
+            raw, card = self.read_card()
+            card.put("%s/%s" % (folder, folder), data)
+            os.makedirs(os.path.dirname(main_backup), exist_ok=True)
+            with open(main_backup, "wb") as f:
+                f.write(s.file)
+            self.replace_card(raw, card, card_backup)
+        except (ValueError, OSError) as e:
+            if os.path.exists(path + ".new"):
+                os.remove(path + ".new")
+            messagebox.showerror("Save editor", "Can't save: %s" % e)
+            return False
+        n = len(self.changes)
+        q = lambda p: editor.quote(editor.shown_path(p))
+        self.log_card("%s on %s: %d changes" % (folder, os.path.basename(path), n), [
+            ["python", "SRC/save.py", "set", q(main_backup), q(new_main)]
+            + [editor.quote(assignment(*kv)) for kv in self.changes],
+            ["python", "SRC/ps2mc.py", "put", q(card_backup), q(path + ".new"),
+             editor.quote("%s/%s=%s" % (folder, folder, editor.shown_path(new_main)))]])
+        self.open_card(path, folder, "Saved %s: %d changes (backup %s)" % (
+            self.where(), n, editor.shown_path(card_backup)))
+        return True
+
+    def write_card_new_slot(self):
+        """Copy the save folder to the card file's lowest free slot (ps2mc
+        copy_folder) and write the edited save into the copy, leaving the
+        original as it is; then open the copy."""
+        path, src = self.card
+        s = self.save
+        try:
+            prefix, letter, _ = save.save_name(src)
+            raw, card = self.read_card()
+            taken = set(card.folders())
+            free = [n for n in range(save.SLOT_MAX + 1)
+                    if "%s%s%03d" % (prefix, letter, n) not in taken]
+            if not free:
+                raise ValueError("no free %s slot on the card (0-%d are taken)"
+                                 % (letter, save.SLOT_MAX))
+        except (ValueError, OSError) as e:
+            messagebox.showerror("Save editor", "Can't save to a new slot: %s" % e)
+            return False
+        name = "%s%s%03d" % (prefix, letter, free[0])
+        if not messagebox.askokcancel("Save to new slot", "Save as %s on this card?\n%s stays "
+                                      "as it is." % (name, src)):
+            return False
+        stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        bak = card_bak(path)
+        card_backup = os.path.join(bak, "%s.%s.bak" % (os.path.basename(path), stamp))
+        main_backup = os.path.join(bak, src, "%s.%s.bak" % (src, stamp))
+        copied = os.path.join(bak, os.path.basename(path) + ".copy")
+        new_main = os.path.join(bak, name, name + ".new")
+        try:
+            data = s.encode() if self.changes else None
+            card.copy_folder(src, name)
+            if data is not None:
+                card.put("%s/%s" % (name, name), data)
+                os.makedirs(os.path.dirname(main_backup), exist_ok=True)
+                with open(main_backup, "wb") as f:
+                    f.write(s.file)
+            self.replace_card(raw, card, card_backup)
+        except (ValueError, OSError) as e:
+            if os.path.exists(path + ".new"):
+                os.remove(path + ".new")
+            messagebox.showerror("Save editor", "Can't save to a new slot: %s" % e)
+            return False
+        n = len(self.changes)
+        q = lambda p: editor.quote(editor.shown_path(p))
+        if data is None:
+            cmds = [["python", "SRC/ps2mc.py", "copy", q(card_backup), q(path + ".new"),
+                     src, name]]
+        else:
+            cmds = [["python", "SRC/ps2mc.py", "copy", q(card_backup), q(copied), src, name],
+                    ["python", "SRC/save.py", "set", q(main_backup), q(new_main)]
+                    + [editor.quote(assignment(*kv)) for kv in self.changes],
+                    ["python", "SRC/ps2mc.py", "put", q(copied), q(path + ".new"),
+                     editor.quote("%s/%s=%s" % (name, name, editor.shown_path(new_main)))]]
+        self.log_card("%s -> %s on %s: %d changes" % (src, name, os.path.basename(path), n),
+                      cmds)
+        self.open_card(path, name, "Saved %s on %s: %d changes; %s is unchanged" % (
+            name, editor.shown_path(path), n, src))
+        return True
+
     def keep_changes(self):
         """False when the user cancels leaving unsaved changes."""
         if not self.changes:
@@ -986,10 +1236,10 @@ class App:
 def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
-    if cmd == "open" and len(args) <= 1:
+    if cmd == "open" and len(args) <= 2:
         if not os.path.isdir("DAT"):
             raise SystemExit("DAT: not found; run from the repo root")
-        App(args[0] if args else None).run()
+        App(*args).run()
         return 0
     print(__doc__)
     return 1

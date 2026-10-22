@@ -234,6 +234,9 @@ history holds the rest.
       (pages with ECC, FAT, folders and files; `put`, `mkdir`), checked
       on three real cards that write back identical, and `selftest` in
       `regress.py` ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md))
+- [x] Save editor on card files: File > Open save on a card file, Save
+      and Save to new slot write into the card through `ps2mc.py`, backed
+      up and logged ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#decisions))
 
 ## 6. Distribute: sharing a mod
 
