@@ -300,7 +300,8 @@ Each result is recorded in the doc named.
       crowd at the new prices ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [x] A card written by `ps2mc.py` (`LMAST-cardtest.ps2`): G000 loaded
       with its edited money, € 30,864, the other saves still loaded, and
-      the browser showed the new folder ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
+      the browser listed the new folder (as "Corrupted Data", having no
+      `icon.sys`) ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
 - [x] The harder economy's income cuts (`sponsor-fees`, `tv-fees`,
       `season-demand`, on `LMAST-test-economy.iso` with all six):
       as on the test sheet ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))

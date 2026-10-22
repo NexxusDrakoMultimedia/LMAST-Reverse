@@ -141,7 +141,10 @@ money; 23 bytes of the card changed.
 4). So a card written by `ps2mc.py` is read by the game, through a
 folder whose root directory and cluster chains `ps2mc.py` grew. The
 card's other saves still loaded, and the PS2 browser listed the
-`LMAST-TEST` folder `mkdir` made (user report).
+`LMAST-TEST` folder `mkdir` made as "Corrupted Data" (user report): the
+browser shows each folder as a save through its `icon.sys`, and this one
+held only a text file. So the browser reads the new root entry; a folder
+meant to show as a save needs the files a game writes.
 
 ## Still unknown
 
