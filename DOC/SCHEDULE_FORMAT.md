@@ -244,7 +244,7 @@ once. A knockout has `n − 1` pairings (fewer for a single round: UID 4 has
 | Bits | Meaning |
 |---|---|
 | `w0` 0–7 | game day. Days run 0 to *d* − 1 with no gaps |
-| `w0` 8–9 | unknown (0 or 1) |
+| `w0` 8–9 | unknown (0 or 1). **Empirical** (all 164 UIDs, both releases): the same for every game of one game day. 1 on every day of the cups, groups and VS leagues; in the domestic leagues on a few days only (UID 0: days 0, 18 and 35; UID 1: 11 of its 50 days, most of them midweek turns) |
 | `w0` 10–13 | round (**empirical**): 1 final, 2 semi-final, 3 quarter-final, 4 last 16, 0 anything else |
 | `w1` 0–8 | pairing index |
 | `w1` 9–10 | home/away swap: home is `pair[swap]` |
@@ -374,6 +374,23 @@ so neither does the `.HED`. `patch_disc.py --mod national-cups` uses it
 python SRC/schedule.py shift DAT/PARAM/SCHEDULE_SYSTEM.PAC out/SCHEDULE_SYSTEM.PAC -1 98-102 114-122
 ```
 
+`python SRC/schedule.py balance <SCHEDULE_COMPETITION.PAC> <out.PAC> [<uid> ...]`
+rebuilds the badly balanced league templates
+([below](#building-a-league-of-another-size)) with `set_league` at their
+own size: by default UIDs 1, 11, 30, 40, 48, 154 and 155, the ones with
+more than two games running at one venue. The entrants, game days and
+counts stay, so each entry keeps its size and the pack its header: the
+`.HED` and its `STATIONFILE` copy don't change. Game bit `w0` 8 stays with
+its game day. A UID already balanced (as `leaguesize.py build` leaves the
+leagues it rebuilds) is left alone, so it also works on a league build's
+pack. On both releases it changes exactly those seven entries, and
+`schedule.py info` finds nothing new. `patch_disc.py --mod
+league-balance` uses it ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)):
+
+```bash
+python SRC/schedule.py balance DAT/PARAM/SCHEDULE_COMPETITION.PAC out/SCHEDULE_COMPETITION.PAC
+```
+
 ## Building a league of another size
 
 Changing a division's size needs a new league schedule for that many
@@ -400,6 +417,11 @@ The templates differ a lot in how well home and away games alternate:
 | 22, 2 | 11, 30, 40, 48 | 7 | 400 |
 | 24, 2 | 2, 29, 39 | 2 | 168 |
 | 26, 2 | 1 | 9 | 512 |
+| 8, 1 and 2 (VS) | 154, 155 | 5 | 28, 56 |
+
+`schedule.py balance` ([Writing](#writing)) rebuilds the 22- and 26-club
+leagues and the 8-club VS leagues at their own size, to a longest run
+of 2. The 10-club runtime league (UID 123) reaches 3 and is left as it is.
 
 **The generator** (`league_days`, `league_tables`, `set_league`) uses
 Berger tables (the circle method): club *n* − 1 stays put while the
@@ -611,7 +633,9 @@ turns a 42-day schedule would add.
 
 ## Still unknown
 
-- Game bits `w0` 8–9, header bytes `0x0A`–`0x0F`, `year_schedule_data`
+- What game bit `w0` 8 selects (a per-day mark, set on every cup day;
+  `set_league` writes 0, so a league `leaguesize.py build` resizes loses
+  its marked days), bit 9, header bytes `0x0A`–`0x0F`, `year_schedule_data`
   `+7`, and the first two team-entry header bytes.
 - `PeriodName.tbb`, the `make_list` source functions and tables 1–8, and
   the meaning of the `savectrl` values.
@@ -635,7 +659,7 @@ python SRC/schedule.py info  DAT/PARAM        # every entry; reports UID 117
 python SRC/schedule.py year  DAT/PARAM        # the 184 year_schedule_data rows
 python SRC/schedule.py compe DAT/PARAM 6      # a 32-team knockout: games, pairings, links
 python SRC/schedule.py entry DAT/PARAM 6      # where its 32 teams come from
-python SRC/schedule.py league DAT/PARAM       # generated leagues of 2-32 clubs beside the disc's
+python SRC/schedule.py league DAT/PARAM       # generated leagues of 2-32 clubs beside the disc's, and what balance rebuilds
 python SRC/schedule.py turns  DAT/PARAM       # each domestic league's game days and room for more
 python SRC/schedule.py turns  DAT/PARAM 0 42  # the English first division's season with 42 game days
 python SRC/sles_disasm.py ISO/SLES_541.51 dis Sche_Block_decode_main2 makeTeamEntryIDList

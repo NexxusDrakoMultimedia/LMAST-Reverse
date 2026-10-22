@@ -39,11 +39,19 @@ Usage:
     python schedule.py league <DAT/PARAM> [<n> [single]]  # generated leagues: check every size, or print one
     python schedule.py turns <DAT/PARAM> [<uid> [<days>]]  # leagues' game days and room; one UID's calendar
     python schedule.py shift <SCHEDULE_SYSTEM.PAC> <out.PAC> <delta> <uid>[-<uid>] ...  # move UIDs' game days
+    python schedule.py balance <SCHEDULE_COMPETITION.PAC> <out.PAC> [<uid>[-<uid>] ...]  # rebuild badly balanced leagues
 
 `shift` moves each UID's turn mask and start turn by delta turns (-1 is
 one turn earlier) and writes the pack with its .HED. The end turn stays,
 and a UID that runs across the year end is refused. patch_disc.py
 --mod national-cups uses it for the World and Euro National Cups.
+
+`balance` rebuilds league UIDs (by default UNBALANCED: 1, 11, 30, 40,
+48, 154 and 155, the templates with more than two games running at one
+venue) with set_league at their own size, and writes the pack with its
+.HED. The games, pairings and entrants keep their counts, so every entry
+keeps its size. A UID already balanced is left as it is. patch_disc.py
+--mod league-balance uses it.
 
 `league` builds round robins for 2-32 clubs (league_days, set_league):
 each club alternates home and away, the second leg starts one round
@@ -388,6 +396,54 @@ def league_stats(c):
             longest = max(longest, run)
     gap = min((m[1][0] - m[0][0] for m in meetings.values() if len(m) > 1), default=0)
     return probs, breaks, longest, gap
+
+
+# The disc's league templates with runs of more than two games at one
+# venue: the 22-club leagues (up to 7), the 26-club English second
+# division with your club (9) and the 8-club VS leagues (5).
+UNBALANCED = (1, 11, 30, 40, 48, 154, 155)
+BALANCED_RUN = 2            # what league_days gives at every size
+
+
+def balance_pack(data, uids=UNBALANCED):
+    """(SCHEDULE_COMPETITION.PAC bytes, [rebuilt UIDs]) with each league
+    UID that has a run of more than BALANCED_RUN games at one venue rebuilt
+    by set_league at its own size and legs. The entrants, the game days
+    and the counts stay, so each entry keeps its size and the pack its
+    header (and .HED); team slots are untouched. A UID already balanced,
+    as leaguesize.py build leaves the leagues it rebuilds, is skipped."""
+    h, blobs = pac.binpac_blobs(data)
+    if len(blobs) != UID_COUNT:
+        raise ValueError("%d entries, expected %d" % (len(blobs), UID_COUNT))
+    done = []
+    for u in uids:
+        c = Competition(blobs[u])
+        if c.type != 0 or not c.pairs:
+            raise ValueError("UID %d is not a league" % u)
+        if league_stats(c)[2] <= BALANCED_RUN:
+            continue
+        legs, days = len(c.games) // len(c.pairs), c.days
+        # Game bit w0 8 is the same for every game of a day (empirical, all
+        # 164 UIDs of both releases), so it stays with its day.
+        flags = {g.day: g.flag for g in c.games}
+        if set_league(c, c.entrants, legs) != days:
+            raise ValueError("UID %d: the rebuilt league has %d game days, not %d"
+                             % (u, c.days, days))
+        for g in c.games:
+            g.flag = flags[g.day]
+        new = c.encode()
+        if len(new) != len(blobs[u]):
+            raise ValueError("UID %d: the rebuilt entry is %d bytes, not %d"
+                             % (u, len(new), len(blobs[u])))
+        probs, _, longest, _ = league_stats(Competition(new))
+        if probs or longest > BALANCED_RUN:
+            raise ValueError("UID %d: the rebuilt league fails its check" % u)
+        blobs[u] = new
+        done.append(u)
+    out = pac.build_binpac(data[:h.header_size], blobs)
+    if len(out) != len(data) or out[:h.header_size] != data[:h.header_size]:
+        raise ValueError("the rebuilt pack changed its layout")
+    return out, done
 
 
 # --- game days for a league --------------------------------------------------
@@ -871,6 +927,31 @@ def cmd_shift(src, dst, delta, uids):
     print("%s: written, with %s" % (dst, dst[:-4] + ".HED"))
 
 
+def cmd_balance(src, dst, uids):
+    """Write src (SCHEDULE_COMPETITION.PAC) to dst with balance_pack's
+    leagues rebuilt, and dst's .HED beside it (unchanged, as the layout is)."""
+    if os.path.abspath(src) == os.path.abspath(dst):
+        raise SystemExit("output is the input")
+    with open(src, "rb") as f:
+        data = f.read()
+    try:
+        new, done = balance_pack(data, uids or UNBALANCED)
+    except (ValueError, struct.error) as e:
+        raise SystemExit("%s: %s" % (src, e))
+    h, blobs = pac.binpac_blobs(data)
+    for u in uids or UNBALANCED:
+        before = league_stats(Competition(blobs[u]))
+        after = league_stats(Competition(pac.binpac_blobs(new)[1][u]))
+        print("UID %3d: longest run %d -> %d, breaks %d -> %d%s" % (
+            u, before[2], after[2], before[1], after[1], "" if u in done else " (already balanced)"))
+    _, hed = build_pack(src, pac.binpac_blobs(new)[1])
+    with open(dst, "wb") as f:
+        f.write(new)
+    with open(dst[:-4] + ".HED", "wb") as f:
+        f.write(hed)
+    print("%s: written, with %s" % (dst, dst[:-4] + ".HED"))
+
+
 def cmd_compe(root, uid):
     c = Competition(read_pack(find(root, COMPE_PAC))[uid][1])
     print("UID %d: %s, %d entrants, %d pairings, %d games over %d days" % (
@@ -924,6 +1005,23 @@ def cmd_league(root, n=None, legs=2):
                 line += "  (disc UID %d: %d days, breaks %d, longest %d, gap %d)" % (
                     uid, d.days, db, dl, dg)
             print(line + ("  !! " + "; ".join(probs) if probs else ""))
+    # What `balance` makes of the pack, in memory.
+    path = find(root, COMPE_PAC)
+    with open(path, "rb") as f:
+        data = f.read()
+    try:
+        new, done = balance_pack(data)
+    except (ValueError, struct.error) as e:
+        print("balance  !! %s" % e)
+        return
+    old, rebuilt = pac.binpac_blobs(data)[1], pac.binpac_blobs(new)[1]
+    for u in UNBALANCED:
+        a, b = league_stats(Competition(old[u])), league_stats(Competition(rebuilt[u]))
+        print("balance UID %3d: longest %d -> %d, breaks %3d -> %2d%s" % (
+            u, a[2], b[2], a[1], b[1], "" if u in done else " (already balanced)"))
+    changed = [u for u in range(UID_COUNT) if old[u] != rebuilt[u]]
+    if changed != sorted(done):
+        print("balance  !! entries %s changed, expected %s" % (changed, sorted(done)))
 
 
 def calendar(marks):
@@ -1003,6 +1101,8 @@ def main(argv):
         cmd_roundtrip(args[0])
     elif cmd == "shift" and len(args) >= 4:
         cmd_shift(args[0], args[1], int(args[2]), parse_uids(args[3:]))
+    elif cmd == "balance" and len(args) >= 2:
+        cmd_balance(args[0], args[1], parse_uids(args[2:]))
     elif cmd == "turns" and len(args) == 1:
         cmd_turns(args[0])
     elif cmd == "turns" and len(args) in (2, 3):
