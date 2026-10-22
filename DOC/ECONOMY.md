@@ -258,6 +258,55 @@ league matches. It is 19 for competitions 0, 10, 20, 28 and 38, 25 for
 competition, so a league resized with `leaguesize.py` keeps its old
 factor.
 
+**Checked on a save:** G000 (home popularity 65,523, club status
+65,326, season tickets at 220 with a 30,000,000 ad budget, 39,000 on
+sale) gives a ticket demand of 304 and sold% 98, the value in the save.
+G006's inputs give demand for about 36,460 against its 36,000 on sale,
+so it just sells out (it holds 100).
+
+## Sponsors
+
+**Confirmed.** The sponsors are a table in `SIMPRG.REL`, not a disc
+file: 212 records of 0x48 bytes at `0x23d978`, ids 1–212
+(`plSponsor_GetDb`, `0x160dc0`). A candidate's fee is set when the
+candidate list is built (`0x1690a0`, `0x1691a8`): the record's `+0x14`
+(main sponsor) or `+0x18` (the other kind) × the business-cycle factor,
+1.25, 1.1, 1.0, 0.9 or 0.75 (doubles at `0x1daba0` and `0x1dac40`), stored
+at the candidate's `+0xc`. Signing books fee × 100 as income 0, once
+(`0xc8234`). A bigger club isn't paid more by the same sponsor; it is
+offered bigger ones (which sponsors a club is offered isn't traced).
+
+**Empirical:** 210 records have fees. `+0x14` runs £500,000–£45M
+(median £3.45M), `+0x18` £50,000–£45M (median £345,000). Four records
+(170, 174, 186, 194) hold the £1,350,000 of Africmap Airways, the first
+main sponsor of a new career ([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md#tested-in-pcsx2)).
+
+## TV contracts
+
+**Confirmed.** A club holds up to 3 TV contracts, 0x10 bytes each at
+block 1 `+0x11c54`: `+0x0` station (0 = free slot), `+0x4` amount,
+`+0x8`/`+0x9` years, `+0xa` kind. Each payment is the sum of the amounts
+× 100, booked as income 2: on signing (the broadcast screen,
+`0xb1cb8`) and through `Pwk.CheckTV` (`pwkTv_Add_TVpremium`,
+`0x163e88`, from SLES `0x111620`).
+
+An offer's amount (`0x163a10`, from the offer list `0x164088`) is
+base × the business-cycle factor (1.25–0.75, doubles at `0x1d9e70`) × a
+home-popularity factor: 0.9, 0.95, 1.0, 1.05 or 1.1 for popularity in
+fifths of 0–65,535 (`pwkTeam_Pop(0)`). The bases are the 19 records of
+0x1c bytes at `0x241780` (`+0x0` station, `+0x8` base, `+0xc` key):
+£1M–£4.75M for the 13 smaller offers, £8.5M–£16.5M for four bigger
+ones and £30M and £50M at the top (base × 100 ÷ 6). Which stations
+are on offer is a 60-bit mask at block 1 `+0x127c0`, kept by
+`pwkTv_UpdateStatus` (`0x164598`) from the 60 station records at
+`0x241a00`.
+
+**Checked on a save:** G006's contracts are stations 14, 16 and 2 at
+1,143,450, 589,050 and 138,600, each its base × 1.1 (cycle 1) × 1.05
+(popularity 50,000). Their sum × 100 is 187,110,000, G006's TV income
+for the season. G000's three 4-year contracts hold 15% more than the
+formula; what the term adds isn't traced.
+
 ## Still unknown
 
 - What the business cycle changes besides build costs, and its random
@@ -269,6 +318,10 @@ factor.
   are indexed by.
 - Plan `+0x16` (7,000 in every save).
 - Merchandise (income 7, `pwkGd_GoodsMonthlySales`) isn't traced.
+- Which sponsors a club is offered, and what `+0x18` is for (suppliers?).
+- What a TV contract's term adds (G000's 4-year contracts are 15% over
+  the formula), how often `Pwk.CheckTV` pays, and what each station
+  record's fields mean.
 
 ## Checking
 
@@ -278,5 +331,7 @@ python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 154b78 240 --sles ISO/SLES_541.51
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 3eda0 230 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkUnkei_GetTicketHosei pwkUnkei_GetAllAudience pwkUnkei_GetExpectSeat
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_ChangePop_Month pwkTeam_PopChange
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 1690a0 60 --sles ISO/SLES_541.51
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 163a10 90 --sles ISO/SLES_541.51
 python SRC/save.py finances <save>
 ```
