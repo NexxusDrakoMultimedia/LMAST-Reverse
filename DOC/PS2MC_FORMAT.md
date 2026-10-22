@@ -133,8 +133,16 @@ the card and writes every file back to an identical image. On a copy of
 `put --touch`, read back byte-identical, and `save.py show` read the new
 money; 23 bytes of the card changed.
 
-**Not yet tested in PCSX2:** that an edited card loads in the game, and
-that a folder or file created by `ps2mc.py` shows in the PS2 browser.
+**Tested in PCSX2** (user screenshot, `LMAST-cardtest.ps2`:
+`Mcd001.ps2` with G000's save edited to money
+123,456 and put back with `put --touch`, then `mkdir LMAST-TEST` and a
+47-byte file put into it): the game loaded G000 from the card, at
+2011–2012 week 4 weekend June, with € 30,864 on the top bar (123,456 ÷
+4). So a card written by `ps2mc.py` is read by the game, through a
+folder whose root directory and cluster chains `ps2mc.py` grew.
+
+**Not yet tested in PCSX2:** that the card's other saves still load, and
+that the `LMAST-TEST` folder shows in the PS2 browser.
 
 ## Still unknown
 

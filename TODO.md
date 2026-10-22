@@ -284,11 +284,9 @@ names the disc or the edit to build; the result goes into the doc.
       age, injury value 0 on an injured player, captain and keyman
       experience, and the Edit player page on a career with one); the manager's Special Mention texts for dissatisfaction
       kinds 0–3, a save edit per kind
-- [ ] A memory card image written by `ps2mc.py` (`LMAST-cardtest.ps2`
-      in PCSX2's memcards folder: `Mcd001.ps2` with G000's money set to
-      123,456 and a new `LMAST-TEST` folder): G000 loads with the edit,
-      the card's other saves still load, and the browser shows the
-      new folder
+- [ ] The rest of `LMAST-cardtest.ps2` (G000 with its edit is tested):
+      the card's other saves still load, and the PS2 browser shows the
+      `LMAST-TEST` folder ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
       ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
