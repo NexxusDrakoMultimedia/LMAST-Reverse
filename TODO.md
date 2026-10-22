@@ -269,8 +269,6 @@ names the disc or the edit to build; the result goes into the doc.
       English camps' towns, a keeper camp (Parma) raising saving and
       catching, Santiago's description, Canberra's last two clubs
       ([`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md))
-- [ ] `--mod national-cups`: a World Cup year played to the end, and the
-      final's results in the Competition menu on the last turn
 - [ ] A smaller first division (France at 18, from the Season tab) and
       two nations changed in one build; only England at 22 is tested
 - [ ] A `TRAINING_LIST.TBB` edit (a practice made much stronger) and a

@@ -233,6 +233,9 @@ Each result is recorded in the doc named.
 - [x] By ear: the music, opening, victory tune, crowd loops, chants and
       the `SYS_SE`/`EFFECTS` banks; the rendered songs
       ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md), [`GAME_DIR.md`](DOC/GAME_DIR.md))
+- [x] `--mod national-cups`: the World Cup final (season 4) moved to
+      turn 94 taken to work, since the retail Euro final on 94 shows its
+      results afterwards ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 
 ## 8. LMASTER Mod and other patches
 
@@ -241,7 +244,7 @@ Each result is recorded in the doc named.
 - [x] The rival's manager by style (`--mod rival-manager`), tested in
       PCSX2 ([`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8))
 - [x] Built: the national cups a turn earlier (`--mod national-cups`,
-      calendar tested) and the four camp switches; `--mod lmaster` turns
+      tested) and the four camp switches; `--mod lmaster` turns
       the mod's fixes on together ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [x] Widescreen: a PCSX2 pnach for Hor+ 16:9 3D with the HUD, menus,
       backdrops, room changes, room depth and cut-ins kept at 4:3, tested
