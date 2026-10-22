@@ -248,9 +248,15 @@ an average one. The Japanese executable has the same 31 words (at
 `0x2728f0`). `patch_disc.py --mod season-status` (in `--mod lmaster`)
 rewrites them as the intended ladder: 0.5 up to 10,000, then 0.6, 0.7,
 0.8 and 0.9 a band of 10,000, and 1.0 above 50,000. Checked by running
-both versions in a small MIPS simulator over the band edges. G000
-(status 65,326) with 80,000 season tickets on sale should sell 48% on
-the retail game and 80% with the fix.
+both versions in a small MIPS simulator over the band edges.
+
+**Tested in PCSX2** (`LMAST-test-seasonstatus.iso`, user's career saved
+to `Mcd001.ps2` as G002 and read off it with `ps2mc.py get`): with
+popularity and club status at 65,535 and 88,000 season tickets on sale
+at the start of 2025–2026, the save holds 72% sold. That is the
+formula's value with the fixed band (1.0); the retail 0.6 gives 43%. The
+same career's previous plan, set on the retail game (39,000 on sale),
+holds 98%, the formula's retail value.
 
 The money comes in at the start of the season through the event
 command that books income 3 (`SIMPRG.REL 0x121258`,

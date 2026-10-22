@@ -298,6 +298,9 @@ Each result is recorded in the doc named.
 - [x] `--mod harder-economy` (`LMAST-test-economy.iso`): tiered facility
       costs, tickets to £80 on both screens, ad budget to £10M, and a
       crowd at the new prices ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] `--mod season-status` (`LMAST-test-seasonstatus.iso`): a
+      top-status club sold 72% of 88,000 season tickets, the fixed
+      band's value (43% on retail) ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets))
 - [x] A card written by `ps2mc.py` (`LMAST-cardtest.ps2`): G000 loaded
       with its edited money, € 30,864, the other saves still loaded, and
       the browser listed the new folder (as "Corrupted Data", having no
