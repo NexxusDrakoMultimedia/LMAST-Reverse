@@ -28,11 +28,9 @@ item below.
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
    match AI's `fb::` classes and which class makes each call, a way in
    for these too.
-2. **Test in PCSX2: the LMASTER Mod camp and national-cup switches**
-   (section 7). `LMAST-test-camps-mes.iso` already has them: the camp
-   list's English towns, a keeper camp raising saving and catching,
-   Santiago's description, Canberra's last two clubs, and a national cup
-   final no longer on the year's last turn.
+2. **Test in PCSX2: the LMASTER Mod's keeper camp** (section 7).
+   `LMAST-test-camps-mes.iso` has it: a camp in Parma or Málaga should
+   raise the keepers' saving and catching.
 
 ## 1. Read: every file parsed and checked
 
@@ -261,10 +259,9 @@ Stage 6. See [`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod).
 Checks that only a person can make (see [`AGENTS.md`](AGENTS.md)). Each
 names the disc or the edit to build; the result goes into the doc.
 
-- [ ] The LMASTER Mod's camp switches on `LMAST-test-camps-mes.iso`: the
-      English camps' towns, a keeper camp (Parma) raising saving and
-      catching, Santiago's description, Canberra's last two clubs; needs
-      a career in its second season at least
+- [ ] `--mod camp-types` on `LMAST-test-camps-mes.iso`: a keeper camp
+      (Parma, or Málaga, which needs no popularity) raising saving and
+      catching; needs a career in its second season at least
       ([`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md))
 - [ ] A smaller first division (France at 18, from the Season tab) and
       two nations changed in one build; only England at 22 is tested

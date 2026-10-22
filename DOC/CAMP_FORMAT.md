@@ -161,8 +161,14 @@ both, apart from spellings (Nates → Nantes, Malaga → Málaga, La Coruna →
 La Coruña). `python SRC/camp.py fixcities` (and `--mod camp-cities`)
 moves the seven in both files.
 
-None of the four fixes has been tested in PCSX2 yet; all are on the test
-disc `LMAST-test-camps-mes.iso` ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
+**Tested in PCSX2** (user report, test disc `LMAST-test-camps-mes.iso`,
+a career in its second season): `camp-cities` shows Southampton,
+Blackburn and Sheffield on the England list, the three that need no
+popularity, in place of Basingstoke, Newport and Oakham; `camp-santiago`
+gives Santiago's camp its "The Chilean capital …" description; and
+`camp-clubs` lists Canberra's clubs as South Melbourne, Aichi, Fukuoka
+and Kanagawa. `camp-types` (a keeper camp raising saving and catching)
+is still to test ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
 
 ## Editing
 
