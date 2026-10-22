@@ -68,44 +68,63 @@ Practices 12–16 (combinations A–E) don't use their own rows: `0x159f28`
 reads my-team data `+0x489f` + (number − 12) and uses row 12 + (value −
 1) ÷ 6 when the value is 1–30, and nothing otherwise.
 
-**Empirical**, checked against the labels: the drills raise the
+**Empirical**, checked against the names: the drills raise the
 abilities their names say (shooting raises shot skill, acceleration
 training pace and acceleration, leadership leadership), and every row
-with negative fatigue is a rest, recovery or therapy menu. The
-exception is 13 of the individual drills, below.
+with negative fatigue is a rest, recovery or therapy menu. In PAL's
+European languages the names of drills 74–86 are one message early, below.
 
-#### Drills 74–86 train the drill before them (both releases)
+#### Drills 74–86: PAL's names are one early
 
-The in-game description of practice *n* is message 971 + *n* of category
-801 (1003 "Shot training." is practice 32, 1045 "Shot training." is 74,
-1055 "\"Cannon Shot\" training." is 84). The descriptions follow the
-labels' order, but rows 74–86 of table 1 don't:
+The name of practice *n* (29–138) is message 971 + *n* of category 801
+(`pwkGUtl_PlPracNo2MsgID`, SLES `0x245bd8`: *n* + `0x3cb`; below 29 the
+number itself). In the Japanese names (`801_0.mbb`, on both discs)
+practice 74 is ダミー "dummy", 75 is pinpoint shooting and 86 king of
+dribbling, and there is no jackknife. Every row of table 1 fits those
+names. PAL's European names (`801_1`–`6.mbb`; French, German, Italian
+and Spanish the same) are one message early, and 1057 (practice 86) holds
+an added "Jackknife":
 
-| Practice | Description | What its row trains |
-|---|---|---|
-| 74 pinpoint shooting | Shot training. | nothing (all zero, no fatigue) |
-| 75 velvet pass | Pass training. | shot skill and technique +15 (shooting) |
-| 76 technical dribbling | Dribble training | short and long pass, cross +10 (passing) |
-| 77 free kick attack | Set pieces training. | dribble pace and skill +15 (dribbling) |
-| 78 all-round attack | Train all aspects. | placekick +20, cross +10 (set pieces) |
-| 79 long shots | Long-range shot training. | +2 to +5 in most attacking abilities (all-round) |
-| 80 first-time shots | Direct shot training. | kick strength, shot skill +15 (long shots) |
-| 81 post play | Target man training. | shot technique +15, nerve +5 (first-time shots) |
-| 82 pull away | Train for the drifting run. | ball keeping +15, contact strength +10 (target man) |
-| 83 1-on-1 shooting | One-on-one finishing. | vision, acceleration +10 (the drifting run) |
-| 84 cannon shot | "Cannon Shot" training. | shot skill +20, technique +10 (finishing) |
-| 85 king of dribbling | "King of Dribble" training. | kick strength +15, shot technique +10 (cannon shot) |
-| 86 jackknife | "Jackknife" training. | dribble skill +20, dribble pace +10 (king of dribbling, or its own) |
+| Practice | Japanese name (`801_0`) | PAL English name (`801_1`) | What its row trains |
+|---|---|---|---|
+| 74 | ダミー dummy | Shot training. | nothing (all zero, no fatigue) |
+| 75 | ピンポイントシュート pinpoint shooting | Pass training. | shot skill and technique +15 |
+| 76 | ベルベットパス velvet pass | Dribble training | short and long pass, cross +10 |
+| 77 | テクニカルドリブル technical dribbling | Set pieces training. | dribble pace and skill +15 |
+| 78 | フリーキックオフェンス free kick attack | Train all aspects. | placekick +20, cross +10 |
+| 79 | オフェンス総合練習 all-round attack | Long-range shot training. | +2 to +5 in most attacking abilities |
+| 80 | ロングシュート long shots | Direct shot training. | kick strength, shot skill +15 |
+| 81 | ダイレクトシュート first-time shots | Target man training. | shot technique +15, nerve +5 |
+| 82 | ポストプレイ post play | Train for the drifting run. | ball keeping +15, contact strength +10 |
+| 83 | プルアウェイ pull away | One-on-one finishing. | vision, acceleration +10 |
+| 84 | 1対1シュート 1-on-1 shooting | "Cannon Shot" training. | shot skill +20, technique +10 |
+| 85 | キャノンシュート cannon shot | "King of Dribble" training. | kick strength +15, shot technique +10 |
+| 86 | キングオブドリブル king of dribbling | "Jackknife" training. | dribble skill +20, dribble pace +10 |
 
-From 87 (ball touch: ball keeping, trap and dribble skill +10) every row
-matches its description again. So the rows look shifted down by one, as
-if an empty row was put in at 74, and one drill's own values (85's or
-86's) are missing. The accessor reads row *n* − 29 with no offset
-(`0x15a070`), and the Japanese file has the same rows 74–86, so a player
-who picks pinpoint shooting trains nothing in both releases. `python
-SRC/training.py show DAT/PARAM/TRAINING_LIST.TBB practice` prints the
-rows; the descriptions are in `MESSAGE/MES.PAC` `801_1.mbb`. Not yet
-checked in game by picking one of these drills.
+From 87 (ball touch) the names agree again. No coach teaches drill 74 in
+either release (the drills a coach can teach, `+0x54` of the 3,000
+managers in `PBDATA_EU.PAC`, [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md):
+75 is listed 172 times, 76 352 times, ... 86 18 times, 74 never).
+Drills 52–138 are the ones coaches teach, so the dummy should never be
+offered (how the menu builds its list isn't traced). So the table and the
+coaches follow the Japanese numbering, and in PAL each drill 75–86 shows
+the next drill's name: the drill named "Pass training." trains shooting.
+The Japanese disc's English slot has the right numbering (1045 missing,
+1046 "Shoot" ... 1057 "King of Dribble").
+
+PAL's order is that of an older list of 13 drills with jackknife and no
+dummy: the developers' manager editor (`DEBUGPRG.REL 0x105b8`, both
+releases) and category 700 messages 8222–8234 (both releases; what reads
+them isn't traced).
+
+`python SRC/patch_disc.py patch <image> <out> --mod drill-names` moves
+messages 1045–1056 to 1046–1057 in `801_1`–`6.mbb` and their copies in
+`PRELOAD/SIMFILE1`–`6.PAC` (entry 28), so each drill shows its own
+name; the jackknife name goes to 1045, which is never shown, and the
+files keep their sizes ([`LMASTER_MOD.md`](LMASTER_MOD.md)). Not yet
+checked in game. `python SRC/training.py show DAT/PARAM/TRAINING_LIST.TBB
+practice` prints the rows; `python SRC/mbb.py dump DAT/MESSAGE/MES.PAC
+--cat 801` the names.
 
 ### Groups and staff (tables 2 and 9)
 
@@ -213,8 +232,9 @@ turn advances, not when "Conduct Training" is chosen (user report).
   per point, and an individual practice raised to +100 only 6–7 times
   what +10 gives ([Editing](#editing)); how condition, age, the coaches
   and the facilities change that isn't known.
-- Which drill's own values are missing from rows 74–86 (85's or 86's),
-  and what row 74 should hold ([above](#drills-7486-train-the-drill-before-them-both-releases)).
+- What reads category 700's drill list (messages 8222–8234, the older
+  order with jackknife), and whether PAL shows it anywhere
+  ([above](#drills-7486-pals-names-are-one-early)).
 - The names of the 87 camp types and 28 youth menus, and of the facility
   rows.
 - Whether anything reads columns 64–70 of the facility tables.

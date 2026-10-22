@@ -293,9 +293,9 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   disc its own saves. The LMASTER Mod's fixes (`--mod lmaster` for all of
   them, [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) are
   `sponsor-negotiation`, `rival-manager`, `national-cups`, `camp-types`,
-  `camp-cities`, `camp-santiago` and `camp-clubs`. `--rename` renames a
-  file outside `DATA.CVM`. Every patch of a whole image prints the
-  executable's PCSX2 CRC.
+  `camp-cities`, `camp-santiago`, `camp-clubs` and `drill-names`.
+  `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
+  image prints the executable's PCSX2 CRC.
 
 | Tool | Reads | Does |
 |---|---|---|

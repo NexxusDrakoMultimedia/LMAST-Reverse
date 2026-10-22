@@ -68,9 +68,10 @@ to the new last sector. Files outside DATA.CVM keep their size.
 
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
-camp-types, camp-cities, camp-santiago, camp-clubs, launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
-(sponsor-negotiation, rival-manager, national-cups, camp-types,
-camp-cities, camp-santiago, camp-clubs; DOC/LMASTER_MOD.md).
+camp-types, camp-cities, camp-santiago, camp-clubs, drill-names, launcher,
+mod-saves. --mod lmaster is the LMASTER Mod's fixes (sponsor-negotiation,
+rival-manager, national-cups, camp-types, camp-cities, camp-santiago,
+camp-clubs, drill-names; DOC/LMASTER_MOD.md).
 Each also works as a flag of its own (--skip-tutorial, ...). With
 switches and no targets, `patch <image> <out_image>` is enough.
 
@@ -121,6 +122,15 @@ CAMP_EXPLANE.TBB. camp-santiago keys Santiago's description in
 CAMP_EXPLANE.TBB to its camp's city (774, not 764), and camp-clubs (whole
 disc image only) makes the camp's clubs list (SIMPRG.REL 0x4c8f8) read all
 737 pairs of CAMP_LIST table 1, one instruction. See DOC/CAMP_FORMAT.md.
+
+drill-names gives drills 75-86 their own names in the European languages.
+PAL's names (MES.PAC category 801, message 971 + practice) are one
+message early and end with an added "Jackknife", so the drill named Pass
+training trained shooting. The names move one message later in
+801_1-6.mbb and their copies (entry 28 of PRELOAD/SIMFILE1-6.PAC); the
+jackknife name goes to 1045, the dummy drill 74 no coach teaches. A
+MES.PAC target gets the fix in its own bytes. The Japanese release has
+the right numbering and is left alone. See DOC/TRAINING_FORMAT.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -1575,6 +1585,64 @@ def plan_camp_clubs(f, img):
                 "camp-clubs: read all 737 camp club pairs")], []
 
 
+# --- the PAL drill names (DOC/TRAINING_FORMAT.md) ----------------------------------
+
+# Practice names are category 801 of MES.PAC (training.fix_drill_names).
+# Language slot n is also entry 28 of PRELOAD/SIMFILEn.PAC, which season
+# mode loads (SIMPRG list 0x214448).
+DRILL_LANGS = (1, 2, 3, 4, 5, 6)
+DRILL_PACKS = ["PRELOAD/SIMFILE%d.PAC" % n for n in DRILL_LANGS]
+
+
+def mes_entries(data):
+    """{name: (offset, size)} of MES.PAC's header in `data` (the header, or
+    the whole archive)."""
+    import pac
+    h = pac.BinPac(data[:struct.unpack_from("<I", data)[0]])
+    return {name.lower(): (off, size) for off, size, name, _ in h.entries}
+
+
+def target_drill_names(file, data):
+    """A MES.PAC target with the drill names fixed in its own 801 files."""
+    import training
+    if norm(file) != norm(MES_FILE):
+        return data
+    out = bytearray(data)
+    for name, (off, size) in mes_entries(data).items():
+        if name in {"%d_%d.mbb" % (training.NAME_CATEGORY, n) for n in DRILL_LANGS}:
+            new = training.fix_drill_names(data[off:off + size])
+            if new is not None:
+                out[off:off + size] = new
+    return bytes(out)
+
+
+def plan_drill_names(f, img, adopted=()):
+    """Jobs for --mod drill-names: the European names of drills 75-86 moved
+    one message later, in MES.PAC and the SIMFILE copies. A MES.PAC a
+    target writes (`adopted`) was fixed by target_drill_names, and its
+    --copies carry that to the SIMFILE packs."""
+    import training
+    if norm(MES_FILE) in adopted:
+        return [], ["note: drill-names: fixed the names in the target's %s" % MES_FILE]
+    why = "drill-names: each drill 75-86 shows its own name"
+    jobs, notes = [], []
+    e = img.entry(MES_FILE)
+    entries = mes_entries(read_at(f, img, e.path, 0, struct.unpack_from(
+        "<I", read_at(f, img, e.path, 0, 4))[0]))
+    for n, pack in zip(DRILL_LANGS, DRILL_PACKS):
+        name = "%d_%d.mbb" % (training.NAME_CATEGORY, n)
+        off, size = entries[name]
+        data = read_at(f, img, e.path, off, size)
+        new = training.fix_drill_names(data)
+        if new is None:
+            notes.append("note: %s#%s already has the drill names in the Japanese numbering"
+                         % (MES_FILE, name))
+            continue
+        jobs += diff_jobs(e.path, off, data, new, why)
+        jobs += pack_copy_jobs(f, img, pack, name, "%s#%s" % (MES_FILE, name), data, new, why)
+    return jobs, notes
+
+
 # --- the developer launcher (DOC/SQB_FORMAT.md#the-developer-launcher) --------
 
 # RootMainSeq.sqb runs Dummy.CheckLauncher (always 1) at 0x88 and at 0x98
@@ -1622,6 +1690,8 @@ SWITCHES = (
      "Training camps: Santiago's camp gets its description"),
     ("camp-clubs", plan_camp_clubs, [NEGO_FILE],
      "Training camps: Canberra's last two clubs appear in its list"),
+    ("drill-names", plan_drill_names, [MES_FILE] + DRILL_PACKS,
+     "Training: drills 75-86 show their own names (PAL's were one early, with a jackknife)"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -1638,11 +1708,13 @@ SWITCH_NAMES = [s[0] for s in SWITCHES]
 TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATION_FILE]),
                 "camp-types": (target_camp_types, [CAMP_LIST_FILE], []),
                 "camp-cities": (target_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE], []),
-                "camp-santiago": (target_camp_santiago, [CAMP_EXPLANE_FILE], [])}
+                "camp-santiago": (target_camp_santiago, [CAMP_EXPLANE_FILE], []),
+                "drill-names": (target_drill_names, [MES_FILE], DRILL_PACKS)}
 
 # Names --mod takes for several switches at once.
 SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
-                             "camp-types", "camp-cities", "camp-santiago", "camp-clubs")}
+                             "camp-types", "camp-cities", "camp-santiago", "camp-clubs",
+                             "drill-names")}
 
 
 def parse_mods(values):

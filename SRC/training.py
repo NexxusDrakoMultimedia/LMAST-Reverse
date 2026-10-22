@@ -44,6 +44,11 @@ the age for the decline tables' columns (16-40), else a number from 0. A
 column is an ability number or name, `fatigue` (64), or 65-70 for the
 equipment tables. `set` writes a same-size file for patch_disc.py, which
 also patches the copies (entry 10 of PRELOAD/SIMFILE0-6.PAC, --copies).
+
+Practice n's name is message 971 + n of MES.PAC category 801
+(pwkGUtl_PlPracNo2MsgID, SLES 0x245bd8). The rows of 74-86 follow the
+Japanese names (74 a dummy); PAL's European names are one message early,
+and fix_drill_names moves them (patch_disc.py --mod drill-names).
 """
 import os
 import struct
@@ -65,8 +70,12 @@ DECLINE_AGE_LIMIT = 41          # 0x15a144: only below 0x29
 POSITIONS = ("GK", "LSB", "RSB", "CB", "LWB", "RWB", "DM", "LSM", "RSM", "OM",
              "LWG", "RWG", "FW")
 
-# The 139 training menu items, DEBUGPRG.REL 0x105b8 (the developers'
-# manager editor), in PlPracNo order: (label, English).
+# The 139 training menu items in PlPracNo order: (label, English). The
+# labels are the developers' manager editor's (DEBUGPRG.REL 0x105b8),
+# except 74-86, which follow the game's own names (MES.PAC 801_0.mbb,
+# message 971 + n, both releases): 74 is a dummy and there is no
+# jackknife. The editor's list, like PAL's names, has pinpoint shooting
+# at 74 and jackknife at 86 (DOC/TRAINING_FORMAT.md).
 PRACTICE_NAMES = (
     ("3-4-3", "system 3-4-3"), ("3-5-2", "system 3-5-2"), ("3-6-1", "system 3-6-1"),
     ("4-3-3", "system 4-3-3"), ("4-4-2", "system 4-4-2"), ("4-5-1", "system 4-5-1"),
@@ -102,6 +111,7 @@ PRACTICE_NAMES = (
     ("スイーパー", "style: sweeper"), ("リベロ", "style: libero"),
     ("ストッパー", "style: stopper"), ("センターバック", "style: centre back"),
     ("オーソドックス", "style: orthodox GK"), ("リベロGK", "style: libero GK"),
+    ("ダミー", "dummy"),
     ("ピンポイントシュート", "pinpoint shooting"), ("ベルベットパス", "velvet pass"),
     ("テクニカルドリブル", "technical dribbling"),
     ("フリーキックオフェンス", "free kick attack"),
@@ -109,7 +119,7 @@ PRACTICE_NAMES = (
     ("ダイレクトシュート", "first-time shots"), ("ポストプレイ", "post play"),
     ("プルアウェイ", "pull away"), ("1対1シュート", "1-on-1 shooting"),
     ("キャノンシュート", "cannon shot"), ("キングオブドリブル", "king of dribbling"),
-    ("ジャックナイフ", "jackknife"), ("ボールタッチ", "ball touch"),
+    ("ボールタッチ", "ball touch"),
     ("ボールキープ", "ball keeping"), ("センタリング", "centring"),
     ("アーリークロス", "early cross"), ("ダイレクトクロス", "first-time cross"),
     ("トラップ", "trapping"), ("ハードタックル", "hard tackle"),
@@ -325,6 +335,50 @@ def encode_file(buf, end, raw, tr):
     if len(out) != len(buf):
         raise ValueError("rebuilt file is %d bytes, not %d" % (len(out), len(buf)))
     return out
+
+
+# --- the PAL drill names (patch_disc.py --mod drill-names) ---------------------
+
+# The name of practice n (29-138) is message 971 + n of category 801
+# (pwkGUtl_PlPracNo2MsgID, SLES 0x245bd8: n + 0x3cb). PAL's European
+# names for 74-86 are one message early: 1045 (practice 74, a dummy no
+# coach teaches) holds pinpoint shooting's name, 1056 king of dribbling's,
+# and 1057 (86, king of dribbling) an added jackknife. NAME_FIX holds that
+# last name in each language slot, which marks a retail file.
+NAME_CATEGORY, NAME_BASE = 801, 971
+NAME_FIRST, NAME_LAST = 74, 86
+NAME_FIX = {1: '"Jackknife" training.', 2: "Protéger le ballon",
+            3: "Innen-Außenriss-Training", 4: 'All. "Finte e controfinte".',
+            5: "Entrenar recorte.", 6: '"Jackknife" training.'}
+
+
+def fix_drill_names(data):
+    """An 801_<lang>.mbb (bytes) with messages 1045-1056 moved to 1046-1057,
+    so each drill 75-86 shows its own name; the jackknife name goes to 1045,
+    which is never shown, so the file keeps its size. None when the file
+    already has the Japanese numbering (no 1045, the Japanese release; or
+    the jackknife name at 1045)."""
+    import mbb
+    m = mbb.Mbb(data, "%d.mbb" % NAME_CATEGORY)
+    if m.category != NAME_CATEGORY or m.lang not in NAME_FIX:
+        raise ValueError("not a European %d_<lang>.mbb" % NAME_CATEGORY)
+    ids = [rid for rid, _ in m.records]
+    first, last = NAME_BASE + NAME_FIRST, NAME_BASE + NAME_LAST
+    if first not in ids:
+        return None
+    k = ids.index(first)
+    if ids[k:k + last - first + 1] != list(range(first, last + 1)):
+        raise ValueError("%s: messages %d-%d aren't in order" % (m.name, first, last))
+    texts = [s for _, s in m.records[k:k + last - first + 1]]
+    marker = mbb.encode(NAME_FIX[m.lang], m.lang)
+    if texts[0] == marker:
+        return None
+    if texts[-1] != marker:
+        raise ValueError("%d_%d.mbb: message %d isn't the retail jackknife name"
+                         % (m.category, m.lang, last))
+    for i, s in enumerate(texts[-1:] + texts[:-1]):
+        m.records[k + i] = (first + i, s)
+    return m.build(len(data))
 
 
 # --- commands ----------------------------------------------------------------
