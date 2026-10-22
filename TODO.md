@@ -295,10 +295,11 @@ names the disc or the edit to build; the result goes into the doc.
       abilities should show as written, and `pmplayer.py check` on the
       career's save should report no differences
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
-- [ ] A facility cost edit: `plrcommon.py set` a club-house or stadium
-      equipment cost, patched with `patch_disc.py --copies`; the facility
-      window should show the new cost × the business cycle, and building
-      it should book that under its payment type
+- [ ] A facility cost edit (`LMAST-test-facility.iso`: every build cost
+      set to (record + 1) × 120,000, club houses 1 and 2 built in 3 and 4
+      turns): the facility window should show the new cost × the
+      business cycle, and building it should take that from the money.
+      The costs shown also name each record
       ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
 
 ## 8. LMASTER Mod and other patches
