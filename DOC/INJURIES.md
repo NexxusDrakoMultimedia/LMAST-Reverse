@@ -91,6 +91,19 @@ for a match, padding and the start of the value table (kind 5 at 250,
 kind 7 at 244, kind 8 at 1). What `fcEuroRand_GetProbabilityTblNoAdd`
 makes of a row that doesn't add up to 100 hasn't been traced.
 
+`patch_disc.py --mod injury-row` (in `--mod lmaster`) clamps the row to
+10 inside `judgeKegaKind`'s own words (`0x21a08c`–`0x21a0a0`): the
+divide-by-zero trap after its `div` can't fire (the divisor is 100), and
+its compare of the practice number with −1 becomes `bltz` (the match
+passes −1, `SIMPRG.REL 0x163678`; practices pass their number,
+`0x21aac4`), which frees the room for `slti` and `movz`. Checked by
+running the old and new code in a small MIPS simulator for every
+fatigue 0–1000 at ages 20, 29, 30, 34, 35 and 40, for the match and two
+practices (18,018 cases): they pick the same row in every case except
+the six at age 35 or more with fatigue 1000, where row 11 becomes row
+10. Not checked in the game: it needs an injury to a player of 35 or
+more at full fatigue.
+
 ### The value table `0x532cf8`
 
 | Kind | Pairs (min–max) | Condition line when set |

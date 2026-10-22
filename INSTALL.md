@@ -138,7 +138,7 @@ The switches:
 
 | Switch | What it does |
 |---|---|
-| `--mod lmaster` | the LMASTER Mod's fixes: main sponsor negotiation, the rival's own manager, the World National Cup's results viewable, training camps that train their own type in their own towns, Santiago's camp description, Canberra's camp clubs, the drill names, 18-month injuries that can't come out as short as a light one, Virtua Pro Football edit players keeping their best play styles, and season tickets by club status ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) |
+| `--mod lmaster` | the LMASTER Mod's fixes: main sponsor negotiation, the rival's own manager, the World National Cup's results viewable, training camps that train their own type in their own towns, Santiago's camp description, Canberra's camp clubs, the drill names, 18-month injuries that can't come out as short as a light one, injuries to players of 35 and over at full fatigue picked from the right table, Virtua Pro Football edit players keeping their best play styles, and season tickets by club status ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) |
 | `--mod harder-economy` | dearer facilities (much dearer at the top), tickets up to £80, dearer advertising, and smaller late-game sponsor, TV and season-ticket income ([`ECONOMY.md`](DOC/ECONOMY.md)) |
 | `--mod league-balance` | league schedules where no club plays more than two games running at home or away |
 | `--mod-saves` | the modded disc's own save folders (above) |

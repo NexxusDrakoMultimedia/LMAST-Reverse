@@ -69,12 +69,12 @@ to the new last sector. Files outside DATA.CVM keep their size.
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
-drill-names, injury-value, vpf-styles, season-status, facility-tiers,
-wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand,
-launcher, mod-saves. --mod lmaster is the LMASTER Mod's fixes
-(sponsor-negotiation, rival-manager, national-cups, camp-types,
+drill-names, injury-value, injury-row, vpf-styles, season-status,
+facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
+season-demand, launcher, mod-saves. --mod lmaster is the LMASTER Mod's
+fixes (sponsor-negotiation, rival-manager, national-cups, camp-types,
 camp-cities, camp-santiago, camp-clubs, drill-names, injury-value,
-vpf-styles, season-status; DOC/LMASTER_MOD.md).
+injury-row, vpf-styles, season-status; DOC/LMASTER_MOD.md).
 league-balance and the harder economy (--mod harder-economy:
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand) are the mod's improvements, so
@@ -150,7 +150,10 @@ the right numbering and is left alone. See DOC/TRAINING_FORMAT.md.
 
 injury-value (whole disc image only) sets the first minimum of kind-6
 injuries in the value table (SLES 0x532d70) from 1600 to 16001, where the
-kinds before it end; see DOC/INJURIES.md. vpf-styles (whole disc image
+kinds before it end. injury-row (whole disc image only) clamps
+judgeKegaKind's table row to 10 (SLES 0x21a08c, 6 words), so a player of
+35 or more at full fatigue no longer reads past the injury tables; see
+DOC/INJURIES.md. vpf-styles (whole disc image
 only) fixes the Virtua Pro Football import's play-style sort: its compare
 (DLL/SAVEPRG.REL 0x3df00) subtracted pointers, so only styles 1-4 could
 come in; 4 words make it compare the ratings, best first (through the
@@ -1771,6 +1774,37 @@ def plan_injury_value(f, img):
     return word_jobs(f, img, "injury-value", words)
 
 
+# judgeKegaKind (SLES 0x21a068) picks an injury's kind from a row of the
+# match (0x532c90) or practice (0x532c28) table, row = (fatigue + 50 at
+# ages 30-34, + 100 at 35 and over) / 100. Fatigue tops out at 1000, so an
+# older player at full fatigue gets row 11 of tables with 11 rows (0-10)
+# and reads the bytes after them. The fix clamps the row to 10 in the same
+# words: the divide-by-zero trap after the div can't fire (the divisor is
+# 100), and the compare of the practice number with -1 becomes bltz (the
+# match passes -1, practices 0 and up), which frees $v1's -1.
+INJURY_ROW_AT = 0x21a08c
+INJURY_ROW_OLD = (0x2403ffff,       # addiu $v1, $zero, -1
+                  0x00a2001a,       # div   $a1, $v0
+                  0x50400001,       # beql  $v0, $zero, +1 (divide-by-zero trap)
+                  0x000001cd,       # break 7
+                  0x00002812,       # mflo  $a1
+                  0x10c30005)       # beq   $a2, $v1, 0x21a0b8
+INJURY_ROW_NEW = (0x00a2001a,       # div   $a1, $v0
+                  0x2402000a,       # addiu $v0, $zero, 10
+                  0x00002812,       # mflo  $a1             row
+                  0x28a1000b,       # slti  $at, $a1, 11
+                  0x0041280a,       # movz  $a1, $v0, $at   row 11 -> 10
+                  0x04c00005)       # bltz  $a2, 0x21a0b8   the match table
+
+
+def plan_injury_row(f, img):
+    """Jobs for --mod injury-row."""
+    words = [(SLES_FILE, INJURY_ROW_AT - 0xff000,
+              struct.pack("<6I", *INJURY_ROW_OLD), struct.pack("<6I", *INJURY_ROW_NEW),
+              "%s 0x%x (injury kind row clamped to 10)" % (SLES_FILE, INJURY_ROW_AT))]
+    return word_jobs(f, img, "injury-row", words)
+
+
 # --- Virtua Pro Football play styles (DOC/PMPLAYER_FORMAT.md#the-record) --------
 
 # The edit-player import (SAVEPRG.REL 0x3df10) sorts pointers to the 22
@@ -2100,6 +2134,9 @@ SWITCHES = (
     ("injury-value", plan_injury_value, [SLES_FILE],
      "Injuries: an 18-month injury can't come out as short as a light one "
      "(kind 6's value 1600 -> 16001)"),
+    ("injury-row", plan_injury_row, [SLES_FILE],
+     "Injuries: a player of 35 or more at full fatigue reads the last row of the "
+     "injury tables, not the bytes after them"),
     ("vpf-styles", plan_vpf_styles, [SAVE_FILE],
      "Virtua Pro Football import: an edit player's best play styles come in "
      "(the import's sort never sorted)"),
@@ -2142,7 +2179,8 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATIO
 # Names --mod takes for several switches at once.
 SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
                              "camp-types", "camp-cities", "camp-santiago", "camp-clubs",
-                             "drill-names", "injury-value", "vpf-styles", "season-status"),
+                             "drill-names", "injury-value", "injury-row", "vpf-styles",
+                             "season-status"),
                  "harder-economy": ("facility-tiers", "wider-tickets", "dearer-ads",
                                     "sponsor-fees", "tv-fees", "season-demand")}
 

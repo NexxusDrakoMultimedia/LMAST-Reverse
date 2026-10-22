@@ -8,7 +8,7 @@ restoration is a separate `patch_disc.py` switch first, so it can be
 built and tested in PCSX2 on its own. Switches are named, and
 `--mod lmaster` turns on the mod's fixes together (sponsor-negotiation,
 rival-manager, national-cups, camp-types, camp-cities, camp-santiago,
-camp-clubs, drill-names, injury-value, vpf-styles, season-status); the editor's Build window has a box for
+camp-clubs, drill-names, injury-value, injury-row, vpf-styles, season-status); the editor's Build window has a box for
 each. A test disc with all of them:
 
 ```bash
@@ -34,7 +34,7 @@ Rules for an entry:
 | Main sponsor negotiation | cut (stub check) | [`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md) | `--mod sponsor-negotiation` | restored, tested in PCSX2 |
 | Debug menu | developers' switch | `RootMainSeq.sqb` | `--mod launcher` | works, tested in PCSX2. A tool, not part of the mod |
 | Kind-6 injuries starting at 1600 | broken data (dropped digit?), in both releases | [`INJURIES.md`](INJURIES.md#the-value-table-0x532cf8): `0x532d70` holds 1600 where 16001 fits | `--mod injury-value`: the u16 at `0x532d70` → 16001 | built; how `calcKegav` uses the table is confirmed, but the effect isn't checked in the game (kind-6 injuries are rare and random) |
-| Injury rows past fatigue 1000 | bug (out-of-bounds read) | [`INJURIES.md`](INJURIES.md#the-kind-tables): row 11 for ages 35+ | clamp the row in `judgeKegaKind` (`0x21a068`), a few instructions | candidate. Rare |
+| Injury rows past fatigue 1000 | bug (out-of-bounds read) | [`INJURIES.md`](INJURIES.md#the-kind-tables): row 11 for ages 35+ | `--mod injury-row`: the row clamped to 10 in `judgeKegaKind`'s own words (`0x21a08c`, 6 words) | built; checked in a MIPS simulator over 18,018 cases (only the six out-of-bounds ones change), not in the game (rare) |
 | "Two months" and "nine months" injury lines | cut before both releases (the Japanese code is the same) | [`INJURIES.md`](INJURIES.md#the-condition-line) | new thresholds in `plPinfo_KegaRecoverDaysChno` and text in four languages | needs a decision on thresholds |
 | Training camps train as the next camp type | bug (off by one), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#two-bugs): `CAMP_LIST` numbers the types 1–87, the training table and the theme check read them as 0–86; Parma, a goalkeeper camp, trains no keeping | `--mod camp-types`: every type lowered by one in `CAMP_LIST.TBB` | tested in PCSX2: one keeper camp raised all three keepers' saving, aerial ability and GK aptitude most (559–617 experience), then catching and rushing out (444–488), and left pace and acceleration alone, the fixed row's pattern ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)) |
 | Seven English camps in the wrong town | PAL left the camp tables on the Japanese city numbers when it renumbered the English cities | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#seven-english-camps-in-the-wrong-town-pal): Liverpool's camp is in Scunthorpe, Manchester's in West London, and five more | `--mod camp-cities`: the seven city ids in `CAMP_LIST.TBB` and `CAMP_EXPLANE.TBB` | tested in PCSX2 (user report): with low popularity the England list shows Southampton, Blackburn and Sheffield, not Basingstoke, Newport and Oakham. The other four need more popularity (Liverpool a sponsor) and weren't seen; the switch moves them the same way |

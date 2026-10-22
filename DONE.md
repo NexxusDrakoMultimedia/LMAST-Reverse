@@ -352,3 +352,10 @@ Each result is recorded in the doc named.
       leagues at their own size, to no more than two games running at one
       venue. Tested in PCSX2: a new England career's league games
       alternate `AHAH…` ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] `--mod injury-value` and `--mod injury-row` (in `lmaster`): kind
+      6's minimum 1600 -> 16001, and the injury table row clamped to 10;
+      checked from the code and, for the row, in a MIPS simulator
+      ([`INJURIES.md`](DOC/INJURIES.md#the-kind-tables))
+- [x] `--mod vpf-styles` (in `lmaster`): Virtua Pro Football edit players
+      keep their best play styles, "none" kept out; tested in PCSX2
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record))

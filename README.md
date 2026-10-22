@@ -303,7 +303,7 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   them, [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) are
   `sponsor-negotiation`, `rival-manager`, `national-cups`, `camp-types`,
   `camp-cities`, `camp-santiago`, `camp-clubs`, `drill-names`,
-  `injury-value`, `vpf-styles` and `season-status`. Its
+  `injury-value`, `injury-row`, `vpf-styles` and `season-status`. Its
   improvements stay out of `lmaster`: `league-balance` rebuilds the
   league schedules that send a club to one venue up to 9 times running,
   and `--mod harder-economy` is `facility-tiers` (dearer facilities,

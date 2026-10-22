@@ -290,8 +290,7 @@ names the disc or the edit to build; the result goes into the doc.
 Cut or broken content to restore, each as a `patch_disc.py` switch
 tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
-- [ ] Candidates: the injury kind row past fatigue 1000, the short
-      `EDIT_EMBLEM` tables 93/101/105
+- [ ] Candidates: the short `EDIT_EMBLEM` tables 93/101/105
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status)). The "two
       months"/"nine months" injury lines need thresholds chosen first
 - [ ] Improvement: a harder economy, built as `--mod harder-economy`
