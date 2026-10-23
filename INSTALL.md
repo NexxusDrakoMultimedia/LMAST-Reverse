@@ -11,8 +11,9 @@ the [README](README.md) covers setting the project up.
 ## What you need
 
 - The PAL disc of *Let's Make a Soccer Team!* (SLES-54151, v1.01), as
-  an uncompressed `.iso` that matches the Redump dump
-  ([disc 12334](https://redump.info/disc/12334/)).
+  an `.iso` that matches the Redump dump
+  ([disc 12334](https://redump.info/disc/12334/)), or a CSO/ZSO of it if
+  you use this project's tools (below).
 - PCSX2.
 - An xdelta patcher, such as Delta Patcher or xdelta UI.
 - The mod's patch (`.xdelta`).
@@ -37,10 +38,20 @@ Any hashing tool works. With this project's tools:
 python SRC/extract_disc.py verify "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso"
 ```
 
-**A compressed image (CSO, CHD) won't patch.** Delta Patcher stops with
-"The file you are trying to patch is not the right one". Decompress it
-to `.iso` first, check the hashes, then patch. You can compress the
-patched image again afterwards.
+**A compressed image (CSO, CHD) won't patch in Delta Patcher.** It stops
+with "The file you are trying to patch is not the right one". Decompress
+it to `.iso` first, check the hashes, then patch. You can compress the
+patched image again afterwards. This project's tools read a CSO or ZSO
+directly, so you can skip that step: check it, then apply the patch to
+it, and you get a patched `.iso`:
+
+```bash
+python SRC/cso.py check disc.cso
+python SRC/vcdiff.py apply disc.cso mod.xdelta modded.iso
+```
+
+A CHD has to be converted to `.iso` first either way (for example with
+`chdman extractcd`).
 
 ## 2. Apply the patch
 

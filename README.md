@@ -334,7 +334,8 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`vcdiff.py`](SRC/vcdiff.py) | two disc images, or an image and a patch | makes and applies xdelta patches (VCDIFF, RFC 3284) in plain Python, for sharing a mod against the Redump image |
+| [`vcdiff.py`](SRC/vcdiff.py) | two disc images, or an image and a patch | makes and applies xdelta patches (VCDIFF, RFC 3284) in plain Python, for sharing a mod against the Redump image; applies patches xdelta3 made, with its LZMA or DJW secondary compression; images may be CSO or ZSO |
+| [`cso.py`](SRC/cso.py) | a CSO or ZSO image | reads compressed disc images (CSO v0–v2, ZSO; deflate and LZ4) for `vcdiff.py` and `patch_disc.py`; `info` checks the index, `check` gives the ISO's SHA-1 and whether it is the Redump dump, `extract` writes the ISO |
 
 ```bash
 python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
@@ -473,7 +474,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `sounddat.py` | `sles_disasm.py` for `music` |
 | `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables; `teaminit.py` for the salary limits |
-| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches), `training.py` (`drill-names`), `plrcommon.py` (`facility-tiers`) |
+| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `cso.py` (a CSO or ZSO input), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches), `training.py` (`drill-names`), `plrcommon.py` (`facility-tiers`) |
 | `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `training.py` (Training), `camp.py` (Camps), `tour.py` (Tours), `plrcommon.py` (Facilities), `formset.py` (Tactics), `uniform.py` (Kits), `mbb.py` (Text), `sqb.py` (Comments); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `ps2mc.py` (card files), `pbdata.py` and `initteam.py` for names |
 | `pmplayer.py` | `save.py` (cipher, CRC, and career saves for `check`), `pbdata.py` for field names, `gamever.py` |

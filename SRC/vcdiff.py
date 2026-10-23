@@ -13,10 +13,14 @@ xdelta UI, DeltaPatcher, open-vcdiff) can apply it. A few changed bytes in
 a 3.5 GB image make a patch of about 10 KB (one COPY per unchanged
 window: the Terry mod's is 10,642 bytes).
 
-`apply` decodes any VCDIFF file without secondary compression or a custom
-code table: all of the default code table, the address cache, RUN and
-overlapping COPY, xdelta3's application header, and its per-window
-Adler-32 (checked). See DOC/REBUILD.md.
+`apply` decodes any VCDIFF file without a custom code table: all of the
+default code table, the address cache, RUN and overlapping COPY, source
+and target (VCD_TARGET) windows, xdelta3's application header and its
+per-window Adler-32 (checked), and xdelta3's secondary compression of the
+sections: LZMA (xdelta3's default since 3.1, through the lzma module) and
+DJW (decoded here). FGK, which xdelta3 3.2 no longer builds, is refused.
+Tested with patches from xdelta3 3.1.0 and 3.2.2 (DOC/REBUILD.md). The
+source, and make's inputs, may be CSO or ZSO images (cso.py).
 
 Usage:
     python vcdiff.py make  <source> <target> <out.xdelta>
@@ -33,6 +37,8 @@ import io
 import os
 import sys
 import zlib
+
+import cso
 
 MAGIC = b"\xd6\xc3\xc4\x00"
 VCD_DECOMPRESS, VCD_CODETABLE, VCD_APPHEADER = 0x01, 0x02, 0x04    # Hdr_Indicator
@@ -202,6 +208,192 @@ def _size(f):
     return n
 
 
+# --- secondary compression (xdelta3's own) -----------------------------------
+# xdelta3 can compress each window's data, instruction and address sections
+# (Delta_Indicator bits VCD_DATACOMP 1, VCD_INSTCOMP 2, VCD_ADDRCOMP 4) with
+# the compressor named by the byte after Hdr_Indicator: 1 DJW, 2 LZMA (the
+# default since xdelta3 3.1), 16 FGK. A compressed section is its decoded
+# size as a VCDIFF integer, then the coded bytes (xdelta3-second.h,
+# xd3_decode_secondary). Written from xdelta3 3.1.0 and 3.2.2's sources,
+# whose coders are the same.
+
+SEC_DJW, SEC_LZMA, SEC_FGK = 1, 2, 16
+SECTION_BITS = (1, 2, 4)                # data, inst, addr
+DJW_MAX_CODELEN, DJW_TOTAL_CODES = 20, 22
+DJW_EXTRA_12OFFSET, DJW_EXTRA_CODE_BITS = 7, 4
+DJW_GROUP_BITS, DJW_SECTORSZ_BITS, DJW_SECTORSZ_MULT = 3, 5, 5
+DJW_MAX_CLCLEN, DJW_CLCLEN_BITS, DJW_MAX_GBCLEN, DJW_GBCLEN_BITS = 15, 4, 7, 3
+# The code-length MTF starts as 0, the basic lengths, then the extra ones
+# (djw_init_clen_mtf_1_2).
+DJW_CLEN_MTF = (0, 4, 5, 6, 7, 8, 9, 10, 3, 11, 2, 12, 13, 1, 14, 15, 16, 17, 18, 19, 20)
+ALPHABET = 256
+
+
+class Bits:
+    """xdelta3's bit reader: bits from the low end of each byte, values most
+    significant bit first (xd3_decode_bits)."""
+    def __init__(self, data):
+        self.data, self.pos, self.byte, self.mask = data, 0, 0, 0x100
+
+    def bit(self):
+        if self.mask == 0x100:
+            if self.pos >= len(self.data):
+                raise ValueError("DJW: section ends too early")
+            self.byte, self.mask = self.data[self.pos], 1
+            self.pos += 1
+        b = 1 if self.byte & self.mask else 0
+        self.mask <<= 1
+        return b
+
+    def bits(self, n):
+        v = 0
+        for _ in range(n):
+            v = (v << 1) | self.bit()
+        return v
+
+
+class HuffDecoder:
+    """A canonical prefix decoder from code lengths (djw_build_decoder)."""
+    def __init__(self, clen, abs_max):
+        nr = [0] * (abs_max + 2)
+        for c in clen:
+            if c > abs_max:
+                raise ValueError("DJW: code length out of range")
+            nr[c] += 1
+        lens = [i for i in range(1, abs_max + 1) if nr[i]]
+        if not lens:
+            raise ValueError("DJW: empty code")
+        self.min, self.max = lens[0], lens[-1]
+        base, limit, tmp = {}, {}, {}
+        tmp[self.min] = base[self.min] = 0
+        limit[self.min] = nr[self.min] - 1
+        for i in range(self.min + 1, self.max + 1):
+            last = (limit[i - 1] + 1) << 1
+            tmp[i] = tmp[i - 1] + nr[i - 1]
+            limit[i] = last + nr[i] - 1
+            base[i] = last - tmp[i]
+        self.base, self.limit = base, limit
+        self.inorder = [0] * len(clen)
+        for sym, c in enumerate(clen):
+            if c:
+                self.inorder[tmp[c]] = sym
+                tmp[c] += 1
+
+    def symbol(self, bits, max_sym):
+        code = n = 0
+        while True:
+            if n == self.max:
+                raise ValueError("DJW: invalid code")
+            n += 1
+            code = (code << 1) | bits.bit()
+            if n >= self.min and code <= self.limit[n]:
+                break
+        off = code - self.base[n]
+        if off < 0 or off > max_sym:
+            raise ValueError("DJW: invalid code")
+        return self.inorder[off]
+
+
+def djw_decode_1_2(bits, dec, mtf, count, skip=0, values=None):
+    """Move-to-front values with 1-2 coded runs (djw_decode_1_2): symbols 0
+    and 1 are run digits, others index the MTF list less one."""
+    values = values if values is not None else []
+    rep = sel = shift = 0
+    while len(values) < count:
+        n = len(values)
+        if skip and n >= skip and values[n - skip] == 0:
+            values.append(0)
+        elif rep:
+            values.append(mtf[0])
+            rep -= 1
+        elif sel:
+            sym = mtf.pop(sel)
+            mtf.insert(0, sym)
+            values.append(sym)
+            sel = 0
+        else:
+            s = dec.symbol(bits, DJW_TOTAL_CODES)
+            if s <= 1:
+                rep = (s + 1) << shift
+                shift += 1
+            else:
+                sel = s - 1
+                shift = 0
+    if rep:
+        raise ValueError("DJW: invalid repeat code")
+    return values
+
+
+def djw_decode(data, size):
+    """One DJW-coded section (xd3_decode_huff): Huffman tables per group of
+    sectors, their code lengths themselves Huffman and MTF coded."""
+    bits = Bits(data)
+    groups = bits.bits(DJW_GROUP_BITS) + 1
+    if groups > 1:
+        sector = (bits.bits(DJW_SECTORSZ_BITS) + 1) * DJW_SECTORSZ_MULT
+    else:
+        sector = size
+    sectors = 1 + (size - 1) // sector
+    # The code-length code: 7 + a 4-bit count of lengths, 4 bits each.
+    n = bits.bits(DJW_EXTRA_CODE_BITS) + DJW_EXTRA_12OFFSET
+    cl_clen = [bits.bits(DJW_CLCLEN_BITS) for _ in range(n)] + [0] * (DJW_TOTAL_CODES - n)
+    cl_dec = HuffDecoder(cl_clen, DJW_MAX_CLCLEN)
+    clen = djw_decode_1_2(bits, cl_dec, list(DJW_CLEN_MTF), ALPHABET * groups, ALPHABET)
+    decs = [HuffDecoder(clen[g * ALPHABET:(g + 1) * ALPHABET], DJW_MAX_CODELEN)
+            for g in range(groups)]
+    if groups > 1:
+        sel_clen = [bits.bits(DJW_GBCLEN_BITS) for _ in range(groups + 1)]
+        sel_dec = HuffDecoder(sel_clen, DJW_MAX_GBCLEN)
+        selectors = djw_decode_1_2(bits, sel_dec, list(range(groups + 1)), sectors)
+    else:
+        selectors = [0]
+    out = bytearray()
+    for c in range(sectors):
+        g = selectors[c]
+        if g >= groups:
+            raise ValueError("DJW: invalid group")
+        dec = decs[g]
+        for _ in range(min(sector, size - len(out))):
+            out.append(dec.symbol(bits, ALPHABET))
+    if bits.pos != len(data):
+        raise ValueError("DJW: unused input at the end of a section")
+    return bytes(out)
+
+
+class Secondary:
+    """The secondary decompressor of one patch. LZMA keeps one xz stream per
+    section kind for the whole file, flushed at the end of each window
+    (xdelta3-lzma.h: one stream encoder, LZMA_SYNC_FLUSH), so its state
+    carries from window to window."""
+    NAMES = {SEC_DJW: "DJW", SEC_LZMA: "LZMA", SEC_FGK: "FGK"}
+
+    def __init__(self, sec_id):
+        if sec_id not in (SEC_DJW, SEC_LZMA):
+            raise ValueError("secondary compression %s is not supported; ask for the patch "
+                             "made with xdelta3 -S lzma or -S none"
+                             % self.NAMES.get(sec_id, "id %d" % sec_id))
+        self.id = sec_id
+        self.lzma = [None, None, None]
+
+    def decode(self, kind, section):
+        r = Reader(section)
+        size = r.int()
+        coded = section[r.pos:]
+        if size == 0:
+            raise ValueError("secondary section with no output")
+        if self.id == SEC_DJW:
+            out = djw_decode(coded, size)
+        else:
+            import lzma
+            if self.lzma[kind] is None:
+                self.lzma[kind] = lzma.LZMADecompressor(format=lzma.FORMAT_XZ)
+            out = self.lzma[kind].decompress(coded)
+        if len(out) != size:
+            raise ValueError("secondary section decoded to %d bytes, expected %d"
+                             % (len(out), size))
+        return out
+
+
 # --- decoder -----------------------------------------------------------------
 
 class Window:
@@ -217,10 +409,11 @@ def parse(patch):
         raise ValueError("not a VCDIFF file")
     r = Reader(patch, 4)
     hdr = r.byte()
-    info = {"app_header": b""}
+    info = {"app_header": b"", "secondary": None}
+    secondary = None
     if hdr & VCD_DECOMPRESS:
-        raise ValueError("secondary compression (id %d) is not supported; make the patch "
-                         "with xdelta3 -S none" % r.byte())
+        secondary = Secondary(r.byte())
+        info["secondary"] = Secondary.NAMES[secondary.id]
     if hdr & VCD_CODETABLE:
         raise ValueError("custom code tables are not supported")
     if hdr & VCD_APPHEADER:
@@ -229,22 +422,27 @@ def parse(patch):
     while r.pos < len(patch):
         ind = r.byte()
         seg_len = seg_pos = 0
+        if ind & VCD_SOURCE and ind & VCD_TARGET:
+            raise ValueError("window with both VCD_SOURCE and VCD_TARGET")
         if ind & (VCD_SOURCE | VCD_TARGET):
-            if ind & VCD_TARGET:
-                raise ValueError("VCD_TARGET windows are not supported")
             seg_len, seg_pos = r.int(), r.int()
         delta_len = r.int()
         end = r.pos + delta_len
         tgt_len = r.int()
-        if r.byte():
-            raise ValueError("compressed delta sections are not supported")
+        compressed = r.byte()
+        if compressed and secondary is None:
+            raise ValueError("compressed delta sections but no secondary compressor")
         dl, il, al = r.int(), r.int(), r.int()
         checksum = None
         if ind & VCD_ADLER32:
             checksum = int.from_bytes(r.take(4), "big")
-        data, inst, addr = r.take(dl), r.take(il), r.take(al)
+        sections = [r.take(dl), r.take(il), r.take(al)]
         if r.pos != end:
             raise ValueError("window length mismatch")
+        for kind, bit in enumerate(SECTION_BITS):
+            if compressed & bit:
+                sections[kind] = secondary.decode(kind, sections[kind])
+        data, inst, addr = sections
         windows.append(Window(ind, seg_len, seg_pos, tgt_len, data, inst, addr, checksum))
     return info, windows
 
@@ -299,15 +497,26 @@ def decode_window(w, segment):
 
 
 def decode(src_file, patch, out_file, progress=None):
-    """Apply a VCDIFF to src_file; return (source SHA-1 of the bytes used is
-    not meaningful, so) the output SHA-1."""
+    """Apply a VCDIFF to src_file (None for a patch made without one);
+    return the output SHA-1. A VCD_TARGET window copies from what is already
+    written, so out_file must be readable too ("w+b")."""
     _, windows = parse(patch)
     h = hashlib.sha1()
     total = sum(w.tgt_len for w in windows)
     done = 0
     for w in windows:
-        src_file.seek(w.seg_pos)
-        segment = src_file.read(w.seg_len)
+        segment = b""
+        if w.indicator & VCD_TARGET:
+            if w.seg_pos + w.seg_len > done:
+                raise ValueError("VCD_TARGET window reads past the output so far")
+            out_file.seek(w.seg_pos)
+            segment = out_file.read(w.seg_len)
+            out_file.seek(done)
+        elif w.indicator & VCD_SOURCE:
+            if src_file is None:
+                raise ValueError("this patch needs a source file")
+            src_file.seek(w.seg_pos)
+            segment = src_file.read(w.seg_len)
         if len(segment) != w.seg_len:
             raise ValueError("source file is too short for this patch")
         out = decode_window(w, segment)
@@ -347,7 +556,7 @@ def cmd_make(src, tgt, out):
     if os.path.abspath(out) in (os.path.abspath(src), os.path.abspath(tgt)):
         raise SystemExit("the output would overwrite an input")
     p = Progress("Comparing %s with %s:" % (os.path.basename(tgt), os.path.basename(src)))
-    with open(src, "rb") as fs, open(tgt, "rb") as ft, open(out, "wb") as fo:
+    with cso.open_image(src) as fs, cso.open_image(tgt) as ft, open(out, "wb") as fo:
         s_sha, t_sha = encode(fs, ft, fo, p)
     p.end()
     print("%s: %d bytes" % (out, os.path.getsize(out)))
@@ -363,10 +572,29 @@ def cmd_apply(src, patch_path, out):
     with open(patch_path, "rb") as f:
         patch = f.read()
     p = Progress("Applying %s:" % os.path.basename(patch_path))
-    with open(src, "rb") as fs, open(out, "wb") as fo:
+    with cso.open_image(src) as fs, open(out, "w+b") as fo:
         sha = decode(fs, patch, fo, p)
     p.end()
     print("%s: %d bytes, SHA-1 %s" % (out, os.path.getsize(out), sha))
+
+
+def app_header_files(app):
+    """[(name, BLAKE3 hex or None)] for the target and source in xdelta3's
+    application header, "target/comp/source/comp"; xdelta3 3.2's armor
+    mode (on by default) adds "#<64 hex digits>" to each name. Python has no
+    BLAKE3, so the digests are shown, not checked."""
+    if not app:
+        return []
+    text = app.decode("utf-8", "replace")
+    parts = text.split("/")
+    out = []
+    for i in (0, 2):
+        if i < len(parts) and parts[i]:
+            name, _, digest = parts[i].rpartition("#")
+            if not name or len(digest) != 64:
+                name, digest = parts[i], None
+            out.append((name, digest))
+    return out
 
 
 def cmd_info(patch_path):
@@ -377,7 +605,9 @@ def cmd_info(patch_path):
     adds = sum(len(w.data) for w in windows)
     print("%s: %d bytes, %d windows, target %d bytes, %d bytes of new data%s" % (
         patch_path, len(patch), len(windows), total, adds,
-        ", app header %r" % info["app_header"] if info["app_header"] else ""))
+        ", secondary compression %s" % info["secondary"] if info["secondary"] else ""))
+    for role, (name, digest) in zip(("target", "source"), app_header_files(info["app_header"])):
+        print("  %s: %s%s" % (role, name, "  BLAKE3 %s" % digest if digest else ""))
     changed = [(w.seg_pos, len(w.data)) for w in windows if w.data]
     for pos, n in changed[:20]:
         print("  window at %#x: %d new bytes" % (pos, n))
@@ -386,7 +616,7 @@ def cmd_info(patch_path):
 
 
 def cmd_roundtrip(src, tgt):
-    with open(src, "rb") as fs, open(tgt, "rb") as ft:
+    with cso.open_image(src) as fs, cso.open_image(tgt) as ft:
         buf = io.BytesIO()
         s_sha, t_sha = encode(fs, ft, buf)
         out = io.BytesIO()

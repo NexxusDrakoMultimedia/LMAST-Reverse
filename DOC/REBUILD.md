@@ -422,12 +422,28 @@ application header, and no checksum. That is the plainest RFC 3284, which
 any decoder should accept. A target longer than the source gets windows
 without a source segment for the extra bytes.
 
-**How `apply` decodes.** It handles any VCDIFF without secondary
-compression or a custom code table: the whole default code table
-(including the paired instructions), the NEAR/SAME address cache, RUN,
-COPYs that overlap their own output, xdelta3's application header, and
-xdelta3's per-window Adler-32, which is checked. Patches made by
-`xdelta3 -S none` should therefore apply too.
+**How `apply` decodes.** It handles any VCDIFF without a custom code
+table: the whole default code table (including the paired instructions),
+the NEAR/SAME address cache, RUN, COPYs that overlap their own output,
+source and target (`VCD_TARGET`) windows, patches made without a source,
+xdelta3's application header, and xdelta3's per-window Adler-32, which is
+checked. It also decodes xdelta3's **secondary compression**, which
+compresses each window's data, instruction and address sections (the
+Delta_Indicator bits 1, 2 and 4) with the coder named by the byte after
+the header indicator:
+
+| Id | Coder | Support |
+|---|---|---|
+| 2 | LZMA, **xdelta3's default since 3.1** | Python's `lzma`. xdelta3 keeps one xz stream per section kind for the whole patch and flushes it at the end of each window (`xdelta3-lzma.h`), so `apply` keeps three decompressors from window to window |
+| 1 | DJW (`-S djw`, `-S djw7`–`djw9` for several tables) | decoded in Python: per-group Huffman tables whose code lengths are themselves MTF and 1-2 run coded, and MTF-coded group selectors (`xdelta3-djw.h`) |
+| 16 | FGK (`-S fgk`) | refused with a message; xdelta3 3.2 no longer builds it |
+
+Each compressed section starts with its decoded size as a VCDIFF integer
+(`xd3_decode_secondary`). Written from the xdelta3 3.1.0 and 3.2.2
+sources, whose coders are the same token for token. xdelta3 3.2's
+application header adds an "armor" BLAKE3 hash of the target and source
+(`name#<64 hex>`, `xdelta3-main.h`); Python has no BLAKE3, so `info`
+shows them and doesn't check them.
 
 **Tested:**
 - The Terry mod (two files, 56 changed bytes): a 10,642-byte patch, 423
@@ -442,14 +458,61 @@ xdelta3's per-window Adler-32, which is checked. Patches made by
 **Confirmed with xdelta3:** Delta Patcher (an xdelta3 front end) applied
 the Terry patch to the Redump image. Its output had SHA-1
 `69a9b5fef73dc2099fe5900a2ca4a4de169d78c3`, byte-identical to
-`vcdiff.py apply`. Not yet tried: decoding a patch that xdelta3 made.
+`vcdiff.py apply`.
 
-**Players need the uncompressed `.iso`.** A patch describes the 3.5 GB
-ISO. Applied to a CSO (compressed ISO, which PCSX2 also runs), Delta
-Patcher fails with "The file you are trying to patch is not the right
-one" (xdelta3: `source file too short: XD3_INVALID_INPUT`). Decompress a
-CSO or CHD to ISO first, check it against the Redump hashes, then patch.
-The patched ISO can be compressed again afterwards.
+**Patches xdelta3 made** (2026-10-24, xdelta3 3.1.0 and 3.2.2, the
+official Windows builds). Each of 16 settings (default, `-0`, `-1`, `-9`,
+`-S none`/`djw`/`lzma`/`fgk`, `-n`, `-A`, `-N`, `-9 -S djw`, `-9 -S
+lzma`, small source and input windows, and no source file) on five pairs
+(scattered edits, insertions and deletions, repeated content, shuffled
+blocks, and a target past one 8 MiB window), with both versions: every
+patch decoded byte for byte except FGK, which is refused. DJW with 2–8
+tables (`-S djw7`, `djw9`, with small windows) decoded too. And the real
+case: xdelta3 3.2.2 at its defaults (LZMA, armor) made a 20,535-byte patch
+from the Redump image to `LMAST-test-full.iso`, and `vcdiff.py apply` gave
+SHA-1 `f9f5e94c0887a0d16c50319f2616319a9df47a15`, the same as the built
+image, in about 8 seconds.
+
+### Compressed images
+
+A patch describes the 3.5 GB ISO. Applied to a CSO (compressed ISO,
+which PCSX2 also runs), Delta Patcher fails with "The file you are trying
+to patch is not the right one" (xdelta3: `source file too short:
+XD3_INVALID_INPUT`). This project's tools read CSO and ZSO directly
+(`SRC/cso.py`): `vcdiff.py apply` and `make` take one wherever they take
+an image, and `patch_disc.py patch` decompresses one into its output
+`.iso` and patches that. The output is always an ISO, which can be
+compressed again afterwards.
+
+```bash
+python SRC/cso.py check   disc.cso            # SHA-1 of the ISO inside; is it the Redump dump?
+python SRC/vcdiff.py apply disc.cso mod.xdelta modded.iso
+python SRC/cso.py extract disc.cso disc.iso
+```
+
+The formats (maxcso's `README_CSO.md`): a 0x18-byte header (`CISO` or
+`ZISO`, header size, ISO size, block size, version, index shift), then
+one u32 per block plus one, giving each block's start shifted by the
+index shift. CSO v0/v1 blocks are raw deflate, or stored when bit 31 is
+set; CSO v2 blocks at least a block long are stored, others LZ4 when bit
+31 is set and deflate otherwise; ZSO blocks are LZ4, or stored when bit
+31 is set. LZ4 is decoded in Python.
+
+**Tested** (2026-10-24): the user's CSO (CSO v1, 16 KiB blocks, index
+shift 1, 2,775,024,620 bytes) decompresses to the Redump SHA-1 in about
+22 seconds, and `vcdiff.py apply` from it gave the built image's SHA-1
+(`f9f5e94c…` above) in about 40 seconds. maxcso 1.13.0 made CSO v1
+(2 KiB, 64 KiB blocks, stored blocks), CSO v2 (deflate, LZ4 only, mixed
+with stored blocks, 16 KiB blocks) and ZSO (default, brute-force LZ4, 2
+and 16 KiB blocks, all stored) images of a 64 MiB slice of the disc;
+each decoded byte for byte, and so did 200 random reads from each. A
+maxcso ZSO of the whole disc (index shift 1, 94,882 stored blocks)
+decompresses to the Redump SHA-1 in about 65 seconds. `make`, `apply` and
+`roundtrip` with CSO inputs on the slice gave the expected SHA-1s.
+`patch_disc.py patch --mod injury-value` gave the same image (SHA-1
+`6ec16bf93c2427cc3a30f01e36ad4e555aae444d`) from the CSO as from the ISO,
+and refuses `--in-place` on a CSO.
+CHD, PCSX2's other compressed format, isn't read.
 
 A patch holds only the changed bytes, so the game data it carries is
 limited to the edit itself (a few dozen bytes for a player edit). Keep
@@ -463,5 +526,6 @@ patches out of the repo anyway, like everything built from the disc.
 - **The big face pack.** `FC_EURO_FACEPACK_00.BIN` (1.1 GB) can be
   rebuilt, but if it outgrows its sectors the move needs nearly all the
   room a single-layer disc has left.
-- **Compressed images.** Players who keep CSO or CHD images have to
-  decompress them before patching. `vcdiff.py` could read CSO directly.
+- **CHD images.** Players who keep CHD (MAME's format, which PCSX2 also
+  runs) have to convert them to ISO before patching; CSO and ZSO are read
+  directly ([above](#compressed-images)).

@@ -252,10 +252,9 @@ every writer has a tab.
 disc they already own. **Done when** the image formats players keep are
 covered. See [`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod).
 
-- [ ] Let `vcdiff.py`/`patch_disc.py` read CSO (and CHD) images, which
-      many players keep instead of ISOs
-- [ ] Decode a patch that xdelta3 itself made with `vcdiff.py apply`
-      (only the other direction is tested)
+- [ ] Read CHD images (MAME's format, which PCSX2 runs) in
+      `vcdiff.py`/`patch_disc.py`, as CSO and ZSO already are
+      ([`REBUILD.md`](DOC/REBUILD.md#compressed-images))
 
 ## 7. Tests in PCSX2
 

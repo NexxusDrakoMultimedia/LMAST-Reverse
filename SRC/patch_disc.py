@@ -42,7 +42,8 @@ Usage:
 
 `patch` re-reads every patched range afterwards. Keep an unmodified copy
 of the disc: --in-place cannot be undone except by patching the original
-files back.
+files back. A CSO or ZSO <image> (cso.py) is decompressed into
+<out_image>, which is then patched; it can't be patched --in-place.
 
 Size changes: the game reads a whole file as (size + 0x7ff) >> 11 sectors
 (ADXF_GetFsizeSct, used at 0x307f24), so a file may grow or shrink inside
@@ -271,6 +272,7 @@ import struct
 import sys
 
 from extract_disc import walk_iso, IsoEntry, SECTOR, PVD_SECTOR, DIR_FLAG
+import cso
 import rofs_decrypt
 
 DISC = "disc:"
@@ -2717,6 +2719,14 @@ def copy_file(src, dst):
 
 def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()):
     pairs = parse_pairs(args)
+    if cso.is_compressed(image):
+        # The output is the decompressed image, patched in place from here on.
+        if in_place:
+            raise SystemExit("%s is a CSO/ZSO image; give an output .iso to patch into" % image)
+        if os.path.abspath(out) == os.path.abspath(image):
+            raise SystemExit("output is the input")
+        cso.cmd_extract(image, out)
+        image, out, in_place = out, None, True
     img = Image(image)
     # Switches that edit a target's bytes do so before anything is planned,
     # so its copies (--copies) carry the change too.

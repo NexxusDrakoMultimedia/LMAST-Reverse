@@ -157,6 +157,11 @@ evidence and how it was tested; the git history holds the rest.
 - [x] Separate saves for a modded disc (`--mod-saves`, `save.py rename`)
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
 - [x] The players' guide, [`INSTALL.md`](INSTALL.md)
+- [x] `vcdiff.py apply` decodes patches xdelta3 3.1 and 3.2 made,
+      including LZMA (their default) and DJW secondary compression
+      ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod))
+- [x] `cso.py`: CSO and ZSO images read directly by `vcdiff.py` and
+      `patch_disc.py` ([`REBUILD.md`](DOC/REBUILD.md#compressed-images))
 
 ## 7. Tests in PCSX2
 
