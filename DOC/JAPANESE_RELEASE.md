@@ -27,7 +27,7 @@ present, `python SRC/regress.py run` also runs every check over them as
 `jp_<name>`.
 
 Still PAL-only: the `patch_disc.py` switches (`--skip-tutorial`,
-`--mod lmaster` and the rest), which check the bytes they replace and
+`--mod lmaster-full` and the rest), which check the bytes they replace and
 refuse a disc that doesn't hold them; `save.py`, which takes no ISO
 folder and can't read a Japanese save yet (below); and the editor.
 

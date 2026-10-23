@@ -18,10 +18,12 @@ or two.
 
 What to work on next, most valuable first.
 
-1. **The harder economy over a season** (section 8). Every part of
-   `--mod harder-economy` is built and tested in PCSX2; what is left is a
-   season played through on it, to see that the economy is harder in a
-   way players notice ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
+1. **LMASTER full in game** (sections 7 and 8). Every part of
+   `--mod harder-economy` is tested in PCSX2, and the five `--mod balance`
+   switches are built but not yet seen in game. A disc built with
+   `--mod lmaster-full`, played through a season, shows whether the
+   economy is harder in a way players notice and whether the balance
+   switches work ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 2. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
    VPF numbers a new edit player, so `pmplayer.py` can fill an empty
    slot. The answer is in VPF's own code, which waits on the sister
@@ -293,6 +295,13 @@ names the disc or the edit to build; the result goes into the doc.
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01`
+- [ ] The `--mod balance` switches, on a `--mod lmaster-full` disc
+      (one test sheet; [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)):
+      an injured player's condition line reading "two months" or "nine
+      months" (English, and one other language); more long injuries over
+      a season; an overseas base's set-up cost twice the retail one; a
+      transfer fee twice the retail one for the same player; merchandise
+      income against the retail game's for the same save
 - [ ] `pmplayer.py check` on a career saved after importing the edited
       V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`; the import
       is tested): no differences, and the fixed import's styles
@@ -305,8 +314,7 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
 - [ ] Candidates: the short `EDIT_EMBLEM` tables 93/101/105
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status)). The "two
-      months"/"nine months" injury lines need thresholds chosen first
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] Candidate: let the unused combination records load, the 15 extra
       records in each attack pattern's block (code: a random variant in
       `GAMEPRG.REL 0x14c3f0`) and the 25 basic records in no table
@@ -318,6 +326,7 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       `season-demand`): all six are tested in PCSX2; a season played
       through on the set is left
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [ ] More improvement ideas: overseas bases, merchandise, reputation,
-      player prices up to £250M, a third tier with a one-season game
+- [ ] More improvement ideas: what making merchandise costs (for
+      dearer stock and bigger margins), lesser players dearer than the
+      doubling gives, reputation, a third tier with a one-season game
       over ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))

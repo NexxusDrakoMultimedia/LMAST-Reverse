@@ -159,7 +159,9 @@ at `0x5eb068 + kind × 0x30 + currency × 0xc`, in units of 100
 `.bss`, so it isn't in the executable's file: the static initializer at
 `0x24a140` (called from `pwk_money.cpp`'s global constructor
 `0x24a2f0`) fills it from constants in its code, and the constructor
-(`0x246b08`) rounds min and max up to the step. The currency is the
+(`0x246b08`) rounds min and max up to the step. Kind 1 is the transfer
+fees, capped at 7,200,000 (£120M), which `patch_disc.py --mod
+transfer-fees` raises ([`ECONOMY.md`](ECONOMY.md#transfer-fees)). The currency is the
 money option (`pwkOpt_GetMoney`, `0x24a4c8`); it starts as 2 for
 language 0 and as 1 otherwise (`0x24a360`). Its values index the money
 rates in [`SAVE_FORMAT.md`](SAVE_FORMAT.md): 0 the stored unit, 1 the

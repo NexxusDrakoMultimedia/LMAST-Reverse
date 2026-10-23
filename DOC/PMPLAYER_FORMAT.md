@@ -109,7 +109,7 @@ byte `+0xb9` and came into the career with no styles.
 The 22 elements are pointers to the rating bytes, and the slot loop
 after the sort (`0x3e050`–`0x3e0bc`) takes the first five whose rating
 is 70 or more, so the sort is meant to put the best first.
-`patch_disc.py --mod vpf-styles` (in `--mod lmaster`) rewrites the
+`patch_disc.py --mod vpf-styles` (in `--mod lmaster-lite`) rewrites the
 compare's 4 words to load both ratings and return b − a: it loads the
 two pointers and the second rating, then jumps (an absolute `j`; the
 executable never moves, and no relocation covers these words) to the

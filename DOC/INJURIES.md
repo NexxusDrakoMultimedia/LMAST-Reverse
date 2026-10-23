@@ -40,6 +40,11 @@ injury later shows "three months" and then a light-injury message.
 lasts depends on the recovery rate (below), which hasn't been timed in
 game.
 
+That is the retail game. The LMASTER Mod's `injury-odds` doubles the
+long injuries ([below](#more-long-injuries-injury-odds)) and
+`injury-lines` brings back the cut "two months" and "nine months" lines
+([below](#the-two-cut-lines-back-injury-lines)).
+
 ## Confirmed from the game code
 
 | Address | Symbol | What it shows |
@@ -82,7 +87,28 @@ Match table `0x532c90`, percent per kind (columns 0–8):
 
 The practice table `0x532c28` has the same shape, starts at 50/40/10 and
 never gives kind 8. Its kind ≥ 4 column reads 0, 0, 0, 1, 4, 6, 10, 15,
-22, 29, 31.
+22, 29, 31. **Empirical:** its row 10 adds up to 99 (0, 5, 23, 40, 20, 5,
+3, 3, 0); every other row of both tables adds up to 100.
+
+### More long injuries: `injury-odds`
+
+`patch_disc.py --mod injury-odds` (in `--mod balance` and
+`--mod lmaster-full`) doubles kinds 4–8 in every row of both tables, to
+at least 2% of a practice row and 5% of a match row (added to kind 4
+where the row had none), and takes the extra from kind 3 and then kind 0,
+so each row keeps its total. A match turns a light report's kinds 3 and
+up into kind 0 and a heavy report's kinds 0–2 into kind 3 (above), so
+taking from those two kinds leaves light match injuries exactly as they
+were; a heavy match injury is then six months or longer this often:
+
+| Row | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| retail | 0 | 1 | 2 | 5 | 11 | 15 | 19 | 20 | 23 | 31 | 39 |
+| `injury-odds` | 5 | 5 | 5 | 10 | 22 | 30 | 38 | 40 | 46 | 62 | 78 |
+
+The practice column becomes 2, 2, 2, 2, 8, 12, 20, 30, 44, 58, 62.
+`python -c "import sys; sys.path.insert(0, 'SRC'); import patch_disc as p; print(p.injury_odds(open('ISO/SLES_541.51', 'rb').read()))"`
+prints both tables before and after. Not checked in the game.
 
 **Row 11 is out of bounds.** Fatigue 1000 with an age of 35 or more gives
 row 11, which neither table has. The game then reads the next bytes: for
@@ -91,7 +117,7 @@ for a match, padding and the start of the value table (kind 5 at 250,
 kind 7 at 244, kind 8 at 1). What `fcEuroRand_GetProbabilityTblNoAdd`
 makes of a row that doesn't add up to 100 hasn't been traced.
 
-`patch_disc.py --mod injury-row` (in `--mod lmaster`) clamps the row to
+`patch_disc.py --mod injury-row` (in `--mod lmaster-lite`) clamps the row to
 10 inside `judgeKegaKind`'s own words (`0x21a08c`–`0x21a0a0`): the
 divide-by-zero trap after its `div` can't fire (the divisor is 100), and
 its compare of the practice number with −1 becomes `bltz` (the match
@@ -124,7 +150,7 @@ short as a light one. It looks like a dropped digit (**empirical**: a
 reading of the table, not proven). **Confirmed** how the table is used:
 `calcKegav` (`0x21a120`) picks one of the kind's pairs at random and
 returns min + random(max − min + 1), so a kind-6 injury runs from 1600
-up. `patch_disc.py --mod injury-value` (in `--mod lmaster`) makes that
+up. `patch_disc.py --mod injury-value` (in `--mod lmaster-lite`) makes that
 minimum 16001, one u16 at `0x532d70`. Not checked in the game: kind-6
 injuries are rare and their value is random.
 
@@ -145,7 +171,7 @@ injuries are rare and their value is random.
 | heavy | else | 9 | 10 "... two years' ..." |
 
 chno 3 and 6 are never returned, so messages 4 ("two months") and 7
-("nine months") are never shown. They were cut before either release:
+("nine months") are never shown in the retail game. They were cut before either release:
 the Japanese build's `plPinfo_KegaRecoverDaysChno` (SLPM_663.16
 `0x217618`) is the same code (**confirmed**, see
 [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)). In PAL French, German,
@@ -157,6 +183,51 @@ kept text for both.
 The Japanese build's kind and value tables (`0x52e998`, `0x52ea00`,
 `0x52ea68`) are identical to PAL's, kind 6's 1600 included.
 
+**Confirmed:** a heavy injury that heals doesn't run down to 0 as a heavy
+one. After each recovery step `plPinfo_CheckRecover` (`0x21ae30`) asks
+`0x21a208`(value, kind), which for kinds 3–7 picks a percentage by the
+value's range (`plUty_GetRange` over the table at `0x532aa0`, then a byte
+of `0x532d98`, 8 a kind) and with that chance turns the injury light
+(flag `0x200`). The line then counts down through the light messages.
+
+### The two cut lines back: `injury-lines`
+
+`patch_disc.py --mod injury-lines` (in `--mod balance` and
+`--mod lmaster-full`) rewrites the heavy part of
+`plPinfo_KegaRecoverDaysChno` (`0x216e14`, 15 words) as a count: chno
+= 9, less one for each of 4,000, 6,000, 10,000, 12,500, 16,000 and
+25,000 the value is under.
+
+| Heavy injury value | chno | Message |
+|---|---|---|
+| < 4,000 | 3 | 4 "two months" (new) |
+| < 6,000 | 4 | 5 "three months" |
+| < 10,000 | 5 | 6 "six months" |
+| < 12,500 | 6 | 7 "nine months" (new) |
+| < 16,000 | 7 | 8 "a year" |
+| < 25,000 | 8 | 9 "18 months" |
+| else | 9 | 10 "two years" |
+
+A new kind-3 injury (4,000–6,000) still shows "three months", and
+"two months" while it heals below 4,000, until it turns light. A new
+kind-5 injury shows "nine months" when its value comes out under 12,500
+(its first pair, 10,001–11,000, always does). The switch also gives
+messages 4 and 7 their own text in French, German, Italian and Spanish,
+in `MES.PAC` (`200_2`–`200_5.mbb`) and their copies in
+`PRELOAD/SIMFILE`, `TACTICSLARGE` and `TACTICSMATCHLARGE` 2–5. The files
+have no spare bytes, so each line fits the 32 bytes of the placeholder:
+
+| Language | Message 4 | Message 7 |
+|---|---|---|
+| French | Blessure grave. 2 mois de soins. | Blessure grave. 9 mois de soins. |
+| German | Schwere Verletzung - 2 Monate. | Schwere Verletzung - 9 Monate. |
+| Italian | Infortunio grave: 2 mesi di cure | Infortunio grave: 9 mesi di cure |
+| Spanish | Lesión grave: 2 meses de cura. | Lesión grave: 9 meses de cura. |
+
+The Italian lines lack the full stop the others have: with it the file
+is 4 bytes over its size. Not checked in the game: it needs a heavy
+injury in the right range on the Squad screen.
+
 ## Still unknown
 
 - How many game days one injury value lasts: how often practice slots
@@ -166,6 +237,9 @@ The Japanese build's kind and value tables (`0x52e998`, `0x52ea00`,
   (GAMEPRG.REL around `0x19cf00` and `0x19ee80`).
 - How kind 8 shows on the condition line (`0x285778` skips the
   message for it).
+- What the heavy-to-light chances at `0x532aa0` and `0x532d98` are, so
+  how long "two months" shows before a healing kind-3 injury turns
+  light.
 
 ## Checking
 

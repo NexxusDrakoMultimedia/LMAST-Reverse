@@ -4420,13 +4420,21 @@ class BuildDialog:
                                 command=lambda v=var, k=kind: self.browse(v, k))
             button.grid(row=row, column=2, padx=(8, 0), pady=3)
             self.entries[kind] = (flag, entry, button)
+        # The two LMASTER builds, as patch_disc.py's groups: each button ticks
+        # exactly that group's boxes (full includes the separate saves).
+        groups = ttk.Frame(form)
+        groups.grid(row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        for text, group in (("LMASTER lite (fixes only)", "lmaster-lite"),
+                            ("LMASTER full (every LMASTER switch, own saves)", "lmaster-full")):
+            ttk.Button(groups, text=text, command=lambda g=group: self.choose_group(g)
+                       ).pack(side="left", padx=(0, 8))
         # patch_disc.py's switches, one box each, from its switch table (its
         # docstring and the docs say what each changes).
-        for row, (name, _, _, text) in enumerate(patch_disc.SWITCHES, 3):
+        for row, (name, _, _, text) in enumerate(patch_disc.SWITCHES, 4):
             ttk.Checkbutton(form, text="%s (--mod %s)" % (text, name),
                             variable=self.switches[name]).grid(
-                row=row, column=0, columnspan=3, sticky="w", pady=(6 if row == 3 else 0, 0))
-        note_row = 3 + len(patch_disc.SWITCHES)
+                row=row, column=0, columnspan=3, sticky="w", pady=(6 if row == 4 else 0, 0))
+        note_row = 4 + len(patch_disc.SWITCHES)
         ttk.Label(form, text="The original must be the Redump dump (redump.info/disc/12334) "
                              "for a patch others can apply. It is only read. A patch without "
                              "the image still needs room for a temporary one while it is made.",
@@ -4484,6 +4492,13 @@ class BuildDialog:
                           for name, var in self.switches.items()}},
                       f,
                       indent=2)
+
+    def choose_group(self, group):
+        """Tick the switches of patch_disc.py's group `group` and untick the
+        rest."""
+        chosen = set(patch_disc.SWITCH_GROUPS[group])
+        for name, var in self.switches.items():
+            var.set(int(name in chosen))
 
     def update_entries(self):
         for flag, entry, button in self.entries.values():

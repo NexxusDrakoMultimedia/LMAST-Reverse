@@ -34,13 +34,17 @@ Usage:
     python plrsim.py info    <PLRESOURCESIM.PAC | DAT/PARAM>
     python plrsim.py show    <PLRESOURCESIM.PAC | DAT/PARAM> <entry> [--pbdata PBDATA.PAC]
     python plrsim.py setfree <in.PAC> <out.PAC> <slot>=<player> ...
+    python plrsim.py setbranch <in.PAC> <out.PAC> <region>=<cost> ...
     python plrsim.py roundtrip <PLRESOURCESIM.PAC | DAT/PARAM>
 
 `show` prints one entry in readable form, naming players, managers and
 scouts from PBDATA_EU.PAC next to the pack (or --pbdata). `setfree`
 replaces players in the free-agent list (entry 15; slots as `show 15`
-numbers them) and writes a same-size pack for patch_disc.py. `roundtrip`
-re-encodes the unchanged list through setfree's encoder and checks that
+numbers them) and writes a same-size pack for patch_disc.py. `setbranch`
+sets overseas branches' establishing costs (entry 1 table 0, regions
+0-12); the investment to raise a level and the upkeep are that cost times
+the level rates, so they follow it. `roundtrip` re-encodes the unchanged
+free-agent list and branch costs through those encoders and checks that
 the rebuilt pack equals the original byte for byte.
 """
 import os
@@ -439,10 +443,68 @@ def encode_free(data, ids):
     return pac.build_binpac(data[:h.header_size], blobs)
 
 
+BRANCH_REGIONS = 13                      # entry 1 table 0 (_GetOverseasBranchEstablishCapital)
+
+
+def branch_costs(data):
+    """The 13 overseas branches' establishing costs (entry 1 table 0) of a
+    whole pack, by region."""
+    _, blobs = pac.binpac_blobs(data)
+    t = tables(blobs[1])[0]
+    pairs = [struct.unpack_from("<2I", t, 8 * i) for i in range(BRANCH_REGIONS)]
+    if [r for r, _ in pairs] != list(range(BRANCH_REGIONS)):
+        raise ValueError("entry 1: regions are not 0-12 in order")
+    return [c for _, c in pairs]
+
+
+def encode_branch_costs(data, costs):
+    """The pack `data` with entry 1's establishing costs replaced by `costs`
+    (13, by region). The level rates and the other entries are kept."""
+    if len(costs) != BRANCH_REGIONS or not all(0 < c < 1 << 32 for c in costs):
+        raise ValueError("expected 13 costs of 1 to 4,294,967,295")
+    h, blobs = pac.binpac_blobs(data)
+    end, raw = tbb.parse(blobs[1])
+    raw[0].data = b"".join(struct.pack("<2I", r, c) for r, c in enumerate(costs)) +         raw[0].data[8 * BRANCH_REGIONS:]
+    blobs[1] = tbb.build(raw, end, tbb.trailer(blobs[1], raw))
+    return pac.build_binpac(data[:h.header_size], blobs)
+
+
+def cmd_setbranch(src, dst, pairs):
+    if os.path.abspath(src) == os.path.abspath(dst):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    with open(src, "rb") as f:
+        data = f.read()
+    costs = branch_costs(data)
+    for pair in pairs:
+        region, sep, cost = pair.partition("=")
+        if not sep or not region.isdigit() or not cost.isdigit():
+            raise SystemExit("expected <region>=<cost>, got %r" % pair)
+        if not 0 <= int(region) < BRANCH_REGIONS:
+            raise SystemExit("region %s: regions are 0-%d" % (region, BRANCH_REGIONS - 1))
+        print("region %s: %d -> %s" % (region, costs[int(region)], cost))
+        costs[int(region)] = int(cost)
+    try:
+        out = encode_branch_costs(data, costs)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    if len(out) != len(data):
+        raise SystemExit("rebuilt pack is %d bytes, not %d" % (len(out), len(data)))
+    with open(dst, "wb") as f:
+        f.write(out)
+    print("wrote %s" % dst)
+
+
 def cmd_roundtrip(path):
     path, blobs = load(path)
     with open(path, "rb") as f:
         data = f.read()
+    try:
+        out = encode_branch_costs(data, branch_costs(data))   # the encoder setbranch uses
+    except (ValueError, struct.error) as e:
+        print("entry 1: !! %s" % e)
+    else:
+        print("entry 1: %d branch costs  %s" % (BRANCH_REGIONS, "rebuilt pack identical"
+                                                if out == data else "!! rebuilt pack differs"))
     if len(blobs) <= 15:
         print("%s: %d entries, no free-agent list to rebuild" % (path, len(blobs)))
         return
@@ -517,6 +579,8 @@ def main(argv):
         cmd_roundtrip(args[0])
     elif cmd == "setfree" and len(args) >= 3:
         cmd_setfree(args[0], args[1], args[2:])
+    elif cmd == "setbranch" and len(args) >= 3:
+        cmd_setbranch(args[0], args[1], args[2:])
     else:
         print(__doc__)
         return 1

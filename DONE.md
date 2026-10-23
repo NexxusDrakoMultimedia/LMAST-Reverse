@@ -214,3 +214,12 @@ Each result is recorded in the doc named.
       ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets))
 - [x] `--mod harder-economy`: six switches, each tested
       ([`ECONOMY.md`](DOC/ECONOMY.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] The LMASTER Mod split into LMASTER lite (`--mod lmaster-lite`, the
+      fixes) and LMASTER full (`--mod lmaster-full`, every switch, with
+      `mod-saves` always on); the editor's Build window has a button for
+      each ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
+- [x] `--mod balance` built: `injury-odds`, `injury-lines` (the cut two-
+      and nine-month lines, with text in four languages), `overseas-bases`,
+      `transfer-fees` and `fanbase`, after tracing merchandise, transfer
+      fees and the overseas base levels ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements),
+      [`ECONOMY.md`](DOC/ECONOMY.md#merchandise))

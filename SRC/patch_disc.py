@@ -71,15 +71,18 @@ skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
-season-demand, launcher, mod-saves. --mod lmaster is the LMASTER Mod's
-fixes (sponsor-negotiation, rival-manager, national-cups, camp-types,
+season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
+fanbase, launcher, mod-saves. Groups (DOC/LMASTER_MOD.md):
+--mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
+(sponsor-negotiation, rival-manager, national-cups, camp-types,
 camp-cities, camp-santiago, camp-clubs, drill-names, injury-value,
-injury-row, vpf-styles, season-status; DOC/LMASTER_MOD.md).
-league-balance and the harder economy (--mod harder-economy:
-facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
-season-demand) are the mod's improvements, so
-they stay out of lmaster and are chosen on their own.
-Each also works as a flag of its own (--skip-tutorial, ...). With
+injury-row, vpf-styles, season-status). --mod harder-economy is
+facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees and
+season-demand; --mod balance is injury-odds, injury-lines,
+overseas-bases, transfer-fees and fanbase. --mod lmaster-full is all of
+those, league-balance and mod-saves, so a full LMASTER disc always saves
+to its own folders. skip-tutorial and launcher are test tools and in no
+group. Each also works as a flag of its own (--skip-tutorial, ...). With
 switches and no targets, `patch <image> <out_image>` is enough.
 
 --skip-tutorial (test discs; whole disc image only) skips the opening
@@ -184,6 +187,35 @@ keep sponsor fees and TV offers up to £2M and halve the part above
 (SIMPRG.REL 0x23d978, 212 sponsors; 0x241780, 19 TV offers).
 season-demand (whole disc image only) halves season-ticket demand
 (pwkUnkei_GetExpectSeat's divisor, SLES 0x272a10). See DOC/ECONOMY.md.
+
+injury-odds (whole disc image only) doubles the chance of an injury of six
+months or more in every row of the practice and match kind tables (SLES
+0x532c28, 0x532c90), to at least 2% and 5% of a row, taking it from kind
+3 and then kind 0, which leaves light match injuries as they were.
+injury-lines (whole disc image only) brings back the "two months" and
+"nine months" condition lines: plPinfo_KegaRecoverDaysChno's heavy ladder
+(SLES 0x216e14, 15 words) gets thresholds 4,000 and 12,500 too, and
+category 200's messages 4 and 7 get French, German, Italian and Spanish
+text in MES.PAC and its PRELOAD copies (SIMFILE, TACTICSLARGE and
+TACTICSMATCHLARGE 2-5), the same size as the placeholders they replace.
+See DOC/INJURIES.md.
+
+overseas-bases (whole disc image only) doubles the 13 overseas bases'
+costs in PLRESOURCESIM.PAC entry 1 (and its PRELOAD/SIMLOCALMEM0-6.PAC
+copies), which doubles their investment and upkeep too, and makes a
+base's level factor on the region's popularity (level + 1) / 2.5 + 0.4
+(SLES 0x268e40): 0.8, 1.2, 1.6, 2.0 for levels 0-3, twice the gain over
+0.4. See DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches.
+transfer-fees (whole disc image only) doubles the base of every transfer
+fee (SLES 0x247288, 1,350,000.0 -> 2,700,000.0) and raises price kind 1's
+cap from 7,200,000 to 15,000,000 (£120M -> £250M) in all four
+currencies (the initializer at 0x24a140). fanbase (whole disc image only)
+scales the merchandise base by supporters (SIMPRG.REL 0x1d9ec8, 17 rows)
+from x0.5 at the bottom to x3 at the top, makes walk-up crowds and
+season-ticket demand count home popularity at 195 in place of 130 with
+the fixed part 1,500 in place of 3,000 a step (SLES 0x2722d8, 0x2722f0,
+0x2728ec, 0x2728f0), and widens the TV offers' popularity factor from
+0.9-1.15 to 0.75-1.25 (SIMPRG.REL 0x163a60-0x163b2c). See DOC/ECONOMY.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -2105,6 +2137,298 @@ def plan_season_demand(f, img):
     return word_jobs(f, img, "season-demand", SEASON_DEMAND)
 
 
+# --- the balance switches (DOC/LMASTER_MOD.md#improvements) --------------------
+
+# injury-odds: worse injuries about twice as common. judgeKegaKind (SLES
+# 0x21a068) picks the kind from a 9-byte row of percentages (kinds 0-8) of
+# the practice (0x532c28) or match (0x532c90) table, 11 rows by fatigue.
+# Each row's kinds 4-8 (six months or longer) double, to at least
+# INJURY_FLOOR of a row (a rested player can get one too), all of it added
+# to kind 4 where the row had none. The extra comes off kind 3, then kind 0,
+# so each row keeps its total (100, and 99 in practice row 10).
+# A match turns a light report's kinds 3+ into kind 0 and a heavy report's
+# kinds 0-2 into kind 3 (SIMPRG.REL 0x163638), so taking from those two
+# leaves light match injuries as they were.
+INJURY_TABLES = (0x532c28, 0x532c90)        # practice, match
+INJURY_KINDS, INJURY_ROWS = 9, 11
+INJURY_FLOOR = {0x532c28: 2, 0x532c90: 5}
+
+
+def injury_odds(sles):
+    """[(address, old bytes, new bytes)] of the two kind tables, from the
+    retail executable; ValueError if a table isn't the retail one."""
+    out = []
+    for addr in INJURY_TABLES:
+        off, n = addr - 0xff000, INJURY_KINDS * INJURY_ROWS
+        old = sles[off:off + n]
+        new = bytearray()
+        for r in range(INJURY_ROWS):
+            row = list(old[INJURY_KINDS * r:INJURY_KINDS * (r + 1)])
+            long_before = sum(row[4:])
+            for k in range(4, INJURY_KINDS):
+                row[k] *= 2
+            row[4] += max(0, INJURY_FLOOR[addr] - sum(row[4:]))
+            extra = sum(row[4:]) - long_before
+            for k in (3, 0):
+                take = min(extra, row[k])
+                row[k] -= take
+                extra -= take
+            if extra:
+                raise ValueError("SLES 0x%x row %d: no room for the longer injuries" % (addr, r))
+            new += bytes(row)
+        out.append((addr, old, bytes(new)))
+    return out
+
+
+INJURY_ODDS_MARK = (0x532c90 + 4, 0, 5)     # match row 0, kind 4: retail, new
+
+
+def plan_injury_odds(f, img):
+    """Jobs for --mod injury-odds."""
+    if img.kind != "disc image":
+        raise ValueError("injury-odds patches SLES_541.51, so it needs the whole disc image, "
+                         "not %s" % img.kind)
+    sles = read_at(f, img, SLES_FILE, 0, img.entry(SLES_FILE).size)
+    addr, retail, new = INJURY_ODDS_MARK
+    if sles[addr - 0xff000] == new:
+        return [], ["note: injury-odds is already applied"]
+    words = [(SLES_FILE, a - 0xff000, old, new, "%s 0x%x (%s injury kind table)" % (
+        SLES_FILE, a, "practice" if a == INJURY_TABLES[0] else "match"))
+             for a, old, new in injury_odds(sles)]
+    return word_jobs(f, img, "injury-odds", words)
+
+
+# injury-lines: the "two months" and "nine months" condition lines, cut
+# before both releases. plPinfo_KegaRecoverDaysChno (SLES 0x216dc8) gives
+# a heavy injury chno 4, 5, 7, 8 or 9 below 6,000, 10,000, 16,000, 25,000
+# and above, and the screen shows message chno + 1 of category 200, so 4
+# and 7 never show. Its heavy ladder (0x216e14, 15 words) becomes a count:
+# 9 less one for each threshold the value is under, so below 4,000 is 3
+# (two months) and 10,000-12,499 is 6 (nine months). A new heavy injury
+# of kind 3 is 4,000-6,000, so "two months" shows while it heals until it
+# turns light; one of kind 5 starts at 10,001 and shows "nine months" up
+# to 12,500. The branch at 0x216e10 to "not injured" (0x216e50, which
+# sets 0) runs the first word in its delay slot, which is harmless there.
+INJURY_LINES_AT = 0x216e14
+INJURY_LINES_OLD = (0x2a221770, 0x1440000e, 0x24020004, 0x2a222710, 0x1440000b, 0x24020005,
+                    0x2a223e80, 0x10400003, 0x2a2461a8, 0x10000006, 0x24020007, 0x24030008,
+                    0x24020009, 0x10000002, 0x0064100b)
+INJURY_LINES_STEPS = (4000, 6000, 10000, 12500, 16000, 25000)
+INJURY_LINES_NEW = ((0x24020009,)                            # addiu $v0, $zero, 9
+                    + sum(((0x2a240000 | t,                  # slti  $a0, $s1, t
+                            0x00441023)                      # subu  $v0, $v0, $a0
+                           for t in INJURY_LINES_STEPS), ())
+                    + (0x10000002,                           # b     0x216e54
+                       0x00000000))                          # nop
+# The English text of messages 4 and 7 is on the disc; French, German,
+# Italian and Spanish hold "See Let's Make revised text 0425". The new
+# lines follow their neighbours (messages 5 and 8) and fit the placeholders'
+# bytes, so the files keep their sizes. Their copies are in three PRELOAD
+# packs per language.
+INJURY_CATEGORY, INJURY_PLACEHOLDER = 200, "See Let's Make revised text 0425"
+INJURY_TEXT = {2: ("Blessure grave. 2 mois de soins.", "Blessure grave. 9 mois de soins."),
+               3: ("Schwere Verletzung - 2 Monate.", "Schwere Verletzung - 9 Monate."),
+               4: ("Infortunio grave: 2 mesi di cure", "Infortunio grave: 9 mesi di cure"),
+               5: ("Lesión grave: 2 meses de cura.", "Lesión grave: 9 meses de cura.")}
+INJURY_TEXT_IDS = (4, 7)
+INJURY_TEXT_PACKS = {n: ["PRELOAD/%s%d.PAC" % (p, n)
+                         for p in ("SIMFILE", "TACTICSLARGE", "TACTICSMATCHLARGE")]
+                     for n in INJURY_TEXT}
+
+
+def fix_injury_lines(data):
+    """A 200_<lang>.mbb (bytes) with messages 4 and 7 in its own language, the
+    same size; None when it doesn't hold the placeholders (English, or
+    already fixed)."""
+    import mbb
+    m = mbb.Mbb(data, "%d.mbb" % INJURY_CATEGORY)
+    if m.category != INJURY_CATEGORY:
+        raise ValueError("not a %d_<lang>.mbb" % INJURY_CATEGORY)
+    if m.lang not in INJURY_TEXT:
+        return None
+    marker = mbb.encode(INJURY_PLACEHOLDER, m.lang)
+    ids = [rid for rid, _ in m.records]
+    for rid, text in zip(INJURY_TEXT_IDS, INJURY_TEXT[m.lang]):
+        k = ids.index(rid)
+        if m.records[k][1] != marker:
+            return None
+        m.records[k] = (rid, mbb.encode(text, m.lang))
+    return m.build(len(data))
+
+
+def target_injury_lines(file, data):
+    """A MES.PAC target with the injury lines in its own 200 files."""
+    if norm(file) != norm(MES_FILE):
+        return data
+    out = bytearray(data)
+    for name, (off, size) in mes_entries(data).items():
+        if name in {"%d_%d.mbb" % (INJURY_CATEGORY, n) for n in INJURY_TEXT}:
+            new = fix_injury_lines(data[off:off + size])
+            if new is not None:
+                out[off:off + size] = new
+    return bytes(out)
+
+
+def plan_injury_lines(f, img, adopted=()):
+    """Jobs for --mod injury-lines: the condition-line ladder, and the text
+    in MES.PAC and its PRELOAD copies (or in a MES.PAC target, `adopted`)."""
+    words = [(SLES_FILE, INJURY_LINES_AT - 0xff000,
+              struct.pack("<15I", *INJURY_LINES_OLD), struct.pack("<15I", *INJURY_LINES_NEW),
+              "%s 0x%x (injury condition lines)" % (SLES_FILE, INJURY_LINES_AT))]
+    jobs, notes = word_jobs(f, img, "injury-lines", words)
+    if norm(MES_FILE) in adopted:
+        return jobs, notes + ["note: injury-lines: put the text in the target's %s" % MES_FILE]
+    why = "injury-lines: the two-month and nine-month lines"
+    e = img.entry(MES_FILE)
+    entries = mes_entries(read_at(f, img, e.path, 0, struct.unpack_from(
+        "<I", read_at(f, img, e.path, 0, 4))[0]))
+    for n, packs in INJURY_TEXT_PACKS.items():
+        name = "%d_%d.mbb" % (INJURY_CATEGORY, n)
+        off, size = entries[name]
+        data = read_at(f, img, e.path, off, size)
+        new = fix_injury_lines(data)
+        if new is None:
+            continue
+        jobs += diff_jobs(e.path, off, data, new, why)
+        for pack in packs:
+            jobs += pack_copy_jobs(f, img, pack, name, "%s#%s" % (MES_FILE, name), data, new, why)
+    return jobs, notes
+
+
+# overseas-bases: dearer bases, stronger per level. A base costs table 0 of
+# PLRESOURCESIM.PAC entry 1 to set up, that cost x the level's rate to
+# raise a level (_GetUp1SituLevelCapital 0x232f70) and x a higher rate in
+# upkeep (GetMaintenanceExpence 0x233648), so doubling the 13 costs
+# doubles all three. The game reads the pack's PRELOAD/SIMLOCALMEM0-6.PAC
+# copies too. Its level (0-3, pwkTown_OverseasBranchInvestment 0x233388)
+# scales the region's monthly popularity change by (level + 1) / 5 + 0.4
+# (0x268e18): 0.6, 0.8, 1.0, 1.2. Dividing by 2.5 gives 0.8, 1.2, 1.6, 2.0.
+SIM_FILE, SIM_ENTRY = "PARAM/PLRESOURCESIM.PAC", "plresourcesim.pac"
+BRANCH_COST_X = 2
+BRANCH_MARK = (6300000, 12600000)           # the cheapest base: retail, doubled
+OVERSEAS_POWER = (
+    sles_word(0x268e40, 0x3c0140a0, 0x3c014020, "overseas base level factor: / 2.5"),
+)
+
+
+def target_overseas_bases(file, data):
+    """A PLRESOURCESIM.PAC target (the editor's free agents) with the base
+    costs doubled in its own bytes."""
+    import plrsim
+    if norm(file) != norm(SIM_FILE):
+        return data
+    costs = plrsim.branch_costs(data)
+    if min(costs) != BRANCH_MARK[0]:
+        return data
+    return plrsim.encode_branch_costs(data, [c * BRANCH_COST_X for c in costs])
+
+
+def plan_overseas_bases(f, img, adopted=()):
+    """Jobs for --mod overseas-bases."""
+    import plrsim
+    jobs, notes = word_jobs(f, img, "overseas-bases", OVERSEAS_POWER)
+    if norm(SIM_FILE) in adopted:
+        return jobs, notes + ["note: overseas-bases: doubled the costs in the target's %s"
+                              % SIM_FILE]
+    why = "overseas-bases: overseas bases cost twice as much"
+    path, data = read_file(f, img, SIM_FILE)
+    costs = plrsim.branch_costs(data)
+    if min(costs) == BRANCH_MARK[1]:
+        return jobs, notes + ["note: %s already has the doubled base costs" % SIM_FILE]
+    if min(costs) != BRANCH_MARK[0]:
+        raise ValueError("overseas-bases: %s's cheapest base costs %d, expected %d; not the "
+                         "retail pack?" % (SIM_FILE, min(costs), BRANCH_MARK[0]))
+    new = plrsim.encode_branch_costs(data, [c * BRANCH_COST_X for c in costs])
+    jobs += diff_jobs(path, 0, data, new, why)
+    for pack in LIST_PACKS:
+        jobs += pack_copy_jobs(f, img, pack, SIM_ENTRY, SIM_FILE, data, new, why)
+    return jobs, notes
+
+
+# transfer-fees: every transfer fee twice as high, up to £250M. The base
+# fee of a player move (0x247130, from pwkMoney_CalcMoveBase 0x247a00) is
+# 1,350,000.0 x a rank and ability factor x three more (a float built by
+# lui/ori at 0x247288; 2,700,000.0 differs only in the lui); what you pay
+# another club (pwkMoney_CalcuPurchaceOtherTeamPlayerTransferMoney
+# 0x248280) and what clubs offer for your players (CComOffer::CalcuOfferClub
+# 0x225b20) start from it. Price kind 1's limits (the initializer at
+# 0x24a140, in units of 100) cap it at 7,200,000, £120M, in all four
+# currencies; 15,000,000 is £250M and a whole number of every currency's
+# step.
+TRANSFER_FEES = (
+    sles_word(0x247288, 0x3c0149a4, 0x3c014a24, "transfer base fee 2,700,000"),
+) + sum(((sles_word(lui, 0x3c06006d, 0x3c0600e4, "transfer fee cap 15,000,000"),
+          sles_word(ori, 0x34c6dd00, 0x34c6e1c0, "transfer fee cap 15,000,000"))
+         for lui, ori in ((0x24a1c8, 0x24a1d4), (0x24a1e0, 0x24a1ec),
+                          (0x24a1f8, 0x24a204), (0x24a210, 0x24a21c))), ())
+
+
+def plan_transfer_fees(f, img):
+    """Jobs for --mod transfer-fees."""
+    return word_jobs(f, img, "transfer-fees", TRANSFER_FEES)
+
+
+# fanbase: a big fanbase counts for more. Merchandise sales start from a
+# base by the sum of pwkTeam_Supporter over the 13 regions (SIMPRG.REL
+# 0x165598): 17 {threshold, base} pairs at 0x1d9ec8, from 800 (under
+# 10,001) to 10,000 (over 10,000,000). Each base is scaled from x0.5 at
+# the bottom to x3 at the top, evenly on a log scale. Walk-up crowds
+# (pwkUnkei_GetAllAudience 0x272128) and season-ticket demand
+# (pwkUnkei_GetExpectSeat 0x2727c8) both start from home popularity / 10
+# x 130 + (k + 1) x 3,000: 130 becomes 195 and 3,000 becomes 1,500. A TV
+# offer (SIMPRG.REL 0x163a10) is x0.9, 0.95, 1.0, 1.05 or 1.15 by home
+# popularity in fifths; it becomes x0.75, 0.875, 1.0, 1.125 or 1.25. Each
+# factor is a double built in $s1 by 7 instructions; the new ones need 2
+# (ori, then dsll32 by 14, as the 1.0 at 0x163a34 is built) and 5 nops.
+MERCH_TABLE, MERCH_ROWS = 0x1d9ec8, 17
+MERCH_TOP_X, MERCH_BOTTOM_X = 3.0, 0.5
+MERCH_MARK = (800, 400)                     # the bottom base: retail, new
+TV_TAIL = {5: (0x00118cb8, 0x3631cccc, 0x00118c38, 0x3631cccc, 0x00118b38, 0x36310ccd),
+           9: (0x00118c38, 0x36319999, 0x00118c38, 0x36319999, 0x00118bb8, 0x36312666)}
+TV_POP = ((0x163a60, 0xffb3, 5, 0xffa0, "0.9 -> 0.75"), (0x163a90, 0xffb9, 9, 0xffb0, "0.95 -> 0.875"),
+          (0x163ad8, 0xffc3, 5, 0xffc8, "1.05 -> 1.125"), (0x163b14, 0xffc9, 9, 0xffd0, "1.15 -> 1.25"))
+FANBASE_CROWDS = (
+    sles_word(0x2722d8, 0x24060082, 0x240600c3, "crowds: popularity / 10 x 195"),
+    sles_word(0x2722f0, 0x24020bb8, 0x240205dc, "crowds: (k + 1) x 1,500"),
+    sles_word(0x2728ec, 0x24060082, 0x240600c3, "season tickets: popularity / 10 x 195"),
+    sles_word(0x2728f0, 0x24020bb8, 0x240205dc, "season tickets: (k + 1) x 1,500"),
+)
+
+
+def merch_table(data):
+    """(old, new) bytes of the merchandise base table in SIMPRG.REL `data`;
+    ValueError when its bottom base is neither the retail nor the new one."""
+    off = MERCH_TABLE
+    old = data[off:off + 8 * MERCH_ROWS]
+    pairs = [struct.unpack_from("<2I", old, 8 * i) for i in range(MERCH_ROWS)]
+    if pairs[-1] != (0, MERCH_MARK[0]):
+        if pairs[-1] == (0, MERCH_MARK[1]):
+            return old, old
+        raise ValueError("fanbase: SIMPRG.REL 0x%x doesn't end with (0, %d); not the retail "
+                         "overlay?" % (off + 8 * (MERCH_ROWS - 1), MERCH_MARK[0]))
+    step = (MERCH_BOTTOM_X / MERCH_TOP_X) ** (1 / (MERCH_ROWS - 1))
+    new = b"".join(struct.pack("<2I", t, round(v * MERCH_TOP_X * step ** i))
+                   for i, (t, v) in enumerate(pairs))
+    return old, new
+
+
+def plan_fanbase(f, img):
+    """Jobs for --mod fanbase."""
+    if img.kind != "disc image":
+        raise ValueError("fanbase patches SLES_541.51 and DLL/SIMPRG.REL, so it needs the "
+                         "whole disc image, not %s" % img.kind)
+    old, new = merch_table(read_at(f, img, NEGO_FILE, 0, img.entry(NEGO_FILE).size))
+    words = list(FANBASE_CROWDS) + [
+        (NEGO_FILE, MERCH_TABLE, old, new, "%s 0x%x (merchandise base by supporters)"
+         % (NEGO_FILE, MERCH_TABLE))]
+    for off, old_hi, tail, new_hi, what in TV_POP:
+        words.append((NEGO_FILE, off,
+                      struct.pack("<7I", 0x34110000 | old_hi, *TV_TAIL[tail]),
+                      struct.pack("<7I", 0x34110000 | new_hi, 0x00118bbc, 0, 0, 0, 0, 0),
+                      "%s 0x%x (TV offer popularity factor %s)" % (NEGO_FILE, off, what)))
+    return word_jobs(f, img, "fanbase", words)
+
+
 # --- the switch table ----------------------------------------------------------
 
 # (name, plan, files it edits, description), in the order they run. A
@@ -2156,6 +2480,17 @@ SWITCHES = (
      "Harder economy: TV offers over £2M keep only half of the rest"),
     ("season-demand", plan_season_demand, [SLES_FILE],
      "Harder economy: half as many fans buy season tickets"),
+    ("injury-odds", plan_injury_odds, [SLES_FILE],
+     "Balance: injuries of six months or longer about twice as common, rested players too"),
+    ("injury-lines", plan_injury_lines,
+     [SLES_FILE, MES_FILE] + sum(INJURY_TEXT_PACKS.values(), []),
+     "Injuries: the cut \"two months\" and \"nine months\" condition lines come back"),
+    ("overseas-bases", plan_overseas_bases, [SLES_FILE, SIM_FILE] + LIST_PACKS,
+     "Balance: overseas bases cost twice as much, and each level does twice as much"),
+    ("transfer-fees", plan_transfer_fees, [SLES_FILE],
+     "Balance: transfer fees twice as high, up to £250M"),
+    ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
+     "Balance: a bigger fanbase sells more merchandise and draws more fans and TV money"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -2174,15 +2509,27 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATIO
                 "camp-types": (target_camp_types, [CAMP_LIST_FILE], []),
                 "camp-cities": (target_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE], []),
                 "camp-santiago": (target_camp_santiago, [CAMP_EXPLANE_FILE], []),
-                "drill-names": (target_drill_names, [MES_FILE], DRILL_PACKS)}
+                "drill-names": (target_drill_names, [MES_FILE], DRILL_PACKS),
+                "injury-lines": (target_injury_lines, [MES_FILE],
+                                 sum(INJURY_TEXT_PACKS.values(), [])),
+                "overseas-bases": (target_overseas_bases, [SIM_FILE], LIST_PACKS)}
 
-# Names --mod takes for several switches at once.
-SWITCH_GROUPS = {"lmaster": ("sponsor-negotiation", "rival-manager", "national-cups",
-                             "camp-types", "camp-cities", "camp-santiago", "camp-clubs",
-                             "drill-names", "injury-value", "injury-row", "vpf-styles",
-                             "season-status"),
-                 "harder-economy": ("facility-tiers", "wider-tickets", "dearer-ads",
-                                    "sponsor-fees", "tv-fees", "season-demand")}
+# Names --mod takes for several switches at once. LMASTER lite is the
+# fixes; LMASTER full is every switch of the mod, with its own saves
+# (mod-saves) so its careers never mix with the retail game's. The
+# tutorial skip and the launcher are test tools, in neither.
+LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-types",
+                "camp-cities", "camp-santiago", "camp-clubs", "drill-names", "injury-value",
+                "injury-row", "vpf-styles", "season-status")
+HARDER_ECONOMY = ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
+                  "season-demand")
+BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fanbase")
+SWITCH_GROUPS = {"lmaster-lite": LMASTER_LITE,
+                 "lmaster": LMASTER_LITE,               # the name before the split
+                 "harder-economy": HARDER_ECONOMY,
+                 "balance": BALANCE,
+                 "lmaster-full": LMASTER_LITE + ("league-balance",) + HARDER_ECONOMY + BALANCE
+                 + ("mod-saves",)}
 
 
 def parse_mods(values):

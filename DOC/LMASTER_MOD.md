@@ -3,16 +3,27 @@
 
 # The LMASTER Mod
 
-A mod that restores content the PAL release cut or left broken. Each
-restoration is a separate `patch_disc.py` switch first, so it can be
-built and tested in PCSX2 on its own. Switches are named, and
-`--mod lmaster` turns on the mod's fixes together (sponsor-negotiation,
-rival-manager, national-cups, camp-types, camp-cities, camp-santiago,
-camp-clubs, drill-names, injury-value, injury-row, vpf-styles,
-season-status); the editor's Build window has a box for each. A test disc with all of them:
+A mod that restores content the PAL release cut or left broken, and
+offers a few improvements. Each restoration and improvement is a
+separate `patch_disc.py` switch first, so it can be built and tested in
+PCSX2 on its own. The mod comes in two builds:
+
+| Build | Switches |
+|---|---|
+| **LMASTER lite**, `--mod lmaster-lite` (also `--mod lmaster`) | the fixes: sponsor-negotiation, rival-manager, national-cups, camp-types, camp-cities, camp-santiago, camp-clubs, drill-names, injury-value, injury-row, vpf-styles, season-status |
+| **LMASTER full**, `--mod lmaster-full` | the fixes, every improvement ([below](#improvements): league-balance, `--mod harder-economy`, `--mod balance`), and mod-saves |
+
+LMASTER full always includes `mod-saves`, so its careers and VS data go
+to their own memory-card folders and never mix with the retail game's
+([`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)):
+a career from a disc whose economy and injuries work differently isn't
+one to load on another. The tutorial skip and the developers' launcher
+are test tools, in neither build. The editor's Build window has a box
+for each switch and a button for each build. A test disc of each:
 
 ```bash
-python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster.iso --mod lmaster
+python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster-lite.iso --mod lmaster-lite
+python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster-full.iso --mod lmaster-full
 ```
 
 Rules for an entry:
@@ -35,7 +46,7 @@ Rules for an entry:
 | Debug menu | developers' switch | `RootMainSeq.sqb` | `--mod launcher` | works, tested in PCSX2. A tool, not part of the mod |
 | Kind-6 injuries starting at 1600 | broken data (dropped digit?), in both releases | [`INJURIES.md`](INJURIES.md#the-value-table-0x532cf8): `0x532d70` holds 1600 where 16001 fits | `--mod injury-value`: the u16 at `0x532d70` → 16001 | built; how `calcKegav` uses the table is confirmed, but the effect isn't checked in the game (kind-6 injuries are rare and random) |
 | Injury rows past fatigue 1000 | bug (out-of-bounds read) | [`INJURIES.md`](INJURIES.md#the-kind-tables): row 11 for ages 35+ | `--mod injury-row`: the row clamped to 10 in `judgeKegaKind`'s own words (`0x21a08c`, 6 words) | built; checked in a MIPS simulator over 18,018 cases (only the six out-of-bounds ones change), not in the game (rare) |
-| "Two months" and "nine months" injury lines | cut before both releases (the Japanese code is the same) | [`INJURIES.md`](INJURIES.md#the-condition-line) | new thresholds in `plPinfo_KegaRecoverDaysChno` and text in four languages | needs a decision on thresholds |
+| "Two months" and "nine months" injury lines | cut before both releases (the Japanese code is the same) | [`INJURIES.md`](INJURIES.md#the-condition-line): `plPinfo_KegaRecoverDaysChno` never returns chno 3 or 6; French, German, Italian and Spanish hold "See Let's Make revised text 0425" | `--mod injury-lines`: the heavy ladder (`0x216e14`, 15 words) gets thresholds 4,000 (two months) and 12,500 (nine months), and messages 4 and 7 of category 200 get text in the four languages, in the placeholders' bytes ([`INJURIES.md`](INJURIES.md#the-two-cut-lines-back-injury-lines)). It adds new text and shows lines the released game never did, so it is in `--mod balance` and LMASTER full, not lite | built (thresholds chosen 2026-10-24); not checked in the game |
 | Training camps train as the next camp type | bug (off by one), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#two-bugs): `CAMP_LIST` numbers the types 1–87, the training table and the theme check read them as 0–86; Parma, a goalkeeper camp, trains no keeping | `--mod camp-types`: every type lowered by one in `CAMP_LIST.TBB` | tested in PCSX2: one keeper camp raised all three keepers' saving, aerial ability and GK aptitude most (559–617 experience), then catching and rushing out (444–488), and left pace and acceleration alone, the fixed row's pattern ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)) |
 | Seven English camps in the wrong town | PAL left the camp tables on the Japanese city numbers when it renumbered the English cities | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#seven-english-camps-in-the-wrong-town-pal): Liverpool's camp is in Scunthorpe, Manchester's in West London, and five more | `--mod camp-cities`: the seven city ids in `CAMP_LIST.TBB` and `CAMP_EXPLANE.TBB` | tested in PCSX2 (user report): with low popularity the England list shows Southampton, Blackburn and Sheffield, not Basingstoke, Newport and Oakham. The other four need more popularity (Liverpool a sponsor) and weren't seen; the switch moves them the same way |
 | Santiago's camp description | bug (wrong city id), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md): `CAMP_EXPLANE` keys message 6146 to city 764, the camp is 774; the lookup (`SIMPRG.REL 0xa4a80`) finds nothing | `--mod camp-santiago`: the description's city 764 → 774 in `CAMP_EXPLANE.TBB` | tested in PCSX2 (user report): Santiago's camp shows "The Chilean capital is a hub of South American finance …" |
@@ -53,16 +64,25 @@ Rules for an entry:
 
 Not restorations: changes to data that works but plays badly. They
 follow the same rules (evidence, smallest change, tested in PCSX2) and
-stay separate switches, so the restorations can be used without them.
+stay separate switches, so the restorations can be used without them
+(LMASTER lite). LMASTER full has all of them. `--mod balance` is the
+five built 2026-10-24 with the values the user chose: `injury-odds`,
+`injury-lines` (in [Status](#status)), `overseas-bases`,
+`transfer-fees` and `fanbase`.
 
 | Change | Evidence | Fix | Status |
 |---|---|---|---|
 | Better home and away runs in the league schedules | [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-league-of-another-size): the disc has one schedule per size, and some send a club to one venue up to 7 times running (the 22-club leagues, UIDs 11, 30, 40, 48) or 9 (the 26-club English second division with your club, UID 1); the 8-club VS league (UIDs 154–155) reaches 5 | `--mod league-balance` rebuilds those seven UIDs with `schedule.balance_pack` (`set_league` at the same size): no more than 2 running, same clubs, game days and turns, and game bit `w0` 8 kept on its day. Only `PARAM/SCHEDULE_COMPETITION.PAC` changes, by 7 entries that keep their size, so its `.HED` and the `STATIONFILE` copy stay. With a league of another size (`leaguesize.py build`) it balances the build's pack, skipping the leagues the build already rebuilt. Checked with England at 22 and France at 18 plus national-cups in one patch. An improvement, so not in `--mod lmaster` | tested in PCSX2 (user report): in a new England career on `LMAST-test-leagues.iso` (with the tutorial skip), the Schedule screen shows the club's league games alternating `AHAHAHAHAHAH…`, and each game's details screen agrees with it, where retail's first 16 in the English second division (UID 1, slot 24 or 25) are `HHAHAAHHAHHHHHAA` or `AAAAHHAAAAAAAHHH`. So the game takes its fixtures from the rebuilt pack. Not played to the end of a season, and the other rebuilt leagues (the 22-club ones, VS) weren't looked at; they are built the same way. `python SRC/schedule.py league DAT/PARAM` shows what it rebuilds |
 | A harder economy that punishes mistakes: dearer facilities, a wider ticket price range, dearer advertising, and the like | [`ECONOMY.md`](ECONOMY.md), **confirmed**: a build charges the facility record's cost (`PLRESOURCECOMMON.PAC` entry 0) × the business cycle (75–125%) × any sponsor discount; the plan screen's limits are constants in its set-up (`SIMPRG.REL 0x3eda0`); the ad budget and ticket price set attendance through a 21 × 11 table that only covers prices 60–300 and budgets up to 30,000,000, and the budget adds up to 50 supporter popularity a month; the salary limits, £10,000–£12,000,000 ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | `--mod harder-economy`, six switches with the values the user chose (2026-10-23). The cost side: **`facility-tiers`** (`plrcommon.facility_tiers`, data): build costs and upkeep ×2 for all equipment and adverts; grounds (sites) ×2 and ×4 (their upkeep is never charged); club houses: the starting one's upkeep ×2 (£25,000 → £50,000), the next ×2 (£15M, £150,000), the top ×4 (£60M, £600,000); stadiums: 15,000–25,000 ×2 (£15M, £45,000 a stand), 30,000–40,000 ×3 (£52.5M, £124,500), 50,000–60,000 cost ×5 and upkeep ×4 (£150M, £290,000), 110,000 cost ×3.5 and upkeep ×6 (£350M, close to the record's limit of about £358M; £600,000). The stand costs within a stadium aren't traced, so they stay. **`wider-tickets`** (code and table): both ticket screens go to 480 (£80), and the ticket demand table is respaced over 60–480 in steps of 21: up to 300 the old curve, above it crowds fall as (300 ÷ price)^1.47, so £80 draws half of £50's crowd. **`dearer-ads`** (code): the ad budget buys half as much per pound (popularity budget ÷ 1,200,000, a demand column per 6,000,000) and goes up to 60,000,000 (£10M), so the full effect costs twice as much. The income side, for the late game (chosen 2026-10-23): **`sponsor-fees`** and **`tv-fees`** (tables in `SIMPRG.REL`) keep a sponsor fee or TV offer up to £2M and halve the part above (£45M → £23.5M, the £50M TV offer → £26M; G006's TV £31.2M → £19.1M a season); **`season-demand`** (code) halves season-ticket demand (G006 would sell about half its 36,000, £20.5M → about £10.5M). The season-ticket status bug is fixed separately, by the restoration `--mod season-status` ([Status](#status)) | tested in PCSX2 (user report, `LMAST-test-economy.iso` with `--mod harder-economy`): the facility window showed the tiered costs, the plan screen and the other competitions' ticket screen went to £80 and the ad budget to £10M, and a home match at the new prices drew a crowd; "all seems fine". The three income switches were then tested on the same disc with all six (user report: sponsor fees, TV offers and season-ticket sales as on the test sheet; "all fine"). Not yet played through a whole season. The scripts named after season tickets, spectators and popularity are never run ([`SQB_FORMAT.md`](SQB_FORMAT.md#which-scripts-run)); the C code above is what runs |
+| Long injuries more common | [`INJURIES.md`](INJURIES.md#the-kind-tables), **confirmed**: a heavy match injury is six months or more 0% of the time for a rested player and 39% at full fatigue, so rotation all but rules them out | `--mod injury-odds`: kinds 4–8 doubled in every row of both kind tables, to at least 2% (practice) and 5% (match) of a row, taken from kind 3 and then kind 0 so light match injuries stay as they were; a heavy match injury is then six months or longer 5% of the time rested and 78% at full fatigue ([`INJURIES.md`](INJURIES.md#more-long-injuries-injury-odds)) | built; not checked in the game |
+| Overseas bases: dearer, stronger per level | [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches), **confirmed**: one cost per region sets the set-up, the investment per level and the upkeep; the level (0–3) scales the region's popularity change by 0.6–1.2 | `--mod overseas-bases`: the 13 costs doubled in `PLRESOURCESIM.PAC` and its `SIMLOCALMEM0`–`6` copies, and the level factor (level + 1) ÷ 2.5 + 0.4, 0.8–2.0 (`0x268e40`) | built; not checked in the game |
+| Transfer fees higher, up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: one base (1,350,000.0, `0x247288`) starts every fee you pay and every offer you get; price kind 1 caps them at £120M | `--mod transfer-fees`: the base 2,700,000.0 and the cap 15,000,000 (£250M) in all four currencies (`0x24a1c8`–`0x24a21c`) | built; not checked in the game, nor whether the transfer screens have limits of their own |
+| A bigger fanbase counts for more | [`ECONOMY.md`](ECONOMY.md#merchandise), **confirmed**: merchandise starts from a base by supporters, a flat table (12.5× from the smallest fanbase to the biggest); crowds and season tickets weigh popularity against a fixed part; TV offers vary only 0.9–1.15 by popularity | `--mod fanbase`: the merchandise bases ×0.5 at the bottom to ×3 at the top (`SIMPRG.REL 0x1d9ec8`), popularity weighted 195 for 130 and the fixed part 1,500 for 3,000 in crowds and season tickets, and the TV factor 0.75–1.25 | built; not checked in the game. Goods prices stay: what making stock costs isn't traced |
 
 Ideas for the harder economy (the user's), with what each would change.
-The first three are built as `--mod harder-economy` and the fourth as
-`--mod season-status` (above); the rest aren't decided:
+The first three are built as `--mod harder-economy`, the fourth as
+`--mod season-status` and the fifth as `--mod overseas-bases` (above);
+the rest are partly built or not decided:
 
 | Idea | Where it lives | Known |
 |---|---|---|
@@ -70,10 +90,10 @@ The first three are built as `--mod harder-economy` and the fourth as
 | A wider ticket price range | the plan screen's limits (`SIMPRG.REL 0x3ef94`, `0x3ef98`) and the ticket demand table (`0x556250`, rows by price, thresholds at `0x556120`) ([`ECONOMY.md`](ECONOMY.md#the-ticket-demand-value)) | **confirmed**: both are fixed at 60–300 (£10–£50). Widening the screen alone makes every price past either end draw the same crowd as that end, so the table needs new rows as well |
 | Dearer advertising | the ad budget's limit (`SIMPRG.REL 0x3eec0`) and what it buys: ticket demand up to 30,000,000 and budget ÷ 600,000 supporter popularity a month ([`ECONOMY.md`](ECONOMY.md#what-the-ad-budget-does)) | **confirmed**: payment 17 is a twelfth of the budget a month, so a dearer ad means a smaller effect per pound (change the 600,000 divisor at `0x268ce0` and the table's 3,000,000 step at `0x2719e0` and `0x271a88`), not a higher price |
 | Season tickets for top clubs | the status factor in `pwkUnkei_GetExpectSeat` (`0x272838`–`0x2728dc`) | **confirmed** bug: every club status above 10,000 gets 0.6, so the 0.7–1.0 steps for higher status are never reached ([`ECONOMY.md`](ECONOMY.md#season-tickets)). Built as the restoration `--mod season-status` (above) |
-| Dearer overseas bases, investment in them and their upkeep | `PLRESOURCESIM.PAC` entry 1: set-up cost per region and level rates (`_GetOverseasBranchEstablishCapital`, `0x232d88`; [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)), payments 18–19 | **confirmed**: the maintenance uses the same two tables, so this is a data edit |
-| Merchandise: dearer to stock, bigger margins | income 7 (Merchandise) in the accounts | the sales code isn't traced |
+| Dearer overseas bases, investment in them and their upkeep | `PLRESOURCESIM.PAC` entry 1: set-up cost per region and level rates (`_GetOverseasBranchEstablishCapital`, `0x232d88`; [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)), payments 18–19 | built as `--mod overseas-bases` (above), with stronger levels |
+| Merchandise: dearer to stock, bigger margins | income 7 (Merchandise), `pwkGd_GoodsMonthlySales` ([`ECONOMY.md`](ECONOMY.md#merchandise)) | the sales are traced, and `--mod fanbase` ties them to the fanbase; the prices are the shop list's `+0x8` (`SIMPRG.REL 0x241a00`), but what making stock costs isn't traced |
 | Reputation harder to raise | club rank (0–31, save `+0xa0`), the world rank points (`SIMPRG.REL 0x151568`) and the status rank (`SAVE_FORMAT.md`, club rank leftovers) | what changes the rank after a match (`0x26ddd8`) and the weights behind the points aren't traced |
-| Lesser players dearer, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the price limits ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits): transfer fees are kept at £100,000–£120,000,000 by constants in the initializer at `0x24a140`, so a higher cap is a code edit) | how a transfer fee is worked out isn't traced |
+| Lesser players dearer, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the price limits ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | `--mod transfer-fees` (above) doubles every fee and raises the cap to £250M ([`ECONOMY.md`](ECONOMY.md#transfer-fees)); raising the lesser players more needs the fee's rank and ability table (`0x398478`), not traced |
 
 Another idea (the user's, not decided): **a third tier and a harsher
 end.** Each season the second division's bottom two go down to a third

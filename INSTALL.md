@@ -131,21 +131,24 @@ For people who make the mod. Set the project up as the README says,
 then build a modded image from the Redump one:
 
 ```bash
-python SRC/patch_disc.py patch disc.iso lmaster.iso --mod lmaster --mod-saves
+python SRC/patch_disc.py patch disc.iso lmaster.iso --mod lmaster-full
 ```
 
 The switches:
 
 | Switch | What it does |
 |---|---|
-| `--mod lmaster` | the LMASTER Mod's fixes: main sponsor negotiation, the rival's own manager, the World National Cup's results viewable, training camps that train their own type in their own towns, Santiago's camp description, Canberra's camp clubs, the drill names, 18-month injuries that can't come out as short as a light one, injuries to players of 35 and over at full fatigue picked from the right table, Virtua Pro Football edit players keeping their best play styles, and season tickets by club status ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) |
+| `--mod lmaster-full` | LMASTER full: everything below, with the modded disc's own save folders (`--mod-saves`), which it always includes |
+| `--mod lmaster-lite` | LMASTER lite (also `--mod lmaster`), the fixes only: main sponsor negotiation, the rival's own manager, the World National Cup's results viewable, training camps that train their own type in their own towns, Santiago's camp description, Canberra's camp clubs, the drill names, 18-month injuries that can't come out as short as a light one, injuries to players of 35 and over at full fatigue picked from the right table, Virtua Pro Football edit players keeping their best play styles, and season tickets by club status ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) |
 | `--mod harder-economy` | dearer facilities (much dearer at the top), tickets up to £80, dearer advertising, and smaller late-game sponsor, TV and season-ticket income ([`ECONOMY.md`](DOC/ECONOMY.md)) |
+| `--mod balance` | injuries of six months or longer about twice as common, and the two-month and nine-month injury lines back; overseas bases twice as dear and twice as strong per level; transfer fees twice as high, up to £250M; and a bigger fanbase selling more merchandise and drawing more fans and TV money ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)) |
 | `--mod league-balance` | league schedules where no club plays more than two games running at home or away |
 | `--mod-saves` | the modded disc's own save folders (above) |
 
 `python SRC/patch_disc.py` with no arguments lists every switch. The
 mod editor (`python SRC/editor.py open`) does the same through File >
-Build disc, with a box for each switch, and adds the files you edited.
+Build disc, with a box for each switch and a button for each LMASTER
+build, and adds the files you edited.
 
 Then make the patch to share:
 

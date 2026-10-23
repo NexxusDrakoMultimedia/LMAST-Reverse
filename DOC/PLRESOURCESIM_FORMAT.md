@@ -90,9 +90,25 @@ message category 961 (`plCity_GetString`,
 
 `_GetOverseasBranchEstablishCapital(region)` is table 0's cost (6,300,000
 to 16,500,000), less the sponsor discount in
-`pwkTown_GetOverseasBranchEstablishCapital`. Raising a branch to a level
-costs `cost × round(rate[level] × 1000) / 1000` (`_GetUp1SituLevelCapital`,
-`0x232f70`), and the maintenance expense uses the same two tables.
+`pwkTown_GetOverseasBranchEstablishCapital`. **Confirmed** from the code:
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x232f70` | `_GetUp1SituLevelCapital` | a step of investment at level *L* is cost × round(rate[*L*] × 1000) ÷ 1000 |
+| `0x233388` | `pwkTown_OverseasBranchInvestment` | a branch has a level (byte `+2`, 0–3) and a progress (byte `+3`, %): each step invested adds a point, 100 raises the level and sets the progress to 10; level 3 is the last |
+| `0x233648` | `GetMaintenanceExpence` | the upkeep at level *L* is cost × round(rate[4 + *L*] × 10000) ÷ 10000, less the bigger of a sponsor and a TV discount |
+| `0x2337f8` | `pwkTown_GetOverseasBranchMaintenanceExpenseFromRegion` | gives the upkeep for levels 0–3 |
+| `0x268e18` | (from `pwkTeam_ChangePop_Month`) | the region's monthly popularity change is × (level + 1) ÷ 5 + 0.4: 0.6, 0.8, 1.0, 1.2 for levels 0–3 ([`ECONOMY.md`](ECONOMY.md#supporter-popularity)) |
+
+So the cost sets all three prices. `plrsim.py setbranch` writes new costs.
+`patch_disc.py --mod overseas-bases` (in `--mod balance` and
+`--mod lmaster-full`) doubles the 13 costs, here and in the copies in
+`PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 17), and makes the level factor
+(level + 1) ÷ 2.5 + 0.4 (the float's `lui` at `0x268e40`): 0.8, 1.2,
+1.6, 2.0, twice the gain over 0.4 at each level. Not checked in the game.
+Where else a branch's level counts (the scouting delays,
+[`EVS_PROCEDURES.md`](EVS_PROCEDURES.md); `pwkRental_OverseasBranchCheck`)
+isn't changed.
 
 ## Entry 2: unread
 

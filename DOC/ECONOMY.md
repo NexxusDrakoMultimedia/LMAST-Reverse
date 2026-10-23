@@ -137,8 +137,12 @@ table at `0x554df0`). The change from `0x268b00` is the sum of:
 | new kit | −20 when `pwkGd_DoesChangedUniType` |
 | supporter complaints | minus the largest `pwkSupCom_GetSupporterComp` of 9 kinds ÷ 2,622 |
 
-Overseas regions multiply the result by two factors from the branch
-(`0x268e18`, `0x268e70`).
+Overseas regions multiply the result by two factors: the branch's level,
+(level + 1) ÷ 5 + 0.4 (`0x268e18`: 0.6–1.2 for levels 0–3;
+[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches),
+where `--mod overseas-bases` makes it 0.8–2.0), and a float from
+`0x554ec8` picked by `plMisc_OFcheck`(the largest `+0x1b0` among your
+players from that region, 15) (`0x268e70`).
 
 ## Attendance and ticket income
 
@@ -173,7 +177,11 @@ match:
 > walk-ups = (home popularity ÷ 10 × 130 + (*k* + 1) × 3,000) × demand × (grade + importance) × weather × (95–104) ÷ 60,000,000
 
 The result is capped at the stadium's capacity. Home popularity is the
-region value above. *k* is the function's u8 argument, 0–32 by its
+region value above. `patch_disc.py --mod fanbase` (in `--mod balance`)
+makes the 130 195 and the 3,000 1,500 (`addiu` immediates at `0x2722d8`
+and `0x2722f0`), so the crowd follows popularity more and the fixed part
+less: at the full 65,535 the first part grows by about half, while a
+club of popularity 5,000 and *k* = 10 keeps about what it had. *k* is the function's u8 argument, 0–32 by its
 tables (the club rank would fit; not traced). Grade is 11, 10, 9, 8, 8,
 8, 5, 0 by `PlMatchGrade` (`0x556218`). Importance is 11, 13, 12, 11,
 11, 40 by `IMPORTANT_MATCH` (`0x556238`). Weather is 10, 10, 5, 5, or
@@ -233,7 +241,10 @@ status × 30, each × (90–109) ÷ 100. The other slots add nothing.
 > sold% = demand × `pwkUnkei_GetSeasonRate`(popularity, club status) ÷ season tickets on sale, at most 100
 
 (27,000 and 18,000 are for the bool argument `CalcSeat` passes, false;
-true gives 66,000 and 19,000.)
+true gives 66,000 and 19,000.) The first part is the walk-up formula's
+popularity / 10 × 130 + (*k* + 1) × 3,000 with *k* = 8 (21 for true),
+from the same immediates at `0x2728ec` and `0x2728f0`, which
+`--mod fanbase` changes as it does the crowd's.
 
 `GetSeasonRate` (`0x271ae8`) is a 15 × 15 byte table (`0x5565f0`) indexed
 by popularity ÷ 4,369 and club status ÷ 4,369, from 10 (both low) to 80
@@ -245,7 +256,7 @@ and otherwise gives 0.6. Its later steps (0.7, 0.8, 0.9, 1.0 above
 because the first test already took every status above 10,000
 (`0x272838`–`0x2728dc`). A top club sells season tickets as if it were
 an average one. The Japanese executable has the same 31 words (at
-`0x2728f0`). `patch_disc.py --mod season-status` (in `--mod lmaster`)
+`0x2728f0`). `patch_disc.py --mod season-status` (in `--mod lmaster-lite`)
 rewrites them as the intended ladder: 0.5 up to 10,000, then 0.6, 0.7,
 0.8 and 0.9 a band of 10,000, and 1.0 above 50,000. Checked by running
 both versions in a small MIPS simulator over the band edges.
@@ -304,8 +315,11 @@ block 1 `+0x11c54`: `+0x0` station (0 = free slot), `+0x4` amount,
 
 An offer's amount (`0x163a10`, from the offer list `0x164088`) is
 base × the business-cycle factor (1.25–0.75, doubles at `0x1d9e70`) × a
-home-popularity factor: 0.9, 0.95, 1.0, 1.05 or 1.1 for popularity in
-fifths of 0–65,535 (`pwkTeam_Pop(0)`). The bases are the 19 records of
+home-popularity factor: 0.9, 0.95, 1.0, 1.05 or 1.15 for popularity in
+fifths of 0–65,535 (`pwkTeam_Pop(0)`; each factor a double built in
+`$s1` by 7 instructions, `0x163a60`, `0x163a90`, 1.0 at `0x163a34`,
+`0x163ad8`, `0x163b14`). `--mod fanbase` makes them 0.75, 0.875, 1.0,
+1.125 and 1.25, each built by `ori` and `dsll32` as the 1.0 is. The bases are the 19 records of
 0x1c bytes at `0x241780` (`+0x0` station, `+0x8` base, `+0xc` key):
 £1M–£4.75M for the 13 smaller offers, £8.5M–£16.5M for four bigger
 ones and £30M and £50M at the top (base × 100 ÷ 6). Which stations
@@ -319,6 +333,84 @@ are on offer is a 60-bit mask at block 1 `+0x127c0`, kept by
 for the season. G000's three 4-year contracts hold 15% more than the
 formula; what the term adds isn't traced.
 
+## Merchandise
+
+**Confirmed.** Merchandise income (income 7) is
+`pwkGd_GoodsMonthlySales(1)` (`0x165dc0`), stored each month at SLES
+`0x3991e0` (`0x251ed8`) and read by `pwkRec_CalcMonthGoodsIncome`
+(`0x253008`). The goods on sale are 12 slots of 0x10 bytes at the club's
+Pwork `+0x12700` (`pwkGd_GetMakeGoodsData`, `0x164b18`), each naming a
+record of the shop list: 60 records of 0x10 bytes at `0x241a00`
+(`0x164ac0`), `+0x0` id, `+0x1` kind, `+0x8` u32 price (stored unit; 36
+to 360 for the ordinary goods, £6–£60). For each slot the month's units
+are
+
+> units = round(base × trend × combo × player × kit × kit2 × weather + 0.5)
+
+| Factor | Function | Value |
+|---|---|---|
+| base | `0x165598` | from the supporters, below |
+| trend | `0x165638` | a float table by months on sale (`0x1d9f60`, 12 a row) and the item's hit or flop (`0x1647f0`; `SetBigHitGoodsId`, `SetBigDisGoodsId`) |
+| combo | `0x165798` | a percentage ÷ 100 (at most 1.0) from the 18 combination records of 10 bytes at `0x241dc0` that the goods on sale match |
+| player | `0x165920` | for a player's goods, that player's popularity abroad (`PlPinfo +0x23a`) ÷ 4,369 through `0x1da320` (0.05–1.5); 0.1 with none, 0.8 when the slot names no player |
+| kit, kit2 | `0x165b30`, `0x165c00` | for kit goods (shop list `+0x3`) from the 2009 season: 0.8 when the kit's type changed (club `+0x129d0`, `+0x129d2`), and by how many recent kits were the same (`0x1da360`: 1.0, 1.0, 0.8, 0.5); 1.0 otherwise |
+| weather | `0x165a78` | 0.5 when the home city's temperature (`plCity_GetTemperature`) is under 11, 16 or 26 for goods of weather type 1, 2 or 3 (shop list `+0xc`) |
+
+The units sold (at most the stock left) × the price (half in month 6 of
+the date, `PlDate +0x3`, when sold-out goods aren't reported either) ×
+the business cycle's 125, 108, 100, 92 or 75 (`0x1da370`) ÷ 100 is the
+slot's income.
+
+**The base** sums `pwkTeam_Supporter` over the 13 regions and finds it in
+17 `{threshold, base}` pairs at `0x1d9ec8`: 800 below 10,001 supporters,
+then 1,000, 1,200, 1,400, 1,600, 1,800, 2,000, 2,200, 2,400, 2,800,
+3,200, 3,600, 4,000, 6,000, 7,000, 8,000, and 10,000 above 10,000,000. A
+region's supporters (`pwkTeam_Supporter`, `0x259a30`) are ((popularity
+÷ 20)² + 10,000) × a byte weight by region × `pwkSup_GetSupporterRand` ÷
+10,000, so they grow with the square of popularity. The weight is from
+`0x553100` for the home region and an overseas region whose branch byte
+`+1` is set, from `0x553110` for one with only byte `+0` set; any other
+region has none. The table is flat: the biggest fanbase
+sells 12.5 times what the smallest does.
+
+`--mod fanbase` scales the 17 bases from ×3 at the top to ×0.5 at the
+bottom, evenly on a log scale: 30,000, 21,457, 16,786, 12,864, 7,667,
+6,170, 4,903, 3,836, 2,939, 2,409, 1,958, 1,575, 1,252, 979, 751, 559
+and 400, so the biggest fanbase sells 75 times the smallest.
+
+## Transfer fees
+
+**Confirmed.** Every player move starts from one base fee,
+`0x247130` (through `pwkMoney_CalcMoveBase`, `0x247a00`, and
+`pwkMoney_GetMoveBaseMoney`, `0x248450`): 1,350,000.0 (a float built at
+`0x247288`) × a factor by club rank and the player's ability (a table at
+`0x398478`, 0x18 bytes a row) × the sum of two more factors × two more,
+then held to price kind 1's limits. It is used by
+
+| Caller | What |
+|---|---|
+| `pwkMoney_CalcuPurchaceOtherTeamPlayerTransferMoney` (`0x248280`) | what you pay another club: the base × 80–100% ÷ 100 |
+| `CComOffer::CalcuOfferClub` (`0x225b20`) | what clubs offer for your players |
+| `plTeam_IsGenerateAgentEvent` (`0x220790`) | an agent's offer |
+
+`CalcPurchaceOfferTransferMoney` (`0x248180`) then gives an offer × (0.7
++ a random 0 to 0.2 + 0.015 × the club's `+0xa0`). Price kind 1's limits
+(the initializer at `0x24a140`, in units of 100;
+[`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) are a minimum
+of 1,000, 4,000, 6,000 or 3,000 by currency and a maximum of 7,200,000
+(£120M) in all four.
+
+`pwkMoney_CalcPlayerMarketPrice` (`0x247d78`) isn't a transfer fee: it
+is the salary a player asks for (its callers are the contract renewal and
+the dissatisfaction check), 30,000 × form factors × two tables × 48.
+
+`--mod transfer-fees` (in `--mod balance`) makes the base 2,700,000.0
+(the `lui` at `0x247288`) and the maximum 15,000,000, £250M (the four
+`lui`/`ori` pairs at `0x24a1c8`–`0x24a21c`), a whole number of every
+currency's step. Fees within the old cap double; fees the old cap held
+at £120M can now reach £250M. Not checked in the game, nor whether the
+transfer screens have limits of their own.
+
 ## Still unknown
 
 - What the business cycle changes besides build costs, and its random
@@ -329,7 +421,11 @@ formula; what the term adds isn't traced.
 - *k* in the attendance formula, and what the turn-up rate's four tables
   are indexed by.
 - Plan `+0x16` (7,000 in every save).
-- Merchandise (income 7, `pwkGd_GoodsMonthlySales`) isn't traced.
+- What making merchandise costs, and how the stock is bought; the
+  shop list's other fields (`+0x2`, `+0x4`, `+0x5`); and what the trend
+  table's rows are.
+- The transfer fee's rank and ability factor and its three others, and
+  what the club byte `+0xa0` in an offer is.
 - Which sponsors a club is offered, and what `+0x18` is for (suppliers?).
 - What a TV contract's term adds (G000's 4-year contracts are 15% over
   the formula), how often `Pwk.CheckTV` pays, and what each station
@@ -345,5 +441,10 @@ python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkUnkei_GetTicketHosei pwkUnkei_G
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_ChangePop_Month pwkTeam_PopChange
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 1690a0 60 --sles ISO/SLES_541.51
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 163a10 90 --sles ISO/SLES_541.51
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 165dc0 240 --sles ISO/SLES_541.51
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 165598 30 --sles ISO/SLES_541.51
+python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_Supporter pwkMoney_CalcuPurchaceOtherTeamPlayerTransferMoney
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x247130 160
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x24a140 110
 python SRC/save.py finances <save>
 ```

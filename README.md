@@ -169,7 +169,7 @@ disassemble as unrelated MIPS instructions.
 | [`gamedata.py`](SRC/gamedata.py) | `GAME/GAMEDATA.BIN`: checks the 4,131 records (body part and surface of each ball contact) and prints them with the fields the match engine is known to read | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) |
 | [`bpb.py`](SRC/bpb.py) | the play books `GAME/PLAYBOOK.BPB` and `COMBINATION.BPB`: checks every play and prints one's starting spots and paths (players by role, and ball, in metres); checks and prints the `COMBINATION2.CBB` records (blocks, slots, areas) | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) |
 | [`plrcommon.py`](SRC/plrcommon.py) | the common pack `PLRESOURCECOMMON.PAC`: checks all 25 tables (facilities, formations, nations, competitions) and prints any one, with the facility records' named fields; `set` edits a facility's build cost, second cost, upkeep, build time or stadium capacity, and `roundtrip` checks every field's edit | [`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md) |
-| [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database; replaces free agents (`setfree`) and checks that the pack rebuilds byte for byte (`roundtrip`) | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
+| [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database; replaces free agents (`setfree`) and overseas bases' costs (`setbranch`), and checks that the pack rebuilds byte for byte (`roundtrip`) | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
 | [`leaguesize.py`](SRC/leaguesize.py) | a nation's two divisions: checks that the first season plays out with each club once (`nations`), and changes the first division's size, moving clubs to or from the second (`plan`, which also gives the sizes each nation allows; `build`, for one or more leagues: the slots, last season's records, the games, the game days and the club counts in `REGULATION.TBB` and `CLUBRESULT.TBB`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from) |
 | [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources; re-encodes all three packs and their `.HED` byte for byte (`roundtrip`); builds and checks league schedules of 2–32 clubs (`league`) and finds free turns for their game days (`turns`); moves schedules' game days (`shift`); rebuilds the badly balanced leagues at their own size (`balance`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
 | [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command, module and field names, prints and edits a PwkScript's data tables (`tables`, `settable`, one script or several in a pack), re-encodes every script byte for byte (`roundtrip`) and patches a command (`setcmd`); `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
@@ -281,7 +281,7 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below), and applies named switches (`--mod`, `--mod lmaster` for the LMASTER Mod); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below), and applies named switches (`--mod`; `--mod lmaster-lite` and `--mod lmaster-full` for the LMASTER Mod); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes |
 | [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
 
 ```bash
@@ -310,17 +310,25 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
 - **Switches** (`--mod <name>,...`, or each as a flag of its own).
   `skip-tutorial` skips the opening playoffs on test discs, `launcher`
   boots into the developers' debug menu, and `mod-saves` gives a modded
-  disc its own saves. The LMASTER Mod's fixes (`--mod lmaster` for all of
-  them, [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) are
-  `sponsor-negotiation`, `rival-manager`, `national-cups`, `camp-types`,
-  `camp-cities`, `camp-santiago`, `camp-clubs`, `drill-names`,
-  `injury-value`, `injury-row`, `vpf-styles` and `season-status`. Its
-  improvements stay out of `lmaster`: `league-balance` rebuilds the
-  league schedules that send a club to one venue up to 9 times running,
-  and `--mod harder-economy` is `facility-tiers` (dearer facilities,
-  much dearer at the top), `wider-tickets` (up to £80), `dearer-ads`,
-  and for the late game `sponsor-fees`, `tv-fees` (amounts over £2M
-  halved above it) and `season-demand` ([`ECONOMY.md`](DOC/ECONOMY.md)).
+  disc its own saves. The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
+  comes in two builds. `--mod lmaster-lite` (also `lmaster`) is its
+  fixes: `sponsor-negotiation`, `rival-manager`, `national-cups`,
+  `camp-types`, `camp-cities`, `camp-santiago`, `camp-clubs`,
+  `drill-names`, `injury-value`, `injury-row`, `vpf-styles` and
+  `season-status`. `--mod lmaster-full` adds every improvement and
+  `mod-saves`, so a full disc never shares saves with the retail game:
+  `league-balance` rebuilds the league schedules that send a club to one
+  venue up to 9 times running; `--mod harder-economy` is `facility-tiers`
+  (dearer facilities, much dearer at the top), `wider-tickets` (up to
+  £80), `dearer-ads`, and for the late game `sponsor-fees`, `tv-fees`
+  (amounts over £2M halved above it) and `season-demand`
+  ([`ECONOMY.md`](DOC/ECONOMY.md)); `--mod balance` is `injury-odds`
+  (long injuries twice as common), `injury-lines` (the cut two-month and
+  nine-month lines, [`INJURIES.md`](DOC/INJURIES.md)), `overseas-bases`
+  (twice the cost, twice the effect per level), `transfer-fees` (twice as
+  high, up to £250M) and `fanbase` (merchandise, crowds and TV offers
+  follow the fanbase more). The tutorial skip and the launcher are in
+  neither build.
   `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
   image prints the executable's PCSX2 CRC.
 
