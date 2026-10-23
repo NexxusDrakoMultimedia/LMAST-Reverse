@@ -1539,7 +1539,12 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
   kick) are first set, flag bits `0x200`–`0x2000` and kind 5,
   the 45 calls with no class, and the sources of parameters 5, 16 and
   24. Also which attack pattern letter is which; abilities 59–63 aren't
-  copied into the match record, so their effect is outside it.
+  copied into the match record, so their effect is outside it. The
+  letters may be the club's five pattern slots (`PlTeamData +0x489f`,
+  any of the 30 patterns) rather than fixed kinds: training's
+  combination A–E practices read those slots, and the match takes its
+  pattern combinations from them
+  ([`BPB_FORMAT.md`](BPB_FORMAT.md#how-a-team-uses-the-combinations)).
 - What each speech tone and condition type value is, what the ball touch
   does (match parameter 139 has no reader), and which dribble style
   looks like what.

@@ -91,6 +91,11 @@ evidence and how it was tested; the git history holds the rest.
       A's kind), the zone mask and distance limits (block C), and the
       slots as the participants' areas; records 0, 1, 4, 18 and 59 never
       start ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#how-a-team-uses-the-combinations))
+- [x] Which combinations a team gets (8 from fixed tables by the style's
+      attack speed and type, up to 3 from the club's attack patterns)
+      and which runs (highest record first, pattern ones after a roll on
+      parameters 72–74); only 65 of 540 records can load
+      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#how-a-team-uses-the-combinations))
 
 ## 3. Write: a writer for every format a mod changes
 

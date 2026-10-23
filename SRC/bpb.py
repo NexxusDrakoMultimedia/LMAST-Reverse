@@ -41,8 +41,10 @@ fb::CombinationSequencer, GAMEPRG.REL 0xc7a78):
 Slot k (1 to n - 1) is where combination participant k is found: the
 first outfield player inside its area (0xc1fc8). The types are named in
 CBB_SLOT_NAMES; types 0 and 6 never find anyone. A team has 11
-combinations, one per player slot, from 3 sets in its CTeamPlayerSetting
-(0xc1180, 0x14b8e0).
+combinations (0xc1180): 8 drawn from a fixed table of basic records
+(0x14c3f0) and up to 3 of the club's attack patterns (record 60 + 16 x
+(pattern - 1)); all 11 are tested against the ball holder, highest
+record first (0xc1438). Only 65 records can ever load.
 
 `info` checks every record against this layout; `cbb` prints records.
 

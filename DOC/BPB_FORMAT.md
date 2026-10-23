@@ -137,15 +137,77 @@ of `0x15c` bytes at `+0x6c8`. `0xc1180` fills them from the team's
 `Pwk::CTeamPlayerSetting`: combination *i* (0–10) is record
 `0x14b8e0(set, i)`, the u32 at style record `+0x78` + set × `0x2c` +
 *i* × 4, where the set (0–2) is the style record's `+8` and the style
-record is one of three of `0x5b4` bytes (`0x14af00`). The setting's
-constructor (`0x14aaf0`) writes −1 to all 33; what writes the real
-record numbers isn't traced.
+record is one of three of `0x5b4` bytes (`0x14af00`), one per team
+style. The setting's constructor (`0x14aaf0`) writes −1 to all 33.
+
+**Which records a team gets.** At match setup `GAME_MODULE`
+(`0x2370`) builds each team's three style records from its
+`PlTeamData` (`0x14bf68`, once per team style *k*):
+
+- **The set** (`0x14c368`): with *s* the style's Attack Speed (team
+  style `+0x5d`, `formset.py` byte 1) and *t* its Attack Type (`+0x5e`,
+  byte 2), the largest of *s*, *t* and 6 − *t* picks it: *t* set 1,
+  *s* set 2, 6 − *t* set 0 (ties go to *t*, then to 6 − *t*). It is
+  stored at style record `+8` (`0x14b3a0`, its only caller), so it is
+  fixed for the match.
+- **Slots 0–7 of each set** (`0x14c3f0`): 8 of 12 records, drawn by a
+  Fisher-Yates shuffle with the game's seeded random numbers (`0x14c2a8`,
+  `g_gameSeed`) from a fixed table per set (`GAMEPRG.REL` data):
+
+  | Set | Table | Records |
+  |---|---|---|
+  | 0 | `0x28c7f0` | 3, 4, 6, 7, 8, 9, 12, 12, 14, 15, 16, 19 |
+  | 1 | `0x28c820` | 22, 23, 28, 29, 30, 31, 32, 33, 36, 37, 38, 39 |
+  | 2 | `0x28c850` | 40, 41, 46, 47, 49, 52, 53, 54, 55, 56, 58, 59 |
+
+- **Slots 8–10** (the same in all three sets): up to three of the
+  club's attack patterns, each pattern *p* (1–30) giving record
+  `0x24a5e8`[*p* − 1] = 60 + 16 × (*p* − 1). For a team whose
+  `PlGiTask::GetOperator` (SLES `0x211d38`, byte `+0x8a` + side of the
+  match task) is 0, three picks at random from the five pattern slots
+  at `PlTeamData +0x489f` (the slots training's combination A–E
+  practices read, [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md)), skipping
+  empty and repeated ones. Otherwise the first three non-zero entries
+  found through the five bytes at `+0x498c` (each indexes 3-byte
+  entries at `+0x498f`, whose first byte is the pattern); what fills
+  those bytes isn't traced.
+
+So the game can only load 65 of the 540 records: the 35 numbers in the
+tables (record 12 twice) and 60, 76, …, 524, the first of each
+pattern's 16. The other 15 of each 16 run the same script (identical
+`.CSB` blocks) with slightly different areas and no distance limits,
+and nothing loads them: `0xc2340`, the only caller of the `.CBB` reader,
+takes its numbers only from these sets. Records 0–2, 5, 10, 11, 13, 17,
+18, 20, 21, 24–27, 34, 35, 42–45, 48, 50, 51 and 57 aren't in any table.
+
+**Which one runs.** No combination belongs to a ball holder. When the
+controller is in its select state (`+0x6c4` = 2), `0xc1438` tests all
+11 against the current ball holder (`0xc1e70`, the test below, which
+returns the number of participants found), sorts the ones that pass by
+record number × 10 + participants, highest first (comparator
+`0xc31e8`), and goes down the list. A record below 60 is accepted
+outright; a pattern record (60 or more) needs a roll (`0xc16a8`): a
+random 0–99 (`0x1c5f00`, the seeded generator) below the ball holder's
+match parameter for its kind:
+
+| Records | Patterns | Parameter ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#who-reads-each-parameter)) |
+|---|---|---|
+| 60–251 | 1–12 (`LS`, `RS`) | 73: attacks down wings |
+| 252–347 | 13–18 (`CT`) | 74: attacks through middle |
+| 348–443 | 19–24 (`CA`) | 72: counterattack |
+| 444–539 | 25–30 (`PO`) | the average of 73 and 74 |
+
+If the roll fails, `0xc6288` is called on `+0x15c8`. The candidate
+starts (`0xc1af0`, the script by `0xc7770`, then `0xc1b08`) when
+`+0x15e0` is then non-zero; otherwise the next one is tried. So the
+club's attack patterns come first, and a basic combination runs when
+none of them passes.
 
 `0xc2340` copies a record into its combination object:
 
 | `.CBB` field | Object | Used by |
 |---|---|---|
-| record number | `+0x4c` | – |
+| record number | `+0x4c` | the sort and the roll (`+0x714` from the controller) |
 | A kind | `+0x8` | the trigger, below |
 | A's two values (kind 1) | `+0x28`, `+0x30` | not traced |
 | B kind, and its value (kind 2) | `+0x20`, `+0x24` (`0xc2b90`/`0xc2b98`) | not traced |
@@ -300,9 +362,9 @@ participants are the ones the record's slots found
 - `CPlayBookDataBase::GetFormationData` (`0x2e7d88`, `IFORM`).
 - Who reads A's two values, block B and C's four u32 once they are in
   the combination object (`+0x28`, `+0x30`, `+0x20`, `+0xc`–`+0x18`).
-- What writes a team's combination record numbers (style record
-  `+0x78`) after the −1s, which of the 11 combinations runs for which
-  ball holder, and what picks the set (style record `+8`).
+- What fills `PlTeamData +0x498c`/`+0x498f` (the attack patterns of a
+  team whose `GetOperator` is set), what `GetOperator` stands for, and
+  what `+0x15e0` and `0xc6288` do when a candidate is tried.
 - What the controller's `+0x1608` "line" value is, and type 6's
   position (`0xc3270`).
 - The area types of `Combi2`, `Combi3` and `Combi17`–`Combi24`
