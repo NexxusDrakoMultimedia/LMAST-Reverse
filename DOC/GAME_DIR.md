@@ -27,11 +27,11 @@ BCB3, DTPK) are **empirical**, checked against every file on the disc.
 | `*.SNP` | Ninja `NSIF` + `NSNT` | node tree |
 | `*.SVR` | `GBIX` + `PVRT` | textures. `GM_KEYHELP0-6` / `GM_TITLE0-6` are probably per-language sets; the code names only `gm_keyhelp.svr` / `gm_title.svr` |
 | `*.SVM`, `EF001.BIN`, `FLARE.BIN` | `PVMH` | texture archives |
-| `BALLMOTION`, `OPTMOTION*`, `PLAYERMOTION`, `SHADOWCOLLI`, `WALLCOLLI` | BINPAC | see `PAC_FORMAT.md` |
+| `BALLMOTION`, `OPTMOTION*`, `PLAYERMOTION`, `SHADOWCOLLI`, `WALLCOLLI` | BINPAC | see [`PAC_FORMAT.md`](PAC_FORMAT.md) |
 | `CUTINPACK.BIN` + `_HEADER.BIN` | KC@P of 277 `etc::PackData` entries | the match's cut-ins ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp), [`PLAYER_DIR.md`](PLAYER_DIR.md)). Every entry starts with a `CIB0` block (type 19); after it come Ninja models (types 20 and 24, 71 in all), `PVMH` textures (21, 71), motions (22, 3,357) and 7 `BMT1` blocks (23). 24 entries hold only the `CIB0` block (**empirical**, `packdata.py info --all`). `CIB0` and `BMT1` aren't decoded |
 | `PLAYBOOK.BPB`, `COMBINATION.BPB` | play books | the players' and ball's paths in each set play and move, in metres: see [`BPB_FORMAT.md`](BPB_FORMAT.md) (`Pwk::PlayBookData`) |
 | `COMBINATION2.CBB/.CSB` | 540 combination records / 540 PRS-packed `SQB1` scripts | the combinations' data and scripts: see [`BPB_FORMAT.md`](BPB_FORMAT.md#combination2cbb-and-csb) |
-| `BACK_MATCH.TBB`, `TACTICS_PLAYBOOK_EDIT.TBB` | TBB | see `TBB_FORMAT.md` |
+| `BACK_MATCH.TBB`, `TACTICS_PLAYBOOK_EDIT.TBB` | TBB | see [`TBB_FORMAT.md`](TBB_FORMAT.md) |
 | `AI_PARAM.BIN` | 467 × f32 | no reader found, by name or by content: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md#ai_parambin) |
 | `GAMEDATA.BIN` | 4,131 records of 0x30 bytes | the match engine's table (loader slot 10); a few fields read: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md) |
 | `TEAM.TMB` | `TMB1` | team names, 3-letter codes, stadiums (`Highbury`/`LON`). Dated Mar 2005, not referenced by name. Probably stale |
@@ -430,7 +430,7 @@ python SRC/sounddat.py fname   DAT/GAME/FNAMEEN 10409
 `extract` writes `slotNN_<lang>_<crowd>/`, `tbl/` and `dtpk/`. All 96
 slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
 
-## Open questions
+## Still unknown
 
 - Names for the loader functions listed above. `snr2.py` labels their
   imports ([`SNR2_FORMAT.md`](SNR2_FORMAT.md)), but local functions carry

@@ -220,7 +220,7 @@ python SRC/packdata.py extract DAT/PLAYER/FC_EURO_FACEPACK_01.HED 0 out/face
 python SRC/svr.py info out/face                                 # the texture blocks
 ```
 
-## Open questions
+## Still unknown
 
 - The 0x18-byte header of face block 4 (its first four bytes are
   `ff ff ff ff` exactly when the head has no hair), and whether its

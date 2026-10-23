@@ -867,7 +867,6 @@ more, and the three counts add up to 27,950. So "1mil" labels the
 required-status cutoff 10,000
 ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#players-98-bytes-779-bits-used)).
 
-The stadium viewer's CREATE fields look like the stadium build request of
-[`STADIUM_DIR.md`](STADIUM_DIR.md): level, stand level, time of day,
-weather, season and month, crowd sizes and adverts. That makes it a way to
-work out the open request fields there.
+The stadium viewer's fields are the stadium build request:
+[`STADIUM_DIR.md`](STADIUM_DIR.md#the-build-request) names them from its
+BUILD panel's handler.

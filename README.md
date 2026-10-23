@@ -49,15 +49,19 @@ far-right techbro chud, this project is ALSO not for you.
 
 ## Setup
 
-The tools expect this layout. `ISO/` and `DAT/` are git-ignored.
+The tools expect this layout. Everything built from the disc is
+git-ignored, and none of it may be committed.
 
 ```
-ISO/    the disc filesystem (SLES_541.51, DLL/, AUDIO/, DATA.CVM, ...)
-        + the decrypted DATA.ISO
-DAT/    the contents of DATA.ISO, which is what most tools read
-SRC/    tools
-DOC/    format documentation
-PNACH/  PCSX2 patches (widescreen)
+ISO/      the disc filesystem (SLES_541.51, DLL/, AUDIO/, DATA.CVM, ...)
+          + the decrypted DATA.ISO                              (ignored)
+DAT/      the contents of DATA.ISO, which is what most tools read (ignored)
+ISO_JP/, DAT_JP/   the same for the Japanese release, optional   (ignored)
+mod/      the editor's default mod folder                       (ignored)
+.regress/ regress.py's baselines; .cache/ save.py's field list  (ignored)
+SRC/      tools
+DOC/      format and system documentation
+PNACH/    PCSX2 patches (widescreen)
 ```
 
 Put a dump of the disc that matches Redump
@@ -85,8 +89,11 @@ To do the same by hand:
    python SRC/rofs_decrypt.py ISO/DATA.CVM ISO/DATA.ISO
    ```
 
-3. Mount `ISO/DATA.ISO` (for example with PowerShell's `Mount-DiskImage`) and
-   copy its contents into `DAT/`.
+3. Extract it into `DAT/` (or mount it and copy its contents):
+
+   ```bash
+   python SRC/extract_disc.py extract ISO/DATA.ISO DAT
+   ```
 
 The decryption and key recovery are covered in
 [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) and
@@ -290,8 +297,12 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   without re-encrypting anything. A file can grow or shrink inside its
   last sector. One that needs more sectors is moved to the end of
   `DATA.ISO`, which re-keys the table of contents and grows the disc
-  image if it has to. Repacking archives other than `PRELOAD` packs
-  isn't supported yet.
+  image if it has to.
+- **Archives.** An entry that changes size rebuilds its archive: a
+  `PRELOAD` pack, any other BINPAC with its `.HED` copies, and for
+  `MES.PAC` and the Acrobata pack the executable's index of it. KC@P
+  packs are rebuilt by `pac.py replace`
+  ([`REBUILD.md`](DOC/REBUILD.md#archives)).
 - **Copies.** Many files have a copy in a `PRELOAD` pack, and the game
   reads that copy whenever the pack is loaded, so an edit must reach
   both. `--copies` updates every copy and rebuilds the packs around
@@ -325,7 +336,7 @@ python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers, shows the date, money, squad, youth team and staff, edits money, your club's status, abilities, fatigue, condition, motivation the pair combinations behind the tactics screen's hearts (`combi`), staff abilities and the manager's dissatisfaction, the candidate lists (`candidates`), the accounts and season plan (`finances`; ad budget, ticket prices and season tickets can be set), and other clubs' friendship and club rank, with each club's reputation text (`clubs`), the career's imported Virtua Pro Football player (`editplayer`, `edit:<field>`), and re-encodes byte for byte; copies a save between the original game's names and a modded disc's (`rename`) or to the card's next free slot (`copy`) |
+| [`save.py`](SRC/save.py) | a memory-card save folder, `ISO/SLES_541.51`, `ISO/DLL/SAVEPRG.REL` | decrypts and decodes a saved game by running the game's own serializers and re-encodes it byte for byte. Shows the club, squad, youth team, staff, pair combinations (`combi`), candidate lists (`candidates`), accounts and season plan (`finances`), the other clubs (`clubs`) and the imported Virtua Pro Football player (`editplayer`). `set` edits money, club status, players' abilities, condition, salary and contract, the combinations, staff and dissatisfaction, the season plan, other clubs' friendship and rank, and the edit player (`edit:<field>`). `rename` copies a save to a modded disc's name, `copy` to the card's next free slot |
 | [`ps2mc.py`](SRC/ps2mc.py) | a PCSX2 memory card image (`.ps2` file) | lists and checks the card (every page's ECC, every chain), copies saves off it (`get`), and writes a new image with a file replaced or added (`put`) or a folder added (`mkdir`) or copied (`copy`), with the ECC and FAT kept right; `roundtrip` writes every file back to an identical image |
 | [`pmplayer.py`](SRC/pmplayer.py) | Virtua Pro Football's `pmplayer.bin`, `ISO/DLL/SAVEPRG.REL` | the edit players a career can import: decrypts and checks the file, shows each field and what the import makes of it, edits names, height, weight, abilities, skills, styles and the rest (`set`), round-trips byte for byte, and compares a career's imported player with its record (`check`) |
 
@@ -343,8 +354,8 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) and [`PMPLAYER_FORMAT.md`](DOC/PMPLAY
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | a window with a tab per kind of data. **People** edits players, managers and scouts in the player database: search by name, id, nationality or club, every named field with its allowed values, unnamed fields read-only. **Clubs** edits the club records (rank, manager, stadium, city, transfer policy) and the computer teams' squads (player, age, shirt, contract). **New club** edits what a new career gets for each league and team style: squad, staff, scouts, youth team, candidate lists and the rival club. **Season** shows the starting divisions with last season's table, swaps two league clubs' places, and changes each first division's size within the range the schedules allow (rewriting the schedule packs). **Free agents** replaces the players who start a career without a club, refusing one already in a squad. **Regulations** edits each schedule's match rules (match grade, yellow-card ban, matchday squad, foreign players, substitutions), its win bonus and prizes (shown in pounds) and its promotion and relegation places, with the schedules named by league, and how each reports a final place (league, cup round names or none, the third-place match). **Training** edits the training tables: what each practice menu, camp type and youth practice trains and how tiring it is, match growth by position, the facility bonuses, the coaching staff ability per ability and decline with age. **Camps** shows each training camp's town, description and area clubs, and edits its camp type with a preview of what it trains. **Facilities** edits the facility records' build costs, upkeep, build times and stadium capacities, money shown in pounds. **Kits** edits every club's home and away kits, with colour swatches, the keeper kits made for your club, the rival and the VS teams, and the licensed clubs' number colours, name, collar and captain mark. **Text** finds any message by category, text or id and edits it in all 7 language slots; a file that outgrows its slot makes `MES.PAC` grow, and Build disc updates the executable's index of its files. It saves to a mod folder (`mod/` by default) and writes the matching `python SRC/...` command to `mod/editor.log` |
-| [`saveedit.py`](SRC/saveedit.py) | a career save on a PCSX2 folder memory card or card file (`.ps2`) | a separate window for one save, through `save.py`: the club (date, money, status, ranks), finances (season plan and accounts), the squad and youth team with each player in full, pair combinations as the tactics screen's icons, staff, the 440 other clubs with their players, and the candidate lists. Edits every field `save.py set` can write: money and club status, the season plan, players' abilities and condition, pair combinations, staff, other clubs' friendship and rank, and the imported edit player (candidates are shown only); File > Save backs the save up beside the memory card first and logs the matching `save.py set` command; File > Save to new slot writes the edit to a copy in the next free slot instead; on a card file both write into the card through `ps2mc.py`, after backing the card up ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)) |
+| [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | the mod editor: one window with a tab per kind of data (below), saving to a mod folder (`mod/` by default) and writing the matching `python SRC/...` command to `mod/editor.log`; File > Build disc makes the modded image or patch |
+| [`saveedit.py`](SRC/saveedit.py) | a career save on a PCSX2 folder memory card or card file (`.ps2`) | the save editor: a separate window for one save, through `save.py` (below) ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)) |
 
 ```bash
 python SRC/editor.py open             # the mod folder mod/
@@ -353,15 +364,53 @@ python SRC/saveedit.py open <card>/BESLES-54151-G000   # a save on a folder memo
 python SRC/saveedit.py open <card>.ps2                 # a card file: pick a save from it
 ```
 
+The mod editor's tabs:
+
+- **People**: players, managers and scouts in the player database.
+  Search by name, id, nationality or club; every named field with its
+  allowed values, unnamed fields read-only.
+- **Clubs**: the club records (rank, manager, stadium, city, transfer
+  policy) and the computer teams' squads (player, age, shirt, contract).
+- **New club**: what a new career gets for each league and team style:
+  squad, staff, scouts, youth team, candidate lists and the rival club.
+- **Season**: the starting divisions with last season's table; swaps two
+  league clubs' places, and changes each first division's size within
+  the range the schedules allow (rewriting the schedule packs).
+- **Free agents**: the players who start a career without a club,
+  refusing one already in a squad.
+- **Regulations**: each schedule's match rules, win bonus and prizes (in
+  pounds), promotion and relegation places, and how it reports a final
+  place.
+- **Training**: what each practice menu, camp type and youth practice
+  trains and how tiring it is, match growth, facility bonuses, coaching
+  and decline with age.
+- **Camps**: each camp's town, description and area clubs, and its camp
+  type with a preview of what it trains.
+- **Facilities**: build costs, upkeep, build times and stadium
+  capacities, money in pounds.
+- **Kits**: every club's home and away kits with colour swatches, the
+  keeper kits, and the licensed clubs' number colours, name, collar and
+  captain mark.
+- **Text**: any message by category, text or id, in all 7 language
+  slots. A file that outgrows its slot makes `MES.PAC` grow, and Build
+  disc updates the executable's index of it.
+
+The save editor's pages are the club, finances, the squad and youth
+team, pair combinations (as the tactics screen's icons), staff, the 440
+other clubs, the candidate lists (read-only) and the edit player. It
+edits every field `save.py set` can write. File > Save backs the save up
+beside the card and logs the matching `save.py set` command; File > Save
+to new slot writes the edit to a copy in the next free slot. On a card
+file both write into the card through `ps2mc.py`, after backing the card
+up.
+
 **File > Build disc** (Ctrl+B) writes a modded disc image, an xdelta
 patch for sharing, or both: it puts the mod folder's files on a copy of
 your disc image (`patch_disc.py patch ... --copies`) and makes the patch
 from it (`vcdiff.py make`), showing their output and logging both
 commands. For a patch on its own the image is temporary and removed
 afterwards. Boxes add `patch_disc.py`'s switches, one per entry of its
-switch table (`--mod <name>,...`): skip the tutorial, main sponsor
-negotiation, the rival's manager, the national cups a turn earlier, the
-camp types, the English camps' towns, Santiago's description and Canberra's clubs, the debug menu and separate saves. Use the
+switch table (`--mod <name>,...`). Use the
 unmodified Redump image as the original, so the patch applies for
 everyone; the dialog warns if it isn't.
 
@@ -400,16 +449,16 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `teaminit.py`, `plrcommon.py`, `plrsim.py` | `tbb.py` and `pbdata.py` for names; the last two `pac.py`; `teaminit.py limits` `sles_disasm.py` and `gamever.py` |
 | `regulation.py` | `tbb.py`, `schedule.py` for the team-entry check and `leaguesize.py` for the schedules' names |
 | `clubresult.py` | `tbb.py`, and `regulation.py` and `schedule.py` for the club-count checks |
-| `training.py` | `tbb.py`, and `pbdata.py` for the ability names |
-| `camp.py` | `tbb.py`, and `mbb.py` for city and club names |
+| `training.py` | `tbb.py`, `pbdata.py` for the ability names and `mbb.py` for the practice names |
+| `camp.py` | `pac.py`, `tbb.py`, and `mbb.py` for city and club names |
 | `formset.py`, `tour.py` | `tbb.py`, and `pbdata.py` (formations) or `camp.py` and `initteam.py` (club names) |
 | `leaguesize.py` | `schedule.py`, `initteam.py`, `regulation.py`, `clubresult.py` |
 | `uniform.py` | `pac.py`, `tbb.py`, `packdata.py` and `svr.py` (licensed kits), `sles_disasm.py` (the executable's copy), `initteam.py` (club names) |
 | `acrobata.py` | `pac.py`, `ninja.py`, `svr.py`, `snr2.py`, `sles_disasm.py` |
 | `sounddat.py` | `sles_disasm.py` for `music` |
 | `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
-| `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables |
-| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches), `plrcommon.py` (`facility-tiers`) |
+| `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables; `teaminit.py` for the salary limits |
+| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches), `training.py` (`drill-names`), `plrcommon.py` (`facility-tiers`) |
 | `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `training.py` (Training), `camp.py` (Camps), `plrcommon.py` (Facilities), `uniform.py` (Kits), `mbb.py` (Text); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `ps2mc.py` (card files), `pbdata.py` and `initteam.py` for names |
 | `pmplayer.py` | `save.py` (cipher, CRC, and career saves for `check`), `pbdata.py` for field names, `gamever.py` |
@@ -433,7 +482,10 @@ file names and counts from your disc. When an output change is intended,
 
 ## Documentation index
 
-Every format and folder doc labels its claims **confirmed** or **empirical** and ends with what is still unknown.
+Every format and folder doc labels its claims **confirmed** or
+**empirical** and has a "Still unknown" section. For players,
+[`INSTALL.md`](INSTALL.md) covers checking the disc, applying a patch and
+saves.
 
 ### Disc, rebuilding and sharing
 
@@ -484,7 +536,7 @@ Every format and folder doc labels its claims **confirmed** or **empirical** and
 | [`BG_DIR.md`](DOC/BG_DIR.md) | `DAT/BG`: the rooms' archives and room codes, the 103 people and their heads, hair and palettes, hands and props, trophies, `HUMANID.BIN` |
 | [`CVS_DIR.md`](DOC/CVS_DIR.md) | the `CVS/` folders left on the disc: original file names, commit dates, which files the build made |
 | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md) | `DAT/EMBLEM`: the club editor's crest and flag parts, its colour palette, the edit tables, and the player-editor tables |
-| [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models |
+| [`GAME_DIR.md`](DOC/GAME_DIR.md) | `DAT/GAME`: commentary, sound banks, models, motions, the match AI's files and its leftovers |
 | [`NEWS_DIR.md`](DOC/NEWS_DIR.md) | `DAT/NEWS`: newspaper mastheads, article pictures, ads and cartoons, and the monthly ranking flags |
 | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) | `DAT/PARAM`: which code loads each file, record sizes, and the tables without a doc of their own |
 | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) | `DAT/PLAYER`: face packs, licensed kits, `etc::PackData` |

@@ -19,6 +19,16 @@ documented here first, and VPF-Reverse builds on them. Work on VPF's
 own code (its Player Edit, its save) belongs there; bring back here
 only what this game's tools need, such as `pmplayer.py`'s fields.
 
+## Before you start
+
+- Read `TODO.md`'s "Next up" for what matters now, and the doc of the
+  file or system you will touch, including its "Still unknown" list.
+- Run `git status` first. Other sessions may work in the repo at the
+  same time, so stage files by name (never `git add -A` or `.`), and
+  don't bless baselines for output that someone else's work changed.
+- `python SRC/regress.py run` needs a baseline in `.regress/`; if there
+  is none, `bless` one from a clean checkout before changing anything.
+
 ## If you can't run commands or edit files
 
 Some assistants only see the files they're given and can't run anything.
@@ -79,10 +89,10 @@ In that case:
 
 | File | Holds |
 |---|---|
-| `DOC/*.md` | every fact about a file or system, how it was shown, the in-game tests, and the questions still open (its "Still unknown" or "Open questions" section) |
-| `GOALS.md` | what the project is for, each stage's status in a few lines, and the coverage table |
-| `TODO.md` | tasks, ordered by the stages of `GOALS.md` (read, understand, write, rebuild, edit, distribute), then the in-game tests and the LMASTER Mod. Each links the doc that holds its details instead of repeating them |
-| `DONE.md` | finished items, one or two lines each, under the same section numbers as `TODO.md` |
+| `DOC/*.md` | every fact about a file or system, how it was shown, the in-game tests, and the questions still open (its "Still unknown" section; every format and folder doc has one) |
+| `GOALS.md` | what the project is for, what a mod should be able to change, each stage's status in a few lines, and the coverage table. No task lists |
+| `TODO.md` | "Next up", a table of the mod goals and what each still needs, then tasks by the stages of `GOALS.md` (read, understand, write, rebuild, edit, distribute), each section opening with its goal and when it is done, then the in-game tests and the LMASTER Mod. Each item links the doc that holds its details instead of repeating them |
+| `DONE.md` | finished items, one or two lines each with a link to the doc, under the same section numbers as `TODO.md`. No test details: those are in the doc |
 | `README.md` | setup, every tool with what it does, how the tools depend on each other, and the doc index |
 | `INSTALL.md` | the players' guide: checking the disc, applying a patch, saves, and building a patch. Update it when a `--mod` switch or group is added or changes what it does |
 
@@ -102,7 +112,8 @@ the facility records), `save.py`, `ps2mc.py` (`put`, `mkdir`: memory
 card images),
 `schedule.py` (`shift`, and the encoders behind `roundtrip`) and
 `leaguesize.py` (`build`, which writes the schedule packs through
-`schedule.py`'s encoders).
+`schedule.py`'s encoders) and `pmplayer.py` (`set`: Virtua Pro
+Football's edit players).
 
 A writer can then get a tab in `editor.py` (stage 5). The tab edits through
 the writer's own `set` functions and asks the writer which values each
@@ -143,7 +154,7 @@ Commits usually add a doc and its tool together, with messages like
   example `MOVIEPRG.REL 0x32ec`.
 - Include exact counts from the full data set, such as "3,738 files" or
   "64,455 of 65,889". Say explicitly what is still unknown instead of
-  guessing.
+  guessing, and list it in the doc's `## Still unknown` section.
 - Write plainly: short sentences, tables for field layouts, and a
   `python SRC/...` command showing how to check the claims.
 - Keep each fact in one place: the doc of the file or system it

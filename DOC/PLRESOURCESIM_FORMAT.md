@@ -77,7 +77,9 @@ The city record:
 
 **Empirical:** cities are numbered 0–838 in order, and those of one state
 are consecutive. 601 of the 839 are initial choices. City names are
-messages (`plCity_GetString`); not yet listed by the tool.
+message category 961 (`plCity_GetString`,
+[`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#club-records-plresourcesimpac-entry-3));
+`plrsim.py` doesn't print them.
 
 ## Entry 1: overseas branches
 
@@ -169,24 +171,11 @@ UIDs (UID 4 is a cup round), so those names are only approximate.
 ## Entry 9: the edit screens' colour palette
 
 `EDIT::CColor` wraps this TBB (`TblData::CTblData::Setup`). It is set up
-by 8 screens in `SIMPRG.REL` and by `PlGiTask::InitStadium`.
-
-| Table | Bytes | Used by | Contents |
-|---|---|---|---|
-| 0 | 384 | `GetColorFromId96` | 96 colours, `R << 24 | G << 16 | B << 8 | A` |
-| 1 | 32 | `GetId16FromId32` | 32-colour index → 16-colour index |
-| 2 | 96 | `GetId16FromId96` | 96 → 16 |
-| 3 | 16 | `GetId32FromId16` | 16 → 32 |
-| 4 | 96 | `GetId32FromId96` | 96 → 32 |
-| 5 | 16 | `GetId96FromId16` | 16 → 96 |
-| 6 | 32 | `GetId96FromId32` | 32 → 96 |
-
-`GetColor16` turns a colour into a PS2 15-bit colour (each channel × 31 /
-255, alpha bit set when A ≠ 0). So the 32- and 16-colour palettes are
-subsets of the 96.
-
-`EMBLEM/COLOR_TABLE.TBB` is the same table for the club editor, the
-uniform editor and the match ([`EMBLEM_DIR.md`](EMBLEM_DIR.md#color_tabletbb)).
+by 8 screens in `SIMPRG.REL` and by `PlGiTask::InitStadium`. It has the
+layout of `EMBLEM/COLOR_TABLE.TBB`, the copy the club editor, the uniform
+editor and the match use: seven tables, a 96-colour palette and the maps
+between the 96-, 32- and 16-colour palettes, described with their
+getters in [`EMBLEM_DIR.md`](EMBLEM_DIR.md#color_tabletbb).
 **Empirical:** the 96 colours are identical, and 10 bytes of the maps
 differ (8 in table 1, one each in tables 3 and 5).
 

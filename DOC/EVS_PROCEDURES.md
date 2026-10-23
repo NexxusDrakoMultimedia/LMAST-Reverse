@@ -321,7 +321,7 @@ The procedures' logic and triggers are code, so a data mod can change only
 their mail text (the MAIL records in the table above), not when they
 happen. The offers they react to come from `Param` code.
 
-## Open questions
+## Still unknown
 
 - What `+0x0C` (always 4 for procedure steps) and the `0x12c058` argument
   (1, 6, 7, 8, 21) mean.

@@ -13,12 +13,10 @@ the layout below (`python SRC/tbb.py info DAT`).
 
 ## Confirmed from the game code
 
-`SLES_541.51` has no `.symtab`, but `.sndata` contains a runtime export
-table for the `DLL/*.REL` overlays: 12-byte entries
-`{u32 name_ptr, u32 address, u32 hash}` with mangled GCC 2.x names
-(~12,600 symbols). `SRC/sles_disasm.py` recovers them and disassembles
-with labels (`python SRC/sles_disasm.py ISO/SLES_541.51 dis TblData`).
-The TBB accessors recovered from it:
+The executable's symbols come from its `.sndata` export table
+([`SNR2_FORMAT.md`](SNR2_FORMAT.md#calls-from-sles_54151-into-the-overlays));
+`python SRC/sles_disasm.py ISO/SLES_541.51 dis TblData` disassembles the
+accessors with their names:
 
 | Address    | Symbol                                             | Behaviour |
 |---|---|---|
@@ -98,7 +96,7 @@ the size of the record the consumer actually walks:
 
 | File | Line size | Observed record | Notes |
 |---|---|---|---|
-| `EVENT/EVENTDATA_TURN.TBB` | 32 | **281** bytes (61258 = 281 × 218) | packed struct of strings up to char[64] + a u8; unused by the game. See [`EVENTDATA_TURN.md`](EVENTDATA_TURN.md) |
+| `EVENT/EVENTDATA_TURN.TBB` | 32 | **281** bytes (61,258 = 281 × 218) | packed struct of strings up to char[64] + a u8; unused by the game. See [`EVENTDATA_TURN.md`](EVENTDATA_TURN.md) |
 | `0SYSTEM/MSGCOMMON.TBB` t1/t2 | 32 / 24 | 64 / 48 | rows alternate name / 3-letter abbreviation (`ENGLAND`, `ENG`, ...) |
 | `PARAM/TEAM_INIT_DATA.TBB` | 4 | 24, 144, 72, 16 ... | tables of u32 fields |
 | `PARAM/REGULATION.TBB` | 2 | 120 | u16 fields |
@@ -163,3 +161,9 @@ change length: later tables move along, and the end field is recomputed
 unless it was `0`. The line size is kept, and a warning is printed if the
 new length isn't a whole number of lines. The game divides the size by
 the line size, so any extra bytes would just be ignored.
+
+## Still unknown
+
+The container is fully known. What each table's columns mean is in the
+doc of the file that holds it ([`PARAM_DIR.md`](PARAM_DIR.md) and the
+folder docs).

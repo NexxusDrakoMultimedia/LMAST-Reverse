@@ -1121,27 +1121,18 @@ bonuses at `0x550510`, 0x98 bytes each), clamped to 0–4. The bonus to
 `+0x67` is always 0. The match reads all 11
 ([The tendencies](#the-tendencies)).
 
-The tendencies are not the tactics screen's combination lines, nor the heart, "…"
-and skull icons it shows next to each player when one is selected. Both
-are per pair of players: `CTacticsTeam::calculateCombinationLevel`
-(`0x2e6fb0`) reads each pair through `plCombi_Get` (`0x20f638`, team data
-`+0x4354`) and buckets it into levels 1–5 with the thresholds at
-`0x55b850` (13,107, 26,214, 39,322 and 52,430: fifths of 65,535).
-`CTacticsBase::refreshCombinationLevel` (`0x2a5518`) gives every icon
-the level of its pair with the selected player, through
-`CTacticsPlayerIcon::setCombinationLevel` and `GP::SetCooperationIcon`.
-
-The five icons, from the weakest pair to the strongest, are a skull, "…",
-a blue heart, a red heart and a bigger red heart (user report for the
-three hearts; the skull and "…" are confirmed by `save.py combi`, see
-[`SAVE_FORMAT.md`](SAVE_FORMAT.md)). The lines follow the same levels: in one screenshot the
+The tendencies are not the tactics screen's combination lines, nor the
+heart, "…" and skull icons it shows next to each player when one is
+selected. Both are per pair of players, stored in the save: the levels,
+their thresholds and the five icons are in
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("Pair
+combinations"). The lines follow the same levels: in one screenshot the
 only red line joined the selected player to the one player with the big
 red heart, and a substitute who had just come on had only "…" icons and
 white lines. Which colour (white, yellow, orange, red) is which level is
-empirical, from those screenshots. How fast a
-pair grows (`plCombi_GetCombinationGrow`, `0x20fb90`) depends on both
-players' `PlPinfo +0x1ea`, through an 8 × 8 table at `0x390698`, not on
-`+0x66`.
+empirical, from those screenshots. How fast a pair grows
+(`plCombi_GetCombinationGrow`, `0x20fb90`) depends on both players'
+`PlPinfo +0x1ea`, through an 8 × 8 table at `0x390698`, not on `+0x66`.
 
 ```bash
 python SRC/pbdata.py show DAT/PARAM/PBDATA_EU.PAC 4408     # +0x57-+0x5d by name
@@ -1187,7 +1178,9 @@ of 14,395 defenders and forwards only 1 holds any of the three. Bits 0 and
 1 go mostly to defenders (237 of 238), and bits 2, 4 and 11–14 mostly to
 forwards. The code confirms one: the substitutions screen tests bit 7, the
 super sub (`CTacticsMenuSubstitutionsImplement::Update_MessDisplay`,
-`0x2f6558`). What the skills do in a match isn't traced.
+`0x2f6558`). In the match, the skills are parameters 112–127; which
+classes read each is in [Who reads each parameter](#who-reads-each-parameter),
+and how much they change a play isn't traced.
 
 ## Play styles
 

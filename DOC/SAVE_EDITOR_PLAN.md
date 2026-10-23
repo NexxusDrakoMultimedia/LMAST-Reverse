@@ -164,19 +164,18 @@ Decided (user, 2026-10-09):
   saved from G003 to G002, G003 unchanged, the two logged commands giving
   the same folder byte for byte, a second copy without edits to G004
   identical to G002, and a refusal when the main file changed on disk.
-  **Tested in PCSX2** (user report, 2026-10-22): on a test card holding
-  G000, G001 and G003, G003 copied to G002 by `save.py copy` with
-  `money=999999996` showed in the load list, loaded, and had
-  £166,666,666; G003 still loaded with £2,511,807.
+  The game loads a copied save: tested in PCSX2 with `save.py copy`
+  ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc),
+  "Slots").
 
 Still open:
 
 - **PCSX2 running.** PCSX2 may keep a folder card's files open or write
-  them back while the game runs. The editor could warn when the card's
-  folder is in use, or the guide could just say to close the game
-  first.
-- **Japanese saves.** `save.py` is PAL-only (`TODO.md`). The plan leaves
-  them out.
+  them back while the game runs. [`INSTALL.md`](../INSTALL.md#editing-a-save)
+  tells players to close the game first; whether the editor should also
+  warn when the card is in use is undecided.
+- **Japanese saves.** `save.py` is PAL-only ([`TODO.md`](../TODO.md)).
+  The plan leaves them out.
 
 ## Still unknown
 

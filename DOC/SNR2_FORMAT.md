@@ -113,7 +113,9 @@ declared by an SNR2 header of the executable's own at the start of
 pointer at `0x361da4`, and the import lookup walks its symbols.
 The symbol kinds are 2 (export, 13,127), 3 (weak, 1,922), 1 (import,
 value 0, 222) and 4 (6 linker constants: `_gp`, `_end`, `end`, `_stack`,
-`_stack_size`, `_heap_size`).
+`_stack_size`, `_heap_size`). `sles_disasm.py` takes the names of the
+12,614 that point into `.text` (about 12,600, the count the other docs
+give) to label its disassembly.
 
 The relocation types are 2 ×130, 4 ×169, 5 ×10 and 6 ×14. All 169 type-4
 sites are `jal 0`, and they're all of the `jal 0` instructions in
@@ -346,7 +348,7 @@ python SRC/snr2.py callers ISO/DLL/GAMEPRG.REL 9bdb8 fb            # each call, 
 `@address` in `SLES_541.51` when `--sles` is given, and shows every local
 site's resolved target.
 
-## Open questions
+## Still unknown
 
 - What `0x38` is for, and what `0x20`/`0x24` tell the caller. All three
   are offsets equal to `0x34` in every file.

@@ -54,7 +54,7 @@ each:
   third_place, clubs)` writes the place (`0x9ab20`). UID 80, the
   European Super Cup (competition 37, 2 clubs), passes 9999 instead of
   its `clubs` (`0x9ab1c`): with 2 clubs its loser would read "Defeated
-  1st Rnd" ([below](#the-results-list)), with 9999 "Runners-up".
+  1st Rnd" (the table below), with 9999 "Runners-up".
 
 `Msg::ConvertRankToString` (`SLES 0x2017a0`) takes category 1 messages
 650–656 (`Msg::GetString` type `0x1d`, base id 650 at `0x52f708`):

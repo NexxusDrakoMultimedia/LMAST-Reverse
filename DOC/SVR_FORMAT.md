@@ -154,3 +154,11 @@ of the `tst000_01fac` face in `TEST3D/*.SVM`; `BG/HUMAN_*_PALETTE.MRG`
 bundle palettes for the `HUMAN_*` characters). Decode with
 `python SRC/svr.py png <file> <out> --clut <file.SVP>`; without one, the
 indices are rendered as greyscale.
+
+## Still unknown
+
+- Which `.SVP` palette the code pairs with each external-palette
+  texture (above), and which of a room's 32 palettes it picks
+  ([`ZBF_FORMAT.md`](ZBF_FORMAT.md#still-unknown)).
+- Pixel format `0x0A` (24-bit) is handled by the code but unused, so
+  its layout is untested.

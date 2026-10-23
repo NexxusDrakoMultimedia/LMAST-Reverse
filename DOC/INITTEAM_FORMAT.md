@@ -158,14 +158,15 @@ Empirical, checked by `initteam.py info`:
   once.
 - Ages are 16–40, and contract lengths are 2–6.
 - These are the ages a computer team's players show in game, one year
-  older in a new game. (That year may come from the tutorial skip rather
-  than from a new game: `TEAM_INIT_DATA`'s ages show one year older on a
-  `--skip-tutorial` disc only, `TEAMINIT_FORMAT.md`. Whether these tests
-  used the skip isn't recorded.) Tested in PCSX2: Terry's 25 shows as 26, and after
+  older. Tested in PCSX2: Terry's 25 shows as 26, and after
   `initteam.py set 7:1 age=15` he shows as 16. The player database's own
   age field doesn't override them. Also tested through the editor's Clubs
   tab: Van der Sar (team 13, slot 0) at age 16 and shirt 69 showed 17 and
-  69 on his detail screen.
+  69 on his detail screen. The extra year may come from the tutorial
+  skip rather than from a new game: `TEAM_INIT_DATA`'s ages show one year
+  older on a `--skip-tutorial` disc only
+  ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#editing)), and whether these
+  tests used the skip isn't recorded.
 - Shirt numbers are 1–99 and never repeat within a team.
 - All padding bytes are zero.
 
@@ -276,6 +277,8 @@ checks it, and `setteam` edits a club record into a same-size copy of
 ## Still unknown
 
 - What the game does with table 2's negative values.
+- Whether a new game or the tutorial skip adds the year to the squads'
+  ages (a PCSX2 test in [`TODO.md`](../TODO.md#7-tests-in-pcsx2)).
 - Club-record bytes `0x0b`, `0x0c`, `0x0d` and `0x0f`.
 - What reads `MAPTEAM_LIST.TBB`, and what its flag is for.
 

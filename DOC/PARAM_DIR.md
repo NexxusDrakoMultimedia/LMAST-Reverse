@@ -261,8 +261,9 @@ unused placeholders for kit names.
 ## Still unknown
 
 - What table 1's kinds and third field and table 0's groups change in
-  `CLUB_RANK_SYSTEM`, and whether anything reads `CLUBEVENT.TBB`; the executable's club-event records (`0x52ff58`,
-  `0x530688`) field by field.
+  `CLUB_RANK_SYSTEM`.
+- Whether anything reads `CLUBEVENT.TBB`, and the executable's
+  club-event records (`0x52ff58`, `0x530688`) field by field.
 - The tactics sliders' limits, and which regions `TOUR_LIST`'s numbers
   are.
 - What's still open in the files that have a doc is listed there, for

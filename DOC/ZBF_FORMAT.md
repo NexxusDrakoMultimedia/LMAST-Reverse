@@ -38,8 +38,8 @@ The colour image is `CSE/BG_xx_nn_00.CSP` (see [`CSE_FORMAT.md`](CSE_FORMAT.md);
 151 background CSPs carry their own palette (data format `0x6C`). The
 other 41 use an external one (`0x64`). 63 of the 140 MRGs carry a set of
 32 palettes, `BG_xx_nn_00.svp` … `BG_xx_nn_31.svp`. `BG_CH_00_00.svp`
-decodes `BG_CH_00_00.CSP` correctly. Which of the 32 the game picks, and
-when, isn't known.
+decodes `BG_CH_00_00.CSP` correctly. Which of the 32 the game picks isn't
+known (below).
 
 Scaled to 512×448, that texture lines up with the `.zbf` **pixel for
 pixel**: every depth edge sits on the rendered furniture, plants and
@@ -74,5 +74,12 @@ zero buffer of the same shape (`SIMPRG.REL 0xfe8c0`).
 
 So the upload is a plain PSMZ32 transfer. That the Z buffer itself is
 PSMZ24 with `ZTST = GEQUAL` still comes from the data alone (above):
-the frame's own Z buffer format and depth test weren't traced. Also
-unknown: the projection that maps scene depth to these values.
+the frame's own Z buffer format and depth test weren't traced.
+
+## Still unknown
+
+- The frame's own Z buffer format and depth test (PSMZ24 and
+  `ZTST = GEQUAL` come from the data only).
+- The projection that maps scene depth to these values.
+- Which of a room's 32 palettes the game picks, and when
+  ([`BG_DIR.md`](BG_DIR.md#still-unknown)).

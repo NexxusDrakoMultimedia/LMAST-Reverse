@@ -86,3 +86,8 @@ other test-heavy folder `SEQ` keeps its 2004 leftovers (see
 
 The `CVS/` folders can stay as they are. Nothing reads them, so they
 don't need to match edited files.
+
+## Still unknown
+
+Nothing that matters for a mod. Whether the build wrote
+`SAVE_VERSION.DAT` and `GAMEDATA.BIN` (above) is inferred, not shown.

@@ -101,7 +101,7 @@ The value names (DAY/NIGHT, FINE…SNOW, SPRING…WINTER, ENGLAND…HOLLAND,
 JAN…DEC) are the viewer's lists at `GAMEPRG.REL 0x24d4c8`–`0x24d554`. Its
 CREATE panel has STADIUM_LEVEL, NATION_ID and STAND_LEVEL instead of
 DATA_INDEX. **Tested in PCSX2:** the viewer builds and shows stadiums from
-these settings (see `SQB_FORMAT.md`).
+these settings (see [`SQB_FORMAT.md`](SQB_FORMAT.md)).
 
 ## Directory overview
 

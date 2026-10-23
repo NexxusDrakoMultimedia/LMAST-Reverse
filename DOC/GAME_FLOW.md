@@ -229,9 +229,9 @@ either.
   PlayAcrobata arguments (3, 4, 5, 7–10, 13–17) show.
 - What the Dummy module run with argument 15 at turn start does (its
   non-zero result skips the main menu).
-- What `Root9` (command 9) and `Root13` (command 13) do; `RootEventSeq`
-  skips the Event module when `Root13` returns non-zero, probably when
-  nothing is due.
+- When `Root13` returns non-zero, which makes `RootEventSeq` skip the
+  Event module (probably when nothing is due); the command itself is
+  open in [`SQB_FORMAT.md`](SQB_FORMAT.md#still-unknown).
 - Who sets the Load module's result 1: the Option module's save is
   assumed, not traced.
 

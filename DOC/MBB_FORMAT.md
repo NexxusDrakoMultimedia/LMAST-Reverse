@@ -457,7 +457,7 @@ pack) was worked out with these tests; the rule is in
   so a word can break across lines ("ju" / "mpscare"); a long edit needs
   its own line breaks where a word would otherwise split.
 
-## Open questions
+## Still unknown
 
 - What the extra step in `setReaction` does for reactions 2 and 4 (a
   message to the second scene object at `+0x588`).

@@ -514,7 +514,8 @@ and the checks. `build` writes the three schedule packs with their
 `CLUBRESULT.TBB`, with the leagues' games (`set_league`), game days
 (`league_turns`) and club counts (`clubs` in
 [`REGULATION_FORMAT.md`](REGULATION_FORMAT.md#place-slots) and
-[`CLUBRESULT_FORMAT.md`](CLUBRESULT_FORMAT.md)) for the new sizes, reads them back and plays out the first season again. It takes several
+[`CLUBRESULT_FORMAT.md`](CLUBRESULT_FORMAT.md)) for the new sizes,
+reads them back and plays out the first season again. It takes several
 leagues at once (`build DAT/PARAM out England 22 France 18`), and with
 `--over <folder>` reads each file from that folder when it is there, as
 the editor's Season tab does with its mod folder.
@@ -647,10 +648,6 @@ turns a 42-day schedule would add.
   and how other nations' and sizes' promotion and relegation play out in
   game (only England at 22 is tested). What the game does with UID 117's
   extra game days.
-- How `CLUB_RANK_SYSTEM.TBB`'s tables are used in detail
-  ([`PARAM_DIR.md`](PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables); tables
-  2 and 3 are the club ranking,
-  [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)).
 
 ## Checking the claims
 

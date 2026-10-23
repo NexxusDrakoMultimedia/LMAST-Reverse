@@ -30,73 +30,45 @@ priority than the data above.
 ## The path there
 
 Each stage depends on the one before it. The status here is a summary:
-[`DONE.md`](DONE.md) lists what is finished, under the same numbers as
-the stages, and [`TODO.md`](TODO.md) what is left.
+[`TODO.md`](TODO.md) has the work left in each stage, under the same
+numbers, and [`DONE.md`](DONE.md) what is finished.
 
-0. **Decrypt.** *Done.* `DATA.CVM`'s encrypted ISO9660 table of contents is
-   decrypted by `SRC/rofs_decrypt.py` with a key derived from its header,
-   and `DATA.ISO` extracts to `DAT/`
-   ([`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md)).
+0. **Decrypt.** *Done.* `DATA.CVM`'s encrypted table of contents is
+   decrypted with a key derived from its header, and `DATA.ISO` extracts
+   to `DAT/` ([`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md)).
 1. **Read.** Document every file format and every folder in `DATA.CVM` in
    `DOC/`, and parse each format in `SRC/`, checked against every file on
-   the disc. *Nearly done:* every folder has a doc, and the few files
-   still unparsed are in the
-   [coverage table](#coverage-of-datacvm) below.
+   the disc. *Nearly done:* every folder has a doc; the few files still
+   unparsed are in the [coverage table](#coverage-of-datacvm) below.
 2. **Understand.** Know what each field *means* in the game, not just its
    type and offset. A field can't be offered for editing until it has a
-   name and a known range. Fields that are still unknown stay read-only.
-   *Most of the work now:* the player database, the starting season,
-   the parameter tables and saves are named field by field (with the
-   edit player a career imports from Virtua Pro Football, whose save
-   decrypts with its own key), and so is the economy's code (build
-   costs, the plan's limits, attendance and popularity); the match
-   AI's files and the remaining fields listed in each doc's
-   "Still unknown" section are open.
-3. **Write.** Add a writer for each format. A writer must round-trip:
-   reading a file and writing it back unchanged gives the original
-   bytes. That check runs over every file on the disc before any edit is
-   trusted, and goes into `regress.py`. *Done for what a starting-season
-   mod changes:* the archives, every table container, the player
-   database, the message text, the starting leagues and squads, the new
-   club, free agents, kits, schedules and division sizes, regulations,
-   results, training, camps, tactics presets, tours, sequencer scripts,
-   saves, Virtua Pro Football's edit players (a way to bring a fully
-   custom player into a career; its in-game import is still to test) and
-   the facility records (costs, upkeep, build times, stadium capacity).
-   Edits through most of them are tested in PCSX2. Still to come: the
-   club ranking, the club events and the rest of the resource packs.
+   name and a known range; fields still unknown stay read-only. *Most of
+   the work now:* the player database, the starting season, the
+   parameter tables, the economy and saves are named field by field.
+   The match AI's files and each doc's "Still unknown" list are open.
+3. **Write.** A writer for each format, which must round-trip: reading a
+   file and writing it back gives the original bytes, checked over every
+   file on the disc in `regress.py`. *Done for what a starting-season
+   mod changes*, and edits through most writers are tested in PCSX2. The
+   club ranking, the club events and the rest of the resource packs are
+   left.
 4. **Rebuild.** Put edited files back on a disc image that boots. *Done:*
-   `SRC/patch_disc.py` patches files of any size: same-size files in
-   place (only the table of contents is encrypted), a size change inside
-   a file's last sector, a file moved to the end of `DATA.ISO` with the
-   table of contents re-keyed, and a disc grown past its free sectors.
-   It updates every copy of a file, rebuilding `PRELOAD` packs, `.HED`
-   copies and the executable's indexes of `MES.PAC` and the Acrobata
-   pack, and `pac.py` repacks KC@P packs and compresses PRS. All of
-   these are tested in PCSX2 ([`REBUILD.md`](DOC/REBUILD.md)).
-5. **Edit.** GUI tools on top of the writers, organised by what a player of
-   the game would recognise (a club, a player, a season) rather than by file.
-   The GUI checks values against the documented ranges and cross-references
-   (for example, a message reference that no longer resolves). *Started:*
-   `SRC/editor.py`, one window with a tab per kind of data (People,
-   Clubs, New club, Season, Free agents, Regulations, Training, Camps,
-   Facilities, Kits, Text), saving to a mod folder laid out like `DAT/`; each tab
-   edits through its writer and takes the allowed values from it.
-   File > Build disc puts the mod folder on a disc image and makes the
-   patch of stage 6. `SRC/saveedit.py` edits a career save. Still to
-   come: tabs for the writers without one, and the parameter tables once
-   they have writers.
+   `patch_disc.py` patches files of any size, moves them, grows the
+   disc, updates every copy and rebuilds archives, all tested in PCSX2
+   ([`REBUILD.md`](DOC/REBUILD.md)).
+5. **Edit.** GUI tools on top of the writers, organised by what a player
+   of the game would recognise (a club, a player, a season) rather than
+   by file, which check values against the documented ranges and
+   cross-references. *Started:* `editor.py` has a tab for most writers
+   and builds a disc or patch; `saveedit.py` edits a career save. Tabs
+   for the other writers are left.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284) against
-   the user's own unmodified disc image, never as game data or disc images.
-   This matches the rule that no game data goes in the repo. xdelta is the
-   usual format for disc-image mods, and players can apply a patch with
-   existing tools such as xdelta UI or DeltaPatcher, without installing
-   anything from this repo. *Done:* `SRC/vcdiff.py` makes and applies
-   these patches in plain Python, and Delta Patcher applies them with the
-   same result ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod)). A modded
-   disc can keep its saves apart from the original game's
-   (`patch_disc.py --mod-saves`). Still to come: reading CSO images, and
-   a short guide for players.
+   the player's own unmodified disc image, never as game data or disc
+   images, so no game data leaves the user's machine. Players apply them
+   with existing tools such as Delta Patcher. *Done:* `vcdiff.py` makes
+   and applies them, a modded disc can keep its own saves, and
+   [`INSTALL.md`](INSTALL.md) is the players' guide. Compressed images
+   (CSO, CHD) are left.
 
 ## Coverage of `DATA.CVM`
 

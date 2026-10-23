@@ -93,6 +93,7 @@ stride = 4*(version + 2)                     (tagged: name_len is forced to 4)
 - The entry table is zero-padded up to `header_size`. The first entry's
   offset always equals `header_size`, and every offset is a multiple of
   `align`.
+
 ### How the packer laid them out (empirical)
 
 All 662 self-describing BINPACs (every `.PAC` and `.MRG`; `.HED` files
@@ -268,6 +269,13 @@ in 101.3% of the original's size (17,272,464 bytes against 17,050,850).
 `python SRC/pac.py prscheck <archive>` does this for an archive, `pac.py
 prs` wraps one file, and `pac.py replace --prs` compresses a new entry
 whose original was PRSH.
+
+## Still unknown
+
+- Whether the loader checks the `KC@P` magic (no immediate for it in the
+  executable, so probably not).
+- What, if anything, reads the stale `GAME/PLAYERMOTION.HED`.
+- What the `CPHN` variant was used for; no file on the disc has it.
 
 ## Tool
 

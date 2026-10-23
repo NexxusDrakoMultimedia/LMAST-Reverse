@@ -155,8 +155,9 @@ concentration, the empty style slots, and the 0x32 bytes at `+0xb8`
 (28 checks, none differ).
 
 Both cards' files (PAL with 2 players, Japanese with none) round-trip
-byte for byte. No edited file has been imported in game yet
-([`TODO.md`](../TODO.md) section 7).
+byte for byte. An edited file imports in game ([above](#the-record));
+`pmplayer.py check` on a career saved after that import is still to run
+([`TODO.md`](../TODO.md#7-tests-in-pcsx2)).
 
 ## Editing
 

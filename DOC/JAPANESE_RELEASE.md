@@ -49,8 +49,8 @@ files in `ISO/` as the reference:
 4. **near**: as 2, from an address up to 0x800 bytes away.
 
 `gamever.imm` does the same for constants held in instructions (loop
-bounds, table sizes). `python SRC/gamever.py check ISO_JP` lists all 28
-addresses the tools use and how each was found. All 28 are found.
+bounds, table sizes). `python SRC/gamever.py check ISO_JP` lists every
+address the tools use and how each was found: all 31 are found.
 
 Each table's use in a tool checks it a second way (**empirical**, run on
 the Japanese disc):
@@ -104,4 +104,4 @@ except the commentary, which `afs.py` reads as documented.
   count reads as −35 through `ADXF_GetNumFilesFromAfs`), and which clip
   is which with no name table.
 - A Japanese save: the block that changed size, and what `save.py` needs
-  to read one.
+  to read one ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#still-unknown)).

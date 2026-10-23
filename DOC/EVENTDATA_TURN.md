@@ -5,7 +5,7 @@
 
 An early export of the "turn" event sheet: one row per scripted event
 (office visits, salesman pitches, locker-room talks, stadium news, ...).
-218 records of **281 bytes** in a single `TBL1` table (61258 = 281 × 218).
+218 records of **281 bytes** in a single `TBL1` table (61,258 = 281 × 218).
 The TBL1 line size says 32, which is wrong as a stride (see
 [`TBB_FORMAT.md`](TBB_FORMAT.md)). At 32 bytes a line, 10 bytes are left
 over (61,258 = 32 × 1,914 + 10), which is why `tbb.py info` reports 10
@@ -75,3 +75,10 @@ python SRC/eventdata_turn.py DAT/EVENT/EVENTDATA_TURN.TBB eventdata_turn.csv
 ```
 
 Non-ASCII bytes are written as `\xNN` so nothing is silently dropped.
+
+## Still unknown
+
+- The field names: no loader exists, so they are inferred from the
+  data. What `priority` really is, and whether the two 36-byte fields are
+  char[32] plus a u32.
+- The Japanese text the exporter lost.

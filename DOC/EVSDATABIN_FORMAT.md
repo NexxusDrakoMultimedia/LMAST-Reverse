@@ -6,7 +6,7 @@
 `DAT/EVENT/EVSDATABIN_{EVENT,NEWS,MAIL}.BIN` drive the club-management
 events: scripted office/locker/meeting scenes (EVENT), newspaper items
 (NEWS) and inbox mail (MAIL). They replaced the string-based
-[EVENTDATA_TURN.TBB](EVENTDATA_TURN.md) prototype. All three are
+`EVENTDATA_TURN.TBB` prototype ([`EVENTDATA_TURN.md`](EVENTDATA_TURN.md)). All three are
 headerless arrays of fixed-size little-endian records, loaded whole by
 `DLL/SIMPRG.REL`.
 
@@ -397,13 +397,16 @@ read it.
 As with NEWS, `50563` is the variable-list companion of `563`. Every MAIL
 column with data now has a name.
 
-## Open questions
+## Still unknown
 
 - Names for the 170 condition kinds (jump table `0x237df0`) and the 80
   handler types (`0x238a40`). The timings and the effect kinds are
   decoded above.
-- Which regions `PlTeam_Region` 0 and 1–13 are (0 is presumably the
-  club's home region).
+- Which overseas region each of `PlTeam_Region` 1–13 is. Region 0 is
+  the club's home region and 1–13 the overseas regions
+  ([`ECONOMY.md`](ECONOMY.md#supporter-popularity)); whether they follow
+  the `PlDRegion` order ([`EVS_PROCEDURES.md`](EVS_PROCEDURES.md#regions))
+  isn't traced.
 - Which handler types consume `effect1_value` directly, and so what
   kinds 9/16/18/19 mean.
 - What EVENT `+0x0c`, `+0x1c` and the five triplets at `+0x24`–`+0x5c`
