@@ -308,6 +308,12 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
 - [ ] Candidates: the short `EDIT_EMBLEM` tables 93/101/105
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status)). The "two
       months"/"nine months" injury lines need thresholds chosen first
+- [ ] Candidate: let the unused combination records load, the 15 extra
+      records in each attack pattern's block (code: a random variant in
+      `GAMEPRG.REL 0x14c3f0`) and the 25 basic records in no table
+      (data: the three 12-entry tables, or bigger ones moved), and fix
+      the pattern repeat check. Decide first whether the extra records
+      play sensibly ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] The harder economy (`--mod harder-economy`: `facility-tiers`,
       `wider-tickets`, `dearer-ads`, `sponsor-fees`, `tv-fees`,
       `season-demand`): all six are tested in PCSX2; a season played

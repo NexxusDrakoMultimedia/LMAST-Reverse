@@ -167,7 +167,10 @@ style. The setting's constructor (`0x14aaf0`) writes −1 to all 33.
   match task) is 0, three picks at random from the five pattern slots
   at `PlTeamData +0x489f` (the slots training's combination A–E
   practices read, [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md)), skipping
-  empty and repeated ones. Otherwise the first three non-zero entries
+  empty ones. The repeat check (`0x14c718`, `0x14c268`) looks for
+  *p* + 60 among the stored records, which are 60 + 16 × (*p* − 1), so
+  it only catches pattern 1: a club can get the same pattern twice or
+  three times. Otherwise the first three non-zero entries
   found through the five bytes at `+0x498c` (each indexes 3-byte
   entries at `+0x498f`, whose first byte is the pattern); what fills
   those bytes isn't traced.
