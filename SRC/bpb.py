@@ -20,6 +20,16 @@ Confirmed from Pwk::PlayBookData::CPlayBookDataBase in SLES_541.51:
           ((id >> 8) & 0xf) * 8 + 100 + (id & 0xff); 0x4000-0x6fff
           ((id - 0x4000) >> 12) * 20 + 196 + (id & 0xff); 0x7000 on the
           index itself
+  starts  the block at the header's end: u16 size, 2 bytes, u16 n, u16
+          kind (1 corner, 2 free kick, 3 never used), n (x, y) starts
+          (GetFormationData 0x2e7d88)
+  kinds   role type << 8 | flag 0x80 | value (GAMEPRG.REL 0x109598); the
+          types are the role factory's (0x114f30), named in ROLE_TYPES
+
+The match asks for 16 corner plays (records 0-99) and 24 free-kick plays
+(100-195) only (GAMEPRG.REL 0xb8560, 0xb85b0); COMBINATION.BPB's record
+p - 1 is attack pattern p's diagram on the tactics screen (SLES
+0x2faf80). See DOC/BPB_FORMAT.md#which-play-is-which.
 
 COMBINATION2.CBB has the same container (u32 count, size-prefixed records,
 GAMEPRG.REL 0xc7e84): 540 records, one per combination; its scripts are the
@@ -60,6 +70,13 @@ import sys
 BALL_KIND = 0xfe                 # path kind high byte of the ball's path
 COORD_SHIFT, COORD_SCALE, COORD_SIGN = 3, 64.0, 4
 ROUTE_OFF, ROUTE_LEN, NONE = 0x18, 4, 0xff
+FORM_MAX = 22                    # GetFormationData stops at 0x16 values
+# A path kind is a role type (high byte), a value (bits 0-6) and a flag
+# (bit 7) (0x109598). The role factory (GAMEPRG.REL 0x114f30, jump table
+# 0x27a4d0) makes these classes for the types the play books use.
+ROLE_TYPES = {13: "RoleCKKicker", 15: "RoleSP", 16: "RoleSP", 17: "RoleSP",
+              18: "RoleSPRecvSC1", 19: "RoleSPRecvSC2", 20: "RoleSP", 21: "RoleSP",
+              22: "RoleSP", 26: "RoleSPAttacker", BALL_KIND: "ball"}
 
 CBB_SCALE = 10.0                 # 0xc7f00 and 0xc7b64 multiply by 10.0
 CBB_DEFAULT_LIMIT = 1055.6       # 0xc7bc8: 0x4483f3d7
@@ -102,6 +119,14 @@ class Play:
         self.starts = struct.unpack_from("<%dH" % self.n, raw, self.off_start)
         self.kinds = struct.unpack_from("<%dH" % self.n, raw, self.off_kind)
         self.route = [b for b in raw[ROUTE_OFF:ROUTE_OFF + ROUTE_LEN] if b != NONE]
+
+    def formation(self):
+        """(kind, [(x, y)]): the starting positions block at the header's
+        end (GetFormationData 0x2e7d88): u16 size, 2 bytes, u16 n, u16 kind,
+        then n coordinate pairs (at most 22 values are read)."""
+        n, kind = struct.unpack_from("<2H", self.raw, self.header + 4)
+        vals = struct.unpack_from("<%dH" % min(2 * n, FORM_MAX), self.raw, self.header + 8)
+        return kind, [(coord(vals[i]), coord(vals[i + 1])) for i in range(0, len(vals) - 1, 2)]
 
     def problems(self):
         out = []
@@ -282,9 +307,12 @@ def cmd_dump(path, index):
     p = plays[index]
     print("%s play %d: %d bytes, flags %#x, %d paths, ball route %s" % (
         path, index, p.size, p.flags, p.n, p.route or "-"))
+    form_kind, spots = p.formation()
+    print("  starts (kind %d): %s" % (form_kind, " ".join("(%.1f,%.1f)" % s for s in spots)))
     for k, (kind, start, pts) in enumerate(p.paths()):
-        print("  path %2d  kind %#06x%s  start %3d  %s" % (
-            k, kind, " (ball)" if kind >> 8 == BALL_KIND else "       ", start,
+        role = ROLE_TYPES.get(kind >> 8, "type %d" % (kind >> 8))
+        print("  path %2d  kind %#06x %-14s %2d%s  start %3d  %s" % (
+            k, kind, role, kind & 0x7f, "+" if kind & 0x80 else " ", start,
             " ".join("(%.1f,%.1f c%d)" % pt for pt in pts)))
 
 

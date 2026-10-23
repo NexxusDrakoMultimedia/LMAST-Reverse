@@ -43,13 +43,111 @@ A point is two u16, x then y. Each is a coordinate in metres
 code: y's × 10 + x's. The reader keeps the coordinates as floats and the
 code as an int.
 
-**Play ids.** `SplitID` turns a play id into a record index in four
-ranges: ids below `0x1000` are (id >> 8) × 10 + (id & 0xff), records
-0–99; `0x1000`–`0x3fff` are (id >> 12 − 1) × 32 + ((id >> 8) & 0xf) × 8
-+ 100 + (id & 0xff), records 100–195; `0x4000`–`0x6fff` are
-((id − 0x4000) >> 12) × 20 + 196 + (id & 0xff), records 196–255; from
-`0x7000` on, id − `0x7000`. What the four ranges are (attack patterns,
-set pieces, ...) isn't traced.
+**The starting positions** (`GetFormationData`, `0x2e7d88`, into an
+`IFORM`): the block from the end of the fixed header (`+0x08`) to the
+first array:
+
+| Offset | Type | What |
+|---|---|---|
+| `+0x00` | u16 | the block's size (**empirical**) |
+| `+0x02` | 2 bytes | `00 01` in every play; not read |
+| `+0x04` | u16 | *n*, the players placed |
+| `+0x06` | u16 | the play's kind: 1 in records 0–99, 2 in 100–195, 3 in 196–255 (**empirical**) |
+| `+0x08` | *n* × 2 u16 | each player's start, x then y, coded like the points; the reader takes at most 22 values |
+
+**Empirical:** *n* is 11 in the 196 twelve-path plays and the number of
+non-ball paths in the others, and play 0's first spot (33.6, 52.1) is at
+the corner flag, where its ball starts.
+
+**Path kinds** (**confirmed**). `0x109598` splits a kind into the role
+type (high byte), a value (bits 0–6) and a flag (bit 7). The set-play
+code takes the role for a type from a pool the role factory fills
+(`0x109ca0` calls `0x114f30` for types 13–33; `0x1097f8` returns slot
+type − 13), and the factory's jump table (`0x27a4d0`) gives the class
+each type makes. The types the play book uses:
+
+| Type | Class | Paths in `PLAYBOOK.BPB` |
+|---|---|---|
+| 13 | `fb::RoleCKKicker` | the corner taker, one in each of records 0–99 |
+| 15 | `fb::RoleSP` | the free-kick taker (records 100–195) |
+| 16–22 | `fb::RoleSP`, except 18 `fb::RoleSPRecvSC1` and 19 `fb::RoleSPRecvSC2` | runners with a special job |
+| 26 | `fb::RoleSPAttacker` | most paths (1,845): the attackers' runs |
+| 254 (`0xfe`) | – | the ball |
+| 249–253 | none: not role types | only in records 196–255 |
+
+For reference, the factory's other types: 0 `RoleGoalKeeper`, 1
+`RoleBallCarrier`, 2 `RoleBallCarrierMarker`, 3 `RoleSupporter`, 6
+`RoleSpaceMarker`, 7 `RoleSpaceMarkCover`, 9 `RoleKOKicker`, 10
+`RoleKOReceiver`, 12 `RoleGKKicker`, 14 `RoleFKKicker`, 27
+`RoleCKGoalKeeper`, 28 `RoleSPDefender`, 29 `RoleSPMarker`, 30
+`RoleFKWall`, 31 `RoleFKMove`, 32 `RolePKKicker`, 33 `RolePKKeeper`, 38
+`RoleSAAttacker`, 40 `RoleSCAttacker`, 41 `RoleFakeAttacker`, 42–44
+`RoleFreeRunCommon`, 45 `RolePassAndGo`, 47 `RoleCombination`. `0x108c18`
+also maps some types before use: 14, and 15 and 16 when its third
+argument is 0, become 14; 23–25, 28, 29, 31 and any type outside 13–32
+become 28.
+
+**Point codes.** The play setter (`0x108d00`) scales each point by 10
+(to the match's tenths of a metre) and passes its code to `0xf4c18`,
+which keeps it at `+0x10` of the path's 32-byte entries. What reads it
+there isn't traced.
+
+**Play ids** (`SplitID`, `0x2e8370`, gives a type, a group and an
+index; `GetPLAYBOOK` turns them into a record):
+
+| Ids | Type | Record |
+|---|---|---|
+| below `0x1000` | 0 | (id >> 8) × 10 + (id & 0xff): 0–99 |
+| `0x1000`–`0x3fff` | id >> 12 (1–3) | (type − 1) × 32 + ((id >> 8) & 0xf) × 8 + 100 + (id & 0xff): 100–195 |
+| `0x4000`–`0x6fff` | −1 | ((id − 0x4000) >> 12) × 20 + 196 + (id & 0xff): 196–255 |
+| `0x7000` on | −2 | id − `0x7000` |
+
+## Which play is which
+
+**Confirmed.** `GAMEPRG.REL` asks for a play in one place, the play
+setter `0x108d00`. Only two functions call it, both from
+`match::MatchManager`'s set-piece start (`0x1a3990`):
+
+- **Corners** (set-piece type 2, `fb::CSetPlayAssign_CK`, `0xb8560`):
+  `0x109a78` takes a random 0–99. Below 70 it shuffles the 10 ids at
+  `0x2796d0`, records 2, 9, 11, 13, 21, 27, 50, 59, 81 and 89, and
+  otherwise the 6 at `0x2796e8`, records 40, 42, 46, 47, 78 and 79; the
+  first after the shuffle (`0x109b60`) is the play.
+- **Free kicks** (type 4, `fb::CSetPlayAssign_FK`, `0xb85b0`): `0x12f860`
+  sorts the ball's spot, turned to the attacking direction, into a zone:
+  1 or 2 (left, right) within 12 m of the goal line (y ≥ 40.78 m); 3, 0
+  or 4 (x ≤ −12 m, the middle, x > 12 m) 12–30 m from it (y ≥ 22.78 m);
+  5, no play, further out. `0x109958` makes zone 0 group 0, zones 3–4
+  group 1 and zones 1–2 group 2, then draws a random 0–99 against
+  `0x2793d0` (80, 60, 10): below it, one of the 8 ids at `0x279670` +
+  group × 16, else one of the 8 at `0x2796a0` + group × 16, shuffled the
+  same way. The ids are type 1, 2 and 3 for groups 0, 1 and 2:
+
+  | Group | Zones | Below the threshold | Otherwise |
+  |---|---|---|---|
+  | 0 | the middle, 12–30 m | 100, 108, 116, 124 | 102, 103, 104, 105, 115 |
+  | 1 | wide, 12–30 m | 132, 149 | 141, 143, 145, 155, 162 |
+  | 2 | within 12 m | 164, 180, 181 | 167, 178, 179, 192, 193 |
+
+So a match can use 40 of the 256 plays: 16 corners and 24 free kicks.
+Records 196–255, the type −1 range, are never asked for: no code builds
+an id from `0x4000` to `0x6fff`, and their path kinds (249–253) aren't
+role types. The corner ids in range 0 group 4 and up (records 40–89)
+show the groups are not one per corner side; what the groups and
+indexes stand for isn't traced.
+
+**`COMBINATION.BPB` is the tactics screen's.** Its copies in the
+`PRELOAD/TACTICS*` packs (all 14 identical to `GAME/COMBINATION.BPB`)
+are what the tactics screen loads, and its Play Book page
+(`CTacticsMenuTeamTacticsImplement::l_playbook_edit_get_playbookdata`,
+SLES `0x2faf80`) asks for attack pattern *p* (1–30, `PlTeamAttack`
+byte 0) as id `0x7000` + *p* − 1: record *p* − 1. So its 30 records are
+the 30 attack patterns' diagrams, in the order `LS00`–`LS05`, `RS`,
+`CT`, `CA`, `PO` ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)), and the
+screen's list (`CPlayBookList::MakeList`, `0x2f9618`) shows the club's
+choices from `PlTeamData +0x498c`/`+0x498f`, the bytes the match takes a
+user's club's attack patterns from
+([below](#how-a-team-uses-the-combinations)).
 
 ## Empirical
 
@@ -60,14 +158,16 @@ kind has high byte `0xfe`: the ball. In play 0 the ball starts at (33.0,
 51.5), at a corner flag of a 68 × 105 m pitch (goal line at y = 52.5),
 and its route goes to path 1; ten other paths are runs into the box. So
 x runs across the pitch and y along it, in metres from the centre spot.
-Other kind high bytes are 13, 15–22 and 26 (players) and 249–253. The
-point codes are 0, 1, 2, 3 and 20; they change along a run (20, then 2,
-then 1 near its end), so they look like movement styles.
+The other kinds are in the table above. The point codes are 0, 1, 2, 3
+and 20; they change along a run (20, then 2, then 1 near its end), so
+they look like movement styles. Path kind values (bits 0–6) are 0–6
+(0 in 2,210 of the 2,338 player paths) and the flag (bit 7) is set in
+73 paths, all in free-kick records (101–195).
 
 `COMBINATION.BPB` (4,516 bytes) parses with the same layout: 30 records
 of 4–5 paths, 528 points, a 0x1c-byte header, path kinds all 0 and no
-ball route. Its reader (`fb::Combination` per [`GAME_DIR.md`](GAME_DIR.md))
-isn't traced, so the layout match is empirical.
+ball route. It is read by the same `CPlayBookDataBase` code on the
+tactics screen ([above](#which-play-is-which)).
 
 ## `COMBINATION2.CBB` and `.CSB`
 
@@ -387,11 +487,14 @@ participants are the ones the record's slots found
 
 ## Still unknown
 
-- The block at `+0x20` (before the first array) and `+0x10`, `+0x14`,
-  `+0x1c`; the flags.
-- What the path kinds and point codes mean, and which play is which
-  (the id ranges, and `TACTICS_PLAYBOOK_EDIT.TBB`'s link to them).
-- `CPlayBookDataBase::GetFormationData` (`0x2e7d88`, `IFORM`).
+- The header's `+0x10`, `+0x14` and `+0x1c`, the flags, and the
+  starting-positions block's `+0x02` bytes.
+- What reads a point's code (path entry `+0x10`) and what each code
+  does; what a path kind's value and flag select for its role.
+- What the id groups and indexes stand for within corners and free
+  kicks, and what records 196–255 (kind 3, roles 249–253) were for.
+- `TACTICS_PLAYBOOK_EDIT.TBB` (180 rows of 4 bytes, read through
+  `CTacticsLoader::getPlayBookEditTable`).
 - Whether anything reads A's two values, block B and C's four u32
   through a pointer the search missed (no reader found).
 - What fills `PlTeamData +0x498c`/`+0x498f` (the attack patterns of a

@@ -101,6 +101,10 @@ evidence and how it was tested; the git history holds the rest.
       ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#the-combination-commands));
       `GAMEDATA.BIN` part 0 is the right foot and 1 the left, from the
       weak-foot check ([`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md))
+- [x] Which play is which: 16 corner and 24 free-kick plays by zone,
+      records 196–255 never used, `COMBINATION.BPB` as the tactics
+      screen's attack pattern diagrams; path kinds as role types; the
+      starting-positions block ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#which-play-is-which))
 
 ## 3. Write: a writer for every format a mod changes
 

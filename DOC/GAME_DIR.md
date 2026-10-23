@@ -29,7 +29,7 @@ BCB3, DTPK) are **empirical**, checked against every file on the disc.
 | `*.SVM`, `EF001.BIN`, `FLARE.BIN` | `PVMH` | texture archives |
 | `BALLMOTION`, `OPTMOTION*`, `PLAYERMOTION`, `SHADOWCOLLI`, `WALLCOLLI` | BINPAC | see [`PAC_FORMAT.md`](PAC_FORMAT.md) |
 | `CUTINPACK.BIN` + `_HEADER.BIN` | KC@P of 277 `etc::PackData` entries | the match's cut-ins ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp), [`PLAYER_DIR.md`](PLAYER_DIR.md)). Every entry starts with a `CIB0` block (type 19); after it come Ninja models (types 20 and 24, 71 in all), `PVMH` textures (21, 71), motions (22, 3,357) and 7 `BMT1` blocks (23). 24 entries hold only the `CIB0` block (**empirical**, `packdata.py info --all`). `CIB0` and `BMT1` aren't decoded |
-| `PLAYBOOK.BPB`, `COMBINATION.BPB` | play books | the players' and ball's paths in each set play and move, in metres: see [`BPB_FORMAT.md`](BPB_FORMAT.md) (`Pwk::PlayBookData`) |
+| `PLAYBOOK.BPB`, `COMBINATION.BPB` | play books | the players' and ball's paths, in metres: the corner and free-kick plays, and the tactics screen's 30 attack pattern diagrams: see [`BPB_FORMAT.md`](BPB_FORMAT.md) (`Pwk::PlayBookData`) |
 | `COMBINATION2.CBB/.CSB` | 540 combination records / 540 PRS-packed `SQB1` scripts | the combinations' data and scripts: see [`BPB_FORMAT.md`](BPB_FORMAT.md#combination2cbb-and-csb) |
 | `BACK_MATCH.TBB`, `TACTICS_PLAYBOOK_EDIT.TBB` | TBB | see [`TBB_FORMAT.md`](TBB_FORMAT.md) |
 | `AI_PARAM.BIN` | 467 × f32 | no reader found, by name or by content: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md#ai_parambin) |

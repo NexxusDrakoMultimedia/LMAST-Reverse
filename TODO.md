@@ -27,11 +27,10 @@ What to work on next, most valuable first.
    slot. The answer is in VPF's own code, which waits on the sister
    project [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
    (not yet fully reversed).
-3. **The `GAME/` tactics AI files** (section 2, "The match"): the play
-   books (`PLAYBOOK.BPB`: which play is which, the path kinds and point
-   codes), `Combi2`/`Combi3`'s area types, and `GAMEDATA.BIN`'s
-   records. `snr2.py classes` and `callers` name the match AI's `fb::`
-   classes and which class makes each call.
+3. **The `GAME/` tactics AI files** (section 2, "The match"): what
+   reads the play books' point codes, `Combi2`/`Combi3`'s area types,
+   and `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name
+   the match AI's `fb::` classes and which class makes each call.
 
 ## What a mod can change, and what is left
 
@@ -123,8 +122,9 @@ shown to have no effect. Grouped by what a mod would change.
 ### The match
 
 - [ ] The tactics AI files: the area types `Combi2` and `Combi3` make;
-      in the play books the path kinds, point codes, which play is
-      which, the `+0x20` block and `GetFormationData`
+      in the play books what reads the point codes, what a path kind's
+      value and flag do, and what the corner and free-kick id groups
+      stand for
       ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
 - [ ] `GAMEDATA.BIN`: the rest of a ball-contact record, what sets a
       player's record (`+0x520`), and whether
