@@ -11,8 +11,8 @@ means isn't settled: in records 0-41 it pairs them, 4 <-> 5, 6 <-> 7, but
 later records hold small shared values); 0x13ab80 reads the s8 at +0x8 as
 an angle in units of pi/32; 0x13ad00 reads s16 +0x20 / +0x22 as a range.
 The kick code reads the body part, bits 16-18 of the u32 at +0xc (0x98e88:
-0 and 1 the feet, 2 and up scaled by the header parameter), and the
-surface at +0x25 (0x45f74), an index into the kick kind's variant names
+0 the right and 1 the left foot, 2 and up scaled by the header
+parameter), and the surface at +0x25 (0x45f74), an index into the kick kind's variant names
 (0x58000). Empirically parts 0-4 occur and surfaces 0-16 or 255 (none).
 
 Usage:
@@ -27,7 +27,12 @@ import sys
 FILE = "GAMEDATA.BIN"
 RECORD = 0x30
 PARTNER, ANGLE, PART_WORD, SPEED, RANGE, SURFACE = 0x4, 0x8, 0xC, 0x14, 0x20, 0x25
-PARTS = ("foot", "foot", "head", "chest", "other")    # empirical, from the surfaces each uses
+# Parts 0 and 1 are the right and left foot: the kick code (0x98e88) scales
+# a kick by the weak foot when its part is the one 0x97be0 maps the player's
+# leg to (table 0x26e060: left-footed 0, right-footed 1, two-footed none),
+# and 0x97c00 maps the leg to the strong foot (0x26e070: 1, 0, 2 both).
+# 2-4 are named from the surfaces each uses (empirical).
+PARTS = ("right foot", "left foot", "head", "chest", "other")
 # The variant names of the kick kinds' lists (GAMEPRG.REL 0x2680cc on).
 SURFACES = ("INSIDE", "OUTSIDE", "HEEL", "SOLE", "TOE", "INSTEP", "INFRONT",
             "OUTFRONT", "CHEST", "HEAD_STRONG", "HEAD_WEAK", "SLIDING", "CHIP",
@@ -84,7 +89,7 @@ def cmd_info(path):
             print("  record %d  !! %s" % (i, "; ".join(bad)))
     for part in sorted(parts):
         tally = sorted(parts[part].items(), key=lambda kv: -kv[1])
-        print("  part %d %-5s %5d records: %s" % (
+        print("  part %d %-10s %5d records: %s" % (
             part, PARTS[part] if part < len(PARTS) else "?", sum(parts[part].values()),
             ", ".join("%s %d" % (SURFACES[s] if s < len(SURFACES) else s, n) for s, n in tally)))
 

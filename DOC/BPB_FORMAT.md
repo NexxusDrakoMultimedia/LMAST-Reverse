@@ -212,12 +212,27 @@ none of them passes.
 |---|---|---|
 | record number | `+0x4c` | the sort and the roll (`+0x714` from the controller) |
 | A kind | `+0x8` | the trigger, below |
-| A's two values (kind 1) | `+0x28`, `+0x30` | not traced |
-| B kind, and its value (kind 2) | `+0x20`, `+0x24` (`0xc2b90`/`0xc2b98`) | not traced |
+| A's two values (kind 1) | `+0x28`, `+0x30` | no reader found (below) |
+| B kind, and its value (kind 2) | `+0x20`, `+0x24` (`0xc2b90`/`0xc2b98`) | no reader found |
 | C u16 | `+0x1c` | the zone mask, below |
-| C's four u32 | `+0xc`–`+0x18` | not traced |
+| C's four u32 | `+0xc`–`+0x18` | no reader found |
 | C's two limits | `+0x44`, `+0x48` | the distance test, below |
 | slots 1 … *n* − 1 | pointers at `+0x34` | the participants, below |
+
+The objects are `fb::CombinationWork` (vtable `0x253118`, `0xc0780`),
+and the controller is `fb::Combination` (vtable `0x253100`, constructor
+`0xc07d8`). **No reader found** for A's values, block B or C's words:
+the parsed record lives in the sequencer object, whose global
+(`0x249418`) is used only by its getter, create and destroy
+(`0xc7d08`–`0xc7e00`), and `0xc2340` is the only caller of the reader
+(`0xc7a78`) and of the getter outside them. The functions that take a
+combination object afterwards read only `+0` (active), `+8`, `+0x1c`,
+`+0x44`, `+0x48`, `+0x4c` and the slots (`0xc1438`, `0xc1e70`,
+`0xc1248`, `0xc1fc8`, `0xc1af0`), and the script gets only the record
+number (`0xc7770`). A search of the overlay for the fields at their
+offsets inside the controller (`+0x6c8` + field) finds nothing. So they
+are probably unused, though a reader through a pointer this search
+misses can't be ruled out.
 
 The object's constructor (`0xc06b0`) sets up three area objects of each
 class: `fb::COMBINATION::AreaBallHolder` at `+0x50` (`0x14` bytes each),
@@ -345,9 +360,23 @@ The 29 commands (argument counts at `0x274790`, including the result):
 | `Combi14` | *x* | stores 1 in the result |
 | `Combi15` | *p* | stores 1 if *p*'s player holds the ball, else 0 |
 | `Combi16` | *x* | makes an area through `0xc62a8` |
-| `Combi17`–`Combi24` | – | each makes an area around participant 0 by `0xc6150` with a fixed value: 5, 1, 3, 7, 4, 6, 2 and 8 in command order |
+| `Combi17`–`Combi24` | – | each makes an area around participant 0 by `0xc6150` with a fixed direction: 5, 1, 3, 7, 4, 6, 2 and 8 in command order (below) |
 | `Combi25` | *c* | stores 1 with a chance of *c* % (`fcEuroRand_Get0to1`, the game's seeded random numbers), else 0 |
 | `Combi26` | *p*, *d* | makes an area *d* × 10 from participant *p*, trying sideways offsets of 20, 30 or 50 until `0xc63a8` accepts one |
+
+**The directions of `Combi17`–`Combi24`** (**confirmed**): `0xc6188`
+mirrors the value through `0x274870` (0, 5, 6, 7, 8, 1, 2, 3, 4) when
+the team's side (`0xa9d58`) is 1, so value *d* and *d* + 4 are opposite
+directions. `0xc7108` passes it to `0xa39d8`, which turns it into an
+angle (`0xa3900`, jump table `0x26fa90`): 1 90°, 2 135°, 3 180°, 4 225°,
+5 270°, 6 315°, 7 360°, 8 45°. It then walks the field's node network
+(match `+0x102d0`; each node keeps its neighbours from `+0x50`, their
+count at `+1`) from the participant's node and tests each neighbour's
+direction against that angle with a π/2 tolerance (`0x3fc90fdc`). So
+`Combi17`–`Combi24` mark the neighbouring area of the pitch in one of
+eight directions, at 270°, 90°, 180°, 0°, 225°, 315°, 135° and 45°.
+Which angle is forward isn't checked; 90° and 270° are opposite along
+one axis.
 
 So script 0, `Combi3 8; Combi0 1; Combi3 13; Combi0 2; Combi12 0`, makes
 preset area 8, sends participants 1 and 2 to area 0 (`Combi3 13` returns
@@ -363,15 +392,15 @@ participants are the ones the record's slots found
 - What the path kinds and point codes mean, and which play is which
   (the id ranges, and `TACTICS_PLAYBOOK_EDIT.TBB`'s link to them).
 - `CPlayBookDataBase::GetFormationData` (`0x2e7d88`, `IFORM`).
-- Who reads A's two values, block B and C's four u32 once they are in
-  the combination object (`+0x28`, `+0x30`, `+0x20`, `+0xc`–`+0x18`).
+- Whether anything reads A's two values, block B and C's four u32
+  through a pointer the search missed (no reader found).
 - What fills `PlTeamData +0x498c`/`+0x498f` (the attack patterns of a
   team whose `GetOperator` is set), what `GetOperator` stands for, and
   what `+0x15e0` and `0xc6288` do when a candidate is tried.
 - What the controller's `+0x1608` "line" value is, and type 6's
   position (`0xc3270`).
-- The area types of `Combi2`, `Combi3` and `Combi17`–`Combi24`
-  (directions around the ball holder?), what `Combi12`'s target and
+- The area types of `Combi2` and `Combi3`, which of `Combi17`–`Combi24`'s
+  angles is forward, what `Combi12`'s target and
   mode 7's flag are, and the plays at the player's `+0xfc`, `+0x100`
   and `+0x108` that modes 2 and 3 switch to.
 

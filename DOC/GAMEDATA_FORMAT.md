@@ -21,7 +21,7 @@ found. Neither has symbols to name its fields, so this is a partial decode.
 | `0x13abf0`, `0x13ac20`, `0x13ac58` | compare a record's s16 at `+0x4` with a given index and with another record's `+0x4` |
 | `0x13ab80` | reads the s8 at `+0x8` and multiplies it by π/32 (`0x3dc90fdc`): an angle |
 | `0x13ad00` | reads the s16 pair at `+0x20` / `+0x22` as a range a value is tested against |
-| `0x45f44`–`0x45f84`, `0x98e68`–`0x98e94` | a kick request's s16 at `+0x1c` is a record number. The record's byte `+0x25` picks an entry of the kick kind's variant list (`0x58000`), and bits 16–18 of its u32 at `+0xc` pick how the kick's rating is scaled: 0 and 1 by the foot (`0x97be0`), 2 and up by the header parameter ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-kick-kinds)) |
+| `0x45f44`–`0x45f84`, `0x98e68`–`0x98e94` | a kick request's s16 at `+0x1c` is a record number. The record's byte `+0x25` picks an entry of the kick kind's variant list (`0x58000`), and bits 16–18 of its u32 at `+0xc` pick how the kick's rating is scaled: 0 (the right foot) and 1 (the left) by `weak_foot` when it is the player's weak foot (`0x97be0`, table `0x26e060`: left-footers are weak with 0, right-footers with 1, two-footed players never), 2 and up by the header parameter ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-kick-kinds)) |
 
 **Who looks records up** (**confirmed**): `0x13abb8` has 78 call sites,
 in the player loader (`player::CPlayerLoadHandleInterface`'s code,
@@ -57,7 +57,7 @@ HEEL_VOLLEY, 16 DIVING_HEAD) agree:
 
 | Part | Records | Surfaces |
 |---|---|---|
-| 0, 1 | 1,308, 1,086 | foot surfaces, in nearly the same mix (INSIDE 601 / 433, INSTEP 403 / 359, INFRONT 150 / 150): the two feet |
+| 0, 1 | 1,308, 1,086 | foot surfaces, in nearly the same mix (INSIDE 601 / 433, INSTEP 403 / 359, INFRONT 150 / 150): the right and the left foot (**confirmed** by the weak-foot check above) |
 | 2 | 353 | HEAD_STRONG 122, HEAD_WEAK 216, DIVING_HEAD 15: the head |
 | 3 | 40 | CHEST, all of them |
 | 4 | 1,344 | 255 (none) in 1,148, a foot surface in the rest |
@@ -80,9 +80,10 @@ whose values sit between kind words: at the best alignment only 41 of the
 
 ## Still unknown
 
-- The rest of a `GAMEDATA.BIN` record's fields, and which foot parts 0
-  and 1 are.
-- What sets a player's action word (`+0x520`), what record 1408 is, and
+- The rest of a `GAMEDATA.BIN` record's fields.
+- What sets a player's action word (`+0x520`; the stores at `0x75840`,
+  `0x165328` and `0x1d9c48` are on objects not yet matched to the
+  per-player block), what record 1408 is, and
   which callers use `0x13ab80`–`0x13ad00`'s comparisons for what.
 - Whether anything loads `AI_PARAM.BIN` by another route.
 

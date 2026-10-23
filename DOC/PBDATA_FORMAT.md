@@ -634,11 +634,15 @@ switches give each kind a meaning (**confirmed** from the code):
 After the switch, unless the kind has flag `0x40` (the throw-ins,
 [below](#the-kind-table)), the rating is scaled by how the ball is
 struck, read from the same
-`GAMEDATA.BIN` record (`+0xc` bits 16–18: 0 and 1 the feet, 2 the head,
-3 the chest): parts 2 and up by min(header (34) + 20, 100) / 100, so a
-chest touch counts as a header too, and a kick
-with one of the feet, chosen by `0x97be0` (probably the weaker one), by
-0.14 × parameter 59 (`weak_foot` / 2, 0–7). The multiplications use the
+`GAMEDATA.BIN` record (`+0xc` bits 16–18: 0 the right foot, 1 the left,
+2 the head, 3 the chest): parts 2 and up by min(header (34) + 20, 100) /
+100, so a chest touch counts as a header too, and a kick with the
+player's weak foot by 0.14 × parameter 59 (`weak_foot` / 2, 0–7).
+**Confirmed:** `0x97be0` maps the player's leg value through
+`0x26e060` (0, 1, −1, −1) to the weak foot's part, so a left-footer
+(leg 0) is weak with part 0 and a right-footer with part 1, and a
+two-footed player (leg 2, 3) is never scaled; `0x97c00` maps it through
+`0x26e070` (1, 0, 2, 2) to the strong foot. The multiplications use the
 R5900's three-operand `mult` (`0x98ed0`, `0x98f08`).
 
 Two kinds are stored as constants (**confirmed**): kind 38 by the
