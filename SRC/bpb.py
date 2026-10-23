@@ -38,6 +38,12 @@ fb::CombinationSequencer, GAMEPRG.REL 0xc7a78):
   area    u8 shape, s8 x, s8 y (x 10.0), then shape 0 s8 radius, else s8 x2,
           s8 y2 (x 10.0) (0xc7f00)
 
+Slot k (1 to n - 1) is where combination participant k is found: the
+first outfield player inside its area (0xc1fc8). The types are named in
+CBB_SLOT_NAMES; types 0 and 6 never find anyone. A team has 11
+combinations, one per player slot, from 3 sets in its CTeamPlayerSetting
+(0xc1180, 0x14b8e0).
+
 `info` checks every record against this layout; `cbb` prints records.
 
 Usage:
@@ -58,6 +64,22 @@ CBB_DEFAULT_LIMIT = 1055.6       # 0xc7bc8: 0x4483f3d7
 CBB_SLOT_TYPES = 8               # the jump table at 0x274a60
 CBB_AREA_TYPES = (1, 3, 4, 5)    # slot types whose bytes are an area right away
 CBB_BYTE_AREA_TYPES = (2, 6)     # a u8, then an area
+# What each slot type builds in the fb::Combination object (0xc2450) and
+# where its area is (AreaPosition::GetPosition 0xc2df0, jump table 0x274590;
+# x and y in the attacking team's direction). Slot k picks participant k:
+# the first outfield player inside the area (0xc1fc8). Types 0 and 6 never
+# match: AreaBallHolder's test returns 0 (0x2267a8), and AreaPosition's
+# test (0xc2cd8) accepts types 1-5 only.
+CBB_SLOT_NAMES = (
+    "ball-holder stub, never matches",          # 0 AreaBallHolder, +0x50
+    "from the team's line y",                   # 1 x as given, y + manager +0x1608
+    "around participant",                       # 2 the u8 is the participant
+    "at the -x touchline",                      # 3 x - 328.66, y + line
+    "at the +x touchline",                      # 4 x + 328.66, y + line
+    "fixed spot",                               # 5 x, y as given
+    "never matches",                            # 6 rejected by the test
+    "node line",                                # 7 AreaNodeLine, +0x110
+)
 
 
 def coord(v):
@@ -281,7 +303,8 @@ def cmd_cbb(path, first, last):
             c.c_u16, " ".join("%#x" % w for w in c.c_words), c.limits[0], c.limits[1]))
         for k, (t, v) in enumerate(c.slots, 1):
             parts = [fmt_area(x) if isinstance(x, tuple) else "%g" % x for x in v]
-            print("        slot %d  type %d  %s" % (k, t, "  ".join(parts)))
+            name = CBB_SLOT_NAMES[t] if t < len(CBB_SLOT_NAMES) else "?"
+            print("        slot %d  type %d %-26s %s" % (k, t, "(%s)" % name, "  ".join(parts)))
 
 
 def main(argv):

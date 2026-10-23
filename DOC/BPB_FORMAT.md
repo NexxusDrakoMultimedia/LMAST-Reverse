@@ -126,7 +126,103 @@ the fill patterns of uninitialised memory, so the records are C structs
 written with their padding. The areas are mostly circles of radius 100
 or 150 at offsets such as (±100, −50) and (0, 150).
 
-`python SRC/bpb.py cbb DAT/GAME/COMBINATION2.CBB 0 3` prints records.
+`python SRC/bpb.py cbb DAT/GAME/COMBINATION2.CBB 0 3` prints records,
+with each slot type's name.
+
+### How a team uses the combinations
+
+**Confirmed** from `GAMEPRG.REL`. Each team has a combination
+controller (the team's `+0x1788`) holding 11 `fb::Combination` objects
+of `0x15c` bytes at `+0x6c8`. `0xc1180` fills them from the team's
+`Pwk::CTeamPlayerSetting`: combination *i* (0–10) is record
+`0x14b8e0(set, i)`, the u32 at style record `+0x78` + set × `0x2c` +
+*i* × 4, where the set (0–2) is the style record's `+8` and the style
+record is one of three of `0x5b4` bytes (`0x14af00`). The setting's
+constructor (`0x14aaf0`) writes −1 to all 33; what writes the real
+record numbers isn't traced.
+
+`0xc2340` copies a record into its combination object:
+
+| `.CBB` field | Object | Used by |
+|---|---|---|
+| record number | `+0x4c` | – |
+| A kind | `+0x8` | the trigger, below |
+| A's two values (kind 1) | `+0x28`, `+0x30` | not traced |
+| B kind, and its value (kind 2) | `+0x20`, `+0x24` (`0xc2b90`/`0xc2b98`) | not traced |
+| C u16 | `+0x1c` | the zone mask, below |
+| C's four u32 | `+0xc`–`+0x18` | not traced |
+| C's two limits | `+0x44`, `+0x48` | the distance test, below |
+| slots 1 … *n* − 1 | pointers at `+0x34` | the participants, below |
+
+The object's constructor (`0xc06b0`) sets up three area objects of each
+class: `fb::COMBINATION::AreaBallHolder` at `+0x50` (`0x14` bytes each),
+`AreaPosition` at `+0x8c` (`0x2c` each) and `AreaNodeLine` at `+0x110`
+(`0x18` each). A slot's type picks the class (`0xc2450`): type 0 an
+`AreaBallHolder` (its first u8 to `+0xc`, its distance to `+0x10`),
+types 1–6 an `AreaPosition` with the type at `+4` (a circle `0xc2c00`
+or a box `0xc2c58`; type 2's u8 to `+0x10`, type 6's to `+0x14`), and
+type 7 an `AreaNodeLine` (`0xc3168`).
+
+**When a combination is tried.** The controller's `0xc0ea0` takes a
+mode, which it keeps at `+0x15c4`. The team's ball-holder change
+(`0xb93e8`, `match::MatchManager`) calls it with mode 0;
+`fb::PhaseInPlay` (`0xf549c`) calls it with mode 3, which stores 3 only
+on every 60th call (`+0x1604`). These are the only two stores of
+`+0x15c4`. The test before a combination starts (`0xc1e88`) needs:
+
+1. A kind equal to the mode. So kind 0 combinations are tried when a
+   team-mate receives the ball, kind 3 ones about once a second in open
+   play, and the four kind 1 records (0, 1, 4 and 18) **never start**.
+2. Bit *z* of the C u16 set, where *z* is the zone of the ball holder
+   (`+0x1600`, from `0xc2778`): 14 when the holder is more than 36.28
+   from the centre line along the pitch, else row × 3 + column, with 4
+   rows of 18.14 along the pitch (from −36.28 to +36.28, in the attacking
+   direction) and 3 columns across it (the left quarter, the middle
+   half, the right quarter). So `0x0480`, bits 7 and 10, is the middle
+   of the two attacking rows.
+3. If the first limit isn't 0: the team's line value (`+0x1608`) less
+   the ball holder's y (`+0x15f4`) between the two limits.
+4. A participant found for every slot.
+
+**The participants.** Participant 0 is the player at the controller's
+`+0x160c` (probably the ball holder).
+For slot *k*, `0xc1fc8` tests each outfield player (1–10, the keeper
+never) who isn't already a participant against the slot's area
+(the area's test, vtable `+0xc`), sorts the ones inside, and makes the
+first participant *k*. If any slot finds no one, the combination doesn't
+start. `0xc1248` also gives each slot's area position, turned to the
+team's attacking direction.
+
+Where an `AreaPosition` sits, by type (`0xc2df0`, jump table
+`0x274590`); x and y are the area's offsets:
+
+| Type | Position | Records |
+|---|---|---|
+| 1 | x, and the team's line value + y | 474 slots |
+| 2 | participant *u8*'s player + (x, y), turned to his team's direction | 835 |
+| 3 | x − 328.66, line value + y | 18 |
+| 4 | x + 328.66, line value + y | 18 |
+| 5 | (x, y) as given | none |
+| 6 | from `0xc3270` with the u8 and the team's side | 1 (record 1) |
+
+The area's test (`0xc2cd8`) accepts types 1–5 only, and
+`AreaBallHolder`'s test returns 0 (`0x2267a8`), so a type 0 or type 6
+slot never finds a participant: records 1 (type 6) and 59 (type 0)
+never start either. Type 7 appears in no record.
+
+The controller's `+0x15f0` is the ball holder's position, turned to
+the attacking direction (`0xc0bc4`), and `+0x1608` is a per-team value
+the field information keeps at `+0x10400` + side × 4 (`0x3e4a8`), set
+when the players are placed (`0xb7784`, from the last placed player's
+y). Its meaning, the "line" above, isn't confirmed.
+
+**Empirical.** The match works in tenths of a metre: the zone bounds,
+the 328.66 touchline offset (32.9 m) and the default second limit,
+1055.6, which is a pitch length. So the `.CBB`'s ×10 values are
+metres. Over the 540 records: A kind 3 in 480, 0 in 56, 1 in 4; the C
+masks are mostly `0x400` (122), `0x240` (111), `0x900`, `0x480` and
+`0x80`; 452 records have both limits 0 (no distance test) and 38 have
+50 and 1055.6.
 
 ### The combination commands
 
@@ -191,9 +287,9 @@ The 29 commands (argument counts at `0x274790`, including the result):
 So script 0, `Combi3 8; Combi0 1; Combi3 13; Combi0 2; Combi12 0`, makes
 preset area 8, sends participants 1 and 2 to area 0 (`Combi3 13` returns
 −1 without doing anything), and sets participant 0's target. Whether
-area 0 is the area just made (`0xc3878` stores it) wasn't checked. What the
-block A, B and C fields and the slot types select isn't traced: the
-reader stores them in the sequencer, and their users weren't followed.
+area 0 is the area just made (`0xc3878` stores it) wasn't checked. The
+participants are the ones the record's slots found
+([above](#how-a-team-uses-the-combinations)).
 
 ## Still unknown
 
@@ -202,15 +298,17 @@ reader stores them in the sequencer, and their users weren't followed.
 - What the path kinds and point codes mean, and which play is which
   (the id ranges, and `TACTICS_PLAYBOOK_EDIT.TBB`'s link to them).
 - `CPlayBookDataBase::GetFormationData` (`0x2e7d88`, `IFORM`).
-- What the `.CBB` blocks A, B and C and the slot types mean: who reads
-  the fields `0xc7a78` stores, and whether the slots are the
-  participants' starting areas.
+- Who reads A's two values, block B and C's four u32 once they are in
+  the combination object (`+0x28`, `+0x30`, `+0x20`, `+0xc`–`+0x18`).
+- What writes a team's combination record numbers (style record
+  `+0x78`) after the −1s, which of the 11 combinations runs for which
+  ball holder, and what picks the set (style record `+8`).
+- What the controller's `+0x1608` "line" value is, and type 6's
+  position (`0xc3270`).
 - The area types of `Combi2`, `Combi3` and `Combi17`–`Combi24`
   (directions around the ball holder?), what `Combi12`'s target and
   mode 7's flag are, and the plays at the player's `+0xfc`, `+0x100`
   and `+0x108` that modes 2 and 3 switch to.
-- Why records 60–539 leave blocks A and B empty: whether those
-  combinations run differently.
 
 ## Checking
 

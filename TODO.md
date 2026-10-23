@@ -27,10 +27,12 @@ What to work on next, most valuable first.
    slot. The answer is in VPF's own code, which waits on the sister
    project [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
    (not yet fully reversed).
-3. **The `GAME/` tactics AI files** (section 2, "The match"): what the
-   `.CBB` blocks and the combination commands' area types select, and
-   `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
-   match AI's `fb::` classes and which class makes each call.
+3. **The `GAME/` tactics AI files** (section 2, "The match"): what
+   writes each team's 11 combination record numbers, the `.CBB` fields
+   still unread (A's values, B, C's words), the combination commands'
+   area types, and `GAMEDATA.BIN`'s records. `snr2.py classes` and
+   `callers` name the match AI's `fb::` classes and which class makes
+   each call.
 
 ## What a mod can change, and what is left
 
@@ -121,10 +123,11 @@ shown to have no effect. Grouped by what a mod would change.
 
 ### The match
 
-- [ ] The tactics AI files: what the `COMBINATION2.CBB` blocks and slot
-      types select, the area types the combination commands make; in
-      the play books the path kinds, point codes, which play is which,
-      the `+0x20` block and `GetFormationData`
+- [ ] The tactics AI files: what sets each team's combination record
+      numbers, who reads `COMBINATION2.CBB`'s A values, block B and C's
+      words, the area types the combination commands make; in the play
+      books the path kinds, point codes, which play is which, the
+      `+0x20` block and `GetFormationData`
       ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
 - [ ] `GAMEDATA.BIN`: the rest of a ball-contact record, which foot parts
       0 and 1 are, what sets a player's record (`+0x520`), and whether

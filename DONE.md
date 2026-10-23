@@ -87,6 +87,10 @@ evidence and how it was tested; the git history holds the rest.
       each field ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
 - [x] The economy: build costs, the plan's limits, attendance, income
       and popularity ([`ECONOMY.md`](DOC/ECONOMY.md))
+- [x] How a team uses the combinations: 11 per team, the trigger (block
+      A's kind), the zone mask and distance limits (block C), and the
+      slots as the participants' areas; records 0, 1, 4, 18 and 59 never
+      start ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#how-a-team-uses-the-combinations))
 
 ## 3. Write: a writer for every format a mod changes
 
