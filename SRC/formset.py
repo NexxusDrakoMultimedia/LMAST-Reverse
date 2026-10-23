@@ -73,6 +73,14 @@ def check(rows):
     return problems
 
 
+def edit_spec(name):
+    """The values a field allows, as pbdata.edit_spec gives them:
+    ("choice", [formation indexes]) or ("range", low, high)."""
+    if name == "formation":
+        return ("choice", list(range(len(formations()))))
+    return ("range",) + TACTIC_RANGE
+
+
 def set_field(row, name, value):
     if name not in FIELDS:
         raise ValueError("no field %r; fields are %s" % (name, ", ".join(FIELDS)))

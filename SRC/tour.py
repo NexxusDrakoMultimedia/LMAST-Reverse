@@ -29,6 +29,13 @@ FILE = "TOUR_LIST.TBB"
 SLOTS = 40                      # 0x4cb0c: 0x27 + 1 u16 cleared and filled
 CLUBS = 0x22e                   # team ids 1-0x22d (SCHEDULE_FORMAT.md, PLTEAMID)
 REGIONS = 13
+# What each region's clubs have in common (empirical; whether these are the
+# 13 regions of plrcommon.py's table 3.0 isn't confirmed).
+REGION_NAMES = ("Western Europe", "Central and Eastern Europe", "Eastern Europe",
+                "Scandinavia and the Baltic", "South America (north)",
+                "South America (south)", "North Africa", "West Africa",
+                "West and southern Africa", "North America", "East Asia", "Middle East",
+                "Oceania")
 
 
 def load(path):
@@ -55,6 +62,24 @@ def check(pairs):
         if n > SLOTS:
             problems.append("region %d has %d clubs; the screen takes %d" % (region, n, SLOTS))
     return problems
+
+
+def region_name(region):
+    return REGION_NAMES[region] if 0 <= region < REGIONS else "?"
+
+
+def set_pair(pairs, k, region, club):
+    """Replace pair k with {region, club}; returns the old pair."""
+    if not 0 <= k < len(pairs):
+        raise ValueError("no pair %d (0-%d)" % (k, len(pairs) - 1))
+    if not 0 <= region < REGIONS or not 1 <= club < CLUBS:
+        raise ValueError("region 0-%d, club 1-%d" % (REGIONS - 1, CLUBS - 1))
+    if region != pairs[k][0] and sum(r == region for r, _ in pairs) >= SLOTS:
+        raise ValueError("region %d already has %d clubs; the screen takes %d"
+                         % (region, SLOTS, SLOTS))
+    old = tuple(pairs[k])
+    pairs[k] = [region, club]
+    return old
 
 
 def encode_file(buf, end, raw, pairs):
@@ -95,9 +120,9 @@ def cmd_show(path, mes=None):
     _, _, _, pairs = load(path)
     names = club_names(mes)
     for region in sorted({r for r, _ in pairs}):
-        print("region %2d: %s" % (region, ", ".join(
-            "%d %s" % (c, names.get(c, "")) if names else str(c)
-            for r, c in pairs if r == region)))
+        clubs = ", ".join("%d %s" % (c, names.get(c, "")) if names else str(c)
+                          for r, c in pairs if r == region)
+        print("region %2d (%s): %s" % (region, region_name(region), clubs))
 
 
 def cmd_set(path, out_path, args):
@@ -111,12 +136,11 @@ def cmd_set(path, out_path, args):
             k, region, club = int(k, 0), int(region, 0), int(club, 0)
         except ValueError:
             raise SystemExit("expected <pair>=<region>:<club>, got %r" % a)
-        if not 0 <= k < len(pairs):
-            raise SystemExit("%s: no such pair (0-%d)" % (a, len(pairs) - 1))
-        if not 0 <= region < REGIONS or not 1 <= club < CLUBS:
-            raise SystemExit("%s: region 0-%d, club 1-%d" % (a, REGIONS - 1, CLUBS - 1))
-        print("pair %d: %d:%d -> %d:%d" % (k, pairs[k][0], pairs[k][1], region, club))
-        pairs[k] = [region, club]
+        try:
+            old = set_pair(pairs, k, region, club)
+        except ValueError as e:
+            raise SystemExit("%s: %s" % (a, e))
+        print("pair %d: %d:%d -> %d:%d" % ((k,) + old + (region, club)))
     try:
         out = encode_file(buf, end, raw, pairs)
     except ValueError as e:

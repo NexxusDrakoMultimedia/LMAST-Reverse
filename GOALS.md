@@ -59,9 +59,11 @@ numbers, and [`DONE.md`](DONE.md) what is finished.
 5. **Edit.** GUI tools on top of the writers, organised by what a player
    of the game would recognise (a club, a player, a season) rather than
    by file, which check values against the documented ranges and
-   cross-references. *Started:* `editor.py` has a tab for most writers
-   and builds a disc or patch; `saveedit.py` edits a career save. Tabs
-   for the other writers are left.
+   cross-references. *Started:* `editor.py` has a tab for every writer of
+   game data except `schedule.py`'s and `sqb.py setcmd` (commands, not
+   values), and builds a disc or patch; `saveedit.py` edits a career
+   save. Tabs for the writers still to come (section 3 of `TODO.md`)
+   are left.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284) against
    the player's own unmodified disc image, never as game data or disc
    images, so no game data leaves the user's machine. Players apply them

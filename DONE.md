@@ -127,6 +127,10 @@ evidence and how it was tested; the git history holds the rest.
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
 - [x] `ps2mc.py`: PCSX2 memory card images read and written
       ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md))
+- [x] `editor.py` Tours, Tactics and Comments tabs (`tour.py`,
+      `formset.py`, `sqb.py settable`, which now edits several scripts
+      of a pack in one command), tested through the widgets
+      ([`README.md`](README.md#editor))
 
 ## 6. Distribute: sharing a mod
 

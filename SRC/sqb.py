@@ -47,6 +47,7 @@ Usage:
     python sqb.py roundtrip <file | dir> ...      # re-encode every script, !! if not identical
     python sqb.py setcmd  <in.SQB> <out.SQB> <offset> <table:cmd>
     python sqb.py settable <in.sqb | pack.PAC#entry.sqb> <out> <table:row:element=value> ...
+    python sqb.py settable <pack.PAC> <out> <entry.sqb> <table:row:element=value> ... [<entry.sqb> ...]
 
 `setcmd` replaces the command at a script offset (as `dis` prints it) with
 another of the same argument count, keeping its arguments, so the file
@@ -58,6 +59,8 @@ BranchIfNotZero into BranchIfZero (DOC/SQB_FORMAT.md).
 `tables` prints them; given a pack entry it writes the whole pack. E.g.
 `settable "PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb" out.PAC
 1:0:2=3` turns the manager comment's lowest band into "outstanding".
+Given a whole pack, each entry name is followed by its cells, so one
+command edits several scripts (the editor's Comments tab logs it so).
 `roundtrip` also writes every cell back and compares.
 """
 import os
@@ -755,31 +758,121 @@ def table_cells(data):
     return out
 
 
+def pack_scripts(path):
+    """{entry name: (offset, size)} of the .sqb entries of a BINPAC."""
+    return {name: (off, size) for off, size, name, _ in pac.load_header(path).entries
+            if is_script_name(name)}
+
+
+def set_pack_values(data, entries, edits):
+    """New bytes of a BINPAC with SQT1 cells changed in its scripts. entries
+    is pack_scripts(); edits is {entry name: [(table, row, element, value)]}.
+    Each entry keeps its size, so no other entry moves."""
+    blob = bytearray(data)
+    for name, cells in edits.items():
+        if name not in entries:
+            raise ValueError("no script entry %r" % name)
+        off, size = entries[name]
+        blob[off:off + size] = set_table_values(bytes(blob[off:off + size]), cells)
+    return bytes(blob)
+
+
+def parse_cell(spec):
+    where, _, value = spec.partition("=")
+    t, r, e = (int(x, 0) for x in where.split(":"))
+    return t, r, e, int(value, 0)
+
+
 def cmd_settable(src, dst, specs):
     """Change SQT1 cells (`table:row:element=value`) of a script, or of a
     script inside a BINPAC (`pack.PAC#entry`, then dst is the whole pack;
-    the entry keeps its size, so no other entry moves)."""
-    edits = []
-    for spec in specs:
-        where, _, value = spec.partition("=")
-        t, r, e = (int(x, 0) for x in where.split(":"))
-        edits.append((t, r, e, int(value, 0)))
+    the entry keeps its size, so no other entry moves). Given a whole pack,
+    each entry name is followed by its cells."""
+    if os.path.abspath(dst) == os.path.abspath(src.partition("#")[0]):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
     path, _, entry = src.partition("#")
     data = open(path, "rb").read()
-    if entry:
-        hdr = pac.load_header(path)
-        hit = [(off, size) for off, size, name, _ in hdr.entries if name == entry]
-        if not hit:
-            raise ValueError("%s has no entry %r" % (path, entry))
-        off, size = hit[0]
-        new = data[:off] + set_table_values(data[off:off + size], edits) + data[off + size:]
+    edits = {}
+    if entry or not path.upper().endswith(".PAC"):
+        edits[entry] = [parse_cell(s) for s in specs]
     else:
-        new = set_table_values(data, edits)
+        for s in specs:
+            if "=" not in s:
+                entry = s
+                edits.setdefault(entry, [])
+            elif not entry:
+                raise SystemExit("give an entry name before %r" % s)
+            else:
+                edits[entry].append(parse_cell(s))
+    if path.upper().endswith(".PAC"):
+        new = set_pack_values(data, pack_scripts(path), edits)
+    else:
+        new = set_table_values(data, edits[""])
     with open(dst, "wb") as f:
         f.write(new)
-    for (t, r, e, v) in edits:
-        print("table %d row %d element %d = %d" % (t, r, e, v))
+    for name, cells in edits.items():
+        for (t, r, e, v) in cells:
+            print("%s%stable %d row %d element %d = %d" % (name, ": " if name else "", t, r, e, v))
     print("%d bytes changed (%s)" % (sum(a != b for a, b in zip(data, new)), dst))
+
+
+# The detail screens' comment scripts, the only PwkScripts the game runs
+# (RunScript 0x256e60 through 0x284a20; DOC/SQB_FORMAT.md#the-detail-screen-comments):
+# (entry, page, message category, {table: (kind, row label, column label)}).
+# A "message" table's cells are message numbers in the category; a staff
+# script's table 2 has 4 rows (bands) per group, in the groups' order.
+STAFF_BANDS = ("band 0", "band 1", "band 2", "band 3")
+BAND_TABLE = ("band", lambda r: "range %d" % r, lambda c: ("low", "high", "band")[c])
+
+
+def staff_rows(groups):
+    return lambda r: "%s, %s" % (groups[r // 4], STAFF_BANDS[r % 4]) if r // 4 < len(groups)         else "row %d" % r
+
+
+def staff_script(entry, page, category, groups):
+    return (entry, page, category, {1: BAND_TABLE,
+                                    2: ("message", staff_rows(groups), lambda c: "rank %d" % c)})
+
+
+def _ability(r):
+    import pbdata
+    return pbdata.ability_name(r) if r < len(pbdata.ABILITY_NAMES) else "row %d" % r
+
+
+COMMENT_SCRIPTS = (
+    ("PscCommon_sensyu_syousai_nouryokuMS.sqb", "Player: ability (line 1)", 200,
+     {1: ("weight", _ability, lambda c: "kind %d" % c)}),
+    ("PscCommon_sensyu_syousai_seicyoMS.sqb", "Player: growth (line 2)", 200,
+     {1: ("message", lambda r: "growth type %d" % r, lambda c: "age %d" % (16 + c))}),
+    staff_script("PscCommon_manager_syousai_nouryokuMS.sqb", "Manager", 201,
+                 ("formations", "tactics", "attack-minded", "teamwork", "set pieces",
+                  "motivation", "health management")),
+    staff_script("PscCommon_assistant_syousai_nouryokuMS.sqb", "Assistant coach", 201,
+                 ("forwards", "midfield", "defence")),
+    staff_script("PscCommon_GK_syousai_nouryokuMS.sqb", "GK coach", 201,
+                 ("shot-stopper", "mobility")),
+    staff_script("PscCommon_physical_syousai_nouryokuMS.sqb", "Physical coach", 201,
+                 ("physical trainer", "health management")),
+    staff_script("PscCommon_youth_syousai_nouryokuMS.sqb", "Youth manager", 201,
+                 ("formations", "tactics", "teamwork", "physical training", "goalkeeping",
+                  "defence", "midfield", "forwards")),
+    staff_script("PscCommon_scout_syousai_nouryokuMS.sqb", "Scout", 202,
+                 ("club negotiation", "player negotiation", "transfer information", "youth",
+                  "good at his job", "managers", "coaches")),
+)
+
+
+def sqt_shapes(data):
+    """{table: (rows, row length, low, high)} for every SQT1 table of a
+    script, the value range from its element size."""
+    out = {}
+    offs, _ = tbb_tables(data)
+    for n, o in enumerate(offs):
+        if data[o:o + 4] == SQT_MAGIC:
+            check_sqt(data, o)
+            _, _, _, esize, _, width, rows, _ = struct.unpack_from("<4s7I", data, o)
+            out[n] = (rows, width) + SQT_ELEM[esize][1:]
+    return out
 
 
 def cmd_setcmd(src, dst, offset, spec):

@@ -99,6 +99,20 @@ Tabs:
              file that outgrows its slot makes MES.PAC grow and moves the
              later files; Build disc then also updates the executable's
              index of them.
+    Tours    the clubs a tour can play, by region (TOUR_LIST.TBB, tour.py
+             set; DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region):
+             each pair's club and region, at most 40 clubs a region.
+    Tactics  the tactics screen's eight Set Formation presets
+             (TACTICS_FORMATION_SET.TBB, formset.py set;
+             DOC/PARAM_DIR.md#tactics_formation_settbb-tactics-presets):
+             seven team tactics and a formation each. Build disc's
+             --copies carries them into the PRELOAD/TACTICS* packs.
+    Comments the detail screens' comment lines for players, managers,
+             coaches and scouts: the data tables of the PSCCOMMON.PAC
+             scripts the game runs (sqb.py settable;
+             DOC/SQB_FORMAT.md#the-detail-screen-comments), with each
+             message number's text. --copies carries the pack into
+             PRELOAD/STATIONFILE.PAC.
 
 Usage:
     python SRC/editor.py open [<mod folder>] [--dat DAT] [--iso ISO]   # default: mod
@@ -124,7 +138,10 @@ import plrcommon
 import plrsim
 import camp
 import clubresult
+import formset
 import regulation
+import sqb
+import tour
 import training
 import teaminit
 import uniform
@@ -2294,6 +2311,485 @@ class CampsTab(Tab):
         return True
 
 
+FORMSET = "PARAM/" + formset.FILE
+FORMSET_CATEGORY = 492      # setting labels 0-6, set names 10001 + row, descriptions 20001 + row
+
+
+class TacticsTab(Tab):
+    """The tactics screen's eight national presets (TACTICS_FORMATION_SET.TBB)
+    through formset.set_field and formset.encode_file, as `formset.py set`
+    does: seven team tactics and a formation each, in the ranges
+    formset.edit_spec gives. The labels, names and descriptions come from
+    MES.PAC (category 492). Build disc's --copies carries the file into the
+    PRELOAD/TACTICS* packs."""
+    title = "Tactics"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.rows = None
+        self.changes = {}           # (row, field) -> value, in edit order
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="The tactics screen's Set Formation presets (DOC/PARAM_DIR.md). The "
+                            "retail sets use 1-5 (Brazil's Attacking 6); the screen's own limits "
+                            "aren't traced.", foreground="#555").pack(side="left")
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("row", "name", "formation")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, text, width in zip(cols, ("Row", "Set", "Formation"), (40, 160, 100)):
+            self.tree.heading(c, text=text)
+            self.tree.column(c, width=width, stretch=c == "name")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        self.tree.pack(fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(FORMSET)
+            self.buf, self.end, self.raw, self.rows = formset.load(self.path)
+            self.texts = camp.messages(mod.source(MES), FORMSET_CATEGORY)
+        except (ValueError, struct.error, OSError) as e:
+            self.rows = None
+            self.app.status("Couldn't load the tactics presets: %s" % e)
+            messagebox.showerror("Tactics", "Couldn't load the tactics presets:\n%s" % e)
+            return
+        self.changes = {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def name(self, r):
+        return (self.texts.get(10001 + r) or
+                (formset.SETS[r] if r < len(formset.SETS) else "row %d" % r)).strip()
+
+    def formation(self, v):
+        f = formset.formations()
+        return "%d %s" % (v, f[v] if v < len(f) else "?")
+
+    def refresh_list(self):
+        if self.rows is None:
+            return
+        self.tree.delete(*self.tree.get_children())
+        for r, row in enumerate(self.rows):
+            self.tree.insert("", "end", iid=str(r), values=(r, self.name(r), self.formation(row[7])),
+                             tags=("edited",) if any(k[0] == r for k in self.changes) else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    def show(self, r):
+        self.current = r
+        row = self.rows[r]
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%s (row %d)" % (self.name(r), r),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        ttk.Label(box, text=(self.texts.get(20001 + r) or "").strip(), foreground="#555",
+                  wraplength=640, justify="left").pack(anchor="w", padx=8)
+        frame = ttk.LabelFrame(box, text="The preset")
+        frame.pack(fill="x", padx=8, pady=6)
+        for k, name in enumerate(formset.FIELDS):
+            text = self.texts.get(k) if name != "formation" else "Formation"
+            ttk.Label(frame, text=text or name).grid(row=k, column=0, sticky="w", padx=(6, 12),
+                                                    pady=2)
+            w = value_input(frame, formset.edit_spec(name),
+                            self.formation if name == "formation" else str,
+                            lambda k=k: row[k],
+                            lambda t, revert, n=name: self.commit(r, n, t, revert))
+            w.grid(row=k, column=1, sticky="w", pady=2)
+
+    def commit(self, r, name, text, revert):
+        what = "%s (row %d)" % (self.name(r), r)
+        try:
+            old = formset.set_field(self.rows[r], name, int(text))
+        except ValueError as e:
+            revert()
+            message = "%s: %s" % (what, e if text.strip() else "%s must be a number" % name)
+            self.app.status(message)
+            messagebox.showerror("Tactics", message)
+            return False
+        self.changes.pop((r, name), None)
+        self.changes[r, name] = self.rows[r][formset.FIELDS.index(name)]
+        self.tree.item(str(r), values=(r, self.name(r), self.formation(self.rows[r][7])),
+                       tags=("edited",))
+        self.app.status("%s: %s %d -> %d" % (what, name, old, self.changes[r, name]))
+        self.app.update_title()
+        return True
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(FORMSET)
+        temps = [(out + ".new", out)]
+        try:
+            data = formset.encode_file(self.buf, self.end, self.raw, self.rows)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Tactics", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        args = []
+        for r in sorted({r for r, _ in self.changes}):
+            args.append(str(r))
+            args += ["%s=%d" % (n, v) for (row, n), v in self.changes.items() if row == r]
+        cmd = ["python", "SRC/formset.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + args
+        n = len(self.changes)
+        lines = log_lines("Tactics: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
+TOUR = "PARAM/" + tour.FILE
+
+
+class ToursTab(Tab):
+    """The clubs a tour can play, by region (TOUR_LIST.TBB), through
+    tour.set_pair and tour.encode_file, as `tour.py set` does. Each pair
+    is a region and a club; changing the region moves the club to that
+    region's list. Club names come from MES.PAC (category 3); the region
+    names are tour.REGION_NAMES, read from the clubs (not confirmed)."""
+    title = "Tours"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.pairs = None
+        self.changes = {}           # pair -> (region, club), in edit order
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="The tour opponents by region (DOC/PARAM_DIR.md). The screen takes "
+                            "up to %d clubs a region, and the file keeps its number of pairs."
+                            % tour.SLOTS, foreground="#555").pack(side="left")
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("region", "name", "clubs")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, text, width in zip(cols, ("Region", "Area", "Clubs"), (50, 200, 50)):
+            self.tree.heading(c, text=text)
+            self.tree.column(c, width=width, stretch=c == "name")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        self.tree.pack(fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(TOUR)
+            self.buf, self.end, self.raw, self.pairs = tour.load(self.path)
+            self.clubs = tour.club_names(mod.source(MES))
+        except (ValueError, struct.error, OSError) as e:
+            self.pairs = None
+            self.app.status("Couldn't load the tour list: %s" % e)
+            messagebox.showerror("Tours", "Couldn't load the tour list:\n%s" % e)
+            return
+        self.changes = {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def club(self, c):
+        return "%d %s" % (c, self.clubs.get(c, ""))
+
+    def region(self, r):
+        return "%d %s" % (r, tour.region_name(r))
+
+    def refresh_list(self):
+        if self.pairs is None:
+            return
+        self.tree.delete(*self.tree.get_children())
+        edited = {self.pairs[k][0] for k in self.changes}
+        for r in range(tour.REGIONS):
+            self.tree.insert("", "end", iid=str(r), values=(
+                r, tour.region_name(r), sum(p[0] == r for p in self.pairs)),
+                tags=("edited",) if r in edited else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    def show(self, region):
+        self.current = region
+        self.detail.clear()
+        box = self.detail.inner
+        mine = [k for k, p in enumerate(self.pairs) if p[0] == region]
+        ttk.Label(box, text="%s (region %d)" % (tour.region_name(region), region),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        ttk.Label(box, text="%d of %d clubs, in the order the screen lists them" % (
+            len(mine), tour.SLOTS), foreground="#555").pack(anchor="w", padx=8)
+        frame = ttk.LabelFrame(box, text="The pairs: club and region")
+        frame.pack(fill="x", padx=8, pady=6)
+        regions = ("choice", list(range(tour.REGIONS)))
+        clubs = ("choice", list(range(1, tour.CLUBS)))
+        for row, k in enumerate(mine):
+            ttk.Label(frame, text="pair %d" % k).grid(row=row, column=0, sticky="w",
+                                                      padx=(6, 12), pady=2)
+            value_input(frame, clubs, self.club, lambda k=k: self.pairs[k][1],
+                        lambda t, revert, k=k: self.commit(k, self.pairs[k][0], t, revert)
+                        ).grid(row=row, column=1, sticky="w", pady=2)
+            value_input(frame, regions, self.region, lambda k=k: self.pairs[k][0],
+                        lambda t, revert, k=k: self.commit(k, t, self.pairs[k][1], revert)
+                        ).grid(row=row, column=2, sticky="w", padx=(12, 6), pady=2)
+
+    def commit(self, k, region, club, revert):
+        try:
+            old = tour.set_pair(self.pairs, k, int(region), int(club))
+        except ValueError as e:
+            revert()
+            message = "pair %d: %s" % (k, e)
+            self.app.status(message)
+            messagebox.showerror("Tours", message)
+            return False
+        self.changes.pop(k, None)
+        self.changes[k] = tuple(self.pairs[k])
+        self.app.status("pair %d: %s in %s -> %s in %s" % (
+            k, self.club(old[1]), tour.region_name(old[0]), self.club(self.pairs[k][1]),
+            tour.region_name(self.pairs[k][0])))
+        self.refresh_list()
+        if old[0] != self.pairs[k][0]:
+            # The pair leaves this region's list; redraw it once the
+            # drop-down's own event is done.
+            self.frame.after_idle(lambda: self.show(self.current))
+        self.app.update_title()
+        return True
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(TOUR)
+        temps = [(out + ".new", out)]
+        try:
+            data = tour.encode_file(self.buf, self.end, self.raw, self.pairs)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Tours", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        cmd = ["python", "SRC/tour.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + [
+            "%d=%d:%d" % (k, r, c) for k, (r, c) in self.changes.items()]
+        n = len(self.changes)
+        lines = log_lines("Tours: %d pairs" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d pairs" % (shown_path(out), n))
+        return True
+
+
+PSC = "PARAM/PSCCOMMON.PAC"
+COMMENT_KINDS = {
+    "weight": "how much each ability counts for each of the 9 position kinds (each retail "
+              "column adds up to 17, and the sum is divided by 17)",
+    "message": "message numbers in category %d; click a cell to see its text",
+    "band": "the bands of the best group's value: {low, high, band}",
+}
+
+
+class CommentsTab(Tab):
+    """The detail screens' comment lines: the SQT1 data tables of the
+    PSCCOMMON.PAC scripts the game runs (sqb.COMMENT_SCRIPTS), through
+    sqb.set_table_values and sqb.set_pack_values, as `sqb.py settable`
+    does. Pick a page, then edit its tables' cells in the range their
+    element size allows; a message number's text shows from MES.PAC.
+    Build disc's --copies carries the pack into PRELOAD/STATIONFILE.PAC."""
+    title = "Comments"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.data = None
+        self.changes = {}           # (entry, table, row, element) -> value, in edit order
+        self.current = 0
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Page").pack(side="left")
+        self.page_var = tk.StringVar()
+        self.page = ttk.Combobox(bar, textvariable=self.page_var, state="readonly", width=28,
+                                 values=[s[1] for s in sqb.COMMENT_SCRIPTS])
+        self.page.pack(side="left", padx=(4, 12))
+        self.page.bind("<<ComboboxSelected>>", lambda e: self.show(self.page.current()))
+        ttk.Label(bar, text="The detail screens' comment lines (DOC/SQB_FORMAT.md, "
+                            "\"The detail-screen comments\").", foreground="#555").pack(side="left")
+        self.cell_var = tk.StringVar()
+        ttk.Label(self.frame, textvariable=self.cell_var, foreground="#0050a0", wraplength=1000,
+                  justify="left").pack(fill="x", padx=8)
+        self.detail = Scrolled(self.frame)
+        self.detail.outer.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(PSC)
+            with open(self.path, "rb") as f:
+                self.data = f.read()
+            self.entries = sqb.pack_scripts(self.path)
+            self.values, self.shapes = {}, {}
+            for entry, _, _, _ in sqb.COMMENT_SCRIPTS:
+                off, size = self.entries[entry]
+                blob = self.data[off:off + size]
+                self.shapes[entry] = sqb.sqt_shapes(blob)
+                self.values[entry] = {(t, r, c): v for t, r, c, v in sqb.table_cells(blob)}
+            mes = mod.source(MES)
+            self.texts = {cat: camp.messages(mes, cat)
+                          for cat in {s[2] for s in sqb.COMMENT_SCRIPTS}}
+        except (KeyError, ValueError, struct.error, OSError) as e:
+            self.data = None
+            self.app.status("Couldn't load the comment scripts: %s" % e)
+            messagebox.showerror("Comments", "Couldn't load the comment scripts:\n%s" % e)
+            return
+        self.changes = {}
+        self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def script(self, entry):
+        return next(s for s in sqb.COMMENT_SCRIPTS if s[0] == entry)
+
+    def show(self, i):
+        self.current = i
+        self.page.current(i)
+        entry, page, category, tables = sqb.COMMENT_SCRIPTS[i]
+        self.cell_var.set("")
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%s (%s)" % (page, entry), font=self.app.title_font).pack(
+            anchor="w", padx=8, pady=(8, 2))
+        for t, (rows, width, lo, hi) in sorted(self.shapes[entry].items()):
+            kind, row_label, col_label = tables[t]
+            about = COMMENT_KINDS[kind] % category if kind == "message" else COMMENT_KINDS[kind]
+            frame = ttk.LabelFrame(box, text="Table %d: %s" % (t, about))
+            frame.pack(anchor="w", padx=8, pady=6)
+            for c in range(width):
+                ttk.Label(frame, text=col_label(c), foreground="#555").grid(
+                    row=0, column=c + 1, padx=1)
+            for r in range(rows):
+                ttk.Label(frame, text=row_label(r)).grid(row=r + 1, column=0, sticky="w",
+                                                         padx=(6, 8))
+                for c in range(width):
+                    key = (t, r, c)
+                    w = value_input(frame, ("range", lo, hi), str,
+                                    lambda key=key: self.values[entry][key],
+                                    lambda text, revert, key=key: self.commit(entry, key, text,
+                                                                              revert))
+                    w.grid(row=r + 1, column=c + 1, padx=1, pady=1)
+                    w.bind("<FocusIn>", lambda e, key=key: self.show_cell(entry, key))
+
+    def show_cell(self, entry, key):
+        _, page, category, tables = self.script(entry)
+        t, r, c = key
+        kind, row_label, col_label = tables[t]
+        v = self.values[entry][key]
+        text = "%s, table %d, %s, %s: %d" % (page, t, row_label(r), col_label(c), v)
+        if kind == "message":
+            text += "  =  %s" % (self.texts[category].get(v) or "(no message %d in category %d)"
+                                 % (v, category)).strip()
+        self.cell_var.set(text)
+
+    def commit(self, entry, key, text, revert):
+        off, size = self.entries[entry]
+        try:
+            value = int(text)
+            # Checks the cell and its range; save writes every change at once.
+            sqb.set_table_values(self.data[off:off + size], [key + (value,)])
+        except ValueError as e:
+            revert()
+            message = "%s %s: %s" % (self.script(entry)[1], key,
+                                     e if text.strip() else "give a number")
+            self.app.status(message)
+            messagebox.showerror("Comments", message)
+            return False
+        old = self.values[entry][key]
+        self.values[entry][key] = value
+        self.changes.pop((entry,) + key, None)
+        self.changes[(entry,) + key] = value
+        self.app.status("%s table %d row %d element %d: %d -> %d" % (
+            (self.script(entry)[1],) + key + (old, value)))
+        self.show_cell(entry, key)
+        self.app.update_title()
+        return True
+
+    def edits(self):
+        """{entry: [(table, row, element, value)]}, in edit order."""
+        out = {}
+        for (entry, t, r, c), v in self.changes.items():
+            out.setdefault(entry, []).append((t, r, c, v))
+        return out
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(PSC)
+        temps = [(out + ".new", out)]
+        edits = self.edits()
+        try:
+            data = sqb.set_pack_values(self.data, self.entries, edits)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Comments", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        args = []
+        for entry, cells in edits.items():
+            args.append(entry)
+            args += ["%d:%d:%d=%d" % cell for cell in cells]
+        cmd = ["python", "SRC/sqb.py", "settable", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + args
+        n = len(self.changes)
+        lines = log_lines("Comments: %d cells" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d cells" % (shown_path(out), n))
+        return True
+
+
 FACILITY_HELP = {
     plrcommon.MONEY: "the game charges a build cost x the business cycle (75-125%) x any "
                      "sponsor discount; upkeep is monthly",
@@ -4242,9 +4738,12 @@ class App:
         self.training = TrainingTab(self)
         self.camps = CampsTab(self)
         self.facilities = FacilitiesTab(self)
+        self.tours = ToursTab(self)
+        self.tactics = TacticsTab(self)
+        self.comments = CommentsTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free,
-                     self.regulations, self.training, self.camps, self.facilities, self.kits,
-                     self.text]
+                     self.regulations, self.training, self.camps, self.tours, self.facilities,
+                     self.tactics, self.kits, self.text, self.comments]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)

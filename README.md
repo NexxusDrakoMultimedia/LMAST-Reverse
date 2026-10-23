@@ -172,7 +172,7 @@ disassemble as unrelated MIPS instructions.
 | [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database; replaces free agents (`setfree`) and checks that the pack rebuilds byte for byte (`roundtrip`) | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
 | [`leaguesize.py`](SRC/leaguesize.py) | a nation's two divisions: checks that the first season plays out with each club once (`nations`), and changes the first division's size, moving clubs to or from the second (`plan`, which also gives the sizes each nation allows; `build`, for one or more leagues: the slots, last season's records, the games, the game days and the club counts in `REGULATION.TBB` and `CLUBRESULT.TBB`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from) |
 | [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources; re-encodes all three packs and their `.HED` byte for byte (`roundtrip`); builds and checks league schedules of 2–32 clubs (`league`) and finds free turns for their game days (`turns`); moves schedules' game days (`shift`); rebuilds the badly balanced leagues at their own size (`balance`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
-| [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command, module and field names, prints and edits a PwkScript's data tables (`tables`, `settable`), re-encodes every script byte for byte (`roundtrip`) and patches a command (`setcmd`); `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
+| [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command, module and field names, prints and edits a PwkScript's data tables (`tables`, `settable`, one script or several in a pack), re-encodes every script byte for byte (`roundtrip`) and patches a command (`setcmd`); `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
 | [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, the 116 licensed kits' descriptors (`PLPACK` and the executable's copy), and the keeper kit table `UNIFORM_GK.TBB`; edits kits (`set`, `setlicence`, `setexe`, `setgk`; every row round-trips) | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
 | [`stadium.py`](SRC/stadium.py) | `DAT/STADIUM`: `.PRI` draw priorities, `BUILD_STADIUM.TBB` (which model each of the 119 stadiums uses), packs per model | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) |
 | [`system.py`](SRC/system.py) | `DAT/0SYSTEM`: the 77 UI colours, `DETAILFLAG`, the 8 crest, badge and sponsor texture packs (which entry a team id picks), icons | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) |
@@ -386,14 +386,21 @@ The mod editor's tabs:
   and decline with age.
 - **Camps**: each camp's town, description and area clubs, and its camp
   type with a preview of what it trains.
+- **Tours**: the clubs a tour can play in each region, by club and
+  region, at most 40 to a region.
 - **Facilities**: build costs, upkeep, build times and stadium
   capacities, money in pounds.
+- **Tactics**: the tactics screen's eight Set Formation presets, seven
+  team tactics and a formation each, with their names and descriptions.
 - **Kits**: every club's home and away kits with colour swatches, the
   keeper kits, and the licensed clubs' number colours, name, collar and
   captain mark.
 - **Text**: any message by category, text or id, in all 7 language
   slots. A file that outgrows its slot makes `MES.PAC` grow, and Build
   disc updates the executable's index of it.
+- **Comments**: the detail screens' comment lines for players, managers,
+  coaches and scouts: the comment scripts' tables (ability weights,
+  bands and message numbers), with each message number's text.
 
 The save editor's pages are the club, finances, the squad and youth
 team, pair combinations (as the tactics screen's icons), staff, the 440
@@ -459,7 +466,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables; `teaminit.py` for the salary limits |
 | `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches), `training.py` (`drill-names`), `plrcommon.py` (`facility-tiers`) |
-| `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `training.py` (Training), `camp.py` (Camps), `plrcommon.py` (Facilities), `uniform.py` (Kits), `mbb.py` (Text); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
+| `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `training.py` (Training), `camp.py` (Camps), `tour.py` (Tours), `plrcommon.py` (Facilities), `formset.py` (Tactics), `uniform.py` (Kits), `mbb.py` (Text), `sqb.py` (Comments); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `ps2mc.py` (card files), `pbdata.py` and `initteam.py` for names |
 | `pmplayer.py` | `save.py` (cipher, CRC, and career saves for `check`), `pbdata.py` for field names, `gamever.py` |
 | `ps2mc.py` | nothing |

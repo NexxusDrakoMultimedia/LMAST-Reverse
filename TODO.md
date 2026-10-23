@@ -24,9 +24,9 @@ What to work on next, most valuable first.
    way players notice ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 2. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
    VPF numbers a new edit player, so `pmplayer.py` can fill an empty
-   slot. The answer is in VPF's own code, which the sister project
-   [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
-   has extracted.
+   slot. The answer is in VPF's own code, which waits on the sister
+   project [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
+   (not yet fully reversed).
 3. **The `GAME/` tactics AI files** (section 2, "The match"): what the
    `.CBB` blocks and the combination commands' area types select, and
    `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name the
@@ -240,10 +240,8 @@ per kind of data, each editing through its writer and taking the allowed
 values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
-- [ ] Tabs for the writers that have none: the tactics presets
-      (`formset.py`), the tour opponents (`tour.py`), the detail-screen
-      comment tables (`sqb.py settable`), and later the club ranking and
-      the resource packs once they have writers (section 3)
+- [ ] Tabs for the club ranking and the resource packs, once they have
+      writers (section 3)
 - [ ] The editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
@@ -280,6 +278,9 @@ names the disc or the edit to build; the result goes into the doc.
       stored keeper kit
 - [ ] The crest editor: whether the three short `EDIT_EMBLEM` layer
       tables lose visible parts
+- [ ] The editor's Tours, Tactics and Comments tabs: a disc built with
+      one edit from each (a tour opponent, a preset's formation, a
+      manager comment cell) shows it in game
 - [ ] Save editor step 4: one save edited on each page (the Club page is
       tested), including the step 5 player fields (salary, contract
       years, age, injury value 0 on an injured player, captain and
