@@ -373,6 +373,40 @@ region's supporters (`pwkTeam_Supporter`, `0x259a30`) are ((popularity
 region has none. The table is flat: the biggest fanbase
 sells 12.5 times what the smallest does.
 
+### Making the stock
+
+**Confirmed.** Goods are paid for when they are ordered, not when they
+sell. The goods screen (`SIMPRG.REL 0xbcca0`) works out a unit cost of
+shop price × 30 ÷ 100 (the `addiu` 30 at `0xbcce4`), and offers 8 lot
+sizes, each costing unit cost × lot × a discount ÷ 100; a lot the club
+can't pay for (`pwkGen_GetSikin`) is greyed out:
+
+| Lot (`0x1d10b8`) | 1,000 | 2,000 | 3,000 | 5,000 | 10,000 | 20,000 | 50,000 | 100,000 |
+|---|---|---|---|---|---|---|---|---|
+| Discount % (`0x1d10d8`) | 100 | 95 | 90 | 85 | 80 | 75 | 70 | 60 |
+
+Ordering (`0xbc0b0`) keeps the lot's cost and its stock (the same lot
+sizes, `0x1d1090`[choice], 1-based), then pays the cost as payment 22
+(`pwkGen_Pay`, `0xbb814`; "Casual income", the misnamed expense, under
+Other expenditure) and puts the goods on sale with that stock
+(`0x164ec8`: slot `+0x0` id, `+0x4` stock, `+0x8` sold, `+0xc` player).
+Item 49 (`0x31`, price 150,000,000) is the exception: one unit at a fifth
+of its price (`0xbc418`).
+
+So a unit costs 18–30% of its price, and each one sold brings in its
+price × the business cycle (75–125%): margins of 70–82% in an average
+cycle, before unsold stock. A £30 shirt (180) costs £9 a unit in a lot
+of 1,000 and £5.40 in a lot of 100,000. The levers for dearer stock and
+smaller margins are the 30, the discount table and the prices (shop list
+`+0x8`).
+
+`patch_disc.py --mod merch-costs` (in `--mod balance` and
+`--mod lmaster-full`) makes the 30 50 and halves each discount (rounded
+up): 100, 97, 95, 92, 90, 87, 85 and 80. A unit then costs 40–50% of its
+price, so margins in an average cycle are 50–60%, and stock that doesn't
+sell costs more. The £30 shirt costs £15 a unit in a lot of 1,000 and
+£12 in a lot of 100,000. The prices stay. Not checked in the game.
+
 `--mod fanbase` scales the 17 bases from ×3 at the top to ×0.5 at the
 bottom, evenly on a log scale: 30,000, 21,457, 16,786, 12,864, 7,667,
 6,170, 4,903, 3,836, 2,939, 2,409, 1,958, 1,575, 1,252, 979, 751, 559
@@ -421,9 +455,8 @@ transfer screens have limits of their own.
 - *k* in the attendance formula, and what the turn-up rate's four tables
   are indexed by.
 - Plan `+0x16` (7,000 in every save).
-- What making merchandise costs, and how the stock is bought; the
-  shop list's other fields (`+0x2`, `+0x4`, `+0x5`); and what the trend
-  table's rows are.
+- The shop list's other fields (`+0x2`, `+0x4`, `+0x5`), what the trend
+  table's rows are, and when goods that stop selling leave the shop.
 - The transfer fee's rank and ability factor and its three others, and
   what the club byte `+0xa0` in an offer is.
 - Which sponsors a club is offered, and what `+0x18` is for (suppliers?).

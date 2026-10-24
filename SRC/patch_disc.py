@@ -73,14 +73,14 @@ league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fanbase, launcher, mod-saves. Groups (DOC/LMASTER_MOD.md):
+fanbase, merch-costs, launcher, mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
 camp-cities, camp-santiago, camp-clubs, drill-names, injury-value,
 injury-row, vpf-styles, season-status). --mod harder-economy is
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees and
 season-demand; --mod balance is injury-odds, injury-lines,
-overseas-bases, transfer-fees and fanbase. --mod lmaster-full is all of
+overseas-bases, transfer-fees, fanbase and merch-costs. --mod lmaster-full is all of
 those, league-balance and mod-saves, so a full LMASTER disc always saves
 to its own folders. skip-tutorial and launcher are test tools and in no
 group. Each also works as a flag of its own (--skip-tutorial, ...). With
@@ -216,7 +216,11 @@ from x0.5 at the bottom to x3 at the top, makes walk-up crowds and
 season-ticket demand count home popularity at 195 in place of 130 with
 the fixed part 1,500 in place of 3,000 a step (SLES 0x2722d8, 0x2722f0,
 0x2728ec, 0x2728f0), and widens the TV offers' popularity factor from
-0.9-1.15 to 0.75-1.25 (SIMPRG.REL 0x163a60-0x163b2c). See DOC/ECONOMY.md.
+0.9-1.15 to 0.75-1.25 (SIMPRG.REL 0x163a60-0x163b2c). merch-costs (whole
+disc image only) makes a unit of merchandise stock cost 50% of its shop
+price instead of 30% (SIMPRG.REL 0xbcce4) and halves the bulk discounts
+(0x1d10d8: 100, 95, ... 60 -> 100, 97, 95, 92, 90, 87, 85, 80). See
+DOC/ECONOMY.md.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -2431,6 +2435,28 @@ def plan_fanbase(f, img):
     return word_jobs(f, img, "fanbase", words)
 
 
+# merch-costs: dearer merchandise stock. The goods screen (SIMPRG.REL
+# 0xbcca0) prices a unit at shop price x 30 / 100 (the addiu at 0xbcce4)
+# and a lot at unit cost x lot x a discount / 100, the discounts 100, 95,
+# 90, 85, 80, 75, 70, 60 for the 8 lots at 0x1d10d8 (u32 each). A unit
+# costs half its price, and each discount is half the old one (rounded up),
+# so the biggest lot gets 20% off (80) rather than 40%.
+MERCH_DISCOUNTS = 0x1d10d8
+MERCH_DISCOUNT_OLD = (100, 95, 90, 85, 80, 75, 70, 60)
+MERCH_DISCOUNT_NEW = tuple(100 - (100 - d + 1) // 2 for d in MERCH_DISCOUNT_OLD)
+MERCH_COSTS = (
+    simprg_word(0xbcce4, 0x2404001e, 0x24040032, "goods: a unit costs price x 50 / 100"),
+    (NEGO_FILE, MERCH_DISCOUNTS, struct.pack("<8I", *MERCH_DISCOUNT_OLD),
+     struct.pack("<8I", *MERCH_DISCOUNT_NEW),
+     "%s 0x%x (goods lot discounts down to 80%%)" % (NEGO_FILE, MERCH_DISCOUNTS)),
+)
+
+
+def plan_merch_costs(f, img):
+    """Jobs for --mod merch-costs."""
+    return word_jobs(f, img, "merch-costs", MERCH_COSTS)
+
+
 # --- the switch table ----------------------------------------------------------
 
 # (name, plan, files it edits, description), in the order they run. A
@@ -2493,6 +2519,8 @@ SWITCHES = (
      "Balance: transfer fees twice as high, up to £250M"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
      "Balance: a bigger fanbase sells more merchandise and draws more fans and TV money"),
+    ("merch-costs", plan_merch_costs, [NEGO_FILE],
+     "Balance: merchandise stock costs half its price to make, with bulk discounts of 20% at most"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -2525,7 +2553,8 @@ LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-t
                 "injury-row", "vpf-styles", "season-status")
 HARDER_ECONOMY = ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
                   "season-demand")
-BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fanbase")
+BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fanbase",
+           "merch-costs")
 SWITCH_GROUPS = {"lmaster-lite": LMASTER_LITE,
                  "lmaster": LMASTER_LITE,               # the name before the split
                  "harder-economy": HARDER_ECONOMY,

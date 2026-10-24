@@ -19,7 +19,7 @@ or two.
 What to work on next, most valuable first.
 
 1. **LMASTER full in game** (sections 7 and 8). Every part of
-   `--mod harder-economy` is tested in PCSX2, and the five `--mod balance`
+   `--mod harder-economy` is tested in PCSX2, and the six `--mod balance`
    switches are built but not yet seen in game. A disc built with
    `--mod lmaster-full`, played through a season, shows whether the
    economy is harder in a way players notice and whether the balance
@@ -301,7 +301,8 @@ names the disc or the edit to build; the result goes into the doc.
       months" (English, and one other language); more long injuries over
       a season; an overseas base's set-up cost twice the retail one; a
       transfer fee twice the retail one for the same player; merchandise
-      income against the retail game's for the same save
+      income against the retail game's for the same save; a lot of 1,000
+      goods costing 50% of the price × 1,000 to order
 - [ ] `pmplayer.py check` on a career saved after importing the edited
       V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`; the import
       is tested): no differences, and the fixed import's styles
@@ -326,7 +327,6 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       `season-demand`): all six are tested in PCSX2; a season played
       through on the set is left
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [ ] More improvement ideas: what making merchandise costs (for
-      dearer stock and bigger margins), lesser players dearer than the
+- [ ] More improvement ideas: lesser players dearer than the
       doubling gives, reputation, a third tier with a one-season game
       over ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))

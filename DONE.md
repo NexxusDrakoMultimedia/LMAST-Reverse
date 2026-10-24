@@ -231,3 +231,6 @@ Each result is recorded in the doc named.
       `transfer-fees` and `fanbase`, after tracing merchandise, transfer
       fees and the overseas base levels ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements),
       [`ECONOMY.md`](DOC/ECONOMY.md#merchandise))
+- [x] `merch-costs` (in `--mod balance`): merchandise stock at 50% of its
+      price, bulk discounts halved, after tracing the goods screen's costs
+      ([`ECONOMY.md`](DOC/ECONOMY.md#making-the-stock))

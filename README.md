@@ -326,8 +326,9 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   (long injuries twice as common), `injury-lines` (the cut two-month and
   nine-month lines, [`INJURIES.md`](DOC/INJURIES.md)), `overseas-bases`
   (twice the cost, twice the effect per level), `transfer-fees` (twice as
-  high, up to £250M) and `fanbase` (merchandise, crowds and TV offers
-  follow the fanbase more). The tutorial skip and the launcher are in
+  high, up to £250M), `fanbase` (merchandise, crowds and TV offers
+  follow the fanbase more) and `merch-costs` (merchandise stock dearer to
+  make). The tutorial skip and the launcher are in
   neither build.
   `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
   image prints the executable's PCSX2 CRC.
