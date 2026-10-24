@@ -478,8 +478,8 @@ image, in about 8 seconds.
 A patch describes the 3.5 GB ISO. Applied to a CSO (compressed ISO,
 which PCSX2 also runs), Delta Patcher fails with "The file you are trying
 to patch is not the right one" (xdelta3: `source file too short:
-XD3_INVALID_INPUT`). This project's tools read CSO and ZSO directly
-(`SRC/cso.py`): `vcdiff.py apply` and `make` take one wherever they take
+XD3_INVALID_INPUT`). This project's tools read CSO, ZSO and CHD directly
+(`SRC/cso.py`, `SRC/chd.py`, below): `vcdiff.py apply` and `make` take one wherever they take
 an image, and `patch_disc.py patch` decompresses one into its output
 `.iso` and patches that. The output is always an ISO, which can be
 compressed again afterwards.
@@ -512,7 +512,46 @@ decompresses to the Redump SHA-1 in about 65 seconds. `make`, `apply` and
 `patch_disc.py patch --mod injury-value` gave the same image (SHA-1
 `6ec16bf93c2427cc3a30f01e36ad4e555aae444d`) from the CSO as from the ISO,
 and refuses `--in-place` on a CSO.
-CHD, PCSX2's other compressed format, isn't read.
+
+**CHD** (`SRC/chd.py`, MAME's format, which PCSX2 also runs) goes through
+the same door: `cso.open_image` hands a CHD to `chd.Image`, so every tool
+above takes one.
+
+```bash
+python SRC/chd.py info  disc.chd             # header, codecs, hunks by codec, metadata
+python SRC/chd.py check disc.chd             # every hunk's CRC, the header's data SHA-1, the ISO's SHA-1
+python SRC/vcdiff.py apply disc.chd mod.xdelta modded.iso
+```
+
+What it reads, from MAME 0.287's sources (`src/lib/util`):
+
+| Part | Layout |
+|---|---|
+| header | version 5 only, 124 bytes, big-endian: `MComprHD`, header size, version, four codec tags, logical size, map offset, metadata offset, hunk size, unit size, data SHA-1, SHA-1, parent SHA-1 (a parent, delta CHD is refused) |
+| map | 16 bytes (map size, first hunk offset, map CRC-16, bit widths), then a Huffman tree of each hunk's compression (16 codes, at most 8 bits, run-length coded lengths) with run codes, then per hunk its length and CRC-16 or a hunk number. The rebuilt 12-byte entries must match the map CRC (`decompress_v5_map`). An uncompressed CHD maps hunks by number |
+| hunks | codec 0–3 (the header's tags), stored, or a copy of another hunk; each checked against its CRC-16 |
+| codecs | `zlib` raw deflate; `lzma` raw LZMA1 (lc 3, lp 0, pb 2, the dictionary LZMA SDK level 8 picks for the hunk size); `huff` MAME's 8-bit Huffman (the lengths coded by a small 24-code tree); `flac` bare FLAC frames of 16-bit stereo after an `L`/`B` byte-order mark, decoded here; `zstd` through Python 3.14's `compression.zstd`, else refused with a message |
+| CD codecs | `cdzl`, `cdlz`, `cdzs`: an ECC bitmap and the base length, then the frames' 2,352 sector bytes (base codec) and 96 subcode bytes (zlib, or zstd). `cdfl`: FLAC of the sectors (big-endian samples), then zlib subcode. Frames in the bitmap get their sync and P/Q ECC rebuilt (`cdrom.cpp`'s tables, which follow `b + 86c` and `((b/2)·43 + 44c) mod 1118 · 2 + b%2`, checked against them) |
+| the ISO | a DVD or raw CHD holds the ISO as is; a CD CHD holds 2,448-byte frames, and the ISO is each frame's 2,048 data bytes at the offset its one data track's type gives (`CHT2` metadata: 0 for MODE1 and MODE2_FORM1, 16 for MODE1_RAW, 24 for MODE2_RAW). Several tracks are refused |
+
+**Tested** (2026-10-24, chdman 0.287): on the 64 MiB slice, the default
+`createdvd` (lzma, zlib, huff, flac, all four used) and `createcd` (cdlz,
+cdzl, cdfl), each codec alone, no compression, hunk sizes of 2, 4 and 16
+KiB, a raw CHD, and each CD codec alone: every hunk passed its CRC, the
+data SHA-1 matched the header (chdman leaves it zero in an uncompressed
+CHD), and the ISO matched the slice. zstd and cdzs give the message on
+Python 3.13. The whole disc as a default `createdvd` CHD (2,599,704,206
+bytes, 866,256 hunks: Huffman 439,019, zlib 182,253, LZMA 134,005, copies
+86,081, FLAC 22,216, stored 2,682) decodes to the Redump SHA-1 in about
+13 minutes. From it, `vcdiff.py apply` of the xdelta3 3.2.2 patch gave
+`f9f5e94c…`, the built image, and `patch_disc.py patch --mod
+injury-value` gave `6ec16bf9…`, the same image as from the ISO and the
+CSO (about 13 minutes each).
+
+**Speed.** Huffman and FLAC hunks decode in Python, at about 1.3 and 3.7
+ms each, so a CHD that chdman coded mostly with them takes minutes; LZMA
+and zlib hunks are fast (C). `chdman extractdvd` is far quicker for a
+player who has it.
 
 A patch holds only the changed bytes, so the game data it carries is
 limited to the edit itself (a few dozen bytes for a player edit). Keep
@@ -526,6 +565,6 @@ patches out of the repo anyway, like everything built from the disc.
 - **The big face pack.** `FC_EURO_FACEPACK_00.BIN` (1.1 GB) can be
   rebuilt, but if it outgrows its sectors the move needs nearly all the
   room a single-layer disc has left.
-- **CHD images.** Players who keep CHD (MAME's format, which PCSX2 also
-  runs) have to convert them to ISO before patching; CSO and ZSO are read
-  directly ([above](#compressed-images)).
+- **CHD speed and tracks.** Huffman and FLAC hunks decode slowly in
+  Python, and CD CHDs with several tracks aren't read
+  ([above](#compressed-images)).

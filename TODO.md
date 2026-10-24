@@ -252,8 +252,9 @@ every writer has a tab.
 disc they already own. **Done when** the image formats players keep are
 covered. See [`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod).
 
-- [ ] Read CHD images (MAME's format, which PCSX2 runs) in
-      `vcdiff.py`/`patch_disc.py`, as CSO and ZSO already are
+- [ ] Optional: faster CHD decoding (Huffman and FLAC hunks decode in
+      Python at about 1.3 and 3.7 ms each; a whole disc takes about ten
+      minutes) and CHDs with several CD tracks
       ([`REBUILD.md`](DOC/REBUILD.md#compressed-images))
 
 ## 7. Tests in PCSX2

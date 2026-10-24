@@ -38,20 +38,22 @@ Any hashing tool works. With this project's tools:
 python SRC/extract_disc.py verify "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso"
 ```
 
-**A compressed image (CSO, CHD) won't patch in Delta Patcher.** It stops
-with "The file you are trying to patch is not the right one". Decompress
-it to `.iso` first, check the hashes, then patch. You can compress the
-patched image again afterwards. This project's tools read a CSO or ZSO
-directly, so you can skip that step: check it, then apply the patch to
-it, and you get a patched `.iso`:
+**A compressed image (CSO, ZSO, CHD) won't patch in Delta Patcher.** It
+stops with "The file you are trying to patch is not the right one".
+Decompress it to `.iso` first, check the hashes, then patch. You can
+compress the patched image again afterwards. This project's tools read
+these images directly, so you can skip that step: check it, then apply
+the patch to it, and you get a patched `.iso`:
 
 ```bash
 python SRC/cso.py check disc.cso
-python SRC/vcdiff.py apply disc.cso mod.xdelta modded.iso
+python SRC/chd.py check disc.chd
+python SRC/vcdiff.py apply disc.chd mod.xdelta modded.iso
 ```
 
-A CHD has to be converted to `.iso` first either way (for example with
-`chdman extractcd`).
+A CHD can take a while: these tools decode it in Python, about ten
+minutes for the whole disc, where `chdman extractdvd` takes seconds. A
+CHD made with zstd compression needs Python 3.14 or later.
 
 ## 2. Apply the patch
 

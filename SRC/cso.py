@@ -2,8 +2,9 @@
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """CSO and ZSO compressed disc images, which PCSX2 runs and many players
 keep instead of the 3.5 GB ISO of Let's Make a Soccer Team! (PS2). Read
-only: the tools that take a disc image (vcdiff.py) open one through
-open_image() and see the ISO's bytes. Standard library only.
+only: the tools that take a disc image (vcdiff.py, patch_disc.py) open one
+through open_image() and see the ISO's bytes; open_image() also hands CHD
+images to chd.py. Standard library only.
 
   header  0x18 bytes: char[4] magic ("CISO" or "ZISO"), u32 header size
           (0x18), u64 the ISO's size, u32 block size, u8 version, u8 index
@@ -22,7 +23,7 @@ maxcso, README_CSO.md); see DOC/REBUILD.md#compressed-images.
 Usage:
     python cso.py info    <image.cso | image.zso>      # header and index checks
     python cso.py check   <image.cso | image.zso>      # decompress all, SHA-1, Redump check
-    python cso.py extract <image.cso | image.zso> <out.iso>
+    python cso.py extract <image.cso | image.zso | image.chd> <out.iso>
 
 `check` and `extract` print the ISO's SHA-1 and say whether it is the
 Redump dump (redump.info/disc/12334), so a patch's expected source can be
@@ -201,19 +202,32 @@ class Image:
         self.close()
 
 
+CHD_MAGIC = b"MComprHD"                  # chd.py
+
+
 def is_compressed(path):
+    """A CSO, ZSO or CHD image, which open_image() reads as its ISO."""
     with open(path, "rb") as f:
-        return f.read(4) in MAGICS
+        head = f.read(8)
+    return head[:4] in MAGICS or head == CHD_MAGIC
 
 
 def open_image(path):
-    """A disc image for reading: a CSO/ZSO as its ISO bytes, else the file."""
-    return Image(path) if is_compressed(path) else open(path, "rb")
+    """A disc image for reading: a CSO, ZSO or CHD (chd.py) as its ISO
+    bytes, else the file itself."""
+    with open(path, "rb") as f:
+        head = f.read(8)
+    if head[:4] in MAGICS:
+        return Image(path)
+    if head == CHD_MAGIC:
+        import chd
+        return chd.Image(path)
+    return open(path, "rb")
 
 
 def image_size(f):
     """The ISO size of an open_image() result."""
-    if isinstance(f, Image):
+    if hasattr(f, "size"):
         return f.size
     here = f.tell()
     f.seek(0, os.SEEK_END)
@@ -283,7 +297,7 @@ def cmd_check(path):
 def cmd_extract(path, out):
     if os.path.abspath(out) == os.path.abspath(path):
         raise SystemExit("the output would overwrite the input")
-    with Image(path) as img, open(out, "wb") as f:
+    with open_image(path) as img, open(out, "wb") as f:
         p = Progress("Decompressing %s:" % os.path.basename(path))
         sha = sha1_of(img, f, p)
         p.end()

@@ -70,8 +70,8 @@ numbers, and [`DONE.md`](DONE.md) what is finished.
    with existing tools such as Delta Patcher. *Done:* `vcdiff.py` makes
    and applies them, a modded disc can keep its own saves, and
    [`INSTALL.md`](INSTALL.md) is the players' guide. `vcdiff.py` applies
-   patches xdelta3 itself made, and the tools read CSO and ZSO images.
-   CHD is left.
+   patches xdelta3 itself made, and the tools read CSO, ZSO and CHD
+   images directly.
 
 ## Coverage of `DATA.CVM`
 

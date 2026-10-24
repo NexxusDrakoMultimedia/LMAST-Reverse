@@ -162,6 +162,9 @@ evidence and how it was tested; the git history holds the rest.
       ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod))
 - [x] `cso.py`: CSO and ZSO images read directly by `vcdiff.py` and
       `patch_disc.py` ([`REBUILD.md`](DOC/REBUILD.md#compressed-images))
+- [x] `chd.py`: CHD v5 images (DVD, raw, one-track CD; every chdman codec
+      but zstd on Python before 3.14) read by the same tools
+      ([`REBUILD.md`](DOC/REBUILD.md#compressed-images))
 
 ## 7. Tests in PCSX2
 

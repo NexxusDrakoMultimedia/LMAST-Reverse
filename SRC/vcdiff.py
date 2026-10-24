@@ -20,7 +20,7 @@ per-window Adler-32 (checked), and xdelta3's secondary compression of the
 sections: LZMA (xdelta3's default since 3.1, through the lzma module) and
 DJW (decoded here). FGK, which xdelta3 3.2 no longer builds, is refused.
 Tested with patches from xdelta3 3.1.0 and 3.2.2 (DOC/REBUILD.md). The
-source, and make's inputs, may be CSO or ZSO images (cso.py).
+source, and make's inputs, may be CSO, ZSO or CHD images (cso.py, chd.py).
 
 Usage:
     python vcdiff.py make  <source> <target> <out.xdelta>
