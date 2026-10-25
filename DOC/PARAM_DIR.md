@@ -78,7 +78,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648`; `0x4bdd0` | the 153 training camps: city, nation, camp type, and the clubs of each area. **confirmed** in part, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
 | `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8`; `0xa4a80` | each camp city's description, message category 570. **confirmed**, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
 | `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 48 × 20 bytes: an older copy of the club events, which the game takes from the executable instead. See below |
-| `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division; tables 0, 1 and 4 are the nation groups, the points per final place and the leagues the year end waits for. **confirmed**, see [below](#club_rank_systemtbb-the-club-rankings-tables) and [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes") |
+| `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division; tables 0, 1 and 4 are the nation groups, the points per final place and the leagues the year end waits for. **confirmed**; `clubrank.py` reads and writes it. See [below](#club_rank_systemtbb-the-club-rankings-tables) and [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes") |
 | `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 166 × s16, each schedule UID's competition. Loaded but never read, see below |
 | `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170`, `0x4cab0` | 106 {region, club} pairs: the clubs a tour can play, by region. **confirmed**, see below |
 | `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#mapteam_listtbb). Reader not found |
@@ -155,19 +155,44 @@ Five tables, which the club ranking (`SIMPRG.REL`, loader `0x150c10`–
 `0x150d08`) keeps at object `+0x18`, `+0x20`, `+0x2c`, `+0x34` and
 `+0x3c`, each with its row count after it. Tables 2 and 3 are described
 with the ranking in [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far).
-`python SRC/tbb.py dump DAT/PARAM/CLUB_RANK_SYSTEM.TBB <table>` prints
-one. The Japanese file is the same.
+`python SRC/clubrank.py show DAT/PARAM/CLUB_RANK_SYSTEM.TBB
+DAT/MESSAGE/MES.PAC` prints all five, with the competitions' names and
+the positions each club rank gets; `set` edits tables 1–3, and the mod
+editor's Club ranking tab does the same. The Japanese file is the same.
 
 | Table | Rows | Row | Reader (**confirmed**) | What the rows hold (**empirical**) |
 |---|---|---|---|---|
 | 0 | 52 | `{u8 nation, u8 group}` | `0x151210` collects the rows whose group is the one asked for and sorts them (`qsort`) | nations 1–52; group 0 for the six league nations, 1–4 for the others (12, 12, 19 and 3 nations) |
-| 1 | 33 | `{s16 competition, s16 kind, s16 ?, u8 points[32]}` | `0x152178`: for the rows of one kind, a competition with a result this year (`0x1520e0`) gives each club the points for its final place (`pwkRec_GetCompePastRecord`, place *n* → byte *n*); a negative competition is skipped | kind 0: the European competitions 34–36; kind 1: the national cups 45 and 46; kind 2: the same three European ones again and each league nation's two divisions and two cups (first division winner 55 … 20th 25, second division 30 …, cup 25 …, league cup 10 …; European League 50, 35, 25, 25 …). One kind-2 row has competition −10, so it is never used. The third field is 1 or 2 |
-| 2 | 32 | s16 | `0x151568` | world rank points by club rank, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) |
+| 1 | 33 | `{s16 competition, s16 kind, s16 tally, u8 points[32]}` | `0x152128`, below | kind 0: the European competitions 34–36; kind 1: the national-team cups 45 and 46; kind 2: the same three European ones again (tally 1) and each league nation's two divisions and two cups (tally 2; first division winner 55 … 20th 25, second division 30 …, cup 25 …, league cup 10 …; European League 50, 35, 25, 25 …). One kind-2 row has competition −10, so it is never used |
+| 2 | 32 | s16 | `0x151568` | world rank points by club rank, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far); 0, 5, 10 … 925 for ranks 0–31 |
 | 3 | 65 | 34 bytes | the club rank by position, see [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) | – |
 | 4 | 18 | `{s16 UID, s16 nation, s16 division, s16 0}` | `0x150dd8`: for each row, the year schedule of the UID (`getYearSchedule`) and its nation (`getNationFromScheCompe`); when the walk finds them done it marks the year (`+0xc` = 2) and the divisions are shifted (`pwkRec_SetDivShift_TeamUserOnly`, `0x150ecc`) | the six league nations' league UIDs: each first division (division 0) and both versions of its second division (1) |
 
-Which pass uses which kind of table 1, and what its third field and the
-groups of table 0 change, aren't traced.
+**Table 1** (**confirmed**). `0x152128(object, tallies, count, kind)`
+walks the rows of one kind. A row with a competition of 0 or more that
+had a result this year (`0x1520e0`) gives `points[n]` to the club in
+entry *n* of its past record (`pwkRec_GetCompePastRecord`), that is
+final place *n* + 1. Each tally is 8 bytes with two u16 counters, at +2
+and +4.
+
+| Called from | Kind | Count | The points go to |
+|---|---|---|---|
+| `0x150528` | 0 | 52 | the club's nation (`plMisc_Club2Nati`), counter +2 |
+| `0x1505c0` | 1 | 145 | the nation: a national team's through `plMisc_NatiTeam2Nati` (teams `0x1cc` and up), a club's through `plMisc_Club2Nati`; counter +2 |
+| `0x150680` | 2 | 441 | the club, counter +2 when the row's tally is 1 and +4 when it is 2; the world rank points (`0x151568`) follow in the same pass |
+
+So the European rows count twice: once for the nation (kind 0) and once
+for the club (kind 2).
+
+**Table 3's rows** (**confirmed**, `0x151ce0`). For a second division
+(division 1) the game takes the row with nation slot −1 and the
+division's size; for a first division, the row with the nation's slot
+and the division's size, or a row of size −1, which is what nations
+7–52 have. When no row matches, the caller (`0x151dc8`) skips the
+division, so its clubs keep their ranks. The retail rows cover first
+divisions of 18 and 20 and second divisions of 18–22, 24 and 26: a first
+division the Season tab sets to another size, such as England at 22, is
+no longer ranked. Not checked in game.
 
 ## `CLUBEVENT.TBB`: an older copy of the club events
 
@@ -260,8 +285,9 @@ unused placeholders for kit names.
 
 ## Still unknown
 
-- What table 1's kinds and third field and table 0's groups change in
-  `CLUB_RANK_SYSTEM`.
+- In `CLUB_RANK_SYSTEM`: what table 0's groups change, and what the
+  nation tallies and the clubs' two counters feed (the three weighted
+  values of `0x151568`).
 - Whether anything reads `CLUBEVENT.TBB`, and the executable's
   club-event records (`0x52ff58`, `0x530688`) field by field.
 - The tactics sliders' limits, and which regions `TOUR_LIST`'s numbers

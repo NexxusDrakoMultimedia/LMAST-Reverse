@@ -460,6 +460,12 @@ open:
 - Promotion and relegation into the second season are tested for
   England at 22 clubs only (below). Other nations and sizes are checked
   by `build` but not in game.
+- The club ranking: `CLUB_RANK_SYSTEM.TBB` has rows only for first
+  divisions of 18 and 20 clubs and second divisions of 18–22, 24 and 26,
+  and the game skips a division with no row, so its clubs' ranks stop
+  changing (**confirmed** from the code, not checked in game;
+  [`PARAM_DIR.md`](PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables)).
+  `leaguesize.py build` doesn't add rows yet.
 
 ### Where the clubs come from
 

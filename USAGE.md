@@ -60,6 +60,7 @@ Each kind of data has a tab along the top:
 | Season | the starting divisions: swap two clubs' places, or change a first division's size |
 | Free agents | the players with no club at the start of a career |
 | Regulations | each competition's match rules, win bonus, prize money and promotion and relegation places |
+| Club ranking | how clubs earn their ranking at the end of each season: the points each competition gives for each final place, and which club rank each position in a league gets |
 | Training | what each practice, camp type and youth practice trains, and how tiring it is |
 | Camps | each training camp's type |
 | Tours | the clubs a tour can play in each region |

@@ -42,7 +42,7 @@ aims at:
 
 | Goal | Where it stands | Left (section) |
 |---|---|---|
-| The starting season | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results have writers and editor tabs, tested in PCSX2 | room for bigger second divisions (2), writers for the national-team calendar and the club ranking (3), a smaller first division tested (7) |
+| The starting season | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results have writers and editor tabs, tested in PCSX2 | room for bigger second divisions (2), a writer for the national-team calendar and club-ranking rows for resized leagues (3), a smaller first division tested (7) |
 | Data | players, staff, clubs, kits, facilities, training and camps have writers and tabs | the remaining player and staff fields (2), the stadium and emblem tables (3), tabs for the tactics presets and tours (5) |
 | Parameters | every `PARAM/` table's layout is known; `tbb.py replace` swaps any table | the open fields (2), field-level writers for the resource packs (3), tabs for them (5) |
 | Text | every message in every language, with a writer and the Text tab | the screen-set variables and a few message categories (2) |
@@ -90,8 +90,8 @@ shown to have no effect. Grouped by what a mod would change.
       and how your club and the rival become ranks 25 and 26 of the
       second division's past record
 - [ ] The remaining schedule and club-ranking fields: `PeriodName.tbb`,
-      the `make_list` sources, `CLUB_RANK_SYSTEM` tables 0, 1 and 4's
-      effects ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#still-unknown),
+      the `make_list` sources, what `CLUB_RANK_SYSTEM`'s nation groups
+      and tallies feed ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#still-unknown),
       [`PARAM_DIR.md`](DOC/PARAM_DIR.md#still-unknown))
 - [ ] Training and camps: the scale of a practice's values, the names of
       the 87 camp types and 28 youth menus, which camp each sponsor frees
@@ -208,8 +208,12 @@ shown to have no effect. Grouped by what a mod would change.
 round-trips every file on the disc. **Done when** each format below has
 a field-level writer with a `roundtrip` check in `regress.py`.
 
-- [ ] `CLUB_RANK_SYSTEM.TBB`: a field-level writer for the ranking's
-      points (tables 1–3, [`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
+- [ ] Resized leagues in the club ranking: `CLUB_RANK_SYSTEM.TBB` has
+      table-3 rows only for first divisions of 18 and 20 and second
+      divisions of 18–22, 24 and 26, and a division with no row isn't
+      ranked. `leaguesize.py build` (and the Season tab) should add rows
+      for a new size, one per nation slot, growing the table
+      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
 - [ ] The club events, which live in the executable (`SLES 0x52ff58`,
       `0x530688`), not in `CLUBEVENT.TBB`: decode the records field by
       field, then a writer
@@ -243,8 +247,7 @@ per kind of data, each editing through its writer and taking the allowed
 values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
-- [ ] Tabs for the club ranking and the resource packs, once they have
-      writers (section 3)
+- [ ] Tabs for the resource packs, once they have writers (section 3)
 - [ ] The editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
@@ -281,6 +284,11 @@ names the disc or the edit to build; the result goes into the doc.
       stored keeper kit
 - [ ] The crest editor: whether the three short `EDIT_EMBLEM` layer
       tables lose visible parts
+- [ ] The Club ranking tab: a disc with one edit to table 3 (for
+      example `rank:7:31=3`, the top three of a slot-1 first division of
+      20 at rank 31), played to the end of the first season; `save.py
+      clubs` on the next save shows the new ranks
+      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
 - [ ] The editor's Tours, Tactics and Comments tabs: a disc built with
       one edit from each (a tour opponent, a preset's formation, a
       manager comment cell) shows it in game

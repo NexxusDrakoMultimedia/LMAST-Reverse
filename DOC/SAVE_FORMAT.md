@@ -541,7 +541,7 @@ traced (`0x150680` updates the points, `0x150738` the ranks).
 | `0x151d58` | for each Euro6 nation (1–6) and each of its two divisions, the clubs of that division |
 | `0x151e60` | for nations 7–52, all the nation's clubs |
 | `0x151c10`, `0x151a28` | sorts the list by world rank points (`+0xa2`), highest first. Your club and the rival take their nation from your league (`plMisc_Club2Nati` `0x215b78`) |
-| `0x151ce0` | picks the table-3 row: nation slot = byte 2 of the nation's UEFA record (block 5 `+0x46638` + 4 × nation) |
+| `0x151ce0` | picks the table-3 row: nation slot = byte 2 of the nation's UEFA record (block 5 `+0x46638` + 4 × nation), and the division's size; a division with no matching row isn't ranked ([`PARAM_DIR.md`](PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables)) |
 | `0x151938` | hands out the ranks: row byte 2 + *i* (*i* = 0–31) is a running position in the list; the clubs before it get rank 31 − *i*, and 0 skips that rank. Teams 1 and 2 take their place but aren't changed |
 
 Table 3 has 65 rows of 34 bytes: `{s8 nation slot, s8 league size,

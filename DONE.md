@@ -124,6 +124,10 @@ evidence and how it was tested; the git history holds the rest.
       edit players ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
 - [x] `plrcommon.py set`: the facility records, each of 494 fields
       checked ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
+- [x] `clubrank.py`: `CLUB_RANK_SYSTEM.TBB`'s points per final place,
+      world rank points and rank positions (`set`, `roundtrip`), with
+      table 1's kinds and tallies traced
+      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
 
 ## 4. Rebuild: edits back on a bootable disc
 
@@ -149,6 +153,8 @@ evidence and how it was tested; the git history holds the rest.
       `formset.py`, `sqb.py settable`, which now edits several scripts
       of a pack in one command), tested through the widgets
       ([`README.md`](README.md#editor))
+- [x] `editor.py` Club ranking tab (`clubrank.py`), tested through the
+      widgets ([`README.md`](README.md#editor))
 
 ## 6. Distribute: sharing a mod
 

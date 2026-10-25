@@ -71,6 +71,14 @@ Tabs:
              get. The club counts are shown, not edited (they must match
              the schedule; the Season tab sets them), and the squad's
              copy follows the squad. Money shows in pounds.
+    Club ranking
+             the club ranking's tables (CLUB_RANK_SYSTEM.TBB, clubrank.py
+             set; DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables):
+             the points each competition gives for each final place, the
+             world rank points by club rank for clubs outside nations
+             1-52, and the club rank each position in a nation or division
+             gets, with the positions each rank reaches. The nation groups
+             and the year-end leagues are not edited.
     Training the training tables (TRAINING_LIST.TBB, training.py set;
              DOC/TRAINING_FORMAT.md): pick a table, then a row (a practice,
              camp type, pitch position, equipment item or growth type), and
@@ -137,6 +145,7 @@ import pbdata
 import plrcommon
 import plrsim
 import camp
+import clubrank
 import clubresult
 import formset
 import regulation
@@ -2616,6 +2625,238 @@ class ToursTab(Tab):
         return True
 
 
+CLUBRANK = "PARAM/" + clubrank.FILE
+CLUBRANK_TABLES = (
+    (clubrank.POINTS, "Points for each final place (table 1)",
+     "The points each competition gives for each final place, added to a club's or a "
+     "nation's tally at the end of the season; the world rank points are worked out from "
+     "the clubs' tallies."),
+    (clubrank.WORLD, "World rank points by club rank (table 2)",
+     "The world rank points of a club outside nations 1-%d, by its club rank (with up to 60 "
+     "either way at random). The game caps world rank points at %d."
+     % (clubrank.NATIONS, clubrank.WORLD_MAX)),
+    (clubrank.RANKS, "Club rank by position (table 3)",
+     "The club rank each position in a nation or division gets, from the clubs sorted by "
+     "world rank points. Each box is the last position that gets that rank: the clubs after "
+     "the box above it, up to this one. 0 gives the rank to no club. A division whose size "
+     "has no row here isn't ranked. Your club and the rival keep their own rank."),
+)
+
+
+class ClubRankTab(Tab):
+    """The club ranking's tables (CLUB_RANK_SYSTEM.TBB) through
+    clubrank.set_value and clubrank.encode_file, as `clubrank.py set`
+    does: a table, then a row, then its values in the ranges
+    clubrank.edit_spec gives. Competition names come from MES.PAC
+    (category 100009)."""
+    title = "Club ranking"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.raw = None
+        self.changes = {}           # clubrank.py set key -> value, in edit order
+        self.table = clubrank.POINTS
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Table").pack(side="left")
+        self.table_names = [name for _, name, _ in CLUBRANK_TABLES]
+        self.table_var = tk.StringVar(value=self.table_names[0])
+        box = ttk.Combobox(bar, textvariable=self.table_var, values=self.table_names,
+                           state="readonly", width=40)
+        box.pack(side="left", padx=(4, 12))
+        box.bind("<<ComboboxSelected>>", lambda e: self.pick_table())
+        self.table_box = box
+        ttk.Label(bar, text="The club ranking at the end of each season (DOC/PARAM_DIR.md).",
+                  foreground="#555").pack(side="left")
+
+        panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("row", "what")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, head, width in zip(cols, ("Row", "What"), (50, 300)):
+            self.tree.heading(c, text=head)
+            self.tree.column(c, width=width, stretch=c == "what")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=2)
+
+    # loading
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(CLUBRANK)
+            self.buf, self.end, self.raw = clubrank.load(self.path)
+            self.names = clubrank.compe_names(mod.source(MES))
+        except (ValueError, struct.error, OSError) as e:
+            self.raw = None
+            self.app.status("Couldn't load the club ranking: %s" % e)
+            messagebox.showerror("Club ranking", "Couldn't load the club ranking:\n%s" % e)
+            return
+        self.changes = {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    # the list
+
+    def pick_table(self):
+        self.table = CLUBRANK_TABLES[self.table_names.index(self.table_var.get())][0]
+        self.current = None
+        self.detail.clear()
+        self.refresh_list()
+
+    def rows(self):
+        """[(row, what)] of the chosen table; table 2 is one row."""
+        if self.table == clubrank.WORLD:
+            return [(0, "ranks 0-%d" % clubrank.RANK_MAX)]
+        if self.table == clubrank.POINTS:
+            out = []
+            for row in range(clubrank.SHAPES[clubrank.POINTS][0]):
+                compe, kind, _, _ = clubrank.points_row(self.raw, row)
+                out.append((row, "%s, %s" % (clubrank.compe_label(compe, self.names),
+                                             clubrank.KINDS[kind].split(" (")[0])))
+            return out
+        return [(row, clubrank.rank_row_label(self.raw, row))
+                for row in range(clubrank.SHAPES[clubrank.RANKS][0])]
+
+    def keys(self, row):
+        if self.table == clubrank.POINTS:
+            return ["points:%d:%d" % (row, p) for p in range(1, clubrank.PLACES + 1)]
+        if self.table == clubrank.WORLD:
+            return ["world:%d" % r for r in range(clubrank.RANK_MAX + 1)]
+        return ["rank:%d:%d" % (row, r) for r in range(clubrank.RANK_MAX, -1, -1)]
+
+    def refresh_list(self):
+        if self.raw is None:
+            return
+        self.tree.delete(*self.tree.get_children())
+        for row, what in self.rows():
+            edited = any(k in self.changes for k in self.keys(row))
+            self.tree.insert("", "end", iid=str(row), values=(row, what),
+                             tags=("edited",) if edited else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    # the detail panel
+
+    def show(self, row):
+        self.current = row
+        self.detail.clear()
+        box = self.detail.inner
+        about = CLUBRANK_TABLES[[t for t, _, _ in CLUBRANK_TABLES].index(self.table)][2]
+        if self.table == clubrank.POINTS:
+            compe, kind, tally, _ = clubrank.points_row(self.raw, row)
+            title = "Row %d: %s" % (row, clubrank.compe_label(compe, self.names))
+            note = "Points go %s%s." % (clubrank.KINDS[kind], "" if kind != 2 else
+                                         ", counter %d" % tally)
+            label = "place %d"
+        elif self.table == clubrank.WORLD:
+            title, note, label = "World rank points by club rank", "", "rank %d"
+        else:
+            title = "Row %d: %s" % (row, clubrank.rank_row_label(self.raw, row))
+            note, label = "", "rank %d up to position"
+        ttk.Label(box, text=title, font=self.app.title_font).pack(anchor="w", padx=8,
+                                                                  pady=(8, 2))
+        ttk.Label(box, text=(note + " " if note else "") + about, foreground="#555",
+                  wraplength=700, justify="left").pack(anchor="w", padx=8)
+        frame = ttk.Frame(box)
+        frame.pack(anchor="w", padx=8, pady=6)
+        self.gets = {}
+        per_column = 16
+        for i, key in enumerate(self.keys(row)):
+            r, c = i % per_column, (i // per_column) * 3
+            n = int(key.split(":")[-1])
+            ttk.Label(frame, text=label % n, foreground="#555").grid(row=r, column=c,
+                                                                     sticky="e", padx=(12, 4))
+            value_input(frame, clubrank.edit_spec(key), str,
+                        lambda key=key: clubrank.get(self.raw, key),
+                        lambda text, revert, key=key: self.commit(key, text, revert)
+                        ).grid(row=r, column=c + 1, sticky="w", pady=1)
+            if self.table == clubrank.RANKS:
+                gets = ttk.Label(frame, text="", foreground="#555", width=14)
+                gets.grid(row=r, column=c + 2, sticky="w", padx=(4, 0))
+                self.gets[n] = gets
+        self.update_gets(row)
+
+    def update_gets(self, row):
+        """Beside each box of table 3, the positions that rank gets."""
+        if self.table != clubrank.RANKS:
+            return
+        ranges = {rank: (a, b) for rank, a, b in
+                  clubrank.rank_ranges(clubrank.rank_row(self.raw, row)[2])}
+        for rank, label in self.gets.items():
+            a, b = ranges.get(rank, (0, 0))
+            label.configure(text="none" if not a else "position %d" % a if a == b
+                            else "positions %d-%d" % (a, b))
+
+    # edits
+
+    def commit(self, key, text, revert):
+        try:
+            old = clubrank.set_value(self.raw, key, int(text))
+        except ValueError as e:
+            revert()
+            self.app.status(str(e))
+            messagebox.showerror("Club ranking", str(e))
+            return False
+        value = clubrank.get(self.raw, key)
+        self.changes.pop(key, None)
+        self.changes[key] = value
+        if self.current is not None and self.tree.exists(str(self.current)):
+            self.tree.item(str(self.current), tags=("edited",))
+            self.update_gets(self.current)
+        self.app.status("%s: %d -> %d" % (key, old, value))
+        self.app.update_title()
+        return True
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(CLUBRANK)
+        temps = [(out + ".new", out)]
+        try:
+            data = clubrank.encode_file(self.buf, self.end, self.raw)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Club ranking", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        cmd = ["python", "SRC/clubrank.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + [
+            "%s=%d" % kv for kv in self.changes.items()]
+        n = len(self.changes)
+        lines = log_lines("Club ranking: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
 PSC = "PARAM/PSCCOMMON.PAC"
 COMMENT_KINDS = {
     "weight": "how much each ability counts for each of the 9 position kinds (each retail "
@@ -4750,6 +4991,7 @@ class App:
         self.season = SeasonTab(self)
         self.free = FreeAgentsTab(self)
         self.regulations = RegulationsTab(self)
+        self.clubrank = ClubRankTab(self)
         self.training = TrainingTab(self)
         self.camps = CampsTab(self)
         self.facilities = FacilitiesTab(self)
@@ -4757,7 +4999,7 @@ class App:
         self.tactics = TacticsTab(self)
         self.comments = CommentsTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free,
-                     self.regulations, self.training, self.camps, self.tours, self.facilities,
+                     self.regulations, self.clubrank, self.training, self.camps, self.tours, self.facilities,
                      self.tactics, self.kits, self.text, self.comments]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:

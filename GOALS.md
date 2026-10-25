@@ -50,8 +50,7 @@ numbers, and [`DONE.md`](DONE.md) what is finished.
    file and writing it back gives the original bytes, checked over every
    file on the disc in `regress.py`. *Done for what a starting-season
    mod changes*, and edits through most writers are tested in PCSX2. The
-   club ranking, the club events and the rest of the resource packs are
-   left.
+   club events and the rest of the resource packs are left.
 4. **Rebuild.** Put edited files back on a disc image that boots. *Done:*
    `patch_disc.py` patches files of any size, moves them, grows the
    disc, updates every copy and rebuilds archives, all tested in PCSX2
@@ -102,7 +101,7 @@ has the full list, and [`TODO.md`](TODO.md) the tasks.
 | `GAME/` | match data: commentary, sound, models, tactics AI | partly | [`GAME_DIR.md`](DOC/GAME_DIR.md), [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md), [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md), `sounddat.py`, `ninja.py`, `bpb.py`, `gamedata.py`, `packdata.py` | what the `.CBB` blocks and the combination commands' areas select, what the play books' paths mean, the rest of a `GAMEDATA.BIN` record, whether `AI_PARAM.BIN` is used, the cut-in pack's `CIB0`/`BMT1` blocks, the `RBD0` trailer, the `SHADOWCOLLI`/`WALLCOLLI` entries, `TEAM.TMB` |
 | `MESSAGE/` | all message text | done, with a writer | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md), `mbb.py` | which value the screen-set variables hold |
 | `NEWS/` | newspaper pictures and ranking months | done | [`NEWS_DIR.md`](DOC/NEWS_DIR.md), `news.py` | where ads and cartoons go on the page |
-| `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `leaguesize.py`, `plrsim.py`, `plrcommon.py`, `regulation.py`, `clubresult.py`, `training.py`, `camp.py`, `formset.py`, `tour.py` | the values in `PLRESOURCECOMMON.PAC` entry 1 and table 4.1, a few schedule tables, what a few named player fields do |
+| `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `leaguesize.py`, `plrsim.py`, `plrcommon.py`, `regulation.py`, `clubresult.py`, `training.py`, `camp.py`, `formset.py`, `tour.py`, `clubrank.py` | the values in `PLRESOURCECOMMON.PAC` entry 1 and table 4.1, a few schedule tables, what a few named player fields do |
 | `PLAYER/` | faces, kits, player models | most files, with a kit writer | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md), [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md), `packdata.py`, `uniform.py` | the face block-4 header, a few kit fields |
 | `PRELOAD/` | copies of other files for bulk loading | done, with a writer | [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md), `preload.py` | – |
 | `SEQ/` | the root sequencer scripts | most files | [`SEQ_DIR.md`](DOC/SEQ_DIR.md), [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md), `sqb.py` | two unused 2004 scripts, `WPX` |

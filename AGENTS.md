@@ -105,7 +105,7 @@ difference with `!!`. It goes into `regress.py` as `<name>_roundtrip`. The
 existing writers are `pac.py` (BINPACs, KC@P packs, PRS), `tbb.py`,
 `pbdata.py`, `mbb.py`, `initteam.py` (`set`, `setteam`, `swap`),
 `teaminit.py`, `regulation.py`, `clubresult.py`, `training.py`,
-`camp.py`, `formset.py`, `tour.py`, `uniform.py`, `sqb.py` (`setcmd`, and
+`camp.py`, `formset.py`, `tour.py`, `clubrank.py`, `uniform.py`, `sqb.py` (`setcmd`, and
 `set_commands` for several edits checked together; `settable` for the
 PwkScript data tables), `plrsim.py` (`setfree`), `plrcommon.py` (`set`,
 the facility records), `save.py`, `ps2mc.py` (`put`, `mkdir`: memory
