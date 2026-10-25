@@ -35,6 +35,19 @@ past the previous one, gives that rank to no club. Teams 1 and 2 (your
 club and the rival) take a place but keep their rank, and clubs past the
 row's last position keep their old rank.
 
+0x151ce0 picks a division's row: for a second division the row of slot
+-1 and the division's size, for a first division the row of the
+nation's slot and the size, or of size -1. The size is the league
+UID's number of entrants (makeTeamEntryIDList, 0x150ae0, stored at
+0x150b5c). With no matching row the division isn't ranked (0x151dc8).
+The loader keeps the row count (+0x38), so table 3 can grow:
+`addrows` appends rows for divisions of a new size, as `leaguesize.py
+build` does for a resized league. A new row stretches the row of the
+nearest size (the same slot; the larger on a tie) over the new size:
+the top club keeps the top rank and the bottom club the bottom one.
+Built that way from a neighbouring size, every retail row comes within
+one rank of the real one at every position.
+
 See DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables and
 DOC/SAVE_FORMAT.md ("How the club rank changes").
 
@@ -42,6 +55,7 @@ Usage:
     python clubrank.py info      <CLUB_RANK_SYSTEM.TBB | DAT/PARAM>
     python clubrank.py show      <CLUB_RANK_SYSTEM.TBB> [MES.PAC]
     python clubrank.py set       <in.TBB> <out.TBB> <key>=<value> ...
+    python clubrank.py addrows   <in.TBB> <out.TBB> <division>:<size> ...
     python clubrank.py roundtrip <CLUB_RANK_SYSTEM.TBB>
 
 `show` names the competitions from MES.PAC (category 100009) when given.
@@ -50,8 +64,14 @@ for patch_disc.py:
 
     points:<row>:<place>=<0-255>   table 1: row 0-32, final place 1-32
     world:<rank>=<0-1023>          table 2: club rank 0-31
-    rank:<row>:<rank>=<0-127>      table 3: row 0-64, the last position
-                                   that gets club rank 0-31
+    rank:<row>:<rank>=<0-127>      table 3: a row (0-64 on the disc),
+                                   the last position that gets club
+                                   rank 0-31
+
+`addrows` takes a division as the game numbers it, 0 (a first division:
+a row for each of nation slots 1-6) or 1 (a second division), and a
+size of 2-127. It adds the rows the game would miss and prints them; a
+size that already has its rows adds none.
 
 for example `points:9:1=80` (the Premier Division's champions get 80),
 `world:31=950`, `rank:7:31=2` (the top two clubs of a slot-1 first
@@ -91,11 +111,17 @@ def load(path):
     if len(raw) != len(SHAPES):
         raise ValueError("expected %d tables, not %d" % (len(SHAPES), len(raw)))
     for t, (rows, size) in enumerate(SHAPES):
-        if len(raw[t].data) != rows * size:
-            raise ValueError("table %d is %d bytes, not %d x %d" % (t, len(raw[t].data),
-                                                                   rows, size))
+        # Table 3 may have grown (addrows); the others keep their size.
+        n = len(raw[t].data)
+        if (n % size or n < rows * size) if t == RANKS else n != rows * size:
+            raise ValueError("table %d is %d bytes, not %d x %d" % (t, n, rows, size))
         raw[t].data = bytearray(raw[t].data)
     return buf, end, raw
+
+
+def rank_rows(raw):
+    """The number of rows in table 3."""
+    return len(raw[RANKS].data) // SHAPES[RANKS][1]
 
 
 # --- the rows ----------------------------------------------------------------
@@ -148,10 +174,59 @@ def rank_row_label(raw, row):
     return "nation slot %d" % slot
 
 
+def find_row(raw, slot, division, size):
+    """The table-3 row the game uses for a division (0 first, 1 second) of
+    `size` clubs in nation slot `slot`, or None (0x151ce0)."""
+    for row in range(rank_rows(raw)):
+        s, n, _ = rank_row(raw, row)
+        if division == 1 and s == -1 and n == size:
+            return row
+        if division != 1 and s == slot and n in (size, -1):
+            return row
+    return None
+
+
+def stretch(positions, size):
+    """The positions of a row for `size` clubs made from another row's:
+    position k of the new list takes the rank of position
+    round(k (m - 1) / (size - 1)) of the old one's m, counting from 0."""
+    ranks = [rank for rank, first, last in rank_ranges(positions)
+             for _ in range(first, last + 1)]
+    out = [0] * (RANK_MAX + 1)
+    for k in range(size):
+        rank = ranks[round(k * (len(ranks) - 1) / (size - 1))]
+        out[RANK_MAX - rank] = k + 1
+    return out
+
+
+def add_rows(raw, division, size):
+    """Append the rows a division of `size` clubs lacks: for a first
+    division (0) one for each nation slot 1-6 without one, for a second
+    division (1) one of slot -1. Returns [(row, slot, size)] of the rows
+    added."""
+    if not 2 <= size <= POSITION_MAX:
+        raise ValueError("a division of %d clubs can't be ranked (2-%d)" % (size, POSITION_MAX))
+    added = []
+    for slot in ((-1,) if division == 1 else range(1, EURO6 + 1)):
+        if find_row(raw, slot, division, size) is not None:
+            continue
+        sources = [(abs(n - size), -n, row) for row in range(rank_rows(raw))
+                   for s, n, _ in [rank_row(raw, row)] if s == slot and n > 1]
+        if not sources:
+            raise ValueError("no row of nation slot %d to make a %d-club row from"
+                             % (slot, size))
+        source = rank_row(raw, min(sources)[2])[2]
+        raw[RANKS].data += struct.pack("<34b", slot, size, *stretch(source, size))
+        added.append((rank_rows(raw) - 1, slot, size))
+    return added
+
+
 # --- edits -------------------------------------------------------------------
 
-def field(key):
-    """(table, offset, struct format, low, high) of a `set` key."""
+def field(key, ranks=None):
+    """(table, offset, struct format, low, high) of a `set` key; `ranks` is
+    the number of rows in table 3 (the disc's 65 when not given)."""
+    ranks = ranks or SHAPES[RANKS][0]
     parts = key.split(":")
     try:
         nums = [int(p, 0) for p in parts[1:]]
@@ -169,8 +244,8 @@ def field(key):
         return WORLD, rank * 2, "<h", 0, WORLD_MAX
     if parts[0] == "rank" and len(nums) == 2:
         row, rank = nums
-        if not 0 <= row < SHAPES[RANKS][0] or not 0 <= rank <= RANK_MAX:
-            raise ValueError("%s: row 0-%d, rank 0-%d" % (key, SHAPES[RANKS][0] - 1, RANK_MAX))
+        if not 0 <= row < ranks or not 0 <= rank <= RANK_MAX:
+            raise ValueError("%s: row 0-%d, rank 0-%d" % (key, ranks - 1, RANK_MAX))
         return (RANKS, row * SHAPES[RANKS][1] + POSITIONS_AT + RANK_MAX - rank, "<b", 0,
                 POSITION_MAX)
     raise ValueError("%s: expected points:<row>:<place>, world:<rank> or rank:<row>:<rank>"
@@ -184,13 +259,13 @@ def edit_spec(key):
 
 
 def get(raw, key):
-    t, o, fmt, _, _ = field(key)
+    t, o, fmt, _, _ = field(key, rank_rows(raw))
     return struct.unpack_from(fmt, raw[t].data, o)[0]
 
 
 def set_value(raw, key, value):
     """Set one field; returns the old value."""
-    t, o, fmt, lo, hi = field(key)
+    t, o, fmt, lo, hi = field(key, rank_rows(raw))
     if not lo <= value <= hi:
         raise ValueError("%s is %d-%d" % (key, lo, hi))
     old = struct.unpack_from(fmt, raw[t].data, o)[0]
@@ -213,7 +288,7 @@ def check(raw):
     for rank, v in enumerate(world_points(raw)):
         if not 0 <= v <= WORLD_MAX:
             problems.append("table 2 rank %d: %d points" % (rank, v))
-    for row in range(SHAPES[RANKS][0]):
+    for row in range(rank_rows(raw)):
         slot, size, positions = rank_row(raw, row)
         if not (slot == -1 or 1 <= slot <= NATIONS) or (size < 0) != (slot > EURO6):
             problems.append("table 3 row %d: nation slot %d, size %d" % (row, slot, size))
@@ -230,8 +305,11 @@ def encode_file(buf, end, raw):
     problems = check(raw)
     if problems:
         raise ValueError("; ".join(problems))
-    out = tbb.build(raw, end, tbb.trailer(buf, raw))
-    if len(out) != len(buf):
+    # A table 3 with added rows moves table 4, and the header's end of data
+    # with it; otherwise the file keeps its size.
+    grown = len(raw[RANKS].data) != raw[RANKS].size
+    out = tbb.build(raw, None if grown and end else end, tbb.trailer(buf, raw))
+    if not grown and len(out) != len(buf):
         raise ValueError("rebuilt file is %d bytes, not %d" % (len(out), len(buf)))
     return out
 
@@ -259,8 +337,8 @@ def cmd_info(path):
         print("%s  !! %s" % (path, e))
         return
     problems = check(raw)
-    print("%s: %s" % (path, ", ".join("table %d %d x %d" % ((t,) + s)
-                                      for t, s in enumerate(SHAPES)))
+    print("%s: %s" % (path, ", ".join("table %d %d x %d" % (t, len(raw[t].data) // size, size)
+                                      for t, (_, size) in enumerate(SHAPES)))
           + ("  !! " + "; ".join(problems) if problems else ""))
     kinds = {}
     for row in range(SHAPES[POINTS][0]):
@@ -287,7 +365,7 @@ def cmd_show(path, mes=None):
     print("table 2, world rank points by club rank (ranks 0-31): %s"
           % " ".join(map(str, world_points(raw))))
     print("table 3, club rank by position:")
-    for row in range(SHAPES[RANKS][0]):
+    for row in range(rank_rows(raw)):
         print("  row %2d (%s): %s" % (row, rank_row_label(raw, row), ", ".join(
             "%d: %s" % (rank, first if first == last else "%d-%d" % (first, last))
             for rank, first, last in rank_ranges(rank_row(raw, row)[2]))))
@@ -319,6 +397,37 @@ def cmd_set(path, out_path, args):
     print("wrote %s" % out_path)
 
 
+def cmd_addrows(path, out_path, args):
+    if os.path.abspath(out_path) == os.path.abspath(path):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    buf, end, raw = load(path)
+    for a in args:
+        try:
+            division, _, size = a.partition(":")
+            division, size = int(division), int(size)
+        except ValueError:
+            raise SystemExit("expected <division>:<size>, got %r" % a)
+        if division not in (0, 1):
+            raise SystemExit("%s: division 0 (first) or 1 (second)" % a)
+        try:
+            added = add_rows(raw, division, size)
+        except ValueError as e:
+            raise SystemExit("%s: %s" % (a, e))
+        for row, _, _ in added:
+            print("row %d (%s): %s" % (row, rank_row_label(raw, row), ", ".join(
+                "%d: %s" % (rank, first if first == last else "%d-%d" % (first, last))
+                for rank, first, last in rank_ranges(rank_row(raw, row)[2]))))
+        if not added:
+            print("%s: has its rows already" % a)
+    try:
+        out = encode_file(buf, end, raw)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    with open(out_path, "wb") as f:
+        f.write(out)
+    print("wrote %s (%d rows in table 3)" % (out_path, rank_rows(raw)))
+
+
 def cmd_roundtrip(path):
     buf, end, raw = load(path)
     try:
@@ -337,6 +446,8 @@ def main(argv):
         cmd_show(args[0], args[1] if len(args) == 2 else None)
     elif cmd == "set" and len(args) >= 3:
         cmd_set(args[0], args[1], args[2:])
+    elif cmd == "addrows" and len(args) >= 3:
+        cmd_addrows(args[0], args[1], args[2:])
     elif cmd == "roundtrip" and len(args) == 1:
         cmd_roundtrip(args[0])
     else:

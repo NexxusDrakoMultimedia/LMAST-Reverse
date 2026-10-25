@@ -188,11 +188,27 @@ for the club (kind 2).
 (division 1) the game takes the row with nation slot −1 and the
 division's size; for a first division, the row with the nation's slot
 and the division's size, or a row of size −1, which is what nations
-7–52 have. When no row matches, the caller (`0x151dc8`) skips the
-division, so its clubs keep their ranks. The retail rows cover first
-divisions of 18 and 20 and second divisions of 18–22, 24 and 26: a first
-division the Season tab sets to another size, such as England at 22, is
-no longer ranked. Not checked in game.
+7–52 have. The size is the league UID's number of entrants
+(`makeTeamEntryIDList`, `0x150ae0`, stored for the division at
+`0x150b5c`). When no row matches, the caller (`0x151dc8`) skips the
+division, so its clubs keep their ranks. The loader keeps the row count
+(`+0x38`), so the table can grow.
+
+The retail rows cover first divisions of 18 and 20 and second divisions
+of 18–22, 24 and 26. For any other size, `python SRC/clubrank.py addrows
+<in> <out> <division>:<size>` appends the missing rows (a first
+division's for each nation slot 1–6), and `leaguesize.py build` and the
+Season tab do it for a resized league: England at 22 gets six rows, its
+second division at 22 and 24 has them already. The file grows by 34
+bytes a row. A new row stretches the row of the nearest size of the same
+slot (the larger on a tie) over the new size, so the top club keeps the
+top rank and the bottom club the bottom rank. **Empirical:** built that
+way from a neighbouring size, every retail row comes within one rank of
+the real one at every position (the 18-club first divisions from the
+20-club ones differ at 4–8 of 18 positions). The rule is this project's
+choice, not the game's. A grown file isn't tested in game; the same
+loader (`ScheEuro_LoadModule`) reads the schedule packs, which grow
+without trouble.
 
 ## `CLUBEVENT.TBB`: an older copy of the club events
 

@@ -52,7 +52,9 @@ Tabs:
              division's size, in the range leaguesize.py allows; a size
              change also rewrites the three schedule packs and their .HED
              and the leagues' club counts in REGULATION.TBB and
-             CLUBRESULT.TBB, which the Regulations tab then reads again
+             CLUBRESULT.TBB, which the Regulations tab then reads again,
+             and adds the club ranking's rows for a size it has none for
+             (CLUB_RANK_SYSTEM.TBB, which the Club ranking tab reads again)
              (leaguesize.py build --over;
              DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from).
     Free agents
@@ -348,7 +350,8 @@ class Tab:
         """Another tab saved or loaded something this one shows: "squads"
         (OTEAMMEMBER.TBB), "people" (the People tab's records) or
         "schedules" (the Season tab's size change, which also writes
-        REGULATION.TBB)."""
+        REGULATION.TBB, CLUBRESULT.TBB and, for a size the club ranking
+        has no row for, CLUB_RANK_SYSTEM.TBB)."""
         pass
 
 
@@ -2710,6 +2713,24 @@ class ClubRankTab(Tab):
             self.app.status(done)
         self.app.update_title()
 
+    def changed(self, what):
+        """The Season tab resized a league and may have added rows to table
+        3: read the file again and put any unsaved edits back on top (rows
+        are only added at the end, so every key still names its field)."""
+        if what != "schedules" or self.raw is None:
+            return
+        changes = self.changes
+        self.load()
+        if self.raw is None:
+            return
+        for key, value in changes.items():
+            clubrank.set_value(self.raw, key, value)
+        self.changes = changes
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        self.app.update_title()
+
     # the list
 
     def pick_table(self):
@@ -2730,7 +2751,7 @@ class ClubRankTab(Tab):
                                              clubrank.KINDS[kind].split(" (")[0])))
             return out
         return [(row, clubrank.rank_row_label(self.raw, row))
-                for row in range(clubrank.SHAPES[clubrank.RANKS][0])]
+                for row in range(clubrank.rank_rows(self.raw))]
 
     def keys(self, row):
         if self.table == clubrank.POINTS:
@@ -4033,7 +4054,8 @@ class SeasonTab(Tab):
     """The starting season's divisions (PLRRSRC_INITTEAMDATA.TBB):
     swapping two league clubs' places through initteam.InitTeamData.swap,
     as `initteam.py swap` does, and changing a first division's size
-    through leaguesize.py, which also writes the three schedule packs.
+    through leaguesize.py, which also writes the three schedule packs
+    and, for a size the club ranking has no row for, CLUB_RANK_SYSTEM.TBB.
     A pending size change is shown from leaguesize.plan; the save runs
     leaguesize.build after the swaps are written, as the log's commands
     do. A swap only exchanges two ids, so it gives the same result before

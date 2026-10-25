@@ -24,6 +24,12 @@ DOC/SCHEDULE_FORMAT.md#building-a-league-of-another-size):
                           there two seasons running (0x15d958).
                           CLUBRESULT.TBB's `clubs` too (clubresult.py),
                           which only cups read, kept in step.
+  the club ranking        CLUB_RANK_SYSTEM.TBB table 3 has a row for each
+                          division size it ranks (SIMPRG.REL 0x151ce0);
+                          a division with none keeps its clubs' ranks.
+                          clubrank.add_rows appends the missing rows, the
+                          first division's for nation slots 1-6, made
+                          from the row of the nearest size.
 
 To grow the first division by d, the second division's ranks m+1..m+d
 move into the first division's past record at ranks k+1..k+d, above its
@@ -64,6 +70,7 @@ Spain, Netherlands.
 import os
 import sys
 
+import clubrank
 import clubresult
 import initteam
 import regulation
@@ -335,13 +342,21 @@ def league_number(text):
 def build(root, sizes, over=None):
     """The changed files after giving each league's first division its new
     size ([(league, clubs)]): ({file name: bytes} for the three schedule
-    packs and their .HED, PLRRSRC_INITTEAMDATA.TBB, REGULATION.TBB and
-    CLUBRESULT.TBB, {UID: turns} of the rebuilt leagues)."""
+    packs and their .HED, PLRRSRC_INITTEAMDATA.TBB, REGULATION.TBB,
+    CLUBRESULT.TBB, and CLUB_RANK_SYSTEM.TBB when it gains rows, {UID:
+    turns} of the rebuilt leagues)."""
     data = load(root, over)
     system, compes, entries, init = data
     turns = {}
+    divisions = []                  # (division, clubs) the club ranking needs rows for
     for league, clubs in sizes:
+        n = Nation(system, compes, entries, league)
+        divisions += [(0 if u == n.d1 else 1, size) for u, size in n.sizes(clubs).items()]
         turns.update(resize(data, league, clubs))
+    rank_buf, rank_end, rank_raw = clubrank.load(path(root, clubrank.FILE, over))
+    added = []
+    for division, size in divisions:
+        added += clubrank.add_rows(rank_raw, division, size)
     reg_buf, reg_end, reg_raw, reg_rows = regulation.load(path(root, regulation.FILE, over))
     res_buf, res_end, res_raw, res_rows = clubresult.load(path(root, clubresult.FILE, over))
     for u in turns:
@@ -356,6 +371,8 @@ def build(root, sizes, over=None):
     out[initteam.INIT_TBB] = init.encode()
     out[regulation.FILE] = regulation.encode_file(reg_buf, reg_end, reg_raw, reg_rows)
     out[clubresult.FILE] = clubresult.encode_file(res_buf, res_end, res_raw, res_rows)
+    if added:
+        out[clubrank.FILE] = clubrank.encode_file(rank_buf, rank_end, rank_raw)
     return out, turns
 
 
@@ -437,6 +454,19 @@ def verify(folder, sizes, turns):
     for league, clubs in sizes:
         probs += ["%s: %s" % (LEAGUE_NAMES[league], p)
                   for p in plan(folder, league, clubs, data)[4]]
+    # The club ranking, when the build added its rows.
+    rank_path = os.path.join(folder, clubrank.FILE)
+    if os.path.exists(rank_path):
+        rank_raw = clubrank.load(rank_path)[2]
+        probs += ["%s: %s" % (clubrank.FILE, p) for p in clubrank.check(rank_raw)]
+        for league, clubs in sizes:
+            n = Nation(system, compes, entries, league)
+            for u in (n.d1, n.other, n.own):
+                division = 0 if u == n.d1 else 1
+                for slot in (-1,) if division else range(1, clubrank.EURO6 + 1):
+                    if clubrank.find_row(rank_raw, slot, division, compes[u].entrants) is None:
+                        probs.append("UID %d: no club-ranking row for %d clubs in slot %d"
+                                     % (u, compes[u].entrants, slot))
     return probs
 
 

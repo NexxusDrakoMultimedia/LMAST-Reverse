@@ -128,6 +128,10 @@ evidence and how it was tested; the git history holds the rest.
       world rank points and rank positions (`set`, `roundtrip`), with
       table 1's kinds and tallies traced
       ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
+- [x] Resized leagues stay ranked: `clubrank.py addrows`, and
+      `leaguesize.py build` and the Season tab add the club-ranking rows
+      a new size needs
+      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
 
 ## 4. Rebuild: edits back on a bootable disc
 
