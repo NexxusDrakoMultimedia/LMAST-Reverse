@@ -73,7 +73,7 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `REGULATION.TBB` | TBB, 1 table | `plRec_MatchRegulations` (`0x21dc60`), `SIMPRG.REL` list | 165 match regulations × **120 bytes**, indexed by `PLSCHE_GROUP`: clubs, win bonus, prizes, bans, squad and substitution limits, places. **confirmed**, see [`REGULATION_FORMAT.md`](REGULATION_FORMAT.md) |
 | `CLUBRESULT.TBB` | TBB, 1 table | `SIMPRG.REL 0x167e90` | 165 × **8 bytes**, one per schedule UID: how a final place is reported (league, cup round names, not ranked), the third-place match, the clubs. **confirmed**, see [`CLUBRESULT_FORMAT.md`](CLUBRESULT_FORMAT.md) |
 | `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**: roof, level, capacity (thousands). **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`; readers in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) |
-| `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 national-team flags per turn. **confirmed**, see below |
+| `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 national-team flags per turn. **confirmed**; `natcal.py` reads and writes it. See below |
 | `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | the training module (`SIMPRG.REL 0x159998`, lists `0x23d618`, `0x23d690`), `SLES 0x246540` (table 11) | what each practice trains and its fatigue, facility and camp bonuses, match growth by position, ability groups and coaching, decline with age. **confirmed**, see [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md) |
 | `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648`; `0x4bdd0` | the 153 training camps: city, nation, camp type, and the clubs of each area. **confirmed** in part, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
 | `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8`; `0xa4a80` | each camp city's description, message category 570. **confirmed**, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
@@ -110,8 +110,8 @@ flags:
 
 | Bit | Function | Meaning |
 |---|---|---|
-| 1 | `pwkSche_IsNationalMatch` `0x256b30` | national teams play (the globes on the Schedule screen, user report) |
-| 2 | `pwkSche_IsNationalFMatch` `0x256b90` | finals tournament |
+| 1 | `pwkSche_IsNationalMatch` `0x256b30` | national teams play (the globes on the Schedule screen, user report; `SIMPRG.REL 0x4dd84`) |
+| 2 | `pwkSche_IsNationalFMatch` `0x256b90` | finals tournament: `SIMPRG.REL 0x160a48` takes it as the competition the call-up and release are for, the finals (45 Euro, 47 World, by `pwkGen_Keika` mod 4) instead of their qualifying (44, 46) |
 | 4 | `pwkSche_IsNationalConvene` `0x256c50` | call-up: `SIMPRG.REL` `jmNT_CallCheck` `0x160b68` picks every squad |
 | 8 | `pwkSche_IsNationalBreak` `0x256bf0` | release: `jmNT_FreeCheck` `0x160c50` sends the players back; with bit 2 it also asks `getChampionTeam` for the cup's winner |
 
@@ -123,12 +123,34 @@ The retail tables (turn: flags):
 | 1 | Euro National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–93: 1+2; 94: 1+2+8 |
 | 3 | World National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–94: 1+2; 95: 1+2+8 |
 
-These match the cups' turns in `SCHEDULE_SYSTEM.PAC`. A season starting
-in 2009 or 2025 uses table 3, a World Cup year, and one starting in 2007
-table 1, a Euro year (user report). Copies sit in
+A season starting in 2009 or 2025 uses table 3, a World Cup year, and
+one starting in 2007 table 1, a Euro year (user report). Copies sit in
 `PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 31). `patch_disc.py --mod
 national-cups` moves tables 1 and 3 a turn earlier
 ([`LMASTER_MOD.md`](LMASTER_MOD.md)).
+
+**Empirical**, all four tables on both releases (`python SRC/natcal.py
+info DAT/PARAM`):
+
+- The match flag is on exactly on the turns the national cups
+  (competitions 44–47) play in `SCHEDULE_SYSTEM.PAC`: a cup's year row of
+  cycle *c* (1–4) goes to table *c* − 1, and its second-year turns to the
+  next table ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md)).
+- Every match turn lies between a call-up and its release, which may
+  both be on the match turn itself (the qualifying dates are 1+4+8).
+- Only the finals years (tables 1 and 3) hold the finals flag, and there
+  it is also on the call-up and the release that frame the finals.
+
+**Editing.** `python SRC/natcal.py set <in> <out> <table>:<turn>:<flag>=<0|1>`
+sets the finals, call-up and release flags (for example
+`3:88:callup=0 3:87:callup=1 3:87:finals=1` calls the World Cup squads up
+a turn earlier); the mod editor's National calendar tab does the same.
+Both refuse a calendar that breaks the rules above. The match flag isn't
+edited: it follows the schedule, which `national-cups` moves together
+with the calendar. Given an edited `SCHEDULE_LIST.TBB` as a target,
+`national-cups` moves the target's tournament years a turn earlier the
+same way (matches, finals and release; the call-up stays) and `--copies`
+writes the result into the `SIMLOCALMEM` packs. Not tested in game.
 
 ## `GROUP2COMPE.TBB`: each schedule's competition, unread
 

@@ -57,6 +57,14 @@ Tabs:
              (CLUB_RANK_SYSTEM.TBB, which the Club ranking tab reads again)
              (leaguesize.py build --over;
              DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from).
+    National calendar
+             when the national squads are called up and released, and
+             which call-ups are for a finals tournament, in each year of
+             the 4-year cycle (SCHEDULE_LIST.TBB, natcal.py set;
+             DOC/PARAM_DIR.md#schedule_listtbb-the-national-team-calendar).
+             The national-match flag follows the national cups' schedule
+             and is shown only; a calendar natcal.check refuses can't be
+             saved. --copies carries it into PRELOAD/SIMLOCALMEM0-6.PAC.
     Free agents
              the players without a club at the start of a career
              (PLRESOURCESIM.PAC entry 15, plrsim.py setfree;
@@ -149,6 +157,7 @@ from tkinter import font as tkfont, messagebox, ttk
 import initteam
 import leaguesize
 import mbb
+import natcal
 import patch_disc
 import pbdata
 import plrcommon
@@ -4240,6 +4249,221 @@ class TextTab(Tab):
         return True
 
 
+NATCAL = "PARAM/" + natcal.FILE
+SCHEDULE_PAC = "PARAM/" + natcal.SCHEDULE_PAC
+NATCAL_HELP = {
+    "finals": "for the finals: the call-up and release are the finals' (Euro or World "
+              "National Cup), not the qualifying's; set it on both ends of a finals call-up",
+    "callup": "the national squads are called up",
+    "release": "the players go back to their clubs (on the same turn as the call-up, "
+               "or later)",
+}
+
+
+class NationalCalendarTab(Tab):
+    """The national-team calendar (SCHEDULE_LIST.TBB) through
+    natcal.set_flag and natcal.encode_file, as `natcal.py set` does: a year
+    of the 4-year cycle, then a turn, then its finals, call-up and release
+    flags. The match flag follows the national cups' turns in
+    SCHEDULE_SYSTEM.PAC and is shown only. natcal.check runs after every
+    edit and a save is refused while it finds a problem. Build disc's
+    --copies carries the file into PRELOAD/SIMLOCALMEM0-6.PAC."""
+    title = "National calendar"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.raw = None
+        self.changes = {}           # (table, turn, flag) -> value, in edit order
+        self.table = 0
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Year").pack(side="left")
+        self.table_names = [natcal.table_label(k) for k in range(natcal.TABLES)]
+        self.table_var = tk.StringVar(value=self.table_names[0])
+        box = ttk.Combobox(bar, textvariable=self.table_var, values=self.table_names,
+                           state="readonly", width=40)
+        box.pack(side="left", padx=(4, 12))
+        box.bind("<<ComboboxSelected>>", lambda e: self.pick_table())
+        self.table_box = box
+        ttk.Label(bar, text="When the national squads are called up and released "
+                            "(DOC/PARAM_DIR.md).", foreground="#555").pack(side="left")
+
+        panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("turn", "date", "flags")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, head, width in zip(cols, ("Turn", "Date", "Flags"), (50, 160, 170)):
+            self.tree.heading(c, text=head)
+            self.tree.column(c, width=width, stretch=c == "flags")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        self.tree.tag_configure("flagged", background="#eef3ff")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        right = ttk.Frame(panes)
+        self.problems = ttk.Label(right, text="", foreground="#b03000", wraplength=700,
+                                  justify="left")
+        self.problems.pack(anchor="w", padx=8, pady=(8, 0))
+        self.detail = Scrolled(right)
+        self.detail.outer.pack(fill="both", expand=True)
+        panes.add(right, weight=2)
+
+    # loading
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(NATCAL)
+            self.buf, self.end, self.raw = natcal.load(self.path)
+            self.scheduled = natcal.schedule_turns(mod.source(SCHEDULE_PAC))
+        except (ValueError, struct.error, OSError) as e:
+            self.raw = None
+            self.app.status("Couldn't load the national calendar: %s" % e)
+            messagebox.showerror("National calendar",
+                                 "Couldn't load the national calendar:\n%s" % e)
+            return
+        self.changes = {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def changed(self, what):
+        """The Season tab wrote SCHEDULE_SYSTEM.PAC: check against it."""
+        if what == "schedules" and self.raw is not None:
+            self.scheduled = natcal.schedule_turns(self.app.mod.source(SCHEDULE_PAC))
+            self.update_problems()
+
+    # the list
+
+    def pick_table(self):
+        self.table = self.table_names.index(self.table_var.get())
+        self.current = None
+        self.detail.clear()
+        self.refresh_list()
+
+    def row(self, turn):
+        return (turn, natcal.turn_label(turn),
+                natcal.flags_text(self.raw[self.table].data[turn]))
+
+    def refresh_list(self):
+        if self.raw is None:
+            return
+        self.tree.delete(*self.tree.get_children())
+        for turn in range(natcal.TURNS):
+            tags = []
+            if self.raw[self.table].data[turn]:
+                tags.append("flagged")
+            if any(k[:2] == (self.table, turn) for k in self.changes):
+                tags.append("edited")
+            self.tree.insert("", "end", iid=str(turn), values=self.row(turn), tags=tags)
+        self.update_problems()
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    def update_problems(self):
+        probs = natcal.check(self.raw, self.scheduled)
+        self.problems.configure(text="Can't be saved until fixed: " + "; ".join(probs)
+                                if probs else "")
+
+    # the detail panel
+
+    def show(self, turn):
+        self.current = turn
+        k = self.table
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="Turn %d: %s" % (turn, natcal.turn_label(turn)),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        match = natcal.get(self.raw, k, turn, "match")
+        ttk.Label(box, text="National match: %s (from the national cups' schedule, not "
+                            "edited here)" % ("yes" if match else "no"),
+                  foreground="#555").pack(anchor="w", padx=8)
+        frame = ttk.Frame(box)
+        frame.pack(anchor="w", padx=8, pady=6)
+        for r, flag in enumerate(natcal.EDITABLE):
+            ttk.Label(frame, text=flag.replace("callup", "call-up")).grid(
+                row=r, column=0, sticky="w", padx=(0, 8), pady=2)
+            value_input(frame, ("choice", [0, 1]), lambda v: "yes" if v else "no",
+                        lambda flag=flag: natcal.get(self.raw, k, turn, flag),
+                        lambda text, revert, flag=flag: self.commit(k, turn, flag, text, revert)
+                        ).grid(row=r, column=1, sticky="w", pady=2)
+            ttk.Label(frame, text=NATCAL_HELP[flag], foreground="#777", wraplength=520,
+                      justify="left").grid(row=r, column=2, sticky="w", padx=(12, 0))
+        self.windows = ttk.Label(box, text="", foreground="#555", wraplength=700,
+                                 justify="left")
+        self.windows.pack(anchor="w", padx=8, pady=(4, 8))
+        self.update_windows()
+
+    def update_windows(self):
+        wins = natcal.windows(self.raw[self.table].data)[0]
+        self.windows.configure(text="This year's call-ups, turn to turn: " +
+                               (", ".join("%d-%d" % w for w in wins) or "none"))
+
+    # edits
+
+    def commit(self, table, turn, flag, text, revert):
+        try:
+            old = natcal.set_flag(self.raw, table, turn, flag, int(text))
+        except ValueError as e:
+            revert()
+            self.app.status(str(e))
+            messagebox.showerror("National calendar", str(e))
+            return False
+        value = natcal.get(self.raw, table, turn, flag)
+        self.changes.pop((table, turn, flag), None)
+        self.changes[table, turn, flag] = value
+        tags = ["edited"] + (["flagged"] if self.raw[table].data[turn] else [])
+        self.tree.item(str(turn), values=self.row(turn), tags=tags)
+        self.update_windows()
+        self.update_problems()
+        self.app.status("table %d turn %d %s: %d -> %d" % (table, turn, flag, old, value))
+        self.app.update_title()
+        return True
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        out = mod.target(NATCAL)
+        temps = [(out + ".new", out)]
+        try:
+            data = natcal.encode_file(self.buf, self.end, self.raw, self.scheduled)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("National calendar", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        cmd = ["python", "SRC/natcal.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + [
+            "%d:%d:%s=%d" % (k + (v,)) for k, v in self.changes.items()]
+        n = len(self.changes)
+        lines = log_lines("National calendar: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
 INIT_TEAMS = "PARAM/PLRRSRC_INITTEAMDATA.TBB"
 LEAGUESIZE_NEW = "leaguesize.new"     # where a size change is built before it replaces the files
 
@@ -5205,6 +5429,7 @@ class App:
         self.kits = KitsTab(self)
         self.text = TextTab(self)
         self.season = SeasonTab(self)
+        self.natcal = NationalCalendarTab(self)
         self.free = FreeAgentsTab(self)
         self.regulations = RegulationsTab(self)
         self.clubrank = ClubRankTab(self)
@@ -5215,7 +5440,7 @@ class App:
         self.tours = ToursTab(self)
         self.tactics = TacticsTab(self)
         self.comments = CommentsTab(self)
-        self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free,
+        self.tabs = [self.people, self.clubs, self.newclub, self.season, self.natcal, self.free,
                      self.regulations, self.clubrank, self.training, self.camps, self.tours,
                      self.facilities, self.clubevents, self.tactics, self.kits, self.text,
                      self.comments]

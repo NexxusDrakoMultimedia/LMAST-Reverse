@@ -58,6 +58,7 @@ Each kind of data has a tab along the top:
 | Clubs | each club's rank, manager, stadium, city and transfer policy, and the computer teams' squads |
 | New club | what a new career starts with, for each league and team style |
 | Season | the starting divisions: swap two clubs' places, or change a first division's size |
+| National calendar | when the national squads are called up and released, in each year of the four-year cycle |
 | Free agents | the players with no club at the start of a career |
 | Regulations | each competition's match rules, win bonus, prize money and promotion and relegation places |
 | Club ranking | how clubs earn their ranking at the end of each season: the points each competition gives for each final place, and which club rank each position in a league gets |

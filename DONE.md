@@ -135,6 +135,10 @@ evidence and how it was tested; the git history holds the rest.
 - [x] `clubevent.py`: the 46 PR events in the executable decoded field
       by field and named, with a writer (`set`, `roundtrip`) on both
       releases ([`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md))
+- [x] `natcal.py`: the national-team calendar (`SCHEDULE_LIST.TBB`),
+      checked against the national cups' schedule (`set`, `roundtrip`);
+      `national-cups` moves an edited calendar given as a target
+      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#schedule_listtbb-the-national-team-calendar))
 
 ## 4. Rebuild: edits back on a bootable disc
 
@@ -164,6 +168,8 @@ evidence and how it was tested; the git history holds the rest.
       widgets ([`README.md`](README.md#editor))
 - [x] `editor.py` PR events tab (`clubevent.py`), tested through the
       widgets ([`README.md`](README.md#editor))
+- [x] `editor.py` National calendar tab (`natcal.py`), tested through
+      the widgets ([`README.md`](README.md#editor))
 
 ## 6. Distribute: sharing a mod
 

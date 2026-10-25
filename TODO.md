@@ -42,7 +42,7 @@ aims at:
 
 | Goal | Where it stands | Left (section) |
 |---|---|---|
-| The starting season | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results have writers and editor tabs, tested in PCSX2 | room for bigger second divisions (2), a writer for the national-team calendar (3), a smaller first division tested (7) |
+| The starting season | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results have writers and editor tabs, tested in PCSX2; the national-team calendar has a writer and tab | room for bigger second divisions (2), a smaller first division and the national calendar tested (7) |
 | Data | players, staff, clubs, kits, facilities, training, camps, tours, the tactics presets and the PR events have writers and tabs | the remaining player and staff fields (2), the stadium and emblem tables (3) |
 | Parameters | every `PARAM/` table's layout is known; `tbb.py replace` swaps any table | the open fields (2), field-level writers for the resource packs (3), tabs for them (5) |
 | Text | every message in every language, with a writer and the Text tab | the screen-set variables and a few message categories (2) |
@@ -212,8 +212,6 @@ a field-level writer with a `roundtrip` check in `regress.py`.
       exclusives 11–12, combinations 13–14), the overseas branch costs
       (entry 1), and the nation and stadium tables `initteam.py` reads
       (`INITNATIDATA.TBB`, `STADIUM_DATA.TBB`)
-- [ ] `SCHEDULE_LIST.TBB` (the national-team calendar): a field-level
-      writer; only `patch_disc.py --mod national-cups` changes it now
 - [ ] The `STADIUM/` tables and `EMBLEM/` edit tables, once their fields
       are understood
 
@@ -281,6 +279,12 @@ names the disc or the edit to build; the result goes into the doc.
       Renew Mobile Site is in the PR activities list from September,
       can be booked, and its month-end mail reports it
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [ ] The National calendar tab: a disc with the World Cup squads called
+      up a turn earlier (`3:88:callup=0 3:87:callup=1 3:87:finals=1`,
+      on a season starting in 2009), where your club's internationals
+      leave on turn 87 (the last weekend of May) instead of 88; and the
+      same edit built with `--mod national-cups`
+      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#schedule_listtbb-the-national-team-calendar))
 - [ ] The PR events tab: a disc with an event's cost and its ticket
       bonus changed (for example Ticket Campaign, `38:cost=200
       38:ticket=50`): the scheduling screen shows the new cost, and a

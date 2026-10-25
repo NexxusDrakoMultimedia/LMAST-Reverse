@@ -100,6 +100,12 @@ def checks():
         ("clubevent_show", ["clubevent.py", "show", "ISO", "DAT/MESSAGE/MES.PAC"],
          ["ISO", "DAT/MESSAGE/MES.PAC"]),
         ("clubevent_roundtrip", ["clubevent.py", "roundtrip", "ISO"], ["ISO"]),
+        ("natcal", ["natcal.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
+        # Every flagged turn of the four years.
+        ("natcal_show", ["natcal.py", "show", "DAT/PARAM/SCHEDULE_LIST.TBB"],
+         ["DAT/PARAM/SCHEDULE_LIST.TBB"]),
+        ("natcal_roundtrip", ["natcal.py", "roundtrip", "DAT/PARAM/SCHEDULE_LIST.TBB"],
+         ["DAT/PARAM/SCHEDULE_LIST.TBB"]),
         ("clubrank", ["clubrank.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         # Every table's rows, with the ranks each position gets.
         ("clubrank_show", ["clubrank.py", "show", "DAT/PARAM/CLUB_RANK_SYSTEM.TBB",

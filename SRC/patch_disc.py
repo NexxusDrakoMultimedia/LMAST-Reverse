@@ -123,7 +123,9 @@ the tournament years the matches and the release are a turn earlier, and
 the call-up stays on turn 88 with the first group game. With a
 SCHEDULE_SYSTEM.PAC target (leaguesize.py build, a league of another size)
 the cups are moved in the target's bytes, and --copies carries them to
-STATIONFILE.PAC. See DOC/LMASTER_MOD.md.
+STATIONFILE.PAC; so is a SCHEDULE_LIST.TBB target (a calendar edited with
+natcal.py), whose --copies go to the SIMLOCALMEM packs. See
+DOC/LMASTER_MOD.md.
 
 league-balance rebuilds the league schedules that send a club to one
 venue up to 9 times running: the 22-club leagues (UIDs 11, 30, 40, 48),
@@ -1403,9 +1405,11 @@ LIST_MATCH, LIST_FINALS, LIST_CALL, LIST_FREE = 1, 2, 4, 8
 LIST_CALL_TURN = 88
 
 
-def shift_list(data):
+def shift_list(data, strict=True):
     """SCHEDULE_LIST.TBB with the tournament years' matches and release a
-    turn earlier; None when it already has them."""
+    turn earlier; None when it already has them (a match on turn 88).
+    `strict` refuses a table that isn't the retail one; a target's calendar,
+    which may have been edited (natcal.py), is moved as it is."""
     import tbb
     _, tables = tbb.parse(data)
     new = bytearray(data)
@@ -1416,7 +1420,8 @@ def shift_list(data):
             raise ValueError("%s table %d: %d bytes, expected 96" % (LIST_FILE, k, len(b)))
         if b[LIST_CALL_TURN] & LIST_MATCH:
             return None
-        if b[LIST_CALL_TURN] != LIST_FINALS | LIST_CALL or not b[0x5f - (k == 1)] & LIST_FREE:
+        if strict and (b[LIST_CALL_TURN] != LIST_FINALS | LIST_CALL
+                       or not b[0x5f - (k == 1)] & LIST_FREE):
             raise ValueError("%s table %d: turn 88 is 0x%x; not the retail table?"
                              % (LIST_FILE, k, b[LIST_CALL_TURN]))
         moved = bytearray(b[:LIST_CALL_TURN]) + b[LIST_CALL_TURN + 1:] + b"\0"
@@ -1448,10 +1453,15 @@ def shift_cups(data):
 def target_national_cups(file, data):
     """A target's new bytes with the national cups moved: a SCHEDULE_SYSTEM.PAC
     written as a target (a league of another size) gets the move itself, and
-    its --copies carry it to PRELOAD/STATIONFILE.PAC."""
-    if norm(file) != norm(SCHEDULE_FILE):
+    its --copies carry it to PRELOAD/STATIONFILE.PAC; so does a
+    SCHEDULE_LIST.TBB (an edited national-team calendar), whose --copies go
+    to PRELOAD/SIMLOCALMEM0-6.PAC."""
+    if norm(file) == norm(SCHEDULE_FILE):
+        new = shift_cups(data)
+    elif norm(file) == norm(LIST_FILE):
+        new = shift_list(data, strict=False)
+    else:
         return data
-    new = shift_cups(data)
     return data if new is None else new
 
 
@@ -1472,8 +1482,11 @@ def plan_national_cups(f, img, adopted=()):
         jobs += pack_copy_jobs(f, img, STATION_FILE, STATION_ENTRY, SCHEDULE_FILE, data, new, why)
     e = img.entry(LIST_FILE)
     data = read_at(f, img, e.path, 0, e.size)
-    new = shift_list(data)
-    if new is None:
+    new = None if norm(LIST_FILE) in adopted else shift_list(data)
+    if norm(LIST_FILE) in adopted:
+        notes.append("note: national-cups: moved the national-team dates in the target's %s"
+                     % LIST_FILE)
+    elif new is None:
         notes.append("note: %s already has the national-team dates a turn earlier" % LIST_FILE)
     else:
         jobs += diff_jobs(e.path, 0, data, new, why)
@@ -2663,7 +2676,8 @@ SWITCH_NAMES = [s[0] for s in SWITCHES]
 # (hook(file, data) -> data, the files it applies to, other files the switch
 # then leaves to the target's --copies). The plan is called with the files
 # targets wrote, and those others, as `adopted`.
-TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATION_FILE]),
+TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FILE],
+                                  [STATION_FILE] + LIST_PACKS),
                 "league-balance": (target_league_balance, [COMPE_FILE], []),
                 "camp-types": (target_camp_types, [CAMP_LIST_FILE], []),
                 "camp-cities": (target_camp_cities, [CAMP_LIST_FILE, CAMP_EXPLANE_FILE], []),
