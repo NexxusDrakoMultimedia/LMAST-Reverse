@@ -112,6 +112,12 @@ COST_UNIT = 300                               # plClubEvent_GetCost: x 300
 STORED_PER_POUND = 6
 FIRST_SEASON = 2006                           # 0x20e5cc: + 0x7d6
 TALKS, PARTY, NEVER = 27, 45, 37              # 0x20e3f0, 0x20e84c, 0x20e864
+GET_LIST = 0x20e488         # plClubEvent_GetList
+# At GET_LIST + 0x3e0 (0x20e868), sw $zero, 0xa4($sp) clears event 37;
+# --mod mobile-site makes it a nop. Found from the function's start, since
+# the switch changes the bytes there.
+NEVER_AT = 0x3e0
+SW_ZERO_SP = 0xafa00000     # sw $zero, imm($sp)
 NAME_CATEGORY, DESCRIPTION_BASE = 572, 5000
 
 # (name, table, offset, struct format, low, high). Byte 1-4 and 6-7 of the
@@ -203,6 +209,10 @@ class Events:
             self.base[table] = (o, size)
         o = self.elf.v2f(gamever.at(self.path, PRIORITIES))
         self.priorities = struct.unpack_from("<4i", self.data, o)
+        # Whether the list code still clears event 37 (not when the
+        # mobile-site switch made the store a nop).
+        o = self.elf.v2f(gamever.at(self.path, GET_LIST) + NEVER_AT)
+        self.cut = struct.unpack_from("<I", self.data, o)[0] & 0xffff0000 == SW_ZERO_SP
 
     def offset(self, event, table, at):
         if not 0 <= event < EVENTS:
@@ -300,8 +310,8 @@ def chance(ev, event, cycle=2, status=0):
 def conditions(ev, event):
     """When an event is offered, in words."""
     out = []
-    if event == NEVER:
-        out.append("never offered")
+    if event == NEVER and ev.cut:
+        out.append("never offered (--mod mobile-site brings it back)")
     if event == PARTY:
         out.append("while a promise stands, first")
     if ev.get(event, "month_rule") and event in MONTHS:

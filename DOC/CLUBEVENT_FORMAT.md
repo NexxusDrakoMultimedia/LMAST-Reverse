@@ -65,9 +65,13 @@ Two events are handled by number: event 45 (Club Party) is offered only
 while a player has promise 7 or 11 or the manager promise 37
 (`pwkPromise_GetPlayerPromise`, `GetManagerPromise`), and then goes
 first; event 37 (Renew Mobile Site) is never offered (`0x20e864` clears
-it after every check). So Renew Mobile Site is cut content: its record
-is complete (from 2010–11, popularity 30,001, priority 99) but the game
-never lists it.
+it after every check; the Japanese build at `0x20f108`). So Renew
+Mobile Site is cut content: its record is complete (from 2010–11,
+popularity 30,001, priority 99), and so are its mail texts (category
+563, 11233 and 11234), but the game never lists it.
+`patch_disc.py --mod mobile-site` (in `--mod lmaster-lite`) makes that
+store a nop ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)), and
+`clubevent.py show` says whether an executable still clears it.
 
 ## The chance record (8 bytes)
 
@@ -131,4 +135,5 @@ None of these edits is tested in game yet.
   the day (`SIMPRG.REL 0xa411c`: the day's `+0x4`, `+0x8` and `+0x40`),
   and so whether `+0x1c` events need a home match.
 - Which office equipment kind 3 is (the office's four kinds by name).
-- Why event 37 is disabled, and whether restoring it works in game.
+- Why event 37 is disabled, and whether `--mod mobile-site` brings it
+  back in game.

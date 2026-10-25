@@ -71,14 +71,15 @@ Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
-pr-cycle, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
+pr-cycle, mobile-site, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
 fanbase, merch-costs, pr-costs, camp-costs, tour-costs, launcher,
 mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
 camp-cities, camp-santiago, camp-clubs, drill-names, injury-value,
-injury-row, vpf-styles, season-status, pr-cycle). --mod harder-economy is
+injury-row, vpf-styles, season-status, pr-cycle, mobile-site). --mod
+harder-economy is
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees and
 season-demand; --mod balance is injury-odds, injury-lines,
 overseas-bases, transfer-fees, fanbase, merch-costs, pr-costs,
@@ -228,7 +229,10 @@ pr-cycle (whole disc image only) fixes the business cycle's effect on a
 PR event's chance: plClubEvent_Execute's ladder (SLES 0x20dfb0, 11 words)
 read the wrong byte of the event's record for every cycle, so the boom's
 +20 never applied and an average economy took 10 off; now cycles 0-4 add
-bytes 1, 2, none, 3 and 4. pr-costs (whole disc image only) doubles PR
+bytes 1, 2, none, 3 and 4. mobile-site (whole disc image only) brings
+back the cut PR event 37, Renew Mobile Site, which plClubEvent_GetList
+always cleared (SLES 0x20e868, now a nop); it is offered by its own
+record, from 2010-11. pr-costs (whole disc image only) doubles PR
 event costs (plClubEvent_GetCost's x 300 -> x 600, 0x20deec), and
 camp-costs and tour-costs (whole disc image only) scale the camp rates
 (SIMPRG.REL 0x1ce4e8, 8 x 14) by 2 and the tour rates (0x1ce6c0, 14) by
@@ -2516,6 +2520,22 @@ def plan_pr_costs(f, img):
     return word_jobs(f, img, "pr-costs", PR_COSTS)
 
 
+# mobile-site: PR event 37, Renew Mobile Site, back in the list.
+# plClubEvent_GetList (SLES 0x20e488) clears the event's flag after its
+# checks (beql $s1, $a3 at 0x20e864, $a3 = 37, with sw $zero, 0xa4($sp),
+# flag 37, in the delay slot), so the event is never offered although its
+# records are complete (DOC/CLUBEVENT_FORMAT.md). A nop in the delay slot
+# leaves it to the record's own rules, like Renew Home Page's.
+MOBILE_SITE = (
+    sles_word(0x20e868, 0xafa000a4, 0x00000000, "PR event 37 no longer cleared"),
+)
+
+
+def plan_mobile_site(f, img):
+    """Jobs for --mod mobile-site."""
+    return word_jobs(f, img, "mobile-site", MOBILE_SITE)
+
+
 # camp-costs and tour-costs: the camp and tour screens (SIMPRG.REL 0xa3b00,
 # 0xa3bf4) price a booking from u32 rates in SIMPRG.REL, x the squad's
 # players x 300 (x 1/2 for a tour), the business cycle and the sponsor
@@ -2595,6 +2615,9 @@ SWITCHES = (
     ("pr-cycle", plan_pr_cycle, [SLES_FILE],
      "PR events: the business cycle changes their chance as its table intends "
      "(an average economy took 10% off every event)"),
+    ("mobile-site", plan_mobile_site, [SLES_FILE],
+     "PR events: the cut Renew Mobile Site can be booked again (from 2010-11, like "
+     "Renew Home Page)"),
     ("facility-tiers", plan_facility_tiers, [COMMON_FILE, STATION_FILE],
      "Harder economy: bigger stadiums, club houses and grounds cost much more to build "
      "and keep up; other facilities twice as much"),
@@ -2656,7 +2679,7 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATIO
 # tutorial skip and the launcher are test tools, in neither.
 LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-types",
                 "camp-cities", "camp-santiago", "camp-clubs", "drill-names", "injury-value",
-                "injury-row", "vpf-styles", "season-status", "pr-cycle")
+                "injury-row", "vpf-styles", "season-status", "pr-cycle", "mobile-site")
 HARDER_ECONOMY = ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
                   "season-demand")
 BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fanbase",

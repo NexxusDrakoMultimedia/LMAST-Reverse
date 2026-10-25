@@ -275,6 +275,12 @@ names the disc or the edit to build; the result goes into the doc.
       stored keeper kit
 - [ ] The crest editor: whether the three short `EDIT_EMBLEM` layer
       tables lose visible parts
+- [ ] `--mod mobile-site` (in LMASTER lite): on `LMAST-test-mobile.iso`
+      (the switch, `--skip-tutorial`, and event 37 offered from the start:
+      `37:month_rule=0 37:first_season=0 37:popularity=0 37:priority=101`),
+      Renew Mobile Site is in the PR activities list from September,
+      can be booked, and its month-end mail reports it
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] The PR events tab: a disc with an event's cost and its ticket
       bonus changed (for example Ticket Campaign, `38:cost=200
       38:ticket=50`): the scheduling screen shows the new cost, and a
@@ -327,10 +333,6 @@ names the disc or the edit to build; the result goes into the doc.
 improvements, each as a named `patch_disc.py` switch tested in PCSX2
 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
-- [ ] Candidate: bring back the cut PR event 37, Renew Mobile Site,
-      whose record is complete but which `plClubEvent_GetList` always
-      clears (`SLES 0x20e864`); check in game that it can be booked and
-      works ([`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md#the-offer-record-32-bytes))
 - [ ] Candidates: the short `EDIT_EMBLEM` tables 93/101/105
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] Candidate: let the unused combination records load, the 15 extra

@@ -319,7 +319,7 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   fixes: `sponsor-negotiation`, `rival-manager`, `national-cups`,
   `camp-types`, `camp-cities`, `camp-santiago`, `camp-clubs`,
   `drill-names`, `injury-value`, `injury-row`, `vpf-styles`,
-  `season-status` and `pr-cycle`. `--mod lmaster-full` adds every improvement and
+  `season-status`, `pr-cycle` and `mobile-site`. `--mod lmaster-full` adds every improvement and
   `mod-saves`, so a full disc never shares saves with the retail game:
   `league-balance` rebuilds the league schedules that send a club to one
   venue up to 9 times running; `--mod harder-economy` is `facility-tiers`

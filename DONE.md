@@ -258,3 +258,6 @@ Each result is recorded in the doc named.
       the business cycle's mis-ordered effect on PR events; `pr-costs`,
       `camp-costs` and `tour-costs` (in `--mod balance`) make them dearer
       ([`ECONOMY.md`](DOC/ECONOMY.md#pr-events))
+- [x] `mobile-site` (in LMASTER lite) built: the cut PR event Renew
+      Mobile Site can be booked again; not yet checked in game
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))

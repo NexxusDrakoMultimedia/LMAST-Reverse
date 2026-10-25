@@ -62,6 +62,7 @@ ADDRESSES = (
     ("clubevent", "CHANCE_TABLE", "exe", 0x40),
     ("clubevent", "RESULT_TABLE", "exe", 0x40),
     ("clubevent", "PRIORITIES", "exe", 0x10),
+    ("clubevent", "GET_LIST", "exe", 0x40),
     ("humanid", "OBJECT_TABLE", "exe", 0x40),
     ("mbb", "GLOBAL_VARS", "SIMPRG.REL", 0x40),
     ("mbb", "STRING_CASES", "SIMPRG.REL", 0x40),
