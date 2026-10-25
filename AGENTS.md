@@ -103,12 +103,12 @@ Adding a writer (the write stage in `GOALS.md`) follows the same steps, plus
 a `roundtrip` command that re-encodes every file or record and marks any
 difference with `!!`. It goes into `regress.py` as `<name>_roundtrip`. The
 existing writers are `pac.py` (BINPACs, KC@P packs, PRS), `tbb.py`,
-`pbdata.py`, `mbb.py`, `initteam.py` (`set`, `setteam`, `swap`),
+`pbdata.py`, `mbb.py`, `initteam.py` (`set`, `setteam`, `setnation`, `setstadium`, `swap`),
 `teaminit.py`, `regulation.py`, `clubresult.py`, `training.py`,
 `camp.py`, `formset.py`, `tour.py`, `clubrank.py`, `clubevent.py`, `natcal.py`,
 `uniform.py`, `sqb.py` (`setcmd`, and
 `set_commands` for several edits checked together; `settable` for the
-PwkScript data tables), `plrsim.py` (`setfree`), `plrcommon.py` (`set`,
+PwkScript data tables), `plrsim.py` (`setfree`, `setbranch`, `setgroup`), `plrcommon.py` (`set`,
 the facility records), `save.py`, `ps2mc.py` (`put`, `mkdir`: memory
 card images),
 `schedule.py` (`shift`, and the encoders behind `roundtrip`) and

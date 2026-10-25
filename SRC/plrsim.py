@@ -18,7 +18,8 @@ DOC/PLRESOURCESIM_FORMAT.md.
   2  (unread)              TBB: 400 bytes, 128 u16; no call asks for entry 2
   3  club records          457 x 24 bytes (plOteam_GetDb), see initteam.py
   4  nations               145 x {s16 national-team manager, u16 club[8]}
-  5  player affiliations   s16 stream: -player, then clubs (> 0) (0x2161b8)
+  5  player affiliations   s16 stream: -player, then clubs (> 0), players
+                           ascending for bsearch (0x2161b8, 0x216334)
   6  transfer AI           TBB, 6 byte tables (CAcquirePlayer and others)
   7  player introductions  10 groups x 100 {s16 player, s16 threshold} (0x2202f8)
   8  record kinds          164 x {s16 schedule UID, s16 PlCareerRecordKind}
@@ -26,8 +27,10 @@ DOC/PLRESOURCESIM_FORMAT.md.
   10 stadium ids           6 x 25 bytes (plTeam_GetStadiumDataIndex)
   11 scout exclusives      s16 stream: -scout, then players (0x21ea48)
   12 scout semi-exclusives same format
-  13 good combinations     s16 stream: -level, then players; -1000 ends
+  13 good combinations     s16 stream: -level, then players and managers
   14 bad combinations      same format
+                           Every stream ends at a header with no member
+                           after it (-1 -1, -1000 -1000 in 13-14).
   15 free agents           u16 players, ending at 0xffff (Set_InitDBSet)
 
 Usage:
@@ -35,6 +38,9 @@ Usage:
     python plrsim.py show    <PLRESOURCESIM.PAC | DAT/PARAM> <entry> [--pbdata PBDATA.PAC]
     python plrsim.py setfree <in.PAC> <out.PAC> <slot>=<player> ...
     python plrsim.py setbranch <in.PAC> <out.PAC> <region>=<cost> ...
+    python plrsim.py setgroup <in.PAC> <out.PAC> 5 <player>=<club>,... ...
+    python plrsim.py setgroup <in.PAC> <out.PAC> 11|12 <scout>=<player>,... ...
+    python plrsim.py setgroup <in.PAC> <out.PAC> 13|14 <group>=[<level>:]<id>,... ...
     python plrsim.py roundtrip <PLRESOURCESIM.PAC | DAT/PARAM>
 
 `show` prints one entry in readable form, naming players, managers and
@@ -43,9 +49,15 @@ replaces players in the free-agent list (entry 15; slots as `show 15`
 numbers them) and writes a same-size pack for patch_disc.py. `setbranch`
 sets overseas branches' establishing costs (entry 1 table 0, regions
 0-12); the investment to raise a level and the upkeep are that cost times
-the level rates, so they follow it. `roundtrip` re-encodes the unchanged
-free-agent list and branch costs through those encoders and checks that
-the rebuilt pack equals the original byte for byte.
+the level rates, so they follow it. `setgroup` edits a stream: a
+player's clubs (5), a scout's exclusive or semi-exclusive players (11,
+12), or a combination (13, 14; groups numbered as `show` numbers them,
+the next number adding one, ids being database ids of players and
+managers). An empty value removes the group. The entry keeps its size,
+so a stream may only grow into its zero padding (entry 5 has none).
+`roundtrip` re-encodes the unchanged free-agent list, branch costs and
+streams through those encoders and checks that the rebuilt pack equals
+the original byte for byte.
 """
 import os
 import struct
@@ -95,24 +107,42 @@ def s16s(b):
     return list(struct.unpack("<%dh" % (len(b) // 2), b[:len(b) // 2 * 2]))
 
 
-def stream(b, end=None):
-    """[(header, [values])] of a stream where a header is <= 0 (entry 5)
-    or < 0 (11-14), and the trailing zero padding."""
+# The s16 streams. A value at or above MEMBER_MIN is a member, anything
+# below it a header: entry 5's initializer takes > 0 as a club (bgtz,
+# 0x216214), the scout lookup and the combination search take >= 0 as a
+# member (bgez 0x21ea74, bltz 0x215e18). Every reader stops at a header
+# with no member after it, so the disc ends each stream with two headers
+# (-1 -1, or -1000 -1000 in 13-14) and zeros after.
+STREAMS = (5, 11, 12, 13, 14)
+MEMBER_MIN = {5: 1, 11: 0, 12: 0, 13: 0, 14: 0}
+AFFIL_ROOM = 0x817c // 4                 # PlayerAffiliateaSearchTableInitialize's pointer table
+
+
+def stream(b, entry):
+    """(groups, end, pad) of stream entry `entry`: groups [(header,
+    [members])] up to the end marker, `end` the values from the marker to
+    the zero padding, `pad` the number of zero s16 after it."""
     v = s16s(b)
-    stop = len(v)
-    while stop and v[stop - 1] == 0:
-        stop -= 1
+    lo = MEMBER_MIN[entry]
     groups = []
-    for x in v[:stop]:
-        if x == end:
-            groups.append((x, []))
-        elif x < 0 or (not groups and x == 0):
-            groups.append((x, []))
-        elif groups:
-            groups[-1][1].append(x)
-        else:
-            raise ValueError("stream starts with %d" % x)
-    return groups, len(v) - stop
+    i = 0
+    while i < len(v):
+        if v[i] >= lo:
+            raise ValueError("value %d at s16 %d where a header should be" % (v[i], i))
+        j = i + 1
+        while j < len(v) and v[j] >= lo:
+            j += 1
+        if j == i + 1:
+            break                        # a header with no member: every reader stops here
+        groups.append((v[i], v[i + 1:j]))
+        i = j
+    else:
+        raise ValueError("no end marker")
+    rest = v[i:]
+    stop = len(rest)
+    while stop and rest[stop - 1] == 0:
+        stop -= 1
+    return groups, rest[:stop], len(rest) - stop
 
 
 # --- per-entry parsers: (summary line, problems) ------------------------------
@@ -185,17 +215,16 @@ def e4(b):
     return "%d nations: national-team manager and 8 clubs" % NATIONS, p
 
 
+def end_text(end):
+    return "end %s" % " ".join(str(x) for x in end)
+
+
 def e5(b):
-    groups, pad = stream(b)
-    p = []
-    if any(not 0 <= -h < PLAYERS for h, _ in groups):
-        p.append("player header out of range")
-    if any(not CLUB_FIRST <= c < CLUB_END for _, cs in groups for c in cs):
-        p.append("club outside %d-%d" % (CLUB_FIRST, CLUB_END - 1))
+    groups, end, pad = stream(b, 5)
+    p = check_groups(5, [(-h, xs) for h, xs in groups])
     multi = sum(1 for _, cs in groups if len(cs) > 1)
-    return "%d players, %d clubs listed (%d players with more than one, %d with none), %d zero bytes" % (
-        len(groups), sum(len(cs) for _, cs in groups), multi,
-        sum(1 for _, cs in groups if not cs), pad * 2), p
+    return "%d players, %d clubs listed (%d players with more than one), %s, %d zero bytes" % (
+        len(groups), sum(len(cs) for _, cs in groups), multi, end_text(end), pad * 2), p[:3]
 
 
 def e6(b):
@@ -251,38 +280,25 @@ def e10(b):
         [] if len(t[0]) == 150 else ["%d bytes, expected 150" % len(t[0])]
 
 
-def e_scout(b):
-    groups, pad = stream(b)
-    p = []
-    if any(not 0 < -h < SCOUTS for h, _ in groups):
-        p.append("scout header out of range")
-    if any(not 0 <= x < PLAYERS for _, xs in groups for x in xs):
-        p.append("player out of range")
-    return "%d groups for %d scouts, %d players, %d zero bytes" % (
-        len(groups), len({h for h, _ in groups}), sum(len(xs) for _, xs in groups), pad * 2), p
+def e_scout(b, entry):
+    groups, end, pad = stream(b, entry)
+    p = check_groups(entry, [(-h, xs) for h, xs in groups])
+    return "%d scouts, %d players, %s, %d zero bytes" % (
+        len(groups), sum(len(xs) for _, xs in groups), end_text(end), pad * 2), p[:3]
 
 
-def e_combi(b):
-    groups, pad = stream(b, END_COMBI)
-    p = []
-    ends = [i for i, (h, _) in enumerate(groups) if h == END_COMBI]
-    if not ends:
-        p.append("no %d end marker" % END_COMBI)
-    real = groups[:ends[0]] if ends else groups
-    if any(not 1 <= -h <= 4 for h, _ in real):
-        p.append("level outside 1-4")
-    if any(len(xs) < 2 for _, xs in real):
-        p.append("group with fewer than 2 players")
-    # Members are database ids: players, and managers from 27,950 (0x6d2e).
-    if any(not 0 <= x < PLAYERS + MANAGERS for _, xs in real for x in xs):
-        p.append("member out of range")
-    staff = sum(1 for _, xs in real for x in xs if x >= PLAYERS)
+def e_combi(b, entry):
+    groups, end, pad = stream(b, entry)
+    p = check_groups(entry, [(-h, xs) for h, xs in groups])
+    if end != [END_COMBI] * 2:
+        p.append("end %s, expected %d %d" % (end, END_COMBI, END_COMBI))
+    staff = sum(1 for _, xs in groups for x in xs if x >= PLAYERS)
     sizes = {}
-    for _, xs in real:
+    for _, xs in groups:
         sizes[len(xs)] = sizes.get(len(xs), 0) + 1
-    return "%d groups (%s members: %s; %d managers among them), end marker, %d zero bytes" % (
-        len(real), "/".join(str(k) for k in sorted(sizes)),
-        ", ".join("%d" % sizes[k] for k in sorted(sizes)), staff, pad * 2), p
+    return "%d groups (%s members: %s; %d managers among them), %s, %d zero bytes" % (
+        len(groups), "/".join(str(k) for k in sorted(sizes)),
+        ", ".join("%d" % sizes[k] for k in sorted(sizes)), staff, end_text(end), pad * 2), p[:3]
 
 
 def e15(b):
@@ -299,8 +315,9 @@ def e15(b):
     return "%d free agents, then 0xffff" % len(ids), p
 
 
-PARSERS = (e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e_scout, e_scout,
-           e_combi, e_combi, e15)
+PARSERS = (e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10,
+           lambda b: e_scout(b, 11), lambda b: e_scout(b, 12),
+           lambda b: e_combi(b, 13), lambda b: e_combi(b, 14), e15)
 
 
 # --- commands ----------------------------------------------------------------
@@ -378,18 +395,17 @@ def cmd_show(path, entry, pbpath):
         kind = {5: ("player", "players", "club"), 11: ("scout", "scouts", "player"),
                 12: ("scout", "scouts", "player"), 13: ("level", None, "player"),
                 14: ("level", None, "player")}[entry]
-        groups, _ = stream(b, END_COMBI if entry in (13, 14) else None)
-        for h, xs in groups:
-            if h == END_COMBI:
-                print("  end")
-                break
-            head = "%s %d" % (kind[0], -h)
+        groups, end, _ = stream(b, entry)
+        for g, (h, xs) in enumerate(groups):
+            # Combinations are numbered by place, as setgroup takes them.
+            head = ("group %3d  " % g if entry in (13, 14) else "") + "%s %d" % (kind[0], -h)
             if kind[1]:
                 head += " " + name(kind[1], -h)
             items = [str(x) + (" " + (name("players", x) if x < PLAYERS else
                                       name("managers", x - PLAYERS) + " (manager)")
                                   if kind[2] == "player" and db else "") for x in xs]
             print("  %-28s %s" % (head, ", ".join(items)))
+        print("  " + end_text(end))
     elif entry == 7:
         t = tables(b)[0]
         for g in range(10):
@@ -494,6 +510,174 @@ def cmd_setbranch(src, dst, pairs):
     print("wrote %s" % dst)
 
 
+# --- the streams (entries 5, 11-14) -------------------------------------------
+
+def check_groups(entry, groups):
+    """Problems with stream groups [(key, [members])], key the negated
+    header: a player (5), a scout index (11-12) or a level (13-14)."""
+    p = []
+    keys = [k for k, _ in groups]
+    if any(not xs for _, xs in groups):
+        p.append("a group with no member would end the stream")
+    # Entry 5 is exempt: player 11,811 lists club 398 twice on both
+    # releases, which the search doesn't mind.
+    if entry != 5 and any(len(set(xs)) != len(xs) for _, xs in groups):
+        p.append("a member listed twice in one group")
+    if entry == 5:
+        if any(not 0 <= k < PLAYERS for k in keys):
+            p.append("player outside 0-%d" % (PLAYERS - 1))
+        # bsearch (0x216334) with CompPlayerNo (0x2162b0): players ascending.
+        if any(a >= b for a, b in zip(keys, keys[1:])):
+            p.append("players not in ascending order, or listed twice")
+        # The end marker's first header takes a pointer too.
+        if len(keys) + 1 > AFFIL_ROOM:
+            p.append("%d players; the search table holds %d" % (len(keys), AFFIL_ROOM - 1))
+        if any(not CLUB_FIRST <= c < CLUB_END for _, xs in groups for c in xs):
+            p.append("club outside %d-%d" % (CLUB_FIRST, CLUB_END - 1))
+    elif entry in (11, 12):
+        if any(not 0 < k < SCOUTS for k in keys):
+            p.append("scout outside 1-%d" % (SCOUTS - 1))
+        # The lookup (0x21ea48) stops at a scout's first group.
+        if len(set(keys)) != len(keys):
+            p.append("a scout listed twice")
+        if any(not 0 <= x < PLAYERS for _, xs in groups for x in xs):
+            p.append("player outside 0-%d" % (PLAYERS - 1))
+    else:
+        if any(not 1 <= k <= 4 for k in keys):
+            p.append("level outside 1-4")
+        # plMisc_GetGoodLevel (0x215df8) needs two members of one group.
+        if any(len(xs) < 2 for _, xs in groups):
+            p.append("a group with fewer than 2 members")
+        # Members are database ids: players, and managers from 27,950 (0x6d2e).
+        if any(not 0 <= x < PLAYERS + MANAGERS for _, xs in groups for x in xs):
+            p.append("member outside 0-%d" % (PLAYERS + MANAGERS - 1))
+    return p
+
+
+def groups(data, entry):
+    """Stream entry `entry` of a whole pack, as [[key, [members]]] in stream
+    order (key as check_groups takes it)."""
+    _, blobs = pac.binpac_blobs(data)
+    gs, _, _ = stream(blobs[entry], entry)
+    return [[-h, list(xs)] for h, xs in gs]
+
+
+def encode_groups(data, entry, gs):
+    """The pack `data` with stream entry `entry` rebuilt from `gs`, keeping
+    the end marker and the entry's size: the zero padding takes up the
+    difference. Raises ValueError for groups check_groups refuses, or for
+    a stream that no longer fits."""
+    p = check_groups(entry, gs)
+    if p:
+        raise ValueError("entry %d: %s" % (entry, "; ".join(p)))
+    h, blobs = pac.binpac_blobs(data)
+    old = blobs[entry]
+    _, end, _ = stream(old, entry)
+    v = [x for k, xs in gs for x in [-k] + xs] + end
+    if 2 * len(v) > len(old):
+        raise ValueError("entry %d: the stream needs %d bytes; the entry holds %d (%d over)"
+                         % (entry, 2 * len(v), len(old), 2 * len(v) - len(old)))
+    blobs[entry] = struct.pack("<%dh" % len(v), *v) + bytes(len(old) - 2 * len(v))
+    return pac.build_binpac(data[:h.header_size], blobs)
+
+
+def set_group(entry, gs, key, members, level=None):
+    """Edit the groups `gs` (as groups() returns them) in place, as
+    `setgroup` does, and return the old members ([] for a new group).
+    Entries 5, 11 and 12: `key` is the player or scout; `members` replace
+    its clubs or players, and [] removes it. A new player goes in player
+    order, a new scout at the end. Entries 13 and 14: `key` is the group's
+    place (len(gs) adds one at the end), `level` its level (None keeps
+    it), and [] removes it. Raises ValueError for anything check_groups
+    would refuse."""
+    if entry in (13, 14):
+        if not 0 <= key <= len(gs):
+            raise ValueError("group %d: there are groups 0-%d, and %d adds one"
+                             % (key, len(gs) - 1, len(gs)))
+        trial = [list(g) for g in gs]
+        if key == len(gs):
+            if not members:
+                raise ValueError("group %d: a new group needs members" % key)
+            trial.append([level or 1, list(members)])
+            old = []
+        elif not members:
+            old = trial.pop(key)[1]
+        else:
+            old = trial[key][1]
+            trial[key] = [trial[key][0] if level is None else level, list(members)]
+    else:
+        keys = [k for k, _ in gs]
+        trial = [list(g) for g in gs]
+        if key in keys:
+            i = keys.index(key)
+            old = trial[i][1]
+            if members:
+                trial[i][1] = list(members)
+            else:
+                del trial[i]
+        else:
+            if not members:
+                raise ValueError("%s %d has no group to remove" % ("player" if entry == 5 else "scout", key))
+            old = []
+            if entry == 5:
+                i = 0
+                while i < len(keys) and keys[i] < key:
+                    i += 1
+                trial.insert(i, [key, list(members)])
+            else:
+                trial.append([key, list(members)])
+    p = check_groups(entry, trial)
+    if p:
+        raise ValueError("; ".join(p))
+    gs[:] = trial
+    return old
+
+
+def parse_ids(text):
+    """'1,2,3' as [1, 2, 3]; '' as []."""
+    if not text:
+        return []
+    out = []
+    for x in text.split(","):
+        if not x.strip().isdigit():
+            raise ValueError("expected numbers separated by commas, got %r" % text)
+        out.append(int(x))
+    return out
+
+
+def cmd_setgroup(src, dst, entry, pairs):
+    if os.path.abspath(src) == os.path.abspath(dst):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    with open(src, "rb") as f:
+        data = f.read()
+    gs = groups(data, entry)
+    for pair in pairs:
+        key, sep, value = pair.partition("=")
+        level = None
+        try:
+            if not sep or not key.isdigit():
+                raise ValueError("expected <key>=<id>,<id>..., got %r" % pair)
+            if entry in (13, 14) and ":" in value:
+                lv, _, value = value.partition(":")
+                if not lv.isdigit():
+                    raise ValueError("expected <group>=<level>:<id>,<id>..., got %r" % pair)
+                level = int(lv)
+            old = set_group(entry, gs, int(key), parse_ids(value), level)
+        except ValueError as e:
+            raise SystemExit("%s: %s" % (pair, e))
+        print("%s %s: %s -> %s" % (("player", "scout", "scout", "group", "group")[STREAMS.index(entry)],
+                                   key, ",".join(map(str, old)) or "(none)", value or "(removed)"))
+    try:
+        out = encode_groups(data, entry, gs)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    if len(out) != len(data):
+        raise SystemExit("rebuilt pack is %d bytes, not %d" % (len(out), len(data)))
+    with open(dst, "wb") as f:
+        f.write(out)
+    print("wrote %s" % dst)
+
+
 def cmd_roundtrip(path):
     path, blobs = load(path)
     with open(path, "rb") as f:
@@ -505,6 +689,15 @@ def cmd_roundtrip(path):
     else:
         print("entry 1: %d branch costs  %s" % (BRANCH_REGIONS, "rebuilt pack identical"
                                                 if out == data else "!! rebuilt pack differs"))
+    for e in STREAMS:
+        try:
+            gs = groups(data, e)
+            out = encode_groups(data, e, gs)            # the encoder setgroup uses
+        except (ValueError, struct.error) as err:
+            print("entry %d: !! %s" % (e, err))
+            continue
+        print("entry %d: %d groups  %s" % (e, len(gs), "rebuilt pack identical"
+                                           if out == data else "!! rebuilt pack differs"))
     if len(blobs) <= 15:
         print("%s: %d entries, no free-agent list to rebuild" % (path, len(blobs)))
         return
@@ -581,6 +774,8 @@ def main(argv):
         cmd_setfree(args[0], args[1], args[2:])
     elif cmd == "setbranch" and len(args) >= 3:
         cmd_setbranch(args[0], args[1], args[2:])
+    elif cmd == "setgroup" and len(args) >= 4 and args[2].isdigit() and int(args[2]) in STREAMS:
+        cmd_setgroup(args[0], args[1], int(args[2]), args[3:])
     else:
         print(__doc__)
         return 1

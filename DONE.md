@@ -139,6 +139,12 @@ evidence and how it was tested; the git history holds the rest.
       checked against the national cups' schedule (`set`, `roundtrip`);
       `national-cups` moves an edited calendar given as a target
       ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#schedule_listtbb-the-national-team-calendar))
+- [x] `PLRESOURCESIM.PAC`'s streams (affiliations, scouts' exclusives,
+      combinations) with `plrsim.py setgroup`, and `INITNATIDATA.TBB` and
+      `STADIUM_DATA.TBB` with `initteam.py setnation`/`setstadium`; all
+      round-trip on both releases
+      ([`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#writing-the-streams),
+      [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md))
 
 ## 4. Rebuild: edits back on a bootable disc
 

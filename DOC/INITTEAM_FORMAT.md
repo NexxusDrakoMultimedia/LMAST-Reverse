@@ -272,7 +272,20 @@ Southampton out, and likewise in the other five leagues.
 
 `initteam.py teams`, `nations` and `stadiums` list all of this, `info`
 checks it, and `setteam` edits a club record into a same-size copy of
-`PLRESOURCESIM.PAC`.
+`PLRESOURCESIM.PAC`. `setnation` and `setstadium` edit the two tables
+above, field by field, into same-size copies:
+
+```bash
+python SRC/initteam.py setnation DAT/PARAM/INITNATIDATA.TBB out.TBB 3 uefa_rank=1 uefa_points=500 60 world=99
+python SRC/initteam.py setstadium DAT/PARAM/STADIUM_DATA.TBB out.TBB 5 roof=1 level=4 capacity=90
+```
+
+`setnation` refuses the UEFA fields for nations 53–145, which the game
+doesn't read, and keeps each row's two pad bytes. `setstadium` takes a
+roof of 0 or 1, a level of 0–4 (the range on the disc) and a capacity
+in thousands (0–255). `roundtrip` rebuilds both files through the same
+encoders; both equal the originals byte for byte, on both releases.
+Neither edit has been checked in the game.
 
 ## Still unknown
 

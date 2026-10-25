@@ -39,6 +39,8 @@ Usage:
     python initteam.py nations <DAT/PARAM>
     python initteam.py stadiums <DAT/PARAM>
     python initteam.py setteam <PLRESOURCESIM.PAC> <out.PAC> <team> <field>=<value> ... [<team> ...]
+    python initteam.py setnation <INITNATIDATA.TBB> <out.TBB> <nation> <field>=<value> ... [<nation> ...]
+    python initteam.py setstadium <STADIUM_DATA.TBB> <out.TBB> <stadium> <field>=<value> ... [<stadium> ...]
     python initteam.py swap    <PLRRSRC_INITTEAMDATA.TBB> <out.TBB> <team>:<team> ...
     python initteam.py roundtrip <DAT/PARAM>                 # re-encode all three, !! if not identical
 
@@ -51,8 +53,12 @@ places in the starting divisions (table 0) and in last season's results
 (table 1), which the first season's divisions, after promotion and
 relegation, and its cup places are built from. Every division keeps its
 size, which the schedules fix (SCHEDULE_FORMAT.md). Both clubs must be in
-the starting divisions. `set`, `setteam` and `swap` write through the same
-encoders that `roundtrip` checks: the three files re-encode byte for byte.
+the starting divisions. `setnation` sets a nation's uefa_rank,
+uefa_points (both read for nations 1-52 only) or world rating;
+`setstadium` a stadium's roof (0/1), level (0-4) or capacity (thousands).
+`set`, `setteam`, `setnation`, `setstadium` and `swap` write through the
+same encoders that `roundtrip` checks: the five files re-encode byte for
+byte.
 
 Names are read from <DAT/PARAM>/../MESSAGE/MES.PAC unless --mes is given,
 in language slot 1 (English) unless --lang is given. Without MES.PAC the
@@ -372,12 +378,48 @@ class NationData:
     (pwkRec_GetUefaNation)."""
     ROW, COUNT, UEFA = 6, 145, 52
 
+    FIELDS = ("uefa_rank", "uefa_points", "world")
+    RANGES = {"uefa_rank": (0, 0xff), "uefa_points": (0, 0xffff), "world": (0, 0xff)}
+
     def __init__(self, path):
-        _, tables = tbb.load(path)
-        d = tables[0].data
+        with open(path, "rb") as f:
+            self.buf = f.read()
+        self.end, self.tables = tbb.parse(self.buf)
+        d = self.tables[0].data
         if len(d) != self.ROW * self.COUNT:
             raise ValueError("table is %d bytes, expected %d" % (len(d), self.ROW * self.COUNT))
         self.rows = {n + 1: struct.unpack_from("<BxHBx", d, n * self.ROW) for n in range(self.COUNT)}
+
+    def set(self, nation, name, value):
+        """Set one field of a nation's row; returns the old value. The
+        UEFA fields are read for nations 1-52 only, so other nations
+        refuse them."""
+        if nation not in self.rows:
+            raise ValueError("nation %d: nations are 1-%d" % (nation, self.COUNT))
+        if name not in self.FIELDS:
+            raise ValueError("field %r: the fields are %s" % (name, ", ".join(self.FIELDS)))
+        if name != "world" and nation > self.UEFA:
+            raise ValueError("nation %d: %s is read for nations 1-%d only" % (nation, name, self.UEFA))
+        lo, hi = self.RANGES[name]
+        if not lo <= value <= hi:
+            raise ValueError("%s=%d: allowed %d-%d" % (name, value, lo, hi))
+        row = list(self.rows[nation])
+        i = self.FIELDS.index(name)
+        old, row[i] = row[i], value
+        self.rows[nation] = tuple(row)
+        return old
+
+    def encode(self):
+        """The whole file, rebuilt from the rows with tbb.build; the pad
+        bytes +1 and +5 are kept."""
+        d = bytearray(self.tables[0].data)
+        for n, row in self.rows.items():
+            off = (n - 1) * self.ROW
+            struct.pack_into("<BxHBx", d, off, *row)
+            d[off + 1], d[off + 5] = self.tables[0].data[off + 1], self.tables[0].data[off + 5]
+        trailer = tbb.trailer(self.buf, self.tables)
+        self.tables[0].data = bytes(d)
+        return tbb.build(self.tables, self.end, trailer)
 
 
 class StadiumData:
@@ -386,12 +428,40 @@ class StadiumData:
     ROW, COUNT = 3, 0x77
     BONUS = {0x67: 500, 0x69: 500, 0x6b: 500}   # GetCapacityFromID adds 500 seats
 
+    FIELDS = ("roof", "level", "capacity")
+    # Level 0-4 is the range on the disc (DOC/INITTEAM_FORMAT.md); the
+    # capacity is in thousands.
+    RANGES = {"roof": (0, 1), "level": (0, 4), "capacity": (0, 0xff)}
+
     def __init__(self, path):
-        _, tables = tbb.load(path)
-        d = tables[0].data
+        with open(path, "rb") as f:
+            self.buf = f.read()
+        self.end, self.tables = tbb.parse(self.buf)
+        d = self.tables[0].data
         if len(d) != self.ROW * self.COUNT:
             raise ValueError("table is %d bytes, expected %d" % (len(d), self.ROW * self.COUNT))
         self.rows = [tuple(d[i * 3:i * 3 + 3]) for i in range(self.COUNT)]
+
+    def set(self, stadium, name, value):
+        """Set one field of a stadium's row; returns the old value."""
+        if not 0 <= stadium < self.COUNT:
+            raise ValueError("stadium %d: stadiums are 0-%d" % (stadium, self.COUNT - 1))
+        if name not in self.FIELDS:
+            raise ValueError("field %r: the fields are %s" % (name, ", ".join(self.FIELDS)))
+        lo, hi = self.RANGES[name]
+        if not lo <= value <= hi:
+            raise ValueError("%s=%d: allowed %d-%d" % (name, value, lo, hi))
+        row = list(self.rows[stadium])
+        i = self.FIELDS.index(name)
+        old, row[i] = row[i], value
+        self.rows[stadium] = tuple(row)
+        return old
+
+    def encode(self):
+        """The whole file, rebuilt from the rows with tbb.build."""
+        trailer = tbb.trailer(self.buf, self.tables)
+        self.tables[0].data = b"".join(bytes(r) for r in self.rows)
+        return tbb.build(self.tables, self.end, trailer)
 
     def capacity(self, i):
         return self.rows[i][2] * 1000 + self.BONUS.get(i, 0)
@@ -584,6 +654,17 @@ def cmd_roundtrip(root):
             "" if same else "  !! file differs"))
     except (ValueError, struct.error) as e:
         print("%s  !! %s" % (path, e))
+    for name, cls, what in ((NATION_TBB, NationData, "nation rows"),
+                            (STADIUM_TBB, StadiumData, "stadium rows")):
+        path = find(root, name)
+        try:
+            table = cls(path)
+            same = table.encode() == table.buf
+            print("%s  %d %s re-encoded; file %s%s" % (
+                path, len(table.rows), what, "identical" if same else "differs",
+                "" if same else "  !! file differs"))
+        except (ValueError, struct.error) as e:
+            print("%s  !! %s" % (path, e))
 
 
 def cmd_leagues(root, names):
@@ -757,6 +838,32 @@ def cmd_setteam(path, out_path, args):
     print("wrote %s (same size; patch it with patch_disc.py)" % out_path)
 
 
+def cmd_setrows(cls, label, path, out_path, args):
+    """setnation and setstadium: <row> <field>=<value> ... [<row> ...]."""
+    if os.path.abspath(out_path) == os.path.abspath(path):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    table = cls(path)
+    row = None
+    for a in args:
+        if "=" not in a:
+            row = int(a, 0)
+            continue
+        if row is None:
+            raise SystemExit("give a %s before %r" % (label, a))
+        name, value = a.split("=", 1)
+        try:
+            old = table.set(row, name, int(value, 0))
+        except ValueError as e:
+            raise SystemExit(str(e))
+        print("%s %d %s: %d -> %s" % (label, row, name, old, value))
+    out = table.encode()
+    if len(out) != len(table.buf):
+        raise SystemExit("rebuilt file is %d bytes, not %d" % (len(out), len(table.buf)))
+    with open(out_path, "wb") as f:
+        f.write(out)
+    print("wrote %s (same size; patch it with patch_disc.py)" % out_path)
+
+
 def _opt(args, flag, default=None):
     if flag in args:
         i = args.index(flag)
@@ -780,6 +887,12 @@ def main(argv):
         return 0
     if cmd == "setteam" and len(args) >= 4:
         cmd_setteam(args[0], args[1], args[2:])
+        return 0
+    if cmd == "setnation" and len(args) >= 4:
+        cmd_setrows(NationData, "nation", args[0], args[1], args[2:])
+        return 0
+    if cmd == "setstadium" and len(args) >= 4:
+        cmd_setrows(StadiumData, "stadium", args[0], args[1], args[2:])
         return 0
     if cmd == "swap" and len(args) >= 3:
         cmd_swap(args[0], args[1], args[2:])

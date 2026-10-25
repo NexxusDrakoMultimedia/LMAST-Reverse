@@ -127,17 +127,38 @@ A 400-byte table cycling between 4 and 10, and 16 rows of 8 rising u16
 What the 8 clubs are used for hasn't been traced. England lists 13, 11
 and 12.
 
+## The streams (entries 5, 11–14)
+
+Entries 5 and 11–14 are not TBB files but streams of s16: a header, then
+its members, then the next header. Every reader ends the stream at a
+header that has no member after it, so the disc ends each one with two
+headers in a row (`-1 -1` in 5, 11 and 12; `-1000 -1000` in 13 and 14),
+followed by zeros to the entry's size. A group with no members would end
+the stream early. **Confirmed** from the code:
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x216214` | `PlayerAffiliateaSearchTableInitialize` | entry 5: a value > 0 is a club, ≤ 0 a player; it stops when a header is followed by another value ≤ 0 |
+| `0x21ea74` | (scout lookup) | entries 11–12: a value ≥ 0 is a player; a header followed by a negative value ends the search |
+| `0x215e18` | (combination level, from `plMisc_GetGoodLevel`) | entries 13–14: the same test; the level returned is the header negated |
+
+`python SRC/plrsim.py setgroup` edits all five (below).
+
 ## Entry 5: player affiliations
 
-A stream of s16. A value ≤ 0 starts a player (its negation), and the
-values > 0 after it are the clubs he is affiliated with.
-`PlayerAffiliateaSearchTableInitialize` records a pointer to every player
-header (room for 8,287, `0x817c` bytes) for a search by player number
-(`CompPlayerNo`, `0x2162b0`).
+A value ≤ 0 starts a player (its negation), and the values > 0 after it
+are the clubs he is affiliated with. **Confirmed:**
+`PlayerAffiliateaSearchTableInitialize` records a pointer to every
+player header (room for 8,287, `0x817c` bytes), and
+`plMisc_GetPlayerAffiliateTeam` finds a player with `bsearch`
+(`0x216334`) and the comparator `CompPlayerNo` (`0x2162b0`), so the
+players must be in ascending order. The end marker's first `-1` takes a
+pointer too, which leaves room for 8,286 players.
 
-**Empirical:** 8,003 players. 7,933 have one club, 64 two, 4 three, and 2
-none. All clubs are computer clubs (3–441). The headers are not in
-player order.
+**Empirical:** 8,001 players, in ascending order. 7,933 have one club,
+64 two and 4 three; player 11,811 lists club 398 twice. All clubs are
+computer clubs (3–441). The entry has no zero padding. The Japanese
+release lists 8,285 players, one short of the room.
 
 ## Entry 6: transfer AI tables
 
@@ -197,31 +218,66 @@ differ (8 in table 1, one each in tables 3 and 5).
 
 ## Entries 11 and 12: scouts' exclusive players
 
-A stream of s16. A negative value starts a scout (its negation is the
-scout index, database id − `0x78e6`), and the values after it are player
-ids. The lookup (`0x21ea48`) answers whether a player is in a scout's
-group. With scout −1 it searches every group, which is how
+A negative value starts a scout (its negation is the scout index,
+database id − `0x78e6`), and the values after it are player ids. The
+lookup (`0x21ea48`) answers whether a player is in a scout's group. It
+stops at the scout's first group, so a scout listed twice would lose
+his second group. With scout −1 it searches every group, which is how
 `plPinfo_CheckExclusive` asks whether any scout has the player.
 
 Exclusive players weren't known to the user from playing, so nothing on
 screen has been matched to these lists yet.
 
-**Empirical:** entry 11 has 155 groups for 154 scouts (scout 1's header
-appears twice) and 486 players. Entry 12 has 134 groups for
-133 scouts and 440 players. The rest of each 22,528-byte entry is zeros.
+**Empirical:** entry 11 has 153 scouts and 486 players, entry 12 has 132
+scouts and 440 players, each scout once. The rest of each 22,528-byte
+entry is the end marker and zeros, room for about 10,600 more values.
 
 ## Entries 13 and 14: good and bad combinations
 
-A stream of s16. A negative value starts a group (its negation is the
-level, 1–3, once 4), and the values after it are its members: database
-ids of players and managers. `−1000` ends the list. `plMisc_GetGoodLevel`
-and `plMisc_GetBadLevel` take two ids and return their level.
+A negative value starts a group (its negation is the level, 1–3, once
+4), and the values after it are its members: database ids of players
+and managers. `plMisc_GetGoodLevel` and `plMisc_GetBadLevel` take two
+ids and return the level of the first group that holds both. The
+`-1000 -1000` end works as any two headers in a row would.
 
 **Empirical:** entry 13 has 189 groups (159 pairs, 20 trios, 7 of four, 3
 of five) with 56 managers among the members, for example Owen, Gerrard
 and Carragher. Entry 14 has 63 pairs, with 29 managers. How the level
 changes a match or a player hasn't been traced. **User report:** the
 combinations are hidden: no screen shows them.
+
+## Writing the streams
+
+`plrsim.py setgroup` edits one stream entry and writes a pack of the
+same size:
+
+```bash
+python SRC/plrsim.py setgroup DAT/PARAM/PLRESOURCESIM.PAC out.PAC 5 309=11,13      # Owen's clubs
+python SRC/plrsim.py setgroup DAT/PARAM/PLRESOURCESIM.PAC out.PAC 11 22=309,231    # a scout's exclusives
+python SRC/plrsim.py setgroup DAT/PARAM/PLRESOURCESIM.PAC out.PAC 13 0=2:309,231 189=1:3175,3176
+```
+
+- Entry 5 takes `<player>=<club>,...`; a new player goes in player
+  order, as the `bsearch` needs.
+- Entries 11 and 12 take `<scout>=<player>,...`; a new scout goes at the
+  end.
+- Entries 13 and 14 take `<group>=[<level>:]<id>,...`, with the groups
+  numbered as `show` numbers them. The next number after the last adds
+  a group (level 1 unless given). Ids are database ids, managers from
+  27,950.
+- An empty value (`309=`) removes the group.
+
+The writer refuses what the readers can't take: an empty group, players
+out of order or listed twice in entry 5, a scout listed twice, a
+combination of fewer than two members or a level outside 1–4, and ids
+out of range. It keeps the end marker, and the zero padding takes up
+the difference in length. A stream that no longer fits in its entry is
+refused, so entry 5, which has no padding, can only grow by giving up
+clubs elsewhere. Growing the entry itself would need the pack and its
+`PRELOAD/SIMLOCALMEM*.PAC` copies to grow, which hasn't been tried in
+the game. `roundtrip` rebuilds all five streams through the same
+encoder; each rebuilt pack equals the original byte for byte, on both
+releases. No stream edit has been checked in the game yet.
 
 ## Entry 15: free agents at the start
 
@@ -323,6 +379,10 @@ call into them hasn't been traced.
 ```bash
 python SRC/plrsim.py info DAT/PARAM
 python SRC/plrsim.py show DAT/PARAM 13
+python SRC/plrsim.py roundtrip DAT/PARAM
+python SRC/sles_disasm.py ISO/SLES_541.51 dis PlayerAffiliateaSearchTableInitialize
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 2162e0 40     # affiliation bsearch
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 215df8 34     # combination level
 python SRC/sles_disasm.py ISO/SLES_541.51 dis GetAreaData_Pointer plCity_GetAverageTemperature plCity_GetBelongStateOrNation
 python SRC/sles_disasm.py ISO/SLES_541.51 dis _GetUp1SituLevelCapital Set_InitDBSet plOteam_GetManagerNoOffset
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 21ea48 45     # exclusive-player lookup

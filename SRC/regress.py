@@ -128,7 +128,8 @@ def checks():
          ["DAT/PARAM/CLUBRESULT.TBB"]),
         # The new club's squads and staff, named from the player database.
         ("plrsim", ["plrsim.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
-        # The free-agent list through the encoder setfree uses.
+        # The free-agent list, branch costs and streams through the encoders
+        # setfree, setbranch and setgroup use.
         ("plrsim_roundtrip", ["plrsim.py", "roundtrip", "DAT/PARAM"], ["DAT/PARAM"]),
         ("plrcommon", ["plrcommon.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         # The facility records through the encoder `set` uses, one field at a time.
@@ -298,7 +299,7 @@ def _jp(arg):
 
 # The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15), and its
 # GAMEPRG.REL has the parameter getter at another address.
-JP_SKIP = {"plrsim_show_free", "plrsim_roundtrip", "snr2_callers_gameprg_param"}
+JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param"}
 
 
 def jp_checks(pal):
