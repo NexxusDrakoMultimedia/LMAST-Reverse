@@ -405,7 +405,14 @@ smaller margins are the 30, the discount table and the prices (shop list
 up): 100, 97, 95, 92, 90, 87, 85 and 80. A unit then costs 40–50% of its
 price, so margins in an average cycle are 50–60%, and stock that doesn't
 sell costs more. The £30 shirt costs £15 a unit in a lot of 1,000 and
-£12 in a lot of 100,000. The prices stay. Not checked in the game.
+£12 in a lot of 100,000. The prices stay.
+
+**Tested in PCSX2** (user report, 2026-10-25, a `--mod lmaster-full`
+disc): ordering goods costs half the price a unit, the biggest lot gets
+only 20% off, and the margins come out at 50%. The save state of that
+career shows `SIMPRG.REL` loaded at `0xc75000` with the new unit cost
+(`0xbcce4`) and discount table (`0x1d10d8`), and `--mod fanbase`'s
+merchandise bases and TV factors, also in place.
 
 `--mod fanbase` scales the 17 bases from ×3 at the top to ×0.5 at the
 bottom, evenly on a log scale: 30,000, 21,457, 16,786, 12,864, 7,667,
@@ -442,8 +449,14 @@ the dissatisfaction check), 30,000 × form factors × two tables × 48.
 (the `lui` at `0x247288`) and the maximum 15,000,000, £250M (the four
 `lui`/`ori` pairs at `0x24a1c8`–`0x24a21c`), a whole number of every
 currency's step. Fees within the old cap double; fees the old cap held
-at £120M can now reach £250M. Not checked in the game, nor whether the
-transfer screens have limits of their own.
+at £120M can now reach £250M.
+
+**Tested in PCSX2** (user report, 2026-10-25, a `--mod lmaster-full`
+disc): transfer fees came out doubled. In a save state of that career (slot 1 of the CRC `59D884B2` build, `--mod lmaster-full` without the tutorial skip) the running game holds the
+new code and price kind 1's limits as filled in at start-up, `{min,
+15,000,000, step}` for all four currencies at `0x5eb098`. Not yet seen: a
+fee above the old £120M, and whether the transfer screens have limits of
+their own.
 
 ## Still unknown
 

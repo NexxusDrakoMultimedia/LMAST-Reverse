@@ -799,7 +799,13 @@ modded game never opens the original's. Moving the VS data is
 deliberate, as anti-cheat: teams built in a modded game can't be
 carried into Virtua Pro Football or an unmodded game's VS mode.
 Category 2 stays, so the import from Virtua Pro Football still works.
-The editor's Build disc dialog has a box for it.
+The editor's Build disc dialog has a box for it, and `--mod lmaster-full`
+always includes it.
+
+**Tested in PCSX2** (user report, 2026-10-25, a `--mod lmaster-full`
+disc): a career saved on it went to `BESLES-54151-M000` on the folder
+card `Pyra.ps2`, beside the original's `-G` saves. No `-D000` is on the
+card yet, so the VS data's folder isn't tested.
 
 The serial stays SLES-54151 on purpose. PCSX2 takes a disc's serial
 from the boot file named in `SYSTEM.CNF` (`BOOT2 =

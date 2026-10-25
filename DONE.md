@@ -199,6 +199,11 @@ Each result is recorded in the doc named.
       edited player imports ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
 - [x] The LMASTER Mod's switches and `--mod harder-economy`, each on its
       test disc ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [x] LMASTER full in PCSX2 (user report, 2026-10-25): careers save to
+      `BESLES-54151-M000`, transfer fees double and merchandise orders
+      cost half the price with at most 20% off
+      ([`ECONOMY.md`](DOC/ECONOMY.md#transfer-fees),
+      [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
 
 ## 8. LMASTER Mod and other patches
 

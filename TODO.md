@@ -19,8 +19,9 @@ or two.
 What to work on next, most valuable first.
 
 1. **LMASTER full in game** (sections 7 and 8). Every part of
-   `--mod harder-economy` is tested in PCSX2, and the six `--mod balance`
-   switches are built but not yet seen in game. A disc built with
+   `--mod harder-economy` is tested in PCSX2, and so are `transfer-fees`,
+   `merch-costs` and the separate career saves; the other four
+   `--mod balance` switches are built but not yet seen in game. A disc built with
    `--mod lmaster-full`, played through a season, shows whether the
    economy is harder in a way players notice and whether the balance
    switches work ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
@@ -295,14 +296,14 @@ names the disc or the edit to build; the result goes into the doc.
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01`
-- [ ] The `--mod balance` switches, on a `--mod lmaster-full` disc
-      (one test sheet; [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)):
-      an injured player's condition line reading "two months" or "nine
-      months" (English, and one other language); more long injuries over
-      a season; an overseas base's set-up cost twice the retail one; a
-      transfer fee twice the retail one for the same player; merchandise
-      income against the retail game's for the same save; a lot of 1,000
-      goods costing 50% of the price × 1,000 to order
+- [ ] The rest of the `--mod balance` switches, on a `--mod lmaster-full`
+      disc (`transfer-fees` and `merch-costs` are tested;
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)): an injured
+      player's condition line reading "two months" or "nine months"
+      (English, and one other language); more long injuries over a
+      season; an overseas base's set-up cost twice the retail one; a
+      transfer fee above £120M; merchandise income, crowds and TV offers
+      against the retail game's for the same save
 - [ ] `pmplayer.py check` on a career saved after importing the edited
       V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`; the import
       is tested): no differences, and the fixed import's styles
