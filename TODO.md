@@ -20,8 +20,8 @@ What to work on next, most valuable first.
 
 1. **LMASTER full in game** (sections 7 and 8). Every part of
    `--mod harder-economy` is tested in PCSX2, and so are `transfer-fees`,
-   `merch-costs` and the separate career saves; the other four
-   `--mod balance` switches are built but not yet seen in game. A disc built with
+   `merch-costs` and the separate career saves; the other `--mod balance`
+   switches and `pr-cycle` are built but not yet seen in game. A disc built with
    `--mod lmaster-full`, played through a season, shows whether the
    economy is harder in a way players notice and whether the balance
    switches work ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
@@ -303,7 +303,9 @@ names the disc or the edit to build; the result goes into the doc.
       (English, and one other language); more long injuries over a
       season; an overseas base's set-up cost twice the retail one; a
       transfer fee above £120M; merchandise income, crowds and TV offers
-      against the retail game's for the same save
+      against the retail game's for the same save; a PR event, a camp and
+      a tour costing 2×, 2× and 3× the retail price; PR events succeeding
+      about half the time in an average economy (`pr-cycle`)
 - [ ] `pmplayer.py check` on a career saved after importing the edited
       V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`; the import
       is tested): no differences, and the fixed import's styles

@@ -458,6 +458,106 @@ new code and price kind 1's limits as filled in at start-up, `{min,
 fee above the old £120M, and whether the transfer screens have limits of
 their own.
 
+## PR events
+
+The Publicity Department's events ("PR activities"; the game calls them
+club events, `PlClubEvent`) come from three tables in the executable,
+46 events each (**confirmed**; `PARAM/CLUBEVENT.TBB` is an older copy no
+code reads, [`PARAM_DIR.md`](PARAM_DIR.md#clubeventtbb-an-older-copy-of-the-club-events)):
+
+| Table | Record | Read by | Holds |
+|---|---|---|---|
+| `0x52ff58` | 32 bytes | `plClubEvent_GetCost` (`0x20dee0`), `plClubEvent_NeedMatch` (`0x20ea00`) | `+0x14` the cost ÷ 300, `+0x1c` whether the event needs a match |
+| `0x530518` | 8 bytes | `plClubEvent_Execute` (`0x20df50`) | the chance: byte 0 the base, bytes 1–4 the business cycle's change, 6 and 7 two bonuses |
+| `0x530688` | 28 bytes | `plClubEvent_Execute`, `plClubEvent_GetTicket` (`0x20df00`) | what success brings, below |
+
+**The cost** is `+0x14` × 300: 100 to 10,000 on the disc, so £5,000 to
+£500,000. The scheduling screen keeps it (`SIMPRG.REL 0xa3958`) and pays
+it as payment 22 when the event is booked (`0xa2a2c`); cancelling refunds
+it (`0x45bb4`, `0x49690`, a negative payment 22).
+
+**The chance.** `plClubEvent_Execute` adds to byte 0 (50 for 45 events,
+100 for event 45) a business-cycle byte, then byte 7 when the club status
+is over 49,999 (`0x20df20`) and byte 6 when `0x20df48` returns true, which
+it never does (a stub returning 0). The event succeeds when
+`fcEuroRand_Get0toI(100)` is at most that, so the chance is the sum + 1
+in 100. Bytes 1–4 hold +20, +10, −5 and −10 for most events (as 20, 10,
+251, 246), the changes for cycles 0, 1, 3 and 4 (0 is the boom; cycle 2
+adds nothing). But the ladder that picks one (`0x20dfb0`–`0x20e014`)
+takes byte 2 for cycles 0 and 1, byte 4 for cycle 2 and byte 3 for 3
+and 4: the boom's +20 is never read, and an average economy takes −10,
+more than a slump does. The Japanese executable has the same code
+(`SLPM_663.16 0x20e7f0`). For a typical event (50, +20, +10, −5, −10):
+
+| Business cycle | 0 (boom) | 1 | 2 | 3 | 4 (slump) |
+|---|---|---|---|---|---|
+| retail | 61% | 61% | 41% | 46% | 46% |
+| `--mod pr-cycle` | 71% | 61% | 51% | 46% | 41% |
+
+That the bytes are meant in that order is **empirical** (byte 1 is
+otherwise unread, and the slump's changes are the negative ones), but
+which byte the code reads for each cycle is **confirmed**.
+`patch_disc.py --mod pr-cycle` (in `--mod lmaster-lite`) rewrites the
+ladder's first 11 words to read byte *K* + 1 below cycle 2, nothing at
+2 and byte *K* above it; `--mod pr-costs` (in `--mod balance`) makes
+the cost `+0x14` × 600 (the `addiu` at `0x20deec`), which doubles the
+booking and the refunds alike.
+
+**Success** changes, from the 28-byte record (7 s32): home popularity by
+`+0x8` and every overseas region's by `+0xc` (`pwkTeam_PopChange`), youth
+development by `+0x10` (`pwkYouthDev_Add`), supporter complaint kind 4
+by `+0x14`, and the popularity of up to 11 players named in the event's
+schedule entry by `+0x4` and `+0x0` (`plPinfo_ChangePop`, kinds 0 and 1).
+`+0x18` is a ticket bonus in percent, kept on the event's day of the
+calendar (`+0x30` of its 0x48-byte day) for the match that day
+([attendance](#a-home-match)). A failed event changes nothing; its cost
+is spent.
+
+## Camps and tours
+
+The camp and tour screens (`SIMPRG.REL`, the module set up at `0xa2e60`)
+price a booking, keep it at `+0x520` and pay it as payment 21 (Camp
+Tour) when it is booked (`0xa2548`, `0xa2690`); cancelling refunds it
+(`0xa4d04`, `0xa4df4`). **Confirmed:**
+
+> camp = rate[level][region] × players × 300 × cycle ÷ 100 × (100 − sponsor discount 16) ÷ 100 (`0x4ded8`)
+>
+> tour = rate[region + 1] × (players ÷ 2) × 300 × cycle ÷ 100 × (100 − sponsor discount 28) ÷ 100 (`0x4e080`)
+
+*players* counts the filled slots of the 25-man squad. A camp's *level*
+is its `CAMP_LIST` level (0–7, [`CAMP_FORMAT.md`](CAMP_FORMAT.md)) and
+its *region* `plMisc_Nati2DRegion` of the camp's nation; a tour's region
+is the one chosen on screen. The rates are u32 tables in `SIMPRG.REL`:
+
+| Table | Values |
+|---|---|
+| camp, `0x1ce4e8`, 8 levels × 14 regions | level 0: 150–400; level 7: 400–1,000 |
+| camp cycle, `0x1ce6a8` | 75, 90, 100, 110, 125 for cycles 0–4 (cheaper in a boom) |
+| tour, `0x1ce6c0`, 14 (entry 0 unused) | 1,000, 800, 800, 800, 1,200, 1,200, 600, 600, 600, 1,200, 1,100, 1,000, 800 for regions 0–12 |
+| tour cycle, `0x1ce6f8` | 125, 110, 100, 90, 75 (dearer in a boom) |
+
+With 25 players in an average cycle and no discount, a camp costs
+£187,500–£1,250,000 and a tour £360,000–£720,000.
+
+**Tour income** (`pwkSche_GetTourIncome`, `0x2566f8`; booked as income
+11, Other income, at `SIMPRG.REL 0x134bd0`) is
+
+> (T1[band][region] × 300 + T0[band] × matches) × cycle ÷ 100, halved unless each of the tour's named players (up to 4, `pwkSche_GetTourPlayer`, `0x256630`) is in its matches' entries
+
+where *band* is your popularity in the tour's region against 10
+thresholds (`0x399478`: 0, 3,001, 8,001 … 60,001), T1 is 10 × 13 u32 at
+`0x399258` (25,200–36,500 in band 0 up to 67,900–101,300 in band 9), T0
+10 u32 at `0x399230` (1,000–20,000) and the cycle 125–75 at `0x399460`.
+So a tour earns about £1.2M–£6.3M against its cost of under £1M, and is
+always a profit. `pwkSche_CheckTourSucucess` (`0x256a20`) rates the
+income against 1,500,000 and 30,000,000 (£250,000 and £5M) for the
+tour's report.
+
+`--mod camp-costs` doubles the camp rates and `--mod tour-costs` triples
+the tour rates (both in `--mod balance`), so camps cost £375,000–£2.5M
+and tours £1.1M–£2.2M; a tour where the club is little known then about
+breaks even. Tour income is unchanged.
+
 ## Still unknown
 
 - What the business cycle changes besides build costs, and its random
@@ -472,6 +572,8 @@ their own.
   table's rows are, and when goods that stop selling leave the shop.
 - The transfer fee's rank and ability factor and its three others, and
   what the club byte `+0xa0` in an offer is.
+- What the PR events' byte 6 bonus was for (`0x20df48` is a stub), each
+  event's name, and how often a tour's hosts ask for players.
 - Which sponsors a club is offered, and what `+0x18` is for (suppliers?).
 - What a TV contract's term adds (G000's 4-year contracts are 15% over
   the formula), how often `Pwk.CheckTV` pays, and what each station
@@ -492,5 +594,7 @@ python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 165598 30 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_Supporter pwkMoney_CalcuPurchaceOtherTeamPlayerTransferMoney
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x247130 160
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x24a140 110
+python SRC/sles_disasm.py ISO/SLES_541.51 dis plClubEvent_Execute pwkSche_GetTourIncome
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 4ded8 110 --sles ISO/SLES_541.51
 python SRC/save.py finances <save>
 ```

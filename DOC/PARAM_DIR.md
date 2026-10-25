@@ -188,8 +188,8 @@ earlier version of the executable's table.
 `SIMPRG.REL` loads it with `Camp_Explane.tbb` (list `0x225d78`, entry 2;
 handle at `+0x56c` of the module set up at `0xa4760`, which reads
 `CAMP_EXPLANE` at `0xa4a80`). No code reading its records has been
-found. Edits to club events belong in the executable's tables. The
-Japanese file is the same.
+found. Edits to club events belong in the executable's tables
+([`ECONOMY.md`](ECONOMY.md#pr-events)). The Japanese file is the same.
 
 ## `TACTICS_FORMATION_SET.TBB`: tactics presets
 

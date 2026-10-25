@@ -20,7 +20,9 @@ was inferred from the data and checked against every file on the disc.
 No game data is included. You need your own copy of the disc.
 
 **Just want to play a mod?** See [`INSTALL.md`](INSTALL.md): checking
-your disc, applying a patch, and keeping your saves safe.
+your disc, applying a patch, and keeping your saves safe. **Want to
+make one, or edit a career?** See [`USAGE.md`](USAGE.md): how to use the
+mod editor and the save editor.
 
 **Sister project:** [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
 reverse-engineers *Virtua Pro Football* (`SLES_541.53`), which runs on the
@@ -314,8 +316,8 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   comes in two builds. `--mod lmaster-lite` (also `lmaster`) is its
   fixes: `sponsor-negotiation`, `rival-manager`, `national-cups`,
   `camp-types`, `camp-cities`, `camp-santiago`, `camp-clubs`,
-  `drill-names`, `injury-value`, `injury-row`, `vpf-styles` and
-  `season-status`. `--mod lmaster-full` adds every improvement and
+  `drill-names`, `injury-value`, `injury-row`, `vpf-styles`,
+  `season-status` and `pr-cycle`. `--mod lmaster-full` adds every improvement and
   `mod-saves`, so a full disc never shares saves with the retail game:
   `league-balance` rebuilds the league schedules that send a club to one
   venue up to 9 times running; `--mod harder-economy` is `facility-tiers`
@@ -327,8 +329,9 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   nine-month lines, [`INJURIES.md`](DOC/INJURIES.md)), `overseas-bases`
   (twice the cost, twice the effect per level), `transfer-fees` (twice as
   high, up to £250M), `fanbase` (merchandise, crowds and TV offers
-  follow the fanbase more) and `merch-costs` (merchandise stock dearer to
-  make). The tutorial skip and the launcher are in
+  follow the fanbase more), `merch-costs` (merchandise stock dearer to
+  make), `pr-costs` (PR events twice as dear), `camp-costs` (camps ×2)
+  and `tour-costs` (tours ×3). The tutorial skip and the launcher are in
   neither build.
   `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
   image prints the executable's PCSX2 CRC.

@@ -239,3 +239,7 @@ Each result is recorded in the doc named.
 - [x] `merch-costs` (in `--mod balance`): merchandise stock at 50% of its
       price, bulk discounts halved, after tracing the goods screen's costs
       ([`ECONOMY.md`](DOC/ECONOMY.md#making-the-stock))
+- [x] PR events, camps and tours traced: `pr-cycle` (in LMASTER lite) fixes
+      the business cycle's mis-ordered effect on PR events; `pr-costs`,
+      `camp-costs` and `tour-costs` (in `--mod balance`) make them dearer
+      ([`ECONOMY.md`](DOC/ECONOMY.md#pr-events))

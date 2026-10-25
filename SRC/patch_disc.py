@@ -71,16 +71,18 @@ Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
-facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
+pr-cycle, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fanbase, merch-costs, launcher, mod-saves. Groups (DOC/LMASTER_MOD.md):
+fanbase, merch-costs, pr-costs, camp-costs, tour-costs, launcher,
+mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
 camp-cities, camp-santiago, camp-clubs, drill-names, injury-value,
-injury-row, vpf-styles, season-status). --mod harder-economy is
+injury-row, vpf-styles, season-status, pr-cycle). --mod harder-economy is
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees and
 season-demand; --mod balance is injury-odds, injury-lines,
-overseas-bases, transfer-fees, fanbase and merch-costs. --mod lmaster-full is all of
+overseas-bases, transfer-fees, fanbase, merch-costs, pr-costs,
+camp-costs and tour-costs. --mod lmaster-full is all of
 those, league-balance and mod-saves, so a full LMASTER disc always saves
 to its own folders. skip-tutorial and launcher are test tools and in no
 group. Each also works as a flag of its own (--skip-tutorial, ...). With
@@ -221,6 +223,16 @@ disc image only) makes a unit of merchandise stock cost 50% of its shop
 price instead of 30% (SIMPRG.REL 0xbcce4) and halves the bulk discounts
 (0x1d10d8: 100, 95, ... 60 -> 100, 97, 95, 92, 90, 87, 85, 80). See
 DOC/ECONOMY.md.
+
+pr-cycle (whole disc image only) fixes the business cycle's effect on a
+PR event's chance: plClubEvent_Execute's ladder (SLES 0x20dfb0, 11 words)
+read the wrong byte of the event's record for every cycle, so the boom's
++20 never applied and an average economy took 10 off; now cycles 0-4 add
+bytes 1, 2, none, 3 and 4. pr-costs (whole disc image only) doubles PR
+event costs (plClubEvent_GetCost's x 300 -> x 600, 0x20deec), and
+camp-costs and tour-costs (whole disc image only) scale the camp rates
+(SIMPRG.REL 0x1ce4e8, 8 x 14) by 2 and the tour rates (0x1ce6c0, 14) by
+3. See DOC/ECONOMY.md#pr-events and #camps-and-tours.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -1924,6 +1936,39 @@ def plan_season_status(f, img):
     return word_jobs(f, img, "season-status", words)
 
 
+# --- the PR events' business cycle (DOC/ECONOMY.md#pr-events) -----------------
+
+# plClubEvent_Execute (SLES 0x20df50) succeeds when rand(100) <= the event's
+# chance: byte 0 of its 8-byte record at 0x530518, plus a business-cycle
+# byte. The bytes are +20, +10, -5, -10 for cycles 0, 1, 3 and 4 (0 the
+# boom), and nothing for 2, but the ladder (0x20dfb0-0x20e014) takes byte 2
+# for cycles 0-1, byte 4 for 2 and byte 3 for 3-4: byte 1 is never read,
+# and an average economy gets -10. The fix reads byte K + 1 below cycle 2
+# and byte K above it, and skips cycle 2, in the ladder's first 11 words.
+PR_CYCLE_AT = 0x20dfb0
+PR_CYCLE_OLD = (0x0c09c638, 0x00000000, 0x28420002, 0x10400003, 0x02511821, 0x10000014,
+                0x90620002, 0x0c09c638, 0x00000000, 0x28420003, 0x14400003)
+PR_CYCLE_NEW = (0x0c09c638,         # jal   pwkTown_Keiki       $v0 = K, 0-4
+                0x00000000,         # nop
+                0x02511821,         # addu  $v1, $s2, $s1       the event's record
+                0x00621821,         # addu  $v1, $v1, $v0       + K
+                0x28410002,         # slti  $at, $v0, 2
+                0x00611821,         # addu  $v1, $v1, $at       + 1 below cycle 2
+                0x2441fffe,         # addiu $at, $v0, -2
+                0x10200014,         # beqz  $at, 0x20e020       cycle 2: no change
+                0x90620000,         # lbu   $v0, 0($v1)
+                0x10000010,         # b     0x20e018            add it to the chance
+                0x00000000)         # nop
+
+
+def plan_pr_cycle(f, img):
+    """Jobs for --mod pr-cycle."""
+    words = [(SLES_FILE, PR_CYCLE_AT - 0xff000,
+              struct.pack("<11I", *PR_CYCLE_OLD), struct.pack("<11I", *PR_CYCLE_NEW),
+              "%s 0x%x (PR event business-cycle ladder)" % (SLES_FILE, PR_CYCLE_AT))]
+    return word_jobs(f, img, "pr-cycle", words)
+
+
 # --- the harder economy (DOC/ECONOMY.md, DOC/LMASTER_MOD.md#improvements) ------
 
 COMMON_FILE, COMMON_ENTRY = "PARAM/PLRESOURCECOMMON.PAC", "plresourcecommon.pac"
@@ -2457,6 +2502,58 @@ def plan_merch_costs(f, img):
     return word_jobs(f, img, "merch-costs", MERCH_COSTS)
 
 
+# pr-costs: PR events twice as dear. plClubEvent_GetCost (SLES 0x20dee0) is
+# the record's +0x14 x 300 (the addiu at 0x20deec), and the booking
+# (SIMPRG.REL 0xa3958, paid at 0xa2a2c as payment 22) and both refunds
+# (0x45bb4, 0x49690) ask it, so x 600 doubles all three.
+PR_COSTS = (
+    sles_word(0x20deec, 0x2405012c, 0x24050258, "PR event cost x 600"),
+)
+
+
+def plan_pr_costs(f, img):
+    """Jobs for --mod pr-costs."""
+    return word_jobs(f, img, "pr-costs", PR_COSTS)
+
+
+# camp-costs and tour-costs: the camp and tour screens (SIMPRG.REL 0xa3b00,
+# 0xa3bf4) price a booking from u32 rates in SIMPRG.REL, x the squad's
+# players x 300 (x 1/2 for a tour), the business cycle and the sponsor
+# discount (0x4ded8, 0x4e080), and book it as payment 21. A camp's rate is
+# by its level (0-7) and region, 8 rows of 14 at 0x1ce4e8; a tour's by its
+# region + 1, 14 at 0x1ce6c0 (entry 0 is never used). Each switch scales
+# its table.
+RATE_TABLES = {"camp-costs": (0x1ce4e8, 8 * 14, 400, 2),
+               "tour-costs": (0x1ce6c0, 14, 1000, 3)}
+
+
+def plan_rates(f, img, switch):
+    if img.kind != "disc image":
+        raise ValueError("%s patches DLL/SIMPRG.REL, so it needs the whole disc image, not %s"
+                         % (switch, img.kind))
+    off, count, retail, x = RATE_TABLES[switch]
+    old = read_at(f, img, NEGO_FILE, off, 4 * count)
+    rates = struct.unpack("<%dI" % count, old)
+    if rates[0] == retail * x:
+        return [], ["note: %s is already applied" % switch]
+    if rates[0] != retail:
+        raise ValueError("%s: SIMPRG.REL 0x%x holds %d, expected %d; not the retail overlay?"
+                         % (switch, off, rates[0], retail))
+    new = struct.pack("<%dI" % count, *[r * x for r in rates])
+    return [Job(NEGO_FILE, off, new, "%s 0x%x (%s rates x %d)" % (
+        NEGO_FILE, off, switch.split("-")[0], x), switch)], []
+
+
+def plan_camp_costs(f, img):
+    """Jobs for --mod camp-costs."""
+    return plan_rates(f, img, "camp-costs")
+
+
+def plan_tour_costs(f, img):
+    """Jobs for --mod tour-costs."""
+    return plan_rates(f, img, "tour-costs")
+
+
 # --- the switch table ----------------------------------------------------------
 
 # (name, plan, files it edits, description), in the order they run. A
@@ -2495,6 +2592,9 @@ SWITCHES = (
     ("season-status", plan_season_status, [SLES_FILE],
      "Season tickets: bigger clubs sell more of them, as the status bands intend "
      "(every club over 10,000 status was stuck at the second band)"),
+    ("pr-cycle", plan_pr_cycle, [SLES_FILE],
+     "PR events: the business cycle changes their chance as its table intends "
+     "(an average economy took 10% off every event)"),
     ("facility-tiers", plan_facility_tiers, [COMMON_FILE, STATION_FILE],
      "Harder economy: bigger stadiums, club houses and grounds cost much more to build "
      "and keep up; other facilities twice as much"),
@@ -2521,6 +2621,12 @@ SWITCHES = (
      "Balance: a bigger fanbase sells more merchandise and draws more fans and TV money"),
     ("merch-costs", plan_merch_costs, [NEGO_FILE],
      "Balance: merchandise stock costs half its price to make, with bulk discounts of 20% at most"),
+    ("pr-costs", plan_pr_costs, [SLES_FILE],
+     "Balance: PR events cost twice as much"),
+    ("camp-costs", plan_camp_costs, [NEGO_FILE],
+     "Balance: training camps cost twice as much"),
+    ("tour-costs", plan_tour_costs, [NEGO_FILE],
+     "Balance: tours cost three times as much"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -2550,11 +2656,11 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE], [STATIO
 # tutorial skip and the launcher are test tools, in neither.
 LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-types",
                 "camp-cities", "camp-santiago", "camp-clubs", "drill-names", "injury-value",
-                "injury-row", "vpf-styles", "season-status")
+                "injury-row", "vpf-styles", "season-status", "pr-cycle")
 HARDER_ECONOMY = ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
                   "season-demand")
 BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fanbase",
-           "merch-costs")
+           "merch-costs", "pr-costs", "camp-costs", "tour-costs")
 SWITCH_GROUPS = {"lmaster-lite": LMASTER_LITE,
                  "lmaster": LMASTER_LITE,               # the name before the split
                  "harder-economy": HARDER_ECONOMY,
