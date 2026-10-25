@@ -95,6 +95,11 @@ def checks():
         ("tour", ["tour.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         ("tour_roundtrip", ["tour.py", "roundtrip", "DAT/PARAM/TOUR_LIST.TBB"],
          ["DAT/PARAM/TOUR_LIST.TBB"]),
+        ("clubevent", ["clubevent.py", "info", "ISO"], ["ISO"]),
+        # Every event with its cost, chance, results and when it is offered.
+        ("clubevent_show", ["clubevent.py", "show", "ISO", "DAT/MESSAGE/MES.PAC"],
+         ["ISO", "DAT/MESSAGE/MES.PAC"]),
+        ("clubevent_roundtrip", ["clubevent.py", "roundtrip", "ISO"], ["ISO"]),
         ("clubrank", ["clubrank.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         # Every table's rows, with the ranks each position gets.
         ("clubrank_show", ["clubrank.py", "show", "DAT/PARAM/CLUB_RANK_SYSTEM.TBB",

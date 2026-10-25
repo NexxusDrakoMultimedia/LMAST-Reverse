@@ -462,14 +462,12 @@ their own.
 
 The Publicity Department's events ("PR activities"; the game calls them
 club events, `PlClubEvent`) come from three tables in the executable,
-46 events each (**confirmed**; `PARAM/CLUBEVENT.TBB` is an older copy no
-code reads, [`PARAM_DIR.md`](PARAM_DIR.md#clubeventtbb-an-older-copy-of-the-club-events)):
-
-| Table | Record | Read by | Holds |
-|---|---|---|---|
-| `0x52ff58` | 32 bytes | `plClubEvent_GetCost` (`0x20dee0`), `plClubEvent_NeedMatch` (`0x20ea00`) | `+0x14` the cost ÷ 300, `+0x1c` whether the event needs a match |
-| `0x530518` | 8 bytes | `plClubEvent_Execute` (`0x20df50`) | the chance: byte 0 the base, bytes 1–4 the business cycle's change, 6 and 7 two bonuses |
-| `0x530688` | 28 bytes | `plClubEvent_Execute`, `plClubEvent_GetTicket` (`0x20df00`) | what success brings, below |
+46 events each (**confirmed**): an offer record with the cost and when
+the event is offered, a chance record and a success record. Their
+fields, the events' names and when each is offered are in
+[`CLUBEVENT_FORMAT.md`](CLUBEVENT_FORMAT.md); `clubevent.py` and the mod
+editor's PR events tab edit them. This section is what they do to the
+money.
 
 **The cost** is `+0x14` × 300: 100 to 10,000 on the disc, so £5,000 to
 £500,000. The scheduling screen keeps it (`SIMPRG.REL 0xa3958`) and pays
@@ -503,12 +501,10 @@ ladder's first 11 words to read byte *K* + 1 below cycle 2, nothing at
 the cost `+0x14` × 600 (the `addiu` at `0x20deec`), which doubles the
 booking and the refunds alike.
 
-**Success** changes, from the 28-byte record (7 s32): home popularity by
-`+0x8` and every overseas region's by `+0xc` (`pwkTeam_PopChange`), youth
-development by `+0x10` (`pwkYouthDev_Add`), supporter complaint kind 4
-by `+0x14`, and the popularity of up to 11 players named in the event's
-schedule entry by `+0x4` and `+0x0` (`plPinfo_ChangePop`, kinds 0 and 1).
-`+0x18` is a ticket bonus in percent, kept on the event's day of the
+**Success** changes popularity, youth development and supporter
+complaints by the success record
+([`CLUBEVENT_FORMAT.md`](CLUBEVENT_FORMAT.md#the-success-record-28-bytes-7-s32)),
+and its ticket bonus in percent is kept on the event's day of the
 calendar (`+0x30` of its 0x48-byte day) for the match that day
 ([attendance](#a-home-match)). A failed event changes nothing; its cost
 is spent.
@@ -572,8 +568,8 @@ breaks even. Tour income is unchanged.
   table's rows are, and when goods that stop selling leave the shop.
 - The transfer fee's rank and ability factor and its three others, and
   what the club byte `+0xa0` in an offer is.
-- What the PR events' byte 6 bonus was for (`0x20df48` is a stub), each
-  event's name, and how often a tour's hosts ask for players.
+- What the PR events' byte 6 bonus was for (`0x20df48` is a stub), and
+  how often a tour's hosts ask for players.
 - Which sponsors a club is offered, and what `+0x18` is for (suppliers?).
 - What a TV contract's term adds (G000's 4-year contracts are 15% over
   the formula), how often `Pwk.CheckTV` pays, and what each station

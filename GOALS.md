@@ -50,7 +50,7 @@ numbers, and [`DONE.md`](DONE.md) what is finished.
    file and writing it back gives the original bytes, checked over every
    file on the disc in `regress.py`. *Done for what a starting-season
    mod changes*, and edits through most writers are tested in PCSX2. The
-   club events and the rest of the resource packs are left.
+   rest of the resource packs are left.
 4. **Rebuild.** Put edited files back on a disc image that boots. *Done:*
    `patch_disc.py` patches files of any size, moves them, grows the
    disc, updates every copy and rebuilds archives, all tested in PCSX2

@@ -91,6 +91,13 @@ Tabs:
              clubs of its area, and its camp type, the one field edited,
              with what that type trains (from the Training tab, as the
              retail game reads it and with the LMASTER camp-types fix).
+    PR events
+             the Publicity Department's 46 events, kept in the executable
+             (clubevent.py set; DOC/CLUBEVENT_FORMAT.md): when each is
+             offered, its cost, its chance of success in each business
+             cycle and what success brings, named from MES.PAC. Writes
+             mod/disc/SLES_541.51, which the People and Kits tabs also
+             write: a save reads it again first.
     Facilities the facility records (PLRESOURCECOMMON.PAC entry 0,
              plrcommon.py set; DOC/PLRESOURCECOMMON_FORMAT.md): pick a
              table (sites, equipment, club houses, stadiums, adverts), then
@@ -147,6 +154,7 @@ import pbdata
 import plrcommon
 import plrsim
 import camp
+import clubevent
 import clubrank
 import clubresult
 import formset
@@ -3267,6 +3275,192 @@ def money_text(value):
     return "£%s" % format(value // STORED_PER_POUND, ",")
 
 
+CLUBEVENT_GROUPS = (
+    ("When it is offered", ("priority", "cost", "first_season", "popularity", "office",
+                            "talks", "match", "title", "month_rule", "not_july", "gap")),
+    ("The chance of success", ("base", "boom", "good", "poor", "slump", "status_bonus",
+                               "bonus6")),
+    ("What success brings", ("club_home", "club_overseas", "pop_home", "pop_overseas",
+                             "youth", "complaint", "ticket")),
+)
+
+
+class ClubEventsTab(Tab):
+    """The PR events (the executable's club-event tables, clubevent.py;
+    DOC/CLUBEVENT_FORMAT.md) through clubevent.Events.set, as `clubevent.py
+    set` does: an event, then when it is offered, its chance and what
+    success brings, in the ranges clubevent.edit_spec gives. Names and
+    descriptions come from MES.PAC (category 572). The executable is shared
+    with the People and Kits tabs, so a save reads it again and puts these
+    edits on top."""
+    title = "PR events"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.ev = None
+        self.changes = {}           # (event, field) -> value, in edit order
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="The Publicity Department's events, kept in the executable "
+                            "(DOC/CLUBEVENT_FORMAT.md, DOC/ECONOMY.md#pr-events).",
+                  foreground="#555").pack(side="left")
+
+        panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("event", "name", "cost")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, head, width in zip(cols, ("Event", "Name", "Cost"), (50, 170, 90)):
+            self.tree.heading(c, text=head)
+            self.tree.column(c, width=width, stretch=c == "name",
+                             anchor="e" if c == "cost" else "w")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    # loading
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.disc_source(SLES)
+            self.ev = clubevent.Events(self.path)
+            self.names, self.about = clubevent.names(mod.source(MES))
+        except (ValueError, struct.error, OSError) as e:
+            self.ev = None
+            self.app.status("Couldn't load the PR events: %s" % e)
+            messagebox.showerror("PR events", "Couldn't load the PR events:\n%s" % e)
+            return
+        self.changes = {}
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    # the list
+
+    def row(self, event):
+        return (event, self.names.get(event, ""),
+                "£%s" % format(clubevent.pounds(self.ev.get(event, "cost")), ","))
+
+    def refresh_list(self):
+        if self.ev is None:
+            return
+        self.tree.delete(*self.tree.get_children())
+        for event in range(clubevent.EVENTS):
+            edited = any(k[0] == event for k in self.changes)
+            self.tree.insert("", "end", iid=str(event), values=self.row(event),
+                             tags=("edited",) if edited else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    # the detail panel
+
+    def show(self, event):
+        self.current = event
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="%d  %s" % (event, self.names.get(event, "")),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        if self.about.get(event):
+            ttk.Label(box, text=self.about[event], foreground="#555", wraplength=700,
+                      justify="left").pack(anchor="w", padx=8)
+        self.summary = ttk.Label(box, text="", wraplength=700, justify="left")
+        self.summary.pack(anchor="w", padx=8, pady=(6, 0))
+        for title, names in CLUBEVENT_GROUPS:
+            frame = ttk.LabelFrame(box, text=title)
+            frame.pack(fill="x", padx=8, pady=6)
+            for r, name in enumerate(names):
+                ttk.Label(frame, text=name.replace("_", " ")).grid(row=r, column=0, sticky="w",
+                                                                   padx=(6, 8), pady=1)
+                value_input(frame, clubevent.edit_spec(name), str,
+                            lambda name=name: self.ev.get(event, name),
+                            lambda text, revert, name=name: self.commit(event, name, text,
+                                                                        revert)
+                            ).grid(row=r, column=1, sticky="w", pady=1)
+                ttk.Label(frame, text=clubevent.HELP[name], foreground="#777").grid(
+                    row=r, column=2, sticky="w", padx=(12, 6))
+        self.update_summary(event)
+
+    def update_summary(self, event):
+        """When the event is offered, its cost and its chance in each
+        business cycle, as the retail code works it out."""
+        when = clubevent.conditions(self.ev, event)
+        chances = ", ".join("%d%%" % clubevent.chance(self.ev, event, c) for c in range(5))
+        self.summary.configure(text="Costs £%s. Offered: %s. Chance in business cycles 0-4 "
+                               "(boom to slump; without --mod pr-cycle): %s." % (
+                                   format(clubevent.pounds(self.ev.get(event, "cost")), ","),
+                                   "; ".join(when) or "any time", chances))
+
+    # edits
+
+    def commit(self, event, name, text, revert):
+        try:
+            old = self.ev.set(event, name, int(text))
+        except ValueError as e:
+            revert()
+            message = "event %d %s: %s" % (event, name, e)
+            self.app.status(message)
+            messagebox.showerror("PR events", message)
+            return False
+        value = self.ev.get(event, name)
+        self.changes.pop((event, name), None)
+        self.changes[event, name] = value
+        self.tree.item(str(event), values=self.row(event), tags=("edited",))
+        if self.current == event:
+            self.update_summary(event)
+        self.app.status("event %d %s: %d -> %d" % (event, name, old, value))
+        self.app.update_title()
+        return True
+
+    # saving
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        src = mod.disc_source(SLES)       # as the other tabs left it
+        out = mod.disc_target(SLES)
+        temps = [(out + ".new", out)]
+        try:
+            ev = clubevent.Events(src)
+            for (event, name), value in self.changes.items():
+                ev.set(event, name, value)
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(ev.encode())
+        except (ValueError, struct.error, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("PR events", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        cmd = ["python", "SRC/clubevent.py", "set", quote(shown_path(src)),
+               quote(shown_path(out + ".new"))] + [
+            "%d:%s=%d" % (event, name, value) for (event, name), value in self.changes.items()]
+        n = len(self.changes)
+        lines = log_lines("PR events: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
 UNIFORM_LIST = "PLAYER/UNIFORM_LIST.TBB"
 UNIFORM_GK = "PLAYER/UNIFORM_GK.TBB"
 PLPACK = {"home": "PLAYER/PLPACK_HOME", "away": "PLAYER/PLPACK_AWAY"}   # .HED and .PAC
@@ -5017,12 +5211,14 @@ class App:
         self.training = TrainingTab(self)
         self.camps = CampsTab(self)
         self.facilities = FacilitiesTab(self)
+        self.clubevents = ClubEventsTab(self)
         self.tours = ToursTab(self)
         self.tactics = TacticsTab(self)
         self.comments = CommentsTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.free,
-                     self.regulations, self.clubrank, self.training, self.camps, self.tours, self.facilities,
-                     self.tactics, self.kits, self.text, self.comments]
+                     self.regulations, self.clubrank, self.training, self.camps, self.tours,
+                     self.facilities, self.clubevents, self.tactics, self.kits, self.text,
+                     self.comments]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)

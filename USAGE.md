@@ -65,6 +65,7 @@ Each kind of data has a tab along the top:
 | Camps | each training camp's type |
 | Tours | the clubs a tour can play in each region |
 | Facilities | build costs, upkeep, build times and stadium capacities |
+| PR events | the Publicity Department's events: when each is offered, what it costs, its chance of success and what success brings |
 | Tactics | the tactics screen's eight Set Formation presets |
 | Kits | every club's home, away and keeper kits, shown as colour swatches |
 | Text | any message in the game, in all its language slots |

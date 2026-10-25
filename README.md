@@ -168,6 +168,7 @@ disassemble as unrelated MIPS instructions.
 | [`formset.py`](SRC/formset.py) | the tactics screen's eight national presets (`TACTICS_FORMATION_SET.TBB`): seven team tactics and a formation each; edits them (`set`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#tactics_formation_settbb-tactics-presets) |
 | [`tour.py`](SRC/tour.py) | tour opponents by region (`TOUR_LIST.TBB`); edits pairs (`set`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region) |
 | [`clubrank.py`](SRC/clubrank.py) | the club ranking's tables (`CLUB_RANK_SYSTEM.TBB`): the nation groups, the points each competition gives for each final place, the world rank points by club rank, the club rank by position in each nation or division (with the positions each rank gets) and the year-end leagues; edits the points, world rank points and positions (`set`), adds rows for divisions of a new size (`addrows`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables) |
+| [`clubevent.py`](SRC/clubevent.py) | the 46 PR events (club events) in the executable, named from `MES.PAC`: when each is offered, its cost, its chance in each business cycle and what success brings; edits every field into a copy of the executable (`set`), round-trips, on both releases | [`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md) |
 | [`regulation.py`](SRC/regulation.py) | match regulations (`REGULATION.TBB`), one row per schedule: clubs, match grade, win bonus, prizes by position, yellow-card ban, matchday squad, foreign-player limit, substitutions, and the places up and down; edits fields (`set`), round-trips | [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md) |
 | [`gamedata.py`](SRC/gamedata.py) | `GAME/GAMEDATA.BIN`: checks the 4,131 records (body part and surface of each ball contact) and prints them with the fields the match engine is known to read | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) |
 | [`bpb.py`](SRC/bpb.py) | the play books `GAME/PLAYBOOK.BPB` and `COMBINATION.BPB`: checks every play and prints one's starting spots and paths (players by role, and ball, in metres); checks and prints the `COMBINATION2.CBB` records (blocks, slots, areas) | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) |
@@ -410,6 +411,9 @@ The mod editor's tabs:
   region, at most 40 to a region.
 - **Facilities**: build costs, upkeep, build times and stadium
   capacities, money in pounds.
+- **PR events**: the Publicity Department's 46 events: when each is
+  offered, its cost, its chance of success in each business cycle and
+  what success brings (written into the executable).
 - **Tactics**: the tactics screen's eight Set Formation presets, seven
   team tactics and a formation each, with their names and descriptions.
 - **Kits**: every club's home and away kits with colour swatches, the
@@ -482,12 +486,13 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `clubrank.py` | `tbb.py`, and `camp.py` for the competitions' names |
 | `leaguesize.py` | `schedule.py`, `initteam.py`, `regulation.py`, `clubresult.py`, `clubrank.py` |
 | `uniform.py` | `pac.py`, `tbb.py`, `packdata.py` and `svr.py` (licensed kits), `sles_disasm.py` (the executable's copy), `initteam.py` (club names) |
+| `clubevent.py` | `sles_disasm.py` and `gamever.py` for the tables, `camp.py` for the names |
 | `acrobata.py` | `pac.py`, `ninja.py`, `svr.py`, `snr2.py`, `sles_disasm.py` |
 | `sounddat.py` | `sles_disasm.py` for `music` |
 | `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables; `teaminit.py` for the salary limits |
 | `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `cso.py` and `chd.py` (a CSO, ZSO or CHD input), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches), `training.py` (`drill-names`), `plrcommon.py` (`facility-tiers`) |
-| `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `clubrank.py` (Club ranking), `training.py` (Training), `camp.py` (Camps), `tour.py` (Tours), `plrcommon.py` (Facilities), `formset.py` (Tactics), `uniform.py` (Kits), `mbb.py` (Text), `sqb.py` (Comments); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
+| `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `teaminit.py` (New club), `plrsim.py` (Free agents), `regulation.py` and `clubresult.py` (Regulations), `clubrank.py` (Club ranking), `training.py` (Training), `camp.py` (Camps), `tour.py` (Tours), `plrcommon.py` (Facilities), `clubevent.py` (PR events), `formset.py` (Tactics), `uniform.py` (Kits), `mbb.py` (Text), `sqb.py` (Comments); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `ps2mc.py` (card files), `pbdata.py` and `initteam.py` for names |
 | `pmplayer.py` | `save.py` (cipher, CRC, and career saves for `check`), `pbdata.py` for field names, `gamever.py` |
 | `ps2mc.py` | nothing |
@@ -535,6 +540,7 @@ saves.
 | [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events), scout-list search criteria, squad and loan limits, the 13 regions |
 | [`INJURIES.md`](DOC/INJURIES.md) | how injuries are rolled (fatigue and age pick the kind), the value table, recovery, and the condition-line messages, two of which were cut |
 | [`ECONOMY.md`](DOC/ECONOMY.md) | the club's economy: what a build costs (record cost × business cycle × sponsor discount), the plan screen's limits, attendance, ticket, shop and season-ticket income, and the ad budget's effect on popularity |
+| [`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md) | the PR events in the executable: the offer, chance and success records field by field, the names in `MES.PAC`, when each event is offered, the cut Renew Mobile Site, and the Japanese differences |
 | [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
 | [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md) | PCSX2's memory card image files: pages and their ECC, the superblock, the FAT, directory entries, and how `ps2mc.py` writes a card |
 | [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md) | Virtua Pro Football's edit players (`pmplayer.bin`): file layout, CRC, each record field and what the career import makes of it, and its play-style bug |

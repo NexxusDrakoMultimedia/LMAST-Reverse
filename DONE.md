@@ -132,6 +132,9 @@ evidence and how it was tested; the git history holds the rest.
       `leaguesize.py build` and the Season tab add the club-ranking rows
       a new size needs
       ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
+- [x] `clubevent.py`: the 46 PR events in the executable decoded field
+      by field and named, with a writer (`set`, `roundtrip`) on both
+      releases ([`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md))
 
 ## 4. Rebuild: edits back on a bootable disc
 
@@ -158,6 +161,8 @@ evidence and how it was tested; the git history holds the rest.
       of a pack in one command), tested through the widgets
       ([`README.md`](README.md#editor))
 - [x] `editor.py` Club ranking tab (`clubrank.py`), tested through the
+      widgets ([`README.md`](README.md#editor))
+- [x] `editor.py` PR events tab (`clubevent.py`), tested through the
       widgets ([`README.md`](README.md#editor))
 
 ## 6. Distribute: sharing a mod

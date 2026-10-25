@@ -43,7 +43,7 @@ aims at:
 | Goal | Where it stands | Left (section) |
 |---|---|---|
 | The starting season | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results have writers and editor tabs, tested in PCSX2 | room for bigger second divisions (2), a writer for the national-team calendar (3), a smaller first division tested (7) |
-| Data | players, staff, clubs, kits, facilities, training and camps have writers and tabs | the remaining player and staff fields (2), the stadium and emblem tables (3), tabs for the tactics presets and tours (5) |
+| Data | players, staff, clubs, kits, facilities, training, camps, tours, the tactics presets and the PR events have writers and tabs | the remaining player and staff fields (2), the stadium and emblem tables (3) |
 | Parameters | every `PARAM/` table's layout is known; `tbb.py replace` swaps any table | the open fields (2), field-level writers for the resource packs (3), tabs for them (5) |
 | Text | every message in every language, with a writer and the Text tab | the screen-set variables and a few message categories (2) |
 
@@ -208,9 +208,6 @@ shown to have no effect. Grouped by what a mod would change.
 round-trips every file on the disc. **Done when** each format below has
 a field-level writer with a `roundtrip` check in `regress.py`.
 
-- [ ] The club events, which live in the executable (`SLES 0x52ff58`,
-      `0x530688`), not in `CLUBEVENT.TBB`: decode the records field by
-      field, then a writer
 - [ ] `PLRESOURCESIM.PAC`: writers for the streams (affiliations 5,
       exclusives 11–12, combinations 13–14), the overseas branch costs
       (entry 1), and the nation and stadium tables `initteam.py` reads
@@ -278,6 +275,11 @@ names the disc or the edit to build; the result goes into the doc.
       stored keeper kit
 - [ ] The crest editor: whether the three short `EDIT_EMBLEM` layer
       tables lose visible parts
+- [ ] The PR events tab: a disc with an event's cost and its ticket
+      bonus changed (for example Ticket Campaign, `38:cost=200
+      38:ticket=50`): the scheduling screen shows the new cost, and a
+      successful campaign on a match day draws the bigger crowd
+      ([`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md))
 - [ ] The Club ranking tab: a disc with one edit to table 3 (for
       example `rank:7:31=3`, the top three of a slot-1 first division of
       20 at rank 31), played to the end of the first season; `save.py
@@ -325,6 +327,10 @@ names the disc or the edit to build; the result goes into the doc.
 improvements, each as a named `patch_disc.py` switch tested in PCSX2
 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
+- [ ] Candidate: bring back the cut PR event 37, Renew Mobile Site,
+      whose record is complete but which `plClubEvent_GetList` always
+      clears (`SLES 0x20e864`); check in game that it can be booked and
+      works ([`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md#the-offer-record-32-bytes))
 - [ ] Candidates: the short `EDIT_EMBLEM` tables 93/101/105
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] Candidate: let the unused combination records load, the 15 extra
