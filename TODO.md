@@ -385,3 +385,13 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       group's text files, checked in PCSX2 where a screen shows them
       ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [ ] LMAST Realism in LMASTER (the user's idea, 2026-10-27): bring the
+      logos, kits, texture fixes and real competition names of LMAST
+      Realism, the user's own realism ISO, into the LMASTER Mod. First
+      list what Realism changes (`patch_disc.py verify` and the readers,
+      file by file against the retail disc), sort each change by the
+      formats the tools already write (textures `svr.py`, kits
+      `uniform.py`, names `mbb.py`), and decide which group takes it.
+      The files are game data, so they stay out of the repo and come in
+      at build time, as `patch_disc.py` targets or a mod folder
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
