@@ -117,12 +117,13 @@ Caribbean, 10 East Asia, 11 South Asia and Middle East, 12 Oceania.
 these names.
 `patch_disc.py --mod overseas-bases` (in `--mod balance` and
 `--mod lmaster-full`) doubles the 13 costs, here and in the copies in
-`PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 17), and makes the level factor
-(level + 1) ÷ 2.5 + 0.4 (the float's `lui` at `0x268e40`): 0.8, 1.2,
-1.6, 2.0, twice the gain over 0.4 at each level. Not checked in the game.
-Where else a branch's level counts (the scouting delays,
-[`EVS_PROCEDURES.md`](EVS_PROCEDURES.md); `pwkRental_OverseasBranchCheck`)
-isn't changed.
+`PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 17), so the investment and upkeep
+double too. What a level does stays as in retail (the popularity factor,
+the scouting delays in [`EVS_PROCEDURES.md`](EVS_PROCEDURES.md),
+`pwkRental_OverseasBranchCheck`), so every pound spent on a base buys
+half as much, as with `dearer-ads` (the user's choice, 2026-10-26; an
+earlier version also made each level stronger). Not checked in the
+game.
 
 ## Entry 2: unread
 

@@ -165,8 +165,7 @@ this way. `pwkTeam_PopUpdateAnnualy`, `…Monthly` and `…Turnly`
 **Overseas factors.** The monthly, match and title changes in an
 overseas region are multiplied by two factors: the branch's level,
 (level + 1) ÷ 5 + 0.4 (`0x268e18`: 0.6–1.2 for levels 0–3;
-[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches),
-where `--mod overseas-bases` makes it 0.8–2.0), and a float from
+[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)), and a float from
 `0x554ec8` indexed by the best player rank (`PlPinfo +0x1b0`, 0–15,
 [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)) among your players from that
 region (`0x268e70`; 0 with none): 1.02, 1.05, **10.8**, 1.11, 1.14, …

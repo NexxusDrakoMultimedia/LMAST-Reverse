@@ -331,7 +331,7 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   ([`ECONOMY.md`](DOC/ECONOMY.md)); `--mod balance` is `injury-odds`
   (long injuries twice as common), `injury-lines` (the cut two-month and
   nine-month lines, [`INJURIES.md`](DOC/INJURIES.md)), `overseas-bases`
-  (twice the cost, twice the effect per level), `transfer-fees` (twice as
+  (set-up, investment and upkeep twice as dear), `transfer-fees` (twice as
   high, up to £250M), `fanbase` (merchandise, crowds and TV offers
   follow the fanbase more), `merch-costs` (merchandise stock dearer to
   make), `pr-costs` (PR events twice as dear), `camp-costs` (camps ×2)

@@ -208,10 +208,9 @@ See DOC/INJURIES.md.
 
 overseas-bases (whole disc image only) doubles the 13 overseas bases'
 costs in PLRESOURCESIM.PAC entry 1 (and its PRELOAD/SIMLOCALMEM0-6.PAC
-copies), which doubles their investment and upkeep too, and makes a
-base's level factor on the region's popularity (level + 1) / 2.5 + 0.4
-(SLES 0x268e40): 0.8, 1.2, 1.6, 2.0 for levels 0-3, twice the gain over
-0.4. See DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches.
+copies), which doubles their investment and upkeep too; what a level
+does is unchanged, so every pound buys half as much, as with dearer-ads.
+See DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches.
 transfer-fees (whole disc image only) doubles the base of every transfer
 fee (SLES 0x247288, 1,350,000.0 -> 2,700,000.0) and raises price kind 1's
 cap from 7,200,000 to 15,000,000 (£120M -> £250M) in all four
@@ -2371,22 +2370,17 @@ def plan_injury_lines(f, img, adopted=()):
     return jobs, notes
 
 
-# overseas-bases: dearer bases, stronger per level. A base costs table 0 of
+# overseas-bases: dearer bases. A base costs table 0 of
 # PLRESOURCESIM.PAC entry 1 to set up, that cost x the level's rate to
 # raise a level (_GetUp1SituLevelCapital 0x232f70) and x a higher rate in
 # upkeep (GetMaintenanceExpence 0x233648), so doubling the 13 costs
 # doubles all three. The game reads the pack's PRELOAD/SIMLOCALMEM0-6.PAC
-# copies too. Its level (0-3, pwkTown_OverseasBranchInvestment 0x233388)
-# scales the region's monthly popularity change by (level + 1) / 5 + 0.4
-# (0x268e18): 0.6, 0.8, 1.0, 1.2. Dividing by 2.5 gives 0.8, 1.2, 1.6, 2.0.
+# copies too. What a level does (the popularity factor at 0x268e18) stays,
+# so each pound spent on a base buys half as much (the user's choice,
+# 2026-10-26: like dearer-ads, not a stronger level).
 SIM_FILE, SIM_ENTRY = "PARAM/PLRESOURCESIM.PAC", "plresourcesim.pac"
 BRANCH_COST_X = 2
 BRANCH_MARK = (6300000, 12600000)           # the cheapest base: retail, doubled
-OVERSEAS_POWER = (
-    sles_word(0x268e40, 0x3c0140a0, 0x3c014020, "overseas base level factor: / 2.5"),
-)
-
-
 def target_overseas_bases(file, data):
     """A PLRESOURCESIM.PAC target (the editor's free agents) with the base
     costs doubled in its own bytes."""
@@ -2402,7 +2396,7 @@ def target_overseas_bases(file, data):
 def plan_overseas_bases(f, img, adopted=()):
     """Jobs for --mod overseas-bases."""
     import plrsim
-    jobs, notes = word_jobs(f, img, "overseas-bases", OVERSEAS_POWER)
+    jobs, notes = [], []
     if norm(SIM_FILE) in adopted:
         return jobs, notes + ["note: overseas-bases: doubled the costs in the target's %s"
                               % SIM_FILE]
@@ -2696,8 +2690,8 @@ SWITCHES = (
     ("injury-lines", plan_injury_lines,
      [SLES_FILE, MES_FILE] + sum(INJURY_TEXT_PACKS.values(), []),
      "Injuries: the cut \"two months\" and \"nine months\" condition lines come back"),
-    ("overseas-bases", plan_overseas_bases, [SLES_FILE, SIM_FILE] + LIST_PACKS,
-     "Balance: overseas bases cost twice as much, and each level does twice as much"),
+    ("overseas-bases", plan_overseas_bases, [SIM_FILE] + LIST_PACKS,
+     "Balance: overseas bases, their investment and upkeep cost twice as much"),
     ("transfer-fees", plan_transfer_fees, [SLES_FILE],
      "Balance: transfer fees twice as high, up to £250M"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
