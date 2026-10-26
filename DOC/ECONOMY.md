@@ -119,13 +119,64 @@ The ad budget (`pwkUnkei_GetPR`) is read in four places:
 
 ### Supporter popularity
 
-**Confirmed.** Each month `pwkTeam_ChangePop_Month` works out a change
-for your home region and for each of the 13 overseas regions where you
-have a branch. It adds the change to the region's popularity
-(`pwkTeam_PopChange`, `0x267ff8`): a u16 per region at block 1
-`+0x11248`, floored at 0 and capped by the popularity rank at `+0x11228`
-(caps 65,535, 50,000, 40,000, 30,000, 15,000, 10,000 for ranks 0–5,
-table at `0x554df0`). The change from `0x268b00` is the sum of:
+**Confirmed.** A club's fanbase is its popularity in each of 14 regions
+(region 0 is your home nation, 1–13 the overseas regions): a u16 per
+region at block 1 `+0x11248`. Every change goes through
+`pwkTeam_PopChange` (`0x267ff8`), which adds it, floors the result at 0
+and caps it by the **popularity rank** at block 1 `+0x11228`:
+
+| Rank | 0 | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|---|
+| Cap (`0x554df0`) | 65,535 | 50,000 | 40,000 | 30,000 | 15,000 | 10,000 |
+
+A new career starts at rank 5 with a home popularity of 2,000
+(`pwkTeam_PopInit`, `0x268138`, from `pwkTeam_Init`). The rank only
+ever improves: `pwkTeam_PopChangeRank` (`0x2680c0`) stores a new rank
+only when it is lower than the current one. So the cap, not the monthly
+gain, is what holds a growing club back, and the way past it is to win
+things:
+
+| Achievement | Rank | Where |
+|---|---|---|
+| promoted at the end of a season (`pwkRec_CheckDivShift_TeamUserOnly` = 1) | 4 | `pwkTeam_ChangePop_Year` (`0x269430`) |
+| top 10 of the first division | 3 | `0x268ab0` |
+| win a "prime" domestic cup (compe 4, 9, 14, 20, 25 and 31: the English Cup and each nation's Prime Cup, from the jump table at `0x554e40`) | 2 | `0x268a0c` |
+| win the European Club Cup (35) or the International Club Cup (36) | 2 | `0x268808` |
+| win the first division | 1 | `0x268a98` |
+| win the European League (34) | 0 | `0x268808` |
+
+Popularity changes from six places:
+
+| Caller | When | Change |
+|---|---|---|
+| `pwkTeam_ChangePop_Month` (`0x269350`) | `PwkCallbackCommand_EndMonthEnd` (`0x110cb8`) | the monthly change (below) |
+| `pwkTeam_ChangePop_Record` (`0x2690b0`) | after each of your matches (`PwkCallbackCommand_GetGameIfData`, `0x111360`) | the match result (below) |
+| `pwkTeam_ChangePop_Title` (`0x2691e8`) | when a competition ends (`CScheEuro::calcCompetetionFinish`, `0x2063b8`) | your place in it (below) |
+| `pwkTeam_ChangePop_JoinPlayer` (`0x268f90`) | a player joins (`SIMPRG.REL 0x15b1fc`) | gain (below) |
+| `pwkTeam_ChangePop_RetirePlayer` (`0x269020`) | a player leaves (`SIMPRG.REL 0x15b4dc`) | loss (below) |
+| `plClubEvent_Execute`, `pwkTeam_ChangePopByRegion` | PR events ([`CLUBEVENT_FORMAT.md`](CLUBEVENT_FORMAT.md)) and event scripts ([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)) | the event's value |
+
+Each of the first five works out a change for your home region and for
+every overseas region where you have a branch (branch byte `+1` set,
+`pwkTown_GetPlOverseasBranchPointer`); regions without one never change
+this way. `pwkTeam_PopUpdateAnnualy`, `…Monthly` and `…Turnly`
+(`0x268188`–`0x268198`) are empty.
+
+**Overseas factors.** The monthly, match and title changes in an
+overseas region are multiplied by two factors: the branch's level,
+(level + 1) ÷ 5 + 0.4 (`0x268e18`: 0.6–1.2 for levels 0–3;
+[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches),
+where `--mod overseas-bases` makes it 0.8–2.0), and a float from
+`0x554ec8` indexed by the best player rank (`PlPinfo +0x1b0`, 0–15,
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)) among your players from that
+region (`0x268e70`; 0 with none): 1.02, 1.05, **10.8**, 1.11, 1.14, …
+1.47, rising by 0.03. The third value is a typo for 1.08 in both
+releases (Japanese `0x550bf8`): a club whose best player from a region
+has rank 2 gains popularity there ten times as fast.
+
+#### The monthly change
+
+The change from `0x268b00` is the sum of:
 
 | Term | Value |
 |---|---|
@@ -137,12 +188,106 @@ table at `0x554df0`). The change from `0x268b00` is the sum of:
 | new kit | −20 when `pwkGd_DoesChangedUniType` |
 | supporter complaints | minus the largest `pwkSupCom_GetSupporterComp` of 9 kinds ÷ 2,622 |
 
-Overseas regions multiply the result by two factors: the branch's level,
-(level + 1) ÷ 5 + 0.4 (`0x268e18`: 0.6–1.2 for levels 0–3;
-[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches),
-where `--mod overseas-bases` makes it 0.8–2.0), and a float from
-`0x554ec8` picked by `plMisc_OFcheck`(the largest `+0x1b0` among your
-players from that region, 15) (`0x268e70`).
+#### Match results
+
+`0x268640` works out, for each of your matches:
+
+> change = ((opponent's club rank − yours) ÷ 2 + *r*) × result factor × grade factor × streak factor × 2
+
+Club ranks are `pwkOteam_GetRank`, 0–31, higher is better. *r* is −16
+for a loss and +16 otherwise (`0x26871c`, `0x268754`). The two sides
+come from `PlGiTask::GetSide`; reading them as winner and loser is
+**empirical**, from what the factors do. The result factor
+(`0x554f40`) is 2.0, 1.0 or 0.5 for a win, draw or loss against a club
+ranked at least as high as yours, and 1.0, 0.5, 1.0 against a lower one.
+The grade factor is by the match regulation's grade
+([`REGULATION_FORMAT.md`](REGULATION_FORMAT.md), 0 = European and
+national-team matches): 1.0, 0.9, 0.8, 0.7, 0.6, 0.5 at home
+(`0x554f08`), 1.0, 1.0, 0.8, 0.6, 0.3, 0.3 overseas (`0x554f24`). The
+streak factor counts only in your main league: a count from the team
+record (`pwkRec_GetTeamRecordUpdateData`, byte `+0x1` after a win,
+`+0x4` after a loss; read as the current run, **empirical**) picks
+1.1 at 3, 1.2 at 5, 1.4 at 10, 1.6 at 15 and 1.8 at 20 or more, 1.0
+otherwise (`0x554f70`). So a win against a club 10 ranks above you in
+the top grade is worth (5 + 16) × 2.0 × 2 = 84 at home; a loss against
+one 10 ranks below costs (−5 − 16) × 1.0 × 2 = −42.
+
+#### Titles
+
+`0x268858` (competition, place, league flag) gives:
+
+| Competition | Places and points, home (overseas) |
+|---|---|
+| your league, first division | champion 1,500 (800), 2nd–11th 300 (200), 12th or lower and not relegated 200 (100) |
+| your league, second division | champion 300 (200), 2nd–11th and promoted 150 (100), 2nd–11th otherwise 30 (10) |
+| a prime domestic cup (above) | winner 200, runner-up 100, semi-final 50 |
+| another domestic cup | winner 100, runner-up 50, semi-final 25 |
+| European League (34) | 500 (200) for taking part, plus winner 2,000, runner-up 1,000, semi-final 500, quarter-final 250, last 16 120 (overseas 2,000, 1,000, 500, –, –) |
+| European Club Cup (35) | 500 (200) for taking part, plus winner 1,000, runner-up 500, semi-final 250, quarter-final 120, last 32 60; the last 16 get nothing, a bug ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)) (overseas 1,500, 750, 375, –, –) |
+| International Club Cup (36), World Club Cup (40), American Club Cup (42) | 300, 150, 75 for winner, runner-up, semi-final (overseas 200, 100, 50 for 36; 500, 250, 125 for 40 and 42) |
+| World Club Championship (38) | 500, 250, 120 (overseas 1,000, 500, 250) |
+| Asia-Oceania (41) and African (43) Club Cups | 200, 100, 50 |
+| Golden Club Cup (39) | 100, 50, 25 |
+
+The league rows are the table at `0x555118` (overseas `+0x18`), the cup
+rows `0x5550f0` and the international ones the 9 records of 12 bytes at
+`0x555018` (overseas `+0x6c`). The place is 0 for the winner, 1 the
+runner-up, 2–3 the semi-finals, 4–7, 8–15 and 16–31 the earlier rounds.
+
+#### Players joining and leaving
+
+A player who joins (`0x2683e0`) adds
+
+> (star + 1) × squad factor × 3, or 4 for a player of your nation or a youth graduate (`plPinfo_IsYouthUp`) × 0.9–1.1
+
+at home, and the same with 2, or 4 for a player from that region, in
+each overseas region. Star is `PlPinfo +0x1da` (database `+0x42`, 0–15).
+The squad factor (`0x2681f8`) compares the player's rank with the rest
+of the squad's: (*t*[player] − *t*[squad average]) × 10 + 11, with *t*
+0.0, 0.05, … 0.5, 0.6, … 1.0 for ranks 0–15 (`0x554e00`), × 1.5 when the
+player outranks everyone, 1.2 when equal to the best, 0.9 when equal to
+the worst and 0.8 below it. So a star signing (star 15, rank above the
+squad) of your own nation brings up to about 16 × 31.5 × 4 × 1.1 ≈
+2,200 at home.
+
+A player who leaves (`0x2684e0`) takes away
+
+> popularity × 10 × (1.5 for your nation, 2.0 for a youth graduate, 1.0 otherwise) × (`+0x21c` ÷ 10 + 1) × (squad factor + 1) × 0.9–1.1 ÷ 65,535
+
+using the player's home popularity (`PlPinfo +0x238`) in every region; overseas
+the first factor is 2.0 for a player from that region. `+0x21c` is the
+developers' `life` field, not traced.
+
+#### How many supporters
+
+`pwkTeam_Supporter` (`0x259a30`) turns a region's popularity into
+supporters:
+
+> supporters = ((popularity ÷ 20)² + 10,000) × weight × *R* ÷ 10,000
+
+The weight is a byte by region: 100, 40, 20, 20, 20, 8, 8, 20, 4, 4, 4,
+40, 6, 6 (`0x553100`) at home and where the branch byte `+1` is set,
+half that (`0x553110`) where only byte `+0` is set, and none otherwise.
+*R* is block 1 `+0x126c`, rolled at each turn's start to 101–104
+(`pwkSup_CalcSupporterRand`, `0x258370`, from
+`PwkCallbackCommand_TurnStart`). So supporters grow with the square of
+popularity: the cap of rank 4 allows about 580,000 at home, rank 1
+about 6.3 million, rank 0 about 10.8 million.
+
+**Checked on three saves** against the Supporters Club screen (user
+report, 2026-10-26). The screen's "No. of fans" is the sum over every
+region; "No. of local fans" is the highlighted region, and Western
+Europe also counts the home region:
+
+| Save | Rank | Home popularity | *R* | Fans (screen = formula) | Western Europe (screen = formula) |
+|---|---|---|---|---|---|
+| G001, 2008–09 | 4 | 15,000 (capped) | 101 | 578,225 | 578,225 |
+| G006, 2019–20 | 1 | 50,000 (capped) | 101 | 15,438,610 | 8,851,640 |
+| G000, 2024–25 | 0 | 65,523 | 102 | 27,884,698 | 15,337,154 |
+
+Every figure matches to the supporter. G000's region 5 has only branch
+byte `+0` set (half weight), and its regions 7–9 and G006's 7–10 have
+no branch, so their popularity of 4,000 and 600 counts for nothing.
 
 ## Attendance and ticket income
 
@@ -364,14 +509,9 @@ slot's income.
 **The base** sums `pwkTeam_Supporter` over the 13 regions and finds it in
 17 `{threshold, base}` pairs at `0x1d9ec8`: 800 below 10,001 supporters,
 then 1,000, 1,200, 1,400, 1,600, 1,800, 2,000, 2,200, 2,400, 2,800,
-3,200, 3,600, 4,000, 6,000, 7,000, 8,000, and 10,000 above 10,000,000. A
-region's supporters (`pwkTeam_Supporter`, `0x259a30`) are ((popularity
-÷ 20)² + 10,000) × a byte weight by region × `pwkSup_GetSupporterRand` ÷
-10,000, so they grow with the square of popularity. The weight is from
-`0x553100` for the home region and an overseas region whose branch byte
-`+1` is set, from `0x553110` for one with only byte `+0` set; any other
-region has none. The table is flat: the biggest fanbase
-sells 12.5 times what the smallest does.
+3,200, 3,600, 4,000, 6,000, 7,000, 8,000, and 10,000 above 10,000,000
+(supporters: [How many supporters](#how-many-supporters)). The table
+is flat: the biggest fanbase sells 12.5 times what the smallest does.
 
 ### Making the stock
 
@@ -574,6 +714,9 @@ breaks even. Tour income is unchanged.
 - What a TV contract's term adds (G000's 4-year contracts are 15% over
   the formula), how often `Pwk.CheckTV` pays, and what each station
   record's fields mean.
+- What `PlPinfo +0x21c` (`life`) is, which scales the popularity a
+  leaving player takes; and whether the match streak count is the
+  current run of wins or losses.
 
 ## Checking
 
@@ -583,6 +726,9 @@ python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 154b78 240 --sles ISO/SLES_541.51
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 3eda0 230 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkUnkei_GetTicketHosei pwkUnkei_GetAllAudience pwkUnkei_GetExpectSeat
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_ChangePop_Month pwkTeam_PopChange
+python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_PopChangeRank pwkTeam_PopInit pwkTeam_ChangePop_Year pwkSup_CalcSupporterRand
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x2681a0 700
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x268e18 60
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 1690a0 60 --sles ISO/SLES_541.51
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 163a10 90 --sles ISO/SLES_541.51
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 165dc0 240 --sles ISO/SLES_541.51
