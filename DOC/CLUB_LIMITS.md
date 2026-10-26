@@ -47,6 +47,29 @@ About 140 sites use the same numbers for something else:
 | The non-resident path, for 442–459 | `_pwkOteam_GetPlRec_LgTeamNonresident` (`0x24d65c`), its player base (`0x24d6b0`, `0x24d748`), the league records' set-up `0x24d454` (clubs `0x1ba`–`0x1cb`, players from `0x63f7`), `pwkOteam_ResetRentalPossibleClubFlag` (`0x24ca18`) |
 | Not yet understood | `CScheEuro::clearPlayerRecord` and `movePlayerRecord` (`0x2078a0`, `0x207a98`): clubs below 441 skip a player lookup that 441 and up take |
 
+## `--mod tier-clubs` (phase 2a)
+
+`patch_disc.py --mod tier-clubs` (with `--mod save-expand`, whose block
+2 records it uses) makes clubs 442–459 full clubs, as far as code that
+works one club at a time goes:
+
+- `pwkOteam_Team2Otindex` maps clubs 3–459 to records 1–457.
+- Every resident check above takes 442–459 in (club < 460, club − 2 <
+  458, club − 3 < 457), and the non-resident path starts at 460.
+- The three special cases for 442–459 are off: purchase offers
+  (`0x2289ec`), team data (`0x24bb10`) and the detail screen's page type
+  (`0x288460`).
+- The loops below that work through block 2 run to 459, among them
+  `pwkOteam_Init`, which reads 18 more squads from `OTEAMMEMBER.TBB`
+  (`initteam.add_tier_squads`: each club's 25 database players from
+  `0x63f7`, with their ages and shirt numbers, contracts of 2 years).
+
+The loops that fill buffers sized for 441 clubs stay as they are, so
+they leave 442–459 out: the club-rank list and the transfer AI's lists,
+the schedule's club lists, `ClubRank`, the monthly report's and the
+club editor's lists. Phase 2b relays them. A save from before the
+switch has empty records for the new clubs; start a new career.
+
 ## Each loop's body
 
 Whether a loop over clubs can simply run to 459, or fills a buffer

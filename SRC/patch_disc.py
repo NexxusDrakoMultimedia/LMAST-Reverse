@@ -82,7 +82,7 @@ league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
 pr-cycle, mobile-site, overseas-pop, cup-last16, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fee-tiers, slow-reputation, save-expand, one-season-end, fanbase, merch-costs, pr-costs, camp-costs,
+fee-tiers, slow-reputation, save-expand, tier-clubs, one-season-end, fanbase, merch-costs, pr-costs, camp-costs,
 tour-costs, launcher,
 mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
@@ -240,6 +240,12 @@ them. Its code goes in a second loadable segment of SLES_541.51 at
 0xf8000, made from unloaded .DVP bytes, so the file keeps its size.
 Saves no longer load in the retail game or the other way round; use it
 with mod-saves, and `save.py convert` to carry a career over.
+tier-clubs (whole disc image only; needs save-expand; in no group yet)
+makes clubs 442-459, the tutorial's third-tier opponents, full clubs:
+block 2 records (pwkOteam_Team2Otindex), the resident checks and the
+club loops that work one club at a time, squads in OTEAMMEMBER.TBB (18
+added, from their database players; the file grows and moves), and
+three special cases for them off. See DOC/CLUB_LIMITS.md.
 one-season-end (whole disc image only; in no group yet) ends the game
 when you finish in the second division's bottom two in one season, not
 two running (SIMPRG.REL 0x15d958), and warns on this season alone
@@ -2971,6 +2977,117 @@ def plan_save_expand(f, img):
     return word_jobs(f, img, "save-expand", words_)
 
 
+# tier-clubs: clubs 442-459, the tutorial's third-tier opponents, become
+# full clubs like 3-441 (the LMASTER third tier, phase 2a; needs
+# save-expand's block 2 records). DOC/CLUB_LIMITS.md sorts every site.
+# - pwkOteam_Team2Otindex (0x24b7e8) maps clubs 3-459 to records 1-457.
+# - The checks for a resident club (club < 442, club - 2 < 440, club - 3
+#   < 439) take 442-459 in, and the non-resident path (0x24d65c) leaves
+#   them out.
+# - Three special cases for 442-459 are off (club - 442 < 18 never
+#   holds): purchase offers skip their players (0x2289ec), team data are
+#   built as non-resident (0x24bb10), the detail screen's page type 4
+#   (0x288460).
+# - The loops over clubs whose bodies work one club at a time through
+#   block 2 (no buffer sized for 441) run to 459: set-up (pwkOteam_Init
+#   with OTEAMMEMBER.TBB's 18 new squads, Init2), core info, the database
+#   make, friendship by branch, player and youth candidates, the offers'
+#   squad fill, and the year start (YRSTPRG.REL).
+# Loops that fill buffers sized for 441 clubs stay as they are, so they
+# leave 442-459 out until phase 2b relays them.
+TIER_EXE = (    # (address, old immediate, new immediate, what)
+    (0x24B7FC, 0x1B7, 0x1C9, "pwkOteam_Team2Otindex: clubs 3-459"),
+    (0x24B930, 0x1BA, 0x1CC, "pwkOteam_GetOpinfoPointer: resident to 459"),
+    (0x24BEF8, 0x1BA, 0x1CC, "pwkOteam_GetRank: resident to 459"),
+    (0x24BFA0, 0x1BA, 0x1CC, "pwkOteam_GetWorldClubRank: resident to 459"),
+    (0x24BCD4, 0x1B8, 0x1CA, "pwkOteam_GetTeamData: resident to 459"),
+    (0x24A788, 0x1B8, 0x1CA, "pwkOteam_Init squad: resident to 459"),
+    (0x24A738, 0x1BA, 0x1CC, "pwkOteam_Init: squads to club 459"),
+    (0x24A60C, 0x1BA, 0x1CC, "pwkOteam_Init2: to club 459"),
+    (0x24671C, 0x1BA, 0x1CC, "pwkMatchGrow_Grow: resident to 459"),
+    (0x24829C, 0x1B8, 0x1CA, "transfer money: resident to 459"),
+    (0x228C9C, 0x1B8, 0x1CA, "plTeam_IsPurchaseOKFromCOM: resident to 459"),
+    (0x2228B0, 0x1B9, 0x1CB, "CAcquirePlayer::PickupPlayer: to club 459"),
+    (0x2551B8, 0x1BA, 0x1CC, "rental by friendship: resident to 459"),
+    (0x255278, 0x1BA, 0x1CC, "rental by branch: resident to 459"),
+    (0x25A8C4, 0x1B8, 0x1CA, "pwkTeam_AddReleaseList: resident to 459"),
+    (0x284DCC, 0x1B8, 0x1CA, "CDetailManager::ConvertPlayer_Type: resident to 459"),
+    (0x284E5C, 0x1B8, 0x1CA, "CDetailManager::ConvertPlayer_Type: resident to 459"),
+    (0x24D65C, 0x1BA, 0x1CC, "non-resident from club 460"),
+    (0x2289EC, 0x12, 0, "plTeam_CheckPurchaseOffer: no 442-459 exception"),
+    (0x24BB10, 0x12, 0, "pwkOteam_GetTeamData: no 442-459 exception"),
+    (0x288460, 0x12, 0, "CDetailManager::ConvertTeam: no page type 4"),
+    (0x20D314, 0x1BA, 0x1CC, "updatePlCoreInfoSub: to club 459"),
+    (0x2230E0, 0x1BA, 0x1CC, "CMakeDataBase::MakeDB: to club 459"),
+    (0x24A8D4, 0x1BA, 0x1CC, "friendship, branch set up: to club 459"),
+    (0x24A944, 0x1BA, 0x1CC, "friendship, branch removed: to club 459"),
+    (0x2607D4, 0x1BA, 0x1CC, "player candidates: to club 459"),
+    (0x260830, 0x1BA, 0x1CC, "player candidates: to club 459"),
+    (0x2609D0, 0x1BA, 0x1CC, "player candidates: to club 459"),
+    (0x260B58, 0x1BA, 0x1CC, "player candidates: to club 459"),
+    (0x262C20, 0x1BA, 0x1CC, "youth candidates: to club 459"),
+    (0x22628C, 0x1BA, 0x1CC, "CComOffer::CalcuOfferClub squad fill: to club 459"),
+)
+TIER_OVERLAYS = (    # (file, offset, old immediate, new immediate, what)
+    (NEGO_FILE, 0x9263C, 0x1BA, 0x1CC, "CPlayerSearchWindow_Task::GetPlayerAcquireCost: resident to 459"),
+    (NEGO_FILE, 0x69924, 0x1B8, 0x1CA, "CKeyboard_Task::RecoveryInit: resident to 459"),
+    (NEGO_FILE, 0x15AFA4, 0x1B8, 0x1CA, "ZinziYouthTeam: resident to 459"),
+    (NEGO_FILE, 0x15B488, 0x1B8, 0x1CA, "ZinziMyTeam::DiscardPlayer: resident to 459"),
+    (NEGO_FILE, 0x15BC5C, 0x1B8, 0x1CA, "ZinziMyTeam::JoinAllTransfer: resident to 459"),
+    (NEGO_FILE, 0x527C4, 0x1B7, 0x1C9, "loans: clubs 3-459 by the usual checks"),
+    (DISC + "DLL/YRSTPRG.REL", 0x17014, 0x1BA, 0x1CC, "year start: to club 459"),
+    (DISC + "DLL/YRSTPRG.REL", 0x172AC, 0x1BA, 0x1CC, "year start: to club 459"),
+    (DISC + "DLL/YRSTPRG.REL", 0x1783C, 0x1BA, 0x1CC, "year start: to club 459"),
+)
+OTEAM_FILE = "PARAM/OTEAMMEMBER.TBB"
+
+
+def _imm_word(f, img, file, off, old, new, what):
+    """A word whose 16-bit immediate goes from `old` to `new`, from the
+    word the retail file holds there."""
+    w = struct.unpack("<I", read_at(f, img, file, off, 4))[0]
+    if w & 0xFFFF not in (old, new):
+        raise ValueError("tier-clubs: %s 0x%x holds %#x, not an immediate %#x"
+                         % (file, off, w, old))
+    base = w & ~0xFFFF
+    return (file, off, struct.pack("<I", base | old), struct.pack("<I", base | new),
+            "%s 0x%x (%s)" % (file, off + (EXE_BASE if file == SLES_FILE else 0), what))
+
+
+def plan_tier_clubs(f, img):
+    """Jobs for --mod tier-clubs (the code; its OTEAMMEMBER.TBB comes from
+    file_tier_clubs)."""
+    if img.port is not None:
+        raise ValueError("tier-clubs is made for the PAL executable only")
+    words = [_imm_word(f, img, SLES_FILE, a - EXE_BASE, old, new, what)
+             for a, old, new, what in TIER_EXE]
+    words += [_imm_word(f, img, file, off, old, new, what)
+              for file, off, old, new, what in TIER_OVERLAYS]
+    return word_jobs(f, img, "tier-clubs", words)
+
+
+def file_tier_clubs(f, img, dat):
+    """[(target, data)]: OTEAMMEMBER.TBB with squads for clubs 442-459,
+    from the image's file and the player database in `dat` (or the
+    image's own PBDATA_EU.PAC)."""
+    import initteam
+    import pbdata
+    import tempfile
+    _, data = read_file(f, img, OTEAM_FILE)
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "OTEAMMEMBER.TBB")
+        with open(path, "wb") as g:
+            g.write(data)
+        ot = initteam.OteamMembers(path)
+        if ot.end_team != initteam.OTEAM_END:
+            return []                                   # already has them
+        pb = os.path.join(tmp, "PBDATA_EU.PAC")
+        _, pdata = read_file(f, img, "PARAM/PBDATA_EU.PAC")
+        with open(pb, "wb") as g:
+            g.write(pdata)
+        return [(OTEAM_FILE, initteam.add_tier_squads(ot, pbdata.PbData(pb)))]
+
+
 # fanbase: a big fanbase counts for more. Merchandise sales start from a
 # base by the sum of pwkTeam_Supporter over the 13 regions (SIMPRG.REL
 # 0x165598): 17 {threshold, base} pairs at 0x1d9ec8, from 800 (under
@@ -3238,6 +3355,8 @@ SWITCHES = (
      "Balance: club status (reputation) rises half as fast; losses stay"),
     ("save-expand", plan_save_expand, [SLES_FILE, SAVE_FILE],
      "LMASTER full: a bigger save (clubs 442-459, competitions 49-55); breaks save compatibility"),
+    ("tier-clubs", plan_tier_clubs, [SLES_FILE, NEGO_FILE, DISC + "DLL/YRSTPRG.REL", OTEAM_FILE],
+     "LMASTER full: clubs 442-459 (the third tier) as full clubs; needs save-expand"),
     ("one-season-end", plan_one_season_end, [NEGO_FILE],
      "The second division's bottom two end the game after one season, not two"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
@@ -3278,6 +3397,10 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
 # fixes; LMASTER full is every switch of the mod, with its own saves
 # (mod-saves) so its careers never mix with the retail game's. The
 # tutorial skip and the launcher are test tools, in neither.
+# Switches whose plan needs another switch, and switches that write whole
+# files (file_<switch>(f, img, dat) -> [(target, data)]).
+SWITCH_NEEDS = {"tier-clubs": ("save-expand",)}
+SWITCH_FILES = {"tier-clubs": file_tier_clubs}
 LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-types",
                 "camp-cities", "camp-santiago", "camp-clubs", "drill-names", "injury-value",
                 "injury-row", "vpf-styles", "season-status", "pr-cycle", "mobile-site",
@@ -3510,6 +3633,25 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
             if file in {norm(p) for p in files}:
                 pairs[k] = (target, src, hook(file, data))
                 adopted.setdefault(name, set()).update({file} | {norm(p) for p in also})
+    # Switches that need other switches, and switches that bring whole
+    # files of their own (a file that grows), which then go the way of a
+    # target: moved when it needs more sectors, copied with --copies.
+    for name, needs in SWITCH_NEEDS.items():
+        missing = [n for n in needs if name in mods and n not in mods]
+        if missing:
+            raise SystemExit("--mod %s needs --mod %s too" % (name, ",".join(missing)))
+    for name, func in SWITCH_FILES.items():
+        if name not in mods:
+            continue
+        given = {norm(img.entry(t).path) for t, _, _ in pairs if "#" not in t}
+        with open(image, "rb") as g:
+            extra = func(g, img, dat)
+        for target, data in extra:
+            if norm(target) in given:
+                raise SystemExit("--mod %s writes %s; don't patch it as a target too"
+                                 % (name, target))
+            pairs.append((target, "--mod " + name, data))
+            adopted.setdefault(name, set()).add(norm(target))
     index = Index(dat) if dat else None
     if write_copies and index is None:
         raise SystemExit("--copies needs the DAT index (--dat)")

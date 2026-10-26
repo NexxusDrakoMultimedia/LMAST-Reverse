@@ -200,7 +200,10 @@ What is known so far:
      squads for 442–459 added to `OTEAMMEMBER.TBB`; (b) the buffers and
      arrays sized for 441 clubs (`ClubRank`, the club-rank list, the
      schedule's club lists, the transfer AI), each read and resized;
-     each step a switch of its own, tested on a disc.
+     each step a switch of its own, tested on a disc. Step (a) is
+     **built** as `--mod tier-clubs`
+     ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-tier-clubs-phase-2a)); not
+     yet run in the game.
   3. The schedules: UIDs 142–147 every season as the hidden third tiers
      (three real clubs and the two sent down), the second divisions'
      last club down and one random tier club up, two clubs sent down at

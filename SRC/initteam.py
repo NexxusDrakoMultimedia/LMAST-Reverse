@@ -90,6 +90,11 @@ INIT_SIZES = (LEAGUES * DIVISIONS * DIV_BLOCK, 56 * PAST_ROW, 56 * 2)
 # OTEAMMEMBER (pwkOteam_Init 0x24a6a0): teams 3 to 0x1b9, 25 slots each.
 OTEAM_FIRST = 3
 OTEAM_END = 0x1ba
+# The third tier's clubs (LMASTER, patch_disc.py --mod tier-clubs): the
+# tutorial's opponents, given squads of their own after the others. Their
+# 25 players each are the database's block from 0x63f7 (the non-resident
+# set-up at SLES 0x24d6b0 takes the same ids).
+TIER_FIRST, TIER_END, TIER_PLAYERS = 0x1ba, 0x1cc, 0x63f7
 SQUAD = 25                  # also pwkTeam_SetUnumberOpinfo's slot count
 OTEAM_ROW = 0x10
 # Record offsets and the PlOpinfo byte each is copied to.
@@ -211,22 +216,44 @@ class OteamMembers:
         if len(self.tables) != 1:
             raise ValueError("%d tables, expected 1" % len(self.tables))
         d = self.tables[0].data
-        want = (OTEAM_END - OTEAM_FIRST) * SQUAD * OTEAM_ROW
-        if len(d) != want:
-            raise ValueError("table is %d bytes, expected %d" % (len(d), want))
+        sizes = {(end - OTEAM_FIRST) * SQUAD * OTEAM_ROW: end for end in (OTEAM_END, TIER_END)}
+        if len(d) not in sizes:
+            raise ValueError("table is %d bytes, expected %s" % (
+                len(d), " or ".join(str(n) for n in sorted(sizes))))
+        self.end_team = sizes[len(d)]
         self.squads = {}
-        for i, team in enumerate(range(OTEAM_FIRST, OTEAM_END)):
+        for i, team in enumerate(range(OTEAM_FIRST, self.end_team)):
             base = i * SQUAD * OTEAM_ROW
             self.squads[team] = [Member(d[base + k * OTEAM_ROW:][:OTEAM_ROW])
                                  for k in range(SQUAD)]
 
     def encode(self):
         """The whole file, rebuilt from the squads with tbb.build."""
-        data = b"".join(m.encode() for team in range(OTEAM_FIRST, OTEAM_END)
+        data = b"".join(m.encode() for team in sorted(self.squads)
                         for m in self.squads[team])
         trailer = tbb.trailer(self.buf, self.tables)
         self.tables[0].data = data
         return tbb.build(self.tables, self.end, trailer)
+
+
+def add_tier_squads(ot, db):
+    """Give OteamMembers `ot` squads for the third tier's clubs 442-459,
+    from their database players (pbdata.PbData `db`): age and shirt as the
+    database has them, contracts of 2 years. Returns the bytes of the
+    whole file."""
+    if ot.end_team != OTEAM_END:
+        raise ValueError("the table already has squads past club %d" % (OTEAM_END - 1))
+    for team in range(TIER_FIRST, TIER_END):
+        squad = []
+        for k in range(SQUAD):
+            pid = TIER_PLAYERS + SQUAD * (team - TIER_FIRST) + k
+            r = db.record("players", pid)
+            m = Member(bytes(OTEAM_ROW))
+            m.player, m.age, m.shirt, m.contract = pid, r.fields["age"], r.fields["shirt"], 2
+            squad.append(m)
+        ot.squads[team] = squad
+    ot.end_team = TIER_END
+    return ot.encode()
 
 
 # Limits for `set`: the fields are copied into PlOpinfo bytes, and

@@ -236,6 +236,12 @@ Chelsea and Highbury (Arsenal) are at stadium 96, AC Milan and Inter at
 100 (110,000 seats each). The game gives the biggest clubs by reputation
 these stadiums instead of their real grounds.
 
+**Extended by `--mod tier-clubs`.** The table may also hold 18 more
+squads after club 441, for clubs 442–459 (457 squads, 182,848 bytes);
+`initteam.py` reads either size. `initteam.add_tier_squads` builds them
+from the database (each club's 25 players from `0x63f7`), as the
+LMASTER third tier needs ([`CLUB_LIMITS.md`](CLUB_LIMITS.md)).
+
 ## `INITNATIDATA.TBB`: nations
 
 **Confirmed, the load callback `0x253418`, `pwkRec_GetUefaNation`
