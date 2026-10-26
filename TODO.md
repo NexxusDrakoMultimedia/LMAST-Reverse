@@ -35,6 +35,13 @@ What to work on next, most valuable first.
    third tier with them, now with its clubs in the lower cups; the
    disc is `LMAST-test-full-germany.iso`, rebuilt 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
+3. **The stadium and emblem table writers** (section 3, with the
+   field work they need from section 2): the fields first (the
+   `EMBLEM/` preset, crest and layer records, `EDIT_FLAG` and
+   `EDIT_PLAYER.TBB`; the stadium crowd figure groups and request
+   `+0x0e`–`+0x10`), then a writer for each with a `roundtrip` check
+   ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#still-unknown),
+   [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown)).
 
 ## What a mod can change, and what is left
 
