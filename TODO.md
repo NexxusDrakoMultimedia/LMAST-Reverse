@@ -348,6 +348,10 @@ names the disc or the edit to build; the result goes into the doc.
       update), and saves and loads; the ranking screen at the start is
       checked
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-tier-lists-phase-2b))
+- [ ] The third tier's clubs in My Room > Information > Club Info >
+      Other Club Info, which doesn't list clubs 442–459 (user report);
+      how the screen picks its clubs isn't traced
+      ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#still-unknown))
 - [ ] The third tier (`--mod tier-uids`, phase 4 of the design):
       `LMAST-test-tiers-germany.iso` (with the tutorial skip in
       Germany, `--skip-nation Germany`, and `one-season-end`) starts a

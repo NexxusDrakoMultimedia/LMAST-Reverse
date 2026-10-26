@@ -165,6 +165,10 @@ block 2, not in arrays of its own.
 
 ## Still unknown
 
+- How My Room > Information > Club Info > Other Club Info chooses its
+  clubs. **Seen in PCSX2** (user report, 2026-10-27, on
+  `LMAST-test-tiers-germany.iso`): clubs 442–459 aren't listed there,
+  though the All Clubs Ranking lists them. Not traced.
 - Tables indexed by club number with no 440–442 immediate: per-club
   arrays in the save blocks (block 5's team records among them) and in
   objects. Each would overflow for a resident club past 441.
