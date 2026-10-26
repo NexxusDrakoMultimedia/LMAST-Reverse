@@ -315,12 +315,13 @@ names the disc or the edit to build; the result goes into the doc.
       checked
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-tier-lists-phase-2b))
 - [ ] The third tier (`--mod tier-uids`, phase 4 of the design):
-      `LMAST-test-tiers.iso` (with the tutorial skip and
-      `one-season-end`) starts a new career with England at 24 in the
-      second division (yours and the rival in it), plays the first
-      season to its end and into the second, saves and loads; the
-      second division then has last season's tier winner, and its last
-      club is gone ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3))
+      `LMAST-test-tiers-germany.iso` (with the tutorial skip in
+      Germany, `--skip-nation Germany`, and `one-season-end`) starts a
+      new career with a German club, plays the first season to its end
+      and into the second, saves and loads; the second division then
+      has last season's tier winner, and its last club is gone
+      (England's start, 24 clubs with yours and the rival, is checked
+      on `LMAST-test-tiers.iso`) ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST

@@ -590,8 +590,11 @@ That is the won route's order: initialise, year and month start,
 promotion, month end, year end, finalise. The script has no other
 `Call`, so the one that never returns can't block another (calls don't
 nest). `sqb.set_commands` makes the script edits and checks the labels
-once at the end. `pwkLg_Init(0)` names league 0 (England), so other
-leagues may not come out right.
+once at the end. `pwkLg_Init(0)` names league 0 (England); its
+argument is set in the call's delay slot (`0x108dc4`, `move $a0,
+$zero`), and `--skip-nation` writes another league there (England 0,
+France 1, Germany 2, Italy 3, Spain 4, the Netherlands 5), for a club
+created in that nation. A smaller league makes a quicker season test.
 
 `Sche.YearEnd` (`0x113668`) has to run as a script command: it works
 over several frames and partly in an overlay (the first call creates

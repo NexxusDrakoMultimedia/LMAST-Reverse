@@ -36,7 +36,7 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>]
     python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--mod <switch>,...]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
@@ -111,7 +111,11 @@ Finalize, so the real year end runs (club rankings, the club's status);
 RootMainSeq.sqb and RootYearStartSeq.sqb keep club creation and year
 starts. On an image patched by the earlier skip it also undoes that
 skip's sponsor and pwkTeam_YearEndCheck workarounds. The club must be in
-England (the switch calls pwkLg_Init(0)). See DOC/SQB_FORMAT.md.
+England (the switch calls pwkLg_Init(0)), or in the nation --skip-nation
+names (England, France, Germany, Italy, Spain or Netherlands; the
+argument at SLES 0x108dc4): create the club in a city there. A smaller
+league makes a quicker season test (Germany: 34 second-division games
+to England's 46). See DOC/SQB_FORMAT.md.
 
 --sponsor-negotiation (whole disc image only) turns the Sponsor screen's
 main sponsor negotiation back on, as in the Japanese release. The screen's
@@ -1343,6 +1347,15 @@ class PackEdits:
 # --- skipping the tutorial (DOC/SQB_FORMAT.md) --------------------------------
 
 SKIP_FLAG = (DISC + "SLES_541.51", 0x24e434)    # SLES 0x34d434, Dummy.CheckClubEditSkip's flag
+# The nation the career starts in: Dummy.CheckClubEditSkip calls
+# pwkLg_Init(league) at 0x108dc0 with 0 (England) set in its delay slot,
+# 0x108dc4. --skip-nation writes addiu $a0, $zero, league there; the
+# leagues run England 0, France 1, Germany 2, Italy 3, Spain 4, the
+# Netherlands 5 (PLRRSRC_INITTEAMDATA table 0's order). The club must be
+# created in a city of that nation.
+SKIP_NATIONS = ("England", "France", "Germany", "Italy", "Spain", "Netherlands")
+SKIP_NATION_AT = (DISC + "SLES_541.51", 0x9dc4)   # SLES 0x108dc4: move $a0, $zero
+skip_nation = 0                                   # set by main from --skip-nation
 # The skip runs the playoffs' own schedule steps without the playoff turns:
 # RootClubEditSeq.sqb's playoff section (L2) becomes InitializeFirstCheck,
 # YearStart, MonthStart, then Dummy.CheckClubEditSkip (pwkLg_Init(0) and
@@ -1426,6 +1439,8 @@ def plan_skip_tutorial(f, img):
                 jobs.append(Job(e.path, i, new[i:i + 1], path, "--skip-tutorial: " + what))
     if img.port is not None:
         # The earlier skip, undone below, was only ever made for PAL.
+        if skip_nation:
+            raise ValueError("--skip-nation is made for the PAL executable only")
         notes.append("note: --skip-tutorial: start the career in England")
         return jobs, notes
     file, base = OLD_SKIP_SPONSORS
@@ -1437,13 +1452,24 @@ def plan_skip_tutorial(f, img):
                             "--skip-tutorial: undo the earlier skip's sponsor %d offset" % i))
     file, off, retail, earlier = OLD_SKIP_CODE
     held = read_at(f, img, file, off, len(retail))
+    nfile, noff = SKIP_NATION_AT
+    k = noff - off
+    word = struct.unpack_from("<I", held, k)[0]
+    if word >> 16 == 0x2404 and word & 0xFFFF < len(SKIP_NATIONS):   # addiu $a0, $zero, n
+        held = held[:k] + retail[k:k + 4] + held[k + 4:]
+    nation = struct.pack("<I", 0x24040000 | skip_nation if skip_nation else 0x0000202D)
+    if held in (retail, earlier) and word.to_bytes(4, "little") != nation:
+        jobs.append(Job(nfile, noff, nation, "%s (0x108dc4)" % nfile,
+                        "--skip-tutorial: pwkLg_Init(%d), %s" % (skip_nation,
+                                                                 SKIP_NATIONS[skip_nation])))
     if held == earlier:
         jobs.append(Job(file, off, retail, "%s (0x108dac)" % file,
                         "--skip-tutorial: undo the earlier skip's pwkTeam_YearEndCheck call"))
     elif held != retail:
         raise ValueError("%s 0x108dac doesn't hold Dummy.CheckClubEditSkip's code; "
                          "not the retail executable?" % file)
-    notes.append("note: --skip-tutorial: start the career in England")
+    notes.append("note: --skip-tutorial: start the career in %s (create the club in "
+                 "a city there)" % SKIP_NATIONS[skip_nation])
     return jobs, notes
 
 
@@ -4352,6 +4378,15 @@ def main(argv):
         values.append(_opt(args, "--mod"))
     mods = parse_mods(values)
     dat =_opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
+    nation = _opt(args, "--skip-nation", None)
+    if nation is not None:
+        names = [n.lower() for n in SKIP_NATIONS]
+        if nation.lower() not in names:
+            raise SystemExit("--skip-nation takes %s" % ", ".join(SKIP_NATIONS))
+        if "skip-tutorial" not in mods:
+            raise SystemExit("--skip-nation goes with --skip-tutorial")
+        global skip_nation
+        skip_nation = names.index(nation.lower())
     renames = []
     while "--rename" in args:
         renames.append(_opt(args, "--rename"))
