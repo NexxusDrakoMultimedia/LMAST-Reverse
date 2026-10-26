@@ -194,8 +194,11 @@ the sizes the same every season.
 into September past the tiers' first game days, the All Clubs Ranking
 lists the tier clubs, and the Information screen's Competitions tab
 doesn't list the tiers, as the design wants (it must take its
-competitions from a list of its own; not traced). The movements aren't
-run in the game yet.
+competitions from a list of its own; not traced). With the movements
+(`LMAST-test-tiers.iso`, an England career with the tutorial skip): the
+Champions Division's table after its first game day has 24 clubs, your
+club and the rival among them (user report, with a screenshot). The
+season's end isn't played yet.
 
 ## Still unknown
 
