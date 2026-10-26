@@ -321,6 +321,13 @@ names the disc or the edit to build; the result goes into the doc.
       against the retail game's for the same save; a PR event, a camp and
       a tour costing 2×, 2× and 3× the retail price; PR events succeeding
       about half the time in an average economy (`pr-cycle`)
+- [ ] `--mod overseas-pop` and `--mod cup-last16` (in LMASTER lite), on
+      `LMAST-test-popularity.iso` with a save state before and after:
+      an overseas region with a branch whose best player from there has
+      rank 2 gains about a tenth of the retail month-end popularity; a
+      European Club Cup exit in the last 16 adds popularity and one in
+      the last 32 doesn't (block 1 `+0x11248`;
+      [`ECONOMY.md`](DOC/ECONOMY.md#supporter-popularity))
 - [ ] `pmplayer.py check` on a career saved after importing the edited
       V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`; the import
       is tested): no differences, and the fixed import's styles

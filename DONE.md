@@ -279,3 +279,8 @@ Each result is recorded in the doc named.
 - [x] `mobile-site` (in LMASTER lite) built: the cut PR event Renew
       Mobile Site can be booked again; not yet checked in game
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [x] Popularity and supporters traced: the popularity rank's caps and
+      what raises it, every change, and the supporter formula, checked on
+      three saves; `overseas-pop` and `cup-last16` (in LMASTER lite) fix
+      two bugs in it; not yet checked in game
+      ([`ECONOMY.md`](DOC/ECONOMY.md#supporter-popularity))

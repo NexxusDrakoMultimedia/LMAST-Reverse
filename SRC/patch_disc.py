@@ -71,15 +71,15 @@ Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
-pr-cycle, mobile-site, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
+pr-cycle, mobile-site, overseas-pop, cup-last16, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
 fanbase, merch-costs, pr-costs, camp-costs, tour-costs, launcher,
 mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
 camp-cities, camp-santiago, camp-clubs, drill-names, injury-value,
-injury-row, vpf-styles, season-status, pr-cycle, mobile-site). --mod
-harder-economy is
+injury-row, vpf-styles, season-status, pr-cycle, mobile-site,
+overseas-pop, cup-last16). --mod harder-economy is
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees and
 season-demand; --mod balance is injury-odds, injury-lines,
 overseas-bases, transfer-fees, fanbase, merch-costs, pr-costs,
@@ -239,6 +239,14 @@ event costs (plClubEvent_GetCost's x 300 -> x 600, 0x20deec), and
 camp-costs and tour-costs (whole disc image only) scale the camp rates
 (SIMPRG.REL 0x1ce4e8, 8 x 14) by 2 and the tour rates (0x1ce6c0, 14) by
 3. See DOC/ECONOMY.md#pr-events and #camps-and-tours.
+
+overseas-pop (whole disc image only) fixes the overseas popularity
+factor by your best player's rank from a region (SLES 0x554ec8, 1.02 up
+to 1.47 in steps of 0.03): rank 2's 10.8 becomes 1.08. cup-last16 (whole
+disc image only) gives the European Club Cup's popularity points for
+the last 16 (60, overseas none) to the last 16, which got nothing while
+the last 32 got them: 3 words at SLES 0x26894c-0x268970. See
+DOC/ECONOMY.md#supporter-popularity and #titles.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
 memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
@@ -2549,6 +2557,39 @@ def plan_mobile_site(f, img):
     return word_jobs(f, img, "mobile-site", MOBILE_SITE)
 
 
+# overseas-pop: the overseas popularity factor by your best player's rank
+# from the region (0x268e70 indexes 16 floats at 0x554ec8 by it) runs
+# 1.02, 1.05, 10.8, 1.11, ... in steps of 0.03; the third is 1.08 with
+# the decimal point one place off (DOC/ECONOMY.md#supporter-popularity).
+OVERSEAS_POP = (
+    sles_word(0x554ed0, 0x412ccccd, 0x3f8a3d71, "overseas popularity factor, rank 2: 10.8 -> 1.08"),
+)
+
+
+def plan_overseas_pop(f, img):
+    """Jobs for --mod overseas-pop."""
+    return word_jobs(f, img, "overseas-pop", OVERSEAS_POP)
+
+
+# cup-last16: the title popularity (0x268858) gives its 4th points column
+# to places 8-15 when the cup is 34 (European League) and to places 16-31
+# when it is 35 (European Club Cup), so the Club Cup paid its last 32 and
+# not its last 16 (DOC/ECONOMY.md#titles). Both branches end in a shared
+# movz $s2, $a0 ($a0 = 4) on $v1 = cup ^ id. Now places 8-15 test
+# cup < 36 (sltiu: 1 for 34 and 35; the table's cups are 34-43) and
+# places 16-31 get 0, with movn in place of the movz.
+CUP_LAST16 = (
+    sles_word(0x26894c, 0x38630022, 0x2c630024, "title points, places 8-15: cup 34 or 35"),
+    sles_word(0x26896c, 0x38630023, 0x0000182d, "title points, places 16-31: none"),
+    sles_word(0x268970, 0x0083900a, 0x0083900b, "title points: movz -> movn"),
+)
+
+
+def plan_cup_last16(f, img):
+    """Jobs for --mod cup-last16."""
+    return word_jobs(f, img, "cup-last16", CUP_LAST16)
+
+
 # camp-costs and tour-costs: the camp and tour screens (SIMPRG.REL 0xa3b00,
 # 0xa3bf4) price a booking from u32 rates in SIMPRG.REL, x the squad's
 # players x 300 (x 1/2 for a tour), the business cycle and the sponsor
@@ -2631,6 +2672,12 @@ SWITCHES = (
     ("mobile-site", plan_mobile_site, [SLES_FILE],
      "PR events: the cut Renew Mobile Site can be booked again (from 2010-11, like "
      "Renew Home Page)"),
+    ("overseas-pop", plan_overseas_pop, [SLES_FILE],
+     "Popularity: a rank-2 player from a region no longer makes your popularity there "
+     "grow ten times as fast (10.8 -> 1.08)"),
+    ("cup-last16", plan_cup_last16, [SLES_FILE],
+     "Popularity: reaching the European Club Cup's last 16 earns points, its last 32 "
+     "no longer does"),
     ("facility-tiers", plan_facility_tiers, [COMMON_FILE, STATION_FILE],
      "Harder economy: bigger stadiums, club houses and grounds cost much more to build "
      "and keep up; other facilities twice as much"),
@@ -2693,7 +2740,8 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
 # tutorial skip and the launcher are test tools, in neither.
 LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-types",
                 "camp-cities", "camp-santiago", "camp-clubs", "drill-names", "injury-value",
-                "injury-row", "vpf-styles", "season-status", "pr-cycle", "mobile-site")
+                "injury-row", "vpf-styles", "season-status", "pr-cycle", "mobile-site",
+                "overseas-pop", "cup-last16")
 HARDER_ECONOMY = ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
                   "season-demand")
 BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fanbase",

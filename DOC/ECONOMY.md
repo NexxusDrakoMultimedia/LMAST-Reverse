@@ -173,6 +173,8 @@ region (`0x268e70`; 0 with none): 1.02, 1.05, **10.8**, 1.11, 1.14, …
 1.47, rising by 0.03. The third value is a typo for 1.08 in both
 releases (Japanese `0x550bf8`): a club whose best player from a region
 has rank 2 gains popularity there ten times as fast.
+`patch_disc.py --mod overseas-pop` (in `--mod lmaster-lite`) sets it to
+1.08.
 
 #### The monthly change
 
@@ -223,7 +225,7 @@ one 10 ranks below costs (−5 − 16) × 1.0 × 2 = −42.
 | a prime domestic cup (above) | winner 200, runner-up 100, semi-final 50 |
 | another domestic cup | winner 100, runner-up 50, semi-final 25 |
 | European League (34) | 500 (200) for taking part, plus winner 2,000, runner-up 1,000, semi-final 500, quarter-final 250, last 16 120 (overseas 2,000, 1,000, 500, –, –) |
-| European Club Cup (35) | 500 (200) for taking part, plus winner 1,000, runner-up 500, semi-final 250, quarter-final 120, last 32 60; the last 16 get nothing, a bug ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)) (overseas 1,500, 750, 375, –, –) |
+| European Club Cup (35) | 500 (200) for taking part, plus winner 1,000, runner-up 500, semi-final 250, quarter-final 120, last 32 60; the last 16 get nothing, a bug that `patch_disc.py --mod cup-last16` fixes ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)) (overseas 1,500, 750, 375, –, –) |
 | International Club Cup (36), World Club Cup (40), American Club Cup (42) | 300, 150, 75 for winner, runner-up, semi-final (overseas 200, 100, 50 for 36; 500, 250, 125 for 40 and 42) |
 | World Club Championship (38) | 500, 250, 120 (overseas 1,000, 500, 250) |
 | Asia-Oceania (41) and African (43) Club Cups | 200, 100, 50 |
