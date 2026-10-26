@@ -47,6 +47,18 @@ About 140 sites use the same numbers for something else:
 | The non-resident path, for 442–459 | `_pwkOteam_GetPlRec_LgTeamNonresident` (`0x24d65c`), its player base (`0x24d6b0`, `0x24d748`), the league records' set-up `0x24d454` (clubs `0x1ba`–`0x1cb`, players from `0x63f7`), `pwkOteam_ResetRentalPossibleClubFlag` (`0x24ca18`) |
 | Not yet understood | `CScheEuro::clearPlayerRecord` and `movePlayerRecord` (`0x2078a0`, `0x207a98`): clubs below 441 skip a player lookup that 441 and up take |
 
+## Each loop's body
+
+Whether a loop over clubs can simply run to 459, or fills a buffer
+sized for 441 clubs. **Confirmed** from the code, as each was read:
+
+| Loop | Body | To 459 |
+|---|---|---|
+| `updatePlCoreInfoSub` (`0x20d314`) | each club through block 2 (`updatePlCoreInfoSub_Team_OteamOne`, `0x20cdb8`), which records the club on its players' core info; your club's players get `0x1cc` (460), past every club | as it is |
+| `CMakeDataBase::MakeDB` (`0x2230e0`) | each club through block 2 (`MakeDBEach`) | as it is |
+| `pwkOteam_Init` (`0x24a738`) | each club's 25 squad slots, read in order from `OTEAMMEMBER.TBB` | with 18 squads added to the file |
+| `GetOfferClub` (`0x225808`…) | a 4-byte entry per club on the stack at `$sp + 0x10`, below other buffers in a `0x2360`-byte frame | the frame relaid |
+
 ## Tables indexed by club
 
 **Empirical**, from the 161 executable functions that take a `PlTeam`
