@@ -136,6 +136,37 @@ with the UIDs its `NOW_RANK` records and place slots name moved to the
 own versions. So your second division has its real size (England 24
 with your club and the rival).
 
+**The lower cups.** Each nation's lower cup (competitions 5, 10, 15, 21,
+26 and 32: the English League Cup and the Club Cups) takes every club of
+its tier's record, last season's ranks 1–3 (your nation: 1–5), in
+slots after its own (the user's choice, 2026-10-27; the qualifying
+round and the main cup are as they were). Its knockout is rebuilt at the
+new size with `schedule.py`'s builder
+([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-knockout)), and
+`REGULATION.TBB` and `CLUBRESULT.TBB` get its club count (the round
+names depend on it). Every lower cup starts on Dec w1 midweek (turn 40,
+the user's choice), the main cup's first round, whose clubs (the
+qualifying winners and the first division) a lower cup doesn't have, as
+on the turns they shared already; its other rounds stay on the disc's
+midweeks for that many rounds. No round falls on a European or
+national-team day (the user's rule).
+
+| Nation | Clubs (other nations / yours) | Rounds | Turns |
+|---|---|---|---|
+| England (UIDs 9 / 8) | 15 / 17 | 4 / 5 | 40, 50, 54, 76 / 40, 44, 50, 54, 76 |
+| France (18 / 17) | 11 / 13 | 4 | 40, 50, 54, 76 |
+| Germany (27 / 26) | 7 / 9 | 3 / 4 | 40, 54, 76 / 40, 50, 54, 76 |
+| Italy (37 / 36) | 13 / 15 | 4 | 40, 50, 54, 76 |
+| Spain (46 / 45) | 13 / 15 | 4 | 40, 50, 54, 76 |
+| Netherlands (57 / 56) | 9 / 11 | 4 | 40, 50, 54, 76 |
+
+**Empirical**, a script over the switch's files: in season 1 of each
+nation, as yours and not, the qualifying round, the main cup and the
+lower cup take no club twice by last season's records, with
+`ProcPromotion`'s moves (below) in your nation. The tier's rank 1 is
+the club now in the second division (the one promoted, or in season 1
+the one seeded there), as the user's rule wants. Not seen in game yet.
+
 **Season 1.** The seeding loop (`0x253200`) reads the seed table's rows
 to 55, and `PLRRSRC_INITTEAMDATA.TBB` table 1 gets rows 50–55: each
 second division's seeded last place holds one of its tier's clubs, and
@@ -179,7 +210,7 @@ The packs' headers grow to 177 entries in the same 4,096 bytes
 (`pac.grow_binpac_header`), so the `.HED` files keep their size. The
 switch writes the `PRELOAD` copies too (`STATIONFILE.PAC`'s
 `schedule_system.pac` and `.HED` copies, which the game loads, and the
-seven `SIMFILE*.PAC` copies of `REGULATION.TBB`), so it refuses to run
+seven `SIMFILE*.PAC` copies of `REGULATION.TBB` and `CLUBRESULT.TBB`), so it refuses to run
 without `--copies`. `python SRC/schedule.py info` accepts the 177-UID
 layout and finds no new problem (UID 117 as on the retail disc).
 
@@ -207,9 +238,10 @@ start were Siegen and Offenbach (user report). Your nation's cups, now
 copies of the other nations' versions, run on their usual turns: the
 German Club Cup's semi-finals were on December week 3 midweek with its
 4 clubs, the qualifying round's losers, one of them Trier, the tier
-club in the seeded last place (user report, with a screenshot). That
-cup now has 2 rounds where your nation's retail version had 3 (6
-clubs).
+club in the seeded last place (user report, with a screenshot). On
+that disc the cup had 2 rounds where your nation's retail version had
+3 (6 clubs); it now takes the tier's clubs as well ([The lower
+cups](#--mod-third-tier-the-tiers-seasons-phase-3), 9 clubs in 4 rounds).
 
 **The first season's end failed, and is fixed** (user report, with
 screenshots and the save, 2026-10-27). The tiers' year rows had `+7` at

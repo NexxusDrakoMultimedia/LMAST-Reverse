@@ -32,15 +32,10 @@ What to work on next, most valuable first.
    not yet seen in game. A disc built with `--mod lmaster-full`, played
    through a season in Germany, shows whether the economy is harder in
    a way players notice, whether the balance switches work, and the
-   third tier with them; the disc is `LMAST-test-full-germany.iso`
+   third tier with them, now with its clubs in the lower cups (rebuild
+   the disc first); the disc is `LMAST-test-full-germany.iso`
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **The third tier's clubs in the domestic cups** (section 7): bigger
-   brackets, built with `schedule.py`'s knockout builder, that take each
-   nation's tier clubs but the tier's last place, so every current
-   entrant keeps its place, and a turn where a cup gains a round; part
-   of `--mod third-tier`
-   ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
-4. **The switch levels** (section 5): editions, groups, then single
+3. **The switch levels** (section 5): editions, groups, then single
    switches, with the editor's Build tab offering the editions and their
    groups instead of a box per switch ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
@@ -346,17 +341,13 @@ names the disc or the edit to build; the result goes into the doc.
       (`LMAST-test-tiers-germany2.iso`) ran through its transfer windows
       and year end without trouble
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b))
-- [ ] The third tier's clubs in the domestic cups (the user's choice,
-      2026-10-27: grow the brackets, so every current entrant keeps its
-      place): each nation's cups take its tier clubs by `LAST_RANK` of
-      competitions 50–55, all but the tier's last place (the user's
-      rule): ranks 1–4 in the own-nation versions (5-club tier), 1–2 in
-      the others (3 clubs). The brackets are built with `schedule.py`'s
-      knockout builder (`set_knockout`); left are the bigger cups' team
-      entries and, where a cup gains a round, a turn for it. Part of
-      `third-tier`
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#building-a-knockout),
-      [`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
+- [ ] The third tier's clubs in the lower cups (`--mod third-tier`):
+      on a German career (`--skip-nation Germany`), the German Club Cup
+      starts on Dec w1 midweek with 9 clubs, the 5 tier clubs among them,
+      and plays to its final on Apr w3 midweek; another nation's lower
+      cup shows its tier's 3 clubs, and the round names on the end of
+      tournament screen fit the bigger cup
+      ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 - [ ] The third tier's clubs in My Room > Information > Club Info >
       Other Club Info, which doesn't list clubs 442–459 (user report);
       how the screen picks its clubs isn't traced

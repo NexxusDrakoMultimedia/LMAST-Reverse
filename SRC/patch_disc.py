@@ -243,12 +243,15 @@ league under each second division, competitions 50-55, as schedule UIDs
 165-170 (3 clubs) and, for your nation, 171-176 (5 clubs). Each season
 the second division's last club goes down and the tier's winner comes
 up; your second division has its real size, two of its clubs starting
-in the tier; finishing last in it ends the game after one season. Clubs
+in the tier; finishing last in it ends the game after one season. Each
+nation's lower cup (the English League Cup, the Club Cups) takes all of
+its tier's clubs too, its qualifying round as it was, and starts on Dec
+w1 midweek (turn 40). Clubs
 442-459 become full clubs (block 2 records, squads added to
 OTEAMMEMBER.TBB, the club checks, loops and lists that stopped at 441),
 the save grows (block 2 by their 18 records, block 5 by the past records
 of competitions 49-55), and the schedule files grow (SCHEDULE_SYSTEM,
-SCHEDULE_COMPETITION, SCHEDULE_TEAM_ENTRY, REGULATION and
+SCHEDULE_COMPETITION, SCHEDULE_TEAM_ENTRY, REGULATION, CLUBRESULT and
 PLRRSRC_INITTEAMDATA, with their PRELOAD copies). Its saves don't load
 in the retail game, nor the other way round; `save.py convert` carries a
 career over. See DOC/UID_LIMITS.md, DOC/CLUB_LIMITS.md,
@@ -3349,7 +3352,21 @@ TIER_CLUBS, TIER_OWN_CLUBS = 3, 5
 TIER_DOMESTIC = 33                          # competitions 0-32 belong to one nation each
 INITTEAM_FILE = "PARAM/PLRRSRC_INITTEAMDATA.TBB"
 TIER_UID_FILES = ("PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/SCHEDULE_COMPETITION.PAC",
-                  "PARAM/SCHEDULE_TEAM_ENTRY.PAC", "PARAM/REGULATION.TBB", INITTEAM_FILE)
+                  "PARAM/SCHEDULE_TEAM_ENTRY.PAC", "PARAM/REGULATION.TBB", INITTEAM_FILE,
+                  "PARAM/CLUBRESULT.TBB")
+# The lower cups (the English League Cup, the other nations' Club Cups,
+# England to the Netherlands) take every club of their tier's record (the
+# user's choice): a knockout grown by 3 clubs, 5 in your nation's version,
+# its qualifying round as it was. Every lower cup starts on Dec w1 midweek
+# (turn 40, the user's choice), the cups' start turn and the main cup's
+# first round, whose clubs (the qualifying winners and the first
+# division) a lower cup doesn't have, as on the turns they already share.
+# Its other rounds stay on the disc's midweeks for that many rounds (44,
+# 50, 54, 76: the first of them moves to 40), and a 5th round (England's
+# own version, 17 clubs) keeps 44. Never a European or national-team day
+# (the user's rule).
+TIER_CUP_COMPE = (5, 10, 15, 21, 26, 32)
+TIER_CUP_TURNS = {2: (40, 76), 3: (40, 54, 76), 4: (40, 50, 54, 76), 5: (40, 44, 50, 54, 76)}
 TIER_CAVE = CAVE + 0x280                    # past the save wrappers and their variables
 TIER_SEED_LOOP = (0x253200, 0x2A020031, 0x2A020038, "past records seeded to competition 55")
 TIER_FINISH_BOUND = (0x205FA8, 0x2A820031, 0x2A820038, "season-end tables to competition 55")
@@ -3482,7 +3499,8 @@ def file_tier_uids(f, img, dat):
     import schedule
     import tbb
     import tempfile
-    sys_file, compe_file, entry_file, reg_file, init_file = TIER_UID_FILES
+    import clubresult
+    sys_file, compe_file, entry_file, reg_file, init_file, result_file = TIER_UID_FILES
     _, sys_data = read_file(f, img, sys_file)
     head, blobs = pac.binpac_blobs(sys_data)
     system = schedule.System([(e[2], b) for e, b in zip(head.entries, blobs)])
@@ -3508,6 +3526,11 @@ def file_tier_uids(f, img, dat):
         with open(path, "wb") as g:
             g.write(init_data)
         init = initteam.InitTeamData(path)
+        _, result_data = read_file(f, img, result_file)
+        path = os.path.join(tmp, "CLUBRESULT.TBB")
+        with open(path, "wb") as g:
+            g.write(result_data)
+        result_buf, result_end, result_raw, results = clubresult.load(path)
     savectrl = bytearray(system.savectrl)
 
     # Your nation's versions become copies of the other nations'.
@@ -3534,6 +3557,35 @@ def file_tier_uids(f, img, dat):
             if regs[own][name + "_uid"] in own_of:
                 regs[own][name + "_uid"] = own_of[regs[own][name + "_uid"]]
         savectrl[own] = savectrl[other]
+
+    # The lower cups take their tier's clubs, in slots after the others.
+    for k, cup in enumerate(TIER_CUP_COMPE):
+        t = 50 + k
+        for kind, add in ((2, TIER_CLUBS), (1, TIER_OWN_CLUBS)):
+            uid = pairs[cup][kind]
+            c = schedule.Competition(compes[uid])
+            e = schedule.TeamEntry(entries[uid])
+            n = c.entrants
+            if (c.type != 1 or schedule.knockout_shape(c) != (1, 1, "final", False)
+                    or e.slots != n or regs[uid]["clubs"] != n):
+                raise ValueError("third-tier: UID %d isn't a %d-club cup of single games"
+                                 % (uid, n))
+            e.records["last_rank"][e.counts["last_rank"]:e.counts["last_rank"]] = [
+                _entry_record(n + i, i + 1, t) for i in range(add)]
+            e.counts["last_rank"] += add
+            e.header = bytes([uid & 0xFF]) + e.header[1:]
+            entries[uid] = e.encode()
+            days = schedule.set_knockout(c, n + add)
+            h = bytearray(c.header)
+            struct.pack_into("<H", h, 0, uid)
+            c.header = bytes(h)
+            compes[uid] = c.encode()
+            row = rows[uid][0]
+            row.turns = list(TIER_CUP_TURNS[days])
+            if row.start > row.turns[0]:
+                raise ValueError("third-tier: UID %d starts on turn %d" % (uid, row.start))
+            regs[uid]["clubs"] = n + add
+            results[uid]["clubs"] = n + add
 
     compes.append(compes[-1])                       # entry 164: never loaded
     entries.append(entries[-1])
@@ -3616,7 +3668,8 @@ def file_tier_uids(f, img, dat):
             (entry_file, pac.build_binpac(pac.grow_binpac_header(
                 entry_data[:ehead.header_size], count), entries)),
             (reg_file, tbb.build(rtables, rend, tbb.trailer(reg_data, rtables))),
-            (init_file, init.encode())]
+            (init_file, init.encode()),
+            (result_file, clubresult.encode_file(result_buf, result_end, result_raw, results))]
 
 
 def plan_third_tier(f, img):

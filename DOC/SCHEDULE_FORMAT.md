@@ -706,10 +706,9 @@ sides are known, no club twice on a day, one club left). `python
 SRC/schedule.py knockout DAT/PARAM 10` prints one bracket day by day, and
 `... 10 two` the same with two legs.
 
-The builder is for the third tier's cups
-([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)):
-a cup that takes the tier's clubs grows, and where it gains a round its
-UID needs a turn for it. Neither is done yet.
+`patch_disc.py --mod third-tier` uses it to grow each nation's lower cup
+by its tier's clubs
+([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
 
 ## Related files
 

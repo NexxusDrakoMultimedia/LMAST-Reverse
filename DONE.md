@@ -252,6 +252,10 @@ Each result is recorded in the doc named.
       and rebuilds 71 of the disc's 87 knockouts byte for byte; the game
       follows the winner links (`entryWinTeamTournament` `0x2dcc80`)
       ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#building-a-knockout))
+- [x] The third tier's clubs in the lower cups: `--mod third-tier` puts
+      every tier club into its nation's League Cup or Club Cup, which
+      starts on turn 40, qualifying as it was
+      ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 
 ## 8. LMASTER Mod and other patches
 
