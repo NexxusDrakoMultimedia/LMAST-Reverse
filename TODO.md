@@ -387,7 +387,9 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] LMAST Realism in LMASTER (the user's idea, 2026-10-27): bring the
       logos, kits, texture fixes and real competition names of LMAST
-      Realism, the user's own realism ISO, into the LMASTER Mod. First
+      Realism, the user's own realism ISO
+      ([LMAST-Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism)),
+      into the LMASTER Mod. First
       list what Realism changes (`patch_disc.py verify` and the readers,
       file by file against the retail disc), sort each change by the
       formats the tools already write (textures `svr.py`, kits
