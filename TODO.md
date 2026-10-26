@@ -241,6 +241,15 @@ per kind of data, each editing through its writer and taking the allowed
 values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
+- [ ] Switch groups in place of single switches (the user's idea,
+      2026-10-27): `patch_disc.py` has 42 switches, 7 of them in no
+      group (the five third-tier switches and the test tools
+      `skip-tutorial` and `launcher`), and the editor's Build tab shows
+      a box for each. Merge switches that only work together (the
+      third tier's five) or split them into more groups, then make the
+      Build tab offer the groups, with each group's switches shown but
+      not ticked one by one; the test tools stay apart. `--mod <switch>`
+      keeps working for tests ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
 - [ ] Later: the editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
