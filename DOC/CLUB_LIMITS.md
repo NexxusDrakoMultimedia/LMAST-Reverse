@@ -127,7 +127,10 @@ Left as they are:
 - `CScheEuro::clearPlayerRecord` and `movePlayerRecord`, not yet
   understood.
 
-Not yet run in the game.
+**Tested in PCSX2** (user report, 2026-10-27): on
+`LMAST-test-tierlists2.iso`, the All Clubs Ranking at the start of the
+first season lists every club, numbered with no gaps. Still to see: a
+transfer window and the season's end (the world ranking's update).
 
 ## Each loop's body
 
