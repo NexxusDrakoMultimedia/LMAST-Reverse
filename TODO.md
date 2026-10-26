@@ -18,22 +18,29 @@ or two.
 
 What to work on next, most valuable first.
 
-1. **LMASTER full in game** (sections 7 and 8). Every part of
-   `--mod harder-economy` is tested in PCSX2, and so are `transfer-fees`,
-   `merch-costs` and the separate career saves; the other `--mod balance`
-   switches and `pr-cycle` are built but not yet seen in game. A disc built with
-   `--mod lmaster-full`, played through a season, shows whether the
-   economy is harder in a way players notice and whether the balance
-   switches work ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-2. **A new Virtua Pro Football edit player** (section 2, "Saves"): how
-   VPF numbers a new edit player, so `pmplayer.py` can fill an empty
-   slot. The answer is in VPF's own code, which waits on the sister
-   project [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
-   (not yet fully reversed).
-3. **The `GAME/` tactics AI files** (section 2, "The match"): what
-   reads the play books' point codes, `Combi2`/`Combi3`'s area types,
-   and `GAMEDATA.BIN`'s records. `snr2.py classes` and `callers` name
-   the match AI's `fb::` classes and which class makes each call.
+1. **Finish the third tier** (sections 7 and 8). The season test on
+   `LMAST-test-tiers-germany.iso` (a German club, `--skip-nation
+   Germany`) shows the movements at a season's end. Once it passes, the
+   five switches (`save-expand`, `tier-clubs`, `tier-lists`,
+   `tier-uids`, `one-season-end`) join `--mod lmaster-full`, INSTALL.md
+   describes them, and section 8's third-tier item is brought up to date
+   ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3),
+   [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
+2. **The player and staff fields** (section 2, "Players and staff"):
+   the player fields still open (`explodetype`, abilities 59–63, the
+   attack pattern letters, the tendencies, the kit style's cap and
+   gloves; an edited tendency can be checked over PINE), then the staff
+   fields, the 25 manager policies, job 5 and how coaches and former
+   players become managers
+   ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
+3. **LMASTER full in game** (sections 7 and 8), after the third tier
+   joins it: every part of `--mod harder-economy` is tested in PCSX2,
+   and so are `transfer-fees`, `merch-costs` and the separate career
+   saves; the other `--mod balance` switches and `pr-cycle` are built but
+   not yet seen in game. A disc built with `--mod lmaster-full`, played
+   through a season in Germany, shows whether the economy is harder in
+   a way players notice, whether the balance switches work, and the
+   third tier with them ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 
 ## What a mod can change, and what is left
 
