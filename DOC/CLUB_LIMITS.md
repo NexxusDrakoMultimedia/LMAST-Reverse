@@ -30,7 +30,7 @@ About 140 sites use the same numbers for something else:
 | object and structure offsets `+0x1b8` | the window and list tasks' `OpenExecute`/`CloseExecute` (vtable entries), `CEditFaceObject`, `WP::CReport`, `CScrollPlate_Task`, `CSelectTeamStyleTask`, `CTrainingTask`, `CTournament…`, `CDetailManager`'s name copies (`+0x1b8`), `MOVIEPRG.REL`, `TESTPRG.REL`'s emblem editors, `GAMEPRG.REL` |
 | offsets inside save block 5 | `pwkRec_GetTeamStats` (`+0x601b8`), `pwkRec_GetGameResultSysBuffer` (`+0xb01b8`), `pwkEdit_CallPwkEdit`, the matching `SAVEPRG.REL` serializer sites (`0xdd10`, `0x1d004`, `0x2b088`) |
 | screen layout | the detail pages' `SetupDetail…Page` (`$t1` = 442, a coordinate beside 330 or 310) |
-| message, event and variable ids | `SIMPRG.REL` `CEventTitle` (24 sites, `$a2` = 442 with ids 8–0x1d), `EVS::CEvsManager::Req` (21 sites, `$a0` = 440), `EVS::SetEventFlag`, `Msg::GetVariableBuffer`, `ROFS_SetIsoDir`, `ImageTransfer::initialize` |
+| message, event and variable ids | `SIMPRG.REL` `CEventTitle` (24 sites, `$a2` = 442 with ids 8–0x1d), `EVS::CEvsManager::Req` (21 sites, `$a0` = 440), `EVS::SetEventFlag`, `Msg::GetVariableBuffer`, `ROFS_SetIsoDir`, `ImageTransfer::initialize`, and `SIMPRG.REL` `Msg`'s jump tables over 441 message variables (`0x1706e0`, `0x171f48`, `0x1721f4`) |
 | debug modules | `FC_EURO_DUMMY_MODULE::CPlayerPositionSetAndStamemPointDis` (a counter wrapping at 441), `TESTPRG.REL` `CHayasiTestModule` |
 
 ## About clubs
@@ -39,10 +39,11 @@ About 140 sites use the same numbers for something else:
 
 | Kind | Sites |
 |---|---|
-| Loops over clubs, to 441 inclusive (`slti …, 0x1ba` or a count of 441) | `pwkOteam_Init` (`0x24a738`, the squads from `OTEAMMEMBER.TBB`), `pwkOteam_Init2` (`0x24a60c`, ranks and world points), `PlBpinfoTask::updatePlCoreInfoSub` (`0x20d314`), `CMakeDataBase::MakeDB` (`0x2230e0`), `GetOfferClub` (`0x225808`, `0x225864`, `0x2258e8`, `0x225974`), `CComOffer::CalcuOfferClub` (`0x22628c`), `CAcquirePlayer::GetExecuteTeamList` (`0x221d94`, `0x221dbc`), `CContractReform::GetExecuteTeamList` (`0x223eb8`), `pwkOteam_ChangeFS_BranchEstablish`/`Remove` (`0x24a8d4`, `0x24a944`), `pwkTeam_UpdatePlayerCandidates` (`0x2607d4`, `0x260830`, `0x2609d0`, `0x260b58`), `pwkTeam_UpdateYouthCandidatesRankSet_ForAbil` (`0x262c20`), `YRSTPRG.REL` `ZinziYearStart::calcYearStartSecondHalf` (`0x17014`, `0x172ac`, `0x1783c`), `CEDITPRG.REL` initial personnel (`0x2d84`) |
-| A club is resident (club < 442, or club − 2 < 440) | `pwkOteam_GetOpinfoPointer` (`0x24b930`), `pwkOteam_GetRank` (`0x24bef8`), `pwkOteam_GetWorldClubRank` (`0x24bfa0`), `pwkOteam_GetTeamData` (`0x24bcd4`), `pwkOteam_Init`'s squad set-up (`0x24a788`), `pwkMatchGrow_Grow` (`0x24671c`), `pwkMoney_CalcuPurchaceOtherTeamPlayerTransferMoney` (`0x24829c`), `plTeam_IsPurchaseOKFromCOM` (`0x228c9c`), `CAcquirePlayer::PickupPlayer` (`0x2228b0`), `SetLotClub` (`0x2256c8`), `pwkRental_CheckOpenRentalTeamByFriend`/`ByBranch` (`0x2551b8`, `0x255278`), `pwkTeam_AddReleaseList` (`0x25a8c4`), `CDetailManager::ConvertPlayer_Type` (`0x284dcc`, `0x284e5c`), `SIMPRG.REL` `CPlayerSearchWindow_Task::GetPlayerAcquireCost` (`0x9263c`), `CReport_month` (`0xa1194`, `0xa1244`, `0xa12f0`, `0xa1318`), `ZinziYouthTeam`/`ZinziMyTeam` (`0x15afa4`, `0x15b488`, `0x15bc5c`), `CKeyboard_Task::RecoveryInit` (`0x69924`), `Msg` team-name variables (`0x1706e0`, `0x171f48`, `0x1721f4`) |
-| Lists and buffers of 440 or 441 clubs | `plTeam_GetClubrankList` (`0x22c09c`–`0x22c144`: 441 × 8 bytes on a `0xe20` stack frame, sorted with 441), `ScheEuro_TeamEntryList` `getTeamIdFromNation`/`Region` (`0x20afb4`, `0x20b064`: clubs 2–439) and its callers `getList_SRC_KIND_UEFA_XXX`, `_CLUBRANK`, `_FIFA` (`0x20b504`, `0x20b700`, `0x20b880`: 440 entries at `+0x478` of the list) |
-| The world ranking | `SIMPRG.REL` `ClubRank` (`0x150684`–`0x1521e0`, 14 sites): its arrays of 441 clubs |
+| Loops over clubs, to 441 inclusive (`slti …, 0x1ba` or a count of 441) | `pwkOteam_Init` (`0x24a738`, the squads from `OTEAMMEMBER.TBB`), `pwkOteam_Init2` (`0x24a60c`, ranks and world points), `PlBpinfoTask::updatePlCoreInfoSub` (`0x20d314`), `CMakeDataBase::MakeDB` (`0x2230e0`), `GetOfferClub` (`0x225808`, `0x225864`, `0x2258e8`, `0x225974`), `CComOffer::CalcuOfferClub` (`0x22628c`), `CAcquirePlayer::GetExecuteTeamList` (`0x221d94`, `0x221dbc`), `CContractReform::GetExecuteTeamList` (`0x223eb8`), `pwkOteam_ChangeFS_BranchEstablish`/`Remove` (`0x24a8d4`, `0x24a944`), `pwkTeam_UpdatePlayerCandidates` (`0x2607d4`, `0x260830`, `0x2609d0`, `0x260b58`), `pwkTeam_UpdateYouthCandidatesRankSet_ForAbil` (`0x262c20`), `YRSTPRG.REL` `ZinziYearStart::calcYearStartSecondHalf` (`0x17014`, `0x172ac`, `0x1783c`) |
+| A club is resident (club < 442, or club − 2 < 440) | `pwkOteam_GetOpinfoPointer` (`0x24b930`), `pwkOteam_GetRank` (`0x24bef8`), `pwkOteam_GetWorldClubRank` (`0x24bfa0`), `pwkOteam_GetTeamData` (`0x24bcd4`), `pwkOteam_Init`'s squad set-up (`0x24a788`), `pwkMatchGrow_Grow` (`0x24671c`), `pwkMoney_CalcuPurchaceOtherTeamPlayerTransferMoney` (`0x24829c`), `plTeam_IsPurchaseOKFromCOM` (`0x228c9c`), `CAcquirePlayer::PickupPlayer` (`0x2228b0`), `pwkRental_CheckOpenRentalTeamByFriend`/`ByBranch` (`0x2551b8`, `0x255278`), `pwkTeam_AddReleaseList` (`0x25a8c4`), `CDetailManager::ConvertPlayer_Type` (`0x284dcc`, `0x284e5c`), `SIMPRG.REL` `CPlayerSearchWindow_Task::GetPlayerAcquireCost` (`0x9263c`), `ZinziYouthTeam`/`ZinziMyTeam` (`0x15afa4`, `0x15b488`, `0x15bc5c`), `CKeyboard_Task::RecoveryInit` (`0x69924`) |
+| Lists and buffers of 440 or 441 clubs | `GetOfferClub`'s five lists and `SetLotClub` (`0x2256c8`, a list's bound), `plTeam_GetClubrankList` (`0x22c09c`–`0x22c144`: 441 × 8 bytes on a `0xe20` stack frame, sorted with 441), `ScheEuro_TeamEntryList` `getTeamIdFromNation`/`Region` (`0x20afb4`, `0x20b064`: clubs 3–440, at most the count given) and its callers `getList_SRC_KIND_UEFA_XXX`, `_CLUBRANK`, `_FIFA` (`0x20b504`, `0x20b700`, `0x20b880`: 440 entries at `+0x478` of the list) |
+| The world ranking | `SIMPRG.REL` `ClubRank` (`0x150684`–`0x1521e0`, 14 sites): a list of 441 clubs on the stack of its club update (`0x150680`), and its helpers' loops over clubs; each club's points and rank are in its block 2 record (`+0x9c`, `+0xa0`–`+0xa4`) |
+| Lists of a nation's or region's clubs, capped | `SIMPRG.REL` `CReport_month` (`0xa1194`, `0xa1244`, `0xa12f0`, `0xa1318`: 50 at most), `CEDITPRG.REL` (`0x2d84`: as many as its caller allows) |
 | Save block 2's serializers | `SAVEPRG.REL` `0x29548`, `0x1b844` (patched by `--mod save-expand`), and the older reader's `0xc1d0` (version `0x68` saves only) |
 | The non-resident path, for 442–459 | `_pwkOteam_GetPlRec_LgTeamNonresident` (`0x24d65c`), its player base (`0x24d6b0`, `0x24d748`), the league records' set-up `0x24d454` (clubs `0x1ba`–`0x1cb`, players from `0x63f7`), `pwkOteam_ResetRentalPossibleClubFlag` (`0x24ca18`) |
 | Not yet understood | `CScheEuro::clearPlayerRecord` and `movePlayerRecord` (`0x2078a0`, `0x207a98`): clubs below 441 skip a player lookup that 441 and up take |
@@ -65,15 +66,52 @@ works one club at a time goes:
   `0x63f7`, with their ages and shirt numbers, contracts of 2 years).
 
 The loops that fill buffers sized for 441 clubs stay as they are, so
-they leave 442–459 out: the club-rank list and the transfer AI's lists,
-the schedule's club lists, `ClubRank`, the monthly report's and the
-club editor's lists. Phase 2b relays them. A save from before the
-switch has empty records for the new clubs; start a new career.
+they leave 442–459 out; [`--mod tier-lists`](#--mod-tier-lists-phase-2b)
+grows them. A save from before the switch has empty records for the new
+clubs; start a new career.
 
 **Tested in PCSX2** (user report, 2026-10-26): with `save-expand`,
 `tier-clubs` and `mod-saves`, a new career (tutorial skipped) plays
 through a transfer window and saves and loads, and the tutorial's
 promotion playoff against the third-tier clubs plays; "all working".
+
+## `--mod tier-lists` (phase 2b)
+
+`patch_disc.py --mod tier-lists` (with `--mod tier-clubs`) grows the
+lists sized for 441 clubs to 459, and the loops that fill and read them
+run to 459. A list on the stack grows with its function's frame:
+`relay_frame` moves every `$sp` offset from the list's end on, the
+saved registers included, and refuses any use of `$sp` it can't map.
+**Confirmed** from the code of each function:
+
+| Function | Lists | Frame |
+|---|---|---|
+| `plTeam_GetClubrankList` (`0x22c098`) | clubs 1–441 × 8 bytes (club, rank), sorted by rank; the caller gets 441 words | `0xe20` → `0xeb0` |
+| `CAcquirePlayer::Execute` (`0x221720`), the transfer AI | the club-rank list (`$sp + 0x6f0`) and the clubs that buy this time (`$sp`, from `GetExecuteTeamList`, `0x221d94`/`0x221dbc`), 441 words each | `0xe90` → `0xf10` |
+| `CContractReform::GetExecuteTeamList` (`0x223e10`) | the club-rank list at `$sp`; its caller's list (`$sp + 0x70` of `0x223ee0`, `0x6f0` bytes) takes every fourth club, so it already fits | `0x730` → `0x770` |
+| `GetOfferClub` (`0x2256f8`), offers for your players | a flag per club 0–441 (`$sp + 0x10`), the clubs drawn (`$sp + 0x700`) and three lists by nation (`$sp + 0xdf0`, a stride of `0x6e8` at `0x2259d0`), each filled by `SetLotClub` up to 442 entries; their counts at `$sp`–`$sp + 8` and `+0x22b0` | `0x2360` → `0x24b0`, each list 460 words |
+| `SIMPRG.REL` `0x150680`, `ClubRank`'s club update | clubs 1–441 × 8 bytes (the points, and at `+2` and `+4` the points from past records), filled by `0x1514c8`, `0x151568` and `0x152128`, written back by `0x151510` | `0xdf0` → `0xe80` |
+
+Also to 459: `ClubRank`'s other loops over clubs (`0x150d94`, the year's
+reset; `0x151758`, its draw by nation, 220 a nation at most; the counts
+and lists by main league and by nation at `0x151a70`–`0x151be8`, whose
+lists are allocated by the count), and the past-record points by nation
+(`0x1521e0`) take the nation of 442–459 from the club as for the others
+(the retail code would add them to nation 1). `CReport_month`'s lists
+by nation and region run to 459 too; they stop at 50 clubs.
+
+Left as they are:
+
+- `ScheEuro_TeamEntryList`'s lists, the European places filled by club
+  rank (clubs 3–440, at most 440). They stop at the count they are
+  given, so they can't overflow. Clubs past 440 still reach Europe by
+  their league and cup records.
+- `CEDITPRG.REL` `0x2d84`, the club editor's clubs of a nation, capped
+  by its caller.
+- `CScheEuro::clearPlayerRecord` and `movePlayerRecord`, not yet
+  understood.
+
+Not yet run in the game.
 
 ## Each loop's body
 
@@ -85,7 +123,7 @@ sized for 441 clubs. **Confirmed** from the code, as each was read:
 | `updatePlCoreInfoSub` (`0x20d314`) | each club through block 2 (`updatePlCoreInfoSub_Team_OteamOne`, `0x20cdb8`), which records the club on its players' core info; your club's players get `0x1cc` (460), past every club | as it is |
 | `CMakeDataBase::MakeDB` (`0x2230e0`) | each club through block 2 (`MakeDBEach`) | as it is |
 | `pwkOteam_Init` (`0x24a738`) | each club's 25 squad slots, read in order from `OTEAMMEMBER.TBB` | with 18 squads added to the file |
-| `GetOfferClub` (`0x225808`…) | a 4-byte entry per club on the stack at `$sp + 0x10`, below other buffers in a `0x2360`-byte frame | the frame relaid |
+| `GetOfferClub` (`0x225808`…) | a 4-byte entry per club on the stack at `$sp + 0x10`, below other buffers in a `0x2360`-byte frame | the frame relaid (`tier-lists`) |
 
 ## Tables indexed by club
 
@@ -102,17 +140,15 @@ already cover clubs to 459. **Confirmed** for the main ones:
 | league entries | searched by club id (`bsearch`) | `plLg_GetEntry` (`0x2e9630`) |
 | the other clubs, save block 2 | clubs 2–441 (records 0–439); 18 more records with `--mod save-expand`, which `pwkOteam_Team2Otindex` (`0x24b7e8`, club − 3 < 439) reaches once its bound is 457 | `pwkOteam_GetPointer` (`0x24b788`); a club past 441 gets record 1, club 3's |
 
-So the risk left for a club past 441 is in the buffers and object
-arrays the loops above fill: `ClubRank`'s arrays, the club-rank list on
-the stack, `ScheEuro_TeamEntryList`'s 440 entries, and the transfer AI's
-lists.
+So the risk for a club past 441 was in the buffers the loops above
+fill, which `--mod tier-lists` grows; `ClubRank` keeps its points in
+block 2, not in arrays of its own.
 
 ## Still unknown
 
 - Tables indexed by club number with no 440–442 immediate: per-club
   arrays in the save blocks (block 5's team records among them) and in
-  objects such as `ClubRank`, and the stack and object buffers the loops
-  above fill. Each would overflow for a resident club past 441.
+  objects. Each would overflow for a resident club past 441.
 - What `clearPlayerRecord` and `movePlayerRecord`'s test of 441 is for.
 
 ## Checking

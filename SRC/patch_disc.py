@@ -82,7 +82,8 @@ league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
 pr-cycle, mobile-site, overseas-pop, cup-last16, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fee-tiers, slow-reputation, save-expand, tier-clubs, one-season-end, fanbase, merch-costs, pr-costs, camp-costs,
+fee-tiers, slow-reputation, save-expand, tier-clubs, tier-lists, one-season-end,
+fanbase, merch-costs, pr-costs, camp-costs,
 tour-costs, launcher,
 mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
@@ -246,6 +247,10 @@ block 2 records (pwkOteam_Team2Otindex), the resident checks and the
 club loops that work one club at a time, squads in OTEAMMEMBER.TBB (18
 added, from their database players; the file grows and moves), and
 three special cases for them off. See DOC/CLUB_LIMITS.md.
+tier-lists (whole disc image only; needs tier-clubs; in no group yet)
+grows the lists of 441 clubs to 459: the club-rank list, the transfer
+AI's lists, GetOfferClub's five lists (their stack frames relaid), and
+the world ranking (SIMPRG.REL ClubRank), with the loops that fill them.
 one-season-end (whole disc image only; in no group yet) ends the game
 when you finish in the second division's bottom two in one season, not
 two running (SIMPRG.REL 0x15d958), and warns on this season alone
@@ -2977,6 +2982,58 @@ def plan_save_expand(f, img):
     return word_jobs(f, img, "save-expand", words_)
 
 
+# Relaying a function's stack frame, for buffers that grow: the frame
+# size in its prologue and epilogue (addiu $sp, $sp, -/+frame), every
+# load or store based on $sp (lq/sq, the s registers' saves, included),
+# and every addiu/ori rt, $sp, imm that takes a buffer's address move by
+# `shifts`; offsets past the frame (the caller's) move with its size.
+# Anything else that touches $sp is refused, since it can't be mapped.
+_SP_MEM = {0x1A, 0x1B, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+           0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x31, 0x35, 0x37, 0x39, 0x3D, 0x3F}
+
+
+def relay_frame(code, addr, frame, new_frame, shifts):
+    """`code` (a function's bytes at address `addr`) with its stack frame
+    grown from `frame` to `new_frame` bytes. `shifts` is [(offset, delta)]
+    in rising order: an offset from there on moves by delta (until the
+    next). Raises ValueError for a use of $sp it can't map."""
+    def move(off):
+        if off >= frame:
+            return off + new_frame - frame
+        delta = 0
+        for lo, d in shifts:
+            if off >= lo:
+                delta = d
+        return off + delta
+
+    out = []
+    for k, w in enumerate(struct.unpack("<%dI" % (len(code) // 4), code)):
+        op, rs, rt = w >> 26, (w >> 21) & 31, (w >> 16) & 31
+        imm = w & 0xFFFF
+        simm = imm - 0x10000 if imm & 0x8000 else imm
+        where = addr + 4 * k
+        if op == 0x09 and rs == SP and rt == SP:
+            if simm not in (-frame, frame):
+                raise ValueError("0x%x: $sp moves by %d, not the frame" % (where, simm))
+            w = addiu(SP, SP, -new_frame if simm < 0 else new_frame)
+        elif op in _SP_MEM and rs == SP or op == 0x09 and rs == SP:
+            new = move(simm)
+            if not -0x8000 <= new < 0x8000:
+                raise ValueError("0x%x: offset 0x%x moves out of range" % (where, new))
+            w = w & ~0xFFFF | new & 0xFFFF
+        elif op == 0x0D and rs == SP:
+            w = addiu(rt, SP, move(imm))         # ori rt, $sp, imm is $sp + imm
+        elif op == 0 and SP in (rs, rt) and w & 0x3F in (0x21, 0x2D) and (w >> 11) & 31 != SP:
+            # A copy of $sp, or $sp plus an index: a buffer at offset 0,
+            # which must stay put (the index is the caller's to check)
+            if move(0) != 0:
+                raise ValueError("0x%x: $sp taken as a base, but offset 0 moves" % where)
+        elif SP in (rs, rt) and not (op == 0 and (w >> 11) & 31 == SP and w & 0x3F in (0x21, 0x2D)):
+            raise ValueError("0x%x: %08x uses $sp in a way that can't be mapped" % (where, w))
+        out.append(w)
+    return words(*out)
+
+
 # tier-clubs: clubs 442-459, the tutorial's third-tier opponents, become
 # full clubs like 3-441 (the LMASTER third tier, phase 2a; needs
 # save-expand's block 2 records). DOC/CLUB_LIMITS.md sorts every site.
@@ -3086,6 +3143,90 @@ def file_tier_clubs(f, img, dat):
         with open(pb, "wb") as g:
             g.write(pdata)
         return [(OTEAM_FILE, initteam.add_tier_squads(ot, pbdata.PbData(pb)))]
+
+
+# tier-lists: the lists sized for 441 clubs grow to 459, so the third
+# tier's clubs take part in what they feed (phase 2b; needs tier-clubs).
+# A list on the stack grows with its function's frame (relay_frame); the
+# loops that fill or read it run to 459. DOC/CLUB_LIMITS.md has each one.
+# - plTeam_GetClubrankList: 441 x 8 bytes on its stack, sorted.
+# - CAcquirePlayer::Execute (the transfer AI): the club-rank list and the
+#   clubs that buy this time, 441 words each on its stack, filled by
+#   GetExecuteTeamList; CContractReform::GetExecuteTeamList's rank list.
+# - GetOfferClub (offers for your players): a flag per club and four lists
+#   of clubs (stride 0x6e8, an immediate), with SetLotClub's bound.
+# - SIMPRG.REL ClubRank (the world ranking): 441 x 8 bytes on the stack
+#   of its club update (0x150680), and the loops over clubs of its
+#   helpers; the points live in block 2. The past-record points by nation
+#   (0x1521e0) take 442-459's nation from the club like the others.
+# - SIMPRG.REL CReport_month's club lists by nation and region (50 at
+#   most, so they can't overflow).
+# Left as they are: ScheEuro_TeamEntryList's lists (clubs 3-440, at most
+# 440, for the European places by rank: the third tier gets there by its
+# league and cup records), the club editor's list (CEDITPRG.REL 0x2d84,
+# capped by its caller) and Msg's 441-entry jump tables (message
+# variables, not clubs).
+TIER_LIST_RELAYS = (    # (file, start, end, frame, new frame, shifts, [(address, old, new)])
+    (SLES_FILE, 0x22C098, 0x22C180, 0xE20, 0xEB0, [(0xDC8, 0x90)],
+     [(0x22C09C, 0x1B8, 0x1CA), (0x22C0E8, 0x1B9, 0x1CB), (0x22C10C, 0x1BA, 0x1CC),
+      (0x22C118, 0x1B9, 0x1CB), (0x22C138, 0x1B9, 0x1CB), (0x22C144, 0x1B8, 0x1CA)],
+     "plTeam_GetClubrankList: 459 clubs"),
+    (SLES_FILE, 0x221720, 0x2218B0, 0xE90, 0xF10, [(0x6F0, 0x40), (0xDE0, 0x80)], [],
+     "CAcquirePlayer::Execute: two lists of 459"),
+    (SLES_FILE, 0x223E10, 0x223EE0, 0x730, 0x770, [(0x6F0, 0x40)],
+     [(0x223EB8, 0x1B9, 0x1CB)],
+     "CContractReform::GetExecuteTeamList: 459 clubs"),
+    (SLES_FILE, 0x2256F8, 0x225AA0, 0x2360, 0x24B0,
+     [(0x700, 0x40), (0xDF0, 0x80), (0x14D8, 0xC8), (0x1BC0, 0x110), (0x22B0, 0x150)],
+     [(0x225808, 0x1BA, 0x1CC), (0x225864, 0x1B9, 0x1CB), (0x2258E8, 0x1BA, 0x1CC),
+      (0x225974, 0x1BA, 0x1CC), (0x2259D0, 0x6E8, 0x730)],
+     "GetOfferClub: five lists of 460"),
+    (NEGO_FILE, 0x150680, 0x150738, 0xDF0, 0xE80, [(0xDC8, 0x90)],
+     [(0x150684, 0x1B8, 0x1CA), (0x1506D8, 0x1B9, 0x1CB), (0x15071C, 0x1B9, 0x1CB)],
+     "ClubRank club update: 459 clubs"),
+)
+TIER_LIST_EXE = (
+    (0x221D94, 0x1B9, 0x1CB, "CAcquirePlayer::GetExecuteTeamList: 459 clubs"),
+    (0x221DBC, 0x1B9, 0x1CB, "CAcquirePlayer::GetExecuteTeamList: 459 clubs"),
+    (0x2256C8, 0x1BA, 0x1CC, "SetLotClub: lists of 460"),
+)
+TIER_LIST_OVERLAYS = tuple(
+    [(NEGO_FILE, off, 0x1B9, 0x1CB, "ClubRank: clubs 1-459")
+     for off in (0x150D94, 0x1514F0, 0x151544, 0x151708, 0x1517F4, 0x151AB4, 0x151B20,
+                 0x151B7C, 0x151BE8)]
+    + [(NEGO_FILE, 0x1521E0, 0x1BA, 0x1CC, "ClubRank: past-record points by the club's nation"),
+       (NEGO_FILE, 0xA1194, 0x1BA, 0x1CC, "CReport_month: clubs of a nation to 459"),
+       (NEGO_FILE, 0xA1244, 0x1BA, 0x1CC, "CReport_month: clubs of a region to 459"),
+       (NEGO_FILE, 0xA12F0, 0x1BA, 0x1CC, "CReport_month: clubs of a nation to 459"),
+       (NEGO_FILE, 0xA1318, 0x1BA, 0x1CC, "CReport_month: clubs of a region to 459")])
+
+
+def _relay_word(f, img, file, start, end, frame, new_frame, shifts, imms, what):
+    """(file, offset, old, new, label) for a function at `start`..`end`
+    with its frame relaid and the immediates `imms` changed."""
+    base = EXE_BASE if file == SLES_FILE else 0
+    old = read_at(f, img, file, start - base, end - start)
+    new = bytearray(relay_frame(old, start, frame, new_frame, shifts))
+    for addr, was, now in imms:
+        k = addr - start
+        w = struct.unpack_from("<I", new, k)[0]
+        if w & 0xFFFF != was:
+            raise ValueError("tier-lists: 0x%x holds %#x, not an immediate %#x" % (addr, w, was))
+        struct.pack_into("<I", new, k, w & ~0xFFFF | now)
+    return (file, start - base, old, bytes(new),
+            "%s 0x%x-0x%x (%s)" % (file, start, end, what))
+
+
+def plan_tier_lists(f, img):
+    """Jobs for --mod tier-lists."""
+    if img.port is not None:
+        raise ValueError("tier-lists is made for the PAL executable only")
+    words_ = [_relay_word(f, img, *r) for r in TIER_LIST_RELAYS]
+    words_ += [_imm_word(f, img, SLES_FILE, a - EXE_BASE, old, new, what)
+               for a, old, new, what in TIER_LIST_EXE]
+    words_ += [_imm_word(f, img, file, off, old, new, what)
+               for file, off, old, new, what in TIER_LIST_OVERLAYS]
+    return word_jobs(f, img, "tier-lists", words_)
 
 
 # fanbase: a big fanbase counts for more. Merchandise sales start from a
@@ -3357,6 +3498,9 @@ SWITCHES = (
      "LMASTER full: a bigger save (clubs 442-459, competitions 49-55); breaks save compatibility"),
     ("tier-clubs", plan_tier_clubs, [SLES_FILE, NEGO_FILE, DISC + "DLL/YRSTPRG.REL", OTEAM_FILE],
      "LMASTER full: clubs 442-459 (the third tier) as full clubs; needs save-expand"),
+    ("tier-lists", plan_tier_lists, [SLES_FILE, NEGO_FILE],
+     "LMASTER full: the lists of 441 clubs (club rank, transfer AI, offers, world "
+     "ranking) hold 459; needs tier-clubs"),
     ("one-season-end", plan_one_season_end, [NEGO_FILE],
      "The second division's bottom two end the game after one season, not two"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
@@ -3399,7 +3543,7 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
 # tutorial skip and the launcher are test tools, in neither.
 # Switches whose plan needs another switch, and switches that write whole
 # files (file_<switch>(f, img, dat) -> [(target, data)]).
-SWITCH_NEEDS = {"tier-clubs": ("save-expand",)}
+SWITCH_NEEDS = {"tier-clubs": ("save-expand",), "tier-lists": ("tier-clubs",)}
 SWITCH_FILES = {"tier-clubs": file_tier_clubs}
 LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-types",
                 "camp-cities", "camp-santiago", "camp-clubs", "drill-names", "injury-value",
