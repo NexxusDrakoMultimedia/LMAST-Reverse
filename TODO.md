@@ -309,7 +309,7 @@ names the disc or the edit to build; the result goes into the doc.
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind
 - [ ] The third tier's lists (`--mod tier-lists`):
-      `LMAST-test-tierlists.iso` (with the tutorial skip) starts a new
+      `LMAST-test-tierlists2.iso` (with the tutorial skip) starts a new
       career, plays through a transfer window and to the season's end
       (the world ranking's update), and saves and loads
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-tier-lists-phase-2b))

@@ -3198,7 +3198,22 @@ TIER_LIST_OVERLAYS = tuple(
        (NEGO_FILE, 0xA1194, 0x1BA, 0x1CC, "CReport_month: clubs of a nation to 459"),
        (NEGO_FILE, 0xA1244, 0x1BA, 0x1CC, "CReport_month: clubs of a region to 459"),
        (NEGO_FILE, 0xA12F0, 0x1BA, 0x1CC, "CReport_month: clubs of a nation to 459"),
-       (NEGO_FILE, 0xA1318, 0x1BA, 0x1CC, "CReport_month: clubs of a region to 459")])
+       (NEGO_FILE, 0xA1318, 0x1BA, 0x1CC, "CReport_month: clubs of a region to 459"),
+       (NEGO_FILE, 0x1CF850, 0x1B9, 0x1CB, "All Clubs Ranking: clubs 1-459")])
+# The All Clubs Ranking screen (SIMPRG.REL 0x84df0, building the list at
+# INFORMATION_MODULE + 0x4074, 0xe80 bytes) keeps a pointer per club at
+# +8 and an index per club at +0x79c, each with room for 441, and fields
+# between them. Each pointer is only the sorted data (+0x798) + 12 x i,
+# and the indices are never read, so the builder stops writing both and
+# the one reader (CNationRankList_Task 0x84b08) walks the data instead.
+TIER_LIST_WORDS = (    # (offset, old word, new word, what)
+    (0x85094, 0xAC640000, 0, "All Clubs Ranking: no pointer array"),
+    (0x850A8, 0xAC520000, 0, "All Clubs Ranking: no index array"),
+    (0x84BD4, 0x26B70008, 0x8EB70798, "All Clubs Ranking: lw $s7, 0x798($s5), the data"),
+    (0x84BF8, 0x02E31821, 0, "All Clubs Ranking: nop"),
+    (0x84C1C, 0x8C740000, 0x02E0A02D, "All Clubs Ranking: move $s4, $s7, entry i"),
+    (0x84C24, 0x0080202D, 0x26F7000C, "All Clubs Ranking: addiu $s7, $s7, 12, the next"),
+)
 
 
 def _relay_word(f, img, file, start, end, frame, new_frame, shifts, imms, what):
@@ -3226,6 +3241,8 @@ def plan_tier_lists(f, img):
                for a, old, new, what in TIER_LIST_EXE]
     words_ += [_imm_word(f, img, file, off, old, new, what)
                for file, off, old, new, what in TIER_LIST_OVERLAYS]
+    words_ += [(NEGO_FILE, off, struct.pack("<I", old), struct.pack("<I", new),
+                "%s 0x%x (%s)" % (NEGO_FILE, off, what)) for off, old, new, what in TIER_LIST_WORDS]
     return word_jobs(f, img, "tier-lists", words_)
 
 

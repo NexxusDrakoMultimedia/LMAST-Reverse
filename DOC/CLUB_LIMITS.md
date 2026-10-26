@@ -100,6 +100,22 @@ lists are allocated by the count), and the past-record points by nation
 (the retail code would add them to nation 1). `CReport_month`'s lists
 by nation and region run to 459 too; they stop at 50 clubs.
 
+The **All Clubs Ranking** screen (Information, `SIMPRG.REL` `0x84df0`)
+lists the clubs from a table at `0x1cf848` (52 nations, 145 national
+teams, 441 clubs, each from id 1). Each club's rank is its own (block 2
+`+0xa4`), so with only the count raised to 459, 442–459 would still
+miss the list and leave gaps in its numbers. **Seen in PCSX2** (user
+report): before this, the list showed ranks 437, 440, 441, 442 (your
+club) and 443, with 438 and 439 missing. The list's object
+(`INFORMATION_MODULE + 0x4074`, cleared for `0xe80` bytes) has room for
+441 at `+8` (a pointer per club) and `+0x79c` (an index per club), with
+the column records at `+0x6ec` between them. The pointers are only
+`+0x798` (the sorted data, 12 bytes a club) + 12 × i, and nothing reads
+the indices, so `tier-lists` stops writing both (`0x85094`, `0x850a8`)
+and the one reader, `CNationRankList_Task` (`0x84b08`), walks the data
+with a pointer of its own (`0x84bd4`, `0x84bf8`, `0x84c1c`,
+`0x84c24`). The count becomes 459.
+
 Left as they are:
 
 - `ScheEuro_TeamEntryList`'s lists, the European places filled by club
