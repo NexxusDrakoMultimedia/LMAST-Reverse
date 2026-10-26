@@ -18,9 +18,9 @@ or two.
 
 What to work on next, most valuable first.
 
-1. **Finish the third tier** (sections 7 and 8). The season test on
-   `LMAST-test-tiers-germany.iso` (a German club, `--skip-nation
-   Germany`) shows the movements at a season's end. Once it passes, the
+1. **Finish the third tier** (sections 7 and 8). The season test has
+   passed (`LMAST-test-tiers-germany2.iso`: the tiers' winners go up and
+   the second divisions' last clubs go down), so the
    five switches (`save-expand`, `tier-clubs`, `tier-lists`,
    `tier-uids`, `one-season-end`) merge into one, `third-tier` (the
    user's choice, 2026-10-27), which joins `--mod lmaster-full`;
@@ -362,14 +362,6 @@ names the disc or the edit to build; the result goes into the doc.
       Other Club Info, which doesn't list clubs 442–459 (user report);
       how the screen picks its clubs isn't traced
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#still-unknown))
-- [ ] The third tier (`--mod tier-uids`, phase 4 of the design):
-      `LMAST-test-tiers-germany2.iso` (with the tutorial skip in
-      Germany, `--skip-nation Germany`, and `one-season-end`) starts a
-      new career with a German club, plays the first season to its end
-      and into the second, saves and loads; the second division then
-      has last season's tier winner, and its last club is gone
-      (England's start, 24 clubs with yours and the rival, is checked
-      on `LMAST-test-tiers.iso`) ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST
@@ -413,8 +405,8 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] The third tier (in progress, design agreed; LMASTER full, breaks
       save compatibility): phase 1 the save (block 2 and 5 grow), 2 clubs
-      442–459 as full clubs, 3 the schedules, 4 the season test; phase 1
-      is tested in PCSX2
+      442–459 as full clubs, 3 the schedules, 4 the season test; phases
+      1 and 4 are tested in PCSX2
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements));
       `one-season-end` is built ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] A text pass for LMASTER full (the user's idea, 2026-10-27): find

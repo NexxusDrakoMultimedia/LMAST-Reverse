@@ -242,6 +242,11 @@ Each result is recorded in the doc named.
       cost half the price with at most 20% off
       ([`ECONOMY.md`](DOC/ECONOMY.md#transfer-fees),
       [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
+- [x] The third tier's season test (user report, 2026-10-27): a German
+      career, its tier records repaired by hand, plays into 2007–08 on
+      `LMAST-test-tiers-germany2.iso`, with one club moved each way in
+      Germany and England
+      ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3))
 
 ## 8. LMASTER Mod and other patches
 
