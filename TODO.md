@@ -32,7 +32,16 @@ What to work on next, most valuable first.
    not yet seen in game. A disc built with `--mod lmaster-full`, played
    through a season in Germany, shows whether the economy is harder in
    a way players notice, whether the balance switches work, and the
-   third tier with them ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
+   third tier with them; the disc is `LMAST-test-full-germany.iso`
+   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
+3. **The third tier's clubs in the domestic cups** (section 7): a
+   knockout builder in `schedule.py`, then bigger brackets that take each
+   nation's tier clubs but the tier's last place, so every current
+   entrant keeps its place; part of `--mod third-tier`
+   ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
+4. **The switch levels** (section 5): editions, groups, then single
+   switches, with the editor's Build tab offering the editions and their
+   groups instead of a box per switch ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
 ## What a mod can change, and what is left
 
@@ -329,10 +338,12 @@ names the disc or the edit to build; the result goes into the doc.
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind
 - [ ] The third tier's lists (`--mod third-tier`):
-      `LMAST-test-tierlists2.iso` (with the tutorial skip) plays through
-      a transfer window and to the season's end (the world ranking's
-      update), and saves and loads; the ranking screen at the start is
-      checked
+      `LMAST-test-full-germany.iso` (the full LMASTER build) plays
+      through a transfer window and to the season's end (the world
+      ranking's update), and saves and loads; the ranking screen at the
+      start is checked, and a German season with the lists in it
+      (`LMAST-test-tiers-germany2.iso`) ran through its transfer windows
+      and year end without trouble
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b))
 - [ ] The third tier's clubs in the domestic cups (the user's choice,
       2026-10-27: grow the brackets, so every current entrant keeps its
