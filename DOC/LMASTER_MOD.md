@@ -105,29 +105,50 @@ the rest are partly built or not decided:
 | Reputation harder to raise | your club rank is the club status >> 11 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)) | built as `--mod slow-reputation` (above) |
 | Lesser players dearer, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the price limits ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | built as `--mod transfer-fees` and `--mod fee-tiers` (above) |
 
-Another idea (the user's, not decided): **a third tier and a harsher
-end.** Each season the second division's bottom two go down to a third
-tier that isn't played on screen, two clubs chosen at random from it
-(its "playoffs") come up, and a player who finishes in the second
-division's bottom two loses the game at once, instead of after two
-seasons running there, so they are never forced out of the playable
-leagues. What it would take:
+In progress (the user's idea, design agreed 2026-10-26): **a third tier
+and a harsher end.**
 
-- The game-over rule: the manual's four ways to lose include the second
-  division's bottom two two years running, decided in `Sche.YearEnd`
-  ([`GAME_FLOW.md`](GAME_FLOW.md#game-over)); the count of seasons
-  isn't traced. Making it one season means finding that counter.
-- Relegating out of the second division: its next season's slots stop
-  naming its last two ranks (`leaguesize.py` rewrites those lists).
-- The third tier: a nation's clubs are fixed (England has 44 plus yours
-  and the rival), so the relegated clubs need somewhere to be and to
-  come back from. `LIST` slots pick at random but from fixed lists, which
-  can't follow who went down. The likeliest way is a small league the
-  game simulates out of sight, whose past record holds the third-tier
-  clubs, with the shuffle flag of its `LAST_RANK` slots for the random
-  pick. All 164 schedule UIDs are used, so that needs one repurposed or
-  the tables extended, and a few clubs moved out of the second division
-  at the start to fill the tier.
+The design:
+
+- Every nation has a third tier that isn't played on screen, in all six
+  leagues, whether you play there or not.
+- Only the second division's **last** club goes down each season, and
+  one third-tier club, chosen at random, comes up.
+- Two clubs start in the third tier, sent down from the second division
+  at the start, so the second division with your club and the rival in
+  it has its real size (England 24).
+- A player who finishes last in the second division loses at once,
+  after one season, so they never end up in the third tier.
+- Third-tier clubs should still show in the other clubs' club info and
+  in the world rankings, if the game allows it.
+
+What is known so far:
+
+- **The game over.** **Confirmed** (`SIMPRG.REL 0x15d958`): from 2007,
+  with your club in the second division, the game ends when your final
+  rank in each of the last two seasons is past the division's line,
+  which `0x15d8f0` takes from the `down` place slots of its
+  `REGULATION.TBB` row (the club count less the slot's count). The
+  warning before it (`0x15da60`) uses this season's live rank and last
+  season's. `patch_disc.py --mod one-season-end` makes both decide on
+  one season (in no group yet; not checked in the game). With the down
+  count at 1, the line is the last place.
+- **A third tier was planned.** **Empirical**: every second division's
+  `REGULATION.TBB` rows, own-nation and other-nation versions (UIDs 1
+  and 2, 11–12, 20–21, 29–30, 39–40, 48–49), send their bottom two
+  "down" to a competition the disc has no schedule for: 50 England, 51
+  France, 52 Germany, 53 Italy, 54 Spain, 55 Netherlands. The past
+  records' seed table (`PLRRSRC_INITTEAMDATA.TBB` table 1) has 56
+  competition rows, of which the game reads 49
+  ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)). So the six third tiers
+  look like a cut feature, and competitions 50–55 are where they would
+  go.
+- **Left to trace:** whether the game keeps a past record for
+  competitions 50–55 (so a `LAST_RANK` slot can bring a club back), and
+  where those records are stored in a save; how your club and the rival
+  get ranks 25 and 26 of the second division's first record; which
+  cups name second-division ranks; and how the club info screen and the
+  world rankings choose their clubs.
 
 ## Not candidates
 

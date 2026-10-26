@@ -349,4 +349,5 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       `season-demand`): all six are tested in PCSX2; a season played
       through on the set is left
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [ ] More improvement ideas: a third tier with a one-season game over ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [ ] The third tier (in progress, design agreed): the past records of
+      competitions 50–55, then the switch; `one-season-end` is built ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))

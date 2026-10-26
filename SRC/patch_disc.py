@@ -82,7 +82,8 @@ league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
 pr-cycle, mobile-site, overseas-pop, cup-last16, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs, launcher,
+fee-tiers, slow-reputation, one-season-end, fanbase, merch-costs, pr-costs, camp-costs,
+tour-costs, launcher,
 mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
@@ -230,7 +231,11 @@ x2, 15 x3, so lesser players cost about four times the retail fee with
 transfer-fees and the best reach about £246M. slow-reputation (whole disc
 image only) halves what raises club status: a match's win and draw
 factors (SLES 0x399668), the points for final places (0x555188,
-0x555260, 0x555288) and the yearly 500 (0x26e2c4); losses stay. fanbase (whole disc image only)
+0x555260, 0x555288) and the yearly 500 (0x26e2c4); losses stay.
+one-season-end (whole disc image only; in no group yet) ends the game
+when you finish in the second division's bottom two in one season, not
+two running (SIMPRG.REL 0x15d958), and warns on this season alone
+(0x15da60). fanbase (whole disc image only)
 scales the merchandise base by supporters (SIMPRG.REL 0x1d9ec8, 17 rows)
 from x0.5 at the bottom to x3 at the top, makes walk-up crowds and
 season-ticket demand count home popularity at 195 in place of 130 with
@@ -2747,6 +2752,31 @@ def plan_slow_reputation(f, img):
     return word_jobs(f, img, "slow-reputation", SLOW_REPUTATION)
 
 
+# one-season-end: finishing in the second division's bottom two ends the
+# game after one season, not two running (the user's third-tier idea,
+# DOC/LMASTER_MOD.md). SIMPRG.REL 0x15d958 (from 2007, with your club in
+# the second division) reads your final rank in the latest season ($s1)
+# and the one before ($s0) and returns 1 when both are past the
+# division's line (0x15d8f0). The new code skips the test that the
+# earlier record exists and returns 1 on the latest season alone. The
+# warning before it (0x15da60: this season's live rank and last season's)
+# likewise warns on this season alone: the last-season record is neither
+# required nor read. Branches only, since the overlay is relocated.
+ONE_SEASON_END = (
+    simprg_word(0x15da08, 0x5200000f, 0x00000000, "game over: no earlier season needed"),
+    simprg_word(0x15da34, 0x92030004, 0x10000004, "game over: the latest season decides"),
+    simprg_word(0x15da38, 0x0083182a, 0x24020001, "game over: the latest season decides"),
+    simprg_word(0x15daf0, 0x5040000c, 0x00000000, "warning: no last season needed"),
+    simprg_word(0x15dafc, 0x90510004, 0x00000000, "warning: last season not read"),
+    simprg_word(0x15db18, 0x14600002, 0x10000002, "warning: this season decides"),
+)
+
+
+def plan_one_season_end(f, img):
+    """Jobs for --mod one-season-end."""
+    return word_jobs(f, img, "one-season-end", ONE_SEASON_END)
+
+
 # fanbase: a big fanbase counts for more. Merchandise sales start from a
 # base by the sum of pwkTeam_Supporter over the 13 regions (SIMPRG.REL
 # 0x165598): 17 {threshold, base} pairs at 0x1d9ec8, from 800 (under
@@ -3012,6 +3042,8 @@ SWITCHES = (
      "Balance: transfer fees by player rank: lesser players x2, the best up to x3"),
     ("slow-reputation", plan_slow_reputation, [SLES_FILE],
      "Balance: club status (reputation) rises half as fast; losses stay"),
+    ("one-season-end", plan_one_season_end, [NEGO_FILE],
+     "The second division's bottom two end the game after one season, not two"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
      "Balance: a bigger fanbase sells more merchandise and draws more fans and TV money"),
     ("merch-costs", plan_merch_costs, [NEGO_FILE],
