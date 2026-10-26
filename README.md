@@ -652,5 +652,8 @@ its data files are not part of it and are not covered by this license.
 
 ## Special thanks
 
+- **The [LMAST/SFCC English Fan Discord](https://discord.gg/7DNrGye9TZ)**,
+  the English-speaking community of *Let's Make a Soccer Team!* and the
+  *Sakatsuku* (SFCC) series, which this project is made for.
 - **@tw09627** on the LMAST Discord, who first decrypted `DATA.CVM` with the help of
   ChatGPT and opened up the game's data for this project.

@@ -8,6 +8,9 @@ your disc, apply the patch, and keep your saves safe. The first three
 sections need no Python. The last one is for people who build a patch;
 the [README](README.md) covers setting the project up.
 
+For help, and to share what you've made, there's the
+[LMAST/SFCC English Fan Discord](https://discord.gg/7DNrGye9TZ).
+
 ## What you need
 
 - The PAL disc of *Let's Make a Soccer Team!* (SLES-54151, v1.01), as
