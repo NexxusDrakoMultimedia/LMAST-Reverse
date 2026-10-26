@@ -351,8 +351,9 @@ names the disc or the edit to build; the result goes into the doc.
 - [ ] The third tier's clubs in the domestic cups (the user's choice,
       2026-10-27: grow the brackets, so every current entrant keeps its
       place): each nation's cups take its tier clubs by `LAST_RANK` of
-      competitions 50–55, the own-nation versions 5 a nation, the
-      others 3. Needs a knockout builder in `schedule.py` (pairings, next
+      competitions 50–55, all but the tier's last place (the user's
+      rule): ranks 1–4 in the own-nation versions (5-club tier), 1–2 in
+      the others (3 clubs). Needs a knockout builder in `schedule.py` (pairings, next
       links, byes; it builds only leagues now) and, where a cup gains a
       round, a turn for it. Part of `third-tier`, after the merge
       ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md),
