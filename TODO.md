@@ -71,7 +71,8 @@ type has a doc and a tool whose `info` passes over all of `DAT/`.
 - [ ] Outside `DATA.CVM`: `OPMOVIE.SFD` (Sofdec), `info.bin` past the date,
       `dm.bin` and the VS data save
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-- [ ] Japanese release: the differences still open in
+- [ ] Later (the project serves the English release first): Japanese
+      release, the differences still open in
       [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#still-unknown)
 
 ## 2. Understand: field meanings an edit needs
@@ -219,7 +220,7 @@ release. **Done when** the items below work; see
 - [ ] `TACTICSPITCH.PAC` is loaded through `CLoader`, not as a
       registering resource: whether its entries stand in for their
       originals ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#still-unknown))
-- [ ] A Japanese disc built with `--mod lmaster-full`, and a Japanese
+- [ ] Later: a Japanese disc built with `--mod lmaster-full`, and a Japanese
       save edited with `save.py --iso ISO_JP`, still to be run in the
       game ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc),
       [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-japanese-release))
@@ -233,7 +234,7 @@ per kind of data, each editing through its writer and taking the allowed
 values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
-- [ ] The editor and save editor on the Japanese release
+- [ ] Later: the editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
 
