@@ -185,6 +185,10 @@ What is known so far:
      seven past records for competitions 49–55 at its end, with
      `pwkRec_GetCompePastRecord` sending them there; the serializers
      read and write the new space (`save.py` follows, as it runs them).
+     **Built** as `--mod save-expand`, with an LMASTER code segment in
+     the executable for the new code
+     ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-bigger-save---mod-save-expand));
+     checked offline, not yet in the game.
   2. Clubs 442–459 as full clubs: the game's limits 440 (`0x1b8`), 441
      (`0x1b9`) and 442 (`0x1ba`), about 190 immediates across the
      executable and overlays, each checked; their records and squads at

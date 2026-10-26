@@ -309,6 +309,11 @@ names the disc or the edit to build; the result goes into the doc.
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
+- [ ] The bigger save (`LMAST-test-saveexpand.iso`: `save-expand`,
+      `mod-saves`, `--skip-tutorial`): G006 converted with `save.py
+      convert` loads, a turn played and saved loads again, and a new
+      career saves and loads
+      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-bigger-save---mod-save-expand))
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and

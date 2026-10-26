@@ -851,6 +851,36 @@ Checked on a Japanese save (`BISLPM-66316-G000`, 2006–07, turn 4):
 fatigue, read back by `show`; a wristband of 7 refused). The edited save
 hasn't been loaded in the game.
 
+## The bigger save (`--mod save-expand`)
+
+`patch_disc.py --mod save-expand` grows two blocks for the LMASTER
+third tier ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)): block 2
+by 18 records of 0xa8 for clubs 442–459 (records 440–457, where
+`pwkOteam_Team2Otindex` already puts them), and block 5 by seven past
+records of 0x98 at its old end (`+0xb50d0`) for competitions 49–55.
+**Confirmed** for the approach: the blocks' sizes come from the table
+at `0x533ac8`, `PlPworkTask` (`0x21d6f0`) allocates their sum, and the
+save's size follows the stream, counted in a first pass over the same
+serializers (`SAVEPRG.REL 0x335b8`). The layout CRC becomes `0x6ca1`
+and the main file 649,968 bytes (5,199,564 bits); the field list has
+607,518 fields.
+
+`save.py` reads such a save given the patched files (`--iso` a folder
+with the patched `SLES_541.51` and `DLL/SAVEPRG.REL`): it loads the
+executable's added code segment into its interpreter and treats direct
+calls to `_plBits_BitRead`/`BitWrite` like the imports. `save.py
+convert <save> <out> <ISO dir>` re-encodes a save for that layout, the
+new records empty:
+
+```bash
+python SRC/save.py convert <card>/BESLES-54151-G006 out.bin <patched ISO folder>
+python SRC/save.py show out.bin --iso <patched ISO folder>
+```
+
+**Checked offline:** `save.py fields` on the patched files matches the
+game's serializers both ways on random data, and G006 converted reads
+back the same. Not yet loaded in the game.
+
 ## Separate saves for a modded disc
 
 `MC::CFcEuroIF::initialize` (SLES `0x12ad38`) picks the memory-card name

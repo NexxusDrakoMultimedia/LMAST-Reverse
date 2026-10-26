@@ -70,6 +70,7 @@ Usage:
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
     python save.py roundtrip <save> ...                   # decode + encode, compare
+    python save.py convert   <save> <out> <ISO dir>       # re-encode for another layout (--mod save-expand)
     python save.py blocks                                 # block sizes and offsets in .bin
     python save.py fields    [rounds]                     # re-record and check the field list
     python save.py rename    <save folder> <parent>        # copy a save between -G/-C and a modded disc's -M/-D
@@ -251,11 +252,22 @@ class Cpu:
     RETURN = 0x3FFFFF0      # a return address outside memory ends run()
     IMPORT = 0x3000000      # jal to an import jumps here + 4 * import index
 
-    def __init__(self, rel_path):
+    # The bit-stream functions by their PAL address, for code that calls
+    # them directly rather than through an import (patch_disc.py's code
+    # segment, --mod save-expand).
+    DIRECT = {0x20C200: "_plBits_BitRead__5ParamPQ25Param11PlBitsClassii",
+              0x20C1C0: "_plBits_BitWrite__5ParamPQ25Param11PlBitsClasslii"}
+
+    def __init__(self, rel_path, segments=()):
         self.rel = snr2.Snr2(rel_path)
         img = self.rel.data
         self.mem = bytearray(self.MEM_SIZE)
         self.mem[:len(img)] = img
+        # Extra loadable segments of the executable that fit below the
+        # blocks (the code segment at 0xf8000), where the overlay calls them.
+        for vaddr, data in segments:
+            if len(img) <= vaddr and vaddr + len(data) <= Game.block_base():
+                self.mem[vaddr:vaddr + len(data)] = data
         self.r = [0] * 32
         self.rq = [0] * 32          # upper 64 bits, only moved by lq/sq
         self.lo = self.hi = 0
@@ -264,7 +276,7 @@ class Cpu:
         for off, t, sym, _ in self.rel.ext:
             if t == 4:              # R_MIPS_26
                 self.imports[off] = self.rel.syms[sym][0]
-        self.names = sorted(set(self.imports.values()))
+        self.names = sorted(set(self.imports.values()) | set(self.DIRECT.values()))
         self.code = {}
         self.steps = 0
         self.on_store = None        # f(addr, width) after every store
@@ -373,6 +385,8 @@ class Cpu:
                     target = self.IMPORT + 4 * self.names.index(self.imports[pc])
                 else:
                     target = (w & 0x3FFFFFF) << 2
+                    if op == 3 and target in self.DIRECT:
+                        target = self.IMPORT + 4 * self.names.index(self.DIRECT[target])
             elif op in (4, 5, 6, 7, 0x14, 0x15, 0x16, 0x17):
                 a, b = r[rs], r[rt]
                 k = op & 3
@@ -450,6 +464,22 @@ def crc16(rel, data, table=CRC_TABLE):
     for b in data:
         c = (c >> 8) ^ tab[(b ^ c) & 0xFF]
     return c ^ 0xFFFF
+
+
+def extra_segments(sles_path):
+    """[(address, bytes)] of the executable's loadable segments after the
+    first: none in the retail game, the LMASTER code segment on a disc
+    patched with --mod save-expand (patch_disc.py)."""
+    with open(sles_path, "rb") as f:
+        data = f.read()
+    phoff, = struct.unpack_from("<I", data, 0x1C)
+    phnum, = struct.unpack_from("<H", data, 0x2C)
+    out = []
+    for k in range(1, phnum):
+        typ, off, vaddr, _, filesz, _, _, _ = struct.unpack_from("<8I", data, phoff + 32 * k)
+        if typ == 1:
+            out.append((vaddr, data[off:off + filesz]))
+    return out
 
 
 def block_sizes(sles_path=SLES):
@@ -599,8 +629,11 @@ class Fields:
 
 
 def random_plain(game, rng):
-    """A decrypted save with a valid header and random bits after it."""
-    size = game.file_size()
+    """A decrypted save with a valid header and random bits after it: as
+    many bytes as the blocks hold, which no stream exceeds (each field
+    takes at most its stored bytes' worth of bits), so this needs no
+    field list."""
+    size = (HEADER + game.offsets[-1] + 7) // 8 * 8
     body = rng.getrandbits(8 * (size - HEADER)).to_bytes(size - HEADER, "little")
     return struct.pack("<4I", 0, 0, game.crc, game.version) + body
 
@@ -637,11 +670,13 @@ class Game:
         self.sizes = block_sizes(sles_path)
         self.crc = crc16(self.rel, struct.pack("<%dI" % NBLOCKS, *self.sizes), crc_table)
         self.offsets = [sum(self.sizes[:i]) for i in range(NBLOCKS + 1)]
-        self.cache_key = hashlib.sha1(self.rel + struct.pack("<%dI" % NBLOCKS, *self.sizes)).hexdigest()[:12]
+        self.segments = extra_segments(sles_path)
+        self.cache_key = hashlib.sha1(self.rel + struct.pack("<%dI" % NBLOCKS, *self.sizes)
+                                      + b"".join(d for _, d in self.segments)).hexdigest()[:12]
         self._fields = None
 
     def cpu(self):
-        return Cpu(self.rel_path)
+        return Cpu(self.rel_path, self.segments)
 
     def check_header(self, plain):
         """The bit offset of the stream in a decrypted file."""
@@ -1645,6 +1680,39 @@ def cmd_encode(game, src, template, out):
     print("%s: %d bytes, stream %d bits" % (out, len(data), bits))
 
 
+def fresh_file(game, blocks):
+    """A main file for `blocks` with no template: the header, the stream
+    and zero bits to the file's size, encrypted."""
+    stream, bits = game.pack(blocks)
+    plain = struct.pack("<4I", 0, 0, game.crc, game.version) + stream
+    return game.encrypt(plain.ljust(game.file_size(), b"\0")), bits
+
+
+def cmd_convert(game, path, out, to_iso):
+    """Re-encode a save for another layout of the same game, as a disc with
+    --mod save-expand has: each block keeps its bytes, and a block that
+    grew is padded with zeros (the new records start empty)."""
+    import gamever
+    target = Game(os.path.join(to_iso, "DLL", "SAVEPRG.REL"), gamever.exe_path(to_iso), game.dat)
+    with open(save_path(path), "rb") as f:
+        blocks, _ = game.unpack(game.decrypt(f.read()))
+    new = b""
+    for i in range(NBLOCKS):
+        old = blocks[game.offsets[i]:game.offsets[i + 1]]
+        if len(old) > target.sizes[i]:
+            raise SystemExit("block %d shrinks from %d to %d bytes; not converted"
+                             % (i, len(old), target.sizes[i]))
+        new += old.ljust(target.sizes[i], b"\0")
+    data, bits = fresh_file(target, new)
+    back, _ = target.unpack(target.decrypt(data))
+    if back != new:
+        raise SystemExit("the converted save doesn't read back the same")
+    with open(out, "wb") as f:
+        f.write(data)
+    print("%s: layout CRC %#06x -> %#06x, %d bytes, stream %d bits; read back the same"
+          % (out, game.crc, target.crc, len(data), bits))
+
+
 def cmd_roundtrip(game, paths):
     bad = 0
     for p in paths:
@@ -2249,6 +2317,8 @@ def main(argv):
         cmd_decode(game, *args)
     elif cmd == "encode" and len(args) == 3:
         cmd_encode(game, *args)
+    elif cmd == "convert" and len(args) == 3:
+        cmd_convert(game, *args)
     elif cmd == "roundtrip" and args:
         return cmd_roundtrip(game, args)
     elif cmd == "candidates" and len(args) == 1:

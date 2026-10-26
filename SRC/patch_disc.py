@@ -82,7 +82,7 @@ league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
 pr-cycle, mobile-site, overseas-pop, cup-last16, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fee-tiers, slow-reputation, one-season-end, fanbase, merch-costs, pr-costs, camp-costs,
+fee-tiers, slow-reputation, save-expand, one-season-end, fanbase, merch-costs, pr-costs, camp-costs,
 tour-costs, launcher,
 mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
@@ -232,6 +232,14 @@ transfer-fees and the best reach about £246M. slow-reputation (whole disc
 image only) halves what raises club status: a match's win and draw
 factors (SLES 0x399668), the points for final places (0x555188,
 0x555260, 0x555288) and the yearly 500 (0x26e2c4); losses stay.
+save-expand (whole disc image only; in no group yet) grows the save for
+the third tier: block 2 by 18 club records (clubs 442-459), block 5 by
+seven past records (competitions 49-55, through a rewritten
+pwkRec_GetCompePastRecord), with the serializers in SAVEPRG.REL saving
+them. Its code goes in a second loadable segment of SLES_541.51 at
+0xf8000, made from unloaded .DVP bytes, so the file keeps its size.
+Saves no longer load in the retail game or the other way round; use it
+with mod-saves, and `save.py convert` to carry a career over.
 one-season-end (whole disc image only; in no group yet) ends the game
 when you finish in the second division's bottom two in one season, not
 two running (SIMPRG.REL 0x15d958), and warns on this season alone
@@ -2777,6 +2785,190 @@ def plan_one_season_end(f, img):
     return word_jobs(f, img, "one-season-end", ONE_SEASON_END)
 
 
+# --- LMASTER code segment and the bigger save (DOC/LMASTER_MOD.md) -----------
+
+# A small MIPS encoder for the code the switches add, so it reads as
+# instructions. Register numbers as the EE names them.
+ZERO, AT, V0, V1, A0, A1, A2, A3, T0, T1, T2 = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+S0, S1, S2, SP, RA = 16, 17, 18, 29, 31
+
+
+def _i(op, rs, rt, imm):
+    return op << 26 | rs << 21 | rt << 16 | imm & 0xFFFF
+
+
+def _r(rs, rt, rd, funct):
+    return rs << 21 | rt << 16 | rd << 11 | funct
+
+
+def addiu(rt, rs, imm): return _i(0x09, rs, rt, imm)
+def slti(rt, rs, imm): return _i(0x0A, rs, rt, imm)
+def sltiu(rt, rs, imm): return _i(0x0B, rs, rt, imm)
+def ori(rt, rs, imm): return _i(0x0D, rs, rt, imm)
+def lui(rt, imm): return _i(0x0F, 0, rt, imm)
+def lw(rt, off, rs): return _i(0x23, rs, rt, off)
+def lbu(rt, off, rs): return _i(0x24, rs, rt, off)
+def sb(rt, off, rs): return _i(0x28, rs, rt, off)
+def sw(rt, off, rs): return _i(0x2B, rs, rt, off)
+def ld(rt, off, rs): return _i(0x37, rs, rt, off)
+def sd(rt, off, rs): return _i(0x3F, rs, rt, off)
+def lq(rt, off, rs): return _i(0x1E, rs, rt, off)     # 128-bit, as the game saves s registers
+def sq(rt, off, rs): return _i(0x1F, rs, rt, off)
+def beqz(rs, off): return _i(0x04, rs, 0, off)       # off in words from the delay slot
+def bnez(rs, off): return _i(0x05, rs, 0, off)
+def addu(rd, rs, rt): return _r(rs, rt, rd, 0x21)
+def move(rd, rs): return _r(rs, 0, rd, 0x2D)         # daddu rd, rs, $zero
+def mult3(rd, rs, rt): return _r(rs, rt, rd, 0x18)   # the R5900's three-operand mult
+def movn(rd, rs, rt): return _r(rs, rt, rd, 0x0B)
+def jr(rs): return _r(rs, 0, 0, 0x08)
+def j(target): return 0x08000000 | (target >> 2 & 0x3FFFFFF)
+def jal(target): return 0x0C000000 | (target >> 2 & 0x3FFFFFF)
+NOP = 0
+
+
+def words(*ws):
+    return struct.pack("<%dI" % len(ws), *ws)
+
+
+# The LMASTER code segment. SLES_541.51 has one loadable segment, which
+# ends at file offset 0x46a2dc; the .DVP.overlay sections after it are
+# never loaded. A second PT_LOAD program header (the gap after the first,
+# at 0x54, is zero) loads CAVE_SIZE bytes of them at CAVE, in EE RAM below
+# the executable that the game leaves zero, above the BIOS's EELOAD
+# (0x82000). Code there is reached from the executable and from every
+# overlay with plain j/jal. The file keeps its size.
+CAVE, CAVE_FILE, CAVE_SIZE = 0xF8000, 0x46A350, 0x400
+PHDR2 = 0x54
+_BIT_READ, _BIT_WRITE = 0x20C200, 0x20C1C0       # _plBits_BitRead(bits, n, signed), BitWrite(bits, v, n, signed)
+
+# save-expand: the save grows for the third tier. The blocks' sizes
+# (getSize: table 0x533ac8, size + 8) decide the allocation, which
+# PlPworkTask (0x21d6f0) sums, and the layout CRC.
+# - Block 2 (the other clubs) gains 18 records of 0xa8 for clubs
+#   442-459, which pwkOteam_Team2Otindex already maps to records
+#   440-457; its serializers' loops go to 458 (SAVEPRG.REL 0x29548 read,
+#   0x1b844 write).
+# - Block 5 gains seven past records of 0x98 at its old end (0xb50d0) for
+#   competitions 49-55, the third tiers 50-55 among them.
+#   pwkRec_GetCompePastRecord (0x253590) is rewritten in its own 23 words
+#   to take competitions up to 55 and send 49 on there (offset compe x
+#   0x98 + 0x260 below 49, + 0xb33b8 from 49), with plPwork_GetPwork
+#   (lui/lw of 0x3909a8) inlined to make room. Block 5's serializers (read
+#   0x29838, write 0x1bad8) jump to a wrapper in the code segment, which
+#   runs the two instructions it displaced, lets the serializer finish,
+#   then reads or writes the new bytes, 8 bits each. The dispatchers call
+#   them with jalr, so $ra is the overlay's base + 0x2b9fc (read) or
+#   + 0x2ba34 (write), which locates the rest of the serializer.
+# Saves of a disc with this switch don't load in the retail game, nor
+# the other way round (the layout CRC differs); use it with mod-saves.
+PWORK_SIZE_TABLE = 0x533AC8
+BLOCK2_ADD, BLOCK5_ADD = 18 * 0xA8, 7 * 0x98
+BLOCK5_OLD = 0xB50D0
+SAVE_EXPAND_SIZES = ((2, 73928, 73928 + BLOCK2_ADD), (5, 741592, 741592 + BLOCK5_ADD))
+PAST_RECORD = 0x253590
+PAST_RECORD_OLD = bytes.fromhex(
+    "e0ffbd271000b07f2d8080003100022a0d0040100000bfffb875080c000000002d2040004a76080c"
+    "050005242d1840000500601098000224181002026002422402000010211062002d1000001000b07b"
+    "0000bfdf0800e0032000bd27")
+PAST_RECORD_NEW = words(
+    addiu(SP, SP, -0x20), sd(RA, 0, SP), sq(S0, 0x10, SP),
+    sltiu(V0, A0, 0x38),                      # competitions 0-55
+    beqz(V0, 14), addiu(V1, ZERO, 0x98),      # else return 0 ($v0 is 0)
+    mult3(S0, A0, V1),                        # compe x 0x98
+    slti(V1, A0, 0x31),
+    addiu(S0, S0, 0x260),
+    lui(V0, 0xB), ori(V0, V0, 0x3158),        # 0xb33b8 - 0x260: from 49, past the old end
+    movn(V0, ZERO, V1), addu(S0, S0, V0),
+    lui(V1, 0x39), lw(A0, 0x9A8, V1),         # plPwork_GetPwork
+    jal(0x21D928), addiu(A1, ZERO, 5),        # get(5)
+    addu(V1, V0, S0), movn(V0, V1, V0),       # block 5 + offset, or 0 with no block
+    ld(RA, 0, SP), lq(S0, 0x10, SP), jr(RA), addiu(SP, SP, 0x20))
+SAVE_LOOPS = ((0x29548, 0x2AA301B8, 0x2AA301CA, "block 2 read: 458 records"),
+              (0x1B844, 0x2AA201B8, 0x2AA201CA, "block 2 write: 458 records"))
+# (serializer, its first two words, the base offset $ra holds, wrapper)
+_VARS = CAVE + 0x200
+BLOCK5_HOOKS = (("read", 0x29838, (0x27BDFF10, 0x7FB70070), 0x2B9FC),
+                ("write", 0x1BAD8, (0x27BDFF00, 0x7FB70080), 0x2BA34))
+
+
+def _block5_wrapper(at, hook):
+    """The wrapper for one block 5 serializer, placed at CAVE address `at`."""
+    kind, start, (first, second), back = hook
+    after = at + 4 * 12
+    delta = start + 8 - back                         # the serializer's third word, from $ra
+    head = [second,                                  # the displaced sq; the addiu ran in the delay slot
+            lui(T0, (_VARS + 0x8000) >> 16), sw(A0, _VARS & 0xFFFF, T0), sw(A1, (_VARS + 4) & 0xFFFF, T0),
+            sw(RA, (_VARS + 8) & 0xFFFF, T0),
+            lui(T2, (delta + 0x8000) >> 16 & 0xFFFF), addiu(T2, T2, delta), addu(T1, RA, T2),
+            lui(RA, after >> 16), ori(RA, RA, after & 0xFFFF),
+            jr(T1), NOP]
+    if kind == "read":
+        body = [move(A0, S1), addiu(A1, ZERO, 8), jal(_BIT_READ), move(A2, ZERO),
+                sb(V0, 0, S0)]
+    else:
+        body = [move(A0, S1), lbu(A1, 0, S0), addiu(A2, ZERO, 8), jal(_BIT_WRITE),
+                move(A3, ZERO)]
+    loop = len(body)
+    tail = ([addiu(SP, SP, -0x30), sq(S0, 0, SP), sq(S1, 0x10, SP), sq(S2, 0x20, SP),
+             lui(T0, (_VARS + 0x8000) >> 16), lw(S1, _VARS & 0xFFFF, T0), lw(S0, (_VARS + 4) & 0xFFFF, T0),
+             lui(T2, BLOCK5_OLD >> 16), ori(T2, T2, BLOCK5_OLD & 0xFFFF), addu(S0, S0, T2),
+             addiu(S2, ZERO, BLOCK5_ADD)]
+            + body
+            + [addiu(S2, S2, -1), bnez(S2, -(loop + 2)), addiu(S0, S0, 1),
+               lq(S0, 0, SP), lq(S1, 0x10, SP), lq(S2, 0x20, SP), addiu(SP, SP, 0x30),
+               lui(T0, (_VARS + 0x8000) >> 16), lw(RA, (_VARS + 8) & 0xFFFF, T0), jr(RA), NOP])
+    return words(*(head + tail))
+
+
+def save_expand_cave():
+    """The code segment's bytes: the two block 5 wrappers, then the
+    wrappers' variables at CAVE + 0x200, zero."""
+    out, at = b"", {}
+    for hook in BLOCK5_HOOKS:
+        at[hook[0]] = CAVE + len(out)
+        out += _block5_wrapper(CAVE + len(out), hook)
+    if len(out) > _VARS - CAVE:
+        raise ValueError("the wrappers outgrow their space")
+    return out.ljust(CAVE_SIZE, b"\0"), at
+
+
+def phdr2():
+    """The second program header: PT_LOAD, file CAVE_FILE at CAVE, RWX."""
+    return struct.pack("<8I", 1, CAVE_FILE, CAVE, CAVE, CAVE_SIZE, CAVE_SIZE, 7, 0x10)
+
+
+def plan_save_expand(f, img):
+    """Jobs for --mod save-expand."""
+    if img.port is not None:
+        raise ValueError("save-expand is made for the PAL executable only")
+    cave, at = save_expand_cave()
+    e_phnum = read_at(f, img, SLES_FILE, 0x2C, 2)
+    held_cave = read_at(f, img, SLES_FILE, CAVE_FILE, CAVE_SIZE)
+    words_ = [(SLES_FILE, 0x2C, b"\x01\x00", b"\x02\x00", "%s e_phnum 2" % SLES_FILE),
+              (SLES_FILE, PHDR2, bytes(32), phdr2(),
+               "%s program header 1: the LMASTER code segment at 0x%x" % (SLES_FILE, CAVE)),
+              (SLES_FILE, CAVE_FILE, held_cave if held_cave != cave else bytes(CAVE_SIZE), cave,
+               "%s 0x%x (the code segment's bytes, unloaded .DVP data before)"
+               % (SLES_FILE, CAVE_FILE)),
+              (SLES_FILE, PAST_RECORD - EXE_BASE, PAST_RECORD_OLD, PAST_RECORD_NEW,
+               "%s 0x%x (pwkRec_GetCompePastRecord: competitions 49-55 at block 5's end)"
+               % (SLES_FILE, PAST_RECORD))]
+    if e_phnum not in (b"\x01\x00", b"\x02\x00"):
+        raise ValueError("save-expand: %s has %d program headers" % (SLES_FILE, e_phnum[0]))
+    for block, old, new in SAVE_EXPAND_SIZES:
+        words_.append(sles_word(PWORK_SIZE_TABLE + 4 * block, old, new,
+                                "block %d size %d" % (block, new - 8)))
+    for off, old, new, what in SAVE_LOOPS:
+        words_.append((SAVE_FILE, off, struct.pack("<I", old), struct.pack("<I", new),
+                       "%s 0x%x (%s)" % (SAVE_FILE, off, what)))
+    for hook in BLOCK5_HOOKS:
+        kind, start, (first, second), _ = hook
+        words_.append((SAVE_FILE, start, words(first, second), words(j(at[kind]), first),
+                       "%s 0x%x (block 5 %s: the wrapper at 0x%x)" % (SAVE_FILE, start, kind,
+                                                                      at[kind])))
+    return word_jobs(f, img, "save-expand", words_)
+
+
 # fanbase: a big fanbase counts for more. Merchandise sales start from a
 # base by the sum of pwkTeam_Supporter over the 13 regions (SIMPRG.REL
 # 0x165598): 17 {threshold, base} pairs at 0x1d9ec8, from 800 (under
@@ -3042,6 +3234,8 @@ SWITCHES = (
      "Balance: transfer fees by player rank: lesser players x2, the best up to x3"),
     ("slow-reputation", plan_slow_reputation, [SLES_FILE],
      "Balance: club status (reputation) rises half as fast; losses stay"),
+    ("save-expand", plan_save_expand, [SLES_FILE, SAVE_FILE],
+     "LMASTER full: a bigger save (clubs 442-459, competitions 49-55); breaks save compatibility"),
     ("one-season-end", plan_one_season_end, [NEGO_FILE],
      "The second division's bottom two end the game after one season, not two"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
