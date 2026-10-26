@@ -160,8 +160,21 @@ What is known so far:
   49 (`slti 0x31`); a record is 0x98 bytes at save block 5 `+0x260 +
   compe × 0x98` (team ids from `+0x8`, 32 of them). So competitions
   50–55 keep no record a `LAST_RANK` slot could read.
-- **Left to trace:** whether block 5 has room after the 49 records (to
-  extend the bound), or another way to remember the third tier; how your club and the rival
+- **No room for more records.** **Confirmed**: the 49 past records end
+  at block 5 `+0x1f78`, and the non-resident clubs' league records begin
+  at `+0x203c` (`0x24d330`: up to 146 records of 0x1c8 bytes, found by
+  `bsearch`), so 196 bytes lie between: not enough for six more records.
+- **Clubs 442–459 can't join a league as they are.** **Confirmed**: a
+  non-resident club (442 on) gets a temporary league record and its 25
+  players from the database (`0x24d6b0`: ids `0x63f7` + 25 × (club −
+  442), 25,591 onward); `pwkOteam_GetPointer` (`0x24b788`) has no upper
+  bound, so code that updates a league club's block 2 record (main
+  league, rank) would write past the 440 records into block 3 for club
+  442 on. Save blocks have fixed sizes, set by the generated serializers,
+  so block 2 can't grow.
+- **Left to trace:** another way to remember the third tier (the
+  `make_list` sources behind `LIST` slots, which might pick a nation's
+  clubs with no league); how your club and the rival
   get ranks 25 and 26 of the second division's first record; which
   cups name second-division ranks; and how the club info screen and the
   world rankings choose their clubs.
