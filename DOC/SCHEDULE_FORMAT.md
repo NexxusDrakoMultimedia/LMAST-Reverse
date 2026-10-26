@@ -176,7 +176,7 @@ national teams have all of June.
 | `0x04` | s8 | competition (`PLSCHE_COMPE`), 0–71 |
 | `0x05` | u8 | year of the 4-year cycle when it starts (1–4), `0xff` = every year |
 | `0x06` | u8 | load condition, see below |
-| `0x07` | u8 | flag, unknown |
+| `0x07` | u8 | 1: the result is kept. **Confirmed**: `CScheEuro::calcCompetetionFinish` (`0x205f88`) returns at once unless it is 1, so only then are the past record, the honours and the title effects written. 1 on 57 rows (the leagues and each cup's final stage), 0 on 107 (qualifying rounds, group stages, the tutorial, VS, the runtime friendlies) |
 | `0x08` | u8[12] | turn mask: bit *t* set = a game day on turn *t* |
 
 The load condition in `+6` decides whether a UID is loaded in each mode:
@@ -641,8 +641,8 @@ turns a 42-day schedule would add.
 
 - What game bit `w0` 8 selects (a per-day mark, set on every cup day;
   `set_league` writes 0, so a league `leaguesize.py build` resizes loses
-  its marked days), bit 9, header bytes `0x0A`–`0x0F`, `year_schedule_data`
-  `+7`, and the first two team-entry header bytes.
+  its marked days), bit 9, header bytes `0x0A`–`0x0F`, and the first two
+  team-entry header bytes.
 - `PeriodName.tbb`, the `make_list` source functions and tables 1–8, and
   the meaning of the `savectrl` values.
 - How your club and the rival become ranks 25 and 26 of the second

@@ -106,7 +106,8 @@ and moves clubs between them and the second divisions.
 165–170 (3 clubs), and an own-nation version, 171–176 (5 clubs), as the
 second divisions have (load kinds 2 and 1):
 
-- `year_schedule_data`: a row each, loaded every season, its game days
+- `year_schedule_data`: a row each, loaded every season, its result
+  kept (`+7` is 1, which `calcCompetetionFinish` needs), its game days
   spread evenly over its second division's (other-nations UIDs 2, 12,
   21, 30, 40, 49), first and last kept.
 - `savectrl`: type 0 for 164–176 (177 bytes).
@@ -206,7 +207,23 @@ German Club Cup's semi-finals were on December week 3 midweek with its
 4 clubs, the qualifying round's losers, one of them Trier, the tier
 club in the seeded last place (user report, with a screenshot). That
 cup now has 2 rounds where your nation's retail version had 3 (6
-clubs). The season's end isn't played yet.
+clubs).
+
+**The first season's end failed, and is fixed** (user report, with
+screenshots and the save, 2026-10-27). The tiers' year rows had `+7` at
+0, so `calcCompetetionFinish` (`0x205f88`) kept none of their results:
+the save's records for competitions 50–55 still held their seeds (count
+0), while the second divisions' were written. Each second division then
+took its tier's seeded rank 1, a club it already had, so in England
+Sheffield played the Champions Division twice, and in Germany Paderborn,
+last in the 2nd German League and at the tier's rank 1 since the
+career's start, stayed up. The rows now have `+7` at 1. The offline
+play-out keeps results only for such rows, and finds the bug in the old
+files (clubs twice from season 2) and none in the new
+(`LMAST-test-tiers-germany2.iso`). Because `updateTurnEnd` (`0x2033e0`)
+marks a result kept before calling `calcCompetetionFinish`, a career
+from the old disc only recovers if it is saved before the tiers' last
+game day (May) and loaded from the card on the new disc.
 
 ## Still unknown
 

@@ -3314,7 +3314,7 @@ def plan_tier_lists(f, img):
 #   puts your club and the rival at ranks S - 2 and S - 1 and sends the
 #   two seeded clubs there down to your 5-club tier.
 # - Season end: calcCompetetionFinish (0x205fa8) writes the tables of
-#   competitions to 55. The yearly honours exist for 0-48 only, so for
+#   competitions to 55, of those whose year row's +7 is 1 (0x205f88). The yearly honours exist for 0-48 only, so for
 #   49 on, a detour skips pwkRec_ShiftCompeConventionRecord (0x205fc0)
 #   and everything after the table (0x20631c), in the LMASTER code
 #   segment at TIER_CAVE.
@@ -3571,7 +3571,10 @@ def file_tier_uids(f, img, dat):
             e.header = bytes([uid & 0xFF]) + e.header[1:]
             tier_entries.append((uid, e.encode()))
             year = schedule.YearRow(rows[second][0].raw)
-            year.uid, year.compe, year.cycle, year.flag = uid, t, 0xFF, 0
+            # +7 is 1: calcCompetetionFinish keeps only such a competition's
+            # result (0x205f88); with 0 the tiers' records stayed as seeded
+            # and a relegated club came back as the winner (seen in PCSX2).
+            year.uid, year.compe, year.cycle, year.flag = uid, t, 0xFF, 1
             year.kind = 2 if clubs == TIER_CLUBS else 1
             year.turns = _tier_turns(rows[second][0].turns, days)
             year.start, year.end = year.turns[0], year.turns[-1]

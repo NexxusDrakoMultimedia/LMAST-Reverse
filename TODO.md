@@ -363,7 +363,7 @@ names the disc or the edit to build; the result goes into the doc.
       how the screen picks its clubs isn't traced
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#still-unknown))
 - [ ] The third tier (`--mod tier-uids`, phase 4 of the design):
-      `LMAST-test-tiers-germany.iso` (with the tutorial skip in
+      `LMAST-test-tiers-germany2.iso` (with the tutorial skip in
       Germany, `--skip-nation Germany`, and `one-season-end`) starts a
       new career with a German club, plays the first season to its end
       and into the second, saves and loads; the second division then
