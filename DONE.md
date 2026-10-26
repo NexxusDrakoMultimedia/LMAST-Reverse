@@ -293,3 +293,6 @@ Each result is recorded in the doc named.
 - [x] `fee-tiers` (in `--mod balance`): transfer fees by player rank,
       the fee formula's tables decoded
       ([`ECONOMY.md`](DOC/ECONOMY.md#transfer-fees))
+- [x] `slow-reputation` (in `--mod balance`): club status gains halved;
+      what changes the status decoded
+      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md))

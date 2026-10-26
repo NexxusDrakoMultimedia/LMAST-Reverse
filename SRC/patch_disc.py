@@ -82,7 +82,7 @@ league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
 pr-cycle, mobile-site, overseas-pop, cup-last16, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fee-tiers, fanbase, merch-costs, pr-costs, camp-costs, tour-costs, launcher,
+fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs, launcher,
 mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
@@ -91,7 +91,7 @@ injury-row, vpf-styles, season-status, pr-cycle, mobile-site,
 overseas-pop, cup-last16). --mod harder-economy is
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees and
 season-demand; --mod balance is injury-odds, injury-lines,
-overseas-bases, transfer-fees, fee-tiers, fanbase, merch-costs,
+overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs,
 pr-costs, camp-costs and tour-costs. --mod lmaster-full is all of
 those, league-balance and mod-saves, so a full LMASTER disc always saves
 to its own folders. skip-tutorial and launcher are test tools and in no
@@ -227,7 +227,10 @@ currencies (the initializer at 0x24a140). fee-tiers (whole disc image
 only) multiplies the transfer fee's factor by player rank (SLES 0x398478,
 16 ranks x 6 club-rank bands) by tier: ranks 0-5 x2, 6-11 x1.5, 12-14
 x2, 15 x3, so lesser players cost about four times the retail fee with
-transfer-fees and the best reach about £246M. fanbase (whole disc image only)
+transfer-fees and the best reach about £246M. slow-reputation (whole disc
+image only) halves what raises club status: a match's win and draw
+factors (SLES 0x399668), the points for final places (0x555188,
+0x555260, 0x555288) and the yearly 500 (0x26e2c4); losses stay. fanbase (whole disc image only)
 scales the merchandise base by supporters (SIMPRG.REL 0x1d9ec8, 17 rows)
 from x0.5 at the bottom to x3 at the top, makes walk-up crowds and
 season-ticket demand count home popularity at 195 in place of 130 with
@@ -2690,6 +2693,60 @@ def plan_fee_tiers(f, img):
     return word_jobs(f, img, "fee-tiers", words)
 
 
+# slow-reputation: club status (the reputation behind the club rank,
+# status >> 11) rises half as fast; losses stay (the user's choice,
+# 2026-10-26). It rises from three places, all in SLES_541.51:
+# - after each match (0x26ddd8): 4 x ((opponent's rank - yours) / 2 + 16,
+#   or - 16 for a loss) x a competition factor x a result factor x a
+#   league factor. The result factors (0x399668) are {win, draw, loss}
+#   against a stronger or equal club {2, 1, 0.5} and against a weaker
+#   one {1, 0.5, 1}; a win or draw always adds, a loss always takes, so
+#   halving the win and draw factors halves the gains alone.
+# - final places (pwkTeam_MatchGameCheck 0x26dfa8): the international
+#   competitions' points ({compe, 5 places}, 9 records at 0x555188), the
+#   cups' (2 x 5 at 0x555260) and the leagues' (2 x 6 at 0x555288), all
+#   gains, halved (every value is even).
+# - each year end (pwkTeam_YearEndCheck 0x26e2a0): 500.0, the lui at
+#   0x26e2c4, becomes 250.0.
+# Only this code reads those tables (every load of their addresses).
+STATUS_RESULT = 0x399668
+STATUS_RESULT_OLD = (2.0, 1.0, 0.5, 1.0, 0.5, 1.0)
+STATUS_RESULT_NEW = (1.0, 0.5, 0.5, 0.5, 0.25, 1.0)
+STATUS_INTERNATIONAL = (0x555188, (
+    (34, 4000, 2000, 1000, 500, 240), (35, 2000, 1000, 500, 240, 120),
+    (36, 600, 300, 150, 0, 0), (38, 1000, 500, 240, 0, 0), (39, 200, 100, 50, 0, 0),
+    (40, 600, 300, 150, 0, 0), (41, 400, 200, 100, 0, 0), (42, 600, 300, 150, 0, 0),
+    (43, 400, 200, 100, 0, 0)), 1)      # the first word of a record is the competition
+STATUS_CUP = (0x555260, ((400, 200, 100, 0, 0), (200, 100, 50, 0, 0)), 0)
+STATUS_LEAGUE = (0x555288, ((3000, 0, 600, 1000, 600, 400), (600, 300, 0, 0, 60, 0)), 0)
+
+
+def status_points_word(table):
+    """A slow-reputation word for a points table: retail bytes, halved."""
+    addr, rows, keep = table
+    old = b"".join(struct.pack("<%di" % len(r), *r) for r in rows)
+    new = b"".join(struct.pack("<%di" % len(r), *(r[:keep] + tuple(v // 2 for v in r[keep:])))
+                   for r in rows)
+    return (SLES_FILE, addr - EXE_BASE, old, new,
+            "%s 0x%x (status points by final place)" % (SLES_FILE, addr))
+
+
+SLOW_REPUTATION = (
+    (SLES_FILE, STATUS_RESULT - EXE_BASE, struct.pack("<6f", *STATUS_RESULT_OLD),
+     struct.pack("<6f", *STATUS_RESULT_NEW),
+     "%s 0x%x (status after a match: win and draw factors halved)" % (SLES_FILE, STATUS_RESULT)),
+    status_points_word(STATUS_INTERNATIONAL),
+    status_points_word(STATUS_CUP),
+    status_points_word(STATUS_LEAGUE),
+    sles_word(0x26e2c4, 0x3c0143fa, 0x3c01437a, "status each year end: 250"),
+)
+
+
+def plan_slow_reputation(f, img):
+    """Jobs for --mod slow-reputation."""
+    return word_jobs(f, img, "slow-reputation", SLOW_REPUTATION)
+
+
 # fanbase: a big fanbase counts for more. Merchandise sales start from a
 # base by the sum of pwkTeam_Supporter over the 13 regions (SIMPRG.REL
 # 0x165598): 17 {threshold, base} pairs at 0x1d9ec8, from 800 (under
@@ -2953,6 +3010,8 @@ SWITCHES = (
      "Balance: transfer fees twice as high, up to £250M"),
     ("fee-tiers", plan_fee_tiers, [SLES_FILE],
      "Balance: transfer fees by player rank: lesser players x2, the best up to x3"),
+    ("slow-reputation", plan_slow_reputation, [SLES_FILE],
+     "Balance: club status (reputation) rises half as fast; losses stay"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
      "Balance: a bigger fanbase sells more merchandise and draws more fans and TV money"),
     ("merch-costs", plan_merch_costs, [NEGO_FILE],
@@ -2997,7 +3056,7 @@ LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-t
                 "overseas-pop", "cup-last16")
 HARDER_ECONOMY = ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
                   "season-demand")
-BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fee-tiers", "fanbase",
+BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fee-tiers", "slow-reputation", "fanbase",
            "merch-costs", "pr-costs", "camp-costs", "tour-costs")
 SWITCH_GROUPS = {"lmaster-lite": LMASTER_LITE,
                  "lmaster": LMASTER_LITE,               # the name before the split

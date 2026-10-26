@@ -320,7 +320,8 @@ names the disc or the edit to build; the result goes into the doc.
       (English, and one other language); more long injuries over a
       season; an overseas base's set-up cost twice the retail one; a
       transfer fee above £120M, and a lesser player's fee about four
-      times the retail one (`fee-tiers`); merchandise income, crowds and TV offers
+      times the retail one (`fee-tiers`); club status rising about half
+      as fast after wins (`slow-reputation`, `save.py show`); merchandise income, crowds and TV offers
       against the retail game's for the same save; a PR event, a camp and
       a tour costing 2×, 2× and 3× the retail price; PR events succeeding
       about half the time in an average economy (`pr-cycle`)
@@ -348,5 +349,4 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       `season-demand`): all six are tested in PCSX2; a season played
       through on the set is left
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [ ] More improvement ideas: reputation harder to raise, a third tier
-      with a one-season game over ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [ ] More improvement ideas: a third tier with a one-season game over ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))

@@ -583,6 +583,29 @@ five saves the status is within its cap and your club rank is status >>
 exception is the 2005 save (rank 11, table 12), made before the first
 match check.
 
+**What changes the status. Confirmed from the game code:** every
+change goes through `pwkTeam_StatusChange`, from the float-to-int
+wrapper at `0x26dd18`, which has three callers.
+
+| Caller | When | Change |
+|---|---|---|
+| `0x26ddd8` (`pwkTeam_GameCheck`) | after each match | 4 × ((opponent's club rank − yours) ÷ 2 + 16, or − 16 for a loss) × a factor by the regulation's kind (`0x399648`: 1.0, 0.9 … 0.4, then 0 for kind 7) × a result factor (`0x399668`) × in your main league a factor from a byte of the match record (`0x399680`: 1.0 rising to 1.8 at 20 and above) |
+| `pwkTeam_MatchGameCheck` (`0x26dfa8`) | at a final place | points by competition and place: the international competitions' records at `0x555188` (`{compe, 5 places}`: the European League 4,000, 2,000, 1,000, 500, 240; competition 35 2,000 down to 120; the rest 1,000 or less), the cups' at `0x555260` (400, 200, 100 and 200, 100, 50) and the leagues' at `0x555288` (up to 3,000); it also lowers the status rank for titles |
+| `pwkTeam_YearEndCheck` (`0x26e2a0`) | each year end | +500 (the float at `0x26e2c4`), after lowering the status rank on promotion |
+
+The result factors are {win, draw, loss} = {2, 1, 0.5} against a
+stronger or equal club (the opponent's club rank at or above yours) and
+{1, 0.5, 1} against a weaker one. A win or draw always adds and a loss
+always takes: the rank term, in whole numbers, is at least +1 for a win
+or draw and at most −1 for a loss. A league win over an equal club adds
+128; a club rank is 2,048. Which byte of the match
+record picks the league factor isn't traced.
+
+`patch_disc.py --mod slow-reputation` (in `--mod balance`, the user's
+choice, 2026-10-26) halves every gain: the win and draw factors, every
+place's points and the yearly 500 (250.0). Losses stay. Only this code
+reads those tables. Not checked in the game.
+
 `save.py show` prints the status, status rank, cap and both ranks.
 `save.py set ... status=N status_rank=N` writes them and sets both club
 ranks as `0x26dd40` would. A status above the cap is refused, because
@@ -921,8 +944,8 @@ own files name their slot wasn't checked.
   non-resident clubs (442 on), the first u32 of PlMinfo/PlSinfo, PlSinfo
   `+0x64`–`+0x8f`, and how far the manager's popularity goes in play.
 - The club ranking: when in the season it runs, which competitions
-  `0x22`–`0x24` lower the status rank, what changes the status after a
-  match (`0x26ddd8`), the three weighted values behind the world rank
+  `0x22`–`0x24` lower the status rank, the match record's byte behind
+  the league factor of a status change, the three weighted values behind the world rank
   points (`SIMPRG.REL 0x151568`), and whether the club rank limits the
   players an AI club signs.
 - The Special Mention texts of dissatisfaction kinds 0–3 (kind 4 is
