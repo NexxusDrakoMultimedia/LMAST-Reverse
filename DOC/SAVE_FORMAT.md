@@ -27,7 +27,7 @@ functions from `SAVEPRG.REL` in a small interpreter (see
 | `0x320c0`, `0x32158` | Blowfish init, key schedule | standard Blowfish: P-array at `0x4bd78`, S-boxes at `0x4bdc0`. Key bytes go into P big-endian, cycling over the key |
 | `0x32358`, `0x32478` | decrypt, encrypt `(buf, size, key, keylen)` | ECB over 8-byte blocks. Each block is loaded as two native (little-endian) words, left then right. `size` must be a multiple of 8 |
 | `0x331f8`, `0x336f4` | load, save | key: the 10 bytes at `0x536a8`, `sakatsukue` |
-| `0x33200`–`0x3322c` | load | copies the 16-byte header; version `+0xc` must be `0x69` (`0x68` goes to an older reader at `0xe618`) |
+| `0x33200`–`0x3322c` | load | copies the 16-byte header; version `+0xc` must be `0x69` (`0x68` goes to an older reader at `0xe618`). The Japanese build's load wants `0x68` (and sends `0x63` to its older reader): [below](#the-japanese-release) |
 | `0x3328c`–`0x3329c` | load | header `+8` must equal the layout CRC from `0x32ce0` |
 | `0x32ce0` | layout CRC | CRC-16 (`0x31470`, table `0x53408`: reflected poly `0x8408`, init and xorout `0xFFFF`) over `getSize(0..9)` as ten u32 |
 | `0x21d908` (SLES) | `PlPworkTask::getSize` | block `i` is `0x533ac8[i] − 8` bytes |
@@ -777,6 +777,57 @@ and over random blocks the same stream. That covers data the real saves
 don't, so it also shows the layout doesn't depend on the contents (no
 counts or flags that change which fields follow).
 
+## The Japanese release
+
+`save.py` reads and writes the Japanese release's saves with `--iso
+ISO_JP`. It runs that build's serializers from `ISO_JP/DLL/SAVEPRG.REL`,
+as it runs PAL's.
+
+```bash
+python SRC/save.py roundtrip <card>/BISLPM-66316-G000 --iso ISO_JP
+python SRC/save.py show <card>/BISLPM-66316-G000 --iso ISO_JP
+```
+
+**Confirmed from the game code** (`SAVEPRG.REL` of `SLPM_663.16`):
+
+| Address | What it shows |
+|---|---|
+| `0x3311c` | the load compares the header's version with `0x68` (PAL `0x69` at `0x33204`), and sends `0x63` to the older reader |
+| `0x53f28` | the same key, `sakatsukue` |
+| layout CRC | `0x16da` over its block sizes (PAL `0xa225`) |
+
+**Empirical**, from the field lists `save.py` records from each build's
+serializers:
+
+- Block 1 is PAL's block 1 without its last 16 bytes: the six u16 PAL
+  stores at block 1 `+0x129d8`–`+0x129e2` aren't in the Japanese save.
+  Every other field of every block is at the same offset, so all of
+  `save.py`'s field offsets hold for both builds.
+- 156 one-byte fields are written in 2 bits instead of 3: each player's
+  wristband and gloves (PlPbase bytes 88 and 89: PlPinfo `+0x1f0` and
+  `+0x1f1`, in the squad, the youth team and the edit work). They hold
+  0–3 in a Japanese save, 0–7 in a PAL one.
+- The stream is 5,169,038 bits (PAL 5,169,290). The main file is the
+  16-byte header and the stream in whole Blowfish blocks: 646,152 bytes
+  (PAL 646,184).
+- The folders are `BISLPM-66316-Gnnn` (game saves) and `-Cnnn` (VS
+  data).
+- Names in the save are Japanese text: cp932 with the voiced-kana bytes
+  `0x02`–`0x1F` of the message files
+  ([`MBB_FORMAT.md`](MBB_FORMAT.md#japanese-voiced-kana)). `save.py`
+  names players from `DAT_JP/PARAM/PBDATA_JP.PAC`, which holds those
+  names on the Japanese disc.
+
+`set` checks every edit by decoding the new file again: a value the
+build's field can't hold (a wristband of 4 or more in a Japanese save)
+is refused, not cut short.
+
+Checked on a Japanese save (`BISLPM-66316-G000`, 2006–07, turn 4):
+`info` and `roundtrip` (identical, 5,169,038 bits), `show` and `staff`
+(the squad and staff by name), and `set` (money, a player's abilities and
+fatigue, read back by `show`; a wristband of 7 refused). The edited save
+hasn't been loaded in the game.
+
 ## Separate saves for a modded disc
 
 `MC::CFcEuroIF::initialize` (SLES `0x12ad38`) picks the memory-card name
@@ -876,9 +927,8 @@ own files name their slot wasn't checked.
   players an AI club signs.
 - The Special Mention texts of dissatisfaction kinds 0–3 (kind 4 is
   confirmed in game).
-- A Japanese save: its block 1 is 16 bytes smaller (layout CRC `0x16da`,
-  [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)), and `save.py` reads
-  only PAL saves.
+- The six u16 at PAL block 1 `+0x129d8`, which the Japanese save
+  doesn't have.
 - `info.bin` past the date, and `dm.bin`.
 - Whether the game checks `info.bin` against the main file.
 - The VS data (`BESLES-54151-C000`, main file 16,152 bytes). It uses the

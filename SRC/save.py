@@ -81,6 +81,15 @@ save from the cached field list, about a second (the first run records
 the list, about 10 seconds). Needs
 ISO/DLL/SAVEPRG.REL and ISO/SLES_541.51.
 
+Every command takes --iso <folder> (default ISO) for the build whose
+saves it reads, and --dat <folder> for names (default DAT, or DAT_JP
+with ISO_JP). With --iso ISO_JP it reads and writes the Japanese
+release's saves (BISLPM-66316-Gnnn): the same blocks, except that block
+1 is 16 bytes shorter and a player's wristband and gloves are kept in 2
+bits; names are cp932 and come from PBDATA_JP.PAC and the Japanese
+messages. `set` refuses a value the build's save can't hold. See
+DOC/SAVE_FORMAT.md#the-japanese-release.
+
 A modded disc patched with patch_disc.py --mod-saves keeps its saves in
 BESLES-54151-Mnnn and its VS data in BESLES-54151-Dnnn instead of -G and
 -C, so the original game never loads them. `rename` copies a save from
@@ -110,8 +119,11 @@ PWORK_SIZES = 0x533ac8
 
 NBLOCKS = 10
 HEADER = 0x10
-VERSION = 0x69
-FILE_SIZE = 646184
+VERSION = 0x69                  # PAL; Game.version holds the build's
+# The load (0x331f8) compares the header's version with the immediate of
+# the addiu here (0x69 in PAL, 0x68 in the Japanese release).
+VERSION_AT = 0x33204
+FILE_SIZE = 646184              # PAL; Game.file_size() is the build's
 
 M32, M64 = 0xFFFFFFFF, (1 << 64) - 1
 
@@ -588,22 +600,39 @@ class Fields:
 
 def random_plain(game, rng):
     """A decrypted save with a valid header and random bits after it."""
-    body = rng.getrandbits(8 * (FILE_SIZE - HEADER)).to_bytes(FILE_SIZE - HEADER, "little")
-    return struct.pack("<4I", 0, 0, game.crc, VERSION) + body
+    size = game.file_size()
+    body = rng.getrandbits(8 * (size - HEADER)).to_bytes(size - HEADER, "little")
+    return struct.pack("<4I", 0, 0, game.crc, game.version) + body
 
 
 class Game:
     """The pieces of the game code a save needs."""
 
-    def __init__(self, rel_path=SAVEPRG, sles_path=SLES):
+    def __init__(self, rel_path=SAVEPRG, sles_path=SLES, dat=None):
         with open(rel_path, "rb") as f:
             self.rel = f.read()
-        self.rel_path = rel_path
-        # SAVEPRG.REL addresses for this build (gamever: PAL ones as they are).
+        self.rel_path, self.sles_path = rel_path, sles_path
+        # What differs by build besides the code: the data folder for names,
+        # the message language, the text encoding of names, and the player
+        # database (the Japanese disc's PBDATA_JP.PAC holds the Japanese
+        # names; its PBDATA_EU.PAC romanised ones).
         import gamever
+        self.build = gamever.build_of(sles_path)
+        jp = self.build == "JP"
+        self.dat = dat or ("DAT_JP" if jp else "DAT")
+        self.lang = 0 if jp else 1
+        self.pbdata_path = os.path.join(self.dat, "PARAM",
+                                        "PBDATA_JP.PAC" if jp else "PBDATA_EU.PAC")
+        self.mes_path = os.path.join(self.dat, "MESSAGE", "MES.PAC")
+        # SAVEPRG.REL addresses for this build (gamever: PAL ones as they are).
         key, p, s, crc_table, self.read_block, self.write_block = (gamever.at(rel_path, a) for a in (
             KEY_OFF, BF_P, BF_S, CRC_TABLE, READ_BLOCK, WRITE_BLOCK))
         self.key = self.rel[key:key + KEY_LEN]
+        at = gamever.at(rel_path, VERSION_AT)
+        word = struct.unpack_from("<I", self.rel, at)[0]
+        if word >> 16 != 0x2403:                       # addiu $v1, $zero, version
+            raise ValueError("%s 0x%x: not the version check" % (rel_path, at))
+        self.version = word & 0xFFFF
         self.bf = Blowfish(self.rel, self.key, p, s)
         self.sizes = block_sizes(sles_path)
         self.crc = crc16(self.rel, struct.pack("<%dI" % NBLOCKS, *self.sizes), crc_table)
@@ -617,8 +646,8 @@ class Game:
     def check_header(self, plain):
         """The bit offset of the stream in a decrypted file."""
         off, _, crc, ver = struct.unpack_from("<4I", plain)
-        if ver != VERSION:
-            raise ValueError("version %#x; only %#x is supported" % (ver, VERSION))
+        if ver != self.version:
+            raise ValueError("version %#x; this build's saves are %#x" % (ver, self.version))
         if crc != self.crc:
             raise ValueError("layout CRC %#06x, this build expects %#06x" % (crc, self.crc))
         return 8 * (HEADER + off)
@@ -707,6 +736,17 @@ class Game:
         if self._fields is None:
             self._fields = Fields.load_or_trace(self)
         return self._fields
+
+    def name(self, raw):
+        """A name's bytes as text, as the build writes them (pbdata.py)."""
+        import pbdata
+        return pbdata.decode_name(bytes(raw), self.lang)
+
+    def file_size(self):
+        """The main file's size: the header and the stream, whole Blowfish
+        blocks (646,184 bytes in PAL, 646,152 in the Japanese release)."""
+        n = HEADER + (self.fields().bits + 7) // 8
+        return (n + 7) // 8 * 8
 
     def unpack(self, plain):
         """Bit stream -> (the ten blocks as one bytes object, bits used)."""
@@ -1055,7 +1095,8 @@ class Save:
         with open(self.path, "rb") as f:
             self.file = f.read()
         self.blocks = bytearray(game.unpack(game.decrypt(self.file))[0])
-        self.exp = exp_table()
+        self.original = bytes(self.blocks)
+        self.exp = exp_table(game.sles_path)
 
     def at(self, block, off):
         return self.game.offsets[block] + off
@@ -1072,7 +1113,7 @@ class Save:
         import initteam
         import tbb
         buf, off, size = initteam.read_pac_entry(
-            os.path.join("DAT", "PARAM", "PLRESOURCECOMMON.PAC"), 0)
+            os.path.join(self.game.dat, "PARAM", "PLRESOURCECOMMON.PAC"), 0)
         table = tbb.parse(buf[off:off + size])[1][7].data
         st = struct.unpack_from("<bbBb", self.blocks, self.at(1, STADIUM_OFF))
         stadium = st[1] if st[2] else st[0]
@@ -1097,7 +1138,7 @@ class Save:
         """(status rank 0-8, its status cap, club status, your club rank)."""
         b = self.blocks
         srank = struct.unpack_from("<i", b, self.at(1, STATUS_RANK_OFF))[0]
-        caps, _ = status_tables()
+        caps, _ = status_tables(self.game.sles_path)
         return (srank, caps[min(max(srank, 0), STATUS_RANK_MAX)],
                 struct.unpack_from("<H", b, self.at(1, STATUS_OFF))[0],
                 b[self.at(1, MY_RANK_OFF)])
@@ -1106,7 +1147,7 @@ class Save:
         """Set the status rank and/or the club status, then the two club
         ranks the way 0x26dd40 does, so the save matches what the game
         would hold after its next match check."""
-        caps, rivals = status_tables()
+        caps, rivals = status_tables(self.game.sles_path)
         b = self.blocks
         if srank is not None:
             if not 0 <= srank <= STATUS_RANK_MAX:
@@ -1148,7 +1189,7 @@ class Save:
 
     def pinfo(self, o):
         b = self.blocks
-        name = b[o + PINFO_NAME:o + PINFO_NAME + NAME_LEN].split(b"\0")[0].decode("cp850")
+        name = self.game.name(b[o + PINFO_NAME:o + PINFO_NAME + NAME_LEN])
         abil = [struct.unpack_from("<3H", b, o + ABIL_OFF + 6 * k) for k in range(ABIL_COUNT)]
         p = {"id": struct.unpack_from("<h", b, o)[0], "name": name,
              "pos": b[o + PINFO_POS], "age": b[o + PINFO_AGE], "abil": abil}
@@ -1181,7 +1222,7 @@ class Save:
                     continue
                 st = {
                     "id": sid, "offset": o, "kind": kind,
-                    "name": b[o + 4:o + 4 + NAME_LEN].split(b"\0")[0].decode("cp850"),
+                    "name": self.game.name(b[o + 4:o + 4 + NAME_LEN]),
                     "contract_years": b[o + con_off],
                     "salary": struct.unpack_from("<I", b, o + sal_off)[0],
                     "job": struct.unpack_from("<I", b, o + job_off)[0] if job_off else None,
@@ -1246,7 +1287,7 @@ class Save:
         if struct.unpack_from("<h", self.blocks, o)[0] != EDIT_ID:
             return None
         base = o + EDIT_PBASE
-        out = {"name": bytes(self.blocks[base:base + NAME_LEN]).split(b"\0")[0].decode("cp850"),
+        out = {"name": self.game.name(bytes(self.blocks[base:base + NAME_LEN])),
                "slot": next((label for label, po in self.squad()
                              if struct.unpack_from("<h", self.blocks, po)[0] == EDIT_ID), None)}
         for key, off, size, _, _, _ in edit_fields():
@@ -1279,11 +1320,12 @@ class Save:
                 self.blocks[o:o + size] = value.to_bytes(size, "little")
 
     def set_edit_name(self, text):
-        """The edit player's name (cp850, up to 19 bytes), in the edit work
-        and the squad player's copy."""
+        """The edit player's name (cp850, or cp932 on the Japanese release;
+        up to 19 bytes), in the edit work and the squad player's copy."""
         if self.edit_player() is None:
             raise ValueError("this career has no edit player")
-        raw = text.encode("cp850")
+        import pbdata
+        raw = pbdata.encode_name(text, self.game.lang)
         if not raw or len(raw) > NAME_LEN:
             raise ValueError("the name is 1-%d characters" % NAME_LEN)
         for o in self._edit_targets(0):
@@ -1493,7 +1535,19 @@ class Save:
         return p[field]
 
     def encode(self):
-        return build(self.game, bytes(self.blocks), self.file)[0]
+        """The edited main file. Every changed byte must come back when the
+        file is decoded again: a value wider than the build's field (the
+        Japanese save keeps a player's wristband and gloves in 2 bits, PAL
+        in 3) or a byte the save doesn't store raises ValueError."""
+        data = build(self.game, bytes(self.blocks), self.file)[0]
+        back = self.game.unpack(self.game.decrypt(data))[0]
+        for i, (was, now) in enumerate(zip(self.original, self.blocks)):
+            if was != now and back[i] != now:
+                block = max(k for k in range(NBLOCKS) if self.game.offsets[k] <= i)
+                raise ValueError("block %d +0x%x: %d doesn't fit this build's save (it "
+                                 "reads back as %d)" % (block, i - self.game.offsets[block],
+                                                        now, back[i]))
+        return data
 
 
 def plan_key(name):
@@ -1536,8 +1590,8 @@ def cmd_info(game, paths):
             with open(f, "rb") as fh:
                 data = fh.read()
             probs = []
-            if len(data) != FILE_SIZE:
-                probs.append("size %d, expected %d" % (len(data), FILE_SIZE))
+            if len(data) != game.file_size():
+                probs.append("size %d, expected %d" % (len(data), game.file_size()))
             plain = game.decrypt(data[:len(data) & ~7])
             off, zero, crc, ver = struct.unpack_from("<4I", plain)
             if off or zero:
@@ -1615,8 +1669,8 @@ def cmd_show(game, path):
         year, year + 1, week // 2 + 1, ("Midweek", "Weekend")[week & 1], MONTHS[month - 1], turn))
     print("  money  %d" % s.money)
     srank, cap, status, rank = s.status()
-    rep = initteam.category_names(os.path.join("DAT", "MESSAGE", "MES.PAC"), REPUTATION_CATEGORY)
-    n = reputation(reputation_table(), rank)
+    rep = initteam.category_names(game.mes_path, REPUTATION_CATEGORY, game.lang)
+    n = reputation(reputation_table(game.sles_path), rank)
     print("  status %d (status rank %d, cap %d), club rank %d (%s), rival's club rank %d" % (
         status, srank, cap, rank, rep.get(n, "203:%d" % n), s.club(2)["rank"]))
     print("  squad (youth team slots start with y)")
@@ -1725,7 +1779,7 @@ def cmd_candidates(game, path):
     """The candidate lists: players, youth players, managers, coaches, scouts."""
     import pbdata
     s = Save(game, path)
-    db = pbdata.PbData(os.path.join("DAT", "PARAM", "PBDATA_EU.PAC"))
+    db = pbdata.PbData(game.pbdata_path)
     names = {r.db_id: r.name for kind in pbdata.KINDS for r in db.records(kind)}
     print(s.path)
     for name, count, rows in s.candidates():
@@ -1748,7 +1802,7 @@ def cmd_finances(game, path):
     others = ["competition %#x: %d" % cp for cp in s.other_tickets()]
     print("  other ticket prices: %s" % (", ".join(others) or "none"))
     import initteam
-    msg = initteam.category_names(os.path.join("DAT", "MESSAGE", "MES.PAC"), REPORT_CATEGORY)
+    msg = initteam.category_names(game.mes_path, REPORT_CATEGORY, game.lang)
     for label, inc, pay in s.accounts():
         print("  %s: income %d, payments %d, balance %d" % (
             label, sum(inc), sum(pay), sum(inc) - sum(pay)))
@@ -1790,12 +1844,11 @@ def cmd_clubs(game, path, teams):
     import initteam
     import pbdata
     s = Save(game, path)
-    names = initteam.team_names(os.path.join("DAT", "MESSAGE", "MES.PAC"), 1)
-    db = pbdata.PbData(os.path.join("DAT", "PARAM", "PBDATA_EU.PAC"))
+    names = initteam.team_names(game.mes_path, game.lang)
+    db = pbdata.PbData(game.pbdata_path)
     pnames = {r.db_id: r.name for r in db.records("players")}
-    rep_table = reputation_table()
-    rep_names = initteam.category_names(os.path.join("DAT", "MESSAGE", "MES.PAC"),
-                                        REPUTATION_CATEGORY)
+    rep_table = reputation_table(game.sles_path)
+    rep_names = initteam.category_names(game.mes_path, REPUTATION_CATEGORY, game.lang)
     for team in teams or [2] + list(range(3, CLUBS + 2)):
         c = s.club(team)
         if c["team"] != team:
@@ -1937,7 +1990,7 @@ def edit_spec(s=None):
     if s is not None:
         # The caps fall as the rank number rises (rank 0 is the top), so a
         # rank is allowed while its cap still holds the current status.
-        caps, _ = status_tables()
+        caps, _ = status_tables(s.game.sles_path)
         _, cap, cur, _ = s.status()
         srank_hi = max(r for r in range(STATUS_RANK_MAX + 1) if caps[r] >= cur)
     out.append(("status", 0, cap, 1, "club status, up to the cap of the status rank"))
@@ -2054,7 +2107,9 @@ def cmd_spec(game, path=None):
 # --mod-saves moves a modded disc's saves to "-M" and its VS data to "-D"
 # (patch_disc.MOD_SAVES); `rename` copies a save between the two.
 SAVE_LETTERS = {"G": "M", "C": "D", "M": "G", "D": "C"}
-SAVE_NAME = r"(BESLES-54151-)([GCMD])(\d*)"
+# The Japanese release names them BISLPM-66316-G and -C
+# (patch_disc.MOD_SAVES_JP).
+SAVE_NAME = r"(BESLES-54151-|BISLPM-66316-)([GCMD])(\d*)"
 # MC::CFcEuroIF::setNo (0x12aea0) takes slots 0-100 (0x65 and up become 0).
 SLOT_MAX = 100
 
@@ -2065,14 +2120,15 @@ def save_name(folder):
     name = os.path.basename(os.path.normpath(folder))
     m = re.fullmatch(SAVE_NAME, name)
     if not m:
-        raise ValueError("expected a BESLES-54151-G/C/M/Dnnn folder, got %s" % name)
+        raise ValueError("expected a BESLES-54151- or BISLPM-66316-G/C/M/Dnnn folder, got %s"
+                         % name)
     return m.groups()
 
 
-def free_slot(card, letter="G"):
+def free_slot(card, letter="G", prefix="BESLES-54151-"):
     """The lowest game save slot 0-SLOT_MAX with no folder on the card."""
     for n in range(SLOT_MAX + 1):
-        if not os.path.exists(os.path.join(card, "BESLES-54151-%s%03d" % (letter, n))):
+        if not os.path.exists(os.path.join(card, "%s%s%03d" % (prefix, letter, n))):
             return n
     raise ValueError("no free %s slot on %s (0-%d are taken)" % (letter, card, SLOT_MAX))
 
@@ -2126,7 +2182,7 @@ def cmd_copy(src, slot=None):
         if letter not in "GM":
             raise ValueError("only game saves (-G, -M) have slots")
         card = os.path.dirname(os.path.normpath(src))
-        n = free_slot(card, letter) if slot is None else slot
+        n = free_slot(card, letter, prefix) if slot is None else slot
         if not 0 <= n <= SLOT_MAX:
             raise ValueError("slot %d is outside 0-%d" % (n, SLOT_MAX))
         dst = os.path.join(card, "%s%s%03d" % (prefix, letter, n))
@@ -2160,18 +2216,33 @@ def cmd_blocks(game):
     print("  total %d bytes" % game.offsets[-1])
 
 
+def _opt(args, flag, default=None):
+    if flag in args:
+        i = args.index(flag)
+        value = args[i + 1]
+        del args[i:i + 2]
+        return value
+    return default
+
+
 def main(argv):
     if len(argv) < 2:
         print(__doc__)
         return 1
     cmd, args = argv[1], argv[2:]
+    iso = _opt(args, "--iso", "ISO")
+    dat = _opt(args, "--dat")
     if cmd == "rename" and len(args) == 2:
         cmd_rename(*args)
         return 0
     if cmd == "copy" and len(args) in (1, 2):
         cmd_copy(args[0], int(args[1]) if len(args) == 2 else None)
         return 0
-    game = Game()
+    import gamever
+    try:
+        game = Game(os.path.join(iso, "DLL", "SAVEPRG.REL"), gamever.exe_path(iso), dat)
+    except (ValueError, OSError) as e:
+        raise SystemExit("%s: %s" % (iso, e))
     if cmd == "info" and args:
         cmd_info(game, args)
     elif cmd == "decode" and len(args) == 2:

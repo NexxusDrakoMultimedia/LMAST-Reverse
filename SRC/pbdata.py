@@ -672,11 +672,29 @@ class BitReader:
         return v
 
 
+def decode_name(raw, lang=1):
+    """A name's bytes up to its NUL as text: cp850, or for the Japanese
+    database (lang 0) cp932 with the voiced-kana bytes 0x02-0x1F
+    (mbb.JP_KANA)."""
+    raw = raw.split(b"\0")[0]
+    if lang == 0:
+        import mbb
+        return mbb.decode(raw, 0)
+    return raw.decode("cp850")
+
+
+def encode_name(text, lang=1):
+    if lang == 0:
+        import mbb
+        return mbb.encode(text, 0)
+    return text.encode("cp850")
+
+
 class Record:
-    def __init__(self, kind, index, raw):
-        self.kind, self.index, self.raw = kind, index, raw
+    def __init__(self, kind, index, raw, lang=1):
+        self.kind, self.index, self.raw, self.lang = kind, index, raw, lang
         name = raw[:NAME_LEN]
-        self.name = name.split(b"\0")[0].decode("cp850")
+        self.name = decode_name(name, lang)
         self.name_tail = name[len(name.split(b"\0")[0]):]
         r = BitReader(raw)
         r.pos = NAME_LEN * 8
@@ -705,7 +723,7 @@ class Record:
         return w.data()
 
     def set_name(self, text):
-        b = text.encode("cp850")
+        b = encode_name(text, self.lang)
         if len(b) > NAME_LEN - 1:
             raise ValueError("name %r is longer than %d bytes" % (text, NAME_LEN - 1))
         self.name_raw = b + bytes(NAME_LEN - len(b))
@@ -740,6 +758,9 @@ class Record:
 class PbData:
     def __init__(self, path):
         self.path = path
+        # The Japanese database's names are Japanese text (on the Japanese
+        # disc; PAL's PBDATA_JP.PAC has no records).
+        self.lang = 0 if os.path.basename(path).upper() == "PBDATA_JP.PAC" else 1
         h = pac.load_header(path)
         if not isinstance(h, pac.BinPac):
             raise ValueError("not a BINPAC")
@@ -781,7 +802,7 @@ class PbData:
         if not 0 <= index < self.counts[k]:
             raise ValueError("%s index %d out of range" % (kind, index))
         start = self.offset(kind) + index * self.sizes[k]
-        return Record(kind, index, self.data[start:start + self.sizes[k]])
+        return Record(kind, index, self.data[start:start + self.sizes[k]], self.lang)
 
     def records(self, kind):
         if not self.data:

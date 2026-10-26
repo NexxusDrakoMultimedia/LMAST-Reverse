@@ -71,8 +71,7 @@ type has a doc and a tool whose `info` passes over all of `DAT/`.
 - [ ] Outside `DATA.CVM`: `OPMOVIE.SFD` (Sofdec), `info.bin` past the date,
       `dm.bin` and the VS data save
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-- [ ] Japanese release: read a Japanese save (block 1 is 16 bytes
-      smaller), and the other differences in
+- [ ] Japanese release: the differences still open in
       [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#still-unknown)
 
 ## 2. Understand: field meanings an edit needs
@@ -220,9 +219,10 @@ release. **Done when** the items below work; see
 - [ ] `TACTICSPITCH.PAC` is loaded through `CLoader`, not as a
       registering resource: whether its entries stand in for their
       originals ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#still-unknown))
-- [ ] Tools still PAL-only: `save.py`'s commands (they take no ISO
-      folder). A Japanese disc built with `--mod lmaster-full` is still to
-      be run in the game ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+- [ ] A Japanese disc built with `--mod lmaster-full`, and a Japanese
+      save edited with `save.py --iso ISO_JP`, still to be run in the
+      game ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc),
+      [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-japanese-release))
 - [ ] Optional: dual-layer images, for a disc that grows past a
       single-layer DVD
 

@@ -80,6 +80,7 @@ ADDRESSES = (
     ("save", "BF_P", "SAVEPRG.REL", 0x40),
     ("save", "BF_S", "SAVEPRG.REL", 0x40),
     ("save", "KEY_OFF", "SAVEPRG.REL", 0x10),
+    ("save", "VERSION_AT", "SAVEPRG.REL", 0x10),
     ("save", "CRC_TABLE", "SAVEPRG.REL", 0x40),
     ("save", "READ_BLOCK", "SAVEPRG.REL", 0x40),
     ("save", "WRITE_BLOCK", "SAVEPRG.REL", 0x40),

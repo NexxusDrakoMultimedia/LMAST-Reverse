@@ -157,6 +157,8 @@ evidence and how it was tested; the git history holds the rest.
 - [x] `patch_disc.py`'s 35 switches on the Japanese disc, their offsets
       found through `gamever.py`; PAL builds unchanged
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+- [x] `save.py --iso ISO_JP`: Japanese saves read, edited and re-encoded
+      byte for byte ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-japanese-release))
 
 ## 5. Edit: the GUI
 

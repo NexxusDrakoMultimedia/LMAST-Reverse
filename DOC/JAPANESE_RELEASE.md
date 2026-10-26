@@ -27,9 +27,10 @@ present, `python SRC/regress.py run` also runs every check over them as
 `jp_<name>`.
 
 `patch_disc.py` patches a Japanese disc too, switches included
-([below](#patching-a-japanese-disc)). Still PAL-only: `save.py`, which
-takes no ISO folder and can't read a Japanese save yet (below), and the
-editor.
+([below](#patching-a-japanese-disc)), and `save.py --iso ISO_JP` reads
+and writes Japanese saves
+([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)). Still
+PAL-only: the editor and the save editor.
 
 ## How the tools find addresses: `gamever.py`
 
@@ -119,8 +120,10 @@ same switches is byte for byte as before. A disc built with
 | `0x52e998`, `0x52ea68` | injury tables | identical to PAL, kind 6's 1600 included |
 
 The save block sizes differ in block 1 (76,248 bytes against PAL's
-76,264), so the layout CRC is `0x16da` (PAL `0xa225`). Saves of one build
-can't be loaded by the other. No Japanese save has been decoded yet.
+76,264), so the layout CRC is `0x16da` (PAL `0xa225`), and the header's
+version is `0x68` (PAL `0x69`). Saves of one build can't be loaded by the
+other. The layout is PAL's, less the end of block 1 and with a narrower
+wristband and gloves ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)).
 
 ## Differences in the data (empirical)
 
@@ -148,5 +151,3 @@ except the commentary, which `afs.py` reads as documented.
 - The sponsor texture counts, how the game opens `BC_JPN.AFS` (its
   count reads as −35 through `ADXF_GetNumFilesFromAfs`), and which clip
   is which with no name table.
-- A Japanese save: the block that changed size, and what `save.py` needs
-  to read one ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#still-unknown)).
