@@ -200,8 +200,13 @@ Champions Division's table after its first game day has 24 clubs, your
 club and the rival among them (user report, with a screenshot). In a
 German career (`LMAST-test-tiers-germany.iso`, `--skip-nation
 Germany`), the two clubs sent down to the Third German League at the
-start were Siegen and Offenbach (user report). The season's end isn't
-played yet.
+start were Siegen and Offenbach (user report). Your nation's cups, now
+copies of the other nations' versions, run on their usual turns: the
+German Club Cup's semi-finals were on December week 3 midweek with its
+4 clubs, the qualifying round's losers, one of them Trier, the tier
+club in the seeded last place (user report, with a screenshot). That
+cup now has 2 rounds where your nation's retail version had 3 (6
+clubs). The season's end isn't played yet.
 
 ## Still unknown
 
