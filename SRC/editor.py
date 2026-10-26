@@ -5837,27 +5837,50 @@ class BuildDialog:
                                 command=lambda v=var, k=kind: self.browse(v, k))
             button.grid(row=row, column=2, padx=(8, 0), pady=3)
             self.entries[kind] = (flag, entry, button)
-        # The two LMASTER builds, as patch_disc.py's groups: each button ticks
-        # exactly that group's boxes (full includes the separate saves).
-        groups = ttk.Frame(form)
-        groups.grid(row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
-        for text, group in (("LMASTER lite (fixes only)", "lmaster-lite"),
-                            ("LMASTER full (every LMASTER switch, own saves)", "lmaster-full")):
-            ttk.Button(groups, text=text, command=lambda g=group: self.choose_group(g)
+        # patch_disc.py's switch levels: an edition button ticks exactly its
+        # groups (the test tools stay as they are), each group's box ticks
+        # its switches, and the switches show under a group when it is
+        # opened. The docstring and the docs say what each changes.
+        editions = ttk.Frame(form)
+        editions.grid(row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        for name, text, _ in patch_disc.EDITIONS:
+            ttk.Button(editions, text=text, command=lambda e=name: self.choose_edition(e)
                        ).pack(side="left", padx=(0, 8))
-        # patch_disc.py's switches, one box each, from its switch table (its
-        # docstring and the docs say what each changes).
-        for row, (name, _, _, text) in enumerate(patch_disc.SWITCHES, 4):
-            ttk.Checkbutton(form, text="%s (--mod %s)" % (text, name),
-                            variable=self.switches[name]).grid(
-                row=row, column=0, columnspan=3, sticky="w", pady=(6 if row == 4 else 0, 0))
-        note_row = 4 + len(patch_disc.SWITCHES)
+        ttk.Button(editions, text="None", command=lambda: self.choose_edition(None)
+                   ).pack(side="left", padx=(0, 8))
+        self.edition = ttk.Label(editions)
+        self.edition.pack(side="left", padx=(8, 0))
+        tree = ttk.Frame(form)
+        tree.grid(row=4, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        text = {s[0]: s[3] for s in patch_disc.SWITCHES}
+        in_edition = set(sum((g for _, _, g in patch_disc.EDITIONS), ()))
+        self.groups = {}        # name -> (its box's IntVar, its box, its switches' frame)
+        for name, title, members in patch_disc.GROUPS:
+            if name not in in_edition:
+                ttk.Separator(tree).pack(fill="x", pady=4)
+            head = ttk.Frame(tree)
+            head.pack(fill="x")
+            body = ttk.Frame(tree)
+            var = tk.IntVar()
+            opener = ttk.Button(head, text="+", width=2)
+            opener.configure(command=lambda b=body, h=head, o=opener: self.open_group(b, h, o))
+            opener.pack(side="left")
+            box = ttk.Checkbutton(head, text="%s (--mod %s; %d switches)" % (
+                title, name, len(members)), variable=var,
+                command=lambda g=name: self.toggle_group(g))
+            box.pack(side="left", padx=(4, 0))
+            for switch in members:
+                ttk.Checkbutton(body, text="%s (--mod %s)" % (text[switch], switch),
+                                variable=self.switches[switch],
+                                command=self.switch_changed).pack(anchor="w", padx=(40, 0))
+            self.groups[name] = (var, box, body)
         ttk.Label(form, text="The original must be the Redump dump (redump.info/disc/12334) "
                              "for a patch others can apply. It is only read. A patch without "
                              "the image still needs room for a temporary one while it is made.",
                   foreground="#555", wraplength=900, justify="left"
-                  ).grid(row=note_row, column=0, columnspan=3, sticky="w", pady=(6, 0))
+                  ).grid(row=5, column=0, columnspan=3, sticky="w", pady=(6, 0))
         self.update_entries()
+        self.switch_changed()
 
         targets = self.mod.targets()
         ttk.Label(win, text="Edited files in %s (%d):" % (shown_path(os.path.abspath(
@@ -5910,12 +5933,55 @@ class BuildDialog:
                       f,
                       indent=2)
 
-    def choose_group(self, group):
-        """Tick the switches of patch_disc.py's group `group` and untick the
-        rest."""
-        chosen = set(patch_disc.SWITCH_GROUPS[group])
-        for name, var in self.switches.items():
-            var.set(int(name in chosen))
+    def chosen(self):
+        return {name for name, var in self.switches.items() if var.get()}
+
+    def choose_edition(self, edition):
+        """Tick the switches of patch_disc.py's edition `edition` (None: no
+        edition) and untick the rest, leaving the groups in no edition."""
+        chosen = set(patch_disc.SWITCH_GROUPS[edition]) if edition else set()
+        in_edition = set(sum((g for _, _, g in patch_disc.EDITIONS), ()))
+        for group in in_edition:
+            for name in patch_disc.GROUP_SWITCHES[group]:
+                self.switches[name].set(int(name in chosen))
+        self.switch_changed()
+
+    def open_group(self, body, head, opener):
+        """Show or hide a group's switches under its box."""
+        if body.winfo_manager():
+            body.pack_forget()
+            opener.configure(text="+")
+        else:
+            body.pack(fill="x", after=head)
+            opener.configure(text="-")
+
+    def toggle_group(self, group):
+        """A group's box ticks or unticks all its switches."""
+        on = self.groups[group][0].get()
+        for name in patch_disc.GROUP_SWITCHES[group]:
+            self.switches[name].set(on)
+        self.switch_changed()
+
+    def switch_changed(self):
+        """Tick what the chosen switches turn on (third-tier's saves), then
+        show each group's box as ticked, empty or partly ticked, and name
+        the edition the choice is."""
+        for name in patch_disc.implied(self.chosen()):
+            self.switches[name].set(1)
+        chosen = self.chosen()
+        for group, (var, box, _) in self.groups.items():
+            members = set(patch_disc.GROUP_SWITCHES[group])
+            var.set(int(members <= chosen))
+            box.state(["alternate"] if chosen & members and not members <= chosen
+                      else ["!alternate"])
+        in_edition = set(sum((g for _, _, g in patch_disc.EDITIONS), ()))
+        names = patch_disc.mod_names(chosen & set(sum(
+            (patch_disc.GROUP_SWITCHES[g] for g in in_edition), ())))   # not the test tools
+        titles = {name: title for name, title, _ in patch_disc.EDITIONS}
+        edition = names[0] if names and names[0] in titles else None
+        self.edition.configure(text="Edition: %s%s" % (
+            titles[edition].split(" (")[0] if edition else "none",
+            " and more" if edition and names[1:] else ""))
 
     def update_entries(self):
         for flag, entry, button in self.entries.values():
@@ -5973,7 +6039,7 @@ class BuildDialog:
         cmd = ["patch_disc.py", "patch", original, output]
         cmd += ["%s=%s" % (t, shown_path(p)) for t, p in self.mod.targets()]
         cmd += ["--copies", "--dat", shown_path(self.mod.dat)]
-        mods = [name for name in patch_disc.SWITCH_NAMES if self.switches[name].get()]
+        mods = patch_disc.mod_names(self.chosen())      # the highest levels that fit
         if mods:
             cmd += ["--mod", ",".join(mods)]
         out = [cmd]

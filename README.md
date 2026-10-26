@@ -287,7 +287,7 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below), and applies named switches (`--mod`; `--mod lmaster-lite` and `--mod lmaster-full` for the LMASTER Mod); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below), and applies named switches (`--mod`; `--mod lmaster-lite` and `--mod lmaster-full` for the LMASTER Mod); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes; `switches` prints the editions, groups and switches |
 | [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
 
 ```bash
@@ -317,8 +317,11 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   `skip-tutorial` skips the opening playoffs on test discs, `launcher`
   boots into the developers' debug menu, and `mod-saves` gives a modded
   disc its own saves. The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
-  comes in two builds. `--mod lmaster-lite` (also `lmaster`) is its
-  fixes: `sponsor-negotiation`, `rival-manager`, `national-cups`,
+  comes in two editions made of groups, and `--mod` takes an edition,
+  a group or a switch ([the switch levels](DOC/LMASTER_MOD.md#the-switch-levels);
+  `patch_disc.py switches` prints the tree). `--mod lmaster-lite` (also
+  `lmaster`) is its fixes, the groups `training-fixes`, `injury-fixes`,
+  `club-fixes` and `match-fixes`: `sponsor-negotiation`, `rival-manager`, `national-cups`,
   `camp-types`, `camp-cities`, `camp-santiago`, `camp-clubs`,
   `drill-names`, `injury-value`, `injury-row`, `vpf-styles`,
   `season-status`, `pr-cycle`, `mobile-site`, `overseas-pop` and
@@ -338,8 +341,8 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   `fanbase` (merchandise, crowds and TV offers
   follow the fanbase more), `merch-costs` (merchandise stock dearer to
   make), `pr-costs` (PR events twice as dear), `camp-costs` (camps ×2)
-  and `tour-costs` (tours ×3). The tutorial skip and the launcher are in
-  neither build.
+  and `tour-costs` (tours ×3). The tutorial skip and the launcher are the
+  `test-tools` group, in neither edition.
   `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
   image prints the executable's PCSX2 CRC.
 

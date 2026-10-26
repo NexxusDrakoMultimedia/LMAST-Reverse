@@ -187,6 +187,10 @@ evidence and how it was tested; the git history holds the rest.
 - [x] `editor.py` Overseas bases tab (`plrsim.py setbranch`), with the
       regions named from `MES.PAC`, tested through the widgets
       ([`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches))
+- [x] The switch levels: editions, groups and switches in `patch_disc.py`
+      (`switches`, `mod_names`), and the Build tab's edition buttons and
+      group boxes, tested through the widgets
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
 
 ## 6. Distribute: sharing a mod
 

@@ -162,22 +162,27 @@ python SRC/patch_disc.py patch disc.iso lmaster.iso --mod lmaster-full --copies 
 changes files the game also keeps copies of, and the patcher finds and
 updates those copies through the extracted `DAT/` folder.
 
-The switches:
+The switches come in three levels: two editions, made of groups, made
+of single switches ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels)).
+`--mod` takes a name of any level, and several names separated by
+commas (`--mod lmaster-lite,harder-economy`):
 
 | Switch | What it does |
 |---|---|
-| `--mod lmaster-full` | LMASTER full: everything below, the third tier among it, with the modded disc's own save folders (`--mod-saves`), which it always includes |
-| `--mod lmaster-lite` | LMASTER lite (also `--mod lmaster`), the fixes only: main sponsor negotiation, the rival's own manager, the World National Cup's results viewable, training camps that train their own type in their own towns, Santiago's camp description, Canberra's camp clubs, the drill names, 18-month injuries that can't come out as short as a light one, injuries to players of 35 and over at full fatigue picked from the right table, Virtua Pro Football edit players keeping their best play styles, season tickets by club status, PR events whose chance follows the business cycle as intended, the cut PR event Renew Mobile Site, overseas popularity that a rank-2 player no longer multiplies by ten, and European Club Cup popularity for the last 16 instead of the last 32 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) |
+| `--mod lmaster-full` | LMASTER full, an edition: everything below, the third tier among it, with the modded disc's own save folders (`--mod-saves`), which it always includes |
+| `--mod lmaster-lite` | LMASTER lite (also `--mod lmaster`), an edition of the four groups of fixes: `training-fixes` (training camps that train their own type in their own towns, Santiago's camp description, Canberra's camp clubs, the drill names), `injury-fixes` (18-month injuries that can't come out as short as a light one, injuries to players of 35 and over at full fatigue picked from the right table), `club-fixes` (main sponsor negotiation, season tickets by club status, PR events whose chance follows the business cycle as intended, the cut PR event Renew Mobile Site, overseas popularity that a rank-2 player no longer multiplies by ten, European Club Cup popularity for the last 16 instead of the last 32) and `match-fixes` (the rival's own manager, the World National Cup's results viewable, Virtua Pro Football edit players keeping their best play styles) ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) |
 | `--mod harder-economy` | dearer facilities (much dearer at the top), tickets up to £80, dearer advertising, and smaller late-game sponsor, TV and season-ticket income ([`ECONOMY.md`](DOC/ECONOMY.md)) |
 | `--mod balance` | injuries of six months or longer about twice as common, and the two-month and nine-month injury lines back; overseas bases, their investment and upkeep twice as dear; transfer fees twice as high, more again by player rank (lesser players about four times the retail fee, the best up to £250M); club reputation rising half as fast; a bigger fanbase selling more merchandise and drawing more fans and TV money; merchandise stock that costs half its price to make; PR events twice as dear; camps twice and tours three times as dear ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)) |
+| `--mod leagues` | the two league switches below |
 | `--mod league-balance` | league schedules where no club plays more than two games running at home or away |
 | `--mod third-tier` | a hidden third tier under each second division (England's English League 1 and the others): each season the second division's last club goes down and the tier's winner comes up, your second division has its real size, and finishing last in it ends the game after one season. The tier's clubs also play their nation's lower cup (the League Cup or Club Cup), which now starts in the first week of December. It needs a new career, `--copies` and `--dat`, and turns on `--mod-saves` itself ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)) |
-| `--mod-saves` | the modded disc's own save folders (above) |
+| `--mod-saves` | the modded disc's own save folders (above); its group is `--mod saves` |
 
-`python SRC/patch_disc.py` with no arguments lists every switch. The
-mod editor (`python SRC/editor.py open`) does the same through File >
-Build disc, with a box for each switch and a button for each LMASTER
-build, and adds the files you edited.
+`python SRC/patch_disc.py switches` lists every edition, group and
+switch. The mod editor (`python SRC/editor.py open`) does the same
+through File > Build disc, with a button for each edition, a box for
+each group that you can open to tick its switches one by one, and adds
+the files you edited.
 
 Then make the patch to share:
 

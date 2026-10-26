@@ -6,20 +6,50 @@
 A mod that restores content the PAL release cut or left broken, and
 offers a few improvements. Each restoration and improvement is a
 separate `patch_disc.py` switch first, so it can be built and tested in
-PCSX2 on its own. The mod comes in two builds:
+PCSX2 on its own. The mod comes in two editions, LMASTER lite and
+LMASTER full, made of the groups below.
 
-| Build | Switches |
-|---|---|
-| **LMASTER lite**, `--mod lmaster-lite` (also `--mod lmaster`) | the fixes: sponsor-negotiation, rival-manager, national-cups, camp-types, camp-cities, camp-santiago, camp-clubs, drill-names, injury-value, injury-row, vpf-styles, season-status, pr-cycle, mobile-site, overseas-pop, cup-last16 |
-| **LMASTER full**, `--mod lmaster-full` | the fixes, every improvement ([below](#improvements): league-balance, `--mod harder-economy`, `--mod balance`), and mod-saves |
+## The switch levels
+
+The switches come in three levels, and `--mod` takes a name of any
+level:
+
+1. **Editions**: `lmaster-lite` (also `lmaster`) and `lmaster-full`,
+   each a list of groups.
+2. **Groups**: features that each work alone. Every switch is in
+   exactly one group.
+3. **Switches**: one feature each. Parts that need each other are one
+   switch (the third tier's five parts are `third-tier`), and machinery
+   is no switch: `third-tier` turns on `mod-saves` itself.
+
+| Group | Switches | Lite | Full |
+|---|---|---|---|
+| `training-fixes` | camp-types, camp-cities, camp-santiago, camp-clubs, drill-names | yes | yes |
+| `injury-fixes` | injury-value, injury-row | yes | yes |
+| `club-fixes` | sponsor-negotiation, season-status, pr-cycle, mobile-site, overseas-pop, cup-last16 | yes | yes |
+| `match-fixes` | rival-manager, national-cups, vpf-styles | yes | yes |
+| `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | yes |
+| `balance` | injury-odds, injury-lines, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | yes |
+| `leagues` | league-balance, third-tier | – | yes |
+| `saves` | mod-saves | – | yes |
+| `test-tools` | skip-tutorial, launcher | – | – |
 
 LMASTER full always includes `mod-saves`, so its careers and VS data go
 to their own memory-card folders and never mix with the retail game's
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)):
 a career from a disc whose economy and injuries work differently isn't
 one to load on another. The tutorial skip and the developers' launcher
-are test tools, in neither build. The editor's Build window has a box
-for each switch and a button for each build. A test disc of each:
+are test tools, in neither edition. `patch_disc.py switches` prints the
+tree. The editor's Build window draws it: a button for each edition
+ticks its groups (leaving the test tools as they are), each group has a
+box that ticks all its switches, and the switches show under a group
+when it is opened. The box of a partly ticked group shows as partly
+ticked, and the build command names the highest levels that fit
+(`patch_disc.mod_names`: `--mod lmaster-full,skip-tutorial`, or
+`lmaster-lite,harder-economy,...` and single switches when a group is
+partly ticked). A disc built with the new names is byte for byte the
+one the switch lists built (checked on `LMAST-test-full-germany.iso`,
+2026-10-27). A test disc of each edition:
 
 ```bash
 python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster-lite.iso --mod lmaster-lite

@@ -76,29 +76,26 @@ place, mod-saves renames BISLPM-66316-G/C, and fanbase scales the
 Japanese merchandise table, which holds half the PAL bases. See
 DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc.
 
-Switches: --mod takes switch names, comma-separated (or repeated):
-skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
-league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
-drill-names, injury-value, injury-row, vpf-styles, season-status,
-pr-cycle, mobile-site, overseas-pop, cup-last16, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
-season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fee-tiers, slow-reputation, third-tier, fanbase, merch-costs, pr-costs, camp-costs,
-tour-costs, launcher,
-mod-saves. Groups (DOC/LMASTER_MOD.md):
---mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
-(sponsor-negotiation, rival-manager, national-cups, camp-types,
-camp-cities, camp-santiago, camp-clubs, drill-names, injury-value,
-injury-row, vpf-styles, season-status, pr-cycle, mobile-site,
-overseas-pop, cup-last16). --mod harder-economy is
-facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees and
-season-demand; --mod balance is injury-odds, injury-lines,
-overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs,
-pr-costs, camp-costs and tour-costs. --mod lmaster-full is all of
-those, league-balance, third-tier and mod-saves, so a full LMASTER disc
-always saves to its own folders; third-tier makes it need --copies and
---dat. skip-tutorial and launcher are test tools and in no
-group. Each also works as a flag of its own (--skip-tutorial, ...). With
-switches and no targets, `patch <image> <out_image>` is enough.
+Switches come in three levels (DOC/LMASTER_MOD.md#the-switch-levels),
+and --mod takes names of any level, comma-separated (or repeated):
+    python patch_disc.py switches       # print the editions, groups and switches
+Editions: --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes,
+the groups training-fixes, injury-fixes, club-fixes and match-fixes;
+--mod lmaster-full adds harder-economy, balance, leagues and saves, so a
+full LMASTER disc always saves to its own folders.
+Groups: training-fixes (camp-types, camp-cities, camp-santiago,
+camp-clubs, drill-names), injury-fixes (injury-value, injury-row),
+club-fixes (sponsor-negotiation, season-status, pr-cycle, mobile-site,
+overseas-pop, cup-last16), match-fixes (rival-manager, national-cups,
+vpf-styles), harder-economy (facility-tiers, wider-tickets, dearer-ads,
+sponsor-fees, tv-fees, season-demand), balance (injury-odds,
+injury-lines, overseas-bases, transfer-fees, fee-tiers,
+slow-reputation, fanbase, merch-costs, pr-costs, camp-costs,
+tour-costs), leagues (league-balance, third-tier), saves (mod-saves),
+and test-tools (skip-tutorial, launcher), which is in no edition.
+third-tier turns on mod-saves and needs --copies and --dat. Each switch
+also works as a flag of its own (--skip-tutorial, ...). With switches
+and no targets, `patch <image> <out_image>` is enough.
 
 --skip-tutorial (test discs; whole disc image only) skips the opening
 playoffs of a new career, the tutorial, but runs their schedule steps: it
@@ -3994,12 +3991,8 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                                  sum(INJURY_TEXT_PACKS.values(), [])),
                 "overseas-bases": (target_overseas_bases, [SIM_FILE], LIST_PACKS)}
 
-# Names --mod takes for several switches at once. LMASTER lite is the
-# fixes; LMASTER full is every switch of the mod, with its own saves
-# (mod-saves) so its careers never mix with the retail game's. The
-# tutorial skip and the launcher are test tools, in neither.
 # One switch per feature: parts that need each other are one switch
-# (TODO.md, the switch levels). Switches that need another switch, that
+# (DOC/LMASTER_MOD.md, the switch levels). Switches that need another switch, that
 # write whole files (file_<switch>(f, img, dat) -> [(target, data)]),
 # whose files have PRELOAD copies the game loads instead (--copies), that
 # turn on others (a bigger save needs saves of its own), and old names.
@@ -4009,24 +4002,57 @@ SWITCH_COPIES = ("third-tier",)
 SWITCH_IMPLIES = {"third-tier": ("mod-saves",)}
 SWITCH_ALIASES = {name: "third-tier" for name in ("save-expand", "tier-clubs", "tier-lists",
                                                   "tier-uids", "one-season-end")}
-LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-types",
-                "camp-cities", "camp-santiago", "camp-clubs", "drill-names", "injury-value",
-                "injury-row", "vpf-styles", "season-status", "pr-cycle", "mobile-site",
-                "overseas-pop", "cup-last16")
-HARDER_ECONOMY = ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
-                  "season-demand")
-BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fee-tiers", "slow-reputation", "fanbase",
-           "merch-costs", "pr-costs", "camp-costs", "tour-costs")
-SWITCH_GROUPS = {"lmaster-lite": LMASTER_LITE,
-                 "lmaster": LMASTER_LITE,               # the name before the split
-                 "harder-economy": HARDER_ECONOMY,
-                 "balance": BALANCE,
-                 "lmaster-full": LMASTER_LITE + ("league-balance",) + HARDER_ECONOMY + BALANCE
-                 + ("third-tier", "mod-saves")}
+# The switch levels: editions are made of groups, groups of switches, and
+# --mod takes a name of any level. A group holds features that each work
+# alone; every switch is in exactly one group. The test tools are a group
+# of their own, in no edition. editor.py's Build tab draws this tree.
+GROUPS = (       # (name, title, switches)
+    ("training-fixes", "Training fixes",
+     ("camp-types", "camp-cities", "camp-santiago", "camp-clubs", "drill-names")),
+    ("injury-fixes", "Injury fixes", ("injury-value", "injury-row")),
+    ("club-fixes", "Club fixes",
+     ("sponsor-negotiation", "season-status", "pr-cycle", "mobile-site", "overseas-pop",
+      "cup-last16")),
+    ("match-fixes", "Match and import fixes", ("rival-manager", "national-cups", "vpf-styles")),
+    ("harder-economy", "Harder economy",
+     ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
+      "season-demand")),
+    ("balance", "Balance",
+     ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fee-tiers",
+      "slow-reputation", "fanbase", "merch-costs", "pr-costs", "camp-costs", "tour-costs")),
+    ("leagues", "Leagues", ("league-balance", "third-tier")),
+    ("saves", "Separate saves", ("mod-saves",)),
+    ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
+)
+# LMASTER lite is the fixes; LMASTER full is every group of the mod, with
+# its own saves so its careers never mix with the retail game's.
+LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes")
+EDITIONS = (     # (name, title, groups)
+    ("lmaster-lite", "LMASTER lite (fixes only)", LITE_GROUPS),
+    ("lmaster-full", "LMASTER full (every LMASTER group, own saves)",
+     LITE_GROUPS + ("harder-economy", "balance", "leagues", "saves")),
+)
+GROUP_SWITCHES = {name: switches for name, _, switches in GROUPS}
+EDITION_GROUPS = {name: groups for name, _, groups in EDITIONS}
+# Every name --mod takes for several switches at once.
+SWITCH_GROUPS = dict(GROUP_SWITCHES)
+SWITCH_GROUPS.update((name, sum((GROUP_SWITCHES[g] for g in groups), ()))
+                     for name, groups in EDITION_GROUPS.items())
+SWITCH_GROUPS["lmaster"] = SWITCH_GROUPS["lmaster-lite"]     # the name before the split
+assert sorted(sum(GROUP_SWITCHES.values(), ())) == sorted(SWITCH_NAMES), \
+    "every switch belongs to exactly one group"
+
+
+def implied(names):
+    """`names` with the switches they turn on (SWITCH_IMPLIES)."""
+    out = set(names)
+    for name in list(out):
+        out.update(SWITCH_IMPLIES.get(name, ()))
+    return out
 
 
 def parse_mods(values):
-    """The switch names in --mod values ('a,b', group names allowed)."""
+    """The switch names in --mod values ('a,b'; edition and group names allowed)."""
     out = set()
     for v in values:
         for name in filter(None, v.lower().split(",")):
@@ -4038,9 +4064,25 @@ def parse_mods(values):
             else:
                 raise SystemExit("--mod %s: no such switch (%s)" % (
                     name, ", ".join(SWITCH_NAMES + sorted(SWITCH_GROUPS))))
-    for name in list(out):
-        out.update(SWITCH_IMPLIES.get(name, ()))
-    return out
+    return implied(out)
+
+
+def mod_names(switches):
+    """The shortest --mod names for the set `switches` (with what they
+    imply): the biggest edition it holds, then whole groups, then single
+    switches, each in table order. parse_mods(mod_names(s)) == implied(s)."""
+    left = implied(switches)
+    out = []
+    for name, _, groups in sorted(EDITIONS, key=lambda e: -len(e[2])):
+        if set(SWITCH_GROUPS[name]) <= left:
+            out.append(name)
+            left -= set(SWITCH_GROUPS[name])
+            break
+    for name, _, members in GROUPS:
+        if left and set(members) <= left:
+            out.append(name)
+            left -= set(members)
+    return out + [name for name in SWITCH_NAMES if name in left]
 
 
 def rebuild_entry_targets(img, index, image, pairs):
@@ -4448,6 +4490,20 @@ def cmd_verify(image, args):
     return 0 if ok else 1
 
 
+def cmd_switches():
+    """Print the switch levels: each edition's groups, then each group's
+    switches with their descriptions."""
+    text = {s[0]: s[3] for s in SWITCHES}
+    for name, title, groups in EDITIONS:
+        print("%s: %s" % (name, title))
+        print("  groups: %s" % ", ".join(groups))
+    in_edition = set(sum((g for _, _, g in EDITIONS), ()))
+    for name, title, members in GROUPS:
+        print("%s: %s%s" % (name, title, "" if name in in_edition else " (in no edition)"))
+        for switch in members:
+            print("  %-20s %s" % (switch, text[switch]))
+
+
 def _opt(args, flag, default=None):
     if flag in args:
         i = args.index(flag)
@@ -4499,6 +4555,9 @@ def main(argv):
             return 0
         if cmd == "verify" and len(args) >= 2:
             return cmd_verify(args[0], args[1:])
+        if cmd == "switches" and not args:
+            cmd_switches()
+            return 0
     except (ValueError, OSError) as e:
         raise SystemExit(str(e))
     print(__doc__)

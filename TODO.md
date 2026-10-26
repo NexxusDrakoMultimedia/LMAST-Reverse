@@ -32,12 +32,9 @@ What to work on next, most valuable first.
    not yet seen in game. A disc built with `--mod lmaster-full`, played
    through a season in Germany, shows whether the economy is harder in
    a way players notice, whether the balance switches work, and the
-   third tier with them, now with its clubs in the lower cups (rebuild
-   the disc first); the disc is `LMAST-test-full-germany.iso`
+   third tier with them, now with its clubs in the lower cups; the
+   disc is `LMAST-test-full-germany.iso`, rebuilt 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **The switch levels** (section 5): editions, groups, then single
-   switches, with the editor's Build tab offering the editions and their
-   groups instead of a box per switch ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
 ## What a mod can change, and what is left
 
@@ -238,27 +235,6 @@ per kind of data, each editing through its writer and taking the allowed
 values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
-- [ ] Switch groups in place of single switches (the user's idea,
-      2026-10-27): `patch_disc.py` has 42 switches, 7 of them in no
-      group (the five third-tier switches and the test tools
-      `skip-tutorial` and `launcher`), and the editor's Build tab shows
-      a box for each. Make them a tree of three levels:
-      - level 0, the editions: `lmaster-lite` and `lmaster-full`;
-      - level 1, the groups an edition is made of (now `harder-economy`
-        and `balance`; the fixes in `lmaster-lite`, the third tier and
-        others to be sorted into groups), each switch in one group;
-      - level 2, the single switches.
-
-      The rule (the user's): switches that depend on each other merge
-      into one switch, one feature each (the third tier's five, which
-      need each other, are `third-tier` now); a group holds features
-      that each work alone, and machinery is no switch (done for the
-      third tier: the code segment and the save wrappers are helpers, and
-      `SWITCH_IMPLIES` turns on `mod-saves` with it). The Build tab offers the editions,
-      with their groups to add or leave out and the switches shown under
-      each; the test tools stay apart. `--mod` takes any level, so a
-      single switch still works for tests
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
 - [ ] Later: the editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod

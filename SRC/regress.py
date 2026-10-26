@@ -215,6 +215,8 @@ def checks():
         ("patch_disc_copies", ["patch_disc.py", "copies", "DAT", "PARAM/REGULATION.TBB",
                                "PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/PBDATA_EU.PAC",
                                "BG/HUMAN_1000_PALETTE.MRG#header"], ["DAT"]),
+        # The switch levels: editions, groups and switches.
+        ("patch_disc_switches", ["patch_disc.py", "switches"], []),
         # Every PRELOAD entry against its source, and the load lists that
         # decide which copy the game reads.
         ("preload", ["preload.py", "info", "DAT"], ["DAT"]),
