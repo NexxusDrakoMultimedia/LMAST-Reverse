@@ -197,8 +197,11 @@ doesn't list the tiers, as the design wants (it must take its
 competitions from a list of its own; not traced). With the movements
 (`LMAST-test-tiers.iso`, an England career with the tutorial skip): the
 Champions Division's table after its first game day has 24 clubs, your
-club and the rival among them (user report, with a screenshot). The
-season's end isn't played yet.
+club and the rival among them (user report, with a screenshot). In a
+German career (`LMAST-test-tiers-germany.iso`, `--skip-nation
+Germany`), the two clubs sent down to the Third German League at the
+start were Siegen and Offenbach (user report). The season's end isn't
+played yet.
 
 ## Still unknown
 
