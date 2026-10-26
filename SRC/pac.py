@@ -265,6 +265,23 @@ def build_binpac(hdr_bytes, blobs):
     return bytes(out)
 
 
+def grow_binpac_header(hdr_bytes, count):
+    """`hdr_bytes` with room for `count` entries, the new rows copying the
+    last one's name and extra columns (build_binpac then sets each row's
+    offset and size). The header may not need more space than it has."""
+    h = BinPac(hdr_bytes)
+    if count < h.count:
+        raise ValueError("%d entries, fewer than the %d there are" % (count, h.count))
+    end = 0x20 + count * h.stride
+    if binpac_header_size(end, h.align) > h.header_size:
+        raise ValueError("%d entries need a header of %d bytes, not %d" % (
+            count, binpac_header_size(end, h.align), h.header_size))
+    last = hdr_bytes[h.table_end() - h.stride:h.table_end()]
+    out = bytearray(hdr_bytes[:h.table_end()]) + last * (count - h.count)
+    struct.pack_into("<h", out, 4, count)
+    return bytes(out) + bytes(h.header_size - len(out))
+
+
 def binpac_blobs(data):
     """(header, [entry bytes]) of a self-describing BINPAC."""
     h = BinPac(data[:struct.unpack_from("<I", data)[0]])

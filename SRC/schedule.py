@@ -87,6 +87,12 @@ COMPE_PAC = "SCHEDULE_COMPETITION.PAC"
 ENTRY_PAC = "SCHEDULE_TEAM_ENTRY.PAC"
 
 UID_COUNT = 164
+# patch_disc.py --mod tier-uids (LMASTER) adds the third tiers as UIDs
+# 165-170; 164, the default rules' REGULATION row, has no schedule, and
+# the packs' entry 164 is a placeholder (DOC/UID_LIMITS.md).
+TIER_UID_COUNT = 171
+LAYOUTS = {UID_COUNT: list(range(UID_COUNT)),
+           TIER_UID_COUNT: list(range(UID_COUNT)) + list(range(UID_COUNT + 1, TIER_UID_COUNT))}
 COMPE_COUNT = 72            # PLSCHE_COMPE 0-71: open_nation's 72 rows
 TURNS_PER_YEAR = 96         # get_open_turn: open turn = years * 0x60 + bit
 YEAR_ROW = 0x14             # year_schedule_data row size
@@ -731,8 +737,12 @@ def cmd_info(root):
         return
     uids = year_uids(system.year)
     probs = []
-    if sorted(uids) != list(range(UID_COUNT)):
-        probs.append("UIDs are not 0-%d" % (UID_COUNT - 1))
+    count = len(system.savectrl)
+    if count not in LAYOUTS:
+        probs.append("savectrl has %d bytes" % count)
+    elif sorted(uids) != LAYOUTS[count]:
+        probs.append("UIDs are not 0-%d%s" % (UID_COUNT - 1, "" if count == UID_COUNT
+                                               else " and %d-%d" % (UID_COUNT + 1, count - 1)))
     for r in system.year:
         if r.uid >= 0 and r.kind not in LOAD_KIND:
             probs.append("UID %d load kind %d" % (r.uid, r.kind))
@@ -740,8 +750,6 @@ def cmd_info(root):
             probs.append("UID %d compe %d" % (r.uid, r.compe))
         if r.turns and r.start > r.turns[0]:
             probs.append("UID %d start %d after first turn %d" % (r.uid, r.start, r.turns[0]))
-    if len(system.savectrl) != UID_COUNT:
-        probs.append("savectrl has %d bytes" % len(system.savectrl))
     for i, row in enumerate(system.open_nation):
         if row[0] != i:
             probs.append("open_nation row %d is compe %d" % (i, row[0]))
@@ -765,8 +773,8 @@ def cmd_info(root):
         except (ValueError, struct.error) as e:
             print("%-45s !! %s" % (path, e))
             continue
-        if len(pack) != UID_COUNT:
-            print("%-45s !! %d entries, expected %d" % (path, len(pack), UID_COUNT))
+        if len(pack) != count:
+            print("%-45s !! %d entries, expected %d" % (path, len(pack), count))
         for uid, (_, buf) in enumerate(pack):
             try:
                 store[uid] = cls(buf)

@@ -83,13 +83,53 @@ their room in that sum, so their slots must be freed as schedules end,
 or some rows load only in some years; that isn't traced, and the tier
 leagues don't use them.
 
+## Loading more schedules
+
+**Confirmed** (`CScheEuro`): nothing else holds a table per UID.
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x2044f0` | `CScheEuro::makeStartCompeList` | walks the year rows by their count from the file (`+0x368`), keeping the UIDs to load in a growable vector |
+| `0x2068f8` | `CScheEuro::OneLoadCompCB` | a loaded schedule takes a group slot (`getGroupIndexFromUID`, `getEmptyGroupIndex`); its `savectrl` byte is read at the table + UID (`0x206a20`), from the file |
+| `0x2df600` | `scheCtrl_GetGroupStatusAddrFromUID` | a group keeps its UID as an unsigned byte (`lbu +3`), so UIDs up to 255 fit |
+| `0x2d9ae0` | `ScheduleControllerBaseSystem::InitStatus` | 128 group slots. A season loads fewer than 118 schedules even counting every runtime one, so six more fit |
+| `0x2055f0` | `CScheEuro::getPeriodNameFromUID` | round names come from the schedule's rules and type, not a table by UID |
+
+## `--mod tier-uids` (phase 3a)
+
+`patch_disc.py --mod tier-uids` (with `tier-clubs` and `save-expand`,
+and `--copies --dat`) adds the six third tiers as UIDs 165–170, one per
+nation in the order of competitions 50–55 (England to the Netherlands):
+
+- `year_schedule_data`: a row each, loaded every season (load kind 0),
+  its game days spread evenly over the nation's second division's
+  (other-nations UIDs 2, 12, 21, 30, 40, 49), first and last kept.
+- `savectrl`: type 0 for 164–170 (171 bytes).
+- `SCHEDULE_COMPETITION`: a 3-club league each, both legs, 6 games on
+  6 game days (`schedule.set_league`, the rest day left out); entry 164
+  is a copy of 163 and is never loaded.
+- `SCHEDULE_TEAM_ENTRY`: the nation's three third-tier clubs by
+  `PLTEAMID`, as the tutorial's UIDs 142–147 name them (England 442–444
+  up to the Netherlands 457–459).
+- `REGULATION.TBB`: rows 165–170 copy the nation's second division's,
+  for 3 clubs and with no place slots; row 164 stays the default.
+- `SIMPRG.REL 0x3cfcc`: the ticket module's loop runs to UID 170.
+
+The packs' headers grow to 171 entries in the same 4,096 bytes
+(`pac.grow_binpac_header`), so the `.HED` files keep their size. The
+switch writes the `PRELOAD` copies too (`STATIONFILE.PAC`'s
+`schedule_system.pac` and `.HED` copies, which the game loads, and the
+seven `SIMFILE*.PAC` copies of `REGULATION.TBB`), so it refuses to run
+without `--copies`. `python SRC/schedule.py info` accepts the 171-UID
+layout and finds no new problem (UID 117 as on the retail disc).
+
+Who goes up and down, the two clubs sent down at the start, and your
+nation's 5-club tier are phase 3b. Not yet run in the game.
+
 ## Still unknown
 
 - When a schedule's pool slots are freed, and the true peak of each
   pool over a season.
-- Whether anything else keeps an array per UID sized from the 164-entry
-  packs at load (the scan finds no such immediate; a size read from a
-  file's entry count would grow with it).
 - Whether the Information screen's competition list, which names
   competitions by nation, would show competitions 50–55.
 
