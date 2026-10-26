@@ -395,8 +395,10 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       way from each texture `svr.py` decodes, or matched against a dump
       of the originals); (2) a texture writer, since `svr.py` only reads
       (`info`, `png`): palette, swizzle and the containers they sit in;
-      (3) a choice for replacements larger than the original, since a
-      disc texture keeps its size and palette (scaled down and
-      requantised, or left to the pack). Its files stay out of the repo
+      (3) the palette: Realism keeps the native sizes for the most part
+      (user report), so most replacements fit their texture as they are
+      but for requantising to its palette; the few larger ones need a
+      choice (scaled down, or left to the pack). Its files stay out of
+      the repo
       ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
