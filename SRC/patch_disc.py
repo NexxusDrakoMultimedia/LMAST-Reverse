@@ -2844,10 +2844,12 @@ _BIT_READ, _BIT_WRITE = 0x20C200, 0x20C1C0       # _plBits_BitRead(bits, n, sign
 # save-expand: the save grows for the third tier. The blocks' sizes
 # (getSize: table 0x533ac8, size + 8) decide the allocation, which
 # PlPworkTask (0x21d6f0) sums, and the layout CRC.
-# - Block 2 (the other clubs) gains 18 records of 0xa8 for clubs
-#   442-459, which pwkOteam_Team2Otindex already maps to records
-#   440-457; its serializers' loops go to 458 (SAVEPRG.REL 0x29548 read,
-#   0x1b844 write).
+# - Block 2 (the other clubs) gains 18 records of 0xa8, 440-457, for
+#   clubs 442-459; its serializers' loops go to 458 (SAVEPRG.REL 0x29548
+#   read, 0x1b844 write). pwkOteam_Team2Otindex (0x24b7e8) still sends
+#   those clubs to record 1 (club 3's: it maps only 3-441, and
+#   pwkOteam_GetPointer turns -1 into record 1); the third tier's phase 2
+#   raises its bound.
 # - Block 5 gains seven past records of 0x98 at its old end (0xb50d0) for
 #   competitions 49-55, the third tiers 50-55 among them.
 #   pwkRec_GetCompePastRecord (0x253590) is rewritten in its own 23 words

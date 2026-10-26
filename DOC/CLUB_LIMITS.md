@@ -72,7 +72,7 @@ already cover clubs to 459. **Confirmed** for the main ones:
 | club → nation, `PLRESOURCECOMMON.PAC` entry 3 table 5, a byte per club | clubs below 460 (`slti 0x1cc`) | `plMisc_Club2Nati` (`0x215af0`), and through it `plMisc_Club2Region` |
 | city clubs, `0x531f30` | searched by club id | `plOteam_SearchCteam` (`0x216590`) |
 | league entries | searched by club id (`bsearch`) | `plLg_GetEntry` (`0x2e9630`) |
-| the other clubs, save block 2 | clubs 2–459 with `--mod save-expand` | `pwkOteam_GetPointer` (`0x24b788`) |
+| the other clubs, save block 2 | clubs 2–441 (records 0–439); 18 more records with `--mod save-expand`, which `pwkOteam_Team2Otindex` (`0x24b7e8`, club − 3 < 439) reaches once its bound is 457 | `pwkOteam_GetPointer` (`0x24b788`); a club past 441 gets record 1, club 3's |
 
 So the risk left for a club past 441 is in the buffers and object
 arrays the loops above fill: `ClubRank`'s arrays, the club-rank list on

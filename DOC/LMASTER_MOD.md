@@ -167,11 +167,11 @@ What is known so far:
 - **Clubs 442–459 can't join a league as they are.** **Confirmed**: a
   non-resident club (442 on) gets a temporary league record and its 25
   players from the database (`0x24d6b0`: ids `0x63f7` + 25 × (club −
-  442), 25,591 onward); `pwkOteam_GetPointer` (`0x24b788`) has no upper
-  bound, so code that updates a league club's block 2 record (main
-  league, rank) would write past the 440 records into block 3 for club
-  442 on. Save blocks have fixed sizes, set by the generated serializers,
-  so block 2 can't grow.
+  442), 25,591 onward); for such a club `pwkOteam_GetPointer`
+  (`0x24b788`) returns club 3's record (`pwkOteam_Team2Otindex` maps
+  only 3–441, and −1 becomes record 1), so code that updates a league
+  club's block 2 record (main league, rank) would change club 3's. In
+  the retail layout block 2 has no room for more records.
 - **The plan: grow the save (the user's choice, 2026-10-26).** LMASTER
   full saves are separate already (`mod-saves`), so the third tier may
   break save compatibility. **Confirmed** for the approach: the blocks'
@@ -179,8 +179,8 @@ What is known so far:
   (`0x21d6f0`) allocates their sum from heap 6 in a shuffled order, so
   all code reaches a block through `get(i)`; block 2's serializers loop
   a fixed 440 records (`SAVEPRG.REL 0x29548`, `slti 0x1b8`), and
-  `pwkOteam_Team2Otindex` already maps clubs 442–459 to records
-  440–457. The phases:
+  `pwkOteam_Team2Otindex` (club − 3 < 439) can map clubs 442–459 to
+  records 440–457 by its bound alone. The phases:
   1. The save: block 2 gains 18 records for clubs 442–459, and block 5
      seven past records for competitions 49–55 at its end, with
      `pwkRec_GetCompePastRecord` sending them there; the serializers

@@ -449,9 +449,11 @@ Litmanen's "…" a skull.
 
 **The other clubs** (block 2). `pwkOteam_GetPointer` (`0x24b788`)
 returns block 2 + 0xa8 × `pwkOteam_Team2Otindex(team)` (`0x24b7e8`): the
-rival (team 2) is record 0 and teams 3–441 are records 1–439. Clubs from
-team 442 (`0x1ba`) on are "non-resident" (`pwkOteam_GetPlOpinfoNonresident`)
-and not in this block. **Confirmed:**
+rival (team 2) is record 0 and teams 3–441 are records 1–439. For any
+other club `Team2Otindex` gives −1 (it tests club − 3 < 439), which
+`GetPointer` turns into record 1, club 3's. Clubs from team 442
+(`0x1ba`) on are "non-resident" (`pwkOteam_GetPlOpinfoNonresident`) and
+not in this block. **Confirmed:**
 
 | Offset | Type | What | Source |
 |---|---|---|---|
@@ -855,8 +857,9 @@ hasn't been loaded in the game.
 
 `patch_disc.py --mod save-expand` grows two blocks for the LMASTER
 third tier ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)): block 2
-by 18 records of 0xa8 for clubs 442–459 (records 440–457, where
-`pwkOteam_Team2Otindex` already puts them), and block 5 by seven past
+by 18 records of 0xa8, records 440–457, for clubs 442–459 (until
+`pwkOteam_Team2Otindex` is changed to map them there, they still reach
+club 3's record), and block 5 by seven past
 records of 0x98 at its old end (`+0xb50d0`) for competitions 49–55.
 **Confirmed** for the approach: the blocks' sizes come from the table
 at `0x533ac8`, `PlPworkTask` (`0x21d6f0`) allocates their sum, and the
