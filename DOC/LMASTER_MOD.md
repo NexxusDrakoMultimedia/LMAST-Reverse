@@ -188,7 +188,8 @@ What is known so far:
      **Built** as `--mod save-expand`, with an LMASTER code segment in
      the executable for the new code
      ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-bigger-save---mod-save-expand));
-     checked offline, not yet in the game.
+     tested in PCSX2: a converted career loads, saves and loads again
+     (user report).
   2. Clubs 442–459 as full clubs: the game's limits 440 (`0x1b8`), 441
      (`0x1b9`) and 442 (`0x1ba`), about 190 immediates across the
      executable and overlays, each checked; their records and squads at

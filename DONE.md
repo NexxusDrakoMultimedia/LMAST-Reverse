@@ -296,3 +296,6 @@ Each result is recorded in the doc named.
 - [x] `slow-reputation` (in `--mod balance`): club status gains halved;
       what changes the status decoded
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md))
+- [x] `save-expand`: the bigger save for the third tier, with an LMASTER
+      code segment in the executable; tested in PCSX2
+      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-bigger-save---mod-save-expand))

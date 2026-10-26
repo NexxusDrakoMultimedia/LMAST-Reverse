@@ -879,7 +879,9 @@ python SRC/save.py show out.bin --iso <patched ISO folder>
 
 **Checked offline:** `save.py fields` on the patched files matches the
 game's serializers both ways on random data, and G006 converted reads
-back the same. Not yet loaded in the game.
+back the same. **Tested in PCSX2** (user report, 2026-10-26,
+`LMAST-test-saveexpand.iso` with `save-expand`, `mod-saves` and the
+tutorial skip): the converted G006 loads, and saves and loads fine.
 
 ## Separate saves for a modded disc
 
