@@ -348,6 +348,15 @@ names the disc or the edit to build; the result goes into the doc.
       update), and saves and loads; the ranking screen at the start is
       checked
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-tier-lists-phase-2b))
+- [ ] The third tier's clubs in the domestic cups (the user's choice,
+      2026-10-27: grow the brackets, so every current entrant keeps its
+      place): each nation's cups take its tier clubs by `LAST_RANK` of
+      competitions 50–55, the own-nation versions 5 a nation, the
+      others 3. Needs a knockout builder in `schedule.py` (pairings, next
+      links, byes; it builds only leagues now) and, where a cup gains a
+      round, a turn for it. Part of `third-tier`, after the merge
+      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md),
+      [`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3))
 - [ ] The third tier's clubs in My Room > Information > Club Info >
       Other Club Info, which doesn't list clubs 442–459 (user report);
       how the screen picks its clubs isn't traced
