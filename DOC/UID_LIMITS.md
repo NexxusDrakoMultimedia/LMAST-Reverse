@@ -52,7 +52,7 @@ with `--mod save-expand`, past records.
 
 | Site | What it does | For 165–170 |
 |---|---|---|
-| `SIMPRG.REL 0x3cfcc` (`TICKET_SET_MODULE`) | loops UIDs 0–163 (`slti 0xa4`), looking each up in the loaded schedules (`0x3da80`) | to 171 |
+| `SIMPRG.REL 0x3cfcc` (`TICKET_SET_MODULE`) | loops UIDs 0–163 (`slti 0xa4`) for a competition with your home game in the month's eight days (`0x3da80`); "none found" is the loop's end, tested against a second 164 in `$s6` (`0x3cfb8`) | as it is: you never play in a third tier |
 | `GAMEPRG.REL 0xa069c` | a per-UID table of match-presentation flags at `0x26f748` (164 words); 164 and up get entry 0 | as it is |
 | `GAMEPRG.REL 0x9f144` | the same table for the match being played, with no bound | never reached: you never play a third-tier match (`one-season-end` ends the game first) |
 
@@ -113,7 +113,10 @@ nation in the order of competitions 50–55 (England to the Netherlands):
   up to the Netherlands 457–459).
 - `REGULATION.TBB`: rows 165–170 copy the nation's second division's,
   for 3 clubs and with no place slots; row 164 stays the default.
-- `SIMPRG.REL 0x3cfcc`: the ticket module's loop runs to UID 170.
+- No code: the ticket module's loop (`0x3cfcc`) stays at 164.
+  **Seen in PCSX2** (user report): with only its bound raised to 171,
+  the "none found" test at `0x3cfb8` (still 164) failed, and the Set Up
+  Ticket Price screen came up again and again with no competition named.
 
 The packs' headers grow to 171 entries in the same 4,096 bytes
 (`pac.grow_binpac_header`), so the `.HED` files keep their size. The
@@ -124,14 +127,15 @@ without `--copies`. `python SRC/schedule.py info` accepts the 171-UID
 layout and finds no new problem (UID 117 as on the retail disc).
 
 Who goes up and down, the two clubs sent down at the start, and your
-nation's 5-club tier are phase 3b. Not yet run in the game.
+nation's 5-club tier are phase 3b. **Seen in PCSX2** (user report,
+2026-10-27): the Information screen's Competitions tab doesn't list the
+third tiers, as the design wants; it must take its competitions from a
+list of its own, not from the loaded schedules (not traced).
 
 ## Still unknown
 
 - When a schedule's pool slots are freed, and the true peak of each
   pool over a season.
-- Whether the Information screen's competition list, which names
-  competitions by nation, would show competitions 50–55.
 
 ## Checking
 

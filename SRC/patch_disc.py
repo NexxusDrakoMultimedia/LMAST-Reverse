@@ -3263,17 +3263,20 @@ def plan_tier_lists(f, img):
 # league in SCHEDULE_COMPETITION, its three clubs in SCHEDULE_TEAM_ENTRY
 # (PLTEAMID, as the tutorial's UIDs 142-147 name them) and a REGULATION row
 # (the nation's second division's, for 3 clubs, no place slots). Entry
-# 164 of the two packs copies 163, so entry n stays UID n. In code, only
-# the ticket-price module's loop over UIDs (SIMPRG.REL 0x3cfcc) names the
-# count. The clubs (442-459) need tier-clubs; their past records,
-# save-expand. Who goes up and down is phase 3b.
+# 164 of the two packs copies 163, so entry n stays UID n. No code
+# changes: the one loop over UIDs, the ticket-price module's (SIMPRG.REL
+# 0x3cfcc, your home games this month), stays at 164, since you never play
+# in a third tier; its "none found" test compares with a second 164
+# (0x3cfb8), and raising only the loop's bound made every month show a
+# ticket screen for no game (seen in PCSX2). The clubs (442-459) need
+# tier-clubs; their past records, save-expand. Who goes up and down is
+# phase 3b.
 TIER_UID_FIRST, TIER_UIDS = 165, 6
 TIER_UID_END = TIER_UID_FIRST + TIER_UIDS
 TIER_UID_SECOND = (2, 12, 21, 30, 40, 49)   # each nation's second division, other-nations version
 TIER_UID_CLUBS = 3
 TIER_UID_FILES = ("PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/SCHEDULE_COMPETITION.PAC",
                   "PARAM/SCHEDULE_TEAM_ENTRY.PAC", "PARAM/REGULATION.TBB")
-TIER_UID_TICKET = 0x3CFCC       # SIMPRG.REL: slti $v0, $s0, 0xa4
 
 
 def plan_tier_uids(f, img):
@@ -3281,9 +3284,7 @@ def plan_tier_uids(f, img):
     file_tier_uids)."""
     if img.port is not None:
         raise ValueError("tier-uids is made for the PAL executable only")
-    return word_jobs(f, img, "tier-uids", [_imm_word(
-        f, img, NEGO_FILE, TIER_UID_TICKET, 0xA4, TIER_UID_END,
-        "ticket prices: UIDs 0-%d" % (TIER_UID_END - 1))])
+    return [], []
 
 
 def _tier_turns(turns, days):
@@ -3638,7 +3639,7 @@ SWITCHES = (
     ("tier-lists", plan_tier_lists, [SLES_FILE, NEGO_FILE],
      "LMASTER full: the lists of 441 clubs (club rank, transfer AI, offers, world "
      "ranking) hold 459; needs tier-clubs"),
-    ("tier-uids", plan_tier_uids, [NEGO_FILE] + list(TIER_UID_FILES),
+    ("tier-uids", plan_tier_uids, list(TIER_UID_FILES),
      "LMASTER full: six hidden third-tier leagues as schedule UIDs 165-170; "
      "needs tier-clubs and save-expand, and --copies"),
     ("one-season-end", plan_one_season_end, [NEGO_FILE],

@@ -315,10 +315,9 @@ names the disc or the edit to build; the result goes into the doc.
       checked
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-tier-lists-phase-2b))
 - [ ] The six hidden third tiers (`--mod tier-uids`):
-      `LMAST-test-tieruids.iso` (with the tutorial skip) starts a new
-      career and plays past August (the tiers' first game days), with a
-      look at the Information screen's competitions, then saves and
-      loads ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3a))
+      `LMAST-test-tieruids2.iso` (with the tutorial skip) starts a new
+      career and plays past August (the tiers' first game days), then
+      saves and loads; the ticket screens come up only for home games ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3a))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST
