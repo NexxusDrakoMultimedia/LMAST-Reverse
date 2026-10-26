@@ -154,6 +154,9 @@ evidence and how it was tested; the git history holds the rest.
       ([`REBUILD.md`](DOC/REBUILD.md))
 - [x] Testing aids: `--skip-tutorial` and `--launcher`
       ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md))
+- [x] `patch_disc.py`'s 35 switches on the Japanese disc, their offsets
+      found through `gamever.py`; PAL builds unchanged
+      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 
 ## 5. Edit: the GUI
 
