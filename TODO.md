@@ -387,13 +387,16 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] LMAST Realism in LMASTER (the user's idea, 2026-10-27): bring the
       logos, kits, texture fixes and real competition names of LMAST
-      Realism, the user's own realism ISO
+      Realism, the user's own PCSX2 texture pack
       ([LMAST-Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism)),
-      into the LMASTER Mod. First
-      list what Realism changes (`patch_disc.py verify` and the readers,
-      file by file against the retail disc), sort each change by the
-      formats the tools already write (textures `svr.py`, kits
-      `uniform.py`, names `mbb.py`), and decide which group takes it.
-      The files are game data, so they stay out of the repo and come in
-      at build time, as `patch_disc.py` targets or a mod folder
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
+      onto the disc as part of the LMASTER Mod, so it works without
+      PCSX2's texture replacement. Needed: (1) which disc texture each
+      PNG replaces, from the hash PCSX2 names it by (computed the same
+      way from each texture `svr.py` decodes, or matched against a dump
+      of the originals); (2) a texture writer, since `svr.py` only reads
+      (`info`, `png`): palette, swizzle and the containers they sit in;
+      (3) a choice for replacements larger than the original, since a
+      disc texture keeps its size and palette (scaled down and
+      requantised, or left to the pack). Its files stay out of the repo
+      ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
