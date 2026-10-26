@@ -112,6 +112,9 @@ In English: 0 Western Europe, 1 Central Europe, 2 Eastern Europe, 3
 Northern Europe, 4 South America A, 5 South America B, 6 North Africa, 7
 West Africa, 8 East and South Africa, 9 North Central America,
 Caribbean, 10 East Asia, 11 South Asia and Middle East, 12 Oceania.
+**User report:** the game uses this one numbering for every region list
+(tours, camps, scouting, popularity). `tour.py` and the Tours tab use
+these names.
 `patch_disc.py --mod overseas-bases` (in `--mod balance` and
 `--mod lmaster-full`) doubles the 13 costs, here and in the copies in
 `PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 17), and makes the level factor

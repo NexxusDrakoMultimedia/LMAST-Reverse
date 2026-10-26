@@ -301,6 +301,11 @@ and copies in the club of every pair whose region matches, in table
 order. Its caller (`0xa44d8`) takes the region from the screen's list
 (the module's `+0x2028` plus the chosen line, less one).
 
+The regions are the game's 13 overseas regions, named in
+[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)
+(user report: the game numbers its regions the same way everywhere; the
+clubs below fit the names).
+
 **Empirical**: regions 0–12 hold 10, 8, 8, … 8 clubs: 0 Western Europe
 (Tottenham, Marseille, Dortmund, Lazio, Valencia, Feyenoord, Glasgow
 City, Porto, Basel, Brugge), 1 and 2 Central and Eastern Europe, 3
@@ -310,8 +315,7 @@ southern Africa, 9 North America, 10 East Asia, 11 the Middle East and
 12 Oceania. Five groups end with clubs from the six leagues. `python
 SRC/tour.py show DAT/PARAM/TOUR_LIST.TBB DAT/MESSAGE/MES.PAC` lists them,
 and `set` changes a pair. `python SRC/plrcommon.py show DAT/PARAM 3.0`
-lists the 13 regions the game knows; whether these numbers are the same
-regions isn't confirmed.
+lists the same 13 regions.
 
 ## `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`
 

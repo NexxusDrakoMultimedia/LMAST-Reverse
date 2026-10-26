@@ -29,13 +29,14 @@ FILE = "TOUR_LIST.TBB"
 SLOTS = 40                      # 0x4cb0c: 0x27 + 1 u16 cleared and filled
 CLUBS = 0x22e                   # team ids 1-0x22d (SCHEDULE_FORMAT.md, PLTEAMID)
 REGIONS = 13
-# What each region's clubs have in common (empirical; whether these are the
-# 13 regions of plrcommon.py's table 3.0 isn't confirmed).
-REGION_NAMES = ("Western Europe", "Central and Eastern Europe", "Eastern Europe",
-                "Scandinavia and the Baltic", "South America (north)",
-                "South America (south)", "North Africa", "West Africa",
-                "West and southern Africa", "North America", "East Asia", "Middle East",
-                "Oceania")
+# The game's English names for the 13 overseas regions: message category 1,
+# record 310 + region (getRegionDetail 0x202310; see plrsim.py). The game
+# uses one region numbering throughout (user report), and each region's
+# tour clubs fit its name.
+REGION_NAMES = ("Western Europe", "Central Europe", "Eastern Europe", "Northern Europe",
+                "South America A", "South America B", "North Africa", "West Africa",
+                "East and South Africa", "North Central America, Caribbean", "East Asia",
+                "South Asia and Middle East", "Oceania")
 
 
 def load(path):

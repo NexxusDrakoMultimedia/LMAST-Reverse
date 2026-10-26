@@ -2528,7 +2528,7 @@ class ToursTab(Tab):
     tour.set_pair and tour.encode_file, as `tour.py set` does. Each pair
     is a region and a club; changing the region moves the club to that
     region's list. Club names come from MES.PAC (category 3); the region
-    names are tour.REGION_NAMES, read from the clubs (not confirmed)."""
+    names are tour.REGION_NAMES, the game's own (MES.PAC category 1)."""
     title = "Tours"
 
     def __init__(self, app):
