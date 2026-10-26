@@ -88,9 +88,9 @@ ENTRY_PAC = "SCHEDULE_TEAM_ENTRY.PAC"
 
 UID_COUNT = 164
 # patch_disc.py --mod tier-uids (LMASTER) adds the third tiers as UIDs
-# 165-170; 164, the default rules' REGULATION row, has no schedule, and
+# 165-176; 164, the default rules' REGULATION row, has no schedule, and
 # the packs' entry 164 is a placeholder (DOC/UID_LIMITS.md).
-TIER_UID_COUNT = 171
+TIER_UID_COUNT = 177
 LAYOUTS = {UID_COUNT: list(range(UID_COUNT)),
            TIER_UID_COUNT: list(range(UID_COUNT)) + list(range(UID_COUNT + 1, TIER_UID_COUNT))}
 COMPE_COUNT = 72            # PLSCHE_COMPE 0-71: open_nation's 72 rows

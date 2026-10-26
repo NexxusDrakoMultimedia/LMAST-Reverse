@@ -224,10 +224,11 @@ What is known so far:
      164 schedules is found and grown first, as in phase 2. The club
      that comes up is the **tier's winner** (`LAST_RANK` rank 1 of its
      competition), which changes each season as the games are simulated.
-     Step (a) is **built** as `--mod tier-uids`: the six tiers as
-     3-club leagues, UIDs 165–170
-     ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-tier-uids-phase-3a)); not
-     yet run in the game. Step (b): the movements, and your nation's
+     **Built** as `--mod tier-uids`, (a) the leagues and (b) the
+     movements ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-tier-uids-phase-3));
+     the leagues tested in PCSX2 into September, the movements not yet
+     run in the game. The rival goes down like any club (the user's
+     choice, 2026-10-27). Step (b): the movements, and your nation's
      tier at 5 clubs (an own-nation version of each tier, as the second
      divisions have). Found for (b), **confirmed**:
      - `ScheCallback_ProcPromotion` (`0x1131c8`), once at a career's

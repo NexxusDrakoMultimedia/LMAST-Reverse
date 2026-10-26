@@ -253,11 +253,15 @@ grows the lists of 441 clubs to 459: the club-rank list, the transfer
 AI's lists, GetOfferClub's five lists (their stack frames relaid), and
 the world ranking (SIMPRG.REL ClubRank), with the loops that fill them.
 tier-uids (whole disc image only, with --copies and --dat; needs
-tier-clubs and save-expand; in no group yet) adds six hidden third-tier
-leagues, competitions 50-55, as schedule UIDs 165-170: their rows in
-SCHEDULE_SYSTEM.PAC, SCHEDULE_COMPETITION.PAC, SCHEDULE_TEAM_ENTRY.PAC
-and REGULATION.TBB, which grow (their PRELOAD copies too). Each has its
-nation's three third-tier clubs. See DOC/UID_LIMITS.md.
+tier-clubs, save-expand and one-season-end; in no group yet) adds the
+hidden third tiers, competitions 50-55, as schedule UIDs 165-170 (3
+clubs) and, for your nation, 171-176 (5 clubs): each season the second
+division's last club goes down and the tier's winner comes up, and your
+second division has its real size, two of its clubs starting in the
+tier. It writes SCHEDULE_SYSTEM.PAC, SCHEDULE_COMPETITION.PAC,
+SCHEDULE_TEAM_ENTRY.PAC, REGULATION.TBB and PLRRSRC_INITTEAMDATA.TBB
+(with their PRELOAD copies) and changes the season's start and end code.
+See DOC/UID_LIMITS.md and DOC/LMASTER_MOD.md.
 one-season-end (whole disc image only; in no group yet) ends the game
 when you finish in the second division's bottom two in one season, not
 two running (SIMPRG.REL 0x15d958), and warns on this season alone
@@ -2907,6 +2911,7 @@ SAVE_LOOPS = ((0x29548, 0x2AA301B8, 0x2AA301CA, "block 2 read: 458 records"),
               (0x1B844, 0x2AA201B8, 0x2AA201CA, "block 2 write: 458 records"))
 # (serializer, its first two words, the base offset $ra holds, wrapper)
 _VARS = CAVE + 0x200
+SAVE_CAVE_SIZE = 0x280      # save-expand's part of the segment: its code, then _VARS
 BLOCK5_HOOKS = (("read", 0x29838, (0x27BDFF10, 0x7FB70070), 0x2B9FC),
                 ("write", 0x1BAD8, (0x27BDFF00, 0x7FB70080), 0x2BA34))
 
@@ -2962,12 +2967,13 @@ def plan_save_expand(f, img):
     if img.port is not None:
         raise ValueError("save-expand is made for the PAL executable only")
     cave, at = save_expand_cave()
+    cave = cave[:SAVE_CAVE_SIZE]                # the rest is tier-uids'
     e_phnum = read_at(f, img, SLES_FILE, 0x2C, 2)
-    held_cave = read_at(f, img, SLES_FILE, CAVE_FILE, CAVE_SIZE)
+    held_cave = read_at(f, img, SLES_FILE, CAVE_FILE, SAVE_CAVE_SIZE)
     words_ = [(SLES_FILE, 0x2C, b"\x01\x00", b"\x02\x00", "%s e_phnum 2" % SLES_FILE),
               (SLES_FILE, PHDR2, bytes(32), phdr2(),
                "%s program header 1: the LMASTER code segment at 0x%x" % (SLES_FILE, CAVE)),
-              (SLES_FILE, CAVE_FILE, held_cave if held_cave != cave else bytes(CAVE_SIZE), cave,
+              (SLES_FILE, CAVE_FILE, held_cave if held_cave != cave else bytes(SAVE_CAVE_SIZE), cave,
                "%s 0x%x (the code segment's bytes, unloaded .DVP data before)"
                % (SLES_FILE, CAVE_FILE)),
               (SLES_FILE, PAST_RECORD - EXE_BASE, PAST_RECORD_OLD, PAST_RECORD_NEW,
@@ -3253,30 +3259,138 @@ def plan_tier_lists(f, img):
     return word_jobs(f, img, "tier-lists", words_)
 
 
-# tier-uids: six hidden third-tier leagues, competitions 50-55 (England to
-# the Netherlands), as new schedule UIDs 165-170 (phase 3a; DOC/UID_LIMITS.md).
-# UID 164 stays free: about 30 calls pass it for the default rules
-# (REGULATION.TBB row 164). The schedule code takes its count from the
-# files, so each gets: a year_schedule_data row (loaded every season, in
-# the nation's second-division season on evenly spaced game days of it),
-# a savectrl byte (type 0, the big leagues' pool, which has room), a
-# league in SCHEDULE_COMPETITION, its three clubs in SCHEDULE_TEAM_ENTRY
-# (PLTEAMID, as the tutorial's UIDs 142-147 name them) and a REGULATION row
-# (the nation's second division's, for 3 clubs, no place slots). Entry
-# 164 of the two packs copies 163, so entry n stays UID n. No code
-# changes: the one loop over UIDs, the ticket-price module's (SIMPRG.REL
-# 0x3cfcc, your home games this month), stays at 164, since you never play
-# in a third tier; its "none found" test compares with a second 164
-# (0x3cfb8), and raising only the loop's bound made every month show a
-# ticket screen for no game (seen in PCSX2). The clubs (442-459) need
-# tier-clubs; their past records, save-expand. Who goes up and down is
-# phase 3b.
-TIER_UID_FIRST, TIER_UIDS = 165, 6
-TIER_UID_END = TIER_UID_FIRST + TIER_UIDS
+# tier-uids: the hidden third tiers, competitions 50-55 (England to the
+# Netherlands), as new schedule UIDs, and who goes up and down (phase 3;
+# DOC/UID_LIMITS.md, DOC/LMASTER_MOD.md). UID 164 stays free: about 30
+# calls pass it for the default rules (REGULATION.TBB row 164).
+# - The leagues: each nation's tier as an other-nations version, 165-170
+#   (its 3 clubs), and an own-nation version, 171-176 (5 clubs: two of
+#   your second division's are sent down at the start), as the second
+#   divisions have. Each gets a year row (loaded every season, on evenly
+#   spaced game days of its second division's season), a savectrl byte
+#   (type 0, the big leagues' pool, which has room), a league in
+#   SCHEDULE_COMPETITION, its slots in SCHEDULE_TEAM_ENTRY and a
+#   REGULATION row (its second division's, for its clubs, one place up).
+#   Entry 164 of the two packs copies 163, so entry n stays UID n.
+# - The movements: a second division takes its own ranks but the last,
+#   and its tier's rank 1 (the winner); a tier takes its own ranks from 2,
+#   and the second division's last. REGULATION's down count is 1.
+# - Your nation: every own-nation version of a domestic UID (second
+#   division, cup qualifying, cups) differs from its other-nations
+#   version only by places for your club and the rival past the second
+#   division's record, so it becomes a copy of it (UIDs it names moved to
+#   the own versions): your second division has its real size.
+# - Season 1: the seed table's rows 50-55 hold the tiers, and the seeding
+#   loop (0x253200) reads rows to 55. A second division's seeded last
+#   place holds a tier club and its tier's rank 1 that last club, so
+#   everyone starts where the seeds put them. In your nation
+#   ScheCallback_ProcPromotion (0x1131c8, rewritten in its own 76 words)
+#   puts your club and the rival at ranks S - 2 and S - 1 and sends the
+#   two seeded clubs there down to your 5-club tier.
+# - Season end: calcCompetetionFinish (0x205fa8) writes the tables of
+#   competitions to 55. The yearly honours exist for 0-48 only, so for
+#   49 on, a detour skips pwkRec_ShiftCompeConventionRecord (0x205fc0)
+#   and everything after the table (0x20631c), in the LMASTER code
+#   segment at TIER_CAVE.
+# No change to the ticket-price module's loop over UIDs (SIMPRG.REL
+# 0x3cfcc, your home games): its "none found" test compares with a second
+# 164 (0x3cfb8), and raising only its bound made the Set Up Ticket Price
+# screen come back for no game (seen in PCSX2); you never play in a tier.
+# The clubs (442-459) need tier-clubs, their past records save-expand,
+# and the game over on one season one-season-end.
+TIER_UID_FIRST, TIER_NATIONS = 165, 6
+TIER_UID_OWN = TIER_UID_FIRST + TIER_NATIONS          # 171-176
+TIER_UID_END = TIER_UID_OWN + TIER_NATIONS            # 177
 TIER_UID_SECOND = (2, 12, 21, 30, 40, 49)   # each nation's second division, other-nations version
-TIER_UID_CLUBS = 3
+TIER_SECOND_COMPE = (1, 7, 12, 17, 23, 28)  # ... and its competition (0x51ad70)
+TIER_CLUBS, TIER_OWN_CLUBS = 3, 5
+TIER_DOMESTIC = 33                          # competitions 0-32 belong to one nation each
+INITTEAM_FILE = "PARAM/PLRRSRC_INITTEAMDATA.TBB"
 TIER_UID_FILES = ("PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/SCHEDULE_COMPETITION.PAC",
-                  "PARAM/SCHEDULE_TEAM_ENTRY.PAC", "PARAM/REGULATION.TBB")
+                  "PARAM/SCHEDULE_TEAM_ENTRY.PAC", "PARAM/REGULATION.TBB", INITTEAM_FILE)
+TIER_CAVE = CAVE + 0x280                    # past save-expand's code and variables
+TIER_SEED_LOOP = (0x253200, 0x2A020031, 0x2A020038, "past records seeded to competition 55")
+TIER_FINISH_BOUND = (0x205FA8, 0x2A820031, 0x2A820038, "season-end tables to competition 55")
+TIER_SHIFT = (0x205FC0, 0x253C58)           # jal pwkRec_ShiftCompeConventionRecord
+TIER_FINISH = (0x20631C, 0x206328, 0x20651C)  # honours from here, back after the first, clean-up
+PROMOTION, PROMOTION_WORDS = 0x1131C8, 76
+
+
+def _asm(base, items):
+    """Words for `items` at `base`: ints, ("label", name), and branches
+    ("beqz"/"bnez", reg, name) or ("b", name) to a label, delay slots
+    written as the next item."""
+    at, pos = {}, 0
+    for it in items:
+        if isinstance(it, tuple) and it[0] == "label":
+            at[it[1]] = pos
+        else:
+            pos += 1
+    out = []
+    for it in items:
+        if isinstance(it, tuple) and it[0] == "label":
+            continue
+        if isinstance(it, tuple):
+            off = at[it[-1]] - (len(out) + 1)
+            it = {"beqz": lambda: beqz(it[1], off), "bnez": lambda: bnez(it[1], off),
+                  "b": lambda: beqz(ZERO, off)}[it[0]]()
+        out.append(it & 0xFFFFFFFF)
+    return out
+
+
+def tier_cave():
+    """The tiers' code at TIER_CAVE: (words, {name: address})."""
+    shift_at = TIER_CAVE
+    shift = [slti(V0, A0, 0x31), ("beqz", V0, "ret"), NOP,
+             j(TIER_SHIFT[1]), NOP,                 # competitions 0-48: shift their honours
+             ("label", "ret"), jr(RA), NOP]
+    finish_at = shift_at + 4 * len(_asm(shift_at, shift))
+    start, back, cleanup = TIER_FINISH
+    finish = [slti(V0, 20, 0x31), ("beqz", V0, "skip"), NOP,       # $s4: the competition
+              jal(0x253AF8), move(A1, 20),          # the displaced call, its $a0 0 set before
+              j(back), NOP,
+              ("label", "skip"), j(cleanup), NOP]
+    return _asm(shift_at, shift) + _asm(finish_at, finish), {"shift": shift_at, "finish": finish_at}
+
+
+def promotion_words():
+    """ScheCallback_ProcPromotion rewritten, padded with nops. Your
+    nation's second division's record d is seeded with S clubs (its last
+    a tier club) and its tier's t with 3 (the first d's seeded last
+    club). With S the first empty place: t[4] = t[0], t[3] = d[S-2],
+    t[0] = d[S-3], then your club at d[S-3] and the rival at d[S-2]. So
+    the second division (d's ranks to S - 1, and t's 1) has the clubs it
+    was seeded with but the two at S - 1 and S, which play in the 5-club
+    tier (t's ranks 2-5, and d's S). Done once: not if your club or the
+    rival is in d already."""
+    w = _asm(PROMOTION, [
+        addiu(SP, SP, -0x30), sd(RA, 0, SP), sq(S0, 0x10, SP), sq(S1, 0x20, SP),
+        jal(0x2463B0), NOP,                         # pwkLg_GetMyNati: 1-6
+        addiu(V0, V0, -1), sltiu(V1, V0, 6), ("beqz", V1, "ret"), NOP,
+        (V0 << 16 | V1 << 11 | 3 << 6),             # sll $v1, $v0, 3
+        lui(A0, 0x52), addu(A0, A0, V1), lw(S0, -0x528C & 0xFFFF, A0),   # 0x51ad74 + 8k: d
+        addiu(S1, V0, 50),                          # t
+        jal(PAST_RECORD), move(A0, S1),
+        ("beqz", V0, "ret"), move(S1, V0),
+        jal(PAST_RECORD), move(A0, S0),
+        ("beqz", V0, "ret"), addiu(A0, V0, 8),      # d's teams
+        move(T0, ZERO),
+        ("label", "find"), lw(V1, 0, A0),
+        addiu(V0, V1, -1), sltiu(V0, V0, 2), ("bnez", V0, "ret"), NOP,   # already there
+        ("beqz", V1, "found"), NOP,
+        addiu(T0, T0, 1), slti(V0, T0, 0x1F), ("bnez", V0, "find"), addiu(A0, A0, 4),
+        ("b", "ret"), NOP,
+        ("label", "found"), slti(V0, T0, 3), ("bnez", V0, "ret"), addiu(T1, S1, 8),
+        lw(V0, 0, T1), sw(V0, 16, T1),              # t[4] = t[0]
+        lw(V0, -8 & 0xFFFF, A0), sw(V0, 12, T1),    # t[3] = d[S-2]
+        lw(V0, -12 & 0xFFFF, A0), sw(V0, 0, T1),    # t[0] = d[S-3]
+        addiu(V0, ZERO, 1), sw(V0, -12 & 0xFFFF, A0),   # d[S-3] = your club
+        addiu(V0, ZERO, 2), sw(V0, -8 & 0xFFFF, A0),    # d[S-2] = the rival
+        ("label", "ret"), ld(RA, 0, SP), lq(S0, 0x10, SP), lq(S1, 0x20, SP),
+        jr(RA), addiu(SP, SP, 0x30)])
+    if len(w) > PROMOTION_WORDS:
+        raise ValueError("ProcPromotion needs %d words, has %d" % (len(w), PROMOTION_WORDS))
+    return w + [NOP] * (PROMOTION_WORDS - len(w))
 
 
 def plan_tier_uids(f, img):
@@ -3284,7 +3398,27 @@ def plan_tier_uids(f, img):
     file_tier_uids)."""
     if img.port is not None:
         raise ValueError("tier-uids is made for the PAL executable only")
-    return [], []
+    cave, at = tier_cave()
+    words_ = [sles_word(a, old, new, what) for a, old, new, what in (TIER_SEED_LOOP, TIER_FINISH_BOUND)]
+    site, target = TIER_SHIFT
+    words_.append(sles_word(site, jal(target), jal(at["shift"]),
+                            "calcCompetetionFinish: no honours to shift from competition 49"))
+    start = TIER_FINISH[0]
+    words_.append((SLES_FILE, start - EXE_BASE, words(move(A0, ZERO), jal(0x253AF8)),
+                   words(j(at["finish"]), move(A0, ZERO)),
+                   "%s 0x%x (calcCompetetionFinish: no honours from competition 49)"
+                   % (SLES_FILE, start)))
+    old = read_at(f, img, SLES_FILE, PROMOTION - EXE_BASE, 4 * PROMOTION_WORDS)
+    new = words(*promotion_words())
+    words_.append((SLES_FILE, PROMOTION - EXE_BASE, old if old != new else bytes(len(new)), new,
+                   "%s 0x%x (ScheCallback_ProcPromotion: two clubs of your second "
+                   "division down to its tier)" % (SLES_FILE, PROMOTION)))
+    off = CAVE_FILE + TIER_CAVE - CAVE
+    held = read_at(f, img, SLES_FILE, off, 4 * len(cave))
+    new = words(*cave)
+    words_.append((SLES_FILE, off, held if held != new else bytes(len(new)), new,
+                   "%s 0x%x (the third tier's code at 0x%x)" % (SLES_FILE, off, TIER_CAVE)))
+    return word_jobs(f, img, "tier-uids", words_)
 
 
 def _tier_turns(turns, days):
@@ -3294,14 +3428,21 @@ def _tier_turns(turns, days):
     return [turns[round(i * (len(turns) - 1) / (days - 1))] for i in range(days)]
 
 
+def _entry_record(slot, rank, compe):
+    """A LAST_RANK team-entry record: rank `rank` of `compe` last season."""
+    return struct.pack("<BBBBh", slot, rank, 0, 0, compe)
+
+
 def file_tier_uids(f, img, dat):
-    """[(target, data)]: the four files with UIDs 165-170 added, from the
+    """[(target, data)]: the five files with the third tiers, from the
     image's own; [] when they have them already."""
+    import initteam
     import pac
     import regulation
     import schedule
     import tbb
-    sys_file, compe_file, entry_file, reg_file = TIER_UID_FILES
+    import tempfile
+    sys_file, compe_file, entry_file, reg_file, init_file = TIER_UID_FILES
     _, sys_data = read_file(f, img, sys_file)
     head, blobs = pac.binpac_blobs(sys_data)
     system = schedule.System([(e[2], b) for e, b in zip(head.entries, blobs)])
@@ -3321,41 +3462,108 @@ def file_tier_uids(f, img, dat):
             for i, o in enumerate(range(0, len(rtables[0].data), regulation.ROW))]
     if not len(compes) == len(entries) == regulation.UIDS == len(regs) - 1:
         raise ValueError("tier-uids: the files don't have 164 UIDs")
+    _, init_data = read_file(f, img, init_file)
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "PLRRSRC_INITTEAMDATA.TBB")
+        with open(path, "wb") as g:
+            g.write(init_data)
+        init = initteam.InitTeamData(path)
+    savectrl = bytearray(system.savectrl)
+
+    # Your nation's versions become copies of the other nations'.
+    pairs = {}
+    for uid, (r, _) in rows.items():
+        if r.kind in (1, 2) and 0 <= r.compe < TIER_DOMESTIC:
+            pairs.setdefault(r.compe, {})[r.kind] = uid
+    own_of = {d[2]: d[1] for d in pairs.values() if 1 in d and 2 in d}
+    for other, own in own_of.items():
+        compes[own] = compes[other]
+        e = schedule.TeamEntry(entries[other])
+        for i, rec in enumerate(e.records["now_rank"]):
+            target = struct.unpack_from("<h", rec, 4)[0]
+            if target in own_of:
+                e.records["now_rank"][i] = rec[:4] + struct.pack("<h", own_of[target])
+        e.header = bytes([own & 0xFF]) + e.header[1:]
+        entries[own] = e.encode()
+        mine, theirs = rows[own][0], rows[other][0]
+        if rows[own][1] or rows[other][1]:
+            raise ValueError("tier-uids: UID %d or %d runs over the year end" % (own, other))
+        mine.start, mine.end, mine.turns = theirs.start, theirs.end, list(theirs.turns)
+        regs[own] = regulation.Regulation(own, regs[other].encode())
+        for name, _ in regulation.SLOTS:
+            if regs[own][name + "_uid"] in own_of:
+                regs[own][name + "_uid"] = own_of[regs[own][name + "_uid"]]
+        savectrl[own] = savectrl[other]
+
     compes.append(compes[-1])                       # entry 164: never loaded
     entries.append(entries[-1])
+    tier_compes, tier_entries, tier_years, tier_regs = [], [], [], []
     for k, second in enumerate(TIER_UID_SECOND):
-        uid, compe = TIER_UID_FIRST + k, 50 + k
-        c = schedule.Competition(compes[second])
-        days = schedule.set_league(c, TIER_UID_CLUBS)
-        h = bytearray(c.header)
-        struct.pack_into("<HH", h, 0, uid, compe)
-        c.header = bytes(h)
-        compes.append(c.encode())
-        e = schedule.TeamEntry(entries[142 + k])
-        clubs = [r for r in e.records["plteamid"] if struct.unpack_from("<H", r, 4)[0] != 1]
-        if len(clubs) != TIER_UID_CLUBS:
-            raise ValueError("tier-uids: UID %d names %d third-tier clubs" % (142 + k, len(clubs)))
-        e.records = {kind: [] for kind in schedule.TeamEntry.KINDS}
-        e.records["plteamid"] = [bytes([slot]) + r[1:] for slot, r in enumerate(clubs)]
-        e.counts = {kind: 0 for kind in schedule.TeamEntry.KINDS}
-        e.counts["plteamid"] = TIER_UID_CLUBS
-        e.header = bytes([uid & 0xFF]) + e.header[1:]
-        entries.append(e.encode())
-        base, nxt = rows[second]
-        year = schedule.YearRow(base.raw)
-        year.uid, year.compe, year.cycle, year.kind, year.flag = uid, compe, 0xFF, 0, 0
-        year.turns = _tier_turns(base.turns, days)
-        year.start, year.end = year.turns[0], year.turns[-1]
-        system.year.append(year)
-        r = regulation.Regulation(uid, regs[second].encode())
-        r["clubs"] = TIER_UID_CLUBS
-        for name, _ in regulation.SLOTS:
-            r[name + "_count"], r[name + "_compe"], r[name + "_uid"] = 0, -1, -1
-        regs.append(r)
+        d, t = TIER_SECOND_COMPE[k], 50 + k
+        seeded = [c for c in init.past[d] if c]
+        size = len(seeded)
+        if regs[second]["clubs"] != size:
+            raise ValueError("tier-uids: UID %d has %d clubs, its record %d"
+                             % (second, regs[second]["clubs"], size))
+        tutorial = schedule.TeamEntry(entries[142 + k])
+        real = [struct.unpack_from("<H", r, 4)[0] for r in tutorial.records["plteamid"]]
+        real = [c for c in real if c != 1]
+        if len(real) != TIER_CLUBS or any(init.past[t]):
+            raise ValueError("tier-uids: competition %d's clubs or record aren't as expected" % t)
+        # Seeds: d's last place a tier club, t's rank 1 d's last club.
+        init.past[d][size - 1] = real[0]
+        init.past[t][:TIER_CLUBS] = [seeded[-1]] + real[1:]
+        # The second divisions: the last place goes, the tier's winner comes.
+        for uid in (second, own_of[second]):
+            e = schedule.TeamEntry(entries[uid])
+            last = [i for i, r in enumerate(e.records["last_rank"][:e.counts["last_rank"]])
+                    if r[1] == size and struct.unpack_from("<h", r, 4)[0] == d]
+            if len(last) != 1:
+                raise ValueError("tier-uids: UID %d doesn't take rank %d of competition %d"
+                                 % (uid, size, d))
+            i = last[0]
+            e.records["last_rank"][i] = _entry_record(e.records["last_rank"][i][0], 1, t)
+            e.header = bytes([uid & 0xFF]) + e.header[1:]
+            entries[uid] = e.encode()
+            if regs[uid]["down1_compe"] != t:
+                raise ValueError("tier-uids: UID %d sends its clubs to %d, not %d"
+                                 % (uid, regs[uid]["down1_compe"], t))
+            regs[uid]["down1_count"] = 1
+        for uid, clubs in ((TIER_UID_FIRST + k, TIER_CLUBS), (TIER_UID_OWN + k, TIER_OWN_CLUBS)):
+            c = schedule.Competition(compes[second])
+            days = schedule.set_league(c, clubs)
+            h = bytearray(c.header)
+            struct.pack_into("<HH", h, 0, uid, t)
+            c.header = bytes(h)
+            tier_compes.append((uid, c.encode()))
+            e = schedule.TeamEntry(entries[142 + k])
+            e.records = {kind: [] for kind in schedule.TeamEntry.KINDS}
+            e.records["last_rank"] = ([_entry_record(i, i + 2, t) for i in range(clubs - 1)]
+                                      + [_entry_record(clubs - 1, size, d)])
+            e.counts = {kind: 0 for kind in schedule.TeamEntry.KINDS}
+            e.counts["last_rank"] = clubs
+            e.header = bytes([uid & 0xFF]) + e.header[1:]
+            tier_entries.append((uid, e.encode()))
+            year = schedule.YearRow(rows[second][0].raw)
+            year.uid, year.compe, year.cycle, year.flag = uid, t, 0xFF, 0
+            year.kind = 2 if clubs == TIER_CLUBS else 1
+            year.turns = _tier_turns(rows[second][0].turns, days)
+            year.start, year.end = year.turns[0], year.turns[-1]
+            tier_years.append((uid, year))
+            r = regulation.Regulation(uid, regs[second].encode())
+            r["clubs"] = clubs
+            for name, _ in regulation.SLOTS:
+                r[name + "_count"], r[name + "_compe"], r[name + "_uid"] = 0, -1, -1
+            r["up1_count"], r["up1_compe"] = 1, d
+            tier_regs.append((uid, r))
+    for items, out in ((tier_compes, compes), (tier_entries, entries), (tier_regs, regs)):
+        out.extend(b for _, b in sorted(items, key=lambda x: x[0]))
+    system.year.extend(y for _, y in sorted(tier_years, key=lambda x: x[0]))
+
     sys_blobs = [b for _, b in system.encode()]
     end, t = tbb.parse(sys_blobs[4])
     trailer = tbb.trailer(sys_blobs[4], t)
-    t[0].data = bytes(system.savectrl) + bytes(TIER_UID_END - len(system.savectrl))
+    t[0].data = bytes(savectrl) + bytes(TIER_UID_END - len(savectrl))
     sys_blobs[4] = tbb.build(t, end, trailer)
     rtables[0].data = b"".join(r.encode() for r in regs)
     count = len(compes)
@@ -3364,7 +3572,8 @@ def file_tier_uids(f, img, dat):
                 compe_data[:chead.header_size], count), compes)),
             (entry_file, pac.build_binpac(pac.grow_binpac_header(
                 entry_data[:ehead.header_size], count), entries)),
-            (reg_file, tbb.build(rtables, rend, tbb.trailer(reg_data, rtables)))]
+            (reg_file, tbb.build(rtables, rend, tbb.trailer(reg_data, rtables))),
+            (init_file, init.encode())]
 
 
 # fanbase: a big fanbase counts for more. Merchandise sales start from a
@@ -3639,9 +3848,9 @@ SWITCHES = (
     ("tier-lists", plan_tier_lists, [SLES_FILE, NEGO_FILE],
      "LMASTER full: the lists of 441 clubs (club rank, transfer AI, offers, world "
      "ranking) hold 459; needs tier-clubs"),
-    ("tier-uids", plan_tier_uids, list(TIER_UID_FILES),
-     "LMASTER full: six hidden third-tier leagues as schedule UIDs 165-170; "
-     "needs tier-clubs and save-expand, and --copies"),
+    ("tier-uids", plan_tier_uids, [SLES_FILE] + list(TIER_UID_FILES),
+     "LMASTER full: the hidden third tiers (schedule UIDs 165-176), last in the second "
+     "division down, tier winner up; needs tier-clubs, save-expand, one-season-end and --copies"),
     ("one-season-end", plan_one_season_end, [NEGO_FILE],
      "The second division's bottom two end the game after one season, not two"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
@@ -3685,7 +3894,7 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
 # Switches whose plan needs another switch, and switches that write whole
 # files (file_<switch>(f, img, dat) -> [(target, data)]).
 SWITCH_NEEDS = {"tier-clubs": ("save-expand",), "tier-lists": ("tier-clubs",),
-                "tier-uids": ("tier-clubs", "save-expand")}
+                "tier-uids": ("tier-clubs", "save-expand", "one-season-end")}
 SWITCH_FILES = {"tier-clubs": file_tier_clubs, "tier-uids": file_tier_uids}
 # Switches whose files have PRELOAD copies the game loads instead
 # (STATIONFILE.PAC's schedule packs, SIMFILE*.PAC's REGULATION.TBB).

@@ -95,42 +95,107 @@ leagues don't use them.
 | `0x2d9ae0` | `ScheduleControllerBaseSystem::InitStatus` | 128 group slots. A season loads fewer than 118 schedules even counting every runtime one, so six more fit |
 | `0x2055f0` | `CScheEuro::getPeriodNameFromUID` | round names come from the schedule's rules and type, not a table by UID |
 
-## `--mod tier-uids` (phase 3a)
+## `--mod tier-uids` (phase 3)
 
-`patch_disc.py --mod tier-uids` (with `tier-clubs` and `save-expand`,
-and `--copies --dat`) adds the six third tiers as UIDs 165–170, one per
-nation in the order of competitions 50–55 (England to the Netherlands):
+`patch_disc.py --mod tier-uids` (with `tier-clubs`, `save-expand` and
+`one-season-end`, and `--copies --dat`) adds the third tiers, one per
+nation in the order of competitions 50–55 (England to the Netherlands),
+and moves clubs between them and the second divisions.
 
-- `year_schedule_data`: a row each, loaded every season (load kind 0),
-  its game days spread evenly over the nation's second division's
-  (other-nations UIDs 2, 12, 21, 30, 40, 49), first and last kept.
-- `savectrl`: type 0 for 164–170 (171 bytes).
-- `SCHEDULE_COMPETITION`: a 3-club league each, both legs, 6 games on
-  6 game days (`schedule.set_league`, the rest day left out); entry 164
-  is a copy of 163 and is never loaded.
-- `SCHEDULE_TEAM_ENTRY`: the nation's three third-tier clubs by
-  `PLTEAMID`, as the tutorial's UIDs 142–147 name them (England 442–444
-  up to the Netherlands 457–459).
-- `REGULATION.TBB`: rows 165–170 copy the nation's second division's,
-  for 3 clubs and with no place slots; row 164 stays the default.
-- No code: the ticket module's loop (`0x3cfcc`) stays at 164.
-  **Seen in PCSX2** (user report): with only its bound raised to 171,
-  the "none found" test at `0x3cfb8` (still 164) failed, and the Set Up
-  Ticket Price screen came up again and again with no competition named.
+**The leagues.** Each nation's tier has an other-nations version, UIDs
+165–170 (3 clubs), and an own-nation version, 171–176 (5 clubs), as the
+second divisions have (load kinds 2 and 1):
 
-The packs' headers grow to 171 entries in the same 4,096 bytes
+- `year_schedule_data`: a row each, loaded every season, its game days
+  spread evenly over its second division's (other-nations UIDs 2, 12,
+  21, 30, 40, 49), first and last kept.
+- `savectrl`: type 0 for 164–176 (177 bytes).
+- `SCHEDULE_COMPETITION`: a league each, both legs (3 clubs: 6 games on
+  6 game days; 5 clubs: 20 on 10); entry 164 is a copy of 163 and is
+  never loaded.
+- `REGULATION.TBB`: rows 165–176 copy the second division's, for their
+  clubs, with one place up to it; row 164 stays the default.
+
+**The movements**, in `SCHEDULE_TEAM_ENTRY` (all `LAST_RANK`, last
+season's records):
+
+| Schedule | Takes |
+|---|---|
+| a second division, either version | its own ranks as before but the last (England: 7–23), its tier's rank 1 |
+| a tier | its own ranks 2–3 (your nation: 2–5), its second division's last |
+
+The second divisions' `REGULATION` rows send 1 club down, not 2, so
+`one-season-end`'s line is the last place. Every own-nation version of
+a domestic UID (the second division and each nation's cups) differs
+from its other-nations version only by places for your club and the
+rival past the second division's record; each becomes a copy of it,
+with the UIDs its `NOW_RANK` records and place slots name moved to the
+own versions. So your second division has its real size (England 24
+with your club and the rival).
+
+**Season 1.** The seeding loop (`0x253200`) reads the seed table's rows
+to 55, and `PLRRSRC_INITTEAMDATA.TBB` table 1 gets rows 50–55: each
+second division's seeded last place holds one of its tier's clubs, and
+the tier's record that last club and the other two. So everyone starts
+where the seeds put them: the second division keeps its clubs, the tier
+has its three. The tier club in that last place plays its nation's cups
+in season 1 (later, the club relegated there does). In your nation,
+`ScheCallback_ProcPromotion` (`0x1131c8`), rewritten in its own 76
+words, puts your club and the rival at ranks S − 2 and S − 1 of the
+second division's record, where S is its seeded size, and moves the
+clubs it finds there to the tier's record:
+
+| Record | As seeded | After |
+|---|---|---|
+| second division | ranks 1–(S − 1), a tier club at S | ranks 1–(S − 3), your club, the rival, the tier club |
+| tier | the second division's S, two tier clubs | the second division's S − 2, two tier clubs, its S − 1, its S |
+
+The second division then takes ranks to S − 1 and the tier's rank 1:
+its seeded clubs but the two at S − 1 and S, which play the 5-club tier
+with the three tier clubs. It does nothing if your club or the rival is
+in the record already, as the retail code did.
+
+**Season end.** `CScheEuro::calcCompetetionFinish` writes the tables of
+competitions to 55 (`0x205fa8`). The yearly honours
+(`pwkRec_GetCompeConventionRecord*`) exist for 0–48 only, so two
+detours in the LMASTER code segment (`0xf8280`, after `save-expand`'s
+`0x280` bytes) skip them from 49: the call to
+`pwkRec_ShiftCompeConventionRecord` (`0x205fc0`), and everything after
+the table (`0x20631c`: the winner, best eleven, MVP, top scorer, title
+effects), which goes to the function's clean-up (`0x20651c`). A rival
+in a tier is a club like any other (the user's choice); its year-end
+division record (`pwkRec_UpdateCompeRecordYearEnd`) is skipped there.
+
+**No code** in the ticket module's loop (`0x3cfcc`), which stays at
+164. **Seen in PCSX2** (user report): with only its bound raised to
+171, the "none found" test at `0x3cfb8` (still 164) failed, and the Set
+Up Ticket Price screen came up again and again with no competition
+named.
+
+The packs' headers grow to 177 entries in the same 4,096 bytes
 (`pac.grow_binpac_header`), so the `.HED` files keep their size. The
 switch writes the `PRELOAD` copies too (`STATIONFILE.PAC`'s
 `schedule_system.pac` and `.HED` copies, which the game loads, and the
 seven `SIMFILE*.PAC` copies of `REGULATION.TBB`), so it refuses to run
-without `--copies`. `python SRC/schedule.py info` accepts the 171-UID
+without `--copies`. `python SRC/schedule.py info` accepts the 177-UID
 layout and finds no new problem (UID 117 as on the retail disc).
 
-Who goes up and down, the two clubs sent down at the start, and your
-nation's 5-club tier are phase 3b. **Seen in PCSX2** (user report,
-2026-10-27): the Information screen's Competitions tab doesn't list the
-third tiers, as the design wants; it must take its competitions from a
-list of its own, not from the loaded schedules (not traced).
+**Played out offline** (**empirical**, a script over the switch's
+files): five seasons with each nation as yours, each schedule filled
+from the records, a random final order for each, and the records
+written as `calcCompetetionFinish` does (the Dutch playoff groups
+interleaved). Every slot of every league, playoff and cup is filled, no
+club is in a schedule twice, and each nation's clubs are split once
+between its first division, second division and tier, 262 clubs in all,
+the sizes the same every season.
+
+**Seen in PCSX2** (user reports, 2026-10-27), with the leagues alone
+(`LMAST-test-tieruids2.iso`, UIDs 165–170 then): a new career plays
+into September past the tiers' first game days, the All Clubs Ranking
+lists the tier clubs, and the Information screen's Competitions tab
+doesn't list the tiers, as the design wants (it must take its
+competitions from a list of its own; not traced). The movements aren't
+run in the game yet.
 
 ## Still unknown
 
