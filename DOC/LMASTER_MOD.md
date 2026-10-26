@@ -202,8 +202,8 @@ What is known so far:
      schedule's club lists, the transfer AI), each read and resized;
      each step a switch of its own, tested on a disc. Step (a) is
      **built** as `--mod tier-clubs`
-     ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-tier-clubs-phase-2a)); not
-     yet run in the game.
+     ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-tier-clubs-phase-2a)),
+     tested in PCSX2 (a new career and the tutorial's playoff).
   3. The schedules: UIDs 142–147 every season as the hidden third tiers
      (three real clubs and the two sent down), the second divisions'
      last club down and one random tier club up, two clubs sent down at

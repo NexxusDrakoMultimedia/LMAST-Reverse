@@ -309,11 +309,6 @@ names the disc or the edit to build; the result goes into the doc.
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
-- [ ] Clubs 442–459 as full clubs (`--mod tier-clubs`):
-      `LMAST-test-tierclubs.iso` (with the tutorial skip) starts a new
-      career, plays through a transfer window and saves and loads;
-      `LMAST-test-tierclubs-tutorial.iso` plays the tutorial's playoff
-      against them ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-tier-clubs-phase-2a))
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and

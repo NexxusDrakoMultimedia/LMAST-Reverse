@@ -299,3 +299,5 @@ Each result is recorded in the doc named.
 - [x] `save-expand`: the bigger save for the third tier, with an LMASTER
       code segment in the executable; tested in PCSX2
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-bigger-save---mod-save-expand))
+- [x] `tier-clubs`: clubs 442–459 as full clubs (third tier phase 2a);
+      tested in PCSX2 ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-tier-clubs-phase-2a))

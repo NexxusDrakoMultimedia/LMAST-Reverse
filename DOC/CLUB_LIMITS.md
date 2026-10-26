@@ -70,6 +70,11 @@ the schedule's club lists, `ClubRank`, the monthly report's and the
 club editor's lists. Phase 2b relays them. A save from before the
 switch has empty records for the new clubs; start a new career.
 
+**Tested in PCSX2** (user report, 2026-10-26): with `save-expand`,
+`tier-clubs` and `mod-saves`, a new career (tutorial skipped) plays
+through a transfer window and saves and loads, and the tutorial's
+promotion playoff against the third-tier clubs plays; "all working".
+
 ## Each loop's body
 
 Whether a loop over clubs can simply run to 459, or fills a buffer
