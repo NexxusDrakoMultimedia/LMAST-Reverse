@@ -223,7 +223,11 @@ files (clubs twice from season 2) and none in the new
 (`LMAST-test-tiers-germany2.iso`). Because `updateTurnEnd` (`0x2033e0`)
 marks a result kept before calling `calcCompetetionFinish`, a career
 from the old disc only recovers if it is saved before the tiers' last
-game day (May) and loaded from the card on the new disc.
+game day (May) and loaded from the card on the new disc. The test
+career was saved later (turn 95, June), so its tiers' records were
+written into the save by hand, from their true final tables read out
+of block 5's pools ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-blocks)): in
+Germany Siegen won the tier and Trier was last.
 
 ## Still unknown
 

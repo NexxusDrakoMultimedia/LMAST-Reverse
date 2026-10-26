@@ -73,6 +73,23 @@ field with only as many bits as it needs.
 | 8 | 1 | (`get(8)` returns 0 when PlPwork `+0x19` is set; `0x2b990` then skips it) |
 | 9 | 8 | not traced |
 
+**The schedules' pools in block 5.** **Confirmed** (the getters'
+offsets; `ScheEuro_Memory::init`, [`UID_LIMITS.md`](UID_LIMITS.md#the-save-pools)):
+
+| Offset | Getter | Holds |
+|---|---|---|
+| `+0x47bb8` | `pwkRec_GetGameResult` (`0x253798`) | 6,240 game records of 16 bytes |
+| `+0x601b8` | `pwkRec_GetTeamStats` (`0x2537e0`) | 1,024 team-stat rows of `0x138` bytes |
+| `+0xae1b8` | `pwkRec_GetCompeTeam` (`0x253828`) | 1,024 entrants of 8 bytes |
+| `+0xb01b8`, `+0xb04c4`, `+0xb0544` | the three `*SysBuffer` getters | the allocators' bitmaps |
+
+**Empirical** (one save, checked against the final 2nd German League
+table on screen): entrant *i* is u16 team at `+0`, and team-stat row *i*
+is that entrant's: u8 played, won, lost, drawn at `+0`–`+3`, then u16
+points, goals for and goals against at `+4`, `+6`, `+8`. A schedule's
+rows stay in the pools until the year end, so a season's tables can be
+read from a save made before it.
+
 ### Fields found so far
 
 All **confirmed** by the accessor named. Offsets are within the block.
