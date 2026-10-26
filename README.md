@@ -333,7 +333,8 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   (long injuries twice as common), `injury-lines` (the cut two-month and
   nine-month lines, [`INJURIES.md`](DOC/INJURIES.md)), `overseas-bases`
   (set-up, investment and upkeep twice as dear), `transfer-fees` (twice as
-  high, up to £250M), `fanbase` (merchandise, crowds and TV offers
+  high, up to £250M), `fee-tiers` (fees by player rank: lesser players
+  ×2 more, the best ×3), `fanbase` (merchandise, crowds and TV offers
   follow the fanbase more), `merch-costs` (merchandise stock dearer to
   make), `pr-costs` (PR events twice as dear), `camp-costs` (camps ×2)
   and `tour-costs` (tours ×3). The tutorial skip and the launcher are in

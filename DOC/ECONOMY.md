@@ -582,6 +582,32 @@ then held to price kind 1's limits. It is used by
 of 1,000, 4,000, 6,000 or 3,000 by currency and a maximum of 7,200,000
 (£120M) in all four.
 
+**Confirmed**, the base fee's factors (`0x247130`, called from
+`pwkMoney_CalcMoveBase(PlRank, u8, PlAffiliateType, int, u8, s8,
+PlTown_Keiki)`): fee = 1,350,000.0 × A × (B + C) × D × E.
+
+| Factor | Table | Indexed by | Values |
+|---|---|---|---|
+| A | `0x398478`, 16 rows × 6 floats | the player's rank (0–15) and a band of the second argument, read as club rank: up to 5, 11, 17, 23, 29 and 31 (thresholds at `0x3985f8`) | rank 0: 1.0–1.5; rank 8: 6.6–10.5; rank 15: 46.1–73.5 |
+| B | `0x398c50`, 3 floats | the affiliation type | 1.4, 1.2, 1.0 |
+| C | `0x398610`, 16 rows × 25 floats | a row 0–15 (the fifth argument; likely the growth type) and the age, 16–40 | +0.1 to +0.4 up to the late twenties, then down to −0.9 |
+| D | `0x398c60`, 7 floats | the sixth argument, 1–7 (likely contract years) | 0.8, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1 |
+| E | `0x398c80`, 5 floats | the business cycle | 1.25, 1.1, 1.0, 0.9, 0.75 |
+
+Table A is the only one the player's rank enters, and only this function
+reads it. A rank-15 player costs 46–49 times a rank-0 one; at peak age
+(B + C = 1.6) a mid club pays about £0.43M for rank 0 and £20.9M for
+rank 15, and a top club in a boom at most about £41M (£82M with
+`transfer-fees`). Which arguments are the growth type and the contract
+isn't traced from the callers.
+
+`--mod fee-tiers` (in `--mod balance`, the user's choice of tiers,
+2026-10-26) multiplies table A's rows: ranks 0–5 ×2, 6–11 ×1.5, 12–14
+×2 and rank 15, the "football icon", ×3. With `transfer-fees` a mid club
+pays about £1.7M for a rank-0 player and £125M for a rank-15 one, and the
+best player at a top club in a boom reaches about £246M, under the £250M
+cap. Not checked in the game.
+
 `pwkMoney_CalcPlayerMarketPrice` (`0x247d78`) isn't a transfer fee: it
 is the salary a player asks for (its callers are the contract renewal and
 the dissatisfaction check), 30,000 × form factors × two tables × 48.

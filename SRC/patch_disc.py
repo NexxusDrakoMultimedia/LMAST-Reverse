@@ -82,7 +82,7 @@ league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
 pr-cycle, mobile-site, overseas-pop, cup-last16, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fanbase, merch-costs, pr-costs, camp-costs, tour-costs, launcher,
+fee-tiers, fanbase, merch-costs, pr-costs, camp-costs, tour-costs, launcher,
 mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
 (sponsor-negotiation, rival-manager, national-cups, camp-types,
@@ -91,8 +91,8 @@ injury-row, vpf-styles, season-status, pr-cycle, mobile-site,
 overseas-pop, cup-last16). --mod harder-economy is
 facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees and
 season-demand; --mod balance is injury-odds, injury-lines,
-overseas-bases, transfer-fees, fanbase, merch-costs, pr-costs,
-camp-costs and tour-costs. --mod lmaster-full is all of
+overseas-bases, transfer-fees, fee-tiers, fanbase, merch-costs,
+pr-costs, camp-costs and tour-costs. --mod lmaster-full is all of
 those, league-balance and mod-saves, so a full LMASTER disc always saves
 to its own folders. skip-tutorial and launcher are test tools and in no
 group. Each also works as a flag of its own (--skip-tutorial, ...). With
@@ -223,7 +223,11 @@ See DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches.
 transfer-fees (whole disc image only) doubles the base of every transfer
 fee (SLES 0x247288, 1,350,000.0 -> 2,700,000.0) and raises price kind 1's
 cap from 7,200,000 to 15,000,000 (£120M -> £250M) in all four
-currencies (the initializer at 0x24a140). fanbase (whole disc image only)
+currencies (the initializer at 0x24a140). fee-tiers (whole disc image
+only) multiplies the transfer fee's factor by player rank (SLES 0x398478,
+16 ranks x 6 club-rank bands) by tier: ranks 0-5 x2, 6-11 x1.5, 12-14
+x2, 15 x3, so lesser players cost about four times the retail fee with
+transfer-fees and the best reach about £246M. fanbase (whole disc image only)
 scales the merchandise base by supporters (SIMPRG.REL 0x1d9ec8, 17 rows)
 from x0.5 at the bottom to x3 at the top, makes walk-up crowds and
 season-ticket demand count home popularity at 195 in place of 130 with
@@ -2649,6 +2653,43 @@ def plan_transfer_fees(f, img):
     return word_jobs(f, img, "transfer-fees", TRANSFER_FEES)
 
 
+# fee-tiers: transfer fees by player rank, on top of transfer-fees'
+# doubling (the user's choice, 2026-10-26). The base fee (0x247130) is
+# 1,350,000.0 x A[player rank][club-rank band] x (B[affiliation] +
+# C[growth row][age]) x D[contract] x E[business cycle]; A, 16 rows of 6
+# floats at 0x398478 (bands by club rank up to 5, 11, 17, 23, 29, 31 at
+# 0x3985f8), is the only table the player's rank enters, and nothing
+# else reads it. Each row is multiplied by its tier: lesser players
+# (ranks 0-5) x2, ranks 6-11 x1.5, 12-14 x2, and rank 15, the "football
+# icon", x3, so with transfer-fees the best player at a top club in a
+# boom reaches about £246M, just under the £250M cap.
+FEE_TABLE, FEE_RANKS, FEE_BANDS = 0x398478, 16, 6
+FEE_TIERS = (2.0,) * 6 + (1.5,) * 6 + (2.0,) * 3 + (3.0,)
+FEE_RETAIL_TOP = 73.5
+
+
+def plan_fee_tiers(f, img):
+    """Jobs for --mod fee-tiers. The new table is the retail one times the
+    tiers, so the retail table is read from the disc; a table that is
+    neither the retail one nor the tiered one is refused by word_jobs."""
+    size = 4 * FEE_RANKS * FEE_BANDS
+    held = read_at(f, img, SLES_FILE, FEE_TABLE - EXE_BASE, size)
+    rows = [struct.unpack_from("<%df" % FEE_BANDS, held, 4 * FEE_BANDS * r)
+            for r in range(FEE_RANKS)]
+    # Rank 15 at the top band: 73.5 retail, 220.5 tiered.
+    top = rows[-1][-1]
+    if abs(top - FEE_RETAIL_TOP * FEE_TIERS[-1]) < 0.01:
+        return [], ["note: fee-tiers is already applied"]
+    if abs(top - FEE_RETAIL_TOP) >= 0.01:
+        raise ValueError("fee-tiers: SLES 0x%x's top fee factor is %.2f, expected %.2f; not "
+                         "the retail executable?" % (FEE_TABLE, top, FEE_RETAIL_TOP))
+    new = b"".join(struct.pack("<%df" % FEE_BANDS, *(v * FEE_TIERS[r] for v in rows[r]))
+                   for r in range(FEE_RANKS))
+    words = [(SLES_FILE, FEE_TABLE - EXE_BASE, held, new,
+              "%s 0x%x (transfer fee factor by player rank)" % (SLES_FILE, FEE_TABLE))]
+    return word_jobs(f, img, "fee-tiers", words)
+
+
 # fanbase: a big fanbase counts for more. Merchandise sales start from a
 # base by the sum of pwkTeam_Supporter over the 13 regions (SIMPRG.REL
 # 0x165598): 17 {threshold, base} pairs at 0x1d9ec8, from 800 (under
@@ -2910,6 +2951,8 @@ SWITCHES = (
      "Balance: overseas bases, their investment and upkeep cost twice as much"),
     ("transfer-fees", plan_transfer_fees, [SLES_FILE],
      "Balance: transfer fees twice as high, up to £250M"),
+    ("fee-tiers", plan_fee_tiers, [SLES_FILE],
+     "Balance: transfer fees by player rank: lesser players x2, the best up to x3"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
      "Balance: a bigger fanbase sells more merchandise and draws more fans and TV money"),
     ("merch-costs", plan_merch_costs, [NEGO_FILE],
@@ -2954,7 +2997,7 @@ LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-t
                 "overseas-pop", "cup-last16")
 HARDER_ECONOMY = ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
                   "season-demand")
-BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fanbase",
+BALANCE = ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fee-tiers", "fanbase",
            "merch-costs", "pr-costs", "camp-costs", "tour-costs")
 SWITCH_GROUPS = {"lmaster-lite": LMASTER_LITE,
                  "lmaster": LMASTER_LITE,               # the name before the split

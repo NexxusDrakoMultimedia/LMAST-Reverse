@@ -290,3 +290,6 @@ Each result is recorded in the doc named.
       two bugs in it, confirmed from the code (both values are hidden in
       game, so there's no in-game test)
       ([`ECONOMY.md`](DOC/ECONOMY.md#supporter-popularity))
+- [x] `fee-tiers` (in `--mod balance`): transfer fees by player rank,
+      the fee formula's tables decoded
+      ([`ECONOMY.md`](DOC/ECONOMY.md#transfer-fees))
