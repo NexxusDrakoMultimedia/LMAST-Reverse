@@ -252,8 +252,10 @@ every writer has a tab.
         others to be sorted into groups), each switch in one group;
       - level 2, the single switches.
 
-      Merge switches that only work together (the third tier's five)
-      where a group adds nothing. The Build tab offers the editions,
+      The rule (the user's): switches that depend on each other merge
+      into one switch, one feature each (the third tier's five, which
+      need each other through `SWITCH_NEEDS`, become one); a group
+      holds features that each work alone. The Build tab offers the editions,
       with their groups to add or leave out and the switches shown under
       each; the test tools stay apart. `--mod` takes any level, so a
       single switch still works for tests
