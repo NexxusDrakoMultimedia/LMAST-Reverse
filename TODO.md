@@ -256,7 +256,14 @@ every writer has a tab.
       The rule (the user's): switches that depend on each other merge
       into one switch, one feature each (the third tier's five, which
       need each other through `SWITCH_NEEDS`, become `third-tier`); a group
-      holds features that each work alone. The Build tab offers the editions,
+      holds features that each work alone. Machinery is no switch:
+      `save-expand` splits into the LMASTER code segment, which
+      `patch_disc.py` adds whenever a chosen switch puts code there, a
+      shared helper for growing save blocks (the size table and the
+      serializer wrappers), and the third tier's own records (block 2's
+      18 clubs, block 5's competitions 49–55), which go into
+      `third-tier`. A switch that grows the save turns on `mod-saves`
+      itself, since its careers can't load in the retail game. The Build tab offers the editions,
       with their groups to add or leave out and the switches shown under
       each; the test tools stay apart. `--mod` takes any level, so a
       single switch still works for tests
