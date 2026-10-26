@@ -47,6 +47,26 @@ About 140 sites use the same numbers for something else:
 | The non-resident path, for 442–459 | `_pwkOteam_GetPlRec_LgTeamNonresident` (`0x24d65c`), its player base (`0x24d6b0`, `0x24d748`), the league records' set-up `0x24d454` (clubs `0x1ba`–`0x1cb`, players from `0x63f7`), `pwkOteam_ResetRentalPossibleClubFlag` (`0x24ca18`) |
 | Not yet understood | `CScheEuro::clearPlayerRecord` and `movePlayerRecord` (`0x2078a0`, `0x207a98`): clubs below 441 skip a player lookup that 441 and up take |
 
+## Tables indexed by club
+
+**Empirical**, from the 161 executable functions that take a `PlTeam`
+(and 3 in `SIMPRG.REL`), each listed with the functions it calls and the
+data it loads: apart from save block 2, the tables they index by club
+already cover clubs to 459. **Confirmed** for the main ones:
+
+| Table | Covers | Reader |
+|---|---|---|
+| club records, `PLRESOURCESIM.PAC` entry 3 | clubs 3–459 | `plOteam_GetDb` (`0x2165d8`) |
+| club → nation, `PLRESOURCECOMMON.PAC` entry 3 table 5, a byte per club | clubs below 460 (`slti 0x1cc`) | `plMisc_Club2Nati` (`0x215af0`), and through it `plMisc_Club2Region` |
+| city clubs, `0x531f30` | searched by club id | `plOteam_SearchCteam` (`0x216590`) |
+| league entries | searched by club id (`bsearch`) | `plLg_GetEntry` (`0x2e9630`) |
+| the other clubs, save block 2 | clubs 2–459 with `--mod save-expand` | `pwkOteam_GetPointer` (`0x24b788`) |
+
+So the risk left for a club past 441 is in the buffers and object
+arrays the loops above fill: `ClubRank`'s arrays, the club-rank list on
+the stack, `ScheEuro_TeamEntryList`'s 440 entries, and the transfer AI's
+lists.
+
 ## Still unknown
 
 - Tables indexed by club number with no 440–442 immediate: per-club

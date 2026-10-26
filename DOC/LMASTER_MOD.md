@@ -191,10 +191,16 @@ What is known so far:
      tested in PCSX2: a converted career loads, saves and loads again
      (user report).
   2. Clubs 442–459 as full clubs: the game's limits 440 (`0x1b8`), 441
-     (`0x1b9`) and 442 (`0x1ba`), about 190 immediates across the
-     executable and overlays, each checked; their records and squads at
+     (`0x1b9`) and 442 (`0x1ba`), each checked; their records and squads at
      the start. The club info screen and the world rankings should then
-     list them.
+     list them. **In progress**: the 206 sites are sorted in
+     [`CLUB_LIMITS.md`](CLUB_LIMITS.md), about 65 of them about clubs.
+     The order planned (the user's choice to go on carefully,
+     2026-10-26): (a) the resident checks and the club loops, with
+     squads for 442–459 added to `OTEAMMEMBER.TBB`; (b) the buffers and
+     arrays sized for 441 clubs (`ClubRank`, the club-rank list, the
+     schedule's club lists, the transfer AI), each read and resized;
+     each step a switch of its own, tested on a disc.
   3. The schedules: UIDs 142–147 every season as the hidden third tiers
      (three real clubs and the two sent down), the second divisions'
      last club down and one random tier club up, two clubs sent down at
