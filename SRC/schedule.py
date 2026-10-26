@@ -24,7 +24,8 @@ getOpenNation (0x209f40), CScheEuro_*::acceptLoadRequest (0x2072a8,
 Sche_Block_decode_main2 (0x2dc258), getOneGameFromBlockAndGameIndex
 (0x2dab38), ScheEuro_TeamEntry::makeTeamEntryIDList (0x20a298) and its
 four *_TeamEntryProc handlers, ScheEuro_TeamEntryList::requestMakeList
-(0x20b188).
+(0x20b188), scheCtrl_GetMatchupBufferSize (0x2dfb28) and
+ScheduleControllerBaseSystem::entryWinTeamTournament (0x2dcc80).
 
 `info` checks every entry against that layout and cross-checks the packs:
 each competition's game days against its UID's turn mask, and its entrant
@@ -37,6 +38,7 @@ Usage:
     python schedule.py entry <DAT/PARAM> <uid>      # team-entry slots of one UID
     python schedule.py roundtrip <DAT/PARAM>        # re-encode all three packs and their .HED, !! if not identical
     python schedule.py league <DAT/PARAM> [<n> [single]]  # generated leagues: check every size, or print one
+    python schedule.py knockout <DAT/PARAM> [<n> [two]]  # generated cups: rebuild the disc's and check every size, or print one
     python schedule.py turns <DAT/PARAM> [<uid> [<days>]]  # leagues' game days and room; one UID's calendar
     python schedule.py shift <SCHEDULE_SYSTEM.PAC> <out.PAC> <delta> <uid>[-<uid>] ...  # move UIDs' game days
     python schedule.py balance <SCHEDULE_COMPETITION.PAC> <out.PAC> [<uid>[-<uid>] ...]  # rebuild badly balanced leagues
@@ -60,6 +62,17 @@ rest day. With no size it checks every size, once and twice round, and
 compares each with the disc's own template of that size (`!!` on a
 generated league that breaks a rule). leaguesize.py build puts a league
 of a new size into the packs, with its turn mask and team-entry slots.
+
+`knockout` builds cup brackets for 2-128 clubs (knockout_tables,
+set_knockout): each half of a bracket splits in two again, a half of odd
+size (it holds a bye) goes to the outer side, and a tie is played as soon
+as both sides are known, one or two legs. A winner's link (table 3) names
+the pairing and side it goes to, which is what the game follows
+(entryWinTeamTournament 0x2dcc80); the pairing names it as slot entrants
++ pairing. With no size it rebuilds every knockout on the disc from its
+shape (71 of 87 come out byte for byte; the rest are listed with how they
+differ) and checks every size (`!!` on a generated bracket that breaks a
+rule).
 
 `turns` lists each league UID's game days and how many it could have:
 the free turns inside its season, where no game of its own, of its
@@ -452,7 +465,184 @@ def balance_pack(data, uids=UNBALANCED):
     return out, done
 
 
-# --- game days for a league --------------------------------------------------
+# --- building a knockout -----------------------------------------------------
+
+KNOCKOUT_MAX = 128          # slots are u8: the last winner slot, 2n - 3, must fit
+LABELS = ("none", "final", "all")   # which games get a round number (Game.round)
+
+
+def knockout_bracket(n):
+    """The bracket for entrant slots 0..n-1 as a tree of nested pairs (a
+    leaf is a slot), in slot order left to right. Each node splits its
+    clubs in two halves, and a half of odd size, which holds a bye, goes
+    to the node's own outer side: the left one in a left half, the right
+    one in a right half (at the top, the left). That is the layout of
+    every disc cup with byes (UIDs 8, 9, 17, 26 and their twins)."""
+    if not 2 <= n <= KNOCKOUT_MAX:
+        raise ValueError("a knockout has 2-%d clubs" % KNOCKOUT_MAX)
+    slots = iter(range(n))
+
+    def node(size, left):
+        if size == 1:
+            return next(slots)
+        small, big = size // 2, size - size // 2
+        odd, even = (small, big) if small % 2 else (big, small)
+        parts = (odd, even) if left else (even, odd)
+        if small == big:
+            parts = (small, big)
+        return (node(parts[0], True), node(parts[1], False))
+    return node(n, True)
+
+
+def knockout_tables(n, legs=1, final_legs=None, labels="final", single=False):
+    """(pairings, next links, games) of a knockout of n entrant slots in the
+    layout of SCHEDULE_COMPETITION tables 1-3 (see the doc's knockout
+    tables). Pairings name entrant slots, or the winner of pairing p as
+    slot n + p. A tie is played as soon as both sides are known, its legs
+    on consecutive game days, the second with home and away swapped
+    (swap 1). Pairings are numbered by their first game day, then left to
+    right. A winner's link names the pairing and side it goes to; the
+    final's, and with `single` every first-round tie's (a round whose
+    winners go on to another UID), leave the competition: the pairing
+    count plus the order they leave in. `labels` sets Game.round: "all"
+    numbers the rounds from the final (1 final, 2 semi-finals, ...),
+    "final" marks the final only and "none" leaves every game 0."""
+    if labels not in LABELS:
+        raise ValueError("labels is one of %s" % ", ".join(LABELS))
+    final_legs = legs if final_legs is None else final_legs
+    if legs not in (1, 2) or final_legs not in (1, 2):
+        raise ValueError("a tie is played over 1 or 2 legs")
+    # Each tie: its two sides (an entrant slot or another tie), its first
+    # game day, its level (1 for a first-round tie) and its leftmost slot.
+    ties = []
+
+    def walk(t):
+        """(tie index, or None for an entrant slot; last game day; level;
+        leftmost slot) of a subtree, its ties added to `ties` children first."""
+        if isinstance(t, int):
+            return None, -1, 0, t
+        sides = [walk(s) for s in t]
+        day = max(s[1] for s in sides) + 1
+        level = max(s[2] for s in sides) + 1
+        ties.append((sides, day, level, sides[0][3]))
+        return len(ties) - 1, day + legs - 1, level, sides[0][3]
+
+    if single:
+        if n % 2 or not 2 <= n <= KNOCKOUT_MAX:
+            raise ValueError("a single round has an even number of clubs, 2-%d" % KNOCKOUT_MAX)
+        for i in range(0, n, 2):
+            walk((i, i + 1))
+    else:
+        walk(knockout_bracket(n))
+    final = None if single else len(ties) - 1      # walk adds the final last
+    top = ties[-1][2]
+    order = sorted(range(len(ties)), key=lambda k: (ties[k][1], ties[k][3]))
+    index = {k: i for i, k in enumerate(order)}
+    pairs, nexts, games, out = [], [None] * len(ties), [], 0
+    for i, k in enumerate(order):
+        sides, day, level, _ = ties[k]
+        pair = []
+        for side, (sub, _, _, slot) in enumerate(sides):
+            if sub is None:
+                pair.append(slot)
+            else:
+                pair.append(n + index[sub])
+                nexts[index[sub]] = (i, side)
+        pairs.append(tuple(pair))
+        if single or k == final:
+            nexts[i] = (len(ties) + out, 0)
+            out += 1
+        if labels == "all":
+            label = top - level + 1
+        else:
+            label = 1 if labels == "final" and k == final else 0
+        if label > 0xf:
+            raise ValueError("%d rounds: the round number is 4 bits" % top)
+        for leg in range(final_legs if k == final else legs):
+            games.append(Game(day + leg | label << 10, i | leg << 9))
+    games.sort(key=lambda g: (g.day, g.pair))
+    return pairs, nexts, games
+
+
+def knockout_shape(c):
+    """(legs, final legs, labels, single) of a knockout Competition, the
+    arguments knockout_tables needs to build one like it."""
+    if c.type != 1 or c.next is None:
+        raise ValueError("not a knockout")
+    played = Counter(g.pair for g in c.games)
+    # A lone tie is a final: its link leaves either way.
+    single = c.pair_count > 1 and all(n >= c.pair_count for n, _ in c.next)
+    final = None if single else c.pair_count - 1
+    legs = max((v for k, v in played.items() if k != final), default=played[final])
+    rounds = {g.round for g in c.games}
+    labels = "all" if max(rounds) > 1 else "final" if 1 in rounds else "none"
+    return legs, played[final] if final is not None else legs, labels, single
+
+
+def set_knockout(c, n, legs=1, final_legs=None, labels="final", single=False):
+    """Make Competition `c` a knockout of n entrants with knockout_tables'
+    pairings, next links and games. The other header bytes are kept, and
+    so is game bit w0 8 for each game day the old entry had (it is the
+    same for every game of a day; new days get the last day's). Returns
+    the number of game days, which the UID's turn mask must match."""
+    if c.next is None:
+        raise ValueError("UID is a league (3 tables); only a knockout can be rebuilt")
+    flags = {g.day: g.flag for g in c.games}
+    last = flags[max(flags)] if flags else 1
+    c.pairs, c.next, c.games = knockout_tables(n, legs, final_legs, labels, single)
+    for g in c.games:
+        g.flag = flags.get(g.day, last)
+    c.type, c.entrants = 1, n
+    c.pair_count, c.game_count = len(c.pairs), len(c.games)
+    return c.days
+
+
+def knockout_stats(c):
+    """Problems of a knockout Competition, played through: every entrant
+    slot and every winner slot is named once, each winner link points
+    back at its winner's slot, a winner plays on only after its tie's
+    last game, no slot plays twice on one day, and one club is left (or,
+    with every tie leaving, one per tie)."""
+    probs = []
+    n, count = c.entrants, c.pair_count
+    named = Counter(s for p in c.pairs for s in p)
+    days = {}
+    for g in c.games:
+        if g.pair < count:
+            days.setdefault(g.pair, []).append(g.day)
+    if set(days) != set(range(count)):
+        probs.append("pairings without a game")
+    for s in range(n):
+        if named[s] != 1:
+            probs.append("entrant slot %d named %d times" % (s, named[s]))
+    leaving = 0
+    for p, (to, side) in enumerate(c.next):
+        if to >= count:
+            leaving += 1
+            if named[n + p]:
+                probs.append("pairing %d leaves, but its winner slot %d is named" % (p, n + p))
+            continue
+        if c.pairs[to][side] != n + p:
+            probs.append("pairing %d's link names pairing %d side %d, which holds slot %d"
+                         % (p, to, side, c.pairs[to][side]))
+        if named[n + p] != 1:
+            probs.append("winner slot %d named %d times" % (n + p, named[n + p]))
+        if p in days and to in days and min(days[to]) <= max(days[p]):
+            probs.append("pairing %d plays on day %d, before pairing %d is decided"
+                         % (to, min(days[to]), p))
+    if any(s >= n + count for p in c.pairs for s in p):
+        probs.append("a pairing names a slot past the winner slots")
+    single = all(to >= count for to, _ in c.next)
+    if leaving != (count if single else 1):
+        probs.append("%d ties leave the competition" % leaving)
+    busy = Counter()
+    for g in c.games:
+        if g.pair < count:
+            for s in c.pairs[g.pair]:
+                busy[(s, g.day)] += 1
+    if any(v > 1 for v in busy.values()):
+        probs.append("a slot plays twice on one day")
+    return probs
 
 MONTHS = ("Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun")
 TURNS_PER_MONTH = 8         # 4 weeks of a midweek and a weekend turn (empirical)
@@ -1032,6 +1222,62 @@ def cmd_league(root, n=None, legs=2):
         print("balance  !! entries %s changed, expected %s" % (changed, sorted(done)))
 
 
+def cmd_knockout(root, n=None, legs=1):
+    """Rebuild every knockout on the disc from its shape and compare it
+    byte for byte, and check the generated bracket for every size; or
+    print one generated bracket day by day."""
+    if n is not None:
+        pairs, nexts, games = knockout_tables(n, legs)
+        print("%d clubs, %d leg%s: %d pairings, %d games over %d days" % (
+            n, legs, "s" * (legs - 1), len(pairs), len(games), games[-1].day + 1))
+        for d in range(games[-1].day + 1):
+            ties = []
+            for g in games:
+                if g.day == d:
+                    a, b = ["W%d" % (s - n) if s >= n else str(s) for s in pairs[g.pair]]
+                    ties.append("%d:%s-%s" % (g.pair, *((b, a) if g.swap else (a, b))))
+            print("  day %3d  %s" % (d, "  ".join(ties)))
+        return
+    same, other = [], {}
+    for uid, (_, buf) in enumerate(read_pack(find(root, COMPE_PAC))):
+        c = Competition(buf)
+        if c.type != 1:
+            continue
+        legs_, final_legs, labels, single = knockout_shape(c)
+        new = Competition(buf)
+        try:
+            set_knockout(new, c.entrants, legs_, final_legs, labels, single)
+        except ValueError as e:
+            other.setdefault(str(e), []).append(uid)
+            continue
+        if new.encode() == buf:
+            same.append(uid)
+            continue
+        # Not the disc's layout: say how it differs, and what the disc's
+        # own entry breaks of the rules the built one keeps.
+        diff = [what for what, a, b in (("pairings", c.pairs, new.pairs),
+                                        ("links", c.next, new.next),
+                                        ("games", [g.encode() for g in c.games],
+                                         [g.encode() for g in new.games])) if a != b]
+        probs = knockout_stats(c)
+        other.setdefault("%d clubs, %d pairings, %d games: %s differ%s" % (
+            c.entrants, c.pair_count, c.game_count, ", ".join(diff),
+            "; on the disc: %s" % "; ".join(probs) if probs else ""), []).append(uid)
+    print("%d knockouts rebuilt byte for byte: %s" % (len(same), runs_text(same)))
+    for text, uids in other.items():
+        print("UID %s  %s" % (runs_text(uids), text))
+    for legs_ in (1, 2):
+        for n in range(2, KNOCKOUT_MAX + 1):
+            c = Competition.__new__(Competition)
+            c.next, c.games, c.header, c.tails = [], [], bytes(COMPE_HEADER), [b"", b"", b""]
+            days = set_knockout(c, n, legs_)
+            probs = knockout_stats(c)
+            if probs or n <= 16 or n % 16 == 0:
+                print("%3d clubs %d leg%s: %2d days %3d games%s" % (
+                    n, legs_, "s" if legs_ == 2 else " ", days, len(c.games),
+                    "  !! " + "; ".join(probs) if probs else ""))
+
+
 def calendar(marks):
     """A month-by-week grid of one-letter marks per turn."""
     lines = ["       " + " ".join("w%d%s" % (k // 2 + 1, "m" if k % 2 == 0 else "e")
@@ -1120,6 +1366,11 @@ def main(argv):
     elif cmd == "league" and len(args) in (2, 3) and args[1].isdigit() \
             and (len(args) == 2 or args[2] == "single"):
         cmd_league(args[0], int(args[1]), 1 if len(args) == 3 else 2)
+    elif cmd == "knockout" and len(args) == 1:
+        cmd_knockout(args[0])
+    elif cmd == "knockout" and len(args) in (2, 3) and args[1].isdigit() \
+            and (len(args) == 2 or args[2] == "two"):
+        cmd_knockout(args[0], int(args[1]), 2 if len(args) == 3 else 1)
     else:
         print(__doc__)
         return 1

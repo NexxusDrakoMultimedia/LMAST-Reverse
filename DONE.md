@@ -247,6 +247,11 @@ Each result is recorded in the doc named.
       `LMAST-test-tiers-germany2.iso`, with one club moved each way in
       Germany and England
       ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
+- [x] A knockout builder for the third tier's cups: `schedule.py
+      knockout` builds brackets of 2–128 clubs with byes, one or two legs,
+      and rebuilds 71 of the disc's 87 knockouts byte for byte; the game
+      follows the winner links (`entryWinTeamTournament` `0x2dcc80`)
+      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#building-a-knockout))
 
 ## 8. LMASTER Mod and other patches
 

@@ -132,6 +132,8 @@ League" and so on. Every competition 0–71 has at least one
 | `0x2072a8`, `0x207458`, `0x2075c8` | `CScheEuro_{Normal,FirstPromote,VS}::acceptLoadRequest` | the load condition in `+6` |
 | `0x2068f8` | `CScheEuro::OneLoadCompCB` | a `SCHEDULE_COMPETITION` entry and the UID's masks go to `decodeBlockData`/`decodeGameTurn`. `savectrl[uid]` picks the save buffer |
 | `0x2dc258` | `Sche_Block_decode_main2` | the competition entry layout |
+| `0x2dfb28` | `scheCtrl_GetMatchupBufferSize` | a knockout's matchup buffer: header `0x0A` and `0x0F` |
+| `0x2dcc80` | `ScheduleControllerBaseSystem::entryWinTeamTournament` | a tie's winner goes where its table 3 link says |
 | `0x2dc650` | `scheCtrl_InitGameDay` | game day *k* is the *k*-th set bit of the turn mask |
 | `0x2dab38` | `getOneGameFromBlockAndGameIndex` | home = `pair[swap]`, away = `pair[1 − swap]` |
 | `0x20a298` | `ScheEuro_TeamEntry::makeTeamEntryIDList` | the team-entry layout and its four record kinds |
@@ -233,7 +235,19 @@ A TBB with 3 tables (league) or 4 (knockout).
 | `0x05` | u8 | entrants |
 | `0x06` | u16 | pairings |
 | `0x08` | u16 | games |
-| `0x0A`–`0x0F` | u8 × 6 | copied to the block at `+0x1a`, `+0x16`, `+0x17`, `+0x19`, `+0x18`, `+0x1b`. Zero in leagues. Unknown |
+| `0x0A`–`0x0F` | u8 × 6 | copied to the block at `+0x1a`, `+0x16`, `+0x17`, `+0x19`, `+0x18`, `+0x1b`. Zero in leagues. `0x0A` and `0x0F` set the size of the matchup buffer, below; the rest unknown |
+
+**Confirmed** (`scheCtrl_GetMatchupBufferSize` `0x2dfb28`): a knockout's
+matchup buffer, the working copy of its pairings, holds the pairings plus
+one place per club that leaves: 2 × pairings when `0x0A` is 2, else
+pairings + 1, or + 2 when `0x0F` is non-zero. `Sche_Block_decode_main2`
+fills the places past the pairings with `0xff`. On the disc `0x0A` is 2
+in the single-round UIDs, whose every winner leaves (UIDs 4, 58, 97,
+the 2-club friendlies, ...), and 3 in the other knockouts; `0x0F` is 1
+in UID 122 only, the one with a match for third place (two clubs leave,
+its final's winner and the third-place winner). `0x0B`–`0x0E` are 1, 1,
+1, 1 in the knockouts with two-legged ties and 0, 1, 0, 1 in the
+others (**empirical**).
 
 **Empirical:** a league has `n(n−1)/2` pairings and plays each twice or
 once. A knockout has `n − 1` pairings (fewer for a single round: UID 4 has
@@ -259,7 +273,21 @@ after them (for example `3c 3d` in the 32-team UID 6 final).
 
 `{u8 pairing, u8 side}`: where the winner of each pairing goes. A value at
 or past the pairing count means the winner leaves this competition (the
-final, and single-round ties that feed another UID).
+final, and single-round ties that feed another UID): the pairing count
+plus the order the clubs leave in, so the place past the pairings in the
+matchup buffer that the club goes to.
+
+**Confirmed:** `ScheduleControllerBaseSystem::entryWinTeamTournament`
+(`0x2dcc80`) reads a decided tie's link here (block `+0x24`) and
+`_scheCtrl_EntryTeamToMatch` (`0x2dca48`) writes the winner into the
+matchup buffer at that pairing and side. So these links decide the
+bracket, and a winner slot in table 2 is only a placeholder until the
+tie is played. **Empirical:** in every knockout but four the two agree
+(the winner of pairing *p* is named as slot entrants + *p*, where its
+link points). The 10-club cups UIDs 17, 37 and 46 name the winners of
+pairings 1–4 in other places than their links (pairing 5 names the
+winner of pairing 1 where the link sends pairing 3's), and UID 122's
+third-place match names its sides as slots 30 and 31.
 
 ### Game days and the turn mask
 
@@ -625,6 +653,64 @@ use; neither is done.
 `python SRC/schedule.py turns DAT/PARAM 0 42` draws the season with the
 turns a 42-day schedule would add.
 
+## Building a knockout
+
+A cup that takes more clubs needs a bigger bracket. `schedule.py` builds
+one (`knockout_bracket`, `knockout_tables`, `set_knockout`) the way the
+disc's cups are laid out (**empirical**, all knockouts of both releases):
+
+- **The bracket.** The clubs split into two halves, each half into two
+  again, down to single clubs. A half of odd size holds a bye, and it
+  goes to the outer side of its part of the bracket: the left in a left
+  half, the right in a right half (at the top, the left). The 10-club
+  cups, for example, are `[[0, (1, 2)], (3, 4)]` against `[(5, 6),
+  [(7, 8), 9]]`: clubs 0 and 9 join in round 2, and the winners of 3–4
+  and 5–6 in the semi-finals.
+- **The game days.** A tie is played on the first game day after both of
+  its sides are known, so byes wait. A two-legged tie takes two days in a
+  row, the second with home and away swapped (swap 1); the final may
+  have one leg or two.
+- **The tables.** Pairings are numbered by their first game day, then
+  left to right. A first-round pairing names its two entrant slots and a
+  later one names the winner of pairing *p* as slot entrants + *p*; each
+  winner's link (table 3) points where it goes, and the final's leaves,
+  as the pairing count. A single round (a qualifying round, whose
+  winners go on to another UID) pairs slots 0–1, 2–3 and so on, and every
+  link leaves. Games run in day order, then by pairing.
+- **The round numbers** (`w0` 10–13) come in three styles, which the
+  builder takes as `labels`: the final marked 1 and the rest 0 (the
+  domestic cups), every round numbered from the final (the European and
+  VS cups: 3 quarter-finals, 2 semi-finals, 1 final), or none (the
+  playoffs, the qualifying rounds).
+
+`set_knockout` keeps the other header bytes, and game bit `w0` 8 for
+each game day the old entry had (new days get the last day's). A
+bracket of *n* clubs has *n* − 1 pairings and takes ⌈log₂ *n*⌉ rounds
+(game days, twice that with two legs). Sizes run from 2 to 128 clubs:
+slots are one byte, and the last winner slot is 2*n* − 3.
+
+`python SRC/schedule.py knockout DAT/PARAM` rebuilds every knockout on
+the disc from its own shape (clubs, legs, the final's legs, the round
+numbers, single round or not): 71 of the 87 come out byte for byte, on
+both releases. The others:
+
+| UIDs | Differs in | Why |
+|---|---|---|
+| 17, 37, 46 (the 10-club French, Italian and Spanish Club Cups, own-nation) | pairings | the disc's placeholders for four winners disagree with their links ([table 3](#table-3-next-pairing-knockout-only-2-bytes-each)); the builder writes the bracket the links play |
+| 122 (16 clubs) | everything | a match for third place, which the builder doesn't make |
+| 130–141 (runtime friendlies) | the game | their one game has home and away swapped, alternately with UIDs 124–129 |
+
+It also builds and checks every size from 2 to 128, one leg and two
+(each slot named once, each link back to its winner, no tie before its
+sides are known, no club twice on a day, one club left). `python
+SRC/schedule.py knockout DAT/PARAM 10` prints one bracket day by day, and
+`... 10 two` the same with two legs.
+
+The builder is for the third tier's cups
+([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)):
+a cup that takes the tier's clubs grows, and where it gains a round its
+UID needs a turn for it. Neither is done yet.
+
 ## Related files
 
 - `0SYSTEM/SCHEDULE.TBB` (2 tables, 76 and 23 rows of 32 bytes, with a
@@ -641,7 +727,7 @@ turns a 42-day schedule would add.
 
 - What game bit `w0` 8 selects (a per-day mark, set on every cup day;
   `set_league` writes 0, so a league `leaguesize.py build` resizes loses
-  its marked days), bit 9, header bytes `0x0A`–`0x0F`, and the first two
+  its marked days), bit 9, header bytes `0x0B`–`0x0E`, and the first two
   team-entry header bytes.
 - `PeriodName.tbb`, the `make_list` source functions and tables 1–8, and
   the meaning of the `savectrl` values.
@@ -662,6 +748,8 @@ python SRC/schedule.py year  DAT/PARAM        # the 184 year_schedule_data rows
 python SRC/schedule.py compe DAT/PARAM 6      # a 32-team knockout: games, pairings, links
 python SRC/schedule.py entry DAT/PARAM 6      # where its 32 teams come from
 python SRC/schedule.py league DAT/PARAM       # generated leagues of 2-32 clubs beside the disc's, and what balance rebuilds
+python SRC/schedule.py knockout DAT/PARAM     # the disc's knockouts rebuilt by the bracket builder; sizes 2-128 checked
+python SRC/schedule.py knockout DAT/PARAM 10  # one generated 10-club bracket, day by day
 python SRC/schedule.py turns  DAT/PARAM       # each domestic league's game days and room for more
 python SRC/schedule.py turns  DAT/PARAM 0 42  # the English first division's season with 42 game days
 python SRC/sles_disasm.py ISO/SLES_541.51 dis Sche_Block_decode_main2 makeTeamEntryIDList

@@ -163,6 +163,8 @@ def checks():
         ("schedule_roundtrip", ["schedule.py", "roundtrip", "DAT/PARAM"], ["DAT/PARAM"]),
         # Generated leagues of 2-32 clubs, checked and compared with the disc's.
         ("schedule_league", ["schedule.py", "league", "DAT/PARAM"], ["DAT/PARAM"]),
+        # The disc's knockouts rebuilt by the bracket builder, and every size checked.
+        ("schedule_knockout", ["schedule.py", "knockout", "DAT/PARAM"], ["DAT/PARAM"]),
         # Each domestic league's game days and its room for more.
         ("schedule_turns", ["schedule.py", "turns", "DAT/PARAM"], ["DAT/PARAM"]),
         # Each nation's divisions, the first season played out from its records.

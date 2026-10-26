@@ -34,10 +34,11 @@ What to work on next, most valuable first.
    a way players notice, whether the balance switches work, and the
    third tier with them; the disc is `LMAST-test-full-germany.iso`
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **The third tier's clubs in the domestic cups** (section 7): a
-   knockout builder in `schedule.py`, then bigger brackets that take each
+3. **The third tier's clubs in the domestic cups** (section 7): bigger
+   brackets, built with `schedule.py`'s knockout builder, that take each
    nation's tier clubs but the tier's last place, so every current
-   entrant keeps its place; part of `--mod third-tier`
+   entrant keeps its place, and a turn where a cup gains a round; part
+   of `--mod third-tier`
    ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
 4. **The switch levels** (section 5): editions, groups, then single
    switches, with the editor's Build tab offering the editions and their
@@ -350,10 +351,11 @@ names the disc or the edit to build; the result goes into the doc.
       place): each nation's cups take its tier clubs by `LAST_RANK` of
       competitions 50–55, all but the tier's last place (the user's
       rule): ranks 1–4 in the own-nation versions (5-club tier), 1–2 in
-      the others (3 clubs). Needs a knockout builder in `schedule.py` (pairings, next
-      links, byes; it builds only leagues now) and, where a cup gains a
-      round, a turn for it. Part of `third-tier`
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md),
+      the others (3 clubs). The brackets are built with `schedule.py`'s
+      knockout builder (`set_knockout`); left are the bigger cups' team
+      entries and, where a cup gains a round, a turn for it. Part of
+      `third-tier`
+      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#building-a-knockout),
       [`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 - [ ] The third tier's clubs in My Room > Information > Club Info >
       Other Club Info, which doesn't list clubs 442–459 (user report);
