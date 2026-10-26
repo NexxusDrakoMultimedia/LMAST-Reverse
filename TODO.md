@@ -22,8 +22,9 @@ What to work on next, most valuable first.
    `LMAST-test-tiers-germany.iso` (a German club, `--skip-nation
    Germany`) shows the movements at a season's end. Once it passes, the
    five switches (`save-expand`, `tier-clubs`, `tier-lists`,
-   `tier-uids`, `one-season-end`) join `--mod lmaster-full`, INSTALL.md
-   describes them, and section 8's third-tier item is brought up to date
+   `tier-uids`, `one-season-end`) merge into one, `third-tier` (the
+   user's choice, 2026-10-27), which joins `--mod lmaster-full`;
+   INSTALL.md describes it, and section 8's third-tier item is brought up to date
    ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3),
    [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 2. **The player and staff fields** (section 2, "Players and staff"):
@@ -254,7 +255,7 @@ every writer has a tab.
 
       The rule (the user's): switches that depend on each other merge
       into one switch, one feature each (the third tier's five, which
-      need each other through `SWITCH_NEEDS`, become one); a group
+      need each other through `SWITCH_NEEDS`, become `third-tier`); a group
       holds features that each work alone. The Build tab offers the editions,
       with their groups to add or leave out and the switches shown under
       each; the test tools stay apart. `--mod` takes any level, so a
