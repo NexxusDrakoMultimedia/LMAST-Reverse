@@ -561,6 +561,7 @@ saves.
 | [`ECONOMY.md`](DOC/ECONOMY.md) | the club's economy: what a build costs (record cost × business cycle × sponsor discount), the plan screen's limits, attendance, ticket, shop and season-ticket income, and the ad budget's effect on popularity |
 | [`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md) | the PR events in the executable: the offer, chance and success records field by field, the names in `MES.PAC`, when each event is offered, the cut Renew Mobile Site, and the Japanese differences |
 | [`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md) | where the code fixes the clubs at 441 (resident clubs 1–441, the non-resident 442–459): every site of 440–442, sorted into club loops, resident checks, buffers and the rest |
+| [`UID_LIMITS.md`](DOC/UID_LIMITS.md) | where the game fixes the schedules at 164: UID 164 as the default rules, the files that set the count, the code that names it, and the save pools the schedules share |
 | [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
 | [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md) | PCSX2's memory card image files: pages and their ECC, the superblock, the FAT, directory entries, and how `ps2mc.py` writes a card |
 | [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md) | Virtua Pro Football's edit players (`pmplayer.bin`): file layout, CRC, each record field and what the career import makes of it, and its play-style bug |

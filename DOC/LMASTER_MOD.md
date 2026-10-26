@@ -114,9 +114,13 @@ The design:
   leagues, whether you play there or not.
 - Only the second division's **last** club goes down each season, and
   one third-tier club, chosen at random, comes up.
-- Two clubs start in the third tier, sent down from the second division
-  at the start, so the second division with your club and the rival in
-  it has its real size (England 24).
+- In your own nation only, two clubs start in the third tier, sent down
+  from the second division at the start, so the second division with
+  your club and the rival in it has its real size (England 24). The
+  other nations' second divisions don't take your club and the rival,
+  so they keep their clubs, and their third tiers start with their
+  three real clubs (the user's correction, 2026-10-27). One club down
+  and one up each season keeps every tier at its starting size.
 - A player who finishes last in the second division loses at once,
   after one season, so they never end up in the third tier.
 - Third-tier clubs should still show in the other clubs' club info and
@@ -207,11 +211,19 @@ What is known so far:
      (b) is **built** as `--mod tier-lists`
      ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-tier-lists-phase-2b)): the
      club-rank list, the transfer AI's lists, the offers' lists and the
-     world ranking hold 459 clubs; not yet run in the game.
-  3. The schedules: UIDs 142–147 every season as the hidden third tiers
-     (three real clubs and the two sent down), the second divisions'
-     last club down and one random tier club up, two clubs sent down at
-     the start, `REGULATION.TBB`'s down count 1, and `one-season-end`.
+     world ranking hold 459 clubs; tested in PCSX2 so far: the All
+     Clubs Ranking lists every club (user report).
+  3. The schedules: six hidden third-tier leagues every season (three
+     real clubs, and in your nation the two sent down), the second
+     divisions' last club down and the tier's winner up, two clubs sent
+     down at the start in your nation,
+     `REGULATION.TBB`'s down count 1, and `one-season-end`. The user's
+     choices (2026-10-27): the third tiers get six **new UIDs,
+     164–169**, so the tutorial's playoff (UIDs 142–147) and VS mode's
+     leagues (148–163) stay as they are; every table and loop sized for
+     164 schedules is found and grown first, as in phase 2. The club
+     that comes up is the **tier's winner** (`LAST_RANK` rank 1 of its
+     competition), which changes each season as the games are simulated.
   4. Two seasons played in PCSX2.
 - **Left to trace:** the rest of each phase; how your club and the rival
   get ranks 25 and 26 of the second division's first record; which
