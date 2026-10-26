@@ -130,7 +130,7 @@ Money values are in units of **10,000** (the handler multiplies by
 | 1 | `0x1210c8` | income: `pwkGen_Income(value × 10000, PlIncomeType 11)`; skipped if value < 0 | 257: 900, 260: 300 |
 | 2 | `0x1210f8` | expense: `pwkGen_Pay(value × 10000, PlPaymentType 22)`; skipped if value < 0 | 166…189 (stadium, handler 33): 600/1500/3000; 255: 300 |
 | 3 | `0x121128` | popularity +value in region 0 (`pwkTeam_ChangePopByRegion(0, value)`) | 102, 103, 199, 262, 263, 308 |
-| 4 | `0x121148` | popularity +value in regions 1–13 | 102, 103, 199, 308 |
+| 4 | `0x121148` | popularity +value in regions 1–13 (`PlTeam_Region` *n* is display region *n* − 1, as the camp code reads it: [`CAMP_FORMAT.md`](CAMP_FORMAT.md#when-a-camp-is-open)) | 102, 103, 199, 308 |
 | 5 | `0x121198` | popularity −value in region 0 | 242–254 (handler 6): 500 / 10 |
 | 6 | `0x1211b8` | popularity −value in regions 1–13 | – |
 | 7 | `0x121288` | captain gains `value` exp in ability 26, leadership (`pwkGUtl_AddExp`), unless the captain is unused/unplayable | 194: 1000 |
@@ -402,11 +402,6 @@ column with data now has a name.
 - Names for the 170 condition kinds (jump table `0x237df0`) and the 80
   handler types (`0x238a40`). The timings and the effect kinds are
   decoded above.
-- Which overseas region each of `PlTeam_Region` 1–13 is. Region 0 is
-  the club's home region and 1–13 the overseas regions
-  ([`ECONOMY.md`](ECONOMY.md#supporter-popularity)); whether they follow
-  the `PlDRegion` order ([`EVS_PROCEDURES.md`](EVS_PROCEDURES.md#regions))
-  isn't traced.
 - Which handler types consume `effect1_value` directly, and so what
   kinds 9/16/18/19 mean.
 - What EVENT `+0x0c`, `+0x1c` and the five triplets at `+0x24`–`+0x5c`

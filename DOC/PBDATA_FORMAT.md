@@ -135,7 +135,7 @@ is 0):
 
 | Ids | Called from | Teams | What |
 |---|---|---|---|
-| 25,591–26,040 | mode 0, `0x24d450`, at new-game setup (`0x110ae4`) | 442–459, 25 each | made-up players for the 18 clubs without an `OTEAMMEMBER` squad, three per league nation: England, France, Germany, Italy, Spain, Netherlands (**empirical**: each block of 25 has one nationality). England's first 18 and 16 from 25,623 are the built-in default club ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#without-the-file)) |
+| 25,591–26,040 | mode 0, `0x24d450`, at new-game setup (`0x110ae4`) | 442–459, 25 each | made-up players for the 18 clubs without an `OTEAMMEMBER` squad, three per league nation: England, France, Germany, Italy, Spain, Netherlands (**empirical**: each block of 25 has one nationality). They are the third-tier clubs of the tutorial's playoff (England's 442–444 Gillingham, Nottingham and Rotherham, [`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)). England's first 18 and 16 from 25,623 are the built-in default club ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#without-the-file)) |
 | 26,041–27,949 | mode 2, `0x24d480`, from `PwkCallbackCommand_VS_Start` (`0x111478`) | 460–542, 23 each | the national teams' fixed squads, used in **VS mode**. Every block has one nationality |
 
 A national-team record repeats a club player under the same name, as a
@@ -1452,8 +1452,10 @@ career national squads list each player's club, so they are drawn only
 from club players. The renamed fixed record doesn't appear, as the
 search limit above says.
 
-What `_getNationalTeamPoint` scores, what
-team 465 is, and what flag `0x300` means aren't traced.
+What `_getNationalTeamPoint` scores, why team 465 is accepted (it is
+the Netherlands' national team,
+[`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md#entry-3-nations)),
+and what flag `0x300` means aren't traced.
 
 ## `PBDATA_JP.PAC`
 
@@ -1568,7 +1570,6 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
   effects aren't traced.
 - Header `+0x14`, `+0x24` and the last 8 header bytes.
 - What `_getNationalTeamPoint` scores.
-- Which clubs teams 442–459 are.
 
 ## Checking the claims
 

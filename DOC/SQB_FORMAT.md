@@ -503,9 +503,10 @@ root set, which is tried first.
 - The command sets `INFORMATION.SQB` and `CHECKCLUBEDIT.SQB` were written
   for.
 - `INFORMATION.WPX`.
-- Whether the tutorial skip works for leagues other than England (it
-  calls `pwkLg_Init(0)`), and whether the parts of `Sche.YearEnd` and
-  `Sche.MonthEnd` it skips (`pwkTeam_ChangePop_Year`) change anything.
+- Whether the tutorial skip works in France, Italy, Spain and the
+  Netherlands (`--skip-nation`; England and Germany are played in
+  PCSX2), and whether the parts of `Sche.YearEnd` and `Sche.MonthEnd` it
+  skips (`pwkTeam_ChangePop_Year`) change anything.
 - The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG LIGHT
   TEST; and why the blank test modules show nothing (missing data, or
   waiting for input from the launcher).
@@ -798,7 +799,7 @@ the real game screen, opened on its own with the launcher's new game.
 | 112 | SPONSOR | a sponsor menu test |
 | 113 | CSE TEST 2 | a separate news viewer |
 | 114 | HAYASI TEST | hangs |
-| 115 | PLAYER EDIT | hangs. The user's view: probably the Japanese version's in-game player editor, disabled here, where the European version has the Virtua Pro Football player import instead |
+| 115 | PLAYER EDIT | hangs. In a career the same module (63, `YRSTPRG.REL`) is opened by an event and brings in a Virtua Pro Football edit player ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)); the user's view is that the Japanese version also edited players in it |
 | 116 | BG LIGHT TEST | not recorded |
 | 117 | TICKET SET TEST | shows a block of text |
 | 118 | TICKET SET | the mid-year competition ticket-price screen, in a loop |

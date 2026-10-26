@@ -59,6 +59,7 @@ Each page shows what `save.py` can already read, and edits only what
 | Staff | manager, youth manager, coaches, scouts (`staff`) | `manager:abil.<n>=`, `dissat.<n>=`, `pop_supporters=`, ... |
 | Other clubs | friendship, rank, players (`clubs`) | `club:<team>:friendship=`, `rank=` |
 | Candidates | scouted players and youth, staff candidates (`candidates`) | none (`save.py set` can't yet) |
+| Edit player | the imported Virtua Pro Football player (`editplayer`) | `edit:<field>=`, `edit:name=`, `edit:ability.<n>=` |
 
 ## Steps
 
@@ -174,8 +175,9 @@ Still open:
   them back while the game runs. [`INSTALL.md`](../INSTALL.md#editing-a-save)
   tells players to close the game first; whether the editor should also
   warn when the card is in use is undecided.
-- **Japanese saves.** `save.py` is PAL-only ([`TODO.md`](../TODO.md)).
-  The plan leaves them out.
+- **Japanese saves.** `save.py --iso ISO_JP` reads and writes them
+  ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)), but the
+  save editor is PAL-only, left for later ([`TODO.md`](../TODO.md#5-edit-the-gui)).
 
 ## Still unknown
 

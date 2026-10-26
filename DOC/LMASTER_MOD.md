@@ -40,7 +40,7 @@ to their own memory-card folders and never mix with the retail game's
 a career from a disc whose economy and injuries work differently isn't
 one to load on another. The tutorial skip and the developers' launcher
 are test tools, in neither edition. `patch_disc.py switches` prints the
-tree. The editor's Build window draws it: a button for each edition
+tree. The editor's Build disc window (File > Build disc) draws it: a button for each edition
 ticks its groups (leaving the test tools as they are), each group has a
 box that ticks all its switches, and the switches show under a group
 when it is opened. The box of a partly ticked group shows as partly
@@ -100,14 +100,13 @@ Not restorations: changes to data that works but plays badly. They
 follow the same rules (evidence, smallest change, tested in PCSX2) and
 stay separate switches, so the restorations can be used without them
 (LMASTER lite). LMASTER full has all of them. `--mod balance` is the
-switches built 2026-10-24 and 25 with the values the user chose:
-`injury-odds`, `injury-lines` (in [Status](#status)), `overseas-bases`,
-`transfer-fees`, `fanbase`, `merch-costs`, `pr-costs`, `camp-costs` and
-`tour-costs`.
+switches built 2026-10-24 to 26 with the values the user chose (the
+group's list is in [the switch levels](#the-switch-levels);
+`injury-lines` is in [Status](#status)).
 
 | Change | Evidence | Fix | Status |
 |---|---|---|---|
-| Better home and away runs in the league schedules | [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-league-of-another-size): the disc has one schedule per size, and some send a club to one venue up to 7 times running (the 22-club leagues, UIDs 11, 30, 40, 48) or 9 (the 26-club English second division with your club, UID 1); the 8-club VS league (UIDs 154–155) reaches 5 | `--mod league-balance` rebuilds those seven UIDs with `schedule.balance_pack` (`set_league` at the same size): no more than 2 running, same clubs, game days and turns, and game bit `w0` 8 kept on its day. Only `PARAM/SCHEDULE_COMPETITION.PAC` changes, by 7 entries that keep their size, so its `.HED` and the `STATIONFILE` copy stay. With a league of another size (`leaguesize.py build`) it balances the build's pack, skipping the leagues the build already rebuilt. Checked with England at 22 and France at 18 plus national-cups in one patch. An improvement, so not in `--mod lmaster` | tested in PCSX2 (user report): in a new England career on `LMAST-test-leagues.iso` (with the tutorial skip), the Schedule screen shows the club's league games alternating `AHAHAHAHAHAH…`, and each game's details screen agrees with it, where retail's first 16 in the English second division (UID 1, slot 24 or 25) are `HHAHAAHHAHHHHHAA` or `AAAAHHAAAAAAAHHH`. So the game takes its fixtures from the rebuilt pack. Not played to the end of a season, and the other rebuilt leagues (the 22-club ones, VS) weren't looked at; they are built the same way. `python SRC/schedule.py league DAT/PARAM` shows what it rebuilds |
+| Better home and away runs in the league schedules | [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-league-of-another-size): the disc has one schedule per size, and some send a club to one venue up to 7 times running (the 22-club leagues, UIDs 11, 30, 40, 48) or 9 (the 26-club English second division with your club, UID 1); the 8-club VS league (UIDs 154–155) reaches 5 | `--mod league-balance` rebuilds those seven UIDs with `schedule.balance_pack` (`set_league` at the same size): no more than 2 running, same clubs, game days and turns, and game bit `w0` 8 kept on its day. Only `PARAM/SCHEDULE_COMPETITION.PAC` changes, by 7 entries that keep their size, so its `.HED` and the `STATIONFILE` copy stay. With a league of another size (`leaguesize.py build`) it balances the build's pack, skipping the leagues the build already rebuilt. Checked with England at 22 and France at 18 plus national-cups in one patch. An improvement, so not in LMASTER lite | tested in PCSX2 (user report): in a new England career on `LMAST-test-leagues.iso` (with the tutorial skip), the Schedule screen shows the club's league games alternating `AHAHAHAHAHAH…`, and each game's details screen agrees with it, where retail's first 16 in the English second division (UID 1, slot 24 or 25) are `HHAHAAHHAHHHHHAA` or `AAAAHHAAAAAAAHHH`. So the game takes its fixtures from the rebuilt pack. Not played to the end of a season, and the other rebuilt leagues (the 22-club ones, VS) weren't looked at; they are built the same way. `python SRC/schedule.py league DAT/PARAM` shows what it rebuilds |
 | A harder economy that punishes mistakes: dearer facilities, a wider ticket price range, dearer advertising, and the like | [`ECONOMY.md`](ECONOMY.md), **confirmed**: a build charges the facility record's cost (`PLRESOURCECOMMON.PAC` entry 0) × the business cycle (75–125%) × any sponsor discount; the plan screen's limits are constants in its set-up (`SIMPRG.REL 0x3eda0`); the ad budget and ticket price set attendance through a 21 × 11 table that only covers prices 60–300 and budgets up to 30,000,000, and the budget adds up to 50 supporter popularity a month; the salary limits, £10,000–£12,000,000 ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | `--mod harder-economy`, six switches with the values the user chose (2026-10-23). The cost side: **`facility-tiers`** (`plrcommon.facility_tiers`, data): build costs and upkeep ×2 for all equipment and adverts; grounds (sites) ×2 and ×4 (their upkeep is never charged); club houses: the starting one's upkeep ×2 (£25,000 → £50,000), the next ×2 (£15M, £150,000), the top ×4 (£60M, £600,000); stadiums: 15,000–25,000 ×2 (£15M, £45,000 a stand), 30,000–40,000 ×3 (£52.5M, £124,500), 50,000–60,000 cost ×5 and upkeep ×4 (£150M, £290,000), 110,000 cost ×3.5 and upkeep ×6 (£350M, close to the record's limit of about £358M; £600,000). The stand costs within a stadium aren't traced, so they stay. **`wider-tickets`** (code and table): both ticket screens go to 480 (£80), and the ticket demand table is respaced over 60–480 in steps of 21: up to 300 the old curve, above it crowds fall as (300 ÷ price)^1.47, so £80 draws half of £50's crowd. **`dearer-ads`** (code): the ad budget buys half as much per pound (popularity budget ÷ 1,200,000, a demand column per 6,000,000) and goes up to 60,000,000 (£10M), so the full effect costs twice as much. The income side, for the late game (chosen 2026-10-23): **`sponsor-fees`** and **`tv-fees`** (tables in `SIMPRG.REL`) keep a sponsor fee or TV offer up to £2M and halve the part above (£45M → £23.5M, the £50M TV offer → £26M; G006's TV £31.2M → £19.1M a season); **`season-demand`** (code) halves season-ticket demand (G006 would sell about half its 36,000, £20.5M → about £10.5M). The season-ticket status bug is fixed separately, by the restoration `--mod season-status` ([Status](#status)) | tested in PCSX2 (user report, `LMAST-test-economy.iso` with `--mod harder-economy`): the facility window showed the tiered costs, the plan screen and the other competitions' ticket screen went to £80 and the ad budget to £10M, and a home match at the new prices drew a crowd; "all seems fine". The three income switches were then tested on the same disc with all six (user report: sponsor fees, TV offers and season-ticket sales as on the test sheet; "all fine"). Not yet played through a whole season. The scripts named after season tickets, spectators and popularity are never run ([`SQB_FORMAT.md`](SQB_FORMAT.md#which-scripts-run)); the C code above is what runs |
 | Long injuries more common | [`INJURIES.md`](INJURIES.md#the-kind-tables), **confirmed**: a heavy match injury is six months or more 0% of the time for a rested player and 39% at full fatigue, so rotation all but rules them out | `--mod injury-odds`: kinds 4–8 doubled in every row of both kind tables, to at least 2% (practice) and 5% (match) of a row, taken from kind 3 and then kind 0 so light match injuries stay as they were; a heavy match injury is then six months or longer 5% of the time rested and 78% at full fatigue ([`INJURIES.md`](INJURIES.md#more-long-injuries-injury-odds)) | built; not checked in the game |
 | Overseas bases: dearer, each pound buying half as much | [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches), **confirmed**: one cost per region sets the set-up, the investment per level and the upkeep; the level (0–3) scales the region's popularity change by 0.6–1.2 | `--mod overseas-bases`: the 13 costs doubled in `PLRESOURCESIM.PAC` and its `SIMLOCALMEM0`–`6` copies, so the investment per level and the upkeep double too; what a level does stays as in retail (the user's choice, 2026-10-26: like `dearer-ads`) | built; not checked in the game |
@@ -119,10 +118,9 @@ switches built 2026-10-24 and 25 with the values the user chose:
 | Dearer camps and tours | [`ECONOMY.md`](ECONOMY.md#camps-and-tours), **confirmed**: rates by camp level and region, and by tour region, × the squad × 300; a tour earns £1.2M–£6.3M against under £1M | `--mod camp-costs`: the camp rates × 2 (`SIMPRG.REL 0x1ce4e8`); `--mod tour-costs`: the tour rates × 3 (`0x1ce6c0`), so a tour where the club is little known about breaks even. Tour income unchanged | built; not checked in the game |
 | Dearer merchandise stock, smaller margins | [`ECONOMY.md`](ECONOMY.md#making-the-stock), **confirmed**: a unit of stock costs 30% of its price, less a bulk discount of up to 40%, paid when ordered (payment 22), so goods sell at margins of 70–82% | `--mod merch-costs`: the unit cost 50% (`SIMPRG.REL 0xbcce4`) and the discounts halved, down to 80% for the biggest lot (`0x1d10d8`); margins 50–60% | tested in PCSX2 (user report, 2026-10-25): orders cost half the price a unit, the biggest lot gets 20% off, margins 50% ([`ECONOMY.md`](ECONOMY.md#making-the-stock)) |
 
-Ideas for the harder economy (the user's), with what each would change.
-The first three are built as `--mod harder-economy`, the fourth as
-`--mod season-status` and the fifth as `--mod overseas-bases` (above);
-the rest are partly built or not decided:
+Ideas for the harder economy (the user's), with where each lives. All
+are built now: the first three as `--mod harder-economy`, the fourth as
+`--mod season-status` and the rest in `--mod balance` (above):
 
 | Idea | Where it lives | Known |
 |---|---|---|
@@ -135,8 +133,8 @@ the rest are partly built or not decided:
 | Reputation harder to raise | your club rank is the club status >> 11 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)) | built as `--mod slow-reputation` (above) |
 | Lesser players dearer, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the price limits ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | built as `--mod transfer-fees` and `--mod fee-tiers` (above) |
 
-In progress (the user's idea, design agreed 2026-10-26): **a third tier
-and a harsher end.**
+Built as `--mod third-tier` (the user's idea, design agreed
+2026-10-26): **a third tier and a harsher end.**
 
 The design:
 
@@ -164,9 +162,9 @@ What is known so far:
   which `0x15d8f0` takes from the `down` place slots of its
   `REGULATION.TBB` row (the club count less the slot's count). The
   warning before it (`0x15da60`) uses this season's live rank and last
-  season's. `patch_disc.py --mod third-tier` (built as `one-season-end`) makes both decide on
-  one season (in no group yet; not checked in the game). With the down
-  count at 1, the line is the last place.
+  season's. `patch_disc.py --mod third-tier` (built as `one-season-end`)
+  makes both decide on one season (not checked in the game). With the
+  down count at 1, the line is the last place.
 - **A third tier was planned.** **Empirical**: every second division's
   `REGULATION.TBB` rows, own-nation and other-nation versions (UIDs 1
   and 2, 11–12, 20–21, 29–30, 39–40, 48–49), send their bottom two
@@ -227,9 +225,9 @@ What is known so far:
   2. Clubs 442–459 as full clubs: the game's limits 440 (`0x1b8`), 441
      (`0x1b9`) and 442 (`0x1ba`), each checked; their records and squads at
      the start. The club info screen and the world rankings should then
-     list them. **In progress**: the 206 sites are sorted in
+     list them. The 206 sites are sorted in
      [`CLUB_LIMITS.md`](CLUB_LIMITS.md), about 65 of them about clubs.
-     The order planned (the user's choice to go on carefully,
+     The order (the user's choice to go on carefully,
      2026-10-26): (a) the resident checks and the club loops, with
      squads for 442–459 added to `OTEAMMEMBER.TBB`; (b) the buffers and
      arrays sized for 441 clubs (`ClubRank`, the club-rank list, the
@@ -248,10 +246,12 @@ What is known so far:
      divisions' last club down and the tier's winner up, two clubs sent
      down at the start in your nation,
      `REGULATION.TBB`'s down count 1, and the one-season game over. The user's
-     choices (2026-10-27): the third tiers get six **new UIDs,
-     164–169**, so the tutorial's playoff (UIDs 142–147) and VS mode's
-     leagues (148–163) stay as they are; every table and loop sized for
-     164 schedules is found and grown first, as in phase 2. The club
+     choices (2026-10-27): the third tiers get **new UIDs**, 165–170
+     and their own-nation versions 171–176 (UID 164 is the default
+     rules, [`UID_LIMITS.md`](UID_LIMITS.md#164-is-no-competition)), so
+     the tutorial's playoff (UIDs 142–147) and VS mode's leagues
+     (148–163) stay as they are; every table and loop sized for 164
+     schedules was found first, as in phase 2. The club
      that comes up is the **tier's winner** (`LAST_RANK` rank 1 of its
      competition), which changes each season as the games are simulated.
      **Built** (as `tier-uids`), (a) the leagues and (b) the
@@ -309,10 +309,9 @@ What is known so far:
   applied on top of its schedule packs, and the switches whose PRELOAD
   edits share its rebuilt packs (`drill-names`, `injury-lines`,
   `facility-tiers`) land as entry edits of the rebuilt packs.
-- **Left to trace:** the rest of each phase; how your club and the rival
-  get ranks 25 and 26 of the second division's first record; which
-  cups name second-division ranks; and how the club info screen and the
-  world rankings choose their clubs.
+- **Left to trace:** how the Other Club Info screen chooses its clubs
+  ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#still-unknown)); the rest is in
+  [`UID_LIMITS.md`](UID_LIMITS.md#still-unknown).
 
 ## Not candidates
 

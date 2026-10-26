@@ -13,7 +13,9 @@ lead up or down to which competition. The file is a TBB1 file
 
 Rows are indexed by the schedule UID (`PLSCHE_GROUP`, 0–163,
 [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md)). Row 164 belongs to no
-schedule.
+schedule: it is the default rules for a club outside any competition,
+which about 30 callers ask for (**confirmed**,
+[`UID_LIMITS.md`](UID_LIMITS.md#164-is-no-competition)).
 
 `python SRC/regulation.py info DAT/PARAM` checks every row.
 `python SRC/regulation.py show DAT/PARAM/REGULATION.TBB 0` prints a row
@@ -200,7 +202,6 @@ win_bonus=200`, on a `--skip-tutorial` disc with `--copies`:
 
 - `+0x04`: no reader found.
 - Who reads the match rule block's copy of `squad2` (`+0x18`).
-- Whether row 164 is ever read.
 - What the place checks change on screen or in the match (news, the
   league table, the match's stakes), and what calls the relegation
   game-over check (`SIMPRG.REL 0x15d958`).

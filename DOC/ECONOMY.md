@@ -619,8 +619,10 @@ currency's step. Fees within the old cap double; fees the old cap held
 at £120M can now reach £250M.
 
 **Tested in PCSX2** (user report, 2026-10-25, a `--mod lmaster-full`
-disc): transfer fees came out doubled. In a save state of that career (slot 1 of the CRC `59D884B2` build, `--mod lmaster-full` without the tutorial skip) the running game holds the
-new code and price kind 1's limits as filled in at start-up, `{min,
+disc): transfer fees came out doubled. In a save state of that career
+(slot 1 of the CRC `59D884B2` build, `--mod lmaster-full` without the
+tutorial skip) the running game holds the new code and price kind 1's
+limits as filled in at start-up, `{min,
 15,000,000, step}` for all four currencies at `0x5eb098`. Not yet seen: a
 fee above the old £120M, and whether the transfer screens have limits of
 their own.
@@ -733,8 +735,9 @@ breaks even. Tour income is unchanged.
 - Plan `+0x16` (7,000 in every save).
 - The shop list's other fields (`+0x2`, `+0x4`, `+0x5`), what the trend
   table's rows are, and when goods that stop selling leave the shop.
-- The transfer fee's rank and ability factor and its three others, and
-  what the club byte `+0xa0` in an offer is.
+- Which of the transfer fee's arguments are the growth type and the
+  contract years (factors C and D), traced from the callers, and what
+  the club byte `+0xa0` in an offer is.
 - What the PR events' byte 6 bonus was for (`0x20df48` is a stub), and
   how often a tour's hosts ask for players.
 - Which sponsors a club is offered, and what `+0x18` is for (suppliers?).

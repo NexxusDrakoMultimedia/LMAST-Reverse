@@ -170,8 +170,9 @@ byte hasn't been checked in the game.
 `YRSTPRG.REL` together with message category 2000. That module is
 sequencer module 63 (PlayerEdit), started from events
 ([`SNR2_FORMAT.md`](SNR2_FORMAT.md)), and module 115 in the developer
-launcher, where it hangs ([`SQB_FORMAT.md`](SQB_FORMAT.md)). It is
-probably the Japanese version's player editor.
+launcher, where it hangs ([`SQB_FORMAT.md`](SQB_FORMAT.md)). It is the
+player editor that brings a Virtua Pro Football edit player into a
+career ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)).
 
 The tables aren't decoded. Their shapes (**empirical**): tables 0–8 are
 14 rows of 33 bytes (values like 30–80, a rating per ability and

@@ -361,14 +361,19 @@ and away (3rd v 6th, 4th v 5th), then their winners in one game. So
 competition 2 is the **promotion playoffs**: the top two go up, 3rd to
 6th play off for the third place, and the three losers stay down. The
 second division keeps every other club; nothing is relegated from it, as
-the game has no third tier (user report).
+the retail game has no third tier (user report; `--mod third-tier` adds
+one, [`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
 
 **Your club and the rival.** After the tutorial the game adds your club
 and the rival to your nation's second division, which grows by 2 (user
 report). That fits the slot counts: the own-nation UID 1 has 26 slots
 and takes ranks 7–26 of competition 1, whose record holds 24 clubs, so
 ranks 25 and 26 are the two new clubs; the other-nations UID 2 has 24.
-How the game gives them those ranks isn't traced. The other leagues'
+**Confirmed:** `ScheCallback_ProcPromotion` (`0x1131c8`), once at a
+career's start, puts your club and the rival in the first two empty
+places of your second division's past record (the second divisions by
+nation in a table at `0x51ad70`), which are ranks 25 and 26 in England
+([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)). The other leagues'
 UIDs follow their own rules, not checked here.
 
 ## Writing
@@ -478,13 +483,12 @@ entry encodes and re-reads with no problems; a 22-club UID 0 grows from
 open:
 
 - Memory: each loaded UID takes its games, entrants and table rows from
-  shared save-buffer pools (`ScheEuro_Memory::init` `0x209210` sets
-  sizes such as `0x16c0` and `0x1800`; `alloc_save_buffer` `0x2097e8`,
-  type from `savectrl`). The big leagues are all type 0, which already
-  holds the 26-club league (650 games), but whether the pools have room
-  for more games in total isn't traced. The 22-club test below saved
-  and reloaded without trouble, which doesn't rule out a limit for
-  bigger changes.
+  shared save-buffer pools, one per `savectrl` type (sizes and use in
+  [`UID_LIMITS.md`](UID_LIMITS.md#the-save-pools); `alloc_save_buffer`
+  `0x2097e8`). The big leagues are all type 0, whose 5,824 games hold a
+  normal season's 5,300 or so, but when a schedule's slots are freed
+  isn't traced. The 22-club test below saved and reloaded without
+  trouble, which doesn't rule out a limit for bigger changes.
 - Promotion and relegation into the second season are tested for
   England at 22 clubs only (below). Other nations and sizes are checked
   by `build` but not in game.
@@ -728,11 +732,9 @@ by its tier's clubs
   `set_league` writes 0, so a league `leaguesize.py build` resizes loses
   its marked days), bit 9, header bytes `0x0B`–`0x0E`, and the first two
   team-entry header bytes.
-- `PeriodName.tbb`, the `make_list` source functions and tables 1–8, and
-  the meaning of the `savectrl` values.
-- How your club and the rival become ranks 25 and 26 of the second
-  division's past record, which the own-nation UID 1 takes after the
-  tutorial.
+- `PeriodName.tbb`, and the `make_list` source functions and tables
+  1–8. (The `savectrl` values are the save pools' types,
+  [`UID_LIMITS.md`](UID_LIMITS.md#the-save-pools).)
 - Whether the save-buffer pools have room for bigger leagues than the
   ones tested ([Building a league of another size](#building-a-league-of-another-size)),
   and how other nations' and sizes' promotion and relegation play out in

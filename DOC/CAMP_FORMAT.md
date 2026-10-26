@@ -24,7 +24,7 @@ All four are part of the [LMASTER Mod](LMASTER_MOD.md).
 | `SIMPRG.REL 0xa5488`–`0xa5558` | books a camp: the camp record (`pwkSche_GetCamp`, `PlPwork` task 6 `+0x1b00`) gets the week at `+0x0a`, 1 at `+0x1c`, the city at `+0x18` and `0x4bdd0`'s value at `+0x3c`. **confirmed** |
 | `pwkSche_GetCampType` (`0x255690`) | returns `+0x3c` of the running camp. Its callers are the training module (`SIMPRG.REL 0x1586b4`, the row of [`TRAINING_LIST`](TRAINING_FORMAT.md) table 10) and `pwkSche_CheckCampSucucess` (`0x256948`). **confirmed** |
 | `SIMPRG.REL` load lists `0x1cdd30` (entry 3), `0x23d618` | load `Camp_list.tbb` for the camp screen's module and for the training module during a camp |
-| `SIMPRG.REL` list `0x225df0` | loads `Camp_Explane.tbb` |
+| `SIMPRG.REL` load list `0x225d78` (entry 3) | loads `Camp_Explane.tbb` |
 | `SIMPRG.REL 0xa4a80` | walks `CAMP_EXPLANE`'s 153 pairs (`0x99`, resource 3 of the list at `0x225d78`) for a city and returns its message, or 0 when no pair matches. **confirmed** |
 
 ## `CAMP_LIST.TBB`

@@ -16,7 +16,7 @@ limits, for making 442–459 full clubs (the LMASTER third tier, phase 2).
 
 Every `addiu`/`addi`/`slti`/`sltiu`/`andi`/`ori` with an immediate of
 440 (`0x1b8`), 441 (`0x1b9`) or 442 (`0x1ba`) in the executable and the
-eleven overlays: 206 sites (**empirical**, the scan below). Each was
+ten overlays: 206 sites (**empirical**, the scan below). Each was
 read with its function and surroundings. A table indexed by club
 number without such an immediate (pointer arithmetic over a 441-entry
 array) doesn't show up this way; see [Still unknown](#still-unknown).

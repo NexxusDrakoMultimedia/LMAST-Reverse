@@ -22,7 +22,8 @@ That covers every edit the writers make: most keep the file's size
 (`pbdata.py`, `initteam.py`, `teaminit.py`, `uniform.py`, `plrsim.py`,
 `sqb.py setcmd`, and `mbb.py`, whose grown message files use the spare
 room in their slot, [`MBB_FORMAT.md`](MBB_FORMAT.md#writing)); `tbb.py
-replace` and `leaguesize.py build` can change it.
+replace`, `leaguesize.py build`, `clubrank.py addrows` and some
+`--mod` switches (`third-tier`) can change it.
 
 ## Why same-size patching needs no encryption
 
@@ -366,9 +367,9 @@ playoffs' schedule steps without their matches
 ([`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs)).
 Tested in PCSX2: the career goes from club creation to the 2006–07
 season with real club rankings, the playoff season's money and the
-usual sponsors. Start the career in England, since the switch names
-league 0. It needs the whole disc image. Running it again changes
-nothing.
+usual sponsors. Start the career in England, or in the nation
+`--skip-nation` names. It needs the whole disc image. Running it again
+changes nothing.
 
 `patch` copies the image first (use `--in-place` to patch a copy you made
 yourself), plans every write against the unmodified image, then writes

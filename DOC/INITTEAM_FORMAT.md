@@ -65,7 +65,9 @@ Empirical, checked by `initteam.py info`:
 | `0x00` | u32[32] | `PlTeam` id at positions 0–31, `0` for none |
 
 Only records 0–48 are read. Records 38–43 and 48 are empty, as are the
-unread 49–55, so 42 of the 49 read records have teams. For a league the
+unread 49–55, so 42 of the 49 read records have teams. (`--mod
+third-tier` fills records 50–55 and has the game read them,
+[`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3).) For a league the
 list is its starting table: record 0 is the English first division in
 the same order as table 0. Records 44–47 hold national teams. Knockout
 competitions have their entrants. The schedule's `LAST_RANK` team entries
@@ -122,8 +124,9 @@ Sheffield (41, 24th of 24 in the second division), on a
 Champions Division (the English second division), at home to the
 player's club. A club that finishes low in a second division stays
 there: the English second division's own-nation schedule (UID 1) keeps
-ranks 7–26 of last season's second division, and the game has no third
-tier to relegate to (user report).
+ranks 7–26 of last season's second division, and the retail game has
+no third tier to relegate to (user report; `--mod third-tier` adds one,
+[`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
 
 **Across leagues** (user report, PCSX2): F.C. Barcelona, swapped into
 the English Champions Division in the Season tab, has fixtures in that
@@ -176,6 +179,12 @@ are clubs from the rest of Europe (`Salzburg`, `Porto`, `Glasgow City`,
 and Oceania (`Flamengo`, `Cairo`, `Toronto`, `Kanagawa`, `North Shore`).
 The names go on past 441 to 542 (`Australia`, `New Zealand`). Those teams
 have no squad in this file.
+
+**Extended by `--mod third-tier`.** The table may also hold 18 more
+squads after club 441, for clubs 442–459 (457 squads, 182,848 bytes);
+`initteam.py` reads either size. `initteam.add_tier_squads` builds them
+from the database (each club's 25 players from `0x63f7`), as the
+LMASTER third tier needs ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-clubs-phase-2a)).
 
 ## Names
 
@@ -235,12 +244,6 @@ Chelsea and Highbury (Arsenal) are at stadium 96, AC Milan and Inter at
 99, Bayern, Dortmund and Leverkusen at 98, and Barcelona and La Boca at
 100 (110,000 seats each). The game gives the biggest clubs by reputation
 these stadiums instead of their real grounds.
-
-**Extended by `--mod third-tier`.** The table may also hold 18 more
-squads after club 441, for clubs 442–459 (457 squads, 182,848 bytes);
-`initteam.py` reads either size. `initteam.add_tier_squads` builds them
-from the database (each club's 25 players from `0x63f7`), as the
-LMASTER third tier needs ([`CLUB_LIMITS.md`](CLUB_LIMITS.md)).
 
 ## `INITNATIDATA.TBB`: nations
 

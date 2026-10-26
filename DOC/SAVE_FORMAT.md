@@ -872,12 +872,14 @@ hasn't been loaded in the game.
 
 ## The bigger save (`--mod third-tier`)
 
-`patch_disc.py --mod third-tier` (built as `save-expand`) grows two blocks for the LMASTER
-third tier ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)): block 2
-by 18 records of 0xa8, records 440–457, for clubs 442–459 (until
-`pwkOteam_Team2Otindex` is changed to map them there, they still reach
-club 3's record), and block 5 by seven past
-records of 0x98 at its old end (`+0xb50d0`) for competitions 49–55.
+`patch_disc.py --mod third-tier` (built as `save-expand`) grows two
+blocks for the LMASTER third tier
+([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)): block 2 by 18
+records of 0xa8, records 440–457, for clubs 442–459 (the same switch
+maps them there through `pwkOteam_Team2Otindex`,
+[`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-clubs-phase-2a)),
+and block 5 by seven past records of 0x98 at its old end (`+0xb50d0`)
+for competitions 49–55.
 **Confirmed** for the approach: the blocks' sizes come from the table
 at `0x533ac8`, `PlPworkTask` (`0x21d6f0`) allocates their sum, and the
 save's size follows the stream, counted in a first pass over the same
@@ -993,7 +995,8 @@ own files name their slot wasn't checked.
   staff candidate records, and what the youth limit of 4
   (`pwkTeam_GetYouthPlayerMax`) counts.
 - Other clubs: bytes `+0x9b`, `+0xa1` and `+0xa6`–`+0xa7`, the
-  non-resident clubs (442 on), the first u32 of PlMinfo/PlSinfo, PlSinfo
+  non-resident clubs' temporary records (442 on,
+  [`CLUB_LIMITS.md`](CLUB_LIMITS.md)), the first u32 of PlMinfo/PlSinfo, PlSinfo
   `+0x64`–`+0x8f`, and how far the manager's popularity goes in play.
 - The club ranking: when in the season it runs, which competitions
   `0x22`–`0x24` lower the status rank, the match record's byte behind

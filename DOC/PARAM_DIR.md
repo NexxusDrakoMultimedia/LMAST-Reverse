@@ -331,8 +331,7 @@ unused placeholders for kit names.
   nation tallies and the clubs' two counters feed (the three weighted
   values of `0x151568`).
 - Whether anything reads `CLUBEVENT.TBB`.
-- The tactics sliders' limits, and which regions `TOUR_LIST`'s numbers
-  are.
+- The tactics sliders' limits.
 - What's still open in the files that have a doc is listed there, for
   example the schedule packs
   ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#still-unknown)).

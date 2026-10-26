@@ -26,8 +26,8 @@ The tools take the Japanese folders wherever they take a path:
 present, `python SRC/regress.py run` also runs every check over them as
 `jp_<name>`.
 
-`patch_disc.py` patches a Japanese disc too, switches included
-([below](#patching-a-japanese-disc)), and `save.py --iso ISO_JP` reads
+`patch_disc.py` patches a Japanese disc too, with every switch but the
+third tier ([below](#patching-a-japanese-disc)), and `save.py --iso ISO_JP` reads
 and writes Japanese saves
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)). Still
 PAL-only: the editor and the save editor.
@@ -54,7 +54,7 @@ files in `ISO/` as the reference:
 
 `gamever.imm` does the same for constants held in instructions (loop
 bounds, table sizes). `python SRC/gamever.py check ISO_JP` lists every
-address the tools use and how each was found: all 31 are found.
+address the tools use and how each was found: all 37 are found.
 
 Each table's use in a tool checks it a second way (**empirical**, run on
 the Japanese disc):
@@ -70,11 +70,13 @@ the Japanese disc):
 
 ## Patching a Japanese disc
 
-`patch_disc.py patch` takes the Japanese image, with any of the 35
-switches:
+`patch_disc.py patch` takes the Japanese image, with every switch but
+`third-tier`, which refuses it ("made for the PAL executable only"), so
+LMASTER full can't be built for it; LMASTER lite and the other groups
+can:
 
 ```bash
-python SRC/patch_disc.py patch "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso" out.iso --mod lmaster-full --skip-tutorial
+python SRC/patch_disc.py patch "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso" out.iso --mod lmaster-lite,harder-economy,balance,league-balance --skip-tutorial
 ```
 
 The switches give their bytes as offsets in the PAL executable and
@@ -88,7 +90,8 @@ the function it called in PAL. Each switch then checks the bytes as on
 PAL, so a place the Japanese build changed is refused, not patched.
 
 What each switch finds there (**empirical**, from planning every switch
-on the Redump image):
+on the Redump image; `fee-tiers` and `slow-reputation`, added later,
+were patched onto it on 2026-10-27):
 
 | Switch | On the Japanese disc |
 |---|---|
@@ -107,8 +110,8 @@ Every patched spot's surrounding code (8 words either side, immediates
 and jump targets ignored) agrees between the builds in at least 12 of 17
 words, and the four below 14 are in `pwkUnkei_GetExpectSeat`, whose
 registers differ, and the merchandise table. A PAL disc patched with the
-same switches is byte for byte as before. A disc built with
-`--mod lmaster-full --skip-tutorial` hasn't been run in the game.
+same switches is byte for byte as before. No Japanese disc built with
+the switches has been run in the game yet.
 
 ## Confirmed from the game code
 
