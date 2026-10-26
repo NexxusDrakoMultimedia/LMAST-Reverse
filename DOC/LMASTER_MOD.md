@@ -226,8 +226,10 @@ What is known so far:
      competition), which changes each season as the games are simulated.
      **Built** as `--mod tier-uids`, (a) the leagues and (b) the
      movements ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-tier-uids-phase-3));
-     the leagues tested in PCSX2 into September, the movements not yet
-     run in the game. The rival goes down like any club (the user's
+     tested in PCSX2: a German career's season end moves the second
+     division's last club down and the tier's winner up, in your nation
+     and the others, after the fix that keeps the tiers' results
+     ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-tier-uids-phase-3)). The rival goes down like any club (the user's
      choice, 2026-10-27). Step (b): the movements, and your nation's
      tier at 5 clubs (an own-nation version of each tier, as the second
      divisions have). Found for (b), **confirmed**:

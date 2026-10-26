@@ -229,6 +229,15 @@ written into the save by hand, from their true final tables read out
 of block 5's pools ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-blocks)): in
 Germany Siegen won the tier and Trier was last.
 
+**Tested in PCSX2** (user report, with screenshots, 2026-10-27): that
+career, loaded on `LMAST-test-tiers-germany2.iso`, plays through the
+year end into 2007–08. The 2nd German League's 18 clubs have Siegen, the
+tier's winner, and not Paderborn, last the season before; Burghausen,
+17th, stays. England's Champions Division (other nations, its tier's
+record from the same hand-written tables) has Gillingham, English League
+1's winner, Sheffield once, and not Hull, last the season before. So
+both versions move one club each way.
+
 ## Still unknown
 
 - When a schedule's pool slots are freed, and the true peak of each
