@@ -176,6 +176,9 @@ evidence and how it was tested; the git history holds the rest.
       widgets ([`README.md`](README.md#editor))
 - [x] `editor.py` National calendar tab (`natcal.py`), tested through
       the widgets ([`README.md`](README.md#editor))
+- [x] `editor.py` Player links tab (`plrsim.py setgroup`) and Nations &
+      stadiums tab (`initteam.py setnation`, `setstadium`), tested
+      through the widgets ([`README.md`](README.md#editor))
 
 ## 6. Distribute: sharing a mod
 

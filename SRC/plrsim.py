@@ -41,6 +41,7 @@ Usage:
     python plrsim.py setgroup <in.PAC> <out.PAC> 5 <player>=<club>,... ...
     python plrsim.py setgroup <in.PAC> <out.PAC> 11|12 <scout>=<player>,... ...
     python plrsim.py setgroup <in.PAC> <out.PAC> 13|14 <group>=[<level>:]<id>,... ...
+                     (several streams at once: <entry> <pair> ... <entry> <pair> ...)
     python plrsim.py roundtrip <PLRESOURCESIM.PAC | DAT/PARAM>
 
 `show` prints one entry in readable form, naming players, managers and
@@ -53,8 +54,9 @@ the level rates, so they follow it. `setgroup` edits a stream: a
 player's clubs (5), a scout's exclusive or semi-exclusive players (11,
 12), or a combination (13, 14; groups numbered as `show` numbers them,
 the next number adding one, ids being database ids of players and
-managers). An empty value removes the group. The entry keeps its size,
-so a stream may only grow into its zero padding (entry 5 has none).
+managers). An empty value removes the group, and a bare entry number
+between pairs switches to that stream. Each entry keeps its size, so a
+stream may only grow into its zero padding (entry 5 has none).
 `roundtrip` re-encodes the unchanged free-agent list, branch costs and
 streams through those encoders and checks that the rebuilt pack equals
 the original byte for byte.
@@ -645,13 +647,32 @@ def parse_ids(text):
     return out
 
 
-def cmd_setgroup(src, dst, entry, pairs):
+def group_arg(entry, key, members, level=None):
+    """The `setgroup` argument for one set_group call."""
+    ids = ",".join(str(x) for x in members)
+    if entry in (13, 14) and level is not None and members:
+        ids = "%d:%s" % (level, ids)
+    return "%d=%s" % (key, ids)
+
+
+def cmd_setgroup(src, dst, args):
+    """setgroup <in> <out> <entry> <pair> ... [<entry> <pair> ...]: a bare
+    number picks the stream the pairs after it edit."""
     if os.path.abspath(src) == os.path.abspath(dst):
         raise SystemExit("refusing to overwrite the input; write to a new file")
     with open(src, "rb") as f:
         data = f.read()
-    gs = groups(data, entry)
-    for pair in pairs:
+    entry, edited = None, {}
+    for pair in args:
+        if pair.isdigit():
+            entry = int(pair)
+            if entry not in STREAMS:
+                raise SystemExit("entry %d: the streams are %s" % (entry, ", ".join(map(str, STREAMS))))
+            if entry not in edited:
+                edited[entry] = groups(data, entry)
+            continue
+        if entry is None:
+            raise SystemExit("give an entry (%s) before %r" % (", ".join(map(str, STREAMS)), pair))
         key, sep, value = pair.partition("=")
         level = None
         try:
@@ -662,13 +683,15 @@ def cmd_setgroup(src, dst, entry, pairs):
                 if not lv.isdigit():
                     raise ValueError("expected <group>=<level>:<id>,<id>..., got %r" % pair)
                 level = int(lv)
-            old = set_group(entry, gs, int(key), parse_ids(value), level)
+            old = set_group(entry, edited[entry], int(key), parse_ids(value), level)
         except ValueError as e:
-            raise SystemExit("%s: %s" % (pair, e))
-        print("%s %s: %s -> %s" % (("player", "scout", "scout", "group", "group")[STREAMS.index(entry)],
-                                   key, ",".join(map(str, old)) or "(none)", value or "(removed)"))
+            raise SystemExit("entry %d %s: %s" % (entry, pair, e))
+        print("entry %d %s %s: %s -> %s" % (entry, ("player", "scout", "scout", "group", "group")[
+            STREAMS.index(entry)], key, ",".join(map(str, old)) or "(none)", value or "(removed)"))
+    out = data
     try:
-        out = encode_groups(data, entry, gs)
+        for entry, gs in edited.items():
+            out = encode_groups(out, entry, gs)
     except ValueError as e:
         raise SystemExit(str(e))
     if len(out) != len(data):
@@ -774,8 +797,8 @@ def main(argv):
         cmd_setfree(args[0], args[1], args[2:])
     elif cmd == "setbranch" and len(args) >= 3:
         cmd_setbranch(args[0], args[1], args[2:])
-    elif cmd == "setgroup" and len(args) >= 4 and args[2].isdigit() and int(args[2]) in STREAMS:
-        cmd_setgroup(args[0], args[1], int(args[2]), args[3:])
+    elif cmd == "setgroup" and len(args) >= 4:
+        cmd_setgroup(args[0], args[1], args[2:])
     else:
         print(__doc__)
         return 1

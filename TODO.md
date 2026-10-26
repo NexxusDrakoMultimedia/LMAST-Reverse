@@ -44,7 +44,7 @@ aims at:
 |---|---|---|
 | The starting season | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results have writers and editor tabs, tested in PCSX2; the national-team calendar has a writer and tab | room for bigger second divisions (2), a smaller first division and the national calendar tested (7) |
 | Data | players, staff, clubs, kits, facilities, training, camps, tours, the tactics presets and the PR events have writers and tabs | the remaining player and staff fields (2), the stadium and emblem tables (3) |
-| Parameters | every `PARAM/` table's layout is known; `tbb.py replace` swaps any table | the open fields (2), tabs for the resource packs' writers (5) |
+| Parameters | every `PARAM/` table's layout is known; `tbb.py replace` swaps any table | the open fields (2) |
 | Text | every message in every language, with a writer and the Text tab | the screen-set variables and a few message categories (2) |
 
 ## 1. Read: every file parsed and checked
@@ -232,11 +232,6 @@ per kind of data, each editing through its writer and taking the allowed
 values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
-- [ ] Tabs for the resource packs' writers: the affiliations, scouts'
-      exclusives and combinations (`plrsim.py setgroup`,
-      [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#writing-the-streams)),
-      and the nations and stadiums (`initteam.py setnation`,
-      `setstadium`, [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md))
 - [ ] The editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod

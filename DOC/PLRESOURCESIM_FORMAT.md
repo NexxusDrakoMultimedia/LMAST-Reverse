@@ -266,6 +266,11 @@ python SRC/plrsim.py setgroup DAT/PARAM/PLRESOURCESIM.PAC out.PAC 13 0=2:309,231
   a group (level 1 unless given). Ids are database ids, managers from
   27,950.
 - An empty value (`309=`) removes the group.
+- A bare entry number between pairs switches streams, so one command
+  can edit several (`5 309=11,13 13 0=2:309,231`).
+
+The editor's Player links tab makes the same edits and logs them as one
+`setgroup` command.
 
 The writer refuses what the readers can't take: an empty group, players
 out of order or listed twice in entry 5, a scout listed twice, a

@@ -285,7 +285,9 @@ doesn't read, and keeps each row's two pad bytes. `setstadium` takes a
 roof of 0 or 1, a level of 0–4 (the range on the disc) and a capacity
 in thousands (0–255). `roundtrip` rebuilds both files through the same
 encoders; both equal the originals byte for byte, on both releases.
-Neither edit has been checked in the game.
+The editor's Nations & stadiums tab makes the same edits and logs
+them as `setnation` and `setstadium` commands. Neither edit has been
+checked in the game.
 
 ## Still unknown
 

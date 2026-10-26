@@ -71,6 +71,21 @@ Tabs:
              DOC/PLRESOURCESIM_FORMAT.md). Refuses a player already in the
              list or in a club's squad. Shares the pack with the Clubs tab:
              each saves its edits onto the file as it is then.
+    Player links
+             the clubs each player is affiliated with, each scout's
+             exclusive and semi-exclusive players, and the good and bad
+             combinations of players and managers (PLRESOURCESIM.PAC
+             entries 5 and 11-14, plrsim.py setgroup;
+             DOC/PLRESOURCESIM_FORMAT.md#writing-the-streams). Each list
+             keeps its entry's size; an edit that no longer fits is
+             refused. Shares the pack with the Clubs and Free agents tabs.
+    Nations & stadiums
+             each nation's UEFA rank and points (nations 1-52) and world
+             rating (INITNATIDATA.TBB, initteam.py setnation), and each
+             stadium's roof, level and capacity, with the clubs that use
+             it (STADIUM_DATA.TBB, initteam.py setstadium;
+             DOC/INITTEAM_FORMAT.md). The Clubs and New club tabs read the
+             stadiums again after a save.
     Regulations
              each schedule's match rules, win bonus, prizes and places
              (REGULATION.TBB, regulation.py set; DOC/REGULATION_FORMAT.md),
@@ -158,6 +173,7 @@ import initteam
 import leaguesize
 import mbb
 import natcal
+import pac
 import patch_disc
 import pbdata
 import plrcommon
@@ -368,7 +384,8 @@ class Tab:
         (OTEAMMEMBER.TBB), "people" (the People tab's records) or
         "schedules" (the Season tab's size change, which also writes
         REGULATION.TBB, CLUBRESULT.TBB and, for a size the club ranking
-        has no row for, CLUB_RANK_SYSTEM.TBB)."""
+        has no row for, CLUB_RANK_SYSTEM.TBB) or "stadiums"
+        (STADIUM_DATA.TBB, from the Nations & stadiums tab)."""
         pass
 
 
@@ -963,7 +980,9 @@ class ClubsTab(Tab):
         self.app.update_title()
 
     def changed(self, what):
-        if what == "people" and self.current is not None and self.db is not None:
+        if what == "stadiums" and self.db is not None:
+            self.stadiums = initteam.StadiumData(self.app.mod.source(STADIUMS))
+        if what in ("people", "stadiums") and self.current is not None and self.db is not None:
             self.show(self.current)         # the squad's names come from People
 
     def people(self, kind):
@@ -1307,6 +1326,8 @@ class NewClubTab(Tab):
         if what == "squads":
             squads = initteam.OteamMembers(self.app.mod.source(OTEAM)).squads
             self.club_of = {m.player: team for team, s in squads.items() for m in s}
+        if what == "stadiums":
+            self.stadiums = initteam.StadiumData(self.app.mod.source(STADIUMS))
         self.show()
 
     def people(self, kind):
@@ -5010,6 +5031,578 @@ class FreeAgentsTab(Tab):
         return True
 
 
+LINK_LISTS = (
+    (5, "Player affiliations", "player", "clubs",
+     "The clubs each player is affiliated with. Players are kept in id order, as the game's "
+     "search needs. This list fills its entry exactly: a club added here must be given up "
+     "somewhere else."),
+    (11, "Scouts' exclusive players", "scout", "players",
+     "The players each scout has exclusive knowledge of. A scout may be listed once."),
+    (12, "Scouts' semi-exclusive players", "scout", "players",
+     "The players each scout has semi-exclusive knowledge of. A scout may be listed once."),
+    (13, "Good combinations", "group", "members",
+     "Players and managers who work well together, at level 1-4. No screen shows them. "
+     "A group needs at least two members."),
+    (14, "Bad combinations", "group", "members",
+     "Players and managers who don't get on, at level 1-4. No screen shows them. A group "
+     "needs at least two members."),
+)
+
+
+class LinksTab(Tab):
+    """The streams of PLRESOURCESIM.PAC (entries 5, 11-14): players'
+    affiliated clubs, scouts' exclusive and semi-exclusive players, and the
+    good and bad combinations, through plrsim.set_group, as `plrsim.py
+    setgroup` does. Names come from the People tab and MES.PAC. Shares the
+    pack with the Clubs and Free agents tabs: each saves its edits onto
+    the file as it is then."""
+    title = "Player links"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.gs = None              # entry -> groups as edited
+        self.ops = {}               # entry -> [(key, members, level)], in edit order
+        self.current = None         # (entry, group place) on the right
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="List").pack(side="left")
+        self.list_var = tk.StringVar(value=self.list_label(LINK_LISTS[0]))
+        box = ttk.Combobox(bar, textvariable=self.list_var, state="readonly", width=34,
+                           values=[self.list_label(x) for x in LINK_LISTS])
+        box.pack(side="left", padx=(4, 12))
+        box.bind("<<ComboboxSelected>>", lambda e: self.list_changed())
+        self.list_box = box
+        ttk.Label(bar, text="Find (name or id)").pack(side="left")
+        self.find_var = tk.StringVar()
+        find = ttk.Entry(bar, textvariable=self.find_var, width=22)
+        find.pack(side="left", padx=(4, 12))
+        find.bind("<Return>", lambda e: self.refresh_list())
+        ttk.Button(bar, text="Search", command=self.refresh_list).pack(side="left")
+        self.count_label = ttk.Label(bar, text="")
+        self.count_label.pack(side="left", padx=12)
+        self.help_label = ttk.Label(self.frame, text="", foreground="#555", wraplength=1100,
+                                    justify="left")
+        self.help_label.pack(anchor="w", padx=8)
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=6)
+        left = ttk.Frame(panes)
+        new = ttk.LabelFrame(left, text="New group")
+        new.pack(side="bottom", fill="x", pady=(4, 0))
+        self.new_key_label = ttk.Label(new, text="")
+        self.new_key_label.grid(row=0, column=0, sticky="w", padx=4)
+        self.new_key_var = tk.StringVar()
+        self.new_key = ttk.Entry(new, textvariable=self.new_key_var, width=8)
+        self.new_key.grid(row=0, column=1, sticky="w", padx=4, pady=2)
+        ttk.Label(new, text="ids (a,b,...)").grid(row=0, column=2, sticky="w", padx=4)
+        self.new_ids_var = tk.StringVar()
+        ttk.Entry(new, textvariable=self.new_ids_var, width=24).grid(row=0, column=3, sticky="w",
+                                                                    padx=4, pady=2)
+        self.new_button = ttk.Button(new, text="Add group", command=self.add_group)
+        self.new_button.grid(row=0, column=4, padx=4, pady=2)
+        cols = ("key", "name", "members")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, width in zip(cols, (60, 170, 260)):
+            self.tree.heading(c, text=c.capitalize())
+            self.tree.column(c, width=width, stretch=c == "members")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=2)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=2)
+
+    @staticmethod
+    def list_label(spec):
+        return "%d %s" % spec[:2]
+
+    @property
+    def spec(self):
+        return next(x for x in LINK_LISTS if self.list_label(x) == self.list_var.get())
+
+    @property
+    def entry(self):
+        return self.spec[0]
+
+    # loading
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(SIMPAC)
+            with open(self.path, "rb") as f:
+                data = f.read()
+            _, blobs = pac.binpac_blobs(data)
+            self.gs, self.room = {}, {}
+            for e in plrsim.STREAMS:
+                self.gs[e] = plrsim.groups(data, e)
+                _, end, _ = plrsim.stream(blobs[e], e)
+                self.room[e] = (len(blobs[e]), len(end))
+            self.original = {e: [[k, list(m)] for k, m in g] for e, g in self.gs.items()}
+            self.teams = initteam.team_names(mod.source(MES), 1)
+        except (ValueError, struct.error, OSError, IndexError) as e:
+            self.gs = None
+            self.app.status("Couldn't load the player links: %s" % e)
+            messagebox.showerror("Player links", "Couldn't load the player links:\n%s" % e)
+            return
+        self.ops = {}
+        self.current = None
+        self.detail.clear()
+        self.list_changed()
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def changed(self, what):
+        if what == "people" and self.gs is not None:
+            self.refresh_list()
+            if self.current is not None:
+                self.show(*self.current)
+
+    # names
+
+    def people(self, kind):
+        records = self.app.people.records
+        return records[kind] if records else None
+
+    def person(self, kind, i):
+        records = self.people(kind)
+        return records[i].name if records and 0 <= i < len(records) else ""
+
+    def key_name(self, entry, key):
+        if entry == 5:
+            return self.person("players", key)
+        if entry in (11, 12):
+            return self.person("scouts", key)
+        return "level %d" % key
+
+    def member_name(self, entry, x):
+        if entry == 5:
+            return self.teams.get(x, "")
+        if x >= plrsim.PLAYERS:
+            return self.person("managers", x - plrsim.PLAYERS) + " (manager)"
+        return self.person("players", x)
+
+    def used(self, entry, gs=None):
+        """Bytes the stream needs, with its end marker."""
+        gs = self.gs[entry] if gs is None else gs
+        return 2 * (sum(1 + len(m) for _, m in gs) + self.room[entry][1])
+
+    # the list
+
+    def list_changed(self):
+        spec = self.spec
+        self.help_label.configure(text=spec[4])
+        self.new_key_label.configure(text="level" if spec[0] in (13, 14) else spec[2])
+        self.current = None
+        self.detail.clear()
+        self.refresh_list()
+
+    def refresh_list(self):
+        if self.gs is None:
+            return
+        entry = self.entry
+        find = self.find_var.get().strip().lower()
+        self.tree.delete(*self.tree.get_children())
+        edited = {op[0] for op in self.ops.get(entry, ())}
+        shown = 0
+        for i, (key, members) in enumerate(self.gs[entry]):
+            names = [self.member_name(entry, x) for x in members]
+            if find:
+                hit = str(key) == find or any(str(x) == find for x in members) if find.isdigit() \
+                    else find in self.key_name(entry, key).lower() or \
+                    any(find in n.lower() for n in names)
+                if not hit:
+                    continue
+            if shown == LIST_LIMIT:
+                break
+            label = ", ".join("%d %s" % (x, n) if n else str(x) for x, n in zip(members, names))
+            self.tree.insert("", "end", iid=str(i), values=(
+                key if entry not in (13, 14) else i,
+                self.key_name(entry, key), label),
+                tags=("edited",) if (i if entry in (13, 14) else key) in edited else ())
+            shown += 1
+        size = self.room[entry][0]
+        self.count_label.configure(text="%d groups%s; %d of %d bytes used" % (
+            len(self.gs[entry]), ", showing %d" % shown if shown < len(self.gs[entry]) else "",
+            self.used(entry), size))
+        self.tree.heading("key", text="Group" if entry in (13, 14) else self.spec[2].capitalize())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(self.entry, int(sel[0]))
+
+    def show(self, entry, place):
+        if entry != self.entry or place >= len(self.gs[entry]):
+            self.current = None
+            self.detail.clear()
+            return
+        self.current = (entry, place)
+        self.detail.clear()
+        box = self.detail.inner
+        key, members = self.gs[entry][place]
+        combi = entry in (13, 14)
+        title = "group %d" % place if combi else "%s %d %s" % (self.spec[2], key,
+                                                                self.key_name(entry, key))
+        ttk.Label(box, text=title, font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        if combi:
+            row = ttk.Frame(box)
+            row.pack(anchor="w", padx=8, pady=4)
+            ttk.Label(row, text="level").pack(side="left", padx=(0, 8))
+            value_input(row, ("choice", [1, 2, 3, 4]), str, lambda: self.gs[entry][place][0],
+                        lambda t, revert: self.commit(entry, place, list(members), int(t), revert)
+                        ).pack(side="left")
+        frame = ttk.LabelFrame(box, text=self.spec[3].capitalize())
+        frame.pack(fill="x", padx=8, pady=6)
+        handle = place if combi else key
+        level = key if combi else None
+        for r, x in enumerate(members):
+            ttk.Label(frame, text="%d  %s" % (x, self.member_name(entry, x))).grid(
+                row=r, column=0, sticky="w", padx=6, pady=1)
+            ttk.Button(frame, text="Remove",
+                       command=lambda x=x: self.commit(entry, handle, [m for m in members if m != x],
+                                                       level)).grid(row=r, column=1, padx=6, pady=1)
+        add = ttk.Frame(box)
+        add.pack(anchor="w", padx=8, pady=4)
+        ttk.Label(add, text="Add id").pack(side="left")
+        self.add_var = tk.StringVar()
+        entry_box = ttk.Entry(add, textvariable=self.add_var, width=10)
+        entry_box.pack(side="left", padx=4)
+        do_add = lambda e=None: self.add_member(entry, handle, members, level)
+        entry_box.bind("<Return>", do_add)
+        self.add_button = ttk.Button(add, text="Add", command=do_add)
+        self.add_button.pack(side="left")
+        self.remove_group_button = ttk.Button(box, text="Remove this group",
+                                              command=lambda: self.commit(entry, handle, [], level))
+        self.remove_group_button.pack(anchor="w", padx=8, pady=8)
+
+    # editing
+
+    def add_member(self, entry, handle, members, level):
+        text = self.add_var.get().strip()
+        if not text.isdigit():
+            return self.refuse("expected an id, got %r" % text)
+        self.commit(entry, handle, list(members) + [int(text)], level)
+
+    def add_group(self):
+        entry = self.entry
+        try:
+            ids = plrsim.parse_ids(self.new_ids_var.get().replace(" ", ""))
+        except ValueError as e:
+            return self.refuse(str(e))
+        key = self.new_key_var.get().strip()
+        if not key.isdigit():
+            return self.refuse("give the new group's %s" % ("level" if entry in (13, 14)
+                                                          else self.spec[2]))
+        if entry in (13, 14):
+            self.commit(entry, len(self.gs[entry]), ids, int(key))
+        else:
+            if int(key) in [k for k, _ in self.gs[entry]]:
+                return self.refuse("%s %s already has a group" % (self.spec[2], key))
+            self.commit(entry, int(key), ids)
+
+    def commit(self, entry, handle, members, level=None, revert=None):
+        """set_group on a copy; kept only when the stream still fits."""
+        trial = [[k, list(m)] for k, m in self.gs[entry]]
+        try:
+            old = plrsim.set_group(entry, trial, handle, members, level)
+            if self.used(entry, trial) > self.room[entry][0]:
+                raise ValueError("the list would need %d bytes; its entry holds %d"
+                                 % (self.used(entry, trial), self.room[entry][0]))
+        except ValueError as e:
+            if revert:
+                revert()
+            return self.refuse("%s %d: %s" % (self.spec[2], handle, e))
+        self.gs[entry] = trial
+        self.ops.setdefault(entry, []).append((handle, list(members), level))
+        if self.gs[entry] == self.original[entry]:
+            self.ops.pop(entry)         # back to the disc's list
+        self.app.status("entry %d %s %d: %s -> %s" % (
+            entry, self.spec[2], handle, ",".join(map(str, old)) or "(none)",
+            ",".join(map(str, members)) or "(removed)"))
+        self.refresh_list()
+        place = handle if entry in (13, 14) else next(
+            (i for i, (k, _) in enumerate(self.gs[entry]) if k == handle), None)
+        if place is not None and members and place < len(self.gs[entry]):
+            if self.tree.exists(str(place)):
+                self.tree.selection_set(str(place))
+            self.frame.after_idle(lambda: self.show(entry, place))
+        else:
+            self.current = None
+            self.detail.clear()
+        self.app.update_title()
+        return True
+
+    def refuse(self, message):
+        self.app.status("Refused: " + message)
+        messagebox.showerror("Player links", message)
+        return False
+
+    def dirty(self):
+        return bool(self.ops)
+
+    def save(self):
+        if not self.ops:
+            return True
+        mod = self.app.mod
+        # The Clubs and Free agents tabs write the same pack, so start from
+        # the file as it is now.
+        src = mod.source(SIMPAC)
+        out = mod.target(SIMPAC)
+        temps = [(out + ".new", out)]
+        args = []
+        try:
+            with open(src, "rb") as f:
+                data = f.read()
+            new = data
+            for entry in sorted(self.ops):
+                gs = plrsim.groups(data, entry)
+                args.append(str(entry))
+                for handle, members, level in self.ops[entry]:
+                    plrsim.set_group(entry, gs, handle, members, level)
+                    args.append(plrsim.group_arg(entry, handle, members, level))
+                new = plrsim.encode_groups(new, entry, gs)
+            if len(new) != len(data):
+                raise ValueError("rebuilt pack is %d bytes, not %d" % (len(new), len(data)))
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(new)
+        except (ValueError, struct.error, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Player links", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        cmd = ["python", "SRC/plrsim.py", "setgroup", quote(shown_path(src)),
+               quote(shown_path(out + ".new"))] + args
+        n = sum(len(v) for v in self.ops.values())
+        lines = log_lines("Player links: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
+NATIONS = "PARAM/" + initteam.NATION_TBB
+NATION_LABELS = {"uefa_rank": "UEFA ranking position", "uefa_points": "UEFA coefficient points",
+                 "world": "world rating (÷ 4 is the national team's rank)"}
+STADIUM_LABELS = {"roof": "roof", "level": "stadium level", "capacity": "capacity (thousands)"}
+
+
+class NationsTab(Tab):
+    """INITNATIDATA.TBB (each nation's UEFA rank and points and world
+    rating) and STADIUM_DATA.TBB (each stadium's roof, level and capacity),
+    through initteam's NationData.set and StadiumData.set, as
+    `initteam.py setnation` and `setstadium` do. Nation names come from the
+    People tab; a stadium is named by the clubs whose record uses it."""
+    title = "Nations & stadiums"
+    KINDS = ("Nations", "Stadiums")
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.nat = self.st = None
+        self.changes = {"Nations": {}, "Stadiums": {}}   # (row, field) -> value
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        self.kind_var = tk.StringVar(value=self.KINDS[0])
+        for k in self.KINDS:
+            ttk.Radiobutton(bar, text=k, value=k, variable=self.kind_var,
+                            command=self.kind_changed).pack(side="left", padx=4)
+        ttk.Label(bar, text="UEFA rank and points are read for nations 1-%d only "
+                            "(DOC/INITTEAM_FORMAT.md)." % initteam.NationData.UEFA,
+                  foreground="#555").pack(side="left", padx=12)
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("id", "name", "a", "b", "c")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, width in zip(cols, (50, 200, 80, 80, 80)):
+            self.tree.column(c, width=width, stretch=c == "name")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=1)
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.nat = initteam.NationData(mod.source(NATIONS))
+            self.st = initteam.StadiumData(mod.source(STADIUMS))
+            db = initteam.TeamDb(mod.source(SIMPAC))
+            teams = initteam.team_names(mod.source(MES), 1)
+        except (ValueError, struct.error, OSError) as e:
+            self.nat = self.st = None
+            self.app.status("Couldn't load the nations and stadiums: %s" % e)
+            messagebox.showerror("Nations & stadiums", "Couldn't load:\n%s" % e)
+            return
+        self.users = {}
+        for team, r in sorted(db.records.items()):
+            self.users.setdefault(r["stadium"], []).append(teams.get(team, str(team)))
+        self.changes = {"Nations": {}, "Stadiums": {}}
+        self.kind_changed()
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def changed(self, what):
+        if what == "people" and self.nat is not None:
+            self.refresh_list()
+
+    @property
+    def kind(self):
+        return self.kind_var.get()
+
+    def table(self, kind=None):
+        return self.nat if (kind or self.kind) == "Nations" else self.st
+
+    def name(self, row):
+        if self.kind == "Nations":
+            nations = self.app.people.nations if self.app.people.records else {}
+            return nations.get(row, "")
+        users = self.users.get(row, [])
+        return ", ".join(users[:3]) + (" +%d" % (len(users) - 3) if len(users) > 3 else "")
+
+    def kind_changed(self):
+        self.current = None
+        self.detail.clear()
+        heads = (("Nation", "Name", "UEFA rank", "UEFA pts", "World") if self.kind == "Nations"
+                 else ("Id", "Clubs", "Roof", "Level", "Seats"))
+        for c, text in zip(("id", "name", "a", "b", "c"), heads):
+            self.tree.heading(c, text=text)
+        self.refresh_list()
+
+    def refresh_list(self):
+        if self.nat is None:
+            return
+        self.tree.delete(*self.tree.get_children())
+        edited = {r for r, _ in self.changes[self.kind]}
+        if self.kind == "Nations":
+            rows = [(n, r) for n, r in self.nat.rows.items()]
+        else:
+            rows = list(enumerate(self.st.rows))
+        for i, r in rows:
+            if self.kind == "Nations":
+                values = (i, self.name(i)) + ((r[0], r[1]) if i <= initteam.NationData.UEFA
+                                              else ("-", "-")) + (r[2],)
+            else:
+                values = (i, self.name(i), "yes" if r[0] else "no", r[1], self.st.capacity(i))
+            self.tree.insert("", "end", iid=str(i), values=values,
+                             tags=("edited",) if i in edited else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    def show(self, row):
+        self.current = row
+        self.detail.clear()
+        box = self.detail.inner
+        t = self.table()
+        nations = self.kind == "Nations"
+        ttk.Label(box, text="%s %d  %s" % ("nation" if nations else "stadium", row, self.name(row)),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        if not nations:
+            ttk.Label(box, text="Used by: %s" % (", ".join(self.users.get(row, [])) or "no club "
+                                                 "record"), foreground="#555", wraplength=500,
+                      justify="left").pack(anchor="w", padx=8)
+        frame = ttk.LabelFrame(box, text="Fields")
+        frame.pack(fill="x", padx=8, pady=6)
+        labels = NATION_LABELS if nations else STADIUM_LABELS
+        for r, name in enumerate(t.FIELDS):
+            ttk.Label(frame, text=labels[name]).grid(row=r, column=0, sticky="w", padx=(6, 12), pady=2)
+            i = t.FIELDS.index(name)
+            get = (lambda i=i: self.nat.rows[row][i]) if nations else (lambda i=i: self.st.rows[row][i])
+            if nations and name != "world" and row > initteam.NationData.UEFA:
+                ttk.Label(frame, text="%d (not read)" % get()).grid(row=r, column=1, sticky="w")
+                continue
+            lo, hi = t.RANGES[name]
+            spec = ("choice", [0, 1]) if name == "roof" else ("range", lo, hi)
+            label = (lambda v: "roof" if v else "no roof") if name == "roof" else str
+            value_input(frame, spec, label, get,
+                        lambda text, revert, name=name: self.commit(row, name, text, revert)
+                        ).grid(row=r, column=1, sticky="w", pady=2)
+        if not nations:
+            ttk.Label(box, text="%d seats%s" % (self.st.capacity(row), " (the game adds 500 for "
+                                                "this stadium)" if row in self.st.BONUS else ""),
+                      foreground="#555").pack(anchor="w", padx=8)
+
+    def commit(self, row, name, text, revert):
+        kind = self.kind
+        try:
+            old = self.table(kind).set(row, name, int(text))
+        except ValueError as e:
+            revert()
+            message = "%s %d: %s" % (kind[:-1].lower(), row, e)
+            self.app.status(message)
+            messagebox.showerror("Nations & stadiums", message)
+            return False
+        self.changes[kind].pop((row, name), None)
+        self.changes[kind][(row, name)] = int(text)
+        self.app.status("%s %d %s: %d -> %s" % (kind[:-1].lower(), row, name, old, text))
+        self.refresh_list()
+        if self.tree.exists(str(row)):
+            self.tree.see(str(row))
+        if kind == "Stadiums":
+            self.frame.after_idle(lambda: self.show(row) if self.current == row else None)
+        self.app.update_title()
+        return True
+
+    def dirty(self):
+        return any(self.changes.values())
+
+    def save(self):
+        if not self.dirty():
+            return True
+        mod = self.app.mod
+        files = (("Nations", NATIONS, "setnation", self.nat),
+                 ("Stadiums", STADIUMS, "setstadium", self.st))
+        temps, cmds = [], []
+        try:
+            for kind, rel, verb, t in files:
+                if not self.changes[kind]:
+                    continue
+                out = mod.target(rel)
+                temps.append((out + ".new", out))
+                os.makedirs(os.path.dirname(out), exist_ok=True)
+                with open(out + ".new", "wb") as f:
+                    f.write(t.encode())
+                args, last = [], None
+                for (row, name), value in sorted(self.changes[kind].items()):
+                    if row != last:
+                        args.append(str(row))
+                        last = row
+                    args.append("%s=%d" % (name, value))
+                cmds.append(["python", "SRC/initteam.py", verb, quote(shown_path(mod.source(rel))),
+                             quote(shown_path(out + ".new"))] + args)
+        except (ValueError, struct.error, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Nations & stadiums", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        stadiums = bool(self.changes["Stadiums"])
+        n = sum(len(v) for v in self.changes.values())
+        lines = log_lines("Nations & stadiums: %d changes" % n, cmds, temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %d changes" % n)
+        if stadiums:
+            self.app.notify(self, "stadiums")
+        return True
+
+
 class LogTab(Tab):
     """The commands each save corresponds to, as written to editor.log."""
     title = "Log"
@@ -5431,6 +6024,8 @@ class App:
         self.season = SeasonTab(self)
         self.natcal = NationalCalendarTab(self)
         self.free = FreeAgentsTab(self)
+        self.links = LinksTab(self)
+        self.nations = NationsTab(self)
         self.regulations = RegulationsTab(self)
         self.clubrank = ClubRankTab(self)
         self.training = TrainingTab(self)
@@ -5441,7 +6036,7 @@ class App:
         self.tactics = TacticsTab(self)
         self.comments = CommentsTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.natcal, self.free,
-                     self.regulations, self.clubrank, self.training, self.camps, self.tours,
+                     self.links, self.nations, self.regulations, self.clubrank, self.training, self.camps, self.tours,
                      self.facilities, self.clubevents, self.tactics, self.kits, self.text,
                      self.comments]
         self.log_tab = LogTab(self)
