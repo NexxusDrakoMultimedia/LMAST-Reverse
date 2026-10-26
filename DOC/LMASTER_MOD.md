@@ -229,7 +229,38 @@ What is known so far:
      ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-tier-uids-phase-3a)); not
      yet run in the game. Step (b): the movements, and your nation's
      tier at 5 clubs (an own-nation version of each tier, as the second
-     divisions have).
+     divisions have). Found for (b), **confirmed**:
+     - `ScheCallback_ProcPromotion` (`0x1131c8`), once at a career's
+       start, puts your club and the rival in the first two empty places
+       of your second division's past record (the nations' second
+       divisions in a 6-entry table at `0x51ad70`, nations 1–6 to
+       competitions 1, 7, 12, 17, 23, 28); that is how they become ranks
+       25 and 26 in England.
+     - The past records are seeded for competitions 0–48 only
+       (`0x253200`, `slti 0x31`); the seed table's rows 49–55 are empty.
+     - `CScheEuro::calcCompetetionFinish` (`0x205fa8`, `slti 0x31`)
+       writes no record from competition 49 on. Past it, the yearly
+       honours (`pwkRec_GetCompeConventionRecord*`, `0x253af8`–`0x253c58`)
+       exist for competitions 0–48 only and return null past them, so a
+       third tier must write its table and skip the honours and the title
+       effects.
+     - Every own-nation version of a domestic UID (second division,
+       cup qualifying, cup, league cup) differs from its other-nations
+       version only by your club's and the rival's places, the cups
+       chaining on through `NOW_RANK` of their own versions. With your
+       second division at its real size, each becomes a copy of its
+       other-nations version, its UID references moved to the own ones.
+
+     The plan for (b): each season a second division takes its own
+     ranks but the last plus its tier's rank 1, and a tier its own ranks
+     from 2 plus the second division's last. Season 1 is seeded so that
+     holds: a second division's seeded last place holds a tier club, and
+     the tier's rank 1 that last club. In your nation,
+     `ProcPromotion` instead places your club and the rival in the
+     second division's ranks S − 2 and S − 1 and sends the two below
+     them down to your nation's 5-club tier. A tier club in a seeded last
+     place plays that nation's cups in season 1, as relegated clubs do in
+     later seasons.
   4. Two seasons played in PCSX2.
 - **Left to trace:** the rest of each phase; how your club and the rival
   get ranks 25 and 26 of the second division's first record; which
