@@ -26,10 +26,10 @@ The tools take the Japanese folders wherever they take a path:
 present, `python SRC/regress.py run` also runs every check over them as
 `jp_<name>`.
 
-Still PAL-only: the `patch_disc.py` switches (`--skip-tutorial`,
-`--mod lmaster-full` and the rest), which check the bytes they replace and
-refuse a disc that doesn't hold them; `save.py`, which takes no ISO
-folder and can't read a Japanese save yet (below); and the editor.
+`patch_disc.py` patches a Japanese disc too, switches included
+([below](#patching-a-japanese-disc)). Still PAL-only: `save.py`, which
+takes no ISO folder and can't read a Japanese save yet (below), and the
+editor.
 
 ## How the tools find addresses: `gamever.py`
 
@@ -46,7 +46,10 @@ files in `ISO/` as the reference:
    words look most like the PAL table wins, or nothing does.
 3. **bytes**: the PAL bytes, with address fields masked in code, occur
    once in the other file (or as often as in PAL: the same occurrence).
-4. **near**: as 2, from an address up to 0x800 bytes away.
+4. **function**: a shorter run of the PAL bytes (0x20, 0x10 or 8 bytes)
+   occurs once in the other build's function of the same name, for code
+   the other build changed a few words further on.
+5. **near**: as 2, from an address up to 0x800 bytes away.
 
 `gamever.imm` does the same for constants held in instructions (loop
 bounds, table sizes). `python SRC/gamever.py check ISO_JP` lists every
@@ -63,6 +66,48 @@ the Japanese disc):
 | `mbb.py vars` | global variables, switch tables, converters | each variable resolves to a function, as in PAL |
 | `save.py` | key, Blowfish tables, CRC table, block sizes | same key `sakatsukue`, same Blowfish P-array start |
 | `humanid.py objects` | the human database's object table | all 112 entries equal PAL's |
+
+## Patching a Japanese disc
+
+`patch_disc.py patch` takes the Japanese image, with any of the 35
+switches:
+
+```bash
+python SRC/patch_disc.py patch "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso" out.iso --mod lmaster-full --skip-tutorial
+```
+
+The switches give their bytes as offsets in the PAL executable and
+overlays. On a Japanese disc, `patch_disc.py` finds each range a switch
+reads with `gamever.py`, and writes the switch's new bytes where the
+bytes it checked are. Where `gamever.py` can't place a word, it tries
+the word the switch expects, found once in the Japanese function of the
+same name, then the shift of a translated address up to 0x40 bytes
+away. A call (`jal`) in a switch's code takes the Japanese address of
+the function it called in PAL. Each switch then checks the bytes as on
+PAL, so a place the Japanese build changed is refused, not patched.
+
+What each switch finds there (**empirical**, from planning every switch
+on the Redump image):
+
+| Switch | On the Japanese disc |
+|---|---|
+| `sponsor-negotiation` | nothing to do: the release negotiates with the main sponsor ([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md)) |
+| `drill-names` | nothing to do: `801_1`–`6.mbb` already have the names in the Japanese numbering |
+| `mod-saves` | renames the memory-card folders `BISLPM-66316-G` and `-C` (to `-M` and `-D`), found by name |
+| `skip-tutorial` | as PAL; the undo of the earlier PAL-only skip is left out |
+| `injury-lines` | the code fix only: the Japanese text of the two lines (category 200, messages 4 and 7, "about 2 months", "about 9 months") is already there; slots 1–6 hold `test` |
+| `fanbase` | the merchandise table holds half the PAL bases (5,000 at the top, 400 at the bottom); it is scaled from those with the same factors, ×3 at the top to ×0.5 at the bottom |
+| `tv-fees` | two TV stations' base offers are higher (270,000 and 300,000 against 150,000 and 111,000); the same rule halves everything above £2M |
+| `pr-cycle` | the same code, with `pwkTown_Keiki` at `0x2719d0` |
+| `season-status` | the same ladder, so the Japanese build has the same season-ticket bug |
+| the rest | the same bytes, at other addresses |
+
+Every patched spot's surrounding code (8 words either side, immediates
+and jump targets ignored) agrees between the builds in at least 12 of 17
+words, and the four below 14 are in `pwkUnkei_GetExpectSeat`, whose
+registers differ, and the merchandise table. A PAL disc patched with the
+same switches is byte for byte as before. A disc built with
+`--mod lmaster-full --skip-tutorial` hasn't been run in the game.
 
 ## Confirmed from the game code
 

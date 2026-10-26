@@ -19,7 +19,11 @@ An address is found in the other build, in this order:
   3. bytes     the PAL bytes at the address (code with its address and
                jump fields masked) occur exactly once in the other file,
                or as often as in the PAL file: then the same occurrence.
-  4. near      as 2, with the closest address a named function loads,
+  4. function  a shorter run of the PAL bytes (0x20, 0x10 or 8 bytes)
+               occurs exactly once in the other build's function of the
+               same name: for code the other build changed a few words
+               after the address.
+  5. near      as 2, with the closest address a named function loads,
                up to 0x800 bytes away, plus the distance.
 
 Functions without a symbol are named after their callers ("f>2" is the
@@ -358,10 +362,41 @@ def translate(ref_path, path, addr, size=0x40):
         if len(mine) == len(hits) and addr in mine:
             k = mine.index(addr)
             return hits[k], "bytes, match %d of %d in both" % (k + 1, len(hits))
+    local = _in_function(ref, other, addr)
+    if local:
+        return local
     near = _vote(ref, other, addr, size, False)
     if near:
         return near
     return None, "not found (%s)" % ("bytes match %d places" % len(hits) if hits else "no match")
+
+
+def _named(im):
+    if not hasattr(im, "named"):
+        im.named = sorted(im.name_at)
+    return im.named
+
+
+def _in_function(ref, other, addr):
+    """(address, how) from a shorter run of the bytes at `addr` found once
+    in the other build's function of the same name, or None."""
+    names = _named(ref)
+    i = bisect.bisect_right(names, addr) - 1
+    if i < 0:
+        return None
+    name = ref.name_at[names[i]]
+    if name not in other.addr_of:
+        return None
+    lo = other.addr_of[name]
+    theirs = _named(other)
+    j = bisect.bisect_right(theirs, lo)
+    hi = theirs[j] if j < len(theirs) else lo + 0x10000
+    for size in (0x20, 0x10, 0x8):
+        pat = ref.pattern(addr, size)
+        hits = [h for h in other.find(pat) if lo <= h < hi] if pat else []
+        if len(hits) == 1:
+            return hits[0], "%d bytes once in %s" % (size, name)
+    return None
 
 
 def _vote(ref, other, addr, size, exact):

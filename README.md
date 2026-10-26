@@ -114,7 +114,8 @@ python SRC/extract_disc.py all "Pro Soccer Club o Tsukurou! Europe Championship 
 
 Pass those folders to any tool. The PAL files in `ISO/` must be there
 too: tools give PAL addresses, and [`gamever.py`](SRC/gamever.py) finds
-them in the Japanese executable and overlays. See
+them in the Japanese executable and overlays. `patch_disc.py` patches a
+Japanese disc too, with every `--mod` switch. See
 [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md).
 
 ## Tools

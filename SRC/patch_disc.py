@@ -67,6 +67,15 @@ volume size, the UDF partition length in both partition descriptors and
 the integrity descriptor's size table change, and the UDF end anchor moves
 to the new last sector. Files outside DATA.CVM keep their size.
 
+The Japanese release (SLPM_663.16) takes the same switches. Each gives
+its bytes as PAL offsets; on a Japanese disc they are found in its
+executable and overlays with gamever.py (so the PAL files in ISO/ must be
+there), and checked as on PAL. sponsor-negotiation does nothing there
+(the release negotiates already), drill-names finds the names already in
+place, mod-saves renames BISLPM-66316-G/C, and fanbase scales the
+Japanese merchandise table, which holds half the PAL bases. See
+DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc.
+
 Switches: --mod takes switch names, comma-separated (or repeated):
 skip-tutorial, sponsor-negotiation, rival-manager, national-cups,
 league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
@@ -295,6 +304,7 @@ When either archive is a target, `patch` finds that table by the records
 of the archive on the disc and rewrites the ones that change; that needs
 the whole disc image. See DOC/REBUILD.md#archives.
 """
+import bisect
 import os
 import shutil
 import struct
@@ -399,8 +409,11 @@ class Image:
                     if not e.is_dir and e.path.upper() != CVM_NAME:
                         d = IsoEntry(DISC + e.path, e.extent, e.size, False, e.mtime)
                         self.files[d.path.upper()] = d
+        self.port = Port(self) if norm(JP_EXE_FILE) in self.files else None
 
     def entry(self, path):
+        if self.port is not None and norm(path) == norm(PAL_EXE_FILE):
+            path = JP_EXE_FILE
         e = self.files.get(path.replace("\\", "/").strip("/").upper())
         if e is None:
             if path.lower().startswith(DISC) and self.kind != "disc image":
@@ -559,6 +572,153 @@ class Index:
 
 def norm(path):
     return path.replace("\\", "/").strip("/").upper()
+
+
+# --- the Japanese release (DOC/JAPANESE_RELEASE.md) -------------------------------
+
+# The switches give their bytes as offsets in the PAL executable and
+# overlays. On the Japanese disc (SLPM_663.16) Port moves each offset to
+# the same code or table there, with gamever.py, which compares against
+# the PAL files in ISO/. A switch then checks the bytes it finds as it
+# does on PAL, and refuses where the Japanese build differs.
+PAL_EXE_FILE = DISC + "SLES_541.51"
+JP_EXE_FILE = DISC + "SLPM_663.16"
+EXE_BASE = 0xff000              # SLES_541.51's file offset 0 is address 0xff000
+PORT_NEAR = 0x40
+PORT_CACHE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          ".cache", "port")
+
+
+class Port:
+    """PAL offsets in SLES_541.51 and DLL/*.REL as offsets in another
+    build's files. Every range a switch reads is found once and
+    remembered, so the jobs it plans inside that range land where the
+    bytes it checked are."""
+
+    def __init__(self, img):
+        self.img = img
+        self.paths = {}         # norm(file) -> local copy for gamever
+        self.ranges = []        # (norm(PAL file), PAL start, end, file, offset there)
+
+    def code_file(self, file):
+        n = norm(file)
+        return n == norm(PAL_EXE_FILE) or (n.startswith(norm(DISC + "DLL/"))
+                                           and n.endswith(".REL"))
+
+    def copy(self, file):
+        """A local copy of the image's `file`, where gamever can read it
+        (named as on the disc, an overlay under DLL/)."""
+        n = norm(file)
+        if n not in self.paths:
+            e = self.img.entry(file)
+            with open(self.img.path, "rb") as f:
+                f.seek(self.img.offset(e))
+                data = f.read(e.size)
+            import hashlib
+            rel = e.path[len(DISC):]
+            path = os.path.join(PORT_CACHE, hashlib.sha1(data).hexdigest()[:16], rel)
+            if not os.path.exists(path):
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "wb") as g:
+                    g.write(data)
+            self.paths[n] = path
+        return self.paths[n]
+
+    def find(self, file, off):
+        """(file, offset) in this build for PAL `file` and `off`."""
+        import gamever
+        if norm(file) == norm(PAL_EXE_FILE):
+            import sles_disasm
+            path = self.copy(JP_EXE_FILE)
+            try:
+                addr = gamever.at(path, off + EXE_BASE)
+            except ValueError as e:
+                raise ValueError("%s 0x%x has no counterpart in %s: %s"
+                                 % (PAL_EXE_FILE, off + EXE_BASE, JP_EXE_FILE, e))
+            return JP_EXE_FILE, sles_disasm.Elf(path).v2f(addr)
+        try:
+            return file, gamever.at(self.copy(file), off)
+        except ValueError as e:
+            raise ValueError("%s 0x%x has no counterpart in the Japanese build: %s"
+                             % (file, off, e))
+
+    def map(self, file, off, size=1):
+        """(file, offset) to read or write `size` bytes the PAL switch
+        addresses at `file` `off`; unchanged for any other file."""
+        if not self.code_file(file):
+            return file, off
+        n = norm(file)
+        for pal, start, end, there, base in self.ranges:
+            if pal == n and start <= off and off + size <= end:
+                return there, base + off - start
+        try:
+            there, base = self.find(file, off)
+        except ValueError:
+            # Code the byte search can't place (repeated blocks): the same
+            # shift as an address translated up to PORT_NEAR before or after.
+            near = [(abs(start - off), there, base - start) for pal, start, _, there, base
+                    in self.ranges if pal == n and abs(start - off) <= PORT_NEAR]
+            if not near:
+                raise
+            _, there, shift = min(near)
+            base = off + shift
+        self.ranges.append((n, off, off + size, there, base))
+        return there, base
+
+    def expect(self, f, file, off, old):
+        """Place PAL `file` `off`, where the switch expects the bytes `old`:
+        as map does, or else where `old` occurs once in this build's
+        function of the same name. A word map places anywhere else is
+        left for the switch to refuse."""
+        if not self.code_file(file):
+            return
+        try:
+            there, base = self.map(file, off, len(old))
+            if read_raw(f, self.img, there, base, len(old)) == old:
+                return
+        except ValueError:
+            pass
+        import gamever
+        pal_path = gamever.reference_of(self.copy(JP_EXE_FILE if norm(file) == norm(
+            PAL_EXE_FILE) else file))
+        there = JP_EXE_FILE if norm(file) == norm(PAL_EXE_FILE) else file
+        ref, other = gamever.image(pal_path), gamever.image(self.copy(there))
+        addr = off + (EXE_BASE if there == JP_EXE_FILE else 0)
+        names = gamever._named(ref)
+        i = bisect.bisect_right(names, addr) - 1
+        name = ref.name_at[names[i]] if i >= 0 else None
+        if name not in other.addr_of:
+            return
+        lo = other.addr_of[name]
+        theirs = gamever._named(other)
+        j = bisect.bisect_right(theirs, lo)
+        hi = theirs[j] if j < len(theirs) else lo + 0x10000
+        a, b = other.v2f(lo), other.v2f(hi) if other.v2f(hi) is not None else len(other.data)
+        hits, k = [], other.data.find(old, a, b)
+        while k >= 0:
+            if k % 4 == 0:
+                hits.append(k)
+            k = other.data.find(old, k + 1, b)
+        if len(hits) == 1:
+            n = norm(file)
+            self.ranges = [r for r in self.ranges if not (r[0] == n and r[1] <= off < r[2])]
+            self.ranges.append((n, off, off + len(old), there, hits[0]))
+
+    def jobs(self, jobs):
+        """The jobs a switch planned in PAL offsets, moved to this build."""
+        out = []
+        for j in jobs:
+            if j.file is None or not self.code_file(j.file):
+                out.append(j)
+                continue
+            file, off = self.map(j.file, j.off, len(j.data))
+            addr = off
+            if norm(file) == norm(JP_EXE_FILE):
+                import sles_disasm
+                addr = sles_disasm.Elf(self.copy(JP_EXE_FILE)).f2v(off)
+            out.append(Job(file, off, j.data, "%s (Japanese build: %s 0x%x)" % (
+                j.label, file[len(DISC):], addr), j.why))
+        return out
 
 
 # --- targets -----------------------------------------------------------------
@@ -1222,6 +1382,10 @@ def plan_skip_tutorial(f, img):
         for i, (a, b) in enumerate(zip(data, new)):
             if a != b:
                 jobs.append(Job(e.path, i, new[i:i + 1], path, "--skip-tutorial: " + what))
+    if img.port is not None:
+        # The earlier skip, undone below, was only ever made for PAL.
+        notes.append("note: --skip-tutorial: start the career in England")
+        return jobs, notes
     file, base = OLD_SKIP_SPONSORS
     for i in range(OLD_SKIP_SPONSOR_COUNT):
         off = base + i * OLD_SKIP_SPONSOR_SIZE
@@ -1279,6 +1443,9 @@ def plan_sponsor_negotiation(f, img):
     if img.kind != "disc image":
         raise ValueError("--sponsor-negotiation patches DLL/SIMPRG.REL, so it needs the whole "
                          "disc image, not %s" % img.kind)
+    if img.port is not None:
+        return [], ["note: --sponsor-negotiation: the Japanese release already negotiates "
+                    "with the main sponsor (DOC/SPONSOR_NEGOTIATION.md)"]
     jobs, notes = [], []
     for off, old, new in NEGO_CODE:
         held = read_at(f, img, NEGO_FILE, off, len(old))
@@ -1304,6 +1471,10 @@ def plan_sponsor_negotiation(f, img):
 SLES_FILE = DISC + "SLES_541.51"
 MOD_SAVES = ((0x4223e8, b"BESLES-54151-G", b"BESLES-54151-M"),     # SLES 0x5213e8
              (0x4223f8, b"BESLES-54151-C", b"BESLES-54151-D"))     # SLES 0x5213f8
+# The Japanese build's folders, BISLPM-66316-G and -C (found by name: the
+# strings differ, so gamever.py can't place them).
+MOD_SAVES_JP = ((b"BISLPM-66316-G", b"BISLPM-66316-M"),
+                (b"BISLPM-66316-C", b"BISLPM-66316-D"))
 RETAIL_CRC = 0x3cb245d5
 
 
@@ -1322,6 +1493,21 @@ def plan_mod_saves(f, img):
         raise ValueError("--mod-saves patches SLES_541.51, so it needs the whole disc image, "
                          "not %s" % img.kind)
     jobs, notes = [], []
+    if img.port is not None:
+        e = img.entry(JP_EXE_FILE)
+        data = read_raw(f, img, JP_EXE_FILE, 0, e.size)
+        for old, new in MOD_SAVES_JP:
+            if data.count(new + b"\0") == 1 and old + b"\0" not in data:
+                notes.append("note: %s already names %s" % (JP_EXE_FILE, new.decode()))
+                continue
+            if data.count(old + b"\0") != 1:
+                raise ValueError("%s doesn't hold %s once; not the retail executable?"
+                                 % (JP_EXE_FILE, old.decode()))
+            off = data.index(old + b"\0")
+            jobs.append(Job(JP_EXE_FILE, off, new, "%s (0x%x)" % (JP_EXE_FILE, off),
+                            "--mod-saves: memory-card folder %s -> %s" % (
+                                old.decode(), new.decode())))
+        return jobs, notes
     for off, old, new in MOD_SAVES:
         held = read_at(f, img, SLES_FILE, off, len(old) + 1)
         if held == old + b"\0":
@@ -2020,7 +2206,13 @@ def word_jobs(f, img, switch, words):
     if img.kind != "disc image":
         raise ValueError("%s patches the game's code, so it needs the whole disc image, "
                          "not %s" % (switch, img.kind))
+    if img.port is not None:
+        for file, off, old, _, _ in words:
+            img.port.expect(f, file, off, old)
     held = [read_at(f, img, file, off, len(old)) for file, off, old, _, _ in words]
+    if img.port is not None:
+        words = [(file, off) + port_calls(h, old, new) + (label,)
+                 for h, (file, off, old, new, label) in zip(held, words)]
     if all(h == new for h, (_, _, _, new, _) in zip(held, words)):
         return [], ["note: %s is already applied" % switch]
     jobs = []
@@ -2032,6 +2224,27 @@ def word_jobs(f, img, switch, words):
                              % (switch, label))
         jobs.append(Job(file, off, new, label, switch))
     return jobs, []
+
+
+def port_calls(held, old, new):
+    """(old, new) for another build: where `held` differs from `old` only in
+    jal targets (functions sit elsewhere there), old takes held's targets
+    and each jal in `new` to one of old's functions calls it there."""
+    if len(held) != len(old) or len(old) % 4 or len(new) % 4:
+        return old, new
+    hw = struct.unpack("<%dI" % (len(held) // 4), held)
+    ow = struct.unpack("<%dI" % (len(old) // 4), old)
+    calls = {}
+    for h, o in zip(hw, ow):
+        if h == o:
+            continue
+        if h >> 26 != 3 or o >> 26 != 3 or calls.get(o, h) != h:
+            return old, new
+        calls[o] = h
+    if not calls:
+        return old, new
+    nw = struct.unpack("<%dI" % (len(new) // 4), new)
+    return held, struct.pack("<%dI" % len(nw), *(calls.get(w, w) for w in nw))
 
 
 def sles_word(addr, old, new, what):
@@ -2058,16 +2271,12 @@ TICKET_MAX, TICKET_MAX_NEW, TICKET_MIN = 300, 480, 60
 TICKET_FALL = 1.4748                # log 2 / log 1.6
 
 
-def ticket_tables(sles):
-    """(old thresholds, old rows, new thresholds, new rows) as bytes, from the
-    retail executable; ValueError if its table isn't the retail one."""
-    off = TICKET_THRESHOLDS - 0xff000
-    old_t = sles[off:off + 4 * TICKET_ROWS]
+def ticket_tables(old_t, old_r):
+    """(new thresholds, new rows) as bytes, from the retail executable's
+    thresholds and rows; ValueError if they aren't the retail ones."""
     if list(struct.unpack("<%di" % TICKET_ROWS, old_t)) != \
             [TICKET_MAX - 12 * i for i in range(TICKET_ROWS)]:
         raise ValueError("SLES 0x%x: not the retail ticket thresholds" % TICKET_THRESHOLDS)
-    off = TICKET_TABLE - 0xff000
-    old_r = sles[off:off + 4 * TICKET_ROWS * TICKET_COLS]
     rows = [struct.unpack_from("<%di" % TICKET_COLS, old_r, 4 * TICKET_COLS * i)
             for i in range(TICKET_ROWS)]
     step = (TICKET_MAX_NEW - TICKET_MIN) // (TICKET_ROWS - 1)
@@ -2085,7 +2294,7 @@ def ticket_tables(sles):
     new_r = b"".join(struct.pack("<%di" % TICKET_COLS,
                                  *[max(1, round(demand(p, c))) for c in range(TICKET_COLS)])
                      for p in new_t)
-    return old_t, old_r, struct.pack("<%di" % TICKET_ROWS, *new_t), new_r
+    return struct.pack("<%di" % TICKET_ROWS, *new_t), new_r
 
 
 def plan_wider_tickets(f, img):
@@ -2093,11 +2302,11 @@ def plan_wider_tickets(f, img):
     if img.kind != "disc image":
         raise ValueError("wider-tickets patches SLES_541.51, so it needs the whole disc "
                          "image, not %s" % img.kind)
-    e = img.entry(SLES_FILE)
-    sles = read_at(f, img, SLES_FILE, 0, e.size)
-    if struct.unpack_from("<i", sles, TICKET_THRESHOLDS - 0xff000)[0] == TICKET_MAX_NEW:
+    old_t = read_at(f, img, SLES_FILE, TICKET_THRESHOLDS - EXE_BASE, 4 * TICKET_ROWS)
+    old_r = read_at(f, img, SLES_FILE, TICKET_TABLE - EXE_BASE, 4 * TICKET_ROWS * TICKET_COLS)
+    if struct.unpack_from("<i", old_t)[0] == TICKET_MAX_NEW:
         return [], ["note: wider-tickets is already applied"]
-    old_t, old_r, new_t, new_r = ticket_tables(sles)
+    new_t, new_r = ticket_tables(old_t, old_r)
     words = [
         simprg_word(0x3ef98, 0x2403012c, 0x240301e0, "plan screen: ticket price up to 480"),
         simprg_word(0x3d1e4, 0x2404012c, 0x240401e0, "ticket set screen: up to 480"),
@@ -2155,16 +2364,17 @@ INCOME_TABLES = {
 
 
 def income_table(data, switch):
-    """(old, new) bytes of the switch's table in SIMPRG.REL `data`, or None
-    when it is already cut; ValueError when it is neither."""
+    """(old, new) bytes of the switch's table, from `data`, its records as
+    SIMPRG.REL holds them from the table's start; None when it is already
+    cut; ValueError when it is neither."""
     off, size, first, count, fields, mark, retail = INCOME_TABLES[switch]
-    held = struct.unpack_from("<i", data, off + mark)[0]
+    held = struct.unpack_from("<i", data, mark)[0]
     if held == income_cut(retail):
         return None
     if held != retail:
         raise ValueError("%s: SIMPRG.REL 0x%x holds %d, expected %d; not the retail overlay?"
                          % (switch, off + mark, held, retail))
-    start, end = off + size * first, off + size * (first + count)
+    start, end = size * first, size * (first + count)
     new = bytearray(data[start:end])
     for i in range(count):
         for field in fields:
@@ -2179,12 +2389,12 @@ def plan_income(f, img, switch, why):
     if img.kind != "disc image":
         raise ValueError("%s patches DLL/SIMPRG.REL, so it needs the whole disc image, not %s"
                          % (switch, img.kind))
-    data = read_at(f, img, NEGO_FILE, 0, img.entry(NEGO_FILE).size)
+    off, size, first, count = INCOME_TABLES[switch][:4]
+    data = read_at(f, img, NEGO_FILE, off, size * (first + count))
     got = income_table(data, switch)
     if got is None:
         return [], ["note: %s is already applied" % switch]
     old, new = got
-    off, size, first = INCOME_TABLES[switch][:3]
     return diff_jobs(NEGO_FILE, off + size * first, old, new, why), []
 
 
@@ -2229,13 +2439,13 @@ INJURY_KINDS, INJURY_ROWS = 9, 11
 INJURY_FLOOR = {0x532c28: 2, 0x532c90: 5}
 
 
-def injury_odds(sles):
-    """[(address, old bytes, new bytes)] of the two kind tables, from the
-    retail executable; ValueError if a table isn't the retail one."""
+def injury_odds(tables):
+    """[(address, old bytes, new bytes)] of the two kind tables, from
+    {address: bytes} as the retail executable holds them; ValueError if a
+    table isn't the retail one."""
     out = []
     for addr in INJURY_TABLES:
-        off, n = addr - 0xff000, INJURY_KINDS * INJURY_ROWS
-        old = sles[off:off + n]
+        old = tables[addr]
         new = bytearray()
         for r in range(INJURY_ROWS):
             row = list(old[INJURY_KINDS * r:INJURY_KINDS * (r + 1)])
@@ -2263,13 +2473,14 @@ def plan_injury_odds(f, img):
     if img.kind != "disc image":
         raise ValueError("injury-odds patches SLES_541.51, so it needs the whole disc image, "
                          "not %s" % img.kind)
-    sles = read_at(f, img, SLES_FILE, 0, img.entry(SLES_FILE).size)
+    tables = {a: read_at(f, img, SLES_FILE, a - EXE_BASE, INJURY_KINDS * INJURY_ROWS)
+              for a in INJURY_TABLES}
     addr, retail, new = INJURY_ODDS_MARK
-    if sles[addr - 0xff000] == new:
+    if tables[INJURY_TABLES[1]][addr - INJURY_TABLES[1]] == new:
         return [], ["note: injury-odds is already applied"]
     words = [(SLES_FILE, a - 0xff000, old, new, "%s 0x%x (%s injury kind table)" % (
         SLES_FILE, a, "practice" if a == INJURY_TABLES[0] else "match"))
-             for a, old, new in injury_odds(sles)]
+             for a, old, new in injury_odds(tables)]
     return word_jobs(f, img, "injury-odds", words)
 
 
@@ -2452,7 +2663,10 @@ def plan_transfer_fees(f, img):
 # (ori, then dsll32 by 14, as the 1.0 at 0x163a34 is built) and 5 nops.
 MERCH_TABLE, MERCH_ROWS = 0x1d9ec8, 17
 MERCH_TOP_X, MERCH_BOTTOM_X = 3.0, 0.5
-MERCH_MARK = (800, 400)                     # the bottom base: retail, new
+# (top base, bottom base) of each build's retail table and of the new one.
+# The Japanese table holds half the PAL bases, so its retail bottom equals
+# the new PAL bottom: both ends tell them apart.
+MERCH_RETAIL = ((10000, 800), (5000, 400))  # PAL, Japanese
 TV_TAIL = {5: (0x00118cb8, 0x3631cccc, 0x00118c38, 0x3631cccc, 0x00118b38, 0x36310ccd),
            9: (0x00118c38, 0x36319999, 0x00118c38, 0x36319999, 0x00118bb8, 0x36312666)}
 TV_POP = ((0x163a60, 0xffb3, 5, 0xffa0, "0.9 -> 0.75"), (0x163a90, 0xffb9, 9, 0xffb0, "0.95 -> 0.875"),
@@ -2465,17 +2679,19 @@ FANBASE_CROWDS = (
 )
 
 
-def merch_table(data):
-    """(old, new) bytes of the merchandise base table in SIMPRG.REL `data`;
-    ValueError when its bottom base is neither the retail nor the new one."""
+def merch_table(old):
+    """(old, new) bytes of the merchandise base table, from its bytes in
+    SIMPRG.REL; ValueError when its bottom base is neither the retail nor
+    the new one."""
     off = MERCH_TABLE
-    old = data[off:off + 8 * MERCH_ROWS]
     pairs = [struct.unpack_from("<2I", old, 8 * i) for i in range(MERCH_ROWS)]
-    if pairs[-1] != (0, MERCH_MARK[0]):
-        if pairs[-1] == (0, MERCH_MARK[1]):
-            return old, old
-        raise ValueError("fanbase: SIMPRG.REL 0x%x doesn't end with (0, %d); not the retail "
-                         "overlay?" % (off + 8 * (MERCH_ROWS - 1), MERCH_MARK[0]))
+    ends = (pairs[0][1], pairs[-1][1])
+    if ends in [(round(t * MERCH_TOP_X), round(b * MERCH_BOTTOM_X)) for t, b in MERCH_RETAIL]:
+        return old, old
+    if ends not in MERCH_RETAIL or pairs[-1][0] != 0:
+        raise ValueError("fanbase: SIMPRG.REL 0x%x's bases run %d-%d, not a retail table's "
+                         "(%s); not the retail overlay?" % (off, ends[0], ends[1], ", ".join(
+                             "%d-%d" % e for e in MERCH_RETAIL)))
     step = (MERCH_BOTTOM_X / MERCH_TOP_X) ** (1 / (MERCH_ROWS - 1))
     new = b"".join(struct.pack("<2I", t, round(v * MERCH_TOP_X * step ** i))
                    for i, (t, v) in enumerate(pairs))
@@ -2487,7 +2703,7 @@ def plan_fanbase(f, img):
     if img.kind != "disc image":
         raise ValueError("fanbase patches SLES_541.51 and DLL/SIMPRG.REL, so it needs the "
                          "whole disc image, not %s" % img.kind)
-    old, new = merch_table(read_at(f, img, NEGO_FILE, 0, img.entry(NEGO_FILE).size))
+    old, new = merch_table(read_at(f, img, NEGO_FILE, MERCH_TABLE, 8 * MERCH_ROWS))
     words = list(FANBASE_CROWDS) + [
         (NEGO_FILE, MERCH_TABLE, old, new, "%s 0x%x (merchandise base by supporters)"
          % (NEGO_FILE, MERCH_TABLE))]
@@ -2811,6 +3027,15 @@ def resolve_target(img, index, target):
 
 
 def read_at(f, img, file, off, size):
+    """`size` bytes of `file` at `off`, an offset in the PAL file for the
+    code (moved to the other build's file on the Japanese disc)."""
+    if img.port is not None:
+        file, off = img.port.map(file, off, size)
+    return read_raw(f, img, file, off, size)
+
+
+def read_raw(f, img, file, off, size):
+    """`size` bytes of the image's `file` at `off`, as it is."""
     f.seek(img.offset(img.entry(file)) + off)
     return f.read(size)
 
@@ -3037,11 +3262,14 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
             if name not in mods:
                 continue
             mine = adopted.get(name, set())
-            clash = touched & ({norm(p) for p in files} - mine)
+            clash = touched & ({norm(img.entry(p).path) if img.port and norm(p) == norm(
+                PAL_EXE_FILE) else norm(p) for p in files} - mine)
             if clash:
                 raise SystemExit("--mod %s edits %s; don't patch it as a target too"
                                  % (name, ", ".join(sorted(clash))))
             sjobs, snotes = plan(f, img, mine) if name in TARGET_HOOKS else plan(f, img)
+            if img.port is not None:
+                sjobs = img.port.jobs(sjobs)
             jobs += sjobs
             notes += snotes
         # After the switches, which may patch other bytes of the executable.

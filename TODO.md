@@ -220,8 +220,9 @@ release. **Done when** the items below work; see
 - [ ] `TACTICSPITCH.PAC` is loaded through `CLoader`, not as a
       registering resource: whether its entries stand in for their
       originals ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#still-unknown))
-- [ ] Tools still PAL-only: `patch_disc.py`'s switches (they refuse other
-      discs) and `save.py`'s commands (they take no ISO folder)
+- [ ] Tools still PAL-only: `save.py`'s commands (they take no ISO
+      folder). A Japanese disc built with `--mod lmaster-full` is still to
+      be run in the game ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 - [ ] Optional: dual-layer images, for a disc that grows past a
       single-layer DVD
 
