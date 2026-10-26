@@ -86,6 +86,13 @@ Tabs:
              it (STADIUM_DATA.TBB, initteam.py setstadium;
              DOC/INITTEAM_FORMAT.md). The Clubs and New club tabs read the
              stadiums again after a save.
+    Overseas bases
+             what a club base costs to set up in each of the 13 overseas
+             regions (PLRESOURCESIM.PAC entry 1, plrsim.py setbranch;
+             DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches), named
+             from MES.PAC, with the investment steps and upkeep that
+             follow from it. Shares the pack with the Clubs, Free agents
+             and Player links tabs.
     Regulations
              each schedule's match rules, win bonus, prizes and places
              (REGULATION.TBB, regulation.py set; DOC/REGULATION_FORMAT.md),
@@ -5387,6 +5394,142 @@ class LinksTab(Tab):
         return True
 
 
+class BasesTab(Tab):
+    """The overseas bases' establishing costs (PLRESOURCESIM.PAC entry 1),
+    through plrsim.encode_branch_costs, as `plrsim.py setbranch` does. The
+    investment to raise a level and the upkeep are the cost times the
+    level rates (plrsim.branch_prices), so they are shown, not edited.
+    Region names come from MES.PAC (category 1, 310 + region). Shares the
+    pack with the Clubs, Free agents and Player links tabs."""
+    title = "Overseas bases"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.costs = None
+        self.changes = {}           # region -> cost
+        ttk.Label(self.frame, text="What a club base costs to set up in each overseas region "
+                                   "(DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches). "
+                                   "Each step of investment and the upkeep follow from "
+                                   "it, before sponsor and TV discounts. Money is in the game's "
+                                   "stored unit (£1 = 6).",
+                  foreground="#555", wraplength=1100, justify="left").pack(anchor="w", padx=8,
+                                                                          pady=6)
+        self.page = Scrolled(self.frame)
+        self.page.outer.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            with open(mod.source(SIMPAC), "rb") as f:
+                data = f.read()
+            self.costs = plrsim.branch_costs(data)
+            self.rates = plrsim.branch_rates(data)
+            names = initteam.category_names(mod.source(MES), plrsim.REGION_NAME_CATEGORY)
+            self.names = [names.get(plrsim.REGION_NAME_BASE + r, "")
+                          for r in range(plrsim.BRANCH_REGIONS)]
+        except (ValueError, struct.error, OSError, IndexError) as e:
+            self.costs = None
+            self.app.status("Couldn't load the overseas bases: %s" % e)
+            messagebox.showerror("Overseas bases", "Couldn't load the overseas bases:\n%s" % e)
+            return
+        self.original = list(self.costs)
+        self.changes = {}
+        self.show()
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def show(self):
+        self.page.clear()
+        box = self.page.inner
+        heads = ("Region", "", "Setting up", "", "Investment step, levels 0-3",
+                 "Upkeep, levels 0-3")
+        for c, text in enumerate(heads):
+            ttk.Label(box, text=text, font=self.app.title_font if text else None).grid(
+                row=0, column=c, sticky="w", padx=6, pady=(4, 6))
+        self.prices = []
+        for r in range(plrsim.BRANCH_REGIONS):
+            row = r + 1
+            ttk.Label(box, text=str(r)).grid(row=row, column=0, sticky="w", padx=6, pady=2)
+            ttk.Label(box, text=self.names[r], foreground="#b03000" if r in self.changes
+                      else "").grid(row=row, column=1, sticky="w", padx=6)
+            value_input(box, ("range", 1, 0xffffffff, 100000), str,
+                        lambda r=r: self.costs[r],
+                        lambda text, revert, r=r: self.commit(r, text, revert)
+                        ).grid(row=row, column=2, sticky="w", padx=6)
+            labels = [ttk.Label(box, text="") for _ in range(3)]
+            for c, label in enumerate(labels):
+                label.grid(row=row, column=3 + c, sticky="w", padx=6)
+            self.prices.append(labels)
+            self.show_prices(r)
+
+    def show_prices(self, r):
+        steps, upkeep = plrsim.branch_prices(self.costs[r], self.rates)
+        pounds, steps_label, upkeep_label = self.prices[r]
+        pounds.configure(text=money_text(self.costs[r]))
+        steps_label.configure(text=", ".join(money_text(x) for x in steps))
+        upkeep_label.configure(text=", ".join(money_text(x) for x in upkeep))
+
+    def commit(self, r, text, revert):
+        try:
+            if not text.isdigit():
+                raise ValueError("expected a number, got %r" % text)
+            if not 0 < int(text) < 1 << 32:
+                raise ValueError("a cost is 1 to 4,294,967,295")
+        except ValueError as e:
+            revert()
+            message = "region %d: %s" % (r, e)
+            self.app.status(message)
+            messagebox.showerror("Overseas bases", message)
+            return False
+        old, self.costs[r] = self.costs[r], int(text)
+        self.changes.pop(r, None)
+        if self.costs[r] != self.original[r]:
+            self.changes[r] = self.costs[r]
+        self.app.status("region %d %s: %d -> %d" % (r, self.names[r], old, self.costs[r]))
+        self.show_prices(r)
+        self.app.update_title()
+        return True
+
+    def dirty(self):
+        return bool(self.changes)
+
+    def save(self):
+        if not self.changes:
+            return True
+        mod = self.app.mod
+        # The Clubs, Free agents and Player links tabs write the same pack,
+        # so start from the file as it is now.
+        src = mod.source(SIMPAC)
+        out = mod.target(SIMPAC)
+        temps = [(out + ".new", out)]
+        try:
+            with open(src, "rb") as f:
+                data = f.read()
+            costs = plrsim.branch_costs(data)
+            for r, cost in self.changes.items():
+                costs[r] = cost
+            new = plrsim.encode_branch_costs(data, costs)
+            if len(new) != len(data):
+                raise ValueError("rebuilt pack is %d bytes, not %d" % (len(new), len(data)))
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(new)
+        except (ValueError, struct.error, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Overseas bases", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        cmd = ["python", "SRC/plrsim.py", "setbranch", quote(shown_path(src)),
+               quote(shown_path(out + ".new"))] + ["%d=%d" % c for c in self.changes.items()]
+        n = len(self.changes)
+        lines = log_lines("Overseas bases: %d changes" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d changes" % (shown_path(out), n))
+        return True
+
+
 NATIONS = "PARAM/" + initteam.NATION_TBB
 NATION_LABELS = {"uefa_rank": "UEFA ranking position", "uefa_points": "UEFA coefficient points",
                  "world": "world rating (÷ 4 is the national team's rank)"}
@@ -6026,6 +6169,7 @@ class App:
         self.free = FreeAgentsTab(self)
         self.links = LinksTab(self)
         self.nations = NationsTab(self)
+        self.bases = BasesTab(self)
         self.regulations = RegulationsTab(self)
         self.clubrank = ClubRankTab(self)
         self.training = TrainingTab(self)
@@ -6036,7 +6180,7 @@ class App:
         self.tactics = TacticsTab(self)
         self.comments = CommentsTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.natcal, self.free,
-                     self.links, self.nations, self.regulations, self.clubrank, self.training, self.camps, self.tours,
+                     self.links, self.nations, self.bases, self.regulations, self.clubrank, self.training, self.camps, self.tours,
                      self.facilities, self.clubevents, self.tactics, self.kits, self.text,
                      self.comments]
         self.log_tab = LogTab(self)

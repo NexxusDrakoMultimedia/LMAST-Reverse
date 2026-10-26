@@ -462,6 +462,10 @@ def encode_free(data, ids):
 
 
 BRANCH_REGIONS = 13                      # entry 1 table 0 (_GetOverseasBranchEstablishCapital)
+# A region's name (MSG_UTIL getRegionDetail 0x202310, message type 14) is
+# message category 1, record 310 + region: Msg::GetString takes the base
+# from its table at 0x52f708 and category 1 from global slot 0.
+REGION_NAME_CATEGORY, REGION_NAME_BASE = 1, 310
 
 
 def branch_costs(data):
@@ -485,6 +489,22 @@ def encode_branch_costs(data, costs):
     raw[0].data = b"".join(struct.pack("<2I", r, c) for r, c in enumerate(costs)) +         raw[0].data[8 * BRANCH_REGIONS:]
     blobs[1] = tbb.build(raw, end, tbb.trailer(blobs[1], raw))
     return pac.build_binpac(data[:h.header_size], blobs)
+
+
+def branch_rates(data):
+    """Entry 1 table 1's 8 level rates of a whole pack."""
+    _, blobs = pac.binpac_blobs(data)
+    return struct.unpack("<8f", tables(blobs[1])[1])
+
+
+def branch_prices(cost, rates):
+    """(investment step, upkeep) at levels 0-3 for an establishing cost,
+    before sponsor and TV discounts: cost x round(rate x 1000) / 1000
+    (_GetUp1SituLevelCapital 0x232f70) and cost x round(rate[4 + L] x
+    10000) / 10000 (GetMaintenanceExpence 0x233648)."""
+    steps = [cost * round(rates[lv] * 1000) // 1000 for lv in range(4)]
+    upkeep = [cost * round(rates[4 + lv] * 10000) // 10000 for lv in range(4)]
+    return steps, upkeep
 
 
 def cmd_setbranch(src, dst, pairs):

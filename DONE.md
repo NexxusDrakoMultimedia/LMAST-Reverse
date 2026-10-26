@@ -179,6 +179,9 @@ evidence and how it was tested; the git history holds the rest.
 - [x] `editor.py` Player links tab (`plrsim.py setgroup`) and Nations &
       stadiums tab (`initteam.py setnation`, `setstadium`), tested
       through the widgets ([`README.md`](README.md#editor))
+- [x] `editor.py` Overseas bases tab (`plrsim.py setbranch`), with the
+      regions named from `MES.PAC`, tested through the widgets
+      ([`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches))
 
 ## 6. Distribute: sharing a mod
 

@@ -403,6 +403,9 @@ The mod editor's tabs:
   scout's exclusive and semi-exclusive players, and the hidden good and
   bad combinations of players and managers. Each list keeps its size, so
   an edit that no longer fits is refused.
+- **Overseas bases**: what a club base costs to set up in each of the
+  13 overseas regions, with the investment steps and upkeep that follow
+  from it.
 - **Nations & stadiums**: each nation's UEFA rank and points and world
   rating, and each stadium's roof, level and capacity, with the clubs
   that use it.
@@ -504,7 +507,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables; `teaminit.py` for the salary limits |
 | `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `cso.py` and `chd.py` (a CSO, ZSO or CHD input), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`), `camp.py` (the camp switches), `training.py` (`drill-names`), `plrcommon.py` (`facility-tiers`) |
-| `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `natcal.py` (National calendar), `teaminit.py` (New club), `plrsim.py` (Free agents, Player links), `initteam.py` (Nations & stadiums), `regulation.py` and `clubresult.py` (Regulations), `clubrank.py` (Club ranking), `training.py` (Training), `camp.py` (Camps), `tour.py` (Tours), `plrcommon.py` (Facilities), `clubevent.py` (PR events), `formset.py` (Tactics), `uniform.py` (Kits), `mbb.py` (Text), `sqb.py` (Comments); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
+| `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `natcal.py` (National calendar), `teaminit.py` (New club), `plrsim.py` (Free agents, Player links, Overseas bases), `initteam.py` (Nations & stadiums), `regulation.py` and `clubresult.py` (Regulations), `clubrank.py` (Club ranking), `training.py` (Training), `camp.py` (Camps), `tour.py` (Tours), `plrcommon.py` (Facilities), `clubevent.py` (PR events), `formset.py` (Tactics), `uniform.py` (Kits), `mbb.py` (Text), `sqb.py` (Comments); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `ps2mc.py` (card files), `pbdata.py` and `initteam.py` for names |
 | `pmplayer.py` | `save.py` (cipher, CRC, and career saves for `check`), `pbdata.py` for field names, `gamever.py` |
 | `ps2mc.py` | nothing |

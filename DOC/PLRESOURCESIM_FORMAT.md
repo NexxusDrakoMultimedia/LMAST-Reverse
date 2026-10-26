@@ -100,7 +100,18 @@ to 16,500,000), less the sponsor discount in
 | `0x2337f8` | `pwkTown_GetOverseasBranchMaintenanceExpenseFromRegion` | gives the upkeep for levels 0–3 |
 | `0x268e18` | (from `pwkTeam_ChangePop_Month`) | the region's monthly popularity change is × (level + 1) ÷ 5 + 0.4: 0.6, 0.8, 1.0, 1.2 for levels 0–3 ([`ECONOMY.md`](ECONOMY.md#supporter-popularity)) |
 
-So the cost sets all three prices. `plrsim.py setbranch` writes new costs.
+So the cost sets all three prices. `plrsim.py setbranch` writes new
+costs, and the editor's Overseas bases tab makes the same edit, showing
+the investment steps and upkeep that follow (`plrsim.branch_prices`).
+
+A region's name is message category 1, record 310 + region
+(**confirmed**: `MSG_UTIL::CWildCardFunc::getRegionDetail`, `0x202310`,
+asks `Msg::GetString` for message type 14, whose base is 310 in the
+table at `0x52f708`; types below `0x29` use global slot 0, category 1).
+In English: 0 Western Europe, 1 Central Europe, 2 Eastern Europe, 3
+Northern Europe, 4 South America A, 5 South America B, 6 North Africa, 7
+West Africa, 8 East and South Africa, 9 North Central America,
+Caribbean, 10 East Asia, 11 South Asia and Middle East, 12 Oceania.
 `patch_disc.py --mod overseas-bases` (in `--mod balance` and
 `--mod lmaster-full`) doubles the 13 costs, here and in the copies in
 `PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 17), and makes the level factor
