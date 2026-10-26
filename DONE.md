@@ -282,5 +282,6 @@ Each result is recorded in the doc named.
 - [x] Popularity and supporters traced: the popularity rank's caps and
       what raises it, every change, and the supporter formula, checked on
       three saves; `overseas-pop` and `cup-last16` (in LMASTER lite) fix
-      two bugs in it; not yet checked in game
+      two bugs in it, confirmed from the code (both values are hidden in
+      game, so there's no in-game test)
       ([`ECONOMY.md`](DOC/ECONOMY.md#supporter-popularity))
