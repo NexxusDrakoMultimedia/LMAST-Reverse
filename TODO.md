@@ -245,11 +245,19 @@ every writer has a tab.
       2026-10-27): `patch_disc.py` has 42 switches, 7 of them in no
       group (the five third-tier switches and the test tools
       `skip-tutorial` and `launcher`), and the editor's Build tab shows
-      a box for each. Merge switches that only work together (the
-      third tier's five) or split them into more groups, then make the
-      Build tab offer the groups, with each group's switches shown but
-      not ticked one by one; the test tools stay apart. `--mod <switch>`
-      keeps working for tests ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
+      a box for each. Make them a tree of three levels:
+      - level 0, the editions: `lmaster-lite` and `lmaster-full`;
+      - level 1, the groups an edition is made of (now `harder-economy`
+        and `balance`; the fixes in `lmaster-lite`, the third tier and
+        others to be sorted into groups), each switch in one group;
+      - level 2, the single switches.
+
+      Merge switches that only work together (the third tier's five)
+      where a group adds nothing. The Build tab offers the editions,
+      with their groups to add or leave out and the switches shown under
+      each; the test tools stay apart. `--mod` takes any level, so a
+      single switch still works for tests
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
 - [ ] Later: the editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
