@@ -376,3 +376,12 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       is tested in PCSX2
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements));
       `one-season-end` is built ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [ ] A text pass for LMASTER full (the user's idea, 2026-10-27): find
+      the in-game messages that describe rules its switches change (the
+      relegation game over, the third tier, ticket prices, fees and
+      costs, reputation, and so on) and rewrite them to match, and fix
+      messages that are wrong in the retail game too. Done with
+      `mbb.py`'s writer and the editor's Text tab, as a switch or a
+      group's text files, checked in PCSX2 where a screen shows them
+      ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
