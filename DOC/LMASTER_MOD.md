@@ -172,9 +172,30 @@ What is known so far:
   league, rank) would write past the 440 records into block 3 for club
   442 on. Save blocks have fixed sizes, set by the generated serializers,
   so block 2 can't grow.
-- **Left to trace:** another way to remember the third tier (the
-  `make_list` sources behind `LIST` slots, which might pick a nation's
-  clubs with no league); how your club and the rival
+- **The plan: grow the save (the user's choice, 2026-10-26).** LMASTER
+  full saves are separate already (`mod-saves`), so the third tier may
+  break save compatibility. **Confirmed** for the approach: the blocks'
+  sizes come from the table at `0x533ac8`, and `PlPworkTask`
+  (`0x21d6f0`) allocates their sum from heap 6 in a shuffled order, so
+  all code reaches a block through `get(i)`; block 2's serializers loop
+  a fixed 440 records (`SAVEPRG.REL 0x29548`, `slti 0x1b8`), and
+  `pwkOteam_Team2Otindex` already maps clubs 442–459 to records
+  440–457. The phases:
+  1. The save: block 2 gains 18 records for clubs 442–459, and block 5
+     seven past records for competitions 49–55 at its end, with
+     `pwkRec_GetCompePastRecord` sending them there; the serializers
+     read and write the new space (`save.py` follows, as it runs them).
+  2. Clubs 442–459 as full clubs: the game's limits 440 (`0x1b8`), 441
+     (`0x1b9`) and 442 (`0x1ba`), about 190 immediates across the
+     executable and overlays, each checked; their records and squads at
+     the start. The club info screen and the world rankings should then
+     list them.
+  3. The schedules: UIDs 142–147 every season as the hidden third tiers
+     (three real clubs and the two sent down), the second divisions'
+     last club down and one random tier club up, two clubs sent down at
+     the start, `REGULATION.TBB`'s down count 1, and `one-season-end`.
+  4. Two seasons played in PCSX2.
+- **Left to trace:** the rest of each phase; how your club and the rival
   get ranks 25 and 26 of the second division's first record; which
   cups name second-division ranks; and how the club info screen and the
   world rankings choose their clubs.

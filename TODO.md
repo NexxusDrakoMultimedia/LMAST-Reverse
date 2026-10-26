@@ -349,5 +349,8 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       `season-demand`): all six are tested in PCSX2; a season played
       through on the set is left
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [ ] The third tier (in progress, design agreed): the past records of
-      competitions 50–55, then the switch; `one-season-end` is built ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [ ] The third tier (in progress, design agreed; LMASTER full, breaks
+      save compatibility): phase 1 the save (block 2 and 5 grow), 2 clubs
+      442–459 as full clubs, 3 the schedules, 4 the season test
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements));
+      `one-season-end` is built ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
