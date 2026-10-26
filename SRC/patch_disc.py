@@ -82,9 +82,7 @@ league-balance, camp-types, camp-cities, camp-santiago, camp-clubs,
 drill-names, injury-value, injury-row, vpf-styles, season-status,
 pr-cycle, mobile-site, overseas-pop, cup-last16, facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees,
 season-demand, injury-odds, injury-lines, overseas-bases, transfer-fees,
-fee-tiers, slow-reputation, save-expand, tier-clubs, tier-lists, tier-uids,
-one-season-end,
-fanbase, merch-costs, pr-costs, camp-costs,
+fee-tiers, slow-reputation, third-tier, fanbase, merch-costs, pr-costs, camp-costs,
 tour-costs, launcher,
 mod-saves. Groups (DOC/LMASTER_MOD.md):
 --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes
@@ -96,8 +94,9 @@ facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees and
 season-demand; --mod balance is injury-odds, injury-lines,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs,
 pr-costs, camp-costs and tour-costs. --mod lmaster-full is all of
-those, league-balance and mod-saves, so a full LMASTER disc always saves
-to its own folders. skip-tutorial and launcher are test tools and in no
+those, league-balance, third-tier and mod-saves, so a full LMASTER disc
+always saves to its own folders; third-tier makes it need --copies and
+--dat. skip-tutorial and launcher are test tools and in no
 group. Each also works as a flag of its own (--skip-tutorial, ...). With
 switches and no targets, `patch <image> <out_image>` is enough.
 
@@ -238,38 +237,25 @@ transfer-fees and the best reach about £246M. slow-reputation (whole disc
 image only) halves what raises club status: a match's win and draw
 factors (SLES 0x399668), the points for final places (0x555188,
 0x555260, 0x555288) and the yearly 500 (0x26e2c4); losses stay.
-save-expand (whole disc image only; in no group yet) grows the save for
-the third tier: block 2 by 18 club records (clubs 442-459), block 5 by
-seven past records (competitions 49-55, through a rewritten
-pwkRec_GetCompePastRecord), with the serializers in SAVEPRG.REL saving
-them. Its code goes in a second loadable segment of SLES_541.51 at
-0xf8000, made from unloaded .DVP bytes, so the file keeps its size.
-Saves no longer load in the retail game or the other way round; use it
-with mod-saves, and `save.py convert` to carry a career over.
-tier-clubs (whole disc image only; needs save-expand; in no group yet)
-makes clubs 442-459, the tutorial's third-tier opponents, full clubs:
-block 2 records (pwkOteam_Team2Otindex), the resident checks and the
-club loops that work one club at a time, squads in OTEAMMEMBER.TBB (18
-added, from their database players; the file grows and moves), and
-three special cases for them off. See DOC/CLUB_LIMITS.md.
-tier-lists (whole disc image only; needs tier-clubs; in no group yet)
-grows the lists of 441 clubs to 459: the club-rank list, the transfer
-AI's lists, GetOfferClub's five lists (their stack frames relaid), and
-the world ranking (SIMPRG.REL ClubRank), with the loops that fill them.
-tier-uids (whole disc image only, with --copies and --dat; needs
-tier-clubs, save-expand and one-season-end; in no group yet) adds the
-hidden third tiers, competitions 50-55, as schedule UIDs 165-170 (3
-clubs) and, for your nation, 171-176 (5 clubs): each season the second
-division's last club goes down and the tier's winner comes up, and your
-second division has its real size, two of its clubs starting in the
-tier. It writes SCHEDULE_SYSTEM.PAC, SCHEDULE_COMPETITION.PAC,
-SCHEDULE_TEAM_ENTRY.PAC, REGULATION.TBB and PLRRSRC_INITTEAMDATA.TBB
-(with their PRELOAD copies) and changes the season's start and end code.
-See DOC/UID_LIMITS.md and DOC/LMASTER_MOD.md.
-one-season-end (whole disc image only; in no group yet) ends the game
-when you finish in the second division's bottom two in one season, not
-two running (SIMPRG.REL 0x15d958), and warns on this season alone
-(0x15da60). fanbase (whole disc image only)
+third-tier (whole disc image only, with --copies and --dat; in
+lmaster-full; turns on mod-saves) adds the LMASTER third tier: a hidden
+league under each second division, competitions 50-55, as schedule UIDs
+165-170 (3 clubs) and, for your nation, 171-176 (5 clubs). Each season
+the second division's last club goes down and the tier's winner comes
+up; your second division has its real size, two of its clubs starting
+in the tier; finishing last in it ends the game after one season. Clubs
+442-459 become full clubs (block 2 records, squads added to
+OTEAMMEMBER.TBB, the club checks, loops and lists that stopped at 441),
+the save grows (block 2 by their 18 records, block 5 by the past records
+of competitions 49-55), and the schedule files grow (SCHEDULE_SYSTEM,
+SCHEDULE_COMPETITION, SCHEDULE_TEAM_ENTRY, REGULATION and
+PLRRSRC_INITTEAMDATA, with their PRELOAD copies). Its saves don't load
+in the retail game, nor the other way round; `save.py convert` carries a
+career over. See DOC/UID_LIMITS.md, DOC/CLUB_LIMITS.md,
+DOC/SAVE_FORMAT.md and DOC/LMASTER_MOD.md. The names it was built as,
+save-expand, tier-clubs, tier-lists, tier-uids and one-season-end, are
+taken as third-tier.
+fanbase (whole disc image only)
 scales the merchandise base by supporters (SIMPRG.REL 0x1d9ec8, 17 rows)
 from x0.5 at the bottom to x3 at the top, makes walk-up crowds and
 season-ticket demand count home popularity at 195 in place of 130 with
@@ -1308,6 +1294,31 @@ class PackEdits:
         if prev is not None and prev[0] != new:
             raise ValueError("%s gets two different new contents (%s, %s)" % (label, prev[3], why))
         pack["edits"][index] = (new, old, label, why)
+
+    def fold(self, f, img, job):
+        """Fold a Job that writes inside an entry of a pack collected here
+        (one this run rebuilds) into that entry's edit, so the bytes land
+        where the entry ends up (drill-names' MES copies in the SIMFILE
+        packs that third-tier's REGULATION.TBB copies grow)."""
+        import pac
+        pack = self.packs[norm(job.file)]
+        e = img.entry(pack["file"])
+        h, blobs = pac.binpac_blobs(read_at(f, img, pack["file"], 0, e.size))
+        for i, (off, size, _, _) in enumerate(h.entries):
+            if off <= job.off and job.off + len(job.data) <= off + size:
+                prev = pack["edits"].get(i)
+                if prev is not None and len(prev[0]) != len(blobs[i]):
+                    raise ValueError("%s: an edit inside %s, which changes size too"
+                                     % (job.why, prev[2]))
+                cur = bytearray(prev[0] if prev else blobs[i])
+                cur[job.off - off:job.off - off + len(job.data)] = job.data
+                why = prev[3] if prev else job.why
+                if prev and job.why not in why.split("; "):
+                    why += "; " + job.why
+                pack["edits"][i] = (bytes(cur), blobs[i], prev[2] if prev else job.label, why)
+                return
+        raise ValueError("%s: its edit at 0x%x of %s isn't inside one entry"
+                         % (job.why, job.off, pack["file"]))
 
     def plan(self, f, img, toc, moves):
         import pac
@@ -2808,7 +2819,7 @@ def plan_slow_reputation(f, img):
     return word_jobs(f, img, "slow-reputation", SLOW_REPUTATION)
 
 
-# one-season-end: finishing in the second division's bottom two ends the
+# third-tier, the game over: finishing in the second division's bottom ends the
 # game after one season, not two running (the user's third-tier idea,
 # DOC/LMASTER_MOD.md). SIMPRG.REL 0x15d958 (from 2007, with your club in
 # the second division) reads your final rank in the latest season ($s1)
@@ -2826,11 +2837,6 @@ ONE_SEASON_END = (
     simprg_word(0x15dafc, 0x90510004, 0x00000000, "warning: last season not read"),
     simprg_word(0x15db18, 0x14600002, 0x10000002, "warning: this season decides"),
 )
-
-
-def plan_one_season_end(f, img):
-    """Jobs for --mod one-season-end."""
-    return word_jobs(f, img, "one-season-end", ONE_SEASON_END)
 
 
 # --- LMASTER code segment and the bigger save (DOC/LMASTER_MOD.md) -----------
@@ -2889,7 +2895,7 @@ CAVE, CAVE_FILE, CAVE_SIZE = 0xF8000, 0x46A350, 0x400
 PHDR2 = 0x54
 _BIT_READ, _BIT_WRITE = 0x20C200, 0x20C1C0       # _plBits_BitRead(bits, n, signed), BitWrite(bits, v, n, signed)
 
-# save-expand: the save grows for the third tier. The blocks' sizes
+# third-tier, the bigger save (machinery any feature may use). The blocks' sizes
 # (getSize: table 0x533ac8, size + 8) decide the allocation, which
 # PlPworkTask (0x21d6f0) sums, and the layout CRC.
 # - Block 2 (the other clubs) gains 18 records of 0xa8, 440-457, for
@@ -2937,7 +2943,7 @@ SAVE_LOOPS = ((0x29548, 0x2AA301B8, 0x2AA301CA, "block 2 read: 458 records"),
               (0x1B844, 0x2AA201B8, 0x2AA201CA, "block 2 write: 458 records"))
 # (serializer, its first two words, the base offset $ra holds, wrapper)
 _VARS = CAVE + 0x200
-SAVE_CAVE_SIZE = 0x280      # save-expand's part of the segment: its code, then _VARS
+SAVE_CAVE_SIZE = 0x280      # the save wrappers' part of the segment: code, then _VARS
 BLOCK5_HOOKS = (("read", 0x29838, (0x27BDFF10, 0x7FB70070), 0x2B9FC),
                 ("write", 0x1BAD8, (0x27BDFF00, 0x7FB70080), 0x2BA34))
 
@@ -2988,25 +2994,31 @@ def phdr2():
     return struct.pack("<8I", 1, CAVE_FILE, CAVE, CAVE, CAVE_SIZE, CAVE_SIZE, 7, 0x10)
 
 
-def plan_save_expand(f, img):
-    """Jobs for --mod save-expand."""
-    if img.port is not None:
-        raise ValueError("save-expand is made for the PAL executable only")
-    cave, at = save_expand_cave()
-    cave = cave[:SAVE_CAVE_SIZE]                # the rest is tier-uids'
+def code_segment_words(f, img):
+    """Words that load the LMASTER code segment: e_phnum 2 and the second
+    program header. Any switch that puts code there includes them (the
+    segment's bytes are each switch's own)."""
     e_phnum = read_at(f, img, SLES_FILE, 0x2C, 2)
-    held_cave = read_at(f, img, SLES_FILE, CAVE_FILE, SAVE_CAVE_SIZE)
-    words_ = [(SLES_FILE, 0x2C, b"\x01\x00", b"\x02\x00", "%s e_phnum 2" % SLES_FILE),
-              (SLES_FILE, PHDR2, bytes(32), phdr2(),
-               "%s program header 1: the LMASTER code segment at 0x%x" % (SLES_FILE, CAVE)),
-              (SLES_FILE, CAVE_FILE, held_cave if held_cave != cave else bytes(SAVE_CAVE_SIZE), cave,
-               "%s 0x%x (the code segment's bytes, unloaded .DVP data before)"
-               % (SLES_FILE, CAVE_FILE)),
-              (SLES_FILE, PAST_RECORD - EXE_BASE, PAST_RECORD_OLD, PAST_RECORD_NEW,
-               "%s 0x%x (pwkRec_GetCompePastRecord: competitions 49-55 at block 5's end)"
-               % (SLES_FILE, PAST_RECORD))]
     if e_phnum not in (b"\x01\x00", b"\x02\x00"):
-        raise ValueError("save-expand: %s has %d program headers" % (SLES_FILE, e_phnum[0]))
+        raise ValueError("%s has %d program headers" % (SLES_FILE, e_phnum[0]))
+    return [(SLES_FILE, 0x2C, b"\x01\x00", b"\x02\x00", "%s e_phnum 2" % SLES_FILE),
+            (SLES_FILE, PHDR2, bytes(32), phdr2(),
+             "%s program header 1: the LMASTER code segment at 0x%x" % (SLES_FILE, CAVE))]
+
+
+def save_grow_words(f, img):
+    """Words that grow the save: the blocks' sizes (SAVE_EXPAND_SIZES),
+    block 2's serializer loops (SAVE_LOOPS), and block 5's serializers
+    jumping to the wrappers in the code segment's first SAVE_CAVE_SIZE
+    bytes, which save and load BLOCK5_ADD bytes from BLOCK5_OLD. A
+    feature that needs more room raises these; the third tier uses them
+    for clubs 442-459 and competitions 49-55."""
+    cave, at = save_expand_cave()
+    cave = cave[:SAVE_CAVE_SIZE]                # the rest is the third tier's own code
+    held_cave = read_at(f, img, SLES_FILE, CAVE_FILE, SAVE_CAVE_SIZE)
+    words_ = [(SLES_FILE, CAVE_FILE, held_cave if held_cave != cave else bytes(SAVE_CAVE_SIZE), cave,
+               "%s 0x%x (the code segment's bytes, unloaded .DVP data before)"
+               % (SLES_FILE, CAVE_FILE))]
     for block, old, new in SAVE_EXPAND_SIZES:
         words_.append(sles_word(PWORK_SIZE_TABLE + 4 * block, old, new,
                                 "block %d size %d" % (block, new - 8)))
@@ -3018,7 +3030,15 @@ def plan_save_expand(f, img):
         words_.append((SAVE_FILE, start, words(first, second), words(j(at[kind]), first),
                        "%s 0x%x (block 5 %s: the wrapper at 0x%x)" % (SAVE_FILE, start, kind,
                                                                       at[kind])))
-    return word_jobs(f, img, "save-expand", words_)
+    return words_
+
+
+def past_record_words():
+    """pwkRec_GetCompePastRecord rewritten to send competitions 49-55 to
+    block 5's added end."""
+    return [(SLES_FILE, PAST_RECORD - EXE_BASE, PAST_RECORD_OLD, PAST_RECORD_NEW,
+             "%s 0x%x (pwkRec_GetCompePastRecord: competitions 49-55 at block 5's end)"
+             % (SLES_FILE, PAST_RECORD))]
 
 
 # Relaying a function's stack frame, for buffers that grow: the frame
@@ -3073,9 +3093,9 @@ def relay_frame(code, addr, frame, new_frame, shifts):
     return words(*out)
 
 
-# tier-clubs: clubs 442-459, the tutorial's third-tier opponents, become
+# third-tier, clubs 442-459: the tutorial's third-tier opponents become
 # full clubs like 3-441 (the LMASTER third tier, phase 2a; needs
-# save-expand's block 2 records). DOC/CLUB_LIMITS.md sorts every site.
+# the bigger save's block 2 records). DOC/CLUB_LIMITS.md sorts every site.
 # - pwkOteam_Team2Otindex (0x24b7e8) maps clubs 3-459 to records 1-457.
 # - The checks for a resident club (club < 442, club - 2 < 440, club - 3
 #   < 439) take 442-459 in, and the non-resident path (0x24d65c) leaves
@@ -3143,23 +3163,21 @@ def _imm_word(f, img, file, off, old, new, what):
     word the retail file holds there."""
     w = struct.unpack("<I", read_at(f, img, file, off, 4))[0]
     if w & 0xFFFF not in (old, new):
-        raise ValueError("tier-clubs: %s 0x%x holds %#x, not an immediate %#x"
+        raise ValueError("third-tier: %s 0x%x holds %#x, not an immediate %#x"
                          % (file, off, w, old))
     base = w & ~0xFFFF
     return (file, off, struct.pack("<I", base | old), struct.pack("<I", base | new),
             "%s 0x%x (%s)" % (file, off + (EXE_BASE if file == SLES_FILE else 0), what))
 
 
-def plan_tier_clubs(f, img):
-    """Jobs for --mod tier-clubs (the code; its OTEAMMEMBER.TBB comes from
-    file_tier_clubs)."""
-    if img.port is not None:
-        raise ValueError("tier-clubs is made for the PAL executable only")
+def tier_clubs_words(f, img):
+    """third-tier's words for clubs 442-459 as full clubs (its
+    OTEAMMEMBER.TBB comes from file_tier_clubs)."""
     words = [_imm_word(f, img, SLES_FILE, a - EXE_BASE, old, new, what)
              for a, old, new, what in TIER_EXE]
     words += [_imm_word(f, img, file, off, old, new, what)
               for file, off, old, new, what in TIER_OVERLAYS]
-    return word_jobs(f, img, "tier-clubs", words)
+    return words
 
 
 def file_tier_clubs(f, img, dat):
@@ -3184,8 +3202,8 @@ def file_tier_clubs(f, img, dat):
         return [(OTEAM_FILE, initteam.add_tier_squads(ot, pbdata.PbData(pb)))]
 
 
-# tier-lists: the lists sized for 441 clubs grow to 459, so the third
-# tier's clubs take part in what they feed (phase 2b; needs tier-clubs).
+# third-tier, the lists: those sized for 441 clubs grow to 459, so the third
+# tier's clubs take part in what they feed (phase 2b).
 # A list on the stack grows with its function's frame (relay_frame); the
 # loops that fill or read it run to 459. DOC/CLUB_LIMITS.md has each one.
 # - plTeam_GetClubrankList: 441 x 8 bytes on its stack, sorted.
@@ -3265,16 +3283,14 @@ def _relay_word(f, img, file, start, end, frame, new_frame, shifts, imms, what):
         k = addr - start
         w = struct.unpack_from("<I", new, k)[0]
         if w & 0xFFFF != was:
-            raise ValueError("tier-lists: 0x%x holds %#x, not an immediate %#x" % (addr, w, was))
+            raise ValueError("third-tier: 0x%x holds %#x, not an immediate %#x" % (addr, w, was))
         struct.pack_into("<I", new, k, w & ~0xFFFF | now)
     return (file, start - base, old, bytes(new),
             "%s 0x%x-0x%x (%s)" % (file, start, end, what))
 
 
-def plan_tier_lists(f, img):
-    """Jobs for --mod tier-lists."""
-    if img.port is not None:
-        raise ValueError("tier-lists is made for the PAL executable only")
+def tier_lists_words(f, img):
+    """third-tier's words for the lists of 459 clubs."""
     words_ = [_relay_word(f, img, *r) for r in TIER_LIST_RELAYS]
     words_ += [_imm_word(f, img, SLES_FILE, a - EXE_BASE, old, new, what)
                for a, old, new, what in TIER_LIST_EXE]
@@ -3282,10 +3298,10 @@ def plan_tier_lists(f, img):
                for file, off, old, new, what in TIER_LIST_OVERLAYS]
     words_ += [(NEGO_FILE, off, struct.pack("<I", old), struct.pack("<I", new),
                 "%s 0x%x (%s)" % (NEGO_FILE, off, what)) for off, old, new, what in TIER_LIST_WORDS]
-    return word_jobs(f, img, "tier-lists", words_)
+    return words_
 
 
-# tier-uids: the hidden third tiers, competitions 50-55 (England to the
+# third-tier, the tiers' seasons: competitions 50-55 (England to the
 # Netherlands), as new schedule UIDs, and who goes up and down (phase 3;
 # DOC/UID_LIMITS.md, DOC/LMASTER_MOD.md). UID 164 stays free: about 30
 # calls pass it for the default rules (REGULATION.TBB row 164).
@@ -3322,8 +3338,8 @@ def plan_tier_lists(f, img):
 # 0x3cfcc, your home games): its "none found" test compares with a second
 # 164 (0x3cfb8), and raising only its bound made the Set Up Ticket Price
 # screen come back for no game (seen in PCSX2); you never play in a tier.
-# The clubs (442-459) need tier-clubs, their past records save-expand,
-# and the game over on one season one-season-end.
+# The clubs (442-459), their past records and the one-season game over
+# are the switch's other parts.
 TIER_UID_FIRST, TIER_NATIONS = 165, 6
 TIER_UID_OWN = TIER_UID_FIRST + TIER_NATIONS          # 171-176
 TIER_UID_END = TIER_UID_OWN + TIER_NATIONS            # 177
@@ -3334,7 +3350,7 @@ TIER_DOMESTIC = 33                          # competitions 0-32 belong to one na
 INITTEAM_FILE = "PARAM/PLRRSRC_INITTEAMDATA.TBB"
 TIER_UID_FILES = ("PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/SCHEDULE_COMPETITION.PAC",
                   "PARAM/SCHEDULE_TEAM_ENTRY.PAC", "PARAM/REGULATION.TBB", INITTEAM_FILE)
-TIER_CAVE = CAVE + 0x280                    # past save-expand's code and variables
+TIER_CAVE = CAVE + 0x280                    # past the save wrappers and their variables
 TIER_SEED_LOOP = (0x253200, 0x2A020031, 0x2A020038, "past records seeded to competition 55")
 TIER_FINISH_BOUND = (0x205FA8, 0x2A820031, 0x2A820038, "season-end tables to competition 55")
 TIER_SHIFT = (0x205FC0, 0x253C58)           # jal pwkRec_ShiftCompeConventionRecord
@@ -3419,11 +3435,9 @@ def promotion_words():
     return w + [NOP] * (PROMOTION_WORDS - len(w))
 
 
-def plan_tier_uids(f, img):
-    """Jobs for --mod tier-uids (the code; the files come from
+def tier_uids_words(f, img):
+    """third-tier's words for the tiers' seasons (the files come from
     file_tier_uids)."""
-    if img.port is not None:
-        raise ValueError("tier-uids is made for the PAL executable only")
     cave, at = tier_cave()
     words_ = [sles_word(a, old, new, what) for a, old, new, what in (TIER_SEED_LOOP, TIER_FINISH_BOUND)]
     site, target = TIER_SHIFT
@@ -3444,7 +3458,7 @@ def plan_tier_uids(f, img):
     new = words(*cave)
     words_.append((SLES_FILE, off, held if held != new else bytes(len(new)), new,
                    "%s 0x%x (the third tier's code at 0x%x)" % (SLES_FILE, off, TIER_CAVE)))
-    return word_jobs(f, img, "tier-uids", words_)
+    return words_
 
 
 def _tier_turns(turns, days):
@@ -3476,7 +3490,7 @@ def file_tier_uids(f, img, dat):
     if TIER_UID_FIRST in rows:
         return []
     if len(system.savectrl) != regulation.UIDS:
-        raise ValueError("tier-uids: savectrl has %d UIDs, not %d"
+        raise ValueError("third-tier: savectrl has %d UIDs, not %d"
                          % (len(system.savectrl), regulation.UIDS))
     _, compe_data = read_file(f, img, compe_file)
     chead, compes = pac.binpac_blobs(compe_data)
@@ -3487,7 +3501,7 @@ def file_tier_uids(f, img, dat):
     regs = [regulation.Regulation(i, rtables[0].data[o:o + regulation.ROW])
             for i, o in enumerate(range(0, len(rtables[0].data), regulation.ROW))]
     if not len(compes) == len(entries) == regulation.UIDS == len(regs) - 1:
-        raise ValueError("tier-uids: the files don't have 164 UIDs")
+        raise ValueError("third-tier: the files don't have 164 UIDs")
     _, init_data = read_file(f, img, init_file)
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "PLRRSRC_INITTEAMDATA.TBB")
@@ -3513,7 +3527,7 @@ def file_tier_uids(f, img, dat):
         entries[own] = e.encode()
         mine, theirs = rows[own][0], rows[other][0]
         if rows[own][1] or rows[other][1]:
-            raise ValueError("tier-uids: UID %d or %d runs over the year end" % (own, other))
+            raise ValueError("third-tier: UID %d or %d runs over the year end" % (own, other))
         mine.start, mine.end, mine.turns = theirs.start, theirs.end, list(theirs.turns)
         regs[own] = regulation.Regulation(own, regs[other].encode())
         for name, _ in regulation.SLOTS:
@@ -3529,13 +3543,13 @@ def file_tier_uids(f, img, dat):
         seeded = [c for c in init.past[d] if c]
         size = len(seeded)
         if regs[second]["clubs"] != size:
-            raise ValueError("tier-uids: UID %d has %d clubs, its record %d"
+            raise ValueError("third-tier: UID %d has %d clubs, its record %d"
                              % (second, regs[second]["clubs"], size))
         tutorial = schedule.TeamEntry(entries[142 + k])
         real = [struct.unpack_from("<H", r, 4)[0] for r in tutorial.records["plteamid"]]
         real = [c for c in real if c != 1]
         if len(real) != TIER_CLUBS or any(init.past[t]):
-            raise ValueError("tier-uids: competition %d's clubs or record aren't as expected" % t)
+            raise ValueError("third-tier: competition %d's clubs or record aren't as expected" % t)
         # Seeds: d's last place a tier club, t's rank 1 d's last club.
         init.past[d][size - 1] = real[0]
         init.past[t][:TIER_CLUBS] = [seeded[-1]] + real[1:]
@@ -3545,14 +3559,14 @@ def file_tier_uids(f, img, dat):
             last = [i for i, r in enumerate(e.records["last_rank"][:e.counts["last_rank"]])
                     if r[1] == size and struct.unpack_from("<h", r, 4)[0] == d]
             if len(last) != 1:
-                raise ValueError("tier-uids: UID %d doesn't take rank %d of competition %d"
+                raise ValueError("third-tier: UID %d doesn't take rank %d of competition %d"
                                  % (uid, size, d))
             i = last[0]
             e.records["last_rank"][i] = _entry_record(e.records["last_rank"][i][0], 1, t)
             e.header = bytes([uid & 0xFF]) + e.header[1:]
             entries[uid] = e.encode()
             if regs[uid]["down1_compe"] != t:
-                raise ValueError("tier-uids: UID %d sends its clubs to %d, not %d"
+                raise ValueError("third-tier: UID %d sends its clubs to %d, not %d"
                                  % (uid, regs[uid]["down1_compe"], t))
             regs[uid]["down1_count"] = 1
         for uid, clubs in ((TIER_UID_FIRST + k, TIER_CLUBS), (TIER_UID_OWN + k, TIER_OWN_CLUBS)):
@@ -3603,6 +3617,25 @@ def file_tier_uids(f, img, dat):
                 entry_data[:ehead.header_size], count), entries)),
             (reg_file, tbb.build(rtables, rend, tbb.trailer(reg_data, rtables))),
             (init_file, init.encode())]
+
+
+def plan_third_tier(f, img):
+    """Jobs for --mod third-tier: the code segment, the bigger save and its
+    past records, clubs 442-459, their lists, the tiers' seasons and the
+    one-season game over, as one switch (the files come from
+    file_third_tier)."""
+    if img.port is not None:
+        raise ValueError("third-tier is made for the PAL executable only")
+    return word_jobs(f, img, "third-tier",
+                     code_segment_words(f, img) + save_grow_words(f, img) + past_record_words()
+                     + tier_clubs_words(f, img) + tier_lists_words(f, img)
+                     + tier_uids_words(f, img) + list(ONE_SEASON_END))
+
+
+def file_third_tier(f, img, dat):
+    """[(target, data)] for --mod third-tier: OTEAMMEMBER.TBB with the 18
+    squads, and the five schedule files."""
+    return file_tier_clubs(f, img, dat) + file_tier_uids(f, img, dat)
 
 
 # fanbase: a big fanbase counts for more. Merchandise sales start from a
@@ -3870,18 +3903,10 @@ SWITCHES = (
      "Balance: transfer fees by player rank: lesser players x2, the best up to x3"),
     ("slow-reputation", plan_slow_reputation, [SLES_FILE],
      "Balance: club status (reputation) rises half as fast; losses stay"),
-    ("save-expand", plan_save_expand, [SLES_FILE, SAVE_FILE],
-     "LMASTER full: a bigger save (clubs 442-459, competitions 49-55); breaks save compatibility"),
-    ("tier-clubs", plan_tier_clubs, [SLES_FILE, NEGO_FILE, DISC + "DLL/YRSTPRG.REL", OTEAM_FILE],
-     "LMASTER full: clubs 442-459 (the third tier) as full clubs; needs save-expand"),
-    ("tier-lists", plan_tier_lists, [SLES_FILE, NEGO_FILE],
-     "LMASTER full: the lists of 441 clubs (club rank, transfer AI, offers, world "
-     "ranking) hold 459; needs tier-clubs"),
-    ("tier-uids", plan_tier_uids, [SLES_FILE] + list(TIER_UID_FILES),
-     "LMASTER full: the hidden third tiers (schedule UIDs 165-176), last in the second "
-     "division down, tier winner up; needs tier-clubs, save-expand, one-season-end and --copies"),
-    ("one-season-end", plan_one_season_end, [NEGO_FILE],
-     "The second division's bottom two end the game after one season, not two"),
+    ("third-tier", plan_third_tier,
+     [SLES_FILE, SAVE_FILE, NEGO_FILE, DISC + "DLL/YRSTPRG.REL", OTEAM_FILE] + list(TIER_UID_FILES),
+     "LMASTER full: a hidden third tier under each second division; last place down, the "
+     "tier's winner up, the game over after one season last; new saves; needs --copies"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
      "Balance: a bigger fanbase sells more merchandise and draws more fans and TV money"),
     ("merch-costs", plan_merch_costs, [NEGO_FILE],
@@ -3920,14 +3945,17 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
 # fixes; LMASTER full is every switch of the mod, with its own saves
 # (mod-saves) so its careers never mix with the retail game's. The
 # tutorial skip and the launcher are test tools, in neither.
-# Switches whose plan needs another switch, and switches that write whole
-# files (file_<switch>(f, img, dat) -> [(target, data)]).
-SWITCH_NEEDS = {"tier-clubs": ("save-expand",), "tier-lists": ("tier-clubs",),
-                "tier-uids": ("tier-clubs", "save-expand", "one-season-end")}
-SWITCH_FILES = {"tier-clubs": file_tier_clubs, "tier-uids": file_tier_uids}
-# Switches whose files have PRELOAD copies the game loads instead
-# (STATIONFILE.PAC's schedule packs, SIMFILE*.PAC's REGULATION.TBB).
-SWITCH_COPIES = ("tier-uids",)
+# One switch per feature: parts that need each other are one switch
+# (TODO.md, the switch levels). Switches that need another switch, that
+# write whole files (file_<switch>(f, img, dat) -> [(target, data)]),
+# whose files have PRELOAD copies the game loads instead (--copies), that
+# turn on others (a bigger save needs saves of its own), and old names.
+SWITCH_NEEDS = {}
+SWITCH_FILES = {"third-tier": file_third_tier}
+SWITCH_COPIES = ("third-tier",)
+SWITCH_IMPLIES = {"third-tier": ("mod-saves",)}
+SWITCH_ALIASES = {name: "third-tier" for name in ("save-expand", "tier-clubs", "tier-lists",
+                                                  "tier-uids", "one-season-end")}
 LMASTER_LITE = ("sponsor-negotiation", "rival-manager", "national-cups", "camp-types",
                 "camp-cities", "camp-santiago", "camp-clubs", "drill-names", "injury-value",
                 "injury-row", "vpf-styles", "season-status", "pr-cycle", "mobile-site",
@@ -3941,7 +3969,7 @@ SWITCH_GROUPS = {"lmaster-lite": LMASTER_LITE,
                  "harder-economy": HARDER_ECONOMY,
                  "balance": BALANCE,
                  "lmaster-full": LMASTER_LITE + ("league-balance",) + HARDER_ECONOMY + BALANCE
-                 + ("mod-saves",)}
+                 + ("third-tier", "mod-saves")}
 
 
 def parse_mods(values):
@@ -3949,6 +3977,7 @@ def parse_mods(values):
     out = set()
     for v in values:
         for name in filter(None, v.lower().split(",")):
+            name = SWITCH_ALIASES.get(name, name)
             if name in SWITCH_GROUPS:
                 out.update(SWITCH_GROUPS[name])
             elif name in SWITCH_NAMES:
@@ -3956,6 +3985,8 @@ def parse_mods(values):
             else:
                 raise SystemExit("--mod %s: no such switch (%s)" % (
                     name, ", ".join(SWITCH_NAMES + sorted(SWITCH_GROUPS))))
+    for name in list(out):
+        out.update(SWITCH_IMPLIES.get(name, ()))
     return out
 
 
@@ -4147,19 +4178,7 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
         cso.cmd_extract(image, out)
         image, out, in_place = out, None, True
     img = Image(image)
-    # Switches that edit a target's bytes do so before anything is planned,
-    # so its copies (--copies) carry the change too.
     adopted = {}
-    for name, (hook, files, also) in TARGET_HOOKS.items():
-        if name not in mods:
-            continue
-        for k, (target, src, data) in enumerate(pairs):
-            if "#" in target:
-                continue
-            file = norm(img.entry(target).path)
-            if file in {norm(p) for p in files}:
-                pairs[k] = (target, src, hook(file, data))
-                adopted.setdefault(name, set()).update({file} | {norm(p) for p in also})
     # Switches that need other switches, and switches that bring whole
     # files of their own (a file that grows), which then go the way of a
     # target: moved when it needs more sectors, copied with --copies.
@@ -4183,6 +4202,20 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
                                  % (name, target))
             pairs.append((target, "--mod " + name, data))
             adopted.setdefault(name, set()).add(norm(target))
+    # Switches that edit a target's bytes do so before anything is planned,
+    # so its copies (--copies) carry the change too; after the switches'
+    # own files, so one switch's change lands on another's file (the third
+    # tier's SCHEDULE_SYSTEM.PAC takes national-cups').
+    for name, (hook, files, also) in TARGET_HOOKS.items():
+        if name not in mods:
+            continue
+        for k, (target, src, data) in enumerate(pairs):
+            if "#" in target:
+                continue
+            file = norm(img.entry(target).path)
+            if file in {norm(p) for p in files}:
+                pairs[k] = (target, src, hook(file, data))
+                adopted.setdefault(name, set()).update({file} | {norm(p) for p in also})
     index = Index(dat) if dat else None
     if write_copies and index is None:
         raise SystemExit("--copies needs the DAT index (--dat)")
@@ -4245,6 +4278,29 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
         if clash:
             raise SystemExit("%s: written whole and as single entries in the same run; "
                              "patch one or the other" % ", ".join(sorted(clash)))
+        # The switches, before the PRELOAD packs are rebuilt: an edit inside a
+        # pack this run rebuilds (its copies grew) becomes an entry edit of it.
+        # The files the targets write, before the switches add theirs
+        # (skip-tutorial and launcher both edit RootMainSeq.sqb).
+        touched = {norm(j.file) for j in jobs if j.file is not None} | set(moves.files)
+        for name, plan, files, _ in SWITCHES:
+            if name not in mods:
+                continue
+            mine = adopted.get(name, set())
+            clash = touched & ({norm(img.entry(p).path) if img.port and norm(p) == norm(
+                PAL_EXE_FILE) else norm(p) for p in files} - mine)
+            if clash:
+                raise SystemExit("--mod %s edits %s; don't patch it as a target too"
+                                 % (name, ", ".join(sorted(clash))))
+            sjobs, snotes = plan(f, img, mine) if name in TARGET_HOOKS else plan(f, img)
+            if img.port is not None:
+                sjobs = img.port.jobs(sjobs)
+            for j in sjobs:
+                if j.file is not None and norm(j.file) in packs.packs:
+                    packs.fold(f, img, j)
+                else:
+                    jobs.append(j)
+            notes += snotes
         pjobs, pnotes = packs.plan(f, img, toc, moves)
         jobs += pjobs
         notes += pnotes
@@ -4258,23 +4314,6 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
         for r in renames:
             target, _, new = r.partition("=")
             jobs += plan_rename(f, img, target, new)
-        # The files the targets write, before the switches add theirs
-        # (skip-tutorial and launcher both edit RootMainSeq.sqb).
-        touched = {norm(j.file) for j in jobs if j.file is not None}
-        for name, plan, files, _ in SWITCHES:
-            if name not in mods:
-                continue
-            mine = adopted.get(name, set())
-            clash = touched & ({norm(img.entry(p).path) if img.port and norm(p) == norm(
-                PAL_EXE_FILE) else norm(p) for p in files} - mine)
-            if clash:
-                raise SystemExit("--mod %s edits %s; don't patch it as a target too"
-                                 % (name, ", ".join(sorted(clash))))
-            sjobs, snotes = plan(f, img, mine) if name in TARGET_HOOKS else plan(f, img)
-            if img.port is not None:
-                sjobs = img.port.jobs(sjobs)
-            jobs += sjobs
-            notes += snotes
         # After the switches, which may patch other bytes of the executable.
         for target, _, data in pairs:
             file = norm(resolve_target(img, index, target)[0])

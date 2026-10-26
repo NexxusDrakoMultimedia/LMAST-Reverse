@@ -70,7 +70,7 @@ Usage:
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
     python save.py roundtrip <save> ...                   # decode + encode, compare
-    python save.py convert   <save> <out> <ISO dir>       # re-encode for another layout (--mod save-expand)
+    python save.py convert   <save> <out> <ISO dir>       # re-encode for another layout (--mod third-tier)
     python save.py blocks                                 # block sizes and offsets in .bin
     python save.py fields    [rounds]                     # re-record and check the field list
     python save.py rename    <save folder> <parent>        # copy a save between -G/-C and a modded disc's -M/-D
@@ -254,7 +254,7 @@ class Cpu:
 
     # The bit-stream functions by their PAL address, for code that calls
     # them directly rather than through an import (patch_disc.py's code
-    # segment, --mod save-expand).
+    # segment, --mod third-tier).
     DIRECT = {0x20C200: "_plBits_BitRead__5ParamPQ25Param11PlBitsClassii",
               0x20C1C0: "_plBits_BitWrite__5ParamPQ25Param11PlBitsClasslii"}
 
@@ -469,7 +469,7 @@ def crc16(rel, data, table=CRC_TABLE):
 def extra_segments(sles_path):
     """[(address, bytes)] of the executable's loadable segments after the
     first: none in the retail game, the LMASTER code segment on a disc
-    patched with --mod save-expand (patch_disc.py)."""
+    patched with --mod third-tier (patch_disc.py)."""
     with open(sles_path, "rb") as f:
         data = f.read()
     phoff, = struct.unpack_from("<I", data, 0x1C)
@@ -1690,7 +1690,7 @@ def fresh_file(game, blocks):
 
 def cmd_convert(game, path, out, to_iso):
     """Re-encode a save for another layout of the same game, as a disc with
-    --mod save-expand has: each block keeps its bytes, and a block that
+    --mod third-tier has: each block keeps its bytes, and a block that
     grew is padded with zeros (the new records start empty)."""
     import gamever
     target = Game(os.path.join(to_iso, "DLL", "SAVEPRG.REL"), gamever.exe_path(to_iso), game.dat)

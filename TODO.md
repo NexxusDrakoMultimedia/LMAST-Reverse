@@ -18,24 +18,15 @@ or two.
 
 What to work on next, most valuable first.
 
-1. **Finish the third tier** (sections 7 and 8). The season test has
-   passed (`LMAST-test-tiers-germany2.iso`: the tiers' winners go up and
-   the second divisions' last clubs go down), so the
-   five switches (`save-expand`, `tier-clubs`, `tier-lists`,
-   `tier-uids`, `one-season-end`) merge into one, `third-tier` (the
-   user's choice, 2026-10-27), which joins `--mod lmaster-full`;
-   INSTALL.md describes it, and section 8's third-tier item is brought up to date
-   ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3),
-   [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-2. **The player and staff fields** (section 2, "Players and staff"):
+1. **The player and staff fields** (section 2, "Players and staff"):
    the player fields still open (`explodetype`, abilities 59–63, the
    attack pattern letters, the tendencies, the kit style's cap and
    gloves; an edited tendency can be checked over PINE), then the staff
    fields, the 25 manager policies, job 5 and how coaches and former
    players become managers
    ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
-3. **LMASTER full in game** (sections 7 and 8), after the third tier
-   joins it: every part of `--mod harder-economy` is tested in PCSX2,
+2. **LMASTER full in game** (sections 7 and 8), now with the third
+   tier in it: every part of `--mod harder-economy` is tested in PCSX2,
    and so are `transfer-fees`, `merch-costs` and the separate career
    saves; the other `--mod balance` switches and `pr-cycle` are built but
    not yet seen in game. A disc built with `--mod lmaster-full`, played
@@ -255,15 +246,10 @@ every writer has a tab.
 
       The rule (the user's): switches that depend on each other merge
       into one switch, one feature each (the third tier's five, which
-      need each other through `SWITCH_NEEDS`, become `third-tier`); a group
-      holds features that each work alone. Machinery is no switch:
-      `save-expand` splits into the LMASTER code segment, which
-      `patch_disc.py` adds whenever a chosen switch puts code there, a
-      shared helper for growing save blocks (the size table and the
-      serializer wrappers), and the third tier's own records (block 2's
-      18 clubs, block 5's competitions 49–55), which go into
-      `third-tier`. A switch that grows the save turns on `mod-saves`
-      itself, since its careers can't load in the retail game. The Build tab offers the editions,
+      need each other, are `third-tier` now); a group holds features
+      that each work alone, and machinery is no switch (done for the
+      third tier: the code segment and the save wrappers are helpers, and
+      `SWITCH_IMPLIES` turns on `mod-saves` with it). The Build tab offers the editions,
       with their groups to add or leave out and the switches shown under
       each; the test tools stay apart. `--mod` takes any level, so a
       single switch still works for tests
@@ -342,12 +328,12 @@ names the disc or the edit to build; the result goes into the doc.
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind
-- [ ] The third tier's lists (`--mod tier-lists`):
+- [ ] The third tier's lists (`--mod third-tier`):
       `LMAST-test-tierlists2.iso` (with the tutorial skip) plays through
       a transfer window and to the season's end (the world ranking's
       update), and saves and loads; the ranking screen at the start is
       checked
-      ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-tier-lists-phase-2b))
+      ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b))
 - [ ] The third tier's clubs in the domestic cups (the user's choice,
       2026-10-27: grow the brackets, so every current entrant keeps its
       place): each nation's cups take its tier clubs by `LAST_RANK` of
@@ -355,9 +341,9 @@ names the disc or the edit to build; the result goes into the doc.
       rule): ranks 1–4 in the own-nation versions (5-club tier), 1–2 in
       the others (3 clubs). Needs a knockout builder in `schedule.py` (pairings, next
       links, byes; it builds only leagues now) and, where a cup gains a
-      round, a turn for it. Part of `third-tier`, after the merge
+      round, a turn for it. Part of `third-tier`
       ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md),
-      [`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3))
+      [`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 - [ ] The third tier's clubs in My Room > Information > Club Info >
       Other Club Info, which doesn't list clubs 442–459 (user report);
       how the screen picks its clubs isn't traced
@@ -403,12 +389,6 @@ improvements, each as a named `patch_disc.py` switch tested in PCSX2
       `season-demand`): all six are tested in PCSX2; a season played
       through on the set is left
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [ ] The third tier (in progress, design agreed; LMASTER full, breaks
-      save compatibility): phase 1 the save (block 2 and 5 grow), 2 clubs
-      442–459 as full clubs, 3 the schedules, 4 the season test; phases
-      1 and 4 are tested in PCSX2
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements));
-      `one-season-end` is built ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] A text pass for LMASTER full (the user's idea, 2026-10-27): find
       the in-game messages that describe rules its switches change (the
       relegation game over, the third tier, ticket prices, fees and

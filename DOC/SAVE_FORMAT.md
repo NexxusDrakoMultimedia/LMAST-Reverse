@@ -870,9 +870,9 @@ Checked on a Japanese save (`BISLPM-66316-G000`, 2006–07, turn 4):
 fatigue, read back by `show`; a wristband of 7 refused). The edited save
 hasn't been loaded in the game.
 
-## The bigger save (`--mod save-expand`)
+## The bigger save (`--mod third-tier`)
 
-`patch_disc.py --mod save-expand` grows two blocks for the LMASTER
+`patch_disc.py --mod third-tier` (built as `save-expand`) grows two blocks for the LMASTER
 third tier ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)): block 2
 by 18 records of 0xa8, records 440–457, for clubs 442–459 (until
 `pwkOteam_Team2Otindex` is changed to map them there, they still reach

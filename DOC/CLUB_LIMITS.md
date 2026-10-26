@@ -44,14 +44,14 @@ About 140 sites use the same numbers for something else:
 | Lists and buffers of 440 or 441 clubs | `GetOfferClub`'s five lists and `SetLotClub` (`0x2256c8`, a list's bound), `plTeam_GetClubrankList` (`0x22c09c`–`0x22c144`: 441 × 8 bytes on a `0xe20` stack frame, sorted with 441), `ScheEuro_TeamEntryList` `getTeamIdFromNation`/`Region` (`0x20afb4`, `0x20b064`: clubs 3–440, at most the count given) and its callers `getList_SRC_KIND_UEFA_XXX`, `_CLUBRANK`, `_FIFA` (`0x20b504`, `0x20b700`, `0x20b880`: 440 entries at `+0x478` of the list) |
 | The world ranking | `SIMPRG.REL` `ClubRank` (`0x150684`–`0x1521e0`, 14 sites): a list of 441 clubs on the stack of its club update (`0x150680`), and its helpers' loops over clubs; each club's points and rank are in its block 2 record (`+0x9c`, `+0xa0`–`+0xa4`) |
 | Lists of a nation's or region's clubs, capped | `SIMPRG.REL` `CReport_month` (`0xa1194`, `0xa1244`, `0xa12f0`, `0xa1318`: 50 at most), `CEDITPRG.REL` (`0x2d84`: as many as its caller allows) |
-| Save block 2's serializers | `SAVEPRG.REL` `0x29548`, `0x1b844` (patched by `--mod save-expand`), and the older reader's `0xc1d0` (version `0x68` saves only) |
+| Save block 2's serializers | `SAVEPRG.REL` `0x29548`, `0x1b844` (patched by `--mod third-tier`), and the older reader's `0xc1d0` (version `0x68` saves only) |
 | The non-resident path, for 442–459 | `_pwkOteam_GetPlRec_LgTeamNonresident` (`0x24d65c`), its player base (`0x24d6b0`, `0x24d748`), the league records' set-up `0x24d454` (clubs `0x1ba`–`0x1cb`, players from `0x63f7`), `pwkOteam_ResetRentalPossibleClubFlag` (`0x24ca18`) |
 | Not yet understood | `CScheEuro::clearPlayerRecord` and `movePlayerRecord` (`0x2078a0`, `0x207a98`): clubs below 441 skip a player lookup that 441 and up take |
 
-## `--mod tier-clubs` (phase 2a)
+## `--mod third-tier`: the clubs (phase 2a)
 
-`patch_disc.py --mod tier-clubs` (with `--mod save-expand`, whose block
-2 records it uses) makes clubs 442–459 full clubs, as far as code that
+`patch_disc.py --mod third-tier` (built as `tier-clubs`), with the
+bigger save's block 2 records, makes clubs 442–459 full clubs, as far as code that
 works one club at a time goes:
 
 - `pwkOteam_Team2Otindex` maps clubs 3–459 to records 1–457.
@@ -66,7 +66,7 @@ works one club at a time goes:
   `0x63f7`, with their ages and shirt numbers, contracts of 2 years).
 
 The loops that fill buffers sized for 441 clubs stay as they are, so
-they leave 442–459 out; [`--mod tier-lists`](#--mod-tier-lists-phase-2b)
+they leave 442–459 out; [the lists](#--mod-third-tier-the-lists-phase-2b)
 grows them. A save from before the switch has empty records for the new
 clubs; start a new career.
 
@@ -75,9 +75,9 @@ clubs; start a new career.
 through a transfer window and saves and loads, and the tutorial's
 promotion playoff against the third-tier clubs plays; "all working".
 
-## `--mod tier-lists` (phase 2b)
+## `--mod third-tier`: the lists (phase 2b)
 
-`patch_disc.py --mod tier-lists` (with `--mod tier-clubs`) grows the
+`patch_disc.py --mod third-tier` (built as `tier-lists`) grows the
 lists sized for 441 clubs to 459, and the loops that fill and read them
 run to 459. A list on the stack grows with its function's frame:
 `relay_frame` moves every `$sp` offset from the list's end on, the
@@ -111,7 +111,7 @@ club) and 443, with 438 and 439 missing. The list's object
 441 at `+8` (a pointer per club) and `+0x79c` (an index per club), with
 the column records at `+0x6ec` between them. The pointers are only
 `+0x798` (the sorted data, 12 bytes a club) + 12 × i, and nothing reads
-the indices, so `tier-lists` stops writing both (`0x85094`, `0x850a8`)
+the indices, so `third-tier` stops writing both (`0x85094`, `0x850a8`)
 and the one reader, `CNationRankList_Task` (`0x84b08`), walks the data
 with a pointer of its own (`0x84bd4`, `0x84bf8`, `0x84c1c`,
 `0x84c24`). The count becomes 459.
@@ -142,7 +142,7 @@ sized for 441 clubs. **Confirmed** from the code, as each was read:
 | `updatePlCoreInfoSub` (`0x20d314`) | each club through block 2 (`updatePlCoreInfoSub_Team_OteamOne`, `0x20cdb8`), which records the club on its players' core info; your club's players get `0x1cc` (460), past every club | as it is |
 | `CMakeDataBase::MakeDB` (`0x2230e0`) | each club through block 2 (`MakeDBEach`) | as it is |
 | `pwkOteam_Init` (`0x24a738`) | each club's 25 squad slots, read in order from `OTEAMMEMBER.TBB` | with 18 squads added to the file |
-| `GetOfferClub` (`0x225808`…) | a 4-byte entry per club on the stack at `$sp + 0x10`, below other buffers in a `0x2360`-byte frame | the frame relaid (`tier-lists`) |
+| `GetOfferClub` (`0x225808`…) | a 4-byte entry per club on the stack at `$sp + 0x10`, below other buffers in a `0x2360`-byte frame | the frame relaid (`third-tier`) |
 
 ## Tables indexed by club
 
@@ -157,10 +157,10 @@ already cover clubs to 459. **Confirmed** for the main ones:
 | club → nation, `PLRESOURCECOMMON.PAC` entry 3 table 5, a byte per club | clubs below 460 (`slti 0x1cc`) | `plMisc_Club2Nati` (`0x215af0`), and through it `plMisc_Club2Region` |
 | city clubs, `0x531f30` | searched by club id | `plOteam_SearchCteam` (`0x216590`) |
 | league entries | searched by club id (`bsearch`) | `plLg_GetEntry` (`0x2e9630`) |
-| the other clubs, save block 2 | clubs 2–441 (records 0–439); 18 more records with `--mod save-expand`, which `pwkOteam_Team2Otindex` (`0x24b7e8`, club − 3 < 439) reaches once its bound is 457 | `pwkOteam_GetPointer` (`0x24b788`); a club past 441 gets record 1, club 3's |
+| the other clubs, save block 2 | clubs 2–441 (records 0–439); 18 more records with `--mod third-tier`, which `pwkOteam_Team2Otindex` (`0x24b7e8`, club − 3 < 439) reaches once its bound is 457 | `pwkOteam_GetPointer` (`0x24b788`); a club past 441 gets record 1, club 3's |
 
 So the risk for a club past 441 was in the buffers the loops above
-fill, which `--mod tier-lists` grows; `ClubRank` keeps its points in
+fill, which `--mod third-tier` grows; `ClubRank` keeps its points in
 block 2, not in arrays of its own.
 
 ## Still unknown

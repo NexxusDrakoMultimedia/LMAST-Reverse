@@ -246,7 +246,7 @@ Each result is recorded in the doc named.
       career, its tier records repaired by hand, plays into 2007–08 on
       `LMAST-test-tiers-germany2.iso`, with one club moved each way in
       Germany and England
-      ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-tier-uids-phase-3))
+      ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 
 ## 8. LMASTER Mod and other patches
 
@@ -303,6 +303,11 @@ Each result is recorded in the doc named.
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md))
 - [x] `save-expand`: the bigger save for the third tier, with an LMASTER
       code segment in the executable; tested in PCSX2
-      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-bigger-save---mod-save-expand))
+      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-bigger-save---mod-third-tier))
 - [x] `tier-clubs`: clubs 442–459 as full clubs (third tier phase 2a);
-      tested in PCSX2 ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-tier-clubs-phase-2a))
+      tested in PCSX2 ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-clubs-phase-2a))
+- [x] The third tier: hidden tiers under the second divisions, last
+      club down and the tier's winner up, tested in PCSX2 over a German
+      season; the five switches merged into `--mod third-tier`, in
+      `lmaster-full` ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))

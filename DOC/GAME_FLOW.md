@@ -179,7 +179,7 @@ two years running, and fewer than 8 players. Those match the four checks.
 The relegation check itself is `SIMPRG.REL 0x15d958`
 ([`REGULATION_FORMAT.md`](REGULATION_FORMAT.md#place-slots)); it needs
 your final rank past the line in each of the last two seasons, and
-`--mod one-season-end` makes it one
+`--mod third-tier` makes it one
 ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)).
 Which `Sche.YearEnd` value is the relegation and which is the other end
 of a career (an ending?) hasn't been traced. The PlayAcrobata argument

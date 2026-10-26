@@ -134,7 +134,7 @@ What is known so far:
   which `0x15d8f0` takes from the `down` place slots of its
   `REGULATION.TBB` row (the club count less the slot's count). The
   warning before it (`0x15da60`) uses this season's live rank and last
-  season's. `patch_disc.py --mod one-season-end` makes both decide on
+  season's. `patch_disc.py --mod third-tier` (built as `one-season-end`) makes both decide on
   one season (in no group yet; not checked in the game). With the down
   count at 1, the line is the last place.
 - **A third tier was planned.** **Empirical**: every second division's
@@ -189,9 +189,9 @@ What is known so far:
      seven past records for competitions 49–55 at its end, with
      `pwkRec_GetCompePastRecord` sending them there; the serializers
      read and write the new space (`save.py` follows, as it runs them).
-     **Built** as `--mod save-expand`, with an LMASTER code segment in
+     **Built** (as `save-expand`, now part of `--mod third-tier`), with an LMASTER code segment in
      the executable for the new code
-     ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-bigger-save---mod-save-expand));
+     ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-bigger-save---mod-third-tier));
      tested in PCSX2: a converted career loads, saves and loads again
      (user report).
   2. Clubs 442–459 as full clubs: the game's limits 440 (`0x1b8`), 441
@@ -205,11 +205,11 @@ What is known so far:
      arrays sized for 441 clubs (`ClubRank`, the club-rank list, the
      schedule's club lists, the transfer AI), each read and resized;
      each step a switch of its own, tested on a disc. Step (a) is
-     **built** as `--mod tier-clubs`
-     ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-tier-clubs-phase-2a)),
+     **built** (as `tier-clubs`)
+     ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-clubs-phase-2a)),
      tested in PCSX2 (a new career and the tutorial's playoff). Step
-     (b) is **built** as `--mod tier-lists`
-     ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-tier-lists-phase-2b)): the
+     (b) is **built** (as `tier-lists`)
+     ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)): the
      club-rank list, the transfer AI's lists, the offers' lists and the
      world ranking hold 459 clubs; tested in PCSX2 so far: the All
      Clubs Ranking lists every club (user report).
@@ -217,19 +217,19 @@ What is known so far:
      real clubs, and in your nation the two sent down), the second
      divisions' last club down and the tier's winner up, two clubs sent
      down at the start in your nation,
-     `REGULATION.TBB`'s down count 1, and `one-season-end`. The user's
+     `REGULATION.TBB`'s down count 1, and the one-season game over. The user's
      choices (2026-10-27): the third tiers get six **new UIDs,
      164–169**, so the tutorial's playoff (UIDs 142–147) and VS mode's
      leagues (148–163) stay as they are; every table and loop sized for
      164 schedules is found and grown first, as in phase 2. The club
      that comes up is the **tier's winner** (`LAST_RANK` rank 1 of its
      competition), which changes each season as the games are simulated.
-     **Built** as `--mod tier-uids`, (a) the leagues and (b) the
-     movements ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-tier-uids-phase-3));
+     **Built** (as `tier-uids`), (a) the leagues and (b) the
+     movements ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3));
      tested in PCSX2: a German career's season end moves the second
      division's last club down and the tier's winner up, in your nation
      and the others, after the fix that keeps the tiers' results
-     ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-tier-uids-phase-3)). The rival goes down like any club (the user's
+     ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)). The rival goes down like any club (the user's
      choice, 2026-10-27). Step (b): the movements, and your nation's
      tier at 5 clubs (an own-nation version of each tier, as the second
      divisions have). Found for (b), **confirmed**:
@@ -264,7 +264,21 @@ What is known so far:
      them down to your nation's 5-club tier. A tier club in a seeded last
      place plays that nation's cups in season 1, as relegated clubs do in
      later seasons.
-  4. Two seasons played in PCSX2.
+  4. Two seasons played in PCSX2: done for a German career (the
+     tiers' winners up, the last clubs down).
+
+  The five switches it was built as are **one switch now, `--mod
+  third-tier`** (the user's rule: switches that need each other are one
+  feature), in `--mod lmaster-full`; it turns on `mod-saves` itself and
+  needs `--copies` and `--dat`. The machinery under it is no switch: the
+  LMASTER code segment (`code_segment_words`) and the save-growing
+  wrappers (`save_grow_words`) are there for any later feature, and the
+  old names are taken as `third-tier`. A full LMASTER build was compared
+  entry by entry with one without the third tier: only the third tier's
+  own files and entries differ, `national-cups` and `league-balance`
+  applied on top of its schedule packs, and the switches whose PRELOAD
+  edits share its rebuilt packs (`drill-names`, `injury-lines`,
+  `facility-tiers`) land as entry edits of the rebuilt packs.
 - **Left to trace:** the rest of each phase; how your club and the rival
   get ranks 25 and 26 of the second division's first record; which
   cups name second-division ranks; and how the club info screen and the

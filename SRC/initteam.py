@@ -90,7 +90,7 @@ INIT_SIZES = (LEAGUES * DIVISIONS * DIV_BLOCK, 56 * PAST_ROW, 56 * 2)
 # OTEAMMEMBER (pwkOteam_Init 0x24a6a0): teams 3 to 0x1b9, 25 slots each.
 OTEAM_FIRST = 3
 OTEAM_END = 0x1ba
-# The third tier's clubs (LMASTER, patch_disc.py --mod tier-clubs): the
+# The third tier's clubs (LMASTER, patch_disc.py --mod third-tier): the
 # tutorial's opponents, given squads of their own after the others. Their
 # 25 players each are the database's block from 0x63f7 (the non-resident
 # set-up at SLES 0x24d6b0 takes the same ids).

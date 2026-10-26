@@ -87,7 +87,7 @@ COMPE_PAC = "SCHEDULE_COMPETITION.PAC"
 ENTRY_PAC = "SCHEDULE_TEAM_ENTRY.PAC"
 
 UID_COUNT = 164
-# patch_disc.py --mod tier-uids (LMASTER) adds the third tiers as UIDs
+# patch_disc.py --mod third-tier (LMASTER) adds the third tiers as UIDs
 # 165-176; 164, the default rules' REGULATION row, has no schedule, and
 # the packs' entry 164 is a placeholder (DOC/UID_LIMITS.md).
 TIER_UID_COUNT = 177
@@ -419,8 +419,8 @@ def balance_pack(data, uids=UNBALANCED):
     header (and .HED); team slots are untouched. A UID already balanced,
     as leaguesize.py build leaves the leagues it rebuilds, is skipped."""
     h, blobs = pac.binpac_blobs(data)
-    if len(blobs) != UID_COUNT:
-        raise ValueError("%d entries, expected %d" % (len(blobs), UID_COUNT))
+    if len(blobs) not in LAYOUTS:
+        raise ValueError("%d entries, expected %s" % (len(blobs), " or ".join(map(str, LAYOUTS))))
     done = []
     for u in uids:
         c = Competition(blobs[u])

@@ -108,8 +108,16 @@ modded name. The original stays as it is.
   then use `Mcd001-new.ps2` as the card (`ps2mc.py` never changes the
   card it reads; see [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md)).
 
+**LMASTER full needs a new career.** Its third tier changes the save's
+layout, so a career from the original game, or from LMASTER lite, won't
+load on it even under the modded name. `python SRC/save.py convert`
+can re-encode one, but the clubs and leagues the third tier adds start
+empty in it; start a new career instead
+([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-bigger-save---mod-third-tier)).
+
 A career started on the original game plays on under the mod's rules
-from then on. Some changes only show at certain times: the season plan,
+from then on (LMASTER lite and the other builds without the third
+tier). Some changes only show at certain times: the season plan,
 for example, can only be set at the start of a season.
 
 ### PCSX2 settings and patches
@@ -147,18 +155,23 @@ For people who make the mod. Set the project up as the README says,
 then build a modded image from the Redump one:
 
 ```bash
-python SRC/patch_disc.py patch disc.iso lmaster.iso --mod lmaster-full
+python SRC/patch_disc.py patch disc.iso lmaster.iso --mod lmaster-full --copies --dat DAT
 ```
+
+`--copies` and `--dat` are needed for LMASTER full: the third tier
+changes files the game also keeps copies of, and the patcher finds and
+updates those copies through the extracted `DAT/` folder.
 
 The switches:
 
 | Switch | What it does |
 |---|---|
-| `--mod lmaster-full` | LMASTER full: everything below, with the modded disc's own save folders (`--mod-saves`), which it always includes |
+| `--mod lmaster-full` | LMASTER full: everything below, the third tier among it, with the modded disc's own save folders (`--mod-saves`), which it always includes |
 | `--mod lmaster-lite` | LMASTER lite (also `--mod lmaster`), the fixes only: main sponsor negotiation, the rival's own manager, the World National Cup's results viewable, training camps that train their own type in their own towns, Santiago's camp description, Canberra's camp clubs, the drill names, 18-month injuries that can't come out as short as a light one, injuries to players of 35 and over at full fatigue picked from the right table, Virtua Pro Football edit players keeping their best play styles, season tickets by club status, PR events whose chance follows the business cycle as intended, the cut PR event Renew Mobile Site, overseas popularity that a rank-2 player no longer multiplies by ten, and European Club Cup popularity for the last 16 instead of the last 32 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) |
 | `--mod harder-economy` | dearer facilities (much dearer at the top), tickets up to £80, dearer advertising, and smaller late-game sponsor, TV and season-ticket income ([`ECONOMY.md`](DOC/ECONOMY.md)) |
 | `--mod balance` | injuries of six months or longer about twice as common, and the two-month and nine-month injury lines back; overseas bases, their investment and upkeep twice as dear; transfer fees twice as high, more again by player rank (lesser players about four times the retail fee, the best up to £250M); club reputation rising half as fast; a bigger fanbase selling more merchandise and drawing more fans and TV money; merchandise stock that costs half its price to make; PR events twice as dear; camps twice and tours three times as dear ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)) |
 | `--mod league-balance` | league schedules where no club plays more than two games running at home or away |
+| `--mod third-tier` | a hidden third tier under each second division (England's English League 1 and the others): each season the second division's last club goes down and the tier's winner comes up, your second division has its real size, and finishing last in it ends the game after one season. It needs a new career, `--copies` and `--dat`, and turns on `--mod-saves` itself ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)) |
 | `--mod-saves` | the modded disc's own save folders (above) |
 
 `python SRC/patch_disc.py` with no arguments lists every switch. The

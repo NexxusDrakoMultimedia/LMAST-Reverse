@@ -44,7 +44,7 @@ is bounded by 163–165; the scan below):
 `PRELOAD/SIMFILE*.PAC` of `REGULATION.TBB`
 ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#writing)). Competitions 50–55
 already have `open_nation` rows, names (message category 100009) and,
-with `--mod save-expand`, past records.
+with `--mod third-tier`, past records.
 
 ## Code that names the count
 
@@ -54,7 +54,7 @@ with `--mod save-expand`, past records.
 |---|---|---|
 | `SIMPRG.REL 0x3cfcc` (`TICKET_SET_MODULE`) | loops UIDs 0–163 (`slti 0xa4`) for a competition with your home game in the month's eight days (`0x3da80`); "none found" is the loop's end, tested against a second 164 in `$s6` (`0x3cfb8`) | as it is: you never play in a third tier |
 | `GAMEPRG.REL 0xa069c` | a per-UID table of match-presentation flags at `0x26f748` (164 words); 164 and up get entry 0 | as it is |
-| `GAMEPRG.REL 0x9f144` | the same table for the match being played, with no bound | never reached: you never play a third-tier match (`one-season-end` ends the game first) |
+| `GAMEPRG.REL 0x9f144` | the same table for the match being played, with no bound | never reached: you never play a third-tier match (the one-season game over ends the game first) |
 
 Not about UIDs, though they hold 163–165: `GAMEPRG.REL`'s 163-byte
 arrays at `+0xa7` (`0x97ac0`, `0x97b58`, `0x9c7b0`),
@@ -95,10 +95,12 @@ leagues don't use them.
 | `0x2d9ae0` | `ScheduleControllerBaseSystem::InitStatus` | 128 group slots. A season loads fewer than 118 schedules even counting every runtime one, so six more fit |
 | `0x2055f0` | `CScheEuro::getPeriodNameFromUID` | round names come from the schedule's rules and type, not a table by UID |
 
-## `--mod tier-uids` (phase 3)
+## `--mod third-tier`: the tiers' seasons (phase 3)
 
-`patch_disc.py --mod tier-uids` (with `tier-clubs`, `save-expand` and
-`one-season-end`, and `--copies --dat`) adds the third tiers, one per
+`patch_disc.py --mod third-tier` (with `--copies --dat`; built and
+tested as five switches, `save-expand`, `tier-clubs`, `tier-lists`,
+`tier-uids` and `one-season-end`, merged on 2026-10-27) adds the third
+tiers, one per
 nation in the order of competitions 50–55 (England to the Netherlands),
 and moves clubs between them and the second divisions.
 
@@ -126,7 +128,7 @@ season's records):
 | a tier | its own ranks 2–3 (your nation: 2–5), its second division's last |
 
 The second divisions' `REGULATION` rows send 1 club down, not 2, so
-`one-season-end`'s line is the last place. Every own-nation version of
+the one-season game over's line is the last place. Every own-nation version of
 a domestic UID (the second division and each nation's cups) differs
 from its other-nations version only by places for your club and the
 rival past the second division's record; each becomes a copy of it,
@@ -159,7 +161,7 @@ in the record already, as the retail code did.
 **Season end.** `CScheEuro::calcCompetetionFinish` writes the tables of
 competitions to 55 (`0x205fa8`). The yearly honours
 (`pwkRec_GetCompeConventionRecord*`) exist for 0–48 only, so two
-detours in the LMASTER code segment (`0xf8280`, after `save-expand`'s
+detours in the LMASTER code segment (`0xf8280`, after the save wrappers'
 `0x280` bytes) skip them from 49: the call to
 `pwkRec_ShiftCompeConventionRecord` (`0x205fc0`), and everything after
 the table (`0x20631c`: the winner, best eleven, MVP, top scorer, title
