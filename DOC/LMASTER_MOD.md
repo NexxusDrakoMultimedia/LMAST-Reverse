@@ -143,9 +143,25 @@ What is known so far:
   ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)). So the six third tiers
   look like a cut feature, and competitions 50–55 are where they would
   go.
-- **Left to trace:** whether the game keeps a past record for
-  competitions 50–55 (so a `LAST_RANK` slot can bring a club back), and
-  where those records are stored in a save; how your club and the rival
+- **The third tiers are named and have clubs.** Competitions 50–55 are
+  "English League 1", "French League Division 3", "Third German
+  League", "Italian League C", "Spanish League Division 3" and "Third
+  Dutch League" (message category 100009). Their UIDs, 142–147
+  (`first-promote`, turns 93–95), are the tutorial's promotion playoff:
+  your club (team 1) against three clubs of that nation's third tier
+  (**empirical**, `schedule.py entry DAT/PARAM 142`): England's 442–444
+  are Gillingham, Nottingham and Rotherham, France's 445–447 Angers,
+  Valence and Niort, Germany's 448–450 Essen, Oberhausen and Trier,
+  Italy's from 451 Genova and Venezia. Clubs 442–459 have club records
+  (`PLRESOURCESIM.PAC` entry 3) but no squads (`OTEAMMEMBER.TBB` covers
+  3–441).
+- **Past records stop at 48.** **Confirmed**:
+  `pwkRec_GetCompePastRecord` (`0x253590`) refuses competitions from
+  49 (`slti 0x31`); a record is 0x98 bytes at save block 5 `+0x260 +
+  compe × 0x98` (team ids from `+0x8`, 32 of them). So competitions
+  50–55 keep no record a `LAST_RANK` slot could read.
+- **Left to trace:** whether block 5 has room after the 49 records (to
+  extend the bound), or another way to remember the third tier; how your club and the rival
   get ranks 25 and 26 of the second division's first record; which
   cups name second-division ranks; and how the club info screen and the
   world rankings choose their clubs.
