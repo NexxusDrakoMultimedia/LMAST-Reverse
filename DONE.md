@@ -15,25 +15,25 @@ evidence and how it was tested; the git history holds the rest.
 - [x] Archives and tables: BINPAC, `.HED`, KC@P, PRSH, `etc::PackData`,
       `TBB1`/`TBL1` ([`PAC_FORMAT.md`](DOC/PAC_FORMAT.md),
       [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md), [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md))
-- [x] Game code: about 12,600 symbols, the overlay imports, the
-      developers' field table, the SNR2 overlays and their loader, which
-      overlay holds each module, and C++ classes
+- [x] Game code: about 12,600 symbols, the overlay imports and loader,
+      the developers' field table, C++ classes
       ([`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md))
 - [x] Message text: 3,738 `MBB1` files in 7 language slots
-      ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md)); the event tables and the
-      unused turn-event prototype ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md),
+      ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md))
+- [x] The event tables and the unused turn-event prototype
+      ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md),
       [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md))
 - [x] `PARAM/`: every file's loader and layout, every `TBB1` table
-      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links)
+      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md))
 - [x] Graphics: textures, 2D layouts, depth buffers, Ninja models and
       motions with OBJ and glTF export ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md),
       [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md), [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md),
       [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md))
-- [x] Sound: AFS/ADX to WAV, the DTPK banks, songs as MIDI and rendered
-      WAV, the bank and music tables ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md),
+- [x] Sound: AFS/ADX to WAV, the DTPK banks, songs as MIDI and WAV, the
+      bank and music tables ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md),
       [`GAME_DIR.md`](DOC/GAME_DIR.md), [`SOUND_DIR.md`](DOC/SOUND_DIR.md))
-- [x] A folder doc for every `DAT/` folder and the `CVS/` metadata, each
-      with its tool (see the [coverage table](GOALS.md#coverage-of-datacvm))
+- [x] A folder doc and tool for every `DAT/` folder and the `CVS/`
+      metadata ([coverage table](GOALS.md#coverage-of-datacvm))
 - [x] The match's files: play books, combination scripts and
       `GAMEDATA.BIN`'s container ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md),
       [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md))
@@ -42,10 +42,11 @@ evidence and how it was tested; the git history holds the rest.
 - [x] Memory-card saves, decoded by running the game's own serializers
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md))
 - [x] The Japanese release: extracted, every PAL address the tools use
-      found by `gamever.py`, checked by `regress.py` as `jp_` checks
+      found by `gamever.py`, checked as `jp_` checks
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md))
 - [x] `regress.py`: every tool's `info` and `roundtrip` against a
-      baseline, with one problem marker, `!!`, in every tool
+      baseline, one problem marker (`!!`) in every tool
+      ([`README.md`](README.md#how-the-tools-fit-together))
 
 ## 2. Understand: field meanings an edit needs
 
@@ -57,9 +58,8 @@ evidence and how it was tested; the git history holds the rest.
       [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md))
 - [x] Which copy of a file the game reads: every copy is read somewhere
       ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md))
-- [x] Every player and staff field named, the match's player parameters
-      and which `fb::` class reads each, the kick kinds' table and where
-      each kind is made, player id blocks, the ranking, call-ups
+- [x] Every player and staff field named; the match's player parameters
+      and their readers; player id blocks, the ranking, call-ups
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md))
 - [x] Which free agents the Transfer List shows
       ([`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#which-free-agents-the-transfer-list-shows))
@@ -73,139 +73,94 @@ evidence and how it was tested; the git history holds the rest.
 - [x] Injuries: the roll, the value table, recovery and the condition
       line ([`INJURIES.md`](DOC/INJURIES.md))
 - [x] Saves: money, date, squad, staff, other clubs, accounts, season
-      plan, candidates ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md))
+      plan, candidates, club status ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md))
 - [x] What each PwkScript computes, and every developer launcher entry
       named ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md))
 - [x] Kits, the clash table, licensed and keeper kits
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md)); stadium requests,
       crowds and adverts ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md))
-- [x] `COMBINATION2.CBB`'s record layout and what each of the 29
-      combination commands does ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#cbb-records))
 - [x] The money limits: salaries £10,000–£12,000,000 in steps of £10,000
       ([`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md#salary-limits))
 - [x] Virtua Pro Football's `pmplayer.bin` and how the import converts
       each field ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
-- [x] The economy: build costs, the plan's limits, attendance, income
-      and popularity ([`ECONOMY.md`](DOC/ECONOMY.md))
-- [x] How a team uses the combinations: 11 per team, the trigger (block
-      A's kind), the zone mask and distance limits (block C), and the
-      slots as the participants' areas; records 0, 1, 4, 18 and 59 never
-      start ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#how-a-team-uses-the-combinations))
-- [x] Which combinations a team gets (8 from fixed tables by the style's
-      attack speed and type, up to 3 from the club's attack patterns)
-      and which runs (highest record first, pattern ones after a roll on
-      parameters 72–74); only 65 of 540 records can load
-      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#how-a-team-uses-the-combinations))
-- [x] `Combi17`–`Combi24`'s eight directions, and no reader of the
-      `.CBB`'s A values, block B or C's words
-      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#the-combination-commands));
-      `GAMEDATA.BIN` part 0 is the right foot and 1 the left, from the
-      weak-foot check ([`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md))
-- [x] Which play is which: 16 corner and 24 free-kick plays by zone,
-      records 196–255 never used, `COMBINATION.BPB` as the tactics
-      screen's attack pattern diagrams; path kinds as role types; the
-      starting-positions block ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#which-play-is-which))
+- [x] The economy: build costs, the plan's limits, attendance, income,
+      popularity, sponsors, TV, merchandise, fees, PR events, camps and
+      tours ([`ECONOMY.md`](DOC/ECONOMY.md))
+- [x] The combinations: the `.CBB` records, the 29 commands, which a team
+      gets and which runs ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#how-a-team-uses-the-combinations))
+- [x] Which play is which: corner and free-kick plays by zone, the
+      tactics screen's attack pattern diagrams
+      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#which-play-is-which))
+- [x] The club and schedule limits the third tier needed: every site of
+      440–442 and of 164 ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md),
+      [`UID_LIMITS.md`](DOC/UID_LIMITS.md))
 
 ## 3. Write: a writer for every format a mod changes
 
 - [x] `tbb.py` (all 70 table files), `pac.py` (all 662 BINPACs, KC@P,
-      PRS), `pbdata.py` (31,950 records, `--sles`), `mbb.py` (461,992
-      records; files may grow) round-trip ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#writing))
+      PRS), `pbdata.py`, `mbb.py` round-trip ([`TBB_FORMAT.md`](DOC/TBB_FORMAT.md),
+      [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md), [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#writing))
 - [x] Field-level writers with a `roundtrip` each: `initteam.py`,
-      `teaminit.py`, `plrsim.py setfree`, `uniform.py`, `regulation.py`,
+      `teaminit.py`, `plrsim.py`, `uniform.py`, `regulation.py`,
       `clubresult.py`, `training.py`, `camp.py`, `formset.py`, `tour.py`
+      ([`README.md`](README.md#archives-and-tables))
 - [x] `schedule.py` and `leaguesize.py build`: the schedule packs, league
       schedules of 2–32 clubs, a first division's size
       ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from))
+- [x] `schedule.py knockout`: cup brackets of 2–128 clubs, 71 of the
+      disc's 87 knockouts rebuilt byte for byte
+      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#building-a-knockout))
 - [x] `sqb.py`: every script re-encodes; `setcmd`, `set_commands`,
-      `settable`
-- [x] `save.py set`, including the imported edit player
-      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md)); `pmplayer.py`, VPF's
-      edit players ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
-- [x] `plrcommon.py set`: the facility records, each of 494 fields
-      checked ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
-- [x] `clubrank.py`: `CLUB_RANK_SYSTEM.TBB`'s points per final place,
-      world rank points and rank positions (`set`, `roundtrip`), with
-      table 1's kinds and tallies traced
-      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
-- [x] Resized leagues stay ranked: `clubrank.py addrows`, and
-      `leaguesize.py build` and the Season tab add the club-ranking rows
-      a new size needs
-      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
-- [x] `clubevent.py`: the 46 PR events in the executable decoded field
-      by field and named, with a writer (`set`, `roundtrip`) on both
+      `settable` ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#tool))
+- [x] `save.py set`, the edit player included
+      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#editing)); `pmplayer.py set`
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
+- [x] `plrcommon.py set`: the facility records
+      ([`PLRESOURCECOMMON_FORMAT.md`](DOC/PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records))
+- [x] `clubrank.py`: `CLUB_RANK_SYSTEM.TBB`, with `addrows` for resized
+      leagues ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
+- [x] `clubevent.py`: the 46 PR events in the executable, on both
       releases ([`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md))
-- [x] `natcal.py`: the national-team calendar (`SCHEDULE_LIST.TBB`),
-      checked against the national cups' schedule (`set`, `roundtrip`);
-      `national-cups` moves an edited calendar given as a target
+- [x] `natcal.py`: the national-team calendar
       ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#schedule_listtbb-the-national-team-calendar))
-- [x] `PLRESOURCESIM.PAC`'s streams (affiliations, scouts' exclusives,
-      combinations) with `plrsim.py setgroup`, and `INITNATIDATA.TBB` and
-      `STADIUM_DATA.TBB` with `initteam.py setnation`/`setstadium`; all
-      round-trip on both releases
-      ([`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#writing-the-streams),
+- [x] `plrsim.py setgroup` and `setbranch`, `initteam.py setnation` and
+      `setstadium` ([`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#writing-the-streams),
       [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md))
+- [x] `ps2mc.py`: PCSX2 memory card images read and written
+      ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md))
 
 ## 4. Rebuild: edits back on a bootable disc
 
 - [x] `patch_disc.py`: same-size patching, size changes, moved files, a
-      grown disc, every copy updated, archives rebuilt with their
-      indexes, outer files and renames; all tested in PCSX2
+      grown disc, every copy updated, archives and indexes rebuilt
       ([`REBUILD.md`](DOC/REBUILD.md))
-- [x] Testing aids: `--skip-tutorial` and `--launcher`
-      ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md))
-- [x] `patch_disc.py`'s 35 switches on the Japanese disc, their offsets
-      found through `gamever.py`; PAL builds unchanged
-      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+- [x] Testing aids: `--skip-tutorial` (with `--skip-nation`) and
+      `--launcher` ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs))
+- [x] The switches on the Japanese disc, through `gamever.py`; all but
+      `third-tier` ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 - [x] `save.py --iso ISO_JP`: Japanese saves read, edited and re-encoded
-      byte for byte ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-japanese-release))
+      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-japanese-release))
 
 ## 5. Edit: the GUI
 
-- [x] `editor.py`: a tab per kind of data (People, Clubs, New club,
-      Season, Free agents, Regulations, Training, Camps, Facilities,
-      Kits, Text), each save equal to its logged command, and File >
-      Build disc for an image or patch ([`README.md`](README.md#editor))
-- [x] `saveedit.py` (steps 1–3 and 5): every page `save.py set` can
-      write, Save to new slot, and saves on card files
-      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
-- [x] `ps2mc.py`: PCSX2 memory card images read and written
-      ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md))
-- [x] `editor.py` Tours, Tactics and Comments tabs (`tour.py`,
-      `formset.py`, `sqb.py settable`, which now edits several scripts
-      of a pack in one command), tested through the widgets
-      ([`README.md`](README.md#editor))
-- [x] `editor.py` Club ranking tab (`clubrank.py`), tested through the
-      widgets ([`README.md`](README.md#editor))
-- [x] `editor.py` PR events tab (`clubevent.py`), tested through the
-      widgets ([`README.md`](README.md#editor))
-- [x] `editor.py` National calendar tab (`natcal.py`), tested through
-      the widgets ([`README.md`](README.md#editor))
-- [x] `editor.py` Player links tab (`plrsim.py setgroup`) and Nations &
-      stadiums tab (`initteam.py setnation`, `setstadium`), tested
-      through the widgets ([`README.md`](README.md#editor))
-- [x] `editor.py` Overseas bases tab (`plrsim.py setbranch`), with the
-      regions named from `MES.PAC`, tested through the widgets
-      ([`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches))
-- [x] The switch levels: editions, groups and switches in `patch_disc.py`
-      (`switches`, `mod_names`), and the Build tab's edition buttons and
-      group boxes, tested through the widgets
+- [x] `editor.py`: a tab for every writer of game data, each save equal
+      to its logged command, tested through the widgets
+      ([`USAGE.md`](USAGE.md#the-mod-editor))
+- [x] File > Build disc: a modded image or patch, with the switch
+      levels as edition buttons and group boxes
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
+- [x] `saveedit.py` (steps 1–3 and 5): every page `save.py set` can
+      write, Save to new slot, card files
+      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
 
 ## 6. Distribute: sharing a mod
 
-- [x] `vcdiff.py`: xdelta patches in plain Python, applied the same by
-      Delta Patcher ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod))
+- [x] `vcdiff.py`: xdelta patches in plain Python, and patches xdelta3
+      makes (LZMA, DJW) ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod))
 - [x] Separate saves for a modded disc (`--mod-saves`, `save.py rename`)
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
 - [x] The players' guide, [`INSTALL.md`](INSTALL.md)
-- [x] `vcdiff.py apply` decodes patches xdelta3 3.1 and 3.2 made,
-      including LZMA (their default) and DJW secondary compression
-      ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod))
-- [x] `cso.py`: CSO and ZSO images read directly by `vcdiff.py` and
-      `patch_disc.py` ([`REBUILD.md`](DOC/REBUILD.md#compressed-images))
-- [x] `chd.py`: CHD v5 images (DVD, raw, one-track CD; every chdman codec
-      but zstd on Python before 3.14) read by the same tools
+- [x] `cso.py` and `chd.py`: CSO, ZSO and CHD images read directly
       ([`REBUILD.md`](DOC/REBUILD.md#compressed-images))
 
 ## 7. Tests in PCSX2
@@ -222,7 +177,7 @@ Each result is recorded in the doc named.
       [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md),
       [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md))
 - [x] England's first division at 22 clubs over two seasons
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md))
+      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from))
 - [x] Regulations, kits, a detail-screen comment script, training
       ([`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md#tested-in-pcsx2),
       [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#tested-in-pcsx2),
@@ -239,26 +194,14 @@ Each result is recorded in the doc named.
       ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md), [`GAME_DIR.md`](DOC/GAME_DIR.md))
 - [x] Virtua Pro Football loads a `pmplayer.py`-edited file, and the
       edited player imports ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
-- [x] The LMASTER Mod's switches and `--mod harder-economy`, each on its
-      test disc ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [x] LMASTER full in PCSX2 (user report, 2026-10-25): careers save to
-      `BESLES-54151-M000`, transfer fees double and merchandise orders
-      cost half the price with at most 20% off
+- [x] The LMASTER switches marked tested, each on its test disc
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [x] LMASTER full (2026-10-25): careers save to `BESLES-54151-M000`,
+      transfer fees double, merchandise costs half its price
       ([`ECONOMY.md`](DOC/ECONOMY.md#transfer-fees),
       [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
-- [x] The third tier's season test (user report, 2026-10-27): a German
-      career, its tier records repaired by hand, plays into 2007–08 on
-      `LMAST-test-tiers-germany2.iso`, with one club moved each way in
-      Germany and England
-      ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
-- [x] A knockout builder for the third tier's cups: `schedule.py
-      knockout` builds brackets of 2–128 clubs with byes, one or two legs,
-      and rebuilds 71 of the disc's 87 knockouts byte for byte; the game
-      follows the winner links (`entryWinTeamTournament` `0x2dcc80`)
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#building-a-knockout))
-- [x] The third tier's clubs in the lower cups: `--mod third-tier` puts
-      every tier club into its nation's League Cup or Club Cup, which
-      starts on turn 40, qualifying as it was
+- [x] The third tier over a German season (2026-10-27): one club moved
+      each way in Germany and England
       ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 
 ## 8. LMASTER Mod and other patches
@@ -268,59 +211,31 @@ Each result is recorded in the doc named.
 - [x] The rival's manager by style (`rival-manager`)
       ([`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8))
 - [x] The national cups a turn earlier (`national-cups`) and the four
-      camp switches ([`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md)); `--mod
-      lmaster` turns the fixes on together
+      camp switches ([`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [x] Widescreen: a PCSX2 pnach for 16:9 with the 2D kept at 4:3
       ([`WIDESCREEN.md`](DOC/WIDESCREEN.md))
 - [x] `drill-names`: PAL's drill names 74–86 one message early, moved
       ([`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early))
-- [x] `league-balance`: league schedules with no more than two games
-      running at one venue ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [x] `injury-value` and `injury-row` ([`INJURIES.md`](DOC/INJURIES.md#the-kind-tables))
+- [x] `league-balance`: no club plays more than two games running at
+      one venue ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] `injury-value`, `injury-row`, `injury-odds` and `injury-lines`
+      ([`INJURIES.md`](DOC/INJURIES.md))
 - [x] `vpf-styles`: edit players keep their best play styles
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record))
 - [x] `season-status`: season tickets by club status
       ([`ECONOMY.md`](DOC/ECONOMY.md#season-tickets))
 - [x] `--mod harder-economy`: six switches, each tested
-      ([`ECONOMY.md`](DOC/ECONOMY.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [x] The LMASTER Mod split into LMASTER lite (`--mod lmaster-lite`, the
-      fixes) and LMASTER full (`--mod lmaster-full`, every switch, with
-      `mod-saves` always on); the editor's Build window has a button for
-      each ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
-- [x] `--mod balance` built: `injury-odds`, `injury-lines` (the cut two-
-      and nine-month lines, with text in four languages), `overseas-bases`,
-      `transfer-fees` and `fanbase`, after tracing merchandise, transfer
-      fees and the overseas base levels ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements),
-      [`ECONOMY.md`](DOC/ECONOMY.md#merchandise))
-- [x] `merch-costs` (in `--mod balance`): merchandise stock at 50% of its
-      price, bulk discounts halved, after tracing the goods screen's costs
-      ([`ECONOMY.md`](DOC/ECONOMY.md#making-the-stock))
-- [x] PR events, camps and tours traced: `pr-cycle` (in LMASTER lite) fixes
-      the business cycle's mis-ordered effect on PR events; `pr-costs`,
-      `camp-costs` and `tour-costs` (in `--mod balance`) make them dearer
-      ([`ECONOMY.md`](DOC/ECONOMY.md#pr-events))
-- [x] `mobile-site` (in LMASTER lite) built: the cut PR event Renew
-      Mobile Site can be booked again; not yet checked in game
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [x] Popularity and supporters traced: the popularity rank's caps and
-      what raises it, every change, and the supporter formula, checked on
-      three saves; `overseas-pop` and `cup-last16` (in LMASTER lite) fix
-      two bugs in it, confirmed from the code (both values are hidden in
-      game, so there's no in-game test)
-      ([`ECONOMY.md`](DOC/ECONOMY.md#supporter-popularity))
-- [x] `fee-tiers` (in `--mod balance`): transfer fees by player rank,
-      the fee formula's tables decoded
-      ([`ECONOMY.md`](DOC/ECONOMY.md#transfer-fees))
-- [x] `slow-reputation` (in `--mod balance`): club status gains halved;
-      what changes the status decoded
-      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md))
-- [x] `save-expand`: the bigger save for the third tier, with an LMASTER
-      code segment in the executable; tested in PCSX2
-      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-bigger-save---mod-third-tier))
-- [x] `tier-clubs`: clubs 442–459 as full clubs (third tier phase 2a);
-      tested in PCSX2 ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-clubs-phase-2a))
-- [x] The third tier: hidden tiers under the second divisions, last
-      club down and the tier's winner up, tested in PCSX2 over a German
-      season; the five switches merged into `--mod third-tier`, in
-      `lmaster-full` ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] `--mod balance`: eleven switches built after tracing merchandise,
+      fees, popularity and the PR, camp and tour costs
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements),
+      [`ECONOMY.md`](DOC/ECONOMY.md))
+- [x] `pr-cycle`, `mobile-site`, `overseas-pop` and `cup-last16` (in
+      LMASTER lite) ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [x] The third tier (`--mod third-tier`): the bigger save, clubs
+      442–459 as full clubs, the tiers' leagues and movements, and their
+      clubs in the lower cups ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements),
+      [`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
+- [x] The switch levels: LMASTER lite and LMASTER full as editions of
+      independent groups ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))

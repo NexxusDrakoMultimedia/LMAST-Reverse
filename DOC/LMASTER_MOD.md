@@ -313,6 +313,32 @@ What is known so far:
   ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#still-unknown)); the rest is in
   [`UID_LIMITS.md`](UID_LIMITS.md#still-unknown).
 
+## Planned
+
+Ideas the user has agreed on (2026-10-27), not started:
+
+- **A text pass for LMASTER full.** Find the in-game messages that
+  describe rules its switches change (the relegation game over, the
+  third tier, ticket prices, fees and costs, reputation, and so on) and
+  rewrite them to match, and fix messages that are wrong in the retail
+  game too. Done with `mbb.py`'s writer and the editor's Text tab
+  ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing)), as a switch or a group's
+  text files, and checked in PCSX2 where a screen shows them.
+- **LMAST Realism on the disc.** Bring the logos, kits, texture fixes
+  and real competition names of
+  [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism),
+  the user's own PCSX2 texture pack, onto the disc, so it works without
+  PCSX2's texture replacement. It needs: (1) which disc texture each of
+  its PNGs replaces, from the hash PCSX2 names it by (computed the same
+  way from each texture `svr.py` decodes, or matched against a dump of
+  the originals); (2) a texture writer, since `svr.py` only reads
+  ([`SVR_FORMAT.md`](SVR_FORMAT.md)): palette, swizzle and the containers
+  the textures sit in; (3) a palette for each: Realism keeps the native
+  sizes for the most part (user report), so most replacements fit their
+  texture once requantised to its palette, and the few larger ones need
+  a choice (scaled down, or left to the pack). The pack's files stay out
+  of the repo.
+
 ## Not candidates
 
 - `EVENT/EVENTDATA_TURN.TBB`, `0SYSTEM/SCHEDULE.TBB` and the `CVS/`
