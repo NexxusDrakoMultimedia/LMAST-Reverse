@@ -243,3 +243,6 @@ Each result is recorded in the doc named.
       with careers saved to `-F` (full) or `-M` (max) and VS data to `-V`
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels),
       [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
+- [x] The harder economy played through a season on LMASTER max: much
+      harder in a way a player notices (user report, 2026-10-27;
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))

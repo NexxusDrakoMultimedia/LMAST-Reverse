@@ -129,8 +129,12 @@ Left as they are:
 
 **Tested in PCSX2** (user report, 2026-10-27): on
 `LMAST-test-tierlists2.iso`, the All Clubs Ranking at the start of the
-first season lists every club, numbered with no gaps. Still to see: a
-transfer window and the season's end (the world ranking's update).
+first season lists every club, numbered with no gaps. A German career
+on an LMASTER max build (user report, 2026-10-27; then built as
+`--mod lmaster-full`) passed both transfer windows and the season's
+end, and saved and loaded. The world ranking's update at the season's
+end wasn't looked at in that career; an earlier test showed it working
+(user report).
 
 ## Each loop's body
 

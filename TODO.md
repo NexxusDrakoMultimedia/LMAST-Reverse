@@ -29,13 +29,12 @@ What to work on next, most valuable first.
 2. **LMASTER max in game** (sections 7 and 8): every part of
    `--mod harder-economy` is tested in PCSX2, and so are
    `transfer-fees`, `fee-tiers` at the low end, `pr-costs`,
-   `merch-costs` and the separate career saves. Part-way through a
-   German season the user finds the game much harder economically,
-   the fanbase growing much more slowly and merchandise income much
-   lower (2026-10-27). Left: the season played to its end, the other
-   `--mod balance` switches and `pr-cycle`, and the third tier with
-   them, now with its clubs in the lower cups (seen in game)
-   and their seeded brackets, and its saves in `-M` and `-V`. The disc
+   `merch-costs` and the separate career saves. Through a German
+   season the user found the game much harder economically, the
+   fanbase growing much more slowly and merchandise income much lower
+   (2026-10-27). Left: the other `--mod balance` switches and `pr-cycle`, and the lower cups' seeded
+   brackets and the `-V` VS folder (the third tier's transfer windows,
+   season's end, saving and loading are tested). The disc
    is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 3. **The stadium and emblem table writers** (section 3, with the field
@@ -305,9 +304,9 @@ disc or the edit to build; the result goes into the doc linked.
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#steps))
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-- [ ] The third tier on `LMAST-test-max-germany.iso`: a transfer
-      window and the season's end (the world ranking's update), saving
-      and loading ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b));
+- [ ] The third tier's lower cups on `LMAST-test-max-germany.iso` (its
+      transfer windows, season's end, saving and loading are tested,
+      [`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)):
       the German Club Cup's seeded bracket (one first-round tie on Dec
       w1 midweek, the other 7 clubs from the second round) played to
       its final, another nation's lower cup the same way, and the round
@@ -328,9 +327,11 @@ disc or the edit to build; the result goes into the doc linked.
       `pr-cycle`, on a `--mod lmaster-max` disc: each row marked "not
       checked in the game" in [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements) (the
       injury lines and odds, overseas bases, a fee above £120M,
-      `slow-reputation`, `fanbase`'s crowds, TV offers and big-fanbase
-      merchandise, the camp and tour costs; `fee-tiers`' low end,
-      `pr-costs` and lower merchandise income are seen)
+      `slow-reputation` (club status is hidden, so from two saves
+      around a win, read with `save.py show`), `fanbase`'s crowds, TV
+      offers and big-fanbase merchandise, the camp and tour costs;
+      `fee-tiers`' low end, `pr-costs` and lower merchandise income are
+      seen)
 - [ ] `pmplayer.py check` on a career saved after importing the edited
       V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`)
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#tested))
@@ -347,9 +348,6 @@ is built and tested, or set aside.
 - [ ] Candidate: let the unused combination records load, and fix the
       pattern repeat check; decide first whether the extra records play
       sensibly ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] The harder economy played through a season (Next up 2; part-way,
-      it feels much harder, user report 2026-10-27)
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] A text pass for LMASTER full and max: messages that describe rules
       their switches change, and messages wrong in the retail game
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
