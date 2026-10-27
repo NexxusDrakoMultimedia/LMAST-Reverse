@@ -28,12 +28,13 @@ What to work on next, most valuable first.
    ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
 2. **LMASTER max in game** (sections 7 and 8): every part of
    `--mod harder-economy` is tested in PCSX2, and so are
-   `transfer-fees`, `merch-costs` and the separate career saves; the
-   other `--mod balance` switches and `pr-cycle` are built but not yet
-   seen in game. A disc built with `--mod lmaster-max`, played through
-   a season in Germany, shows whether the economy is harder in a way
-   players notice, whether the balance switches work, and the third
-   tier with them, now with its clubs in the lower cups (seen in game)
+   `transfer-fees`, `fee-tiers` at the low end, `pr-costs`,
+   `merch-costs` and the separate career saves. Part-way through a
+   German season the user finds the game much harder economically,
+   the fanbase growing much more slowly and merchandise income much
+   lower (2026-10-27). Left: the season played to its end, the other
+   `--mod balance` switches and `pr-cycle`, and the third tier with
+   them, now with its clubs in the lower cups (seen in game)
    and their seeded brackets, and its saves in `-M` and `-V`. The disc
    is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
@@ -326,9 +327,10 @@ disc or the edit to build; the result goes into the doc linked.
 - [ ] The rest of the `--mod balance` switches, `injury-lines` and
       `pr-cycle`, on a `--mod lmaster-max` disc: each row marked "not
       checked in the game" in [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements) (the
-      injury lines and odds, overseas bases, a fee above £120M and
-      `fee-tiers`, `slow-reputation`, `fanbase`, the PR, camp and tour
-      costs)
+      injury lines and odds, overseas bases, a fee above £120M,
+      `slow-reputation`, `fanbase`'s crowds, TV offers and big-fanbase
+      merchandise, the camp and tour costs; `fee-tiers`' low end,
+      `pr-costs` and lower merchandise income are seen)
 - [ ] `pmplayer.py check` on a career saved after importing the edited
       V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`)
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#tested))
@@ -345,7 +347,8 @@ is built and tested, or set aside.
 - [ ] Candidate: let the unused combination records load, and fix the
       pattern repeat check; decide first whether the extra records play
       sensibly ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] The harder economy played through a season (Next up 2)
+- [ ] The harder economy played through a season (Next up 2; part-way,
+      it feels much harder, user report 2026-10-27)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] A text pass for LMASTER full and max: messages that describe rules
       their switches change, and messages wrong in the retail game

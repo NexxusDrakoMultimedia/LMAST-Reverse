@@ -558,7 +558,10 @@ merchandise bases and TV factors, also in place.
 `--mod fanbase` scales the 17 bases from ×3 at the top to ×0.5 at the
 bottom, evenly on a log scale: 30,000, 21,457, 16,786, 12,864, 7,667,
 6,170, 4,903, 3,836, 2,939, 2,409, 1,958, 1,575, 1,252, 979, 751, 559
-and 400, so the biggest fanbase sells 75 times the smallest.
+and 400, so the biggest fanbase sells 75 times the smallest. On a
+max build (user report, 2026-10-27, a German career on an LMASTER max build) merchandise income
+came out much lower, as a small fanbase's halved base and `merch-costs`
+predict; a big fanbase's ×3 isn't seen yet.
 
 ## Transfer fees
 
@@ -606,7 +609,9 @@ isn't traced from the callers.
 ×2 and rank 15, the "football icon", ×3. With `transfer-fees` a mid club
 pays about £1.7M for a rank-0 player and £125M for a rank-15 one, and the
 best player at a top club in a boom reaches about £246M, under the £250M
-cap. Not checked in the game.
+cap. **Tested in PCSX2** at the low end (user report, 2026-10-27, a German career on an LMASTER max build):
+lesser players' fees came out about four times retail. A top player's
+fee above £120M isn't seen yet.
 
 `pwkMoney_CalcPlayerMarketPrice` (`0x247d78`) isn't a transfer fee: it
 is the salary a player asks for (its callers are the contract renewal and
@@ -668,7 +673,8 @@ which byte the code reads for each cycle is **confirmed**.
 ladder's first 11 words to read byte *K* + 1 below cycle 2, nothing at
 2 and byte *K* above it; `--mod pr-costs` (in `--mod balance`) makes
 the cost `+0x14` × 600 (the `addiu` at `0x20deec`), which doubles the
-booking and the refunds alike.
+booking and the refunds alike. **Tested in PCSX2** (user report, 2026-10-27, a German career on an LMASTER max build): PR
+events cost double.
 
 **Success** changes popularity, youth development and supporter
 complaints by the success record
