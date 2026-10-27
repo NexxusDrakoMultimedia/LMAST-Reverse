@@ -24,8 +24,10 @@ patch_disc.py's targets: PARAM/PBDATA_EU.PAC=mod/PARAM/PBDATA_EU.PAC and
 disc:SLES_541.51=mod/disc/SLES_541.51.
 
 File > Build disc (Ctrl+B) writes a modded disc image, an xdelta patch,
-or both, optionally with patch_disc.py's switches (--skip-tutorial,
---sponsor-negotiation, --launcher, --mod-saves): `patch_disc.py patch ...
+or both, optionally with patch_disc.py's switches: a button per edition,
+a box per group that opens to its switches (patch_disc.EDITIONS, GROUPS;
+DOC/LMASTER_MOD.md#the-switch-levels), named in the command at the
+highest levels that fit (patch_disc.mod_names). `patch_disc.py patch ...
 --copies` puts the mod folder on a copy of the original, and `vcdiff.py
 make` compares the two. For a patch on its own that image is temporary
 (<patch>.building.iso, removed after). It shows their output and logs
@@ -121,6 +123,14 @@ Tabs:
              clubs of its area, and its camp type, the one field edited,
              with what that type trains (from the Training tab, as the
              retail game reads it and with the LMASTER camp-types fix).
+    Tours    the clubs a tour can play, by region (TOUR_LIST.TBB, tour.py
+             set; DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region):
+             each pair's club and region, at most 40 clubs a region.
+    Facilities the facility records (PLRESOURCECOMMON.PAC entry 0,
+             plrcommon.py set; DOC/PLRESOURCECOMMON_FORMAT.md): pick a
+             table (sites, equipment, club houses, stadiums, adverts), then
+             a record, and edit its build costs, upkeep, build times and
+             stadium capacities. Money shows in pounds.
     PR events
              the Publicity Department's 46 events, kept in the executable
              (clubevent.py set; DOC/CLUBEVENT_FORMAT.md): when each is
@@ -128,11 +138,11 @@ Tabs:
              cycle and what success brings, named from MES.PAC. Writes
              mod/disc/SLES_541.51, which the People and Kits tabs also
              write: a save reads it again first.
-    Facilities the facility records (PLRESOURCECOMMON.PAC entry 0,
-             plrcommon.py set; DOC/PLRESOURCECOMMON_FORMAT.md): pick a
-             table (sites, equipment, club houses, stadiums, adverts), then
-             a record, and edit its build costs, upkeep, build times and
-             stadium capacities. Money shows in pounds.
+    Tactics  the tactics screen's eight Set Formation presets
+             (TACTICS_FORMATION_SET.TBB, formset.py set;
+             DOC/PARAM_DIR.md#tactics_formation_settbb-tactics-presets):
+             seven team tactics and a formation each. Build disc's
+             --copies carries them into the PRELOAD/TACTICS* packs.
     Kits     every club's home and away kits (UNIFORM_LIST.TBB) and the
              keeper kits made from the outfield kit for your club, the rival
              and the VS teams (UNIFORM_GK.TBB), through uniform.py
@@ -146,20 +156,13 @@ Tabs:
              file that outgrows its slot makes MES.PAC grow and moves the
              later files; Build disc then also updates the executable's
              index of them.
-    Tours    the clubs a tour can play, by region (TOUR_LIST.TBB, tour.py
-             set; DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region):
-             each pair's club and region, at most 40 clubs a region.
-    Tactics  the tactics screen's eight Set Formation presets
-             (TACTICS_FORMATION_SET.TBB, formset.py set;
-             DOC/PARAM_DIR.md#tactics_formation_settbb-tactics-presets):
-             seven team tactics and a formation each. Build disc's
-             --copies carries them into the PRELOAD/TACTICS* packs.
     Comments the detail screens' comment lines for players, managers,
              coaches and scouts: the data tables of the PSCCOMMON.PAC
              scripts the game runs (sqb.py settable;
              DOC/SQB_FORMAT.md#the-detail-screen-comments), with each
              message number's text. --copies carries the pack into
              PRELOAD/STATIONFILE.PAC.
+    Log      the commands the saves stood for, as written to editor.log.
 
 Usage:
     python SRC/editor.py open [<mod folder>] [--dat DAT] [--iso ISO]   # default: mod

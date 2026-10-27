@@ -1,23 +1,27 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """Save editor for Let's Make a Soccer Team! (PS2): one window for one
-career save on a PCSX2 folder memory card (DOC/SAVE_EDITOR_PLAN.md).
+career save on a PCSX2 memory card, a folder card or a card file
+(DOC/SAVE_EDITOR_PLAN.md).
 
 A save is a folder BESLES-54151-Gnnn (or -Mnnn for a modded disc's
 saves) on the card. The window decodes it with save.py, which runs the
 game's own save code (DOC/SAVE_FORMAT.md), and shows what save.py can
 read, on one page each: the club, finances, the squad and youth team,
-pair combinations, staff, the other clubs and the candidate lists.
+pair combinations, staff, the other clubs, the candidate lists and the
+edit player imported from Virtua Pro Football.
 Everything it shows and edits comes from save.py (Save methods,
 Save.get, edit_spec and edit_range), so the window keeps no layout of
 its own. Money shows in pounds (the stored unit / 6) next to the stored
 value.
 
 Every field `save.py set` can write has an input: money, club status and
-status rank; the season plan; a player's 64 abilities (one or all) and
-condition fields; pair combinations (one pair or all of a player's);
+status rank; the season plan; a player's 64 abilities (one or all),
+condition fields, salary, contract years, age, injury value and captain
+and keyman experience; pair combinations (one pair or all of a player's);
 staff abilities, dissatisfaction and popularity; another club's
-friendship and rank (the rival's rank follows your club status). Edits
+friendship and rank (the rival's rank follows your club status); the
+edit player's name, database fields and abilities. Edits
 go through save.apply_assigns, the function behind `save.py set`; a
 value it refuses is put back. The candidate lists are shown only.
 

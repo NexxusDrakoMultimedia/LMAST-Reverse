@@ -56,8 +56,9 @@ Usage:
                                     of capacity; stored unit, pounds x 6, euros x 4)
     python save.py set       <save> <out> 3:all=99 3:15=80  #  slot:ability=level (0-99)
     python save.py set       <save> <out> 3:fatigue=0 3:condition=65535  #  slot:field=value
-                                   (fields: fatigue, condition, motivation, power, form,
-                                    policy_counter, policy_organisation)
+                                   (fields: age, fatigue, condition, motivation, power, form,
+                                    injury_value, captain_exp, keyman_exp, policy_counter,
+                                    policy_organisation, salary, contract_years)
     python save.py set       <save> <out> manager:dissat.4=0 coach1:abil.3=90 scout0:abil.all=80
                                    (staff: manager, ymanager, coach0-3, scout0-2; fields
                                     dissat.0-4 and pop_supporters/pop_players 0-65535 for
@@ -67,6 +68,8 @@ Usage:
     python save.py clubs     <save> [team ...]            # other clubs: friendship, ranks, players
     python save.py set       <save> <out> club:7:friendship=100 club:7:rank=31  # 0-100, 0-31
     python save.py set       <save> <out> combi:3:7=60000 combi:5:all=60000  # 0-65535
+    python save.py set       <save> <out> edit:name=V.Drake edit:height=190 edit:ability.all=80
+                                   (the imported edit player's PlPbase fields; `spec` lists them)
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
     python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
     python save.py roundtrip <save> ...                   # decode + encode, compare

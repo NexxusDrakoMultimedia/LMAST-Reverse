@@ -12,7 +12,8 @@ Two TBB1 files in DAT/PARAM set up the clubs at the start of a career
                             49 are read. table 2: 56 s16, the first 49 read.
   OTEAMMEMBER.TBB           teams 3-441, 25 squad slots each, 16-byte
                             records {u16 player, age, shirt, contract years}
-                            with each field padded to a u32.
+                            with each field padded to a u32 (teams 3-459
+                            once --mod third-tier adds 18 squads).
   PLRESOURCESIM.PAC #3      457 x 24-byte club records (plOteam_GetDb):
                             rank, world club rank, manager, stadium,
                             transfer policy, money factor, city, state.

@@ -67,10 +67,11 @@ volume size, the UDF partition length in both partition descriptors and
 the integrity descriptor's size table change, and the UDF end anchor moves
 to the new last sector. Files outside DATA.CVM keep their size.
 
-The Japanese release (SLPM_663.16) takes the same switches. Each gives
-its bytes as PAL offsets; on a Japanese disc they are found in its
-executable and overlays with gamever.py (so the PAL files in ISO/ must be
-there), and checked as on PAL. sponsor-negotiation does nothing there
+The Japanese release (SLPM_663.16) takes the same switches but
+third-tier, which is made for the PAL executable only (so not
+lmaster-full). Each gives its bytes as PAL offsets; on a Japanese disc
+they are found in its executable and overlays with gamever.py (so the
+PAL files in ISO/ must be there), and checked as on PAL. sponsor-negotiation does nothing there
 (the release negotiates already), drill-names finds the names already in
 place, mod-saves renames BISLPM-66316-G/C, and fanbase scales the
 Japanese merchandise table, which holds half the PAL bases. See
