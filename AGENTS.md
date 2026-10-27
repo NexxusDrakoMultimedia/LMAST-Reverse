@@ -96,6 +96,7 @@ In that case:
 | `README.md` | setup, every tool with what it does, how the tools depend on each other, and the doc index |
 | `INSTALL.md` | the players' guide: checking the disc, applying a patch, saves, and building a patch. Update it when a `--mod` switch or group is added or changes what it does |
 | `USAGE.md` | the guide to the mod editor and the save editor: every tab, Build disc, the save editor's pages. Update it when a tab, page or Build disc control is added or changes |
+| `CONTRIBUTORS.md` | who has worked on the project, research and test credits from outside it, the community, and the third-party software the tools build on. Add a person here when their finding or report goes into a doc |
 
 A new open question goes into the doc first; it gets a `TODO.md` item
 only when it is a task someone should pick up.
