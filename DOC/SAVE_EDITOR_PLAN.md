@@ -14,7 +14,7 @@ is left is a PCSX2 test of each page's edit (step 4).
 ## Why a separate tool
 
 - It works on a different thing: one save (`BESLES-54151-Gnnn`, or
-  `-Mnnn` for a modded disc), not the mod folder.
+  `-Fnnn` or `-Mnnn` for a modded disc), not the mod folder.
   `save.py` already decodes and encodes it ([`SAVE_FORMAT.md`](SAVE_FORMAT.md)).
 - Its edits don't go on a disc, so File > Build disc and the mod folder
   don't apply.

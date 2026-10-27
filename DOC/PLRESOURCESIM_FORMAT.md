@@ -116,7 +116,7 @@ Caribbean, 10 East Asia, 11 South Asia and Middle East, 12 Oceania.
 (tours, camps, scouting, popularity). `tour.py` and the Tours tab use
 these names.
 `patch_disc.py --mod overseas-bases` (in `--mod balance` and
-`--mod lmaster-full`) doubles the 13 costs, here and in the copies in
+`--mod lmaster-max`) doubles the 13 costs, here and in the copies in
 `PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 17), so the investment and upkeep
 double too. What a level does stays as in retail (the popularity factor,
 the scouting delays in [`EVS_PROCEDURES.md`](EVS_PROCEDURES.md),

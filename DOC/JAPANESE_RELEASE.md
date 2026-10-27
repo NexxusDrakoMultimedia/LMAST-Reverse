@@ -72,11 +72,11 @@ the Japanese disc):
 
 `patch_disc.py patch` takes the Japanese image, with every switch but
 `third-tier`, which refuses it ("made for the PAL executable only"), so
-LMASTER full can't be built for it; LMASTER lite and the other groups
-can:
+LMASTER full and max can't be built for it; LMASTER lite and the
+groups without `third-tier` can:
 
 ```bash
-python SRC/patch_disc.py patch "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso" out.iso --mod lmaster-lite,harder-economy,balance,league-balance --skip-tutorial
+python SRC/patch_disc.py patch "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso" out.iso --mod lmaster-lite,harder-economy,balance,league-balance,injury-lines --skip-tutorial
 ```
 
 The switches give their bytes as offsets in the PAL executable and

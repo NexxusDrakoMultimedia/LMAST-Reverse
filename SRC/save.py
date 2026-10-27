@@ -76,10 +76,10 @@ Usage:
     python save.py convert   <save> <out> <ISO dir>       # re-encode for another layout (--mod third-tier)
     python save.py blocks                                 # block sizes and offsets in .bin
     python save.py fields    [rounds]                     # re-record and check the field list
-    python save.py rename    <save folder> <parent>        # copy a save between -G/-C and a modded disc's -M/-D
+    python save.py rename    <save folder> <parent> [F|M|V|G|C]  # copy a save between -G/-C and a modded disc's -F/-M/-V
     python save.py copy      <save folder> [slot]          # copy a save to the card's next free slot (0-100)
 
-<save> is a BESLES-54151-Gnnn (or a modded disc's -Mnnn) folder or the main file inside it (on a
+<save> is a BESLES-54151-Gnnn (or a modded disc's -Fnnn or -Mnnn) folder or the main file inside it (on a
 PCSX2 folder memory card these are plain files). Each run decodes the whole
 save from the cached field list, about a second (the first run records
 the list, about 10 seconds). Needs
@@ -94,11 +94,14 @@ bits; names are cp932 and come from PBDATA_JP.PAC and the Japanese
 messages. `set` refuses a value the build's save can't hold. See
 DOC/SAVE_FORMAT.md#the-japanese-release.
 
-A modded disc patched with patch_disc.py --mod-saves keeps its saves in
-BESLES-54151-Mnnn and its VS data in BESLES-54151-Dnnn instead of -G and
--C, so the original game never loads them. `rename` copies a save from
-one name to the other, to carry a career into a mod that keeps the save
-layout (or back).
+A modded disc patched with patch_disc.py --mod-saves keeps its career
+saves in BESLES-54151-Fnnn (LMASTER full) or -Mnnn (LMASTER max) and its
+VS data in BESLES-54151-Vnnn instead of -G and -C, so the original game
+never loads them (discs built before 2026-10-27 used -M and -D). `rename`
+copies a save from one name to another, to carry a career into a mod
+that keeps the save layout (or back): a modded save goes back to -G or
+-C unless a letter is given, retail VS data goes to -V, and a retail
+career needs F or M.
 """
 import array
 import hashlib
@@ -2175,12 +2178,12 @@ def cmd_spec(game, path=None):
 # MC::CFcEuroIF::initialize (0x12ad38) picks the memory-card name for each
 # eCATEGORY: 0 game saves ("-G" + %03d), 1 VS data ("-C"), 2
 # "BESLES-54153FASYS" (Virtua Pro Football's save). patch_disc.py
-# --mod-saves moves a modded disc's saves to "-M" and its VS data to "-D"
-# (patch_disc.MOD_SAVES); `rename` copies a save between the two.
-SAVE_LETTERS = {"G": "M", "C": "D", "M": "G", "D": "C"}
-# The Japanese release names them BISLPM-66316-G and -C
-# (patch_disc.MOD_SAVES_JP).
-SAVE_NAME = r"(BESLES-54151-|BISLPM-66316-)([GCMD])(\d*)"
+# --mod-saves moves a modded disc's career saves to "-F" (LMASTER full) or
+# "-M" (max) and its VS data to "-V" (patch_disc.mod_saves); discs built
+# before 2026-10-27 used "-M" and "-D". `rename` copies a save between them.
+# The Japanese release names them BISLPM-66316-G and -C.
+CAREER_LETTERS, VS_LETTERS = "GFM", "CVD"        # the retail game's first
+SAVE_NAME = r"(BESLES-54151-|BISLPM-66316-)([GFMCVD])(\d*)"
 # MC::CFcEuroIF::setNo (0x12aea0) takes slots 0-100 (0x65 and up become 0).
 SLOT_MAX = 100
 
@@ -2191,7 +2194,7 @@ def save_name(folder):
     name = os.path.basename(os.path.normpath(folder))
     m = re.fullmatch(SAVE_NAME, name)
     if not m:
-        raise ValueError("expected a BESLES-54151- or BISLPM-66316-G/C/M/Dnnn folder, got %s"
+        raise ValueError("expected a BESLES-54151- or BISLPM-66316-G/F/M/C/V/Dnnn folder, got %s"
                          % name)
     return m.groups()
 
@@ -2232,13 +2235,34 @@ def copy_save(src, dst):
             f.write(text.replace(old + ":", new + ":"))
 
 
-def cmd_rename(src, parent):
+def rename_letter(letter, to=None):
+    """The letter `rename` gives a save of `letter`: `to`, of the same kind
+    (career or VS), or by default the retail game's for a modded disc's
+    save, V for retail VS data, and for a retail career the letter `to`
+    must name (F for LMASTER full, M for max)."""
+    kind = CAREER_LETTERS if letter in CAREER_LETTERS else VS_LETTERS
+    if to is None:
+        if letter != kind[0]:
+            return kind[0]
+        if kind == VS_LETTERS:
+            return "V"
+        raise ValueError("a retail career save goes to F (LMASTER full) or M (LMASTER max); "
+                         "give the letter")
+    to = to.upper()
+    if to not in kind or to == letter:
+        raise ValueError("a -%s save can go to %s" % (letter, ", ".join(
+            "-" + k for k in kind if k != letter)))
+    return to
+
+
+def cmd_rename(src, parent, to=None):
     """Copy a save folder between the original game's names and a modded
     disc's (patch_disc.py --mod-saves): BESLES-54151-G003 becomes
-    <parent>/BESLES-54151-M003 and back, -C and -D likewise."""
+    <parent>/BESLES-54151-F003 (or M003) and back, -C and -V likewise;
+    rename_letter says which letter."""
     try:
         prefix, letter, digits = save_name(src)
-        dst = os.path.join(parent, prefix + SAVE_LETTERS[letter] + digits)
+        dst = os.path.join(parent, prefix + rename_letter(letter, to) + digits)
         copy_save(src, dst)
     except ValueError as e:
         raise SystemExit(str(e))
@@ -2247,11 +2271,11 @@ def cmd_rename(src, parent):
 
 def cmd_copy(src, slot=None):
     """Copy a game save to another slot on the same card: the next free one,
-    or `slot`. The letter (-G or a modded disc's -M) stays."""
+    or `slot`. The letter (-G, or a modded disc's -F or -M) stays."""
     try:
         prefix, letter, _ = save_name(src)
-        if letter not in "GM":
-            raise ValueError("only game saves (-G, -M) have slots")
+        if letter not in CAREER_LETTERS:
+            raise ValueError("only career saves (-G, -F, -M) have slots")
         card = os.path.dirname(os.path.normpath(src))
         n = free_slot(card, letter, prefix) if slot is None else slot
         if not 0 <= n <= SLOT_MAX:
@@ -2303,7 +2327,7 @@ def main(argv):
     cmd, args = argv[1], argv[2:]
     iso = _opt(args, "--iso", "ISO")
     dat = _opt(args, "--dat")
-    if cmd == "rename" and len(args) == 2:
+    if cmd == "rename" and len(args) in (2, 3):
         cmd_rename(*args)
         return 0
     if cmd == "copy" and len(args) in (1, 2):

@@ -239,3 +239,7 @@ Each result is recorded in the doc named.
       [`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 - [x] The switch levels: LMASTER lite and LMASTER full as editions of
       independent groups ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
+- [x] LMASTER max: the difficulty groups split off from LMASTER full,
+      with careers saved to `-F` (full) or `-M` (max) and VS data to `-V`
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels),
+      [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))

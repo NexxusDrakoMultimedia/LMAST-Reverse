@@ -5982,9 +5982,13 @@ class BuildDialog:
             (patch_disc.GROUP_SWITCHES[g] for g in in_edition), ())))   # not the test tools
         titles = {name: title for name, title, _ in patch_disc.EDITIONS}
         edition = names[0] if names and names[0] in titles else None
-        self.edition.configure(text="Edition: %s%s" % (
+        self.edition.configure(text="Edition: %s%s%s" % (
             titles[edition].split(" (")[0] if edition else "none",
-            " and more" if edition and names[1:] else ""))
+            " and more" if edition and names[1:] else "",
+            # --mod-saves' letters follow the difficulty switches.
+            "; careers save to -%s, VS data to -%s" % (patch_disc.edition_letter(chosen),
+                                                       patch_disc.VS_LETTER)
+            if "mod-saves" in chosen else ""))
 
     def update_entries(self):
         for flag, entry, button in self.entries.values():

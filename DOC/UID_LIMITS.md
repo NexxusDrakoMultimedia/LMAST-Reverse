@@ -253,7 +253,7 @@ On `LMAST-test-full-germany.iso` (user report, with screenshots,
 (your nation's version) and the French Club Cup with 11, the sizes the
 switch builds, so both cups took their tiers' clubs. The disc layout's byes, spread over three rounds, looked odd
 there, and the lower cups now use the seeded layout
-(`LMAST-test-full-germany2.iso`, not yet seen in game).
+(`LMAST-test-max-germany.iso`, not yet seen in game).
 
 **The first season's end failed, and is fixed** (user report, with
 screenshots and the save, 2026-10-27). The tiers' year rows had `+7` at

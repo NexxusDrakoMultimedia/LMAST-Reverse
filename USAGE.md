@@ -126,14 +126,17 @@ can play or share.
    Either or both. A patch on its own still needs room for a full
    temporary image while it is made.
 3. Optionally, add the project's ready-made changes. The **LMASTER
-   lite** and **LMASTER full** buttons tick the groups of that edition
+   lite**, **LMASTER full** and **LMASTER max** buttons tick the groups
+   of that edition
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels)), and
    **None** clears them. Each group has a box that ticks all its
    switches; press its **+** to see them and tick them one by one.
    [`INSTALL.md`](INSTALL.md#4-building-a-patch) says what each group
    does. Tick **Separate saves** (the `saves` group) if the modded disc
    should keep its careers apart from the original game's; LMASTER full
-   always has it. The test tools (the tutorial skip, the debug menu)
+   and max always have it, and the window shows the letters the saves
+   get (careers in `-F`, or `-M` with any difficulty switch; VS data in
+   `-V`). The test tools (the tutorial skip, the debug menu)
    are in no edition.
 4. Check the list of edited files, then press **Build**.
 

@@ -542,7 +542,7 @@ smaller margins are the 30, the discount table and the prices (shop list
 `+0x8`).
 
 `patch_disc.py --mod merch-costs` (in `--mod balance` and
-`--mod lmaster-full`) makes the 30 50 and halves each discount (rounded
+`--mod lmaster-max`) makes the 30 50 and halves each discount (rounded
 up): 100, 97, 95, 92, 90, 87, 85 and 80. A unit then costs 40–50% of its
 price, so margins in an average cycle are 50–60%, and stock that doesn't
 sell costs more. The £30 shirt costs £15 a unit in a lot of 1,000 and

@@ -26,16 +26,16 @@ What to work on next, most valuable first.
    fields, the 25 manager policies, job 5 and how coaches and former
    players become managers
    ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
-2. **LMASTER full in game** (sections 7 and 8): every part of
+2. **LMASTER max in game** (sections 7 and 8): every part of
    `--mod harder-economy` is tested in PCSX2, and so are
    `transfer-fees`, `merch-costs` and the separate career saves; the
    other `--mod balance` switches and `pr-cycle` are built but not yet
-   seen in game. A disc built with `--mod lmaster-full`, played through
+   seen in game. A disc built with `--mod lmaster-max`, played through
    a season in Germany, shows whether the economy is harder in a way
    players notice, whether the balance switches work, and the third
    tier with them, now with its clubs in the lower cups (seen in game)
-   and their seeded brackets. The disc is
-   `LMAST-test-full-germany2.iso`, built 2026-10-27
+   and their seeded brackets, and its saves in `-M` and `-V`. The disc
+   is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 3. **The stadium and emblem table writers** (section 3, with the field
    work they need from section 2): the fields first (the `EMBLEM/`
@@ -304,7 +304,7 @@ disc or the edit to build; the result goes into the doc linked.
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#steps))
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-- [ ] The third tier on `LMAST-test-full-germany2.iso`: a transfer
+- [ ] The third tier on `LMAST-test-max-germany.iso`: a transfer
       window and the season's end (the world ranking's update), saving
       and loading ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b));
       the German Club Cup's seeded bracket (one first-round tie on Dec
@@ -316,15 +316,16 @@ disc or the edit to build; the result goes into the doc linked.
       Other Club Info, which doesn't list clubs 442–459 (user report);
       how the screen picks its clubs isn't traced
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#still-unknown))
-- [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-D000`
+- [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-V000`,
+      and an LMASTER full disc its careers to `-F000`
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-developer-launcher))
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01` ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md#still-unknown))
-- [ ] The rest of the `--mod balance` switches and `pr-cycle`, on a
-      `--mod lmaster-full` disc: each row marked "not checked in the
-      game" in [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements) (the
+- [ ] The rest of the `--mod balance` switches, `injury-lines` and
+      `pr-cycle`, on a `--mod lmaster-max` disc: each row marked "not
+      checked in the game" in [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements) (the
       injury lines and odds, overseas bases, a fee above £120M and
       `fee-tiers`, `slow-reputation`, `fanbase`, the PR, camp and tour
       costs)
@@ -346,8 +347,8 @@ is built and tested, or set aside.
       sensibly ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] The harder economy played through a season (Next up 2)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [ ] A text pass for LMASTER full: messages that describe rules its
-      switches change, and messages wrong in the retail game
+- [ ] A text pass for LMASTER full and max: messages that describe rules
+      their switches change, and messages wrong in the retail game
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes

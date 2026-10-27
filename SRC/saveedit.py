@@ -4,8 +4,8 @@
 career save on a PCSX2 memory card, a folder card or a card file
 (DOC/SAVE_EDITOR_PLAN.md).
 
-A save is a folder BESLES-54151-Gnnn (or -Mnnn for a modded disc's
-saves) on the card. The window decodes it with save.py, which runs the
+A save is a folder BESLES-54151-Gnnn (or -Fnnn or -Mnnn for a modded
+disc's saves) on the card. The window decodes it with save.py, which runs the
 game's own save code (DOC/SAVE_FORMAT.md), and shows what save.py can
 read, on one page each: the club, finances, the squad and youth team,
 pair combinations, staff, the other clubs, the candidate lists and the
@@ -42,7 +42,7 @@ cap, a pair's cap), so only the full sequence gives the same file.
 
 File > Save to new slot keeps the original instead: it copies the save
 folder to the card's lowest free slot (save.copy_save; slots 0-100, the
-same letter, -G or -M), writes the edited save into the copy and opens
+same letter, -G, -F or -M), writes the edited save into the copy and opens
 it. The log gets the two commands that do the same:
 
     python SRC/save.py copy <save folder> <slot>
@@ -663,11 +663,11 @@ def card_work(card, folder):
 
 
 def card_saves(card):
-    """The career saves (-G and -M folders) on a card file, in name order."""
+    """The career saves (-G, -F and -M folders) on a card file, in name order."""
     names = []
     for name in card.folders():
         try:
-            if save.save_name(name)[1] in "GM":
+            if save.save_name(name)[1] in save.CAREER_LETTERS:
                 names.append(name)
         except ValueError:
             pass
@@ -834,8 +834,8 @@ class App:
             messagebox.showerror("Save editor", "Can't read %s:\n%s" % (path, e))
             return
         if not names:
-            messagebox.showerror("Save editor", "%s holds no career saves (BESLES-54151-G or "
-                                                "-M folders)." % path)
+            messagebox.showerror("Save editor", "%s holds no career saves (BESLES-54151-G, "
+                                                "-F or -M folders)." % path)
             return
         top = tk.Toplevel(self.root)
         top.title("Saves on %s" % os.path.basename(path))

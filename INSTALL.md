@@ -74,9 +74,19 @@ Then boot the patched image in PCSX2 as usual.
 
 ### A modded disc can have its own saves
 
-A mod built with `--mod-saves` saves to different folders on the
-memory card: careers go to `BESLES-54151-M000` and up instead of
-`-G000`, and the VS data to `BESLES-54151-D000` instead of `-C000`.
+A mod built with `--mod-saves` (LMASTER full and max always are) saves
+to different folders on the memory card. `G` and `C` are the original
+game's career and VS folders; a modded disc uses its own letters:
+
+| | Original game | LMASTER full | LMASTER max |
+|---|---|---|---|
+| careers | `BESLES-54151-G000` and up | `BESLES-54151-F000` and up | `BESLES-54151-M000` and up |
+| VS data | `BESLES-54151-C000` | `BESLES-54151-V000` | `BESLES-54151-V000` |
+
+Full and max keep their careers apart, because a career played with
+max's harder economy isn't one to load without it, but share their VS
+data. Discs built before 2026-10-27 used `-M` for careers (their content
+is today's max) and `-D` for VS data.
 The original game never sees these saves, and the modded game never
 sees the original's. So a mod can't spoil your original careers, and
 teams from a modded game can't be carried into the original's VS mode
@@ -90,27 +100,32 @@ safe.
 ### Taking a career over to a modded disc
 
 To carry an existing career to a `--mod-saves` disc, copy it to the
-modded name. The original stays as it is.
+modded name: `F` for LMASTER full, `M` for max. The original stays as
+it is.
 
 - On a **folder card** (a folder named `<card>.ps2`):
 
   ```bash
-  python SRC/save.py rename <card>/BESLES-54151-G003 <card>
+  python SRC/save.py rename <card>/BESLES-54151-G003 <card> F
   ```
 
-  copies `BESLES-54151-G003` to `BESLES-54151-M003`.
+  copies `BESLES-54151-G003` to `BESLES-54151-F003` (give `M` for
+  `-M003`). Without a letter, `rename` takes a modded save back to the
+  original names, and the original VS data to `-V`; `rename
+  <card>/BESLES-54151-D000 <card> V` moves an older disc's VS data to
+  the new name.
 - On a **card file** (a single `.ps2` file):
 
   ```bash
-  python SRC/ps2mc.py copy Mcd001.ps2 Mcd001-new.ps2 BESLES-54151-G003 BESLES-54151-M003
+  python SRC/ps2mc.py copy Mcd001.ps2 Mcd001-new.ps2 BESLES-54151-G003 BESLES-54151-F003
   ```
 
   then use `Mcd001-new.ps2` as the card (`ps2mc.py` never changes the
   card it reads; see [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md)).
 
-**LMASTER full needs a new career.** Its third tier changes the save's
+**LMASTER full and max need a new career.** Their third tier changes the save's
 layout, so a career from the original game, or from LMASTER lite, won't
-load on it even under the modded name. `python SRC/save.py convert`
+load on them even under the modded name. `python SRC/save.py convert`
 can re-encode one, but the clubs and leagues the third tier adds start
 empty in it; start a new career instead
 ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-bigger-save---mod-third-tier)).
@@ -158,31 +173,34 @@ then build a modded image from the Redump one:
 python SRC/patch_disc.py patch disc.iso lmaster.iso --mod lmaster-full --copies --dat DAT
 ```
 
-`--copies` and `--dat` are needed for LMASTER full: the third tier
+(or `--mod lmaster-max`). `--copies` and `--dat` are needed for LMASTER
+full and max: the third tier
 changes files the game also keeps copies of, and the patcher finds and
 updates those copies through the extracted `DAT/` folder.
 
-The switches come in three levels: two editions, made of groups, made
+The switches come in three levels: three editions, made of groups, made
 of single switches ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels)).
 `--mod` takes a name of any level, and several names separated by
 commas (`--mod lmaster-lite,harder-economy`):
 
 | Switch | What it does |
 |---|---|
-| `--mod lmaster-full` | LMASTER full, an edition: everything below, the third tier among it, with the modded disc's own save folders (`--mod-saves`), which it always includes |
+| `--mod lmaster-max` | LMASTER max, an edition: LMASTER full and the two difficulty groups, `harder-economy` and `balance`; careers save to `-M` |
+| `--mod lmaster-full` | LMASTER full, an edition: LMASTER lite, `leagues` (the third tier and the balanced league schedules), `restorations` (the cut two-month and nine-month injury lines) and the modded disc's own save folders (`--mod-saves`), which it always includes; careers save to `-F` |
 | `--mod lmaster-lite` | LMASTER lite (also `--mod lmaster`), an edition of the four groups of fixes: `training-fixes` (training camps that train their own type in their own towns, Santiago's camp description, Canberra's camp clubs, the drill names), `injury-fixes` (18-month injuries that can't come out as short as a light one, injuries to players of 35 and over at full fatigue picked from the right table), `club-fixes` (main sponsor negotiation, season tickets by club status, PR events whose chance follows the business cycle as intended, the cut PR event Renew Mobile Site, overseas popularity that a rank-2 player no longer multiplies by ten, European Club Cup popularity for the last 16 instead of the last 32) and `match-fixes` (the rival's own manager, the World National Cup's results viewable, Virtua Pro Football edit players keeping their best play styles) ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) |
 | `--mod harder-economy` | dearer facilities (much dearer at the top), tickets up to £80, dearer advertising, and smaller late-game sponsor, TV and season-ticket income ([`ECONOMY.md`](DOC/ECONOMY.md)) |
-| `--mod balance` | injuries of six months or longer about twice as common, and the two-month and nine-month injury lines back; overseas bases, their investment and upkeep twice as dear; transfer fees twice as high, more again by player rank (lesser players about four times the retail fee, the best up to £250M); club reputation rising half as fast; a bigger fanbase selling more merchandise and drawing more fans and TV money; merchandise stock that costs half its price to make; PR events twice as dear; camps twice and tours three times as dear ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)) |
+| `--mod balance` | injuries of six months or longer about twice as common; overseas bases, their investment and upkeep twice as dear; transfer fees twice as high, more again by player rank (lesser players about four times the retail fee, the best up to £250M); club reputation rising half as fast; a bigger fanbase selling more merchandise and drawing more fans and TV money; merchandise stock that costs half its price to make; PR events twice as dear; camps twice and tours three times as dear ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)) |
 | `--mod leagues` | the two league switches below |
 | `--mod league-balance` | league schedules where no club plays more than two games running at home or away |
 | `--mod third-tier` | a hidden third tier under each second division (England's English League 1 and the others): each season the second division's last club goes down and the tier's winner comes up, your second division has its real size, and finishing last in it ends the game after one season. The tier's clubs also play their nation's lower cup (the League Cup or Club Cup), which now starts in the first week of December. It needs a new career, `--copies` and `--dat`, and turns on `--mod-saves` itself ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)) |
-| `--mod-saves` | the modded disc's own save folders (above); its group is `--mod saves` |
+| `--mod restorations` | the two-month and nine-month injury lines, cut before release, back in the condition line (`--mod injury-lines`) |
+| `--mod-saves` | the modded disc's own save folders (above): careers to `-F`, or `-M` with any `harder-economy` or `balance` switch, VS data to `-V`; its group is `--mod saves` |
 
 `python SRC/patch_disc.py switches` lists every edition, group and
 switch. The mod editor (`python SRC/editor.py open`) does the same
 through File > Build disc, with a button for each edition, a box for
-each group that you can open to tick its switches one by one, and adds
-the files you edited.
+each group that you can open to tick its switches one by one, the save
+letters your choice gets, and adds the files you edited.
 
 Then make the patch to share:
 

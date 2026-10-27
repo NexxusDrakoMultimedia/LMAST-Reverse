@@ -69,7 +69,7 @@ to the new last sector. Files outside DATA.CVM keep their size.
 
 The Japanese release (SLPM_663.16) takes the same switches but
 third-tier, which is made for the PAL executable only (so not
-lmaster-full). Each gives its bytes as PAL offsets; on a Japanese disc
+lmaster-full or lmaster-max). Each gives its bytes as PAL offsets; on a Japanese disc
 they are found in its executable and overlays with gamever.py (so the
 PAL files in ISO/ must be there), and checked as on PAL. sponsor-negotiation does nothing there
 (the release negotiates already), drill-names finds the names already in
@@ -82,17 +82,21 @@ and --mod takes names of any level, comma-separated (or repeated):
     python patch_disc.py switches       # print the editions, groups and switches
 Editions: --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes,
 the groups training-fixes, injury-fixes, club-fixes and match-fixes;
---mod lmaster-full adds harder-economy, balance, leagues and saves, so a
-full LMASTER disc always saves to its own folders.
+--mod lmaster-full adds leagues, restorations and saves, and --mod
+lmaster-max adds the difficulty groups harder-economy and balance to
+full. Both always save to their own folders: full's careers in -F, max's
+in -M (mod-saves picks M when any difficulty switch is on), and the VS
+data of both in -V.
 Groups: training-fixes (camp-types, camp-cities, camp-santiago,
 camp-clubs, drill-names), injury-fixes (injury-value, injury-row),
 club-fixes (sponsor-negotiation, season-status, pr-cycle, mobile-site,
 overseas-pop, cup-last16), match-fixes (rival-manager, national-cups,
 vpf-styles), harder-economy (facility-tiers, wider-tickets, dearer-ads,
 sponsor-fees, tv-fees, season-demand), balance (injury-odds,
-injury-lines, overseas-bases, transfer-fees, fee-tiers,
-slow-reputation, fanbase, merch-costs, pr-costs, camp-costs,
-tour-costs), leagues (league-balance, third-tier), saves (mod-saves),
+overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
+merch-costs, pr-costs, camp-costs, tour-costs), leagues
+(league-balance, third-tier), restorations (injury-lines), saves
+(mod-saves),
 and test-tools (skip-tutorial, launcher), which is in no edition.
 third-tier turns on mod-saves and needs --copies and --dat. Each switch
 also works as a flag of its own (--skip-tutorial, ...). With switches
@@ -236,7 +240,7 @@ image only) halves what raises club status: a match's win and draw
 factors (SLES 0x399668), the points for final places (0x555188,
 0x555260, 0x555288) and the yearly 500 (0x26e2c4); losses stay.
 third-tier (whole disc image only, with --copies and --dat; in
-lmaster-full; turns on mod-saves) adds the LMASTER third tier: a hidden
+lmaster-full and lmaster-max; turns on mod-saves) adds the LMASTER third tier: a hidden
 league under each second division, competitions 50-55, as schedule UIDs
 165-170 (3 clubs) and, for your nation, 171-176 (5 clubs). Each season
 the second division's last club goes down and the tier's winner comes
@@ -290,9 +294,12 @@ the last 32 got them: 3 words at SLES 0x26894c-0x268970. See
 DOC/ECONOMY.md#supporter-popularity and #titles.
 
 --mod-saves (whole disc image only) gives a modded disc its own saves: the
-memory-card folders become BESLES-54151-Mnnn (career saves, -G on the
-original) and BESLES-54151-Dnnn (VS data, -C), two bytes of SLES_541.51
-(0x5213e8, 0x5213f8; MC::CFcEuroIF::initialize 0x12ad38). The original
+memory-card folders become BESLES-54151-Fnnn for career saves (-G on the
+original), or -Mnnn on a disc with any harder-economy or balance switch
+(LMASTER max), and BESLES-54151-Vnnn for VS data (-C on the original),
+the same on both: two bytes of SLES_541.51 (0x5213e8, 0x5213f8;
+MC::CFcEuroIF::initialize 0x12ad38). Discs built before 2026-10-27 used
+-M and -D; save.py rename moves a save to the new names. The original
 game never opens them, and a modded game's VS teams can't reach Virtua
 Pro Football or an unmodded VS mode. The serial stays SLES-54151, so
 PCSX2's GameDB entry still applies (its D-pad clamp fix and memory-card
@@ -1548,13 +1555,26 @@ def plan_sponsor_negotiation(f, img):
 # with it PCSX2's GameDB entry (the D-pad clamp fix, memcardFilters, which
 # match folders containing "SLES-54151"), stays. Category 2,
 # BESLES-54153FASYS (Virtua Pro Football's save, read by the import), stays.
+# Career saves take F on a disc without the difficulty groups (LMASTER
+# full) and M on one with any of their switches (LMASTER max), since a
+# career from one economy isn't one to load in the other; VS data takes V
+# on both, as a VS team is the same either way (the user's choice,
+# 2026-10-27; earlier builds used M and D).
 SLES_FILE = DISC + "SLES_541.51"
-MOD_SAVES = ((0x4223e8, b"BESLES-54151-G", b"BESLES-54151-M"),     # SLES 0x5213e8
-             (0x4223f8, b"BESLES-54151-C", b"BESLES-54151-D"))     # SLES 0x5213f8
-# The Japanese build's folders, BISLPM-66316-G and -C (found by name: the
-# strings differ, so gamever.py can't place them).
-MOD_SAVES_JP = ((b"BISLPM-66316-G", b"BISLPM-66316-M"),
-                (b"BISLPM-66316-C", b"BISLPM-66316-D"))
+SAVE_LETTERS = {"full": "F", "max": "M"}
+VS_LETTER = "V"
+save_letter = "F"                                   # set by cmd_patch from the switches
+
+
+def mod_saves():
+    """(retail name, modded name) of the career and VS folders."""
+    return ((b"-G", b"-" + save_letter.encode()), (b"-C", b"-" + VS_LETTER.encode()))
+
+
+MOD_SAVES = (0x4223e8, 0x4223f8)                    # SLES 0x5213e8 (-G), 0x5213f8 (-C)
+SAVE_PREFIX, SAVE_PREFIX_JP = b"BESLES-54151", b"BISLPM-66316"
+# The Japanese build's folders, BISLPM-66316-G and -C, are found by name:
+# the strings differ, so gamever.py can't place them.
 RETAIL_CRC = 0x3cb245d5
 
 
@@ -1576,7 +1596,8 @@ def plan_mod_saves(f, img):
     if img.port is not None:
         e = img.entry(JP_EXE_FILE)
         data = read_raw(f, img, JP_EXE_FILE, 0, e.size)
-        for old, new in MOD_SAVES_JP:
+        for old, new in mod_saves():
+            old, new = SAVE_PREFIX_JP + old, SAVE_PREFIX_JP + new
             if data.count(new + b"\0") == 1 and old + b"\0" not in data:
                 notes.append("note: %s already names %s" % (JP_EXE_FILE, new.decode()))
                 continue
@@ -1588,7 +1609,8 @@ def plan_mod_saves(f, img):
                             "--mod-saves: memory-card folder %s -> %s" % (
                                 old.decode(), new.decode())))
         return jobs, notes
-    for off, old, new in MOD_SAVES:
+    for off, (old, new) in zip(MOD_SAVES, mod_saves()):
+        old, new = SAVE_PREFIX + old, SAVE_PREFIX + new
         held = read_at(f, img, SLES_FILE, off, len(old) + 1)
         if held == old + b"\0":
             jobs.append(Job(SLES_FILE, off, new, "%s (0x%x)" % (SLES_FILE, off + 0xff000),
@@ -3973,7 +3995,8 @@ SWITCHES = (
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
-     "Separate saves: this disc saves to BESLES-54151-M/-D, which the original game "
+     "Separate saves: careers to BESLES-54151-F (M with a difficulty switch), VS data to "
+     "-V, which the original game "
      "never opens"),
 )
 SWITCH_NAMES = [s[0] for s in SWITCHES]
@@ -4021,19 +4044,26 @@ GROUPS = (       # (name, title, switches)
      ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
       "season-demand")),
     ("balance", "Balance",
-     ("injury-odds", "injury-lines", "overseas-bases", "transfer-fees", "fee-tiers",
-      "slow-reputation", "fanbase", "merch-costs", "pr-costs", "camp-costs", "tour-costs")),
+     ("injury-odds", "overseas-bases", "transfer-fees", "fee-tiers", "slow-reputation",
+      "fanbase", "merch-costs", "pr-costs", "camp-costs", "tour-costs")),
     ("leagues", "Leagues", ("league-balance", "third-tier")),
+    ("restorations", "Restored content", ("injury-lines",)),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )
-# LMASTER lite is the fixes; LMASTER full is every group of the mod, with
-# its own saves so its careers never mix with the retail game's.
+# LMASTER lite is the fixes. LMASTER full adds the leagues, the restored
+# content and its own saves; LMASTER max adds the difficulty groups to it
+# (the user's split, 2026-10-27). Full and max save careers under their
+# own letters (SAVE_LETTERS), so neither mixes with the retail game's.
 LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes")
+FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "saves")
+DIFFICULTY_GROUPS = ("harder-economy", "balance")
 EDITIONS = (     # (name, title, groups)
     ("lmaster-lite", "LMASTER lite (fixes only)", LITE_GROUPS),
-    ("lmaster-full", "LMASTER full (every LMASTER group, own saves)",
-     LITE_GROUPS + ("harder-economy", "balance", "leagues", "saves")),
+    ("lmaster-full", "LMASTER full (fixes, third tier, restored content; F saves)",
+     FULL_GROUPS),
+    ("lmaster-max", "LMASTER max (full and the difficulty groups; M saves)",
+     FULL_GROUPS + DIFFICULTY_GROUPS),
 )
 GROUP_SWITCHES = {name: switches for name, _, switches in GROUPS}
 EDITION_GROUPS = {name: groups for name, _, groups in EDITIONS}
@@ -4044,6 +4074,13 @@ SWITCH_GROUPS.update((name, sum((GROUP_SWITCHES[g] for g in groups), ()))
 SWITCH_GROUPS["lmaster"] = SWITCH_GROUPS["lmaster-lite"]     # the name before the split
 assert sorted(sum(GROUP_SWITCHES.values(), ())) == sorted(SWITCH_NAMES), \
     "every switch belongs to exactly one group"
+DIFFICULTY = set(sum((GROUP_SWITCHES[g] for g in DIFFICULTY_GROUPS), ()))
+
+
+def edition_letter(mods):
+    """The career save letter --mod-saves writes for the switches `mods`:
+    max's with any difficulty switch, full's without."""
+    return SAVE_LETTERS["max" if DIFFICULTY & set(mods) else "full"]
 
 
 def implied(names):
@@ -4276,6 +4313,8 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
         cso.cmd_extract(image, out)
         image, out, in_place = out, None, True
     img = Image(image)
+    global save_letter
+    save_letter = edition_letter(mods)
     adopted = {}
     # Switches that need other switches, and switches that bring whole
     # files of their own (a file that grows), which then go the way of a

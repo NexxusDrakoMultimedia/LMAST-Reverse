@@ -93,7 +93,7 @@ never gives kind 8. Its kind ≥ 4 column reads 0, 0, 0, 1, 4, 6, 10, 15,
 ### More long injuries: `injury-odds`
 
 `patch_disc.py --mod injury-odds` (in `--mod balance` and
-`--mod lmaster-full`) doubles kinds 4–8 in every row of both tables, to
+`--mod lmaster-max`) doubles kinds 4–8 in every row of both tables, to
 at least 2% of a practice row and 5% of a match row (added to kind 4
 where the row had none), and takes the extra from kind 3 and then kind 0,
 so each row keeps its total. A match turns a light report's kinds 3 and
@@ -192,8 +192,8 @@ of `0x532d98`, 8 a kind) and with that chance turns the injury light
 
 ### The two cut lines back: `injury-lines`
 
-`patch_disc.py --mod injury-lines` (in `--mod balance` and
-`--mod lmaster-full`) rewrites the heavy part of
+`patch_disc.py --mod injury-lines` (in `--mod restorations`,
+and so in `--mod lmaster-full` and `--mod lmaster-max`) rewrites the heavy part of
 `plPinfo_KegaRecoverDaysChno` (`0x216e14`, 15 words) as a count: chno
 = 9, less one for each of 4,000, 6,000, 10,000, 12,500, 16,000 and
 25,000 the value is under.

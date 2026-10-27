@@ -287,7 +287,7 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below), and applies named switches (`--mod`; `--mod lmaster-lite` and `--mod lmaster-full` for the LMASTER Mod); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes; `switches` prints the editions, groups and switches |
+| [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below), and applies named switches (`--mod`; `--mod lmaster-lite`, `--mod lmaster-full` and `--mod lmaster-max` for the LMASTER Mod); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes; `switches` prints the editions, groups and switches |
 | [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
 
 ```bash
@@ -314,14 +314,16 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   both. `--copies` updates every copy and rebuilds the packs around
   entries that change size ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md)).
 - **Switches** (`--mod <name>,...`, or each as a flag of its own).
-  The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) comes in two
-  editions, `--mod lmaster-lite` (the fixes) and `--mod lmaster-full`
-  (every group, with the modded disc's own saves), made of groups of
+  The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) comes in three
+  editions, `--mod lmaster-lite` (the fixes), `--mod lmaster-full` (the
+  fixes, the third tier, the restored injury lines, with the modded
+  disc's own saves in `-F`) and `--mod lmaster-max` (full and the
+  difficulty groups, saves in `-M`; both keep VS data in `-V`), made of groups of
   switches; `--mod` takes a name of any level
   ([the switch levels](DOC/LMASTER_MOD.md#the-switch-levels)), and
   `python SRC/patch_disc.py switches` prints the tree with a line on
   each switch. [`INSTALL.md`](INSTALL.md#4-building-a-patch) says what
-  each group does for a player. The test tools, in neither edition, are
+  each group does for a player. The test tools, in no edition, are
   `skip-tutorial` (skips the opening playoffs; `--skip-nation` picks the
   league) and `launcher` (boots into the developers' debug menu).
 - `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
@@ -349,7 +351,7 @@ python SRC/vcdiff.py make disc.iso modded.iso mymod.xdelta
 python SRC/save.py show <card>/BESLES-54151-G003
 python SRC/save.py player <card>/BESLES-54151-G003 3
 python SRC/save.py set <card>/BESLES-54151-G003 edited.bin money=2000000000 0:all=99
-python SRC/save.py rename <card>/BESLES-54151-G003 <card>    # to BESLES-54151-M003, for a --mod-saves disc
+python SRC/save.py rename <card>/BESLES-54151-G003 <card> F  # to BESLES-54151-F003, for LMASTER full (M for max)
 python SRC/pmplayer.py show <card>/BESLES-54153FASYS00/pmplayer.bin
 ```
 

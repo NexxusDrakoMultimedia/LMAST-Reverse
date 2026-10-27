@@ -6,54 +6,72 @@
 A mod that restores content the PAL release cut or left broken, and
 offers a few improvements. Each restoration and improvement is a
 separate `patch_disc.py` switch first, so it can be built and tested in
-PCSX2 on its own. The mod comes in two editions, LMASTER lite and
-LMASTER full, made of the groups below.
+PCSX2 on its own. The mod comes in three editions, LMASTER lite, full
+and max, made of the groups below.
 
 ## The switch levels
 
 The switches come in three levels, and `--mod` takes a name of any
 level:
 
-1. **Editions**: `lmaster-lite` (also `lmaster`) and `lmaster-full`,
-   each a list of groups.
+1. **Editions**: `lmaster-lite` (also `lmaster`), `lmaster-full` and
+   `lmaster-max`, each a list of groups.
 2. **Groups**: features that each work alone. Every switch is in
    exactly one group.
 3. **Switches**: one feature each. Parts that need each other are one
    switch (the third tier's five parts are `third-tier`), and machinery
    is no switch: `third-tier` turns on `mod-saves` itself.
 
-| Group | Switches | Lite | Full |
-|---|---|---|---|
-| `training-fixes` | camp-types, camp-cities, camp-santiago, camp-clubs, drill-names | yes | yes |
-| `injury-fixes` | injury-value, injury-row | yes | yes |
-| `club-fixes` | sponsor-negotiation, season-status, pr-cycle, mobile-site, overseas-pop, cup-last16 | yes | yes |
-| `match-fixes` | rival-manager, national-cups, vpf-styles | yes | yes |
-| `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | yes |
-| `balance` | injury-odds, injury-lines, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | yes |
-| `leagues` | league-balance, third-tier | – | yes |
-| `saves` | mod-saves | – | yes |
-| `test-tools` | skip-tutorial, launcher | – | – |
+| Group | Switches | Lite | Full | Max |
+|---|---|---|---|---|
+| `training-fixes` | camp-types, camp-cities, camp-santiago, camp-clubs, drill-names | yes | yes | yes |
+| `injury-fixes` | injury-value, injury-row | yes | yes | yes |
+| `club-fixes` | sponsor-negotiation, season-status, pr-cycle, mobile-site, overseas-pop, cup-last16 | yes | yes | yes |
+| `match-fixes` | rival-manager, national-cups, vpf-styles | yes | yes | yes |
+| `leagues` | league-balance, third-tier | – | yes | yes |
+| `restorations` | injury-lines | – | yes | yes |
+| `saves` | mod-saves | – | yes | yes |
+| `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
+| `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
+| `test-tools` | skip-tutorial, launcher | – | – | – |
 
-LMASTER full always includes `mod-saves`, so its careers and VS data go
+LMASTER full is the fixes, the third tier, the balanced league
+schedules and the restored injury lines; LMASTER max adds the two
+difficulty groups, `harder-economy` and `balance` (the user's split,
+2026-10-27). Until then `lmaster-full` held what `lmaster-max` holds
+now, so the test reports before that date that name a full disc mean
+today's max.
+
+Full and max always include `mod-saves`, so their careers and VS data go
 to their own memory-card folders and never mix with the retail game's
-([`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)):
-a career from a disc whose economy and injuries work differently isn't
-one to load on another. The tutorial skip and the developers' launcher
-are test tools, in neither edition. `patch_disc.py switches` prints the
-tree. The editor's Build disc window (File > Build disc) draws it: a button for each edition
-ticks its groups (leaving the test tools as they are), each group has a
-box that ticks all its switches, and the switches show under a group
-when it is opened. The box of a partly ticked group shows as partly
-ticked, and the build command names the highest levels that fit
-(`patch_disc.mod_names`: `--mod lmaster-full,skip-tutorial`, or
-`lmaster-lite,harder-economy,...` and single switches when a group is
-partly ticked). A disc built with the new names is byte for byte the
-one the switch lists built (checked on `LMAST-test-full-germany.iso`,
-2026-10-27). A test disc of each edition:
+([`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)).
+Full's careers go to `BESLES-54151-Fnnn` and max's to `-Mnnn`:
+`mod-saves` takes `M` whenever a difficulty switch is on, since a career
+from a disc whose economy and injuries work differently isn't one to
+load on another. The VS data of both goes to `BESLES-54151-Vnnn`, as a
+VS team is the same on either. `G` and `C` stay the retail game's
+career and VS folders. The tutorial skip and the developers' launcher
+are test tools, in no edition.
+
+`patch_disc.py switches` prints the tree. The editor's Build disc window
+(File > Build disc) draws it: a button for each edition ticks its groups
+(leaving the test tools as they are), each group has a box that ticks
+all its switches, and the switches show under a group when it is opened.
+The box of a partly ticked group shows as partly ticked, the window
+names the edition and the save letters the choice gets, and the build
+command names the highest levels that fit (`patch_disc.mod_names`:
+`--mod lmaster-max,skip-tutorial`, or `lmaster-full,balance` and single
+switches when a group is partly ticked). A disc built with the level
+names is byte for byte the one the switch lists built (checked on
+`LMAST-test-full-germany.iso`, 2026-10-27), and a max disc differs from
+the earlier full build in the VS letter alone (one byte, checked on
+`LMAST-test-max-germany.iso`). A test disc of each edition (full and max
+need `--copies` and `--dat` for the third tier):
 
 ```bash
 python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster-lite.iso --mod lmaster-lite
-python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster-full.iso --mod lmaster-full
+python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster-full.iso --mod lmaster-full --copies --dat DAT
+python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster-max.iso --mod lmaster-max --copies --dat DAT
 ```
 
 Rules for an entry:
@@ -76,7 +94,7 @@ Rules for an entry:
 | Debug menu | developers' switch | `RootMainSeq.sqb` | `--mod launcher` | works, tested in PCSX2. A tool, not part of the mod |
 | Kind-6 injuries starting at 1600 | broken data (dropped digit?), in both releases | [`INJURIES.md`](INJURIES.md#the-value-table-0x532cf8): `0x532d70` holds 1600 where 16001 fits | `--mod injury-value`: the u16 at `0x532d70` → 16001 | built; how `calcKegav` uses the table is confirmed, but the effect isn't checked in the game (kind-6 injuries are rare and random) |
 | Injury rows past fatigue 1000 | bug (out-of-bounds read) | [`INJURIES.md`](INJURIES.md#the-kind-tables): row 11 for ages 35+ | `--mod injury-row`: the row clamped to 10 in `judgeKegaKind`'s own words (`0x21a08c`, 6 words) | built; checked in a MIPS simulator over 18,018 cases (only the six out-of-bounds ones change), not in the game (rare) |
-| "Two months" and "nine months" injury lines | cut before both releases (the Japanese code is the same) | [`INJURIES.md`](INJURIES.md#the-condition-line): `plPinfo_KegaRecoverDaysChno` never returns chno 3 or 6; French, German, Italian and Spanish hold "See Let's Make revised text 0425" | `--mod injury-lines`: the heavy ladder (`0x216e14`, 15 words) gets thresholds 4,000 (two months) and 12,500 (nine months), and messages 4 and 7 of category 200 get text in the four languages, in the placeholders' bytes ([`INJURIES.md`](INJURIES.md#the-two-cut-lines-back-injury-lines)). It adds new text and shows lines the released game never did, so it is in `--mod balance` and LMASTER full, not lite | built (thresholds chosen 2026-10-24); not checked in the game |
+| "Two months" and "nine months" injury lines | cut before both releases (the Japanese code is the same) | [`INJURIES.md`](INJURIES.md#the-condition-line): `plPinfo_KegaRecoverDaysChno` never returns chno 3 or 6; French, German, Italian and Spanish hold "See Let's Make revised text 0425" | `--mod injury-lines`: the heavy ladder (`0x216e14`, 15 words) gets thresholds 4,000 (two months) and 12,500 (nine months), and messages 4 and 7 of category 200 get text in the four languages, in the placeholders' bytes ([`INJURIES.md`](INJURIES.md#the-two-cut-lines-back-injury-lines)). It adds new text and shows lines the released game never did, so it is in `--mod restorations` (LMASTER full and max), not lite | built (thresholds chosen 2026-10-24); not checked in the game |
 | Training camps train as the next camp type | bug (off by one), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#two-bugs): `CAMP_LIST` numbers the types 1–87, the training table and the theme check read them as 0–86; Parma, a goalkeeper camp, trains no keeping | `--mod camp-types`: every type lowered by one in `CAMP_LIST.TBB` | tested in PCSX2: one keeper camp raised all three keepers' saving, aerial ability and GK aptitude most (559–617 experience), then catching and rushing out (444–488), and left pace and acceleration alone, the fixed row's pattern ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)) |
 | Seven English camps in the wrong town | PAL left the camp tables on the Japanese city numbers when it renumbered the English cities | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#seven-english-camps-in-the-wrong-town-pal): Liverpool's camp is in Scunthorpe, Manchester's in West London, and five more | `--mod camp-cities`: the seven city ids in `CAMP_LIST.TBB` and `CAMP_EXPLANE.TBB` | tested in PCSX2 (user report): with low popularity the England list shows Southampton, Blackburn and Sheffield, not Basingstoke, Newport and Oakham. The other four need more popularity (Liverpool a sponsor) and weren't seen; the switch moves them the same way |
 | Santiago's camp description | bug (wrong city id), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md): `CAMP_EXPLANE` keys message 6146 to city 764, the camp is 774; the lookup (`SIMPRG.REL 0xa4a80`) finds nothing | `--mod camp-santiago`: the description's city 764 → 774 in `CAMP_EXPLANE.TBB` | tested in PCSX2 (user report): Santiago's camp shows "The Chilean capital is a hub of South American finance …" |
@@ -99,10 +117,12 @@ Rules for an entry:
 Not restorations: changes to data that works but plays badly. They
 follow the same rules (evidence, smallest change, tested in PCSX2) and
 stay separate switches, so the restorations can be used without them
-(LMASTER lite). LMASTER full has all of them. `--mod balance` is the
-switches built 2026-10-24 to 26 with the values the user chose (the
-group's list is in [the switch levels](#the-switch-levels);
-`injury-lines` is in [Status](#status)).
+(LMASTER lite). LMASTER full has the league schedules, and LMASTER max
+all of them. `--mod harder-economy` and `--mod balance` are the
+difficulty groups, in max only; `balance` is the switches built
+2026-10-24 to 26 with the values the user chose (the groups' lists are
+in [the switch levels](#the-switch-levels); `injury-lines` is in
+[Status](#status), and in `--mod restorations`).
 
 | Change | Evidence | Fix | Status |
 |---|---|---|---|
@@ -299,7 +319,7 @@ What is known so far:
 
   The five switches it was built as are **one switch now, `--mod
   third-tier`** (the user's rule: switches that need each other are one
-  feature), in `--mod lmaster-full`; it turns on `mod-saves` itself and
+  feature), in `--mod leagues` (LMASTER full and max); it turns on `mod-saves` itself and
   needs `--copies` and `--dat`. The machinery under it is no switch: the
   LMASTER code segment (`code_segment_words`) and the save-growing
   wrappers (`save_grow_words`) are there for any later feature, and the
@@ -317,8 +337,8 @@ What is known so far:
 
 Ideas the user has agreed on (2026-10-27), not started:
 
-- **A text pass for LMASTER full.** Find the in-game messages that
-  describe rules its switches change (the relegation game over, the
+- **A text pass for LMASTER full and max.** Find the in-game messages that
+  describe rules their switches change (the relegation game over, the
   third tier, ticket prices, fees and costs, reputation, and so on) and
   rewrite them to match, and fix messages that are wrong in the retail
   game too. Done with `mbb.py`'s writer and the editor's Text tab

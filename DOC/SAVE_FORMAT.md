@@ -919,21 +919,34 @@ for each `eCATEGORY` from three strings:
 No other file on the disc contains the serial.
 
 **`patch_disc.py --mod-saves`** gives a modded disc its own saves by
-changing the letter after the serial: saved games go to
-`BESLES-54151-Mnnn` instead of `-Gnnn`, and the VS data to
-`BESLES-54151-D000` instead of `-C000`, one byte each. The original game
+changing the letter after the serial, one byte each:
+
+| Folder | Retail | LMASTER full | LMASTER max |
+|---|---|---|---|
+| saved games | `BESLES-54151-Gnnn` | `-Fnnn` | `-Mnnn` |
+| VS data | `BESLES-54151-C000` | `-V000` | `-V000` |
+
+`mod-saves` takes `M` when any switch of the difficulty groups
+(`harder-economy`, `balance`) is on and `F` otherwise, so a career never
+loads on a disc whose economy differs from the one it was played on,
+while VS teams are the same on both and share `-V` (the user's choice,
+2026-10-27). Discs built before then used `-M` and `-D`; `python
+SRC/save.py rename <folder> <parent> V` moves old VS data to `-V`, and
+`rename <folder> <parent> F` a career to full's letter. The original game
 looks only for `-G` and `-C`, so it never opens a modded save, and a
 modded game never opens the original's. Moving the VS data is
 deliberate, as anti-cheat: teams built in a modded game can't be
 carried into Virtua Pro Football or an unmodded game's VS mode.
 Category 2 stays, so the import from Virtua Pro Football still works.
-The editor's Build disc dialog has a box for it, and `--mod lmaster-full`
-always includes it.
+The editor's Build disc dialog has a box for it and shows the letters
+a build gets, and `--mod lmaster-full` and `--mod lmaster-max` always
+include it.
 
 **Tested in PCSX2** (user report, 2026-10-25, a `--mod lmaster-full`
-disc): a career saved on it went to `BESLES-54151-M000` on the folder
-card `Pyra.ps2`, beside the original's `-G` saves. No `-D000` is on the
-card yet, so the VS data's folder isn't tested.
+disc, today's max): a career saved on it went to `BESLES-54151-M000` on
+the folder card `Pyra.ps2`, beside the original's `-G` saves. No VS data
+was saved, so the VS folder (then `-D000`, now `-V000`) isn't tested, nor
+full's `-F`.
 
 The serial stays SLES-54151 on purpose. PCSX2 takes a disc's serial
 from the boot file named in `SYSTEM.CNF` (`BOOT2 =
@@ -944,15 +957,16 @@ and SLES-54153, the folders a folder memory card shows the game. A disc
 booting under another serial loses both, and PCSX2 doesn't list it
 without a GameDB entry (tested in PCSX2 with an earlier `save.py serial`
 command, which renamed the executable to `PYRA_313.96`; it booted as
-PYRA-31396). `BESLES-54151-M000` still contains `SLES-54151`, so the
-filter shows it. That earlier command is removed.
+PYRA-31396). `BESLES-54151-M000` (and `-F`, `-V`) still contains
+`SLES-54151`, so the filter shows it. That earlier command is removed.
 
 **Tested in PCSX2** (user report, disc `LMAST-savetest.iso`,
 `--mod-saves` only). A career saved to `BESLES-54151-M000` on a folder
 memory card, beside the original game's `-C000` and `-G000`–`-G006`, and
 loaded again. The original `-G` saves weren't listed, left and right on
 the D-pad registered, and PCSX2 kept the disc's settings as
-`SLES-54151_3CB248D5`. The VS data's move to `-D` isn't tested.
+`SLES-54151_3CB248D5`. The VS data's move (then to `-D`, now `-V`)
+isn't tested.
 
 **The CRC.** PCSX2 also computes a CRC of the executable, the XOR of its
 32-bit words (**empirical**: `3CB245D5` for the retail `SLES_541.51`,
