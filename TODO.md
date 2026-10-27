@@ -305,6 +305,13 @@ disc or the edit to build; the result goes into the doc linked.
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#steps))
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
+- [ ] The third tier's text on `LMAST-test-max-germany.iso` (German
+      career): the advisor's intro at the start (18 clubs, 34 matches,
+      game over at the bottom), Game Over conditions in the help (last
+      place, 18th), the 2nd German League's rules screen (a Relegation
+      section) and its season-start news (the bottom club goes down);
+      one other language if possible
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-text))
 - [ ] The third tier's lower cups on `LMAST-test-max-germany.iso` (its
       transfer windows, season's end, saving and loading are tested,
       [`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)):
@@ -344,8 +351,9 @@ is built and tested, or set aside.
 - [ ] Candidate: let the unused combination records load, and fix the
       pattern repeat check; decide first whether the extra records play
       sensibly ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] A text pass for LMASTER full and max: messages that describe rules
-      their switches change, and messages wrong in the retail game
+- [ ] Retail text fixes for LMASTER lite: messages wrong in the retail
+      game itself, starting with Game Over conditions 1204 and 1205 (the
+      third tier's text is done)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes

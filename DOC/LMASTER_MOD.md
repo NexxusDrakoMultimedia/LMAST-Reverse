@@ -335,17 +335,71 @@ What is known so far:
   [`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)).
   What is left to trace is in [`UID_LIMITS.md`](UID_LIMITS.md#still-unknown).
 
+## The text
+
+`--mod third-tier` rewrites the messages that state the rules the tier
+changes, in English, French, German, Italian and Spanish (the user's
+choice, 2026-10-27, from a reviewed draft): 136 messages, 27 in each
+language and one name. With the tier your second division has its real
+size, two clubs fewer than retail's own version, its last club goes
+down to the tier, and finishing last ends the game after one season
+(retail: two seasons past a line).
+
+| Messages (`MES.PAC` category:id) | What changes |
+|---|---|
+| 487:1100–1105, the advisor's intro to your division | the club count and matches (England 24 and 46, France 20 and 38, Germany 18 and 34, Italy and Spain 22 and 42, the Netherlands 20 and 38), and a last line: finishing bottom is game over |
+| 487:1200–1205, Game Over conditions (help) | point 2: finishing last (24th, 20th, 18th, 22nd, 22nd, 20th) at the end of a season |
+| 30003:1, the game over screen's conditions | point 2: finishing last in the division at the end of a season |
+| 35680:0, the advisor's warning | finishing bottom this season, not twice |
+| 487:902, the game over message | "we finished bottom of the league", not "nothing for the past two seasons" |
+| 30001:101, 107, 112, 117, 123, 128, the second divisions' rules screens | a Relegation section: the club placed last goes down to the tier, by name |
+| 832:433, 436, 442, 438, 440, 445, the second divisions' season-start news | a closing sentence: the bottom club goes down to the tier |
+
+Which message belongs to which nation (**empirical**, from the data):
+the intros hold the retail sizes in the order England, France, Germany,
+Italy, Spain, Netherlands (26, 22, 20, 24, 24, 22); the Game Over texts
+follow it, and their Italian versions name each nation, so 1204 is Spain
+and 1205 the Netherlands, where the other languages repeat Italy (1204)
+and Spain (1205). The rules screens go by their promotion rules, and the
+news by the competition in each news record's date rule
+([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)): competitions 1, 7, 12,
+17, 23 and 28, the second divisions. The code that picks the intros and
+Game Over texts isn't traced (no script or code site names their ids).
+
+Retail slips in the same messages are fixed on the way: "216 equipos"
+(26) in the Spanish text of England's intro, a stray "Vereine" in the
+German text of Italy's, "41 partite" (42) in the Italian text of the
+Netherlands', the Spanish name of the Dutch tier, "Cuarta Liga
+Holandesa" (fourth, 11:1147), the Spanish game over screen's point 3,
+cut off at "es menor" (less than 8), and the nations of 1204 and 1205.
+
+`patch_disc.py` keeps the edits as short replacements and its own
+sentences (`tier_text_edits`), applied to `MES.PAC` by a target hook
+(`target_tier_text`): the disc's own file, or one a target writes (the
+editor's Text tab), which keeps its own edits. Every grown file stays in
+its slot, so no entry moves; `--copies` carries category 832 to its
+copies in `PRELOAD/NEWS1`–`5.PAC` and 11_5 to `STATIONMES5.PAC`.
+**Checked** on `LMAST-test-max-germany.iso` (2026-10-27): the 136
+messages read back as built, every other message equals the build
+without the text, and the five `NEWS` copies of 832 equal `MES.PAC`'s; a
+`--mod lmaster-full` build with a `MES.PAC` target keeps the target's
+edit and gets the text. Not seen in game yet.
+
+The economy switches (tickets, adverts, fees, costs, reputation) need
+no text: no message states their old limits.
+
 ## Planned
 
 Ideas the user has agreed on (2026-10-27), not started:
 
-- **A text pass for LMASTER full and max.** Find the in-game messages that
-  describe rules their switches change (the relegation game over, the
-  third tier, ticket prices, fees and costs, reputation, and so on) and
-  rewrite them to match, and fix messages that are wrong in the retail
-  game too. Done with `mbb.py`'s writer and the editor's Text tab
-  ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing)), as a switch or a group's
-  text files, and checked in PCSX2 where a screen shows them.
+- **Retail text fixes for LMASTER lite.** The third tier's text is done
+  ([The text](#the-text)); what is left are messages wrong in the retail
+  game itself, as a text fix of LMASTER lite. Known so far: Game Over
+  conditions 1204 and 1205 name the wrong nations (and 1205 Spain's
+  number), and the Spanish intro's "216 equipos", fixed only with the
+  third tier now. Done with `mbb.py`'s writer
+  ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing)) and checked in PCSX2 where
+  a screen shows them.
 - **LMAST Realism on the disc.** Bring the logos, kits, texture fixes
   and real competition names of
   [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism),

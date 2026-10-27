@@ -254,7 +254,11 @@ OTEAMMEMBER.TBB, the club checks, loops and lists that stopped at 441),
 the save grows (block 2 by their 18 records, block 5 by the past records
 of competitions 49-55), and the schedule files grow (SCHEDULE_SYSTEM,
 SCHEDULE_COMPETITION, SCHEDULE_TEAM_ENTRY, REGULATION, CLUBRESULT and
-PLRRSRC_INITTEAMDATA, with their PRELOAD copies). Its saves don't load
+PLRRSRC_INITTEAMDATA, with their PRELOAD copies). The messages that state
+these rules (the advisor's intro and warning, Game Over conditions, the
+second divisions' rules screens and season-start news) are rewritten in
+the five European languages, in MES.PAC or a MES.PAC target, with the
+NEWS packs' copies (DOC/LMASTER_MOD.md#the-text). Its saves don't load
 in the retail game, nor the other way round; `save.py convert` carries a
 career over. See DOC/UID_LIMITS.md, DOC/CLUB_LIMITS.md,
 DOC/SAVE_FORMAT.md and DOC/LMASTER_MOD.md. The names it was built as,
@@ -3702,11 +3706,235 @@ def file_tier_uids(f, img, dat):
             (result_file, clubresult.encode_file(result_buf, result_end, result_raw, results))]
 
 
-def plan_third_tier(f, img):
+# third-tier, the text: the messages that state the rules the tier changes,
+# in the five European languages (DOC/LMASTER_MOD.md#the-text). Your second
+# division has its real size, two clubs fewer than retail's own version;
+# its last club goes down to the tier; and finishing last ends the game
+# after one season. Each nation's messages, England to the Netherlands:
+# the advisor's intro to the division (487:1100-1105, the sizes the retail
+# texts give in that order), Game Over conditions (487:1200-1205; the
+# Italian ones name their nations, which shows 1204 is Spain and 1205 the
+# Netherlands, where the other languages repeat Italy and Spain), the
+# league rules screen (30001, by its promotion rules) and the season-start
+# news (832, by the competition in the news record's date rule,
+# EVSDATABIN_NEWS). With them the game over screen's conditions (30003:1),
+# the advisor's warning (35680:0) and the game over message (487:902), and
+# retail slips in the same messages: the Spanish intro's 216 clubs, a stray
+# German word, an Italian 41 matches, the Spanish tier name "Cuarta"
+# (fourth) and the Spanish point 3 cut off at "es menor". Edits are short
+# replacements and our own sentences, so the retail text stays on the disc.
+TT_LANGS = (1, 2, 3, 4, 5)                         # English, French, German, Italian, Spanish
+TT_NATIONS = ("eng", "fra", "ger", "ita", "spa", "ned")
+TT_SIZES = (26, 22, 20, 24, 24, 22)                 # retail own version; the tier's is 2 fewer
+TT_RULES = (101, 107, 112, 117, 123, 128)           # 30001
+TT_NEWS = (433, 436, 442, 438, 440, 445)            # 832, competitions 1, 7, 12, 17, 23, 28
+TT_TIER = (                                          # MES 11:1142-1147, each language
+    ("English League 1", "Ligue 1 anglaise", "Englische 1. Liga", "Prima divisione inglese",
+     "Liga Inglesa 1"),
+    ("French League Division 3", "Division 3 française", "Französische 3. Liga",
+     "Terza divisione francese", "Liga Francesa 3ª División"),
+    ("3rd German League", "Troisième division allemande", "Dritte Deutsche Liga",
+     "Terza divisione tedesca", "Tercera Liga Alemana"),
+    ("Italian League C", "Série C italienne", "Italienische Serie C", "Campionato italiano C",
+     "Serie C Italia"),
+    ("Spanish League Division 3", "Division 3 espagnole", "3. Spanische Liga",
+     "Terza divisione spagnola", "Liga Española 3ª División"),
+    ("3rd Dutch League", "Troisième division hollandaise", "Dritte Holländische Liga",
+     "Terza divisione olandese", "Tercera Liga Holandesa"),
+)
+TT_COUNT = {1: ("teams", "clubs"), 2: ("équipes", "clubs"), 3: ("Teams", "Vereine"),
+            4: ("squadre",), 5: ("equipos", "clubes")}
+TT_MATCHES = {1: "matches", 2: "matches", 3: "Spiele", 4: "partite", 5: "encuentros"}
+TT_BOTTOM = {1: "\nIf we finish bottom, it's game over.",
+             2: "\nSi nous finissons derniers, la partie est finie.",
+             3: "\nWenn wir Letzter werden, ist das Spiel vorbei.",
+             4: "\nSe arriviamo ultimi, è la fine del gioco.",
+             5: "\nSi terminamos últimos, será el fin del juego."}
+# Game Over conditions, point 2: each nation's lines, in each language.
+TT_POINT2 = (
+    ("{lf}2. Finishing last (24th) in the Champions \n{lf}   Division at the end of a season. \n",
+     "{lf}2. Finir dernier (24e) en division  \n{lf}   des champions en fin de saison.  \n",
+     "{lf}2. Der Verein ist am Saisonende in der \n{lf}   Meisterliga Letzter (24.) geworden. \n",
+     "{lf}2. ultimo posto (24a posizione) in \n{lf}   Divisione Campioni a fine stagione. \n",
+     "{lf}2. Acabando último (puesto 24º) \n{lf}   en el Campeonato en una temporada. \n"),
+    ("{lf}2. Finishing last (20th) in French League \n{lf}   Division 2 at the end of a season. \n",
+     "{lf}2. Finir dernier (20e) en  \n{lf}   2ème div. en fin de saison.  \n",
+     "{lf}2. Der Verein ist am Saisonende in der \n{lf}   Französischen Liga 2 Letzter (20.) \n"
+     "{lf}   geworden. \n",
+     "{lf}2. Ultimo posto (20a posizione) nella \n{lf}   seconda Divisione del campionato francese \n"
+     "{lf}   a fine stagione. \n",
+     "{lf}2. Acabando último (puesto 20º) \n{lf}   en la Liga Francesa en una temporada. \n"),
+    ("{lf}2. Finishing last (18th) in the 2nd German \n{lf}   League at the end of a season. \n",
+     "{lf}2. Finir dernier (18e) en 2è  \n{lf}   div. allemande en fin de saison.  \n",
+     "{lf}2. Der Verein ist am Saisonende in der \n{lf}   Zweiten Deutschen Liga Letzter (18.) \n"
+     "{lf}   geworden. \n",
+     "{lf}2. Ultimo posto (18a posizione) nella \n{lf}   seconda Divisione del campionato tedesco \n"
+     "{lf}   a fine stagione.  \n",
+     "{lf}2. Acabando último (puesto 18º) \n{lf}   en la 2ª Liga Alemana en una temporada. \n"),
+    ("{lf}2. Finishing last (22nd) in Italian \n{lf}   League B at the end of a season. \n",
+     "{lf}2. Finir dernier (22e) en div. \n{lf}   B italienne en fin de saison.  \n",
+     "{lf}2. Der Verein ist am Saisonende in der \n{lf}   Italienischen Liga B Letzter (22.) \n"
+     "{lf}   geworden. \n",
+     "{lf}2. Ultimo posto (22a posizione) nel  \n{lf}   campionato italiano B a fine stagione. \n",
+     "{lf}2. Acabando último (puesto 22º) \n{lf}   en la Liga Italiana B en una temporada. \n"),
+    ("{lf}2. Finishing last (22nd) in Spanish League \n{lf}   Division 2 at the end of a season. \n",
+     "{lf}2. Finir dernier (22e) dans  \n{lf}   la div.2 esp. en fin de saison. \n",
+     "{lf}2. Der Verein ist am Saisonende in der \n{lf}   Spanischen Liga 2 Letzter (22.) \n"
+     "{lf}   geworden. \n",
+     "{lf}2. Ultimo posto (22a posizione) nella \n{lf}    seconda Divisione del campionato spagnolo \n"
+     "{lf}    a fine stagione. \n",
+     "{lf}2. Acabando último (puesto 22º) \n{lf}   en la Liga Española en una temporada. \n"),
+    ("{lf}2. Finishing last (20th) in the 2nd Dutch \n{lf}   League at the end of a season. \n",
+     "{lf}2. Finir dernier (20e) dans la deuxième \n{lf}   division hollandaise en fin de saison. \n",
+     "{lf}2. Der Verein ist am Saisonende in der \n{lf}   Zweiten Holländischen Liga Letzter (20.) \n"
+     "{lf}   geworden. \n",
+     "{lf}2. Ultimo posto (20a posizione) nella \n{lf}   seconda Divisione del campionato olandese \n"
+     "{lf}   a fine stagione. \n",
+     "{lf}2. Acabando último (puesto 20º) \n{lf}   en la 2ª Liga Holandesa en una temporada. \n"),
+)
+TT_SCREEN = {    # 30003:1, point 2
+    1: "{lf} 2. Club team finishes last in \n{lf}    {var:1:2031} at the end \n{lf}    of a season. \n",
+    2: "{lf} 2. {var:1:2031} : l'équipe du club \n{lf}    finit dernière en fin de saison. \n",
+    3: "{lf} 2. Die Mannschaft ist am Saisonende \n{lf}    Letzter in der Rangliste \n"
+       "{lf}    {var:1:2031}. \n",
+    4: "{lf} 2. La squadra è arrivata ultima nella \n{lf}    classifica {var:1:2031} \n"
+       "{lf}    a fine stagione. \n",
+    5: "{lf} 2. {var:1:2031}: club en el último \n{lf}    puesto de la clasificación \n"
+       "{lf}    al final de la temporada. \n"}
+TT_WARNING = {   # 35680:0, from the sentence after "Careful, {name}!"
+    1: ("Looking at", "Looking at our points total, we could well finish bottom of {var:1:2031}. "
+        "If we finish last this season, it'll be game over."),
+    2: ("Selon notre", "Selon notre total, nous pourrions bien finir derniers du groupe : "
+        "{var:1:2031}. Si nous finissons derniers cette saison, tout sera terminé."),
+    3: ("Bei unserer", "Bei unserer Punkteanzahl landen wir in Gruppe {var:1:2031} eventuell "
+        "auf dem letzten Platz. Wenn wir diese Saison Letzter werden, ist das Spiel vorbei."),
+    4: ("Di questo", "Di questo passo potremmo arrivare ultimi nel gruppo {var:1:2031}. "
+        "Se arriviamo ultimi in questa stagione, siamo finiti."),
+    5: ("Viendo nuestro", "Viendo nuestro total de puntos, bien podríamos acabar últimos en el "
+        "grupo {var:1:2031}. Será el fin del juego si terminamos últimos esta temporada.")}
+TT_OVER = {      # 487:902, its first sentence
+    1: ("You've achieved nothing for the past two seasons.", "We finished bottom of the league."),
+    2: ("Vous n'avez rien obtenu lors des deux dernières saisons.",
+        "Nous avons fini derniers du championnat."),
+    3: ("Während der letzten zwei Saisons haben Sie nichts erreicht.",
+        "Wir sind Tabellenletzter geworden."),
+    4: ("Non hai conquistato nulla nelle ultime due stagioni.",
+        "Siamo arrivati ultimi in campionato."),
+    5: ("No has logrado nada en las dos últimas temporadas.",
+        "Hemos terminado últimos de la liga.")}
+TT_RELEGATION = {
+    1: "\n\n{color:4}Relegation{/color}\nThe club placed last is relegated to the %s.",
+    2: "\n \n {color:4}Relégation{/color}\n Le club classé dernier est relégué en %s.",
+    3: "\n \n {color:4}Abstieg{/color}\n Der Verein auf dem letzten Platz steigt in die %s ab.",
+    4: "\n \n {color:4}Retrocessioni{/color}\n Il club classificato all'ultimo posto retrocede "
+       "nel gruppo %s.",
+    5: "\n \n {color:4}Descenso{/color}\n El club en el último puesto desciende a la %s."}
+TT_DROP = {      # the news, at the end: the next sentence often refers back to promotion
+    1: " The bottom club will be relegated to the %s.", 2: " Le dernier sera relégué en %s.",
+    3: " Der Letzte steigt in die %s ab.", 4: " L'ultima classificata retrocederà nel gruppo %s.",
+    5: " El último clasificado descenderá a la %s."}
+
+
+def tier_text_edits():
+    """[(category, id, language, edit)]: ("sub", old, new) replaces text
+    found once, ("count", old, new) a club count before its word, ("block",
+    start, end, new) the text from start up to end (None: the message's
+    end), ("add", new) appends. The slips come before the edits they
+    precede."""
+    edits = [(487, 1100, 5, ("sub", "216 equipos", "26 equipos")),
+             (487, 1103, 3, ("sub", "-Aufsteiger. Vereine Die", "-Aufsteiger. Die")),
+             (487, 1105, 4, ("sub", "41 partite", "42 partite")),
+             (11, 1147, 5, ("sub", "Cuarta Liga Holandesa", "Tercera Liga Holandesa")),
+             (30003, 1, 5, ("block", "{lf}    es menor", None, "{lf}    es menor que 8. \n"))]
+    for k, nation in enumerate(TT_NATIONS):
+        old = TT_SIZES[k]
+        for n, lang in enumerate(TT_LANGS):
+            count = (("sub", "Son 22 los clubes", "Son 20 los clubes") if (nation, lang) == ("fra", 5)
+                     else ("count", old, old - 2))
+            edits += [(487, 1100 + k, lang, count),
+                      (487, 1100 + k, lang, ("sub", "%d %s" % (2 * old - 2, TT_MATCHES[lang]),
+                                             "%d %s" % (2 * old - 6, TT_MATCHES[lang]))),
+                      (487, 1100 + k, lang, ("add", TT_BOTTOM[lang])),
+                      (487, 1200 + k, lang, ("block", "{lf}2.", "{lf}3.", TT_POINT2[k][n])),
+                      (30001, TT_RULES[k], lang, ("add", TT_RELEGATION[lang] % TT_TIER[k][n])),
+                      (832, TT_NEWS[k], lang, ("add", TT_DROP[lang] % TT_TIER[k][n]))]
+    for lang in TT_LANGS:
+        edits += [(30003, 1, lang, ("block", "{lf} 2.", "{lf} 3.", TT_SCREEN[lang])),
+                  (35680, 0, lang, ("block", TT_WARNING[lang][0], None, TT_WARNING[lang][1])),
+                  (487, 902, lang, ("sub",) + TT_OVER[lang])]
+    return edits
+
+
+def tier_text_edit(text, lang, edit):
+    """`text` with one edit applied; unchanged when it is applied already
+    (a MES.PAC target that has it). ValueError when it doesn't fit."""
+    kind = edit[0]
+    if kind in ("sub", "count"):
+        olds = ([edit[1]] if kind == "sub" else
+                ["%d %s" % (edit[1], w) for w in TT_COUNT[lang]])
+        news = ([edit[2]] if kind == "sub" else
+                ["%d %s" % (edit[2], w) for w in TT_COUNT[lang]])
+        hits = [(o, n) for o, n in zip(olds, news) if text.count(o) == 1]
+        if len(hits) == 1:
+            return text.replace(*hits[0])
+        if any(text.count(n) == 1 for n in news):
+            return text
+        raise ValueError("%r: not found once" % olds[0])
+    if kind == "block":
+        _, start, end, new = edit
+        if new in text:
+            return text
+        i = text.find(start)
+        j = len(text) if end is None else text.find(end, i + 1)
+        if i < 0 or j < 0:
+            raise ValueError("%r .. %r: not found" % (start, end))
+        lines = text[i:j].split("\n")
+        # Keep a blank {lf} line that ends the region: the spacing between points.
+        tail = lines[-2] + "\n" if end and len(lines) > 2 and lines[-2].strip() == "{lf}" else ""
+        return text[:i] + new + tail + text[j:]
+    if kind == "add":
+        return text if text.endswith(edit[1]) else text.rstrip(" \n") + edit[1]
+    raise ValueError(kind)
+
+
+def target_tier_text(file, data):
+    """A MES.PAC (the disc's, or a target's) with the third tier's text. An
+    entry that grows stays in its slot (mbb.MesPack); one past it would
+    move the later entries, which the text never needs."""
+    import mbb
+    import tempfile
+    if norm(file) != norm(MES_FILE):
+        return data
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "MES.PAC")
+        with open(path, "wb") as g:
+            g.write(data)
+        pack = mbb.MesPack(path)
+    # An image patched before already has the text (its edits build on one
+    # another, so they can't be found a second time): the English intro's
+    # added last line tells.
+    if pack.text(487, 1, 1100).endswith(TT_BOTTOM[1]):
+        return data
+    errors = []
+    for cat, rid, lang, edit in tier_text_edits():
+        try:
+            pack.set(cat, lang, rid, 0, tier_text_edit(pack.text(cat, lang, rid), lang, edit))
+        except ValueError as e:
+            errors.append("%d:%d language %d: %s" % (cat, rid, lang, e))
+    out, _, _, build_errors = pack.build()
+    if errors or build_errors:
+        raise ValueError("third-tier text: " + "; ".join(errors + build_errors))
+    if pack.moved:
+        raise ValueError("third-tier text: a message file outgrows its slot in %s" % MES_FILE)
+    return out
+
+
+def plan_third_tier(f, img, adopted=()):
     """Jobs for --mod third-tier: the code segment, the bigger save and its
     past records, clubs 442-459, their lists, the tiers' seasons and the
     one-season game over, as one switch (the files come from
-    file_third_tier)."""
+    file_third_tier, and its text goes into MES.PAC through
+    target_tier_text)."""
     if img.port is not None:
         raise ValueError("third-tier is made for the PAL executable only")
     return word_jobs(f, img, "third-tier",
@@ -3717,8 +3945,11 @@ def plan_third_tier(f, img):
 
 def file_third_tier(f, img, dat):
     """[(target, data)] for --mod third-tier: OTEAMMEMBER.TBB with the 18
-    squads, and the five schedule files."""
-    return file_tier_clubs(f, img, dat) + file_tier_uids(f, img, dat)
+    squads, the five schedule files, and MES.PAC as the disc has it, for
+    target_tier_text to write the text into (a MES.PAC target takes it
+    there instead)."""
+    return (file_tier_clubs(f, img, dat) + file_tier_uids(f, img, dat)
+            + [(MES_FILE, read_file(f, img, MES_FILE)[1])])
 
 
 # fanbase: a big fanbase counts for more. Merchandise sales start from a
@@ -3987,7 +4218,8 @@ SWITCHES = (
     ("slow-reputation", plan_slow_reputation, [SLES_FILE],
      "Balance: club status (reputation) rises half as fast; losses stay"),
     ("third-tier", plan_third_tier,
-     [SLES_FILE, SAVE_FILE, NEGO_FILE, DISC + "DLL/YRSTPRG.REL", OTEAM_FILE] + list(TIER_UID_FILES),
+     [SLES_FILE, SAVE_FILE, NEGO_FILE, DISC + "DLL/YRSTPRG.REL", OTEAM_FILE, MES_FILE]
+     + list(TIER_UID_FILES),
      "LMASTER full: a hidden third tier under each second division; last place down, the "
      "tier's winner up, the game over after one season last; new saves; needs --copies"),
     ("fanbase", plan_fanbase, [SLES_FILE, NEGO_FILE],
@@ -4023,7 +4255,8 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                 "drill-names": (target_drill_names, [MES_FILE], DRILL_PACKS),
                 "injury-lines": (target_injury_lines, [MES_FILE],
                                  sum(INJURY_TEXT_PACKS.values(), [])),
-                "overseas-bases": (target_overseas_bases, [SIM_FILE], LIST_PACKS)}
+                "overseas-bases": (target_overseas_bases, [SIM_FILE], LIST_PACKS),
+                "third-tier": (target_tier_text, [MES_FILE], [])}
 
 # One switch per feature: parts that need each other are one switch
 # (DOC/LMASTER_MOD.md, the switch levels). Switches that need another switch, that
@@ -4343,6 +4576,10 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
             extra = func(g, img, dat)
         for target, data in extra:
             if norm(target) in given:
+                # A file the switch's target hook edits: the target takes the
+                # change (below), and the switch's own copy isn't needed.
+                if name in TARGET_HOOKS and norm(target) in {norm(p) for p in TARGET_HOOKS[name][1]}:
+                    continue
                 raise SystemExit("--mod %s writes %s; don't patch it as a target too"
                                  % (name, target))
             pairs.append((target, "--mod " + name, data))

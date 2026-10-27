@@ -248,3 +248,5 @@ Each result is recorded in the doc named.
 - [x] The harder economy played through a season on LMASTER max: much
       harder in a way a player notices (user report, 2026-10-27;
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] The third tier's text: the messages that state its rules, in the
+      five European languages ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-text))
