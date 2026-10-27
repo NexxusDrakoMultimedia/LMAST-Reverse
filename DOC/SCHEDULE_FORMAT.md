@@ -710,8 +710,20 @@ sides are known, no club twice on a day, one club left). `python
 SRC/schedule.py knockout DAT/PARAM 10` prints one bracket day by day, and
 `... 10 two` the same with two legs.
 
-`patch_disc.py --mod third-tier` uses it to grow each nation's lower cup
-by its tier's clubs
+**The seeded layout** (`knockout_bracket_seeded`, `layout="seeded"`) is
+the builder's other bracket, the usual draw of a cup and not one the
+disc uses: the slots are seeds (slot 0 the first) placed in a bracket
+of the next power of two (1 v 16, 8 v 9, 4 v 13, ...), and a seed past
+the club count is a bye. So byes come in the first round only, for the
+top seeds, and every round is played on one game day (two with two
+legs), the first round's ties before the clubs with a bye join. A
+9-club cup plays 7–8 on day 0, then 0 against that winner, 1–6, 2–5 and
+3–4; an 11-club cup plays 5–10, 6–9 and 7–8 first. It takes the same
+⌈log₂ *n*⌉ rounds as the disc layout. `knockout` checks every size in
+both layouts, and `... 9 seeded` prints one.
+
+`patch_disc.py --mod third-tier` uses the seeded layout to grow each
+nation's lower cup by its tier's clubs
 ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
 
 ## Related files

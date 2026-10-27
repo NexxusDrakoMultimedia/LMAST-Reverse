@@ -141,8 +141,14 @@ with your club and the rival).
 its tier's record, last season's ranks 1–3 (your nation: 1–5), in
 slots after its own (the user's choice, 2026-10-27; the qualifying
 round and the main cup are as they were). Its knockout is rebuilt at the
-new size with `schedule.py`'s builder
-([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-knockout)), and
+new size with `schedule.py`'s builder in its seeded layout
+([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-knockout)): the
+cup's own clubs and then the tier's, in slot order, are the seeds, byes
+go to the top seeds in the first round only, and each round is played
+on one day (the user's choice, 2026-10-27, after the disc layout's byes
+spread over several rounds looked odd on the bracket screen). In your
+nation's version the German cup of 9 opens with one tie, and the French
+one of 13 with five.
 `REGULATION.TBB` and `CLUBRESULT.TBB` get its club count (the round
 names depend on it). Every lower cup starts on Dec w1 midweek (turn 40,
 the user's choice), the main cup's first round, whose clubs (the
@@ -242,6 +248,12 @@ club in the seeded last place (user report, with a screenshot). On
 that disc the cup had 2 rounds where your nation's retail version had
 3 (6 clubs); it now takes the tier's clubs as well ([The lower
 cups](#--mod-third-tier-the-tiers-seasons-phase-3), 9 clubs in 4 rounds).
+On `LMAST-test-full-germany.iso` (user report, with screenshots,
+2026-10-27) the bracket screens drew the German Club Cup with 9 clubs
+(your nation's version) and the French Club Cup with 11, the sizes the
+switch builds, so both cups took their tiers' clubs. The disc layout's byes, spread over three rounds, looked odd
+there, and the lower cups now use the seeded layout
+(`LMAST-test-full-germany2.iso`, not yet seen in game).
 
 **The first season's end failed, and is fixed** (user report, with
 screenshots and the save, 2026-10-27). The tiers' year rows had `+7` at

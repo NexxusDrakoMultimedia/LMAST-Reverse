@@ -33,8 +33,9 @@ What to work on next, most valuable first.
    seen in game. A disc built with `--mod lmaster-full`, played through
    a season in Germany, shows whether the economy is harder in a way
    players notice, whether the balance switches work, and the third
-   tier with them, now with its clubs in the lower cups. The disc is
-   `LMAST-test-full-germany.iso`, rebuilt 2026-10-27
+   tier with them, now with its clubs in the lower cups (seen in game)
+   and their seeded brackets. The disc is
+   `LMAST-test-full-germany2.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 3. **The stadium and emblem table writers** (section 3, with the field
    work they need from section 2): the fields first (the `EMBLEM/`
@@ -303,12 +304,13 @@ disc or the edit to build; the result goes into the doc linked.
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#steps))
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-- [ ] The third tier on `LMAST-test-full-germany.iso`: a transfer
+- [ ] The third tier on `LMAST-test-full-germany2.iso`: a transfer
       window and the season's end (the world ranking's update), saving
       and loading ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b));
-      the German Club Cup with its 5 tier clubs from Dec w1 midweek to
-      its final, another nation's lower cup with its tier's 3 clubs,
-      and the round names on the end of tournament screen
+      the German Club Cup's seeded bracket (one first-round tie on Dec
+      w1 midweek, the other 7 clubs from the second round) played to
+      its final, another nation's lower cup the same way, and the round
+      names on the end of tournament screen
       ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 - [ ] The third tier's clubs in My Room > Information > Club Info >
       Other Club Info, which doesn't list clubs 442–459 (user report);

@@ -3355,7 +3355,9 @@ TIER_UID_FILES = ("PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/SCHEDULE_COMPETITION.PAC",
 # The lower cups (the English League Cup, the other nations' Club Cups,
 # England to the Netherlands) take every club of their tier's record (the
 # user's choice): a knockout grown by 3 clubs, 5 in your nation's version,
-# its qualifying round as it was. Every lower cup starts on Dec w1 midweek
+# its qualifying round as it was. The bracket is seeded with byes in the
+# first round only (schedule.knockout_bracket_seeded; the user's choice,
+# 2026-10-27): the top slots go straight to the second round. Every lower cup starts on Dec w1 midweek
 # (turn 40, the user's choice), the cups' start turn and the main cup's
 # first round, whose clubs (the qualifying winners and the first
 # division) a lower cup doesn't have, as on the turns they already share.
@@ -3573,7 +3575,7 @@ def file_tier_uids(f, img, dat):
             e.counts["last_rank"] += add
             e.header = bytes([uid & 0xFF]) + e.header[1:]
             entries[uid] = e.encode()
-            days = schedule.set_knockout(c, n + add)
+            days = schedule.set_knockout(c, n + add, layout="seeded")
             h = bytearray(c.header)
             struct.pack_into("<H", h, 0, uid)
             c.header = bytes(h)
