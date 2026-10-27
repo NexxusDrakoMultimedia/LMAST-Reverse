@@ -117,8 +117,9 @@ frame) and for the map window's count of each nation's clubs
 user's report on `LMAST-test-tiers-germany.iso`), and `third-tier`
 makes the bound 460. With the tier, the most clubs a nation has is 47
 (nation 1, 44 before; **empirical**, `PLRESOURCECOMMON.PAC` entry 3
-table 5), so the cap of 50 cuts none off. Built 2026-10-27 on
-`LMAST-test-max-germany.iso`; not seen in game yet.
+table 5), so the cap of 50 cuts none off. **Tested in PCSX2** (user
+report, 2026-10-27, `LMAST-test-max-germany.iso`): Other Club Info
+lists the tier's clubs and shows their info.
 
 `VSPRG.REL` `0x7808` builds VS mode's club list from clubs 3–441 of the
 six main nations; it is left as it is, so VS mode offers the clubs the

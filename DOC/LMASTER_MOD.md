@@ -331,7 +331,7 @@ What is known so far:
   `facility-tiers`) land as entry edits of the rebuilt packs.
 - **Other Club Info** lists a nation's clubs from a loop that stopped at
   441; `third-tier` runs it to 459, so the tier's clubs are listed
-  (built 2026-10-27, not seen in game yet;
+  (tested in PCSX2, user report, 2026-10-27;
   [`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)).
   What is left to trace is in [`UID_LIMITS.md`](UID_LIMITS.md#still-unknown).
 
