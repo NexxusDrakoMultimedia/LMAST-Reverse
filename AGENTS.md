@@ -95,6 +95,7 @@ In that case:
 | `DONE.md` | finished items, one or two lines each with a link to the doc, under the same section numbers as `TODO.md`. No test details: those are in the doc |
 | `README.md` | setup, every tool with what it does, how the tools depend on each other, and the doc index |
 | `INSTALL.md` | the players' guide: checking the disc, applying a patch, saves, and building a patch. Update it when a `--mod` switch or group is added or changes what it does |
+| `USAGE.md` | the guide to the mod editor and the save editor: every tab, Build disc, the save editor's pages. Update it when a tab, page or Build disc control is added or changes |
 
 A new open question goes into the doc first; it gets a `TODO.md` item
 only when it is a task someone should pick up.
@@ -103,18 +104,18 @@ Adding a writer (the write stage in `GOALS.md`) follows the same steps, plus
 a `roundtrip` command that re-encodes every file or record and marks any
 difference with `!!`. It goes into `regress.py` as `<name>_roundtrip`. The
 existing writers are `pac.py` (BINPACs, KC@P packs, PRS), `tbb.py`,
-`pbdata.py`, `mbb.py`, `initteam.py` (`set`, `setteam`, `setnation`, `setstadium`, `swap`),
-`teaminit.py`, `regulation.py`, `clubresult.py`, `training.py`,
-`camp.py`, `formset.py`, `tour.py`, `clubrank.py`, `clubevent.py`, `natcal.py`,
-`uniform.py`, `sqb.py` (`setcmd`, and
-`set_commands` for several edits checked together; `settable` for the
-PwkScript data tables), `plrsim.py` (`setfree`, `setbranch`, `setgroup`), `plrcommon.py` (`set`,
-the facility records), `save.py`, `ps2mc.py` (`put`, `mkdir`: memory
-card images),
-`schedule.py` (`shift`, and the encoders behind `roundtrip`) and
-`leaguesize.py` (`build`, which writes the schedule packs through
-`schedule.py`'s encoders) and `pmplayer.py` (`set`: Virtua Pro
-Football's edit players).
+`pbdata.py`, `mbb.py`, `initteam.py` (`set`, `setteam`, `setnation`,
+`setstadium`, `swap`), `teaminit.py`, `regulation.py`, `clubresult.py`,
+`training.py`, `camp.py`, `formset.py`, `tour.py`, `clubrank.py` (`set`,
+`addrows`), `clubevent.py`, `natcal.py`, `uniform.py`, `sqb.py`
+(`setcmd`, and `set_commands` for several edits checked together;
+`settable` for the PwkScript data tables), `plrsim.py` (`setfree`,
+`setbranch`, `setgroup`), `plrcommon.py` (`set`, the facility records),
+`save.py`, `ps2mc.py` (`put`, `mkdir`, `copy`: memory card images),
+`schedule.py` (`shift`, `balance`, the league and knockout builders, and
+the encoders behind `roundtrip`), `leaguesize.py` (`build`, which writes
+the schedule packs through `schedule.py`'s encoders) and `pmplayer.py`
+(`set`: Virtua Pro Football's edit players).
 
 A writer can then get a tab in `editor.py` (stage 5). The tab edits through
 the writer's own `set` functions and asks the writer which values each

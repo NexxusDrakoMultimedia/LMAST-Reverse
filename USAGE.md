@@ -55,20 +55,23 @@ Each kind of data has a tab along the top:
 | Tab | What you edit there |
 |---|---|
 | People | players, managers and scouts: search by name, id, nationality or club, then change any named field |
-| Clubs | each club's rank, manager, stadium, city and transfer policy, and the computer teams' squads |
-| New club | what a new career starts with, for each league and team style |
-| Season | the starting divisions: swap two clubs' places, or change a first division's size |
-| National calendar | when the national squads are called up and released, in each year of the four-year cycle |
+| Clubs | each club's rank, manager, stadium, city and transfer policy, and the computer teams' squads (player, age, shirt, contract) |
+| New club | what a new career starts with, for each league and team style: squad, staff, scouts, youth team, candidate lists and the rival club |
+| Season | the starting divisions with last season's table: swap two clubs' places, or change a first division's size (the schedules and the club ranking's rows follow) |
+| National calendar | when the national squads are called up and released, and which call-ups are for a finals tournament, in each year of the four-year cycle |
 | Free agents | the players with no club at the start of a career |
-| Regulations | each competition's match rules, win bonus, prize money and promotion and relegation places |
+| Player links | the clubs each player is affiliated with, each scout's exclusive players, and the hidden good and bad combinations of players and managers |
+| Nations & stadiums | each nation's UEFA rank and points and world rating, and each stadium's roof, level and capacity |
+| Overseas bases | what a club base costs to set up in each of the 13 overseas regions, with the investment and upkeep that follow |
+| Regulations | each competition's match rules, win bonus, prize money, promotion and relegation places, and how it reports a final place |
 | Club ranking | how clubs earn their ranking at the end of each season: the points each competition gives for each final place, and which club rank each position in a league gets |
-| Training | what each practice, camp type and youth practice trains, and how tiring it is |
-| Camps | each training camp's type |
+| Training | what each practice, camp type and youth practice trains, and how tiring it is; match growth, facility bonuses, coaching and decline with age |
+| Camps | each training camp's type, with a preview of what it trains |
 | Tours | the clubs a tour can play in each region |
 | Facilities | build costs, upkeep, build times and stadium capacities |
 | PR events | the Publicity Department's events: when each is offered, what it costs, its chance of success and what success brings |
 | Tactics | the tactics screen's eight Set Formation presets |
-| Kits | every club's home, away and keeper kits, shown as colour swatches |
+| Kits | every club's home, away and keeper kits, shown as colour swatches, and the licensed clubs' numbers, name, collar and captain mark |
 | Text | any message in the game, in all its language slots |
 | Comments | the comment lines on the player, manager, coach and scout detail screens |
 | Log | the commands your saves stood for (below) |
@@ -122,12 +125,16 @@ can play or share.
 
    Either or both. A patch on its own still needs room for a full
    temporary image while it is made.
-3. Optionally, add the project's ready-made changes with the boxes
-   below. The two LMASTER buttons tick the right boxes for each LMASTER
-   build ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)), and
-   [`INSTALL.md`](INSTALL.md#4-building-a-patch) says what each box
-   does. Tick **Separate saves** (`--mod mod-saves`) if the modded disc
-   should keep its careers apart from the original game's.
+3. Optionally, add the project's ready-made changes. The **LMASTER
+   lite** and **LMASTER full** buttons tick the groups of that edition
+   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels)), and
+   **None** clears them. Each group has a box that ticks all its
+   switches; press its **+** to see them and tick them one by one.
+   [`INSTALL.md`](INSTALL.md#4-building-a-patch) says what each group
+   does. Tick **Separate saves** (the `saves` group) if the modded disc
+   should keep its careers apart from the original game's; LMASTER full
+   always has it. The test tools (the tutorial skip, the debug menu)
+   are in no edition.
 4. Check the list of edited files, then press **Build**.
 
 The output of each step shows in the window. If you have unsaved edits,

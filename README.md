@@ -115,7 +115,7 @@ python SRC/extract_disc.py all "Pro Soccer Club o Tsukurou! Europe Championship 
 Pass those folders to any tool. The PAL files in `ISO/` must be there
 too: tools give PAL addresses, and [`gamever.py`](SRC/gamever.py) finds
 them in the Japanese executable and overlays. `patch_disc.py` patches a
-Japanese disc too, with every `--mod` switch. See
+Japanese disc too, with every `--mod` switch but `third-tier`. See
 [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md).
 
 ## Tools
@@ -314,36 +314,17 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   both. `--copies` updates every copy and rebuilds the packs around
   entries that change size ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md)).
 - **Switches** (`--mod <name>,...`, or each as a flag of its own).
-  `skip-tutorial` skips the opening playoffs on test discs, `launcher`
-  boots into the developers' debug menu, and `mod-saves` gives a modded
-  disc its own saves. The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
-  comes in two editions made of groups, and `--mod` takes an edition,
-  a group or a switch ([the switch levels](DOC/LMASTER_MOD.md#the-switch-levels);
-  `patch_disc.py switches` prints the tree). `--mod lmaster-lite` (also
-  `lmaster`) is its fixes, the groups `training-fixes`, `injury-fixes`,
-  `club-fixes` and `match-fixes`: `sponsor-negotiation`, `rival-manager`, `national-cups`,
-  `camp-types`, `camp-cities`, `camp-santiago`, `camp-clubs`,
-  `drill-names`, `injury-value`, `injury-row`, `vpf-styles`,
-  `season-status`, `pr-cycle`, `mobile-site`, `overseas-pop` and
-  `cup-last16`. `--mod lmaster-full` adds every improvement and
-  `mod-saves`, so a full disc never shares saves with the retail game:
-  `league-balance` rebuilds the league schedules that send a club to one
-  venue up to 9 times running; `--mod harder-economy` is `facility-tiers`
-  (dearer facilities, much dearer at the top), `wider-tickets` (up to
-  £80), `dearer-ads`, and for the late game `sponsor-fees`, `tv-fees`
-  (amounts over £2M halved above it) and `season-demand`
-  ([`ECONOMY.md`](DOC/ECONOMY.md)); `--mod balance` is `injury-odds`
-  (long injuries twice as common), `injury-lines` (the cut two-month and
-  nine-month lines, [`INJURIES.md`](DOC/INJURIES.md)), `overseas-bases`
-  (set-up, investment and upkeep twice as dear), `transfer-fees` (twice as
-  high, up to £250M), `fee-tiers` (fees by player rank: lesser players
-  ×2 more, the best ×3), `slow-reputation` (club status gains halved),
-  `fanbase` (merchandise, crowds and TV offers
-  follow the fanbase more), `merch-costs` (merchandise stock dearer to
-  make), `pr-costs` (PR events twice as dear), `camp-costs` (camps ×2)
-  and `tour-costs` (tours ×3). The tutorial skip and the launcher are the
-  `test-tools` group, in neither edition.
-  `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
+  The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) comes in two
+  editions, `--mod lmaster-lite` (the fixes) and `--mod lmaster-full`
+  (every group, with the modded disc's own saves), made of groups of
+  switches; `--mod` takes a name of any level
+  ([the switch levels](DOC/LMASTER_MOD.md#the-switch-levels)), and
+  `python SRC/patch_disc.py switches` prints the tree with a line on
+  each switch. [`INSTALL.md`](INSTALL.md#4-building-a-patch) says what
+  each group does for a player. The test tools, in neither edition, are
+  `skip-tutorial` (skips the opening playoffs; `--skip-nation` picks the
+  league) and `launcher` (boots into the developers' debug menu).
+- `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
   image prints the executable's PCSX2 CRC.
 
 | Tool | Reads | Does |
@@ -378,8 +359,8 @@ See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) and [`PMPLAYER_FORMAT.md`](DOC/PMPLAY
 
 | Tool | Reads | Does |
 |---|---|---|
-| [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | the mod editor: one window with a tab per kind of data (below), saving to a mod folder (`mod/` by default) and writing the matching `python SRC/...` command to `mod/editor.log`; File > Build disc makes the modded image or patch |
-| [`saveedit.py`](SRC/saveedit.py) | a career save on a PCSX2 folder memory card or card file (`.ps2`) | the save editor: a separate window for one save, through `save.py` (below) ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)) |
+| [`editor.py`](SRC/editor.py) | `DAT/`, `ISO/`, a mod folder | the mod editor: one window with a tab per kind of data ([`USAGE.md`](USAGE.md#the-mod-editor)), saving to a mod folder (`mod/` by default) and writing the matching `python SRC/...` command to `mod/editor.log`; File > Build disc makes the modded image or patch |
+| [`saveedit.py`](SRC/saveedit.py) | a career save on a PCSX2 folder memory card or card file (`.ps2`) | the save editor: a separate window for one save, through `save.py` ([`USAGE.md`](USAGE.md#the-save-editor), [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md)) |
 
 ```bash
 python SRC/editor.py open             # the mod folder mod/
@@ -388,97 +369,19 @@ python SRC/saveedit.py open <card>/BESLES-54151-G000   # a save on a folder memo
 python SRC/saveedit.py open <card>.ps2                 # a card file: pick a save from it
 ```
 
-The mod editor's tabs:
-
-- **People**: players, managers and scouts in the player database.
-  Search by name, id, nationality or club; every named field with its
-  allowed values, unnamed fields read-only.
-- **Clubs**: the club records (rank, manager, stadium, city, transfer
-  policy) and the computer teams' squads (player, age, shirt, contract).
-- **New club**: what a new career gets for each league and team style:
-  squad, staff, scouts, youth team, candidate lists and the rival club.
-- **Season**: the starting divisions with last season's table; swaps two
-  league clubs' places, and changes each first division's size within
-  the range the schedules allow (rewriting the schedule packs, and
-  adding the club ranking's rows for the new size).
-- **National calendar**: for each year of the 4-year cycle, when the
-  national squads are called up and released and which call-ups are for
-  a finals tournament; the national match dates follow the schedule.
-- **Free agents**: the players who start a career without a club,
-  refusing one already in a squad.
-- **Player links**: the clubs each player is affiliated with, each
-  scout's exclusive and semi-exclusive players, and the hidden good and
-  bad combinations of players and managers. Each list keeps its size, so
-  an edit that no longer fits is refused.
-- **Overseas bases**: what a club base costs to set up in each of the
-  13 overseas regions, with the investment steps and upkeep that follow
-  from it.
-- **Nations & stadiums**: each nation's UEFA rank and points and world
-  rating, and each stadium's roof, level and capacity, with the clubs
-  that use it.
-- **Regulations**: each schedule's match rules, win bonus and prizes (in
-  pounds), promotion and relegation places, and how it reports a final
-  place.
-- **Club ranking**: the points each competition gives for each final
-  place, the world rank points by club rank, and the club rank each
-  position in a nation or division gets, with the positions each rank
-  reaches.
-- **Training**: what each practice menu, camp type and youth practice
-  trains and how tiring it is, match growth, facility bonuses, coaching
-  and decline with age.
-- **Camps**: each camp's town, description and area clubs, and its camp
-  type with a preview of what it trains.
-- **Tours**: the clubs a tour can play in each region, by club and
-  region, at most 40 to a region.
-- **Facilities**: build costs, upkeep, build times and stadium
-  capacities, money in pounds.
-- **PR events**: the Publicity Department's 46 events: when each is
-  offered, its cost, its chance of success in each business cycle and
-  what success brings (written into the executable).
-- **Tactics**: the tactics screen's eight Set Formation presets, seven
-  team tactics and a formation each, with their names and descriptions.
-- **Kits**: every club's home and away kits with colour swatches, the
-  keeper kits, and the licensed clubs' number colours, name, collar and
-  captain mark.
-- **Text**: any message by category, text or id, in all 7 language
-  slots. A file that outgrows its slot makes `MES.PAC` grow, and Build
-  disc updates the executable's index of it.
-- **Comments**: the detail screens' comment lines for players, managers,
-  coaches and scouts: the comment scripts' tables (ability weights,
-  bands and message numbers), with each message number's text.
-
-The save editor's pages are the club, finances, the squad and youth
-team, pair combinations (as the tactics screen's icons), staff, the 440
-other clubs, the candidate lists (read-only) and the edit player. It
-edits every field `save.py set` can write. File > Save backs the save up
-beside the card and logs the matching `save.py set` command; File > Save
-to new slot writes the edit to a copy in the next free slot. On a card
-file both write into the card through `ps2mc.py`, after backing the card
-up.
-
-**File > Build disc** (Ctrl+B) writes a modded disc image, an xdelta
-patch for sharing, or both: it puts the mod folder's files on a copy of
-your disc image (`patch_disc.py patch ... --copies`) and makes the patch
-from it (`vcdiff.py make`), showing their output and logging both
-commands. For a patch on its own the image is temporary and removed
-afterwards. Boxes add `patch_disc.py`'s switches, one per entry of its
-switch table (`--mod <name>,...`). Use the
-unmodified Redump image as the original, so the patch applies for
-everyone; the dialog warns if it isn't.
-
-Each tab edits through a writer's own functions and takes the field names
-and ranges from it (`pbdata.edit_spec`), so a file saved by the editor is
-byte for byte what the logged command gives. The mod folder keeps each file
-under its `DAT/` path, and files from outside `DATA.CVM` under `disc/`
-(`mod/disc/SLES_541.51`), which matches `patch_disc.py`'s targets. The
-editor reads the mod's copy of a file when there is one, so edits build up
-over sessions.
+[`USAGE.md`](USAGE.md) is the guide to both windows: the mod editor's
+tabs, Build disc and the save editor's pages. Each tab edits through a
+writer's own functions and takes the field names and ranges from it
+(`pbdata.edit_spec`), so a file saved by the editor is byte for byte
+what the logged command gives. The mod folder keeps each file under its
+`DAT/` path, and files from outside `DATA.CVM` under `disc/`
+(`mod/disc/SLES_541.51`), which matches `patch_disc.py`'s targets.
 
 ## How the tools fit together
 
 Tools reuse each other by importing the sibling script. The ones not
-listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
-`rofs_decrypt.py`, `svr.py`, `tbb.py`, `vcdiff.py`) stand alone, and
+listed (`afs.py`, `bpb.py`, `chd.py`, `cvs.py`, `gamedata.py`,
+`pac.py`, `ps2mc.py`, `rofs_decrypt.py`, `svr.py`, `tbb.py`) stand alone, and
 `regress.py` runs the others as commands.
 
 | Tool | Builds on |
@@ -496,7 +399,7 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `emblem.py`, `news.py` | `pac.py`, `tbb.py`, `svr.py` |
 | `mbb.py` | `pac.py` for `MES.PAC`; `sles_disasm.py`, `snr2.py`, `gamever.py` for `vars` |
 | `sqb.py` | `pac.py`, `packdata.py` for `COMBINATION2.CSB`, `pbdata.py` for field and ability names |
-| `pbdata.py` | `pac.py`, `tbb.py`, `initteam.py` (club names), `sles_disasm.py` and `gamever.py` (`--sles`) |
+| `pbdata.py` | `pac.py`, `tbb.py`, `initteam.py` (club names), `mbb.py` (Japanese names), `sles_disasm.py` and `gamever.py` (`--sles`) |
 | `initteam.py` | `pac.py`, `tbb.py`, `pbdata.py` and `mbb.py` for names |
 | `teaminit.py`, `plrcommon.py`, `plrsim.py` | `tbb.py` and `pbdata.py` for names; the last two `pac.py`; `teaminit.py limits` `sles_disasm.py` and `gamever.py` |
 | `regulation.py` | `tbb.py`, `schedule.py` for the team-entry check and `leaguesize.py` for the schedules' names |
@@ -513,11 +416,11 @@ listed (`afs.py`, `bpb.py`, `cvs.py`, `gamedata.py`, `pac.py`,
 | `sounddat.py` | `sles_disasm.py` for `music` |
 | `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables; `teaminit.py` for the salary limits |
-| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `cso.py` and `chd.py` (a CSO, ZSO or CHD input), `pac.py` (rebuilding archives), `tbb.py`, `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`, `third-tier`), `regulation.py`, `initteam.py` and `pbdata.py` (`third-tier`), `camp.py` (the camp switches), `training.py` (`drill-names`), `plrcommon.py` (`facility-tiers`) |
+| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `cso.py` (a CSO, ZSO or CHD input), `pac.py` (rebuilding archives), `tbb.py`, `sles_disasm.py` and `gamever.py` (the executable, the Japanese build), `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`, `third-tier`), `regulation.py`, `clubresult.py`, `initteam.py` and `pbdata.py` (`third-tier`), `camp.py` (the camp switches), `training.py` and `mbb.py` (`drill-names`, `injury-lines`), `plrcommon.py` (`facility-tiers`), `plrsim.py` (`overseas-bases`) |
 | `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `natcal.py` (National calendar), `teaminit.py` (New club), `plrsim.py` (Free agents, Player links, Overseas bases), `initteam.py` (Nations & stadiums), `regulation.py` and `clubresult.py` (Regulations), `clubrank.py` (Club ranking), `training.py` (Training), `camp.py` (Camps), `tour.py` (Tours), `plrcommon.py` (Facilities), `clubevent.py` (PR events), `formset.py` (Tactics), `uniform.py` (Kits), `mbb.py` (Text), `sqb.py` (Comments); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `ps2mc.py` (card files), `pbdata.py` and `initteam.py` for names |
 | `pmplayer.py` | `save.py` (cipher, CRC, and career saves for `check`), `pbdata.py` for field names, `gamever.py` |
-| `ps2mc.py` | nothing |
+| `cso.py`, `vcdiff.py` | `chd.py` for CHD images; `vcdiff.py` reads images through `cso.py` |
 
 The disassemblers connect to the format tools through the docs: a
 format is found in the code, documented in `DOC/`, implemented in
