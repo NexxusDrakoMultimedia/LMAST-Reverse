@@ -65,18 +65,11 @@ the two games share are documented here first.
 ## Getting listed
 
 Contributions of any kind are welcome: code, docs, test results from the
-game, bug reports, translations or research. Read
-[`AGENTS.md`](AGENTS.md) for the conventions before sending a change; it
-is written for AI assistants but applies to anyone.
+game, bug reports, translations or research. See
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for how to send one.
 
-- **Code or docs:** open a pull request. Add yourself to the right table
-  above in the same pull request, or ask to be added.
+- **Code or docs:** add yourself to the right table above in your pull
+  request, or ask to be added.
 - **Research, tests or reports:** say how you would like to be credited
   (your name, a handle, or not at all) and you will be added here, and
   in the doc that records the finding.
-- **Commits with a co-author:** end the message with a
-  `Co-Authored-By: Name <email>` line so the shortlog above counts it.
-
-By contributing you agree that your work is licensed under the GNU
-General Public License, version 3 or later, like the rest of the
-repository ([`LICENSE`](LICENSE)).

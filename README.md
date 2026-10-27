@@ -546,6 +546,11 @@ saves.
 
 ## Working on the project
 
+[`CONTRIBUTING.md`](CONTRIBUTING.md) explains how to report a bug, test
+something in the game, or send a change, and what a change needs before
+it is merged. Everyone taking part follows the
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+
 [`AGENTS.md`](AGENTS.md) has the conventions for docs and tools, the
 workflow for a new format or writer, and where each kind of record goes:
 facts and open questions in `DOC/`, tasks by stage in
