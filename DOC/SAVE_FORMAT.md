@@ -623,7 +623,19 @@ record picks the league factor isn't traced.
 `patch_disc.py --mod slow-reputation` (in `--mod balance`, the user's
 choice, 2026-10-26) halves every gain: the win and draw factors, every
 place's points and the yearly 500 (250.0). Losses stay. Only this code
-reads those tables. Not checked in the game.
+reads those tables.
+
+**Tested in PCSX2** (user report and save states, 2026-10-27, a German
+career on an LMASTER max build, CRC `E2A9E3B9`). The club status is
+hidden in game, so it was read from two save states a turn apart (turn
+81 to 82 of 2005–06): the live blocks are at `*(pwork + 0x1c) +
+*(pwork + 0x28 + 4k)`, where `pwork` is the word at `0x3909a8`
+(`plPwork_GetPwork`, `pwGet`). Status rank 7, club rank 0, and a league
+win over Burghausen (club rank 3, read from block 2) in the 2nd German
+League (grade 3, factor 0.7) took the status from 1,057 to 1,104: 4 ×
+(3 ÷ 2 + 16) × 0.7 × 1.0 × 1.0 = 47.6, truncated to 47, the halved win
+factor; retail's 2.0 would give 95, and no retail combination of grade
+and league factor gives less than 54 for that win.
 
 `save.py show` prints the status, status rank, cap and both ranks.
 `save.py set ... status=N status_rank=N` writes them and sets both club

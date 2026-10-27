@@ -29,7 +29,8 @@ What to work on next, most valuable first.
 2. **LMASTER max in game** (sections 7 and 8): every part of
    `--mod harder-economy` is tested in PCSX2, and so are
    `transfer-fees`, `fee-tiers` at the low end, `pr-costs`,
-   `merch-costs` and the separate career saves. Through a German
+   `merch-costs`, `slow-reputation` after a match and the separate
+   career saves. Through a German
    season the user found the game much harder economically, the
    fanbase growing much more slowly and merchandise income much lower
    (2026-10-27). Left: the other `--mod balance` switches and `pr-cycle`, and the lower cups' seeded
@@ -327,11 +328,10 @@ disc or the edit to build; the result goes into the doc linked.
       `pr-cycle`, on a `--mod lmaster-max` disc: each row marked "not
       checked in the game" in [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements) (the
       injury lines and odds, overseas bases, a fee above £120M,
-      `slow-reputation` (club status is hidden, so from two saves
-      around a win, read with `save.py show`), `fanbase`'s crowds, TV
+      `fanbase`'s crowds, TV
       offers and big-fanbase merchandise, the camp and tour costs;
-      `fee-tiers`' low end, `pr-costs` and lower merchandise income are
-      seen)
+      `fee-tiers`' low end, `pr-costs`, lower merchandise income and
+      `slow-reputation` after a win are seen)
 - [ ] `pmplayer.py check` on a career saved after importing the edited
       V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`)
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#tested))
