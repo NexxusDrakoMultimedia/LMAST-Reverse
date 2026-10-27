@@ -574,3 +574,29 @@ the project, the community it is made for (the
 [LMAST/SFCC English Fan Discord](https://discord.gg/7DNrGye9TZ)), the
 first decryption of `DATA.CVM` by **@tw09627**, and the software it
 builds on.
+
+## Acknowledgements
+
+Neither the maintainer nor the community are equipped to deal with
+mental health or other crises. Please use
+[findahelpline.com](https://findahelpline.com/i/iasp) to find a local
+helpline, or if the crisis is life-threatening, contact your local
+emergency services.
+
+Nexxus Drako Multimedia was created on the stolen lands of the Jagera
+and Turrbal peoples, in what is now called Brisbane. Sovereignty was
+never ceded. This always was, and always will be, Aboriginal land. I pay
+my respects to Jagera and Turrbal Elders past and present, and to all
+Aboriginal and Torres Strait Islander peoples.
+
+Colonisation didn't end; it's ongoing, and I back First Nations-led
+fights for land back, treaty and truth-telling.
+
+Nexxus Drako Multimedia is queer-run and queer-made. Trans, nonbinary,
+intersex, asexual, aromantic, bi, pan, lesbian, gay and every other
+queer voice is welcome here, and actively backed: not tolerated, backed.
+
+Transphobia, intersexphobia, homophobia, biphobia, acephobia and any
+other bigotry get you removed, no warnings and no debate.
+
+Trans rights are human rights.

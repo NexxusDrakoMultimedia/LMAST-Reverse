@@ -13,9 +13,11 @@ Discord community.
 1. **Be excellent to each other, always.** If you have to ask yourself
    "am I acting a fool?", the answer is likely yes. This isn't a
    popularity contest, and if you're an asshat, no one will miss you.
-2. **Racism, sexism and LGBTphobia will not be tolerated.** This is an
-   inclusive, LGBTQIA+-friendly project, and we take this very
-   seriously.
+2. **No bigotry.** Racism, sexism, transphobia, intersexphobia,
+   homophobia, biphobia, acephobia and any other bigotry get you
+   removed, no warnings and no debate. This project is queer-run and
+   queer-made, and every queer voice is welcome and actively backed
+   ([Acknowledgements](README.md#acknowledgements)).
 3. **Don't be a creep.** Acting creepy, edgy or lewd towards anyone gets
    you excluded.
 4. **No explicit or NSFW content**, in text, images or links.
@@ -56,3 +58,8 @@ To report a problem, contact the maintainer privately, through the
 [LMAST/SFCC English Fan Discord](https://discord.gg/7DNrGye9TZ) or
 GitHub ([NexxusDrakoMultimedia](https://github.com/NexxusDrakoMultimedia)).
 Reports are kept confidential.
+
+The maintainer and the community can't help with a mental health or
+other crisis. Please use [findahelpline.com](https://findahelpline.com/i/iasp)
+to find a local helpline, or if the crisis is life-threatening, contact
+your local emergency services.
