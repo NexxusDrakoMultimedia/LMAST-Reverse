@@ -17,7 +17,12 @@ limits, for making 442–459 full clubs (the LMASTER third tier, phase 2).
 Every `addiu`/`addi`/`slti`/`sltiu`/`andi`/`ori` with an immediate of
 440 (`0x1b8`), 441 (`0x1b9`) or 442 (`0x1ba`) in the executable and the
 ten overlays: 206 sites (**empirical**, the scan below). Each was
-read with its function and surroundings. A table indexed by club
+read with its function and surroundings. A second pass (2026-10-27)
+over every `slti`/`sltiu` with 439–442 that this doc or `patch_disc.py`
+didn't yet name found four more: `SIMPRG.REL` `0x918` (Other Club Info)
+and `0x15ad4c` (the practice code's club rank), both now in the tables below,
+`VSPRG.REL` `0x7808` (VS mode's clubs, below) and the debug counter at
+`0x1099fc`, besides the debug modules. A table indexed by club
 number without such an immediate (pointer arithmetic over a 441-entry
 array) doesn't show up this way; see [Still unknown](#still-unknown).
 
@@ -31,7 +36,7 @@ About 140 sites use the same numbers for something else:
 | offsets inside save block 5 | `pwkRec_GetTeamStats` (`+0x601b8`), `pwkRec_GetGameResultSysBuffer` (`+0xb01b8`), `pwkEdit_CallPwkEdit`, the matching `SAVEPRG.REL` serializer sites (`0xdd10`, `0x1d004`, `0x2b088`) |
 | screen layout | the detail pages' `SetupDetail…Page` (`$t1` = 442, a coordinate beside 330 or 310) |
 | message, event and variable ids | `SIMPRG.REL` `CEventTitle` (24 sites, `$a2` = 442 with ids 8–0x1d), `EVS::CEvsManager::Req` (21 sites, `$a0` = 440), `EVS::SetEventFlag`, `Msg::GetVariableBuffer`, `ROFS_SetIsoDir`, `ImageTransfer::initialize`, and `SIMPRG.REL` `Msg`'s jump tables over 441 message variables (`0x1706e0`, `0x171f48`, `0x1721f4`) |
-| debug modules | `FC_EURO_DUMMY_MODULE::CPlayerPositionSetAndStamemPointDis` (a counter wrapping at 441), `TESTPRG.REL` `CHayasiTestModule` |
+| debug modules | `FC_EURO_DUMMY_MODULE::CPlayerPositionSetAndStamemPointDis` (a counter wrapping at 441, `0x1099fc`), `TESTPRG.REL` `CHayasiTestModule` (`0x106ec`), `DEBUGPRG.REL` (`0x3170`) |
 
 ## About clubs
 
@@ -40,7 +45,7 @@ About 140 sites use the same numbers for something else:
 | Kind | Sites |
 |---|---|
 | Loops over clubs, to 441 inclusive (`slti …, 0x1ba` or a count of 441) | `pwkOteam_Init` (`0x24a738`, the squads from `OTEAMMEMBER.TBB`), `pwkOteam_Init2` (`0x24a60c`, ranks and world points), `PlBpinfoTask::updatePlCoreInfoSub` (`0x20d314`), `CMakeDataBase::MakeDB` (`0x2230e0`), `GetOfferClub` (`0x225808`, `0x225864`, `0x2258e8`, `0x225974`), `CComOffer::CalcuOfferClub` (`0x22628c`), `CAcquirePlayer::GetExecuteTeamList` (`0x221d94`, `0x221dbc`), `CContractReform::GetExecuteTeamList` (`0x223eb8`), `pwkOteam_ChangeFS_BranchEstablish`/`Remove` (`0x24a8d4`, `0x24a944`), `pwkTeam_UpdatePlayerCandidates` (`0x2607d4`, `0x260830`, `0x2609d0`, `0x260b58`), `pwkTeam_UpdateYouthCandidatesRankSet_ForAbil` (`0x262c20`), `YRSTPRG.REL` `ZinziYearStart::calcYearStartSecondHalf` (`0x17014`, `0x172ac`, `0x1783c`) |
-| A club is resident (club < 442, or club − 2 < 440) | `pwkOteam_GetOpinfoPointer` (`0x24b930`), `pwkOteam_GetRank` (`0x24bef8`), `pwkOteam_GetWorldClubRank` (`0x24bfa0`), `pwkOteam_GetTeamData` (`0x24bcd4`), `pwkOteam_Init`'s squad set-up (`0x24a788`), `pwkMatchGrow_Grow` (`0x24671c`), `pwkMoney_CalcuPurchaceOtherTeamPlayerTransferMoney` (`0x24829c`), `plTeam_IsPurchaseOKFromCOM` (`0x228c9c`), `CAcquirePlayer::PickupPlayer` (`0x2228b0`), `pwkRental_CheckOpenRentalTeamByFriend`/`ByBranch` (`0x2551b8`, `0x255278`), `pwkTeam_AddReleaseList` (`0x25a8c4`), `CDetailManager::ConvertPlayer_Type` (`0x284dcc`, `0x284e5c`), `SIMPRG.REL` `CPlayerSearchWindow_Task::GetPlayerAcquireCost` (`0x9263c`), `ZinziYouthTeam`/`ZinziMyTeam` (`0x15afa4`, `0x15b488`, `0x15bc5c`), `CKeyboard_Task::RecoveryInit` (`0x69924`) |
+| A club is resident (club < 442, or club − 2 < 440) | `SIMPRG.REL` `0x15ad30` (from `CPracticeExecute`'s code, `0x158470`: the club's rank ÷ 4, up to 7, for the practice code, and 0 for a club not resident; what the practice uses it for isn't traced; the check at `0x15ad4c`), `pwkOteam_GetOpinfoPointer` (`0x24b930`), `pwkOteam_GetRank` (`0x24bef8`), `pwkOteam_GetWorldClubRank` (`0x24bfa0`), `pwkOteam_GetTeamData` (`0x24bcd4`), `pwkOteam_Init`'s squad set-up (`0x24a788`), `pwkMatchGrow_Grow` (`0x24671c`), `pwkMoney_CalcuPurchaceOtherTeamPlayerTransferMoney` (`0x24829c`), `plTeam_IsPurchaseOKFromCOM` (`0x228c9c`), `CAcquirePlayer::PickupPlayer` (`0x2228b0`), `pwkRental_CheckOpenRentalTeamByFriend`/`ByBranch` (`0x2551b8`, `0x255278`), `pwkTeam_AddReleaseList` (`0x25a8c4`), `CDetailManager::ConvertPlayer_Type` (`0x284dcc`, `0x284e5c`), `SIMPRG.REL` `CPlayerSearchWindow_Task::GetPlayerAcquireCost` (`0x9263c`), `ZinziYouthTeam`/`ZinziMyTeam` (`0x15afa4`, `0x15b488`, `0x15bc5c`), `CKeyboard_Task::RecoveryInit` (`0x69924`) |
 | Lists and buffers of 440 or 441 clubs | `GetOfferClub`'s five lists and `SetLotClub` (`0x2256c8`, a list's bound), `plTeam_GetClubrankList` (`0x22c09c`–`0x22c144`: 441 × 8 bytes on a `0xe20` stack frame, sorted with 441), `ScheEuro_TeamEntryList` `getTeamIdFromNation`/`Region` (`0x20afb4`, `0x20b064`: clubs 3–440, at most the count given) and its callers `getList_SRC_KIND_UEFA_XXX`, `_CLUBRANK`, `_FIFA` (`0x20b504`, `0x20b700`, `0x20b880`: 440 entries at `+0x478` of the list) |
 | The world ranking | `SIMPRG.REL` `ClubRank` (`0x150684`–`0x1521e0`, 14 sites): a list of 441 clubs on the stack of its club update (`0x150680`), and its helpers' loops over clubs; each club's points and rank are in its block 2 record (`+0x9c`, `+0xa0`–`+0xa4`) |
 | Lists of a nation's or region's clubs, capped | `SIMPRG.REL` `CReport_month` (`0xa1194`, `0xa1244`, `0xa12f0`, `0xa1318`: 50 at most), `CEDITPRG.REL` (`0x2d84`: as many as its caller allows) |
@@ -99,6 +104,25 @@ lists are allocated by the count), and the past-record points by nation
 (`0x1521e0`) take the nation of 442–459 from the club as for the others
 (the retail code would add them to nation 1). `CReport_month`'s lists
 by nation and region run to 459 too; they stop at 50 clubs.
+
+**Other Club Info** (My Room > Information > Club Info): you pick a
+nation, then a club from one list of its clubs (user report). The list
+comes from `SIMPRG.REL` `0x8e0`, which walks clubs 2–441 (`slti …,
+0x1ba` at `0x918`), keeps those of the nation (`plMisc_Club2Nati`) and
+stores each club's id and name, up to the count its caller gives: 50
+for the list itself (`0x1848`, names at `0x248410` and ids at
+`+0x55cc` of the module, menu entries of `0x54` bytes in its `0x1100`
+frame) and for the map window's count of each nation's clubs
+(`0x1ae8`). **Confirmed** from the code. So 442–459 were left out (the
+user's report on `LMAST-test-tiers-germany.iso`), and `third-tier`
+makes the bound 460. With the tier, the most clubs a nation has is 47
+(nation 1, 44 before; **empirical**, `PLRESOURCECOMMON.PAC` entry 3
+table 5), so the cap of 50 cuts none off. Built 2026-10-27 on
+`LMAST-test-max-germany.iso`; not seen in game yet.
+
+`VSPRG.REL` `0x7808` builds VS mode's club list from clubs 3–441 of the
+six main nations; it is left as it is, so VS mode offers the clubs the
+retail game does.
 
 The **All Clubs Ranking** screen (Information, `SIMPRG.REL` `0x84df0`)
 lists the clubs from a table at `0x1cf848` (52 nations, 145 national
@@ -169,10 +193,6 @@ block 2, not in arrays of its own.
 
 ## Still unknown
 
-- How My Room > Information > Club Info > Other Club Info chooses its
-  clubs. **Seen in PCSX2** (user report, 2026-10-27, on
-  `LMAST-test-tiers-germany.iso`): clubs 442–459 aren't listed there,
-  though the All Clubs Ranking lists them. Not traced.
 - Tables indexed by club number with no 440–442 immediate: per-club
   arrays in the save blocks (block 5's team records among them) and in
   objects. Each would overflow for a resident club past 441.

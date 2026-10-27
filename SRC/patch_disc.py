@@ -3173,6 +3173,9 @@ TIER_OVERLAYS = (    # (file, offset, old immediate, new immediate, what)
     (NEGO_FILE, 0x15AFA4, 0x1B8, 0x1CA, "ZinziYouthTeam: resident to 459"),
     (NEGO_FILE, 0x15B488, 0x1B8, 0x1CA, "ZinziMyTeam::DiscardPlayer: resident to 459"),
     (NEGO_FILE, 0x15BC5C, 0x1B8, 0x1CA, "ZinziMyTeam::JoinAllTransfer: resident to 459"),
+    # 0x15ad30, called from CPracticeExecute's code (0x158470): a club's
+    # rank / 4, up to 7, for a resident club and 0 for any other.
+    (NEGO_FILE, 0x15AD4C, 0x1BA, 0x1CC, "practice: the club's rank level, resident to 459"),
     (NEGO_FILE, 0x527C4, 0x1B7, 0x1C9, "loans: clubs 3-459 by the usual checks"),
     (DISC + "DLL/YRSTPRG.REL", 0x17014, 0x1BA, 0x1CC, "year start: to club 459"),
     (DISC + "DLL/YRSTPRG.REL", 0x172AC, 0x1BA, 0x1CC, "year start: to club 459"),
@@ -3241,6 +3244,10 @@ def file_tier_clubs(f, img, dat):
 #   (0x1521e0) take 442-459's nation from the club like the others.
 # - SIMPRG.REL CReport_month's club lists by nation and region (50 at
 #   most, so they can't overflow).
+# - SIMPRG.REL 0x8e0, a nation's clubs for Information > Club Info >
+#   Other Club Info (0x1848) and the map window's counts (0x1ae8): clubs
+#   2-441 of the nation, 50 at most, which its callers' lists hold. With
+#   the tier a nation has 47 clubs at most, so none is cut off.
 # Left as they are: ScheEuro_TeamEntryList's lists (clubs 3-440, at most
 # 440, for the European places by rank: the third tier gets there by its
 # league and cup records), the club editor's list (CEDITPRG.REL 0x2d84,
@@ -3279,6 +3286,7 @@ TIER_LIST_OVERLAYS = tuple(
        (NEGO_FILE, 0xA1244, 0x1BA, 0x1CC, "CReport_month: clubs of a region to 459"),
        (NEGO_FILE, 0xA12F0, 0x1BA, 0x1CC, "CReport_month: clubs of a nation to 459"),
        (NEGO_FILE, 0xA1318, 0x1BA, 0x1CC, "CReport_month: clubs of a region to 459"),
+       (NEGO_FILE, 0x918, 0x1BA, 0x1CC, "Other Club Info: clubs of a nation to 459"),
        (NEGO_FILE, 0x1CF850, 0x1B9, 0x1CB, "All Clubs Ranking: clubs 1-459")])
 # The All Clubs Ranking screen (SIMPRG.REL 0x84df0, building the list at
 # INFORMATION_MODULE + 0x4074, 0xe80 bytes) keeps a pointer per club at

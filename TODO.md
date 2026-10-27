@@ -314,9 +314,10 @@ disc or the edit to build; the result goes into the doc linked.
       names on the end of tournament screen
       ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 - [ ] The third tier's clubs in My Room > Information > Club Info >
-      Other Club Info, which doesn't list clubs 442–459 (user report);
-      how the screen picks its clubs isn't traced
-      ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#still-unknown))
+      Other Club Info on `LMAST-test-max-germany.iso`: Germany's list
+      shows its 3 tier clubs after the others, and opening one shows
+      its info
+      ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b))
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-V000`,
       and an LMASTER full disc its careers to `-F000`
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))

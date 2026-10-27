@@ -329,9 +329,11 @@ What is known so far:
   applied on top of its schedule packs, and the switches whose PRELOAD
   edits share its rebuilt packs (`drill-names`, `injury-lines`,
   `facility-tiers`) land as entry edits of the rebuilt packs.
-- **Left to trace:** how the Other Club Info screen chooses its clubs
-  ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#still-unknown)); the rest is in
-  [`UID_LIMITS.md`](UID_LIMITS.md#still-unknown).
+- **Other Club Info** lists a nation's clubs from a loop that stopped at
+  441; `third-tier` runs it to 459, so the tier's clubs are listed
+  (built 2026-10-27, not seen in game yet;
+  [`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)).
+  What is left to trace is in [`UID_LIMITS.md`](UID_LIMITS.md#still-unknown).
 
 ## Planned
 
