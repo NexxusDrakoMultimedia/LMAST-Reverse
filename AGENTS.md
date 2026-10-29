@@ -58,8 +58,9 @@ In that case:
   Redump dump, built discs such as the `LMAST-test-*.iso` test discs,
   and patches), `mod/` (the editor's default mod
   folder, which holds edited game files), `.regress/` (regression
-  baselines, which list names and counts from the disc) and `.cache/`
-  (`save.py`'s recorded field list).
+  baselines, which list names and counts from the disc), `.cache/`
+  (`save.py`'s recorded field list) and `names/` (the name tables
+  `mbb.py names` writes for the user to fill in).
 - The Japanese release (SLPM-66316) extracts to `ISO_JP/` and `DAT_JP/`,
   also ignored (`DOC/JAPANESE_RELEASE.md`). When either is present,
   `regress.py` runs every check over it as `jp_<name>`.

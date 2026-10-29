@@ -30,6 +30,17 @@ Usage:
     python mbb.py set    <MES.PAC> <out.PAC> <cat> <id> <lang> "<text>" [<cat> <id> <lang> "<text>" ...] [--copy N]
     python mbb.py import <MES.PAC> <edits.csv> <out.PAC>     # apply a CSV in `csv` format
     python mbb.py vars [MES.PAC] [ISO dir]                   # what fills each global {var:1:N}
+    python mbb.py names <MES.PAC> <out.csv>                  # club, national team and competition names to fill in
+
+`names` lists every club (teams 3-459), national team (460-542),
+competition (category 9) and competition stage (11) with its English
+name and length, an empty column for its real name (with a length
+formula for Excel), the French, German, Italian and Spanish names, every
+copy of it (the variant lists 4, 100003, 100009, 100011 and the short
+name in 5), the stadium named after it (category 10), and the other
+messages that mention it. The categories also have copies in
+PRELOAD/STATIONMES<lang>.PAC (--copies). It writes game text: keep the
+file out of the repo (names/ is ignored for it).
 
 `vars` reads the executable and DLL/SIMPRG.REL in the ISO dir (default
 ISO, or ISO_JP for the Japanese release): the game's table of global
@@ -436,6 +447,127 @@ def cmd_csv(paths, out_path):
         for key in sorted(table):
             w.writerow(list(key) + table[key])
     print("%d messages -> %s" % (len(table), out_path))
+
+
+# --- names: the club, national team and competition names -----------------
+#
+# The name lists (DOC/MBB_FORMAT.md#categories): category 3 is every team's
+# name, id 2000 + team id, with 4 a copy and 5 the three-letter forms;
+# 100003 is a variant list of 3 with the same ids. Teams 3-459 are clubs
+# (442-459 the tutorial's third-tier opponents), 460-542 national teams;
+# 0-2 stand for your club and the rival (DOC/CLUB_LIMITS.md). Category 9
+# names the competitions (id 10000 + competition), 100009 the same in
+# capitals; 11 and 100011 name their stages and groups. Category 10 is
+# "<club> Stadium". PRELOAD/STATIONMES<lang>.PAC holds each language's
+# copy of categories 1 and 3-11 (DOC/PRELOAD_DIR.md).
+
+TEAM_CAT, TEAM_BASE = 3, 2000
+TEAM_COPIES = (4, 100003)       # same ids as category 3
+TEAM_SHORT_CAT, TEAM_SHORT_BASE = 5, 4000
+CLUBS = range(3, 460)
+NATIONAL_TEAMS = range(460, 543)
+STADIUM_CAT = 10
+NAME_SECTIONS = (
+    # (section, category, variant categories, ids)
+    ("club", TEAM_CAT, TEAM_COPIES, [TEAM_BASE + t for t in CLUBS]),
+    ("national team", TEAM_CAT, TEAM_COPIES, [TEAM_BASE + t for t in NATIONAL_TEAMS]),
+    ("competition", 9, (100009,), None),
+    ("competition stage", 11, (100011,), None),
+)
+EU_LANGS = (1, 2, 3, 4, 5)      # en, fr, de, it, es: the languages PAL players see
+STATIONMES = "PRELOAD/STATIONMES%d.PAC"
+NAME_LIMIT = 18                 # the player's own club and own name (user report)
+MENTION_MIN = 6                 # shorter names match too many words to count mentions
+# Lists of real places that share names with clubs and national teams (the
+# nations 6, 7, 8, 100006; states 960, 100960; cities 961, 100961): a
+# match there is the place, not a use of the team's name.
+PLACE_CATS = {6, 7, 8, 100006, 960, 100960, 961, 100961}
+
+
+def name_tables(paths):
+    """{category: {id: [text per language]}} for every category, first copy
+    of each id only."""
+    table = {}
+    for _, m in iter_files(paths):
+        cat = table.setdefault(m.category, {})
+        for rid, s in m.records:
+            cat.setdefault(rid, [""] * len(LANGS))
+            if not cat[rid][m.lang]:
+                cat[rid][m.lang] = decode(s, m.lang)
+    return table
+
+
+def name_rows(table):
+    """One row per name: (section, category, id, team, texts, copies,
+    stadiums, mentions)."""
+    import re
+    name_cats = {c for _, c, variants, _ in NAME_SECTIONS for c in (c,) + variants}
+    name_cats |= {TEAM_SHORT_CAT, STADIUM_CAT} | PLACE_CATS
+    stadiums = table.get(STADIUM_CAT, {})
+    # Every message outside the name lists, English, for counting mentions.
+    others = [(c, rid, texts[1]) for c, recs in table.items() if c not in name_cats
+              for rid, texts in recs.items() if texts[1]]
+    rows = []
+    for section, cat, variants, ids in NAME_SECTIONS:
+        recs = table.get(cat, {})
+        for rid in (ids if ids is not None else sorted(recs)):
+            if rid not in recs:
+                continue
+            texts = recs[rid]
+            en = texts[1]
+            copies = ["%d:%d" % (cat, rid)]
+            for v in variants:
+                vt = table.get(v, {}).get(rid)
+                if vt is None:
+                    continue
+                same = all(vt[l] == texts[l] for l in EU_LANGS)
+                copies.append("%d:%d%s" % (v, rid, "" if same else " (%s)" % vt[1]))
+            team = rid - TEAM_BASE if cat == TEAM_CAT else ""
+            if cat == TEAM_CAT:
+                short = table.get(TEAM_SHORT_CAT, {}).get(TEAM_SHORT_BASE + team)
+                if short:
+                    copies.append("%d:%d short %s" % (TEAM_SHORT_CAT, TEAM_SHORT_BASE + team,
+                                                      short[1]))
+            stads = ["%d:%d %s" % (STADIUM_CAT, sid, st[1]) for sid, st in sorted(stadiums.items())
+                     if cat == TEAM_CAT and st[1] == en + " Stadium"]
+            mentions = []
+            if len(en) >= MENTION_MIN:
+                pat = re.compile(r"(?<![\w])" + re.escape(en) + r"(?![\w])")
+                mentions = ["%d:%d" % (c, i) for c, i, t in others if pat.search(t)]
+            rows.append((section, cat, rid, team, texts, copies, stads, mentions))
+    return rows
+
+
+def cmd_names(paths, out_path):
+    """The name table to fill in with real names (LMASTER_MOD.md#planned)."""
+    if os.path.exists(out_path):
+        # It may hold names typed in by hand.
+        raise SystemExit("%s exists; refusing to overwrite it" % out_path)
+    rows = name_rows(name_tables(paths))
+    header = ["section", "category", "id", "team", "game name (en)", "length",
+              "real name (fill in)", "real length", "fr", "de", "it", "es",
+              "copies of this name", "stadium named after it", "mentioned in (en)",
+              "LMAST Realism logo shows"]
+    with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.writer(f)
+        w.writerow(header)
+        for n, (section, cat, rid, team, texts, copies, stads, mentions) in enumerate(rows, 2):
+            en = texts[1]
+            w.writerow([section, cat, rid, team, en, len(en), "",
+                        # Excel and LibreOffice show the length of what is typed in G.
+                        '=IF(G%d="","",LEN(G%d))' % (n, n),
+                        texts[2], texts[3], texts[4], texts[5],
+                        "; ".join(copies), "; ".join(stads),
+                        "%d: %s" % (len(mentions), " ".join(mentions[:12])) if mentions else "",
+                        ""])
+    counts = {}
+    for row in rows:
+        counts[row[0]] = counts.get(row[0], 0) + 1
+    over = [r for r in rows if len(r[4][1]) > NAME_LIMIT]
+    print("%d names (%s) -> %s" % (len(rows), ", ".join("%d %ss" % (n, s) for s, n in
+                                                        counts.items()), out_path))
+    print("%d game names longer than %d characters (competitions and stages only: %s)" % (
+        len(over), NAME_LIMIT, ", ".join(sorted({r[0] for r in over})) or "none"))
 
 
 def cmd_roundtrip(path):
@@ -945,6 +1077,8 @@ def main(argv):
         cmd_dump([a for a in args if a != "--raw"], lang, cat, raw)
     elif cmd == "csv" and len(args) >= 2:
         cmd_csv(args[:-1], args[-1])
+    elif cmd == "names" and len(args) == 2:
+        cmd_names(args[:1], args[1])
     elif cmd == "roundtrip" and len(args) == 1:
         return cmd_roundtrip(args[0])
     elif cmd == "set":

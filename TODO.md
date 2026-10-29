@@ -367,8 +367,11 @@ is built and tested, or set aside.
       club and national team under its real name of the era (Highbury as
       Arsenal, European League as UEFA Champions League), matching LMAST
       Realism's club names, in all five languages, each at most 18
-      characters like the player's own club name; first the list of
-      names (from Realism, checked by the user)
+      characters like the player's own club name. The table is made
+      and filled with short-style English suggestions from Realism's
+      logos (`names/realnames.csv`); next, the user's check of it (12
+      marked "?"), the other four languages, then the `real-names`
+      switch
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes

@@ -428,10 +428,66 @@ Ideas the user has agreed on (2026-10-27), not started:
   club and themself with at most 18 characters (user report), so the
   real club and competition names should keep to 18 characters too,
   using the short form a name is known by where the full one is longer.
-  Before it starts: the list of replacements (from Realism's names,
-  checked by the user), whether any screen fits less than 18, and the
-  club names copied into `PRELOAD` packs. It would be its own group (one switch, `real-names`), in the
-  full and max editions.
+  It would be its own group (one switch, `real-names`), in the full and
+  max editions.
+
+  **The name table (groundwork, 2026-10-30).** `python SRC/mbb.py names
+  DAT/MESSAGE/MES.PAC names/realnames.csv` lists the 776 names to
+  consider: 457 clubs (teams 3–459), 83 national teams (460–542), 72
+  competitions (category 9) and 164 competition stages and groups
+  (category 11). Each row has the game's English name and length, an
+  empty column for the real name with a length formula, the French,
+  German, Italian and Spanish names, every copy (categories 4, 100003,
+  100009, 100011 and the short name in 5), the stadium named after a
+  club (category 10, "<name> Stadium") and the other messages that
+  mention it. `names/` is ignored, since the file holds the game's text,
+  and the command won't overwrite a table that exists. What it shows:
+
+  - Every game club name already fits 18 characters (the longest is
+    18). 113 competition and stage names are longer, so the limit can
+    only be a guide for those.
+  - 80 club names differ by language (French "Real Madrid Cast."),
+    and most competition names are translated, so each language
+    needs its own real name, not only the English one.
+  - Category 100003 differs from 3 in 7 names (spellings such as
+    "Albinoleffe" and the typo "Motherwwell").
+  - 142 names appear in other messages too: "European League" in 15
+    (the tournament rules among them), the nations in news and
+    supporter lists. Those messages need the same rename.
+  - The `PRELOAD/STATIONMES<lang>.PAC` copies of categories 1 and 3–11
+    have little room to grow: 1,840 free bytes for English, 644 for
+    French, 1,072 for German, 232 for Italian and 1,008 for Spanish
+    (`python SRC/preload.py info DAT`). Longer names past that need the
+    pack rebuilt (`--copies` does it), which the Italian copy will.
+
+  LMAST Realism holds no text list of names: its logos are named by
+  texture hash, and its kit folders use the game's made-up names. Its
+  league folders (`ENG/Premier League` and so on) each hold that
+  league's or region's real clubs, so the table's last column, "LMAST
+  Realism logo shows", was read from the logos by sight (contact sheets
+  of each folder) and paired with the game's clubs of the same league
+  or region. Where a game name could fit two crests, the club's kit
+  colours decided (`uniform.py show`: Glasgow City wears green and
+  white, so it is Celtic). The English folders are the 2005/06 clubs;
+  the game's starting divisions are a season older (Crystal Palace,
+  Norwich and Southampton in the top flight), which doesn't change any
+  name.
+
+  **Style (the user's choice, 2026-10-30): short names, like the
+  licensed clubs of Italy, Spain and the Netherlands** ("Juventus",
+  "Atlético Madrid", "PSV Eindhoven"), never shortened past the name a
+  club is known by ("Real Madrid", not "R. Madrid"). The table's real
+  name column holds a suggestion only where the game's name isn't how
+  the club is known (Highbury → Arsenal, Gelsenkirchen → Schalke 04,
+  La Boca → Boca Juniors); an empty cell keeps the game's name, and the
+  licensed names stay. 340 suggestions and 220 logo readings are in.
+  Twelve end in "?" for the user to check: six clubs whose crest and
+  game name don't clearly match, two with no crest found (Baku,
+  AL-Hyde), the Italian, Spanish and Dutch "Club Cups" (no real
+  counterpart in 2005) and the world club championship. 27
+  suggestions, all competition or stage names, are over 18 characters,
+  as many of the game's own are. Only the English column is filled; the
+  other languages are still to do.
 
 ## Not candidates
 

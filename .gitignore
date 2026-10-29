@@ -16,3 +16,5 @@ __pycache__/
 /mod/
 # xdelta patches made from the disc (SRC/vcdiff.py, the editor's Build disc)
 /*.xdelta
+# Name tables made from the game's text (SRC/mbb.py names), to fill in
+/names/

@@ -272,7 +272,7 @@ The category number says roughly what a file contains (English samples):
 
 | Range | Files | Contents |
 |---|---|---|
-| 0–11 | 12 | salesman dialogue (0), UI words (1), symbolic names (2), club/city/country/league name lists (3–11) |
+| 0–11 | 12 | salesman dialogue (0), UI words (1), symbolic names (2), club/city/country/league name lists (3–11; below) |
 | 100–999 | 122 | club-management text: status lines, scouts, injuries, staff and player comments |
 | 1000–9999 | 52 | menu help, screen titles, records, investment |
 | 10000, 20000 | 2 | sponsor/company names, flag and item names |
@@ -283,6 +283,20 @@ The category number says roughly what a file contains (English samples):
 | 50563, 50832, 50833 | 3 | variable lists for the mail/news text in 563/832/833 (see below) |
 | 80000, 90000 | 2 | scout/transfer report text, mail prompts |
 | 100001–120000 | 9 | variants of categories 1, 3, 6, 9, 11, 960, 961, 10000, 20000 with the same ids: mostly identical, but e.g. `100009` has upper-case league names and `120000` longer item names |
+
+**The name lists (empirical, English).** Category 3 is every team's
+name, id 2000 + team id: placeholders for 0–2 (your club and the
+rival), clubs 3–459, national teams 460–542
+([`CLUB_LIMITS.md`](CLUB_LIMITS.md)). Category 4 repeats it at id 3000 +
+team, 5 has the three-letter forms at 4000 + team, and 100003 is a
+variant with the same ids that differs in 7 names. Categories 6 and 7
+(5000 + nation) and 8 (three-letter, 7000 +) name the 145 nations, 9
+the 72 competitions (10000 +, 100009 in capitals), 10 the stadiums
+("<club> Stadium", 11000 +), 11 the 164 competition stages and groups
+(1000 +), 960 the states and 961 the cities. The longest club name is
+18 characters. `python SRC/mbb.py names` lists the club, national
+team and competition names with all their copies
+([`LMASTER_MOD.md`](LMASTER_MOD.md#planned)).
 
 Category 100's English file actually holds French text ("Voulez-vous
 personnaliser votre club ?").
