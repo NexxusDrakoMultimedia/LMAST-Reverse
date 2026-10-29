@@ -452,9 +452,11 @@ Italian and Spanish names and a team's three-letter form.
 | 100011 | the same | the same name where it repeats 11, or the English one where it holds English (in four languages run together, "European LeagueGroup A") |
 
 **Stadiums (2026-10-30).** 382 of the 457 clubs have a stadium row,
-the grounds they played at in 2006-07 (Emirates Stadium for Arsenal,
-Stadio Olimpico di Torino for Juventus, Alfredo Di Stéfano for Real
-Madrid Castilla, opened that year). Sponsor names give way to the
+the grounds they played at in 2006-07 (Emirates Stadium for Arsenal and
+Alfredo Di Stéfano for Real Madrid Castilla, both opened that year).
+One exception, the user's choice: Juventus keep the Stadio delle Alpi,
+their ground until 2006, not the Stadio Olimpico di Torino they
+shared with Torino in 2006-07. Sponsor names give way to the
 ground's own (Westfalenstadion, Arena AufSchalke, Volksparkstadion,
 Son Moix, El Sadar, Stadion Letná); where a ground had no other name
 (Reebok Stadium, JJB Stadium, Ricoh Arena, KC Stadium, Walkers Stadium,
