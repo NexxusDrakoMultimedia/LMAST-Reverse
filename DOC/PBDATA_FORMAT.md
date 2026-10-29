@@ -241,7 +241,17 @@ position grid and the system growth) and with all four VPF players
 SB/CB, WB/DM, SM/OM and WG/FW are the side and centre of each row. 59–63
 are the five attack patterns the tactics screen calls Left Flank, Right
 Flank, Centre Drive, Counter Attack and Possession (messages 1:620–649);
-which pattern is which letter isn't traced.
+which pattern is which letter isn't traced. Nothing in the data or the
+code tells the five apart. No call to the three functions that take an
+ability number (`plPinfo_Abil2PSM`, `pwkGUtl_GetGrowCoe`,
+`pwkGUtl_AddExp`) passes 59–63 as a constant; the match doesn't copy
+them ([The match engine's player parameters](#the-match-engines-player-parameters));
+and every practice grows all five equally. Their only reader found is
+the hexagon table, which weights 60 alone. Training's combinations A–E
+(practices 12–16) are a different set: they pick their row from the
+club's five pattern slots, and rows 12–16 train the left side, right
+side, centre, counterattack and possession, the tactics screen's order
+([`TRAINING_FORMAT.md`](TRAINING_FORMAT.md)).
 
 **Record fields (confirmed).** The player editor draws each field's label
 and then reads that field, a few instructions later, in record order
@@ -851,9 +861,15 @@ The item names are the ones `pbdata.py` uses. They come from the class
 names, not from the game's text: no screen in the game shows the
 tendencies (user report). "RWTB" is probably "run with the ball".
 The classes for dribble, shoot, clear, press and goalkeeping act for one
-player, the one on the ball or marking it. For carry in `0x117480` and for
-the four passes, the player is picked from a team slot, and whether it is
-the passer or the receiver isn't traced. Also not traced: what the press
+player, the one on the ball or marking it. The pass intentions (feed,
+side change, back, killer and the liner cross) and the one-two read the
+passer's value: each takes the intention's own player id (intention
+`+4` → `+4` → `+0`), turns it into a team slot with `0x73df8` on match
+data `+0x8e84`, and reads that slot's player
+(`GAMEPRG.REL 0xdeed8`, `0xe110c`, `0xe2ec8`, `0xddf40`, `0xebd84`,
+`0xe8554`). For carry in `0x117480` the player is picked from a team
+slot by the off-ball role, and which player that is isn't traced. Also
+not traced: what the press
 floats measure (they look like distances and a closing speed), and which
 tactics setting the team value at `+0x9764` is.
 
@@ -1007,7 +1023,7 @@ database fit), or **VPF** (VPF's name, with the values as shown).
 | 56 | attacks through middle | 38/34, 86/86, 56/55 | VPF + data |
 | 57 | line DF | 64/64, 58/57, 64/63 | VPF + data. Beckham settles the pair (line DF 63, pressing 59) |
 | 58 | pressing | 68/68, 58/57, 60/59 | VPF + data |
-| 59–63 | attack patterns A–E | – | developer labels 攻撃パターンA–E理解度; 60 is in the Teamwork hexagon |
+| 59–63 | attack patterns A–E | – | developer labels 攻撃パターンA–E理解度; 60 is in the Teamwork hexagon. Every practice in `TRAINING_LIST.TBB` grows the five by the same amount (+1, +4, +8 or +15), and no code reads one of them by number (below) |
 
 VPF's aptitude page names the position cells. Rooney and Beckham agree
 on 39 = OM (86/85, 72/70), 42 = centre (94/93, 88/87), 43 = left (82/82,
@@ -1040,6 +1056,11 @@ same settings; the database players mostly have 0.
 | Address | Symbol | What it shows |
 |---|---|---|
 | `GAMEPRG.REL 0x1e468` | (called from `0x1e67c`, `0x1e7c8`, after `get_player_uniform_style_info_ptr`) | fills a 16-byte `player::SPlayerUniformStyleInfo` from `PlPinfo`: bytes 0–6 are record `+0x57`–`+0x5d`, byte 7 the shirt number (`+0x2b`), `+8` a pointer to the record (name and number for the shirt), `+0xc` a flag from `0x1e518`, which compares the player with the one picked by team `+0x41eb` (probably the captain). Byte 2 (`+0x59`) is copied only when `plGi_Get() +0x1f538` is set, and is 0 otherwise |
+| `0x2130d4` | `PlGiTask::InitStadium` | sets `plGi +0x1f538` to `IsLongSleeveUniformFromTempareture` (`0x21fbc8`: temperature below 10) of `plCity_GetTemperature` for the player's club's city (`pwkTeam_GetMyTeamData +4`) on the match date. `PlGiTask::init` (`0x210ffc`) clears it. The only caller is `ScheCallbackCommand_MatchBranch` (`0x113db8`), the career's match step, so a VS match leaves it 0 |
+| `GAMEPRG.REL 0xe12c` | (before `set_team_uniform_style_info`) | copies the same flag into the team style's long-sleeve byte (`+0x14`), so outfield gloves show exactly when "by season" sleeves are long |
+| `0x103594`–`0x10364c` | `CFaceLoader::LoadRequest` | for an edit player (`plPinfo_IsEdit`, id from `0x7cce`) it copies the edit work (`pwkTeam_GetEditWork`, record at work `+4`) and passes record `+0x5a` ≠ 0 to `CEditFaceObject::RequestCreate` (`0x1507c8`), which keeps it at `+0x288`. Other players take `LoadRequestNormal` (`0x1036a8`), which has no cap |
+| `0x150d04` | `CEditFaceObject::CopyHair` | when `+0x288` is set, adds the face pack's cap texture (`GetCapTextureImage`, vtable slot `0x10c`) to the hair model |
+| `YRSTPRG.REL 0xc598`, `0xf250`, `0xf464` | `PLAYEREDIT_MODULE` | the retail player editor's face preview passes record `+0x5a` to `CEditFaceEdit::ChangeHairType` (`0x14ff48`) as its cap flag, which `SetupHairModel` (`0x1503a0`) uses the same way |
 | `0x2cd9c8` | `PlayerAssemblerBase::set_player_uniform_style_info` | clamps bytes 0–6 to at most 2, 4, 4, 3, 5, 1 and 14, then stores the 16 bytes at assembler `+0x8460` + 16 × slot. Slot 0 is the goalkeeper (`prepare_player_one` sets up the GK textures for it) |
 | `0x2cf3a0` | `set_default_uniform_style` | the defaults: all 0 except byte 4 (`+0x5b`) = 1 and the shirt number 10 |
 | `0x2cdd68` | `refresh_uniform_style` | byte 0 picks the arm models: 1 short, 2 long, 0 the team's choice (team style `+0x14`, set by the season, `IsLongSleeveUniformFromTempareture` `0x21fbc8`). Byte 1 non-zero adds the wristband meshes, only when the sleeves are short. Byte 5 (slot 0 only) swaps the goalkeeper's pants model for the long one |
@@ -1054,8 +1075,8 @@ come from its `.svm` entries (`python SRC/svr.py info`).
 |---|---|---|---|
 | `+0x57` | 0 | sleeves | 0 by season, 1 short all year, 2 long all year |
 | `+0x58` | 1 | wristband | 0 none, 1–4 a colour (shown only with short sleeves) |
-| `+0x59` | 2 | gloves | outfield players in cold weather: 0 none, 1–4 glove texture `fpglv_00`–`03` |
-| `+0x5a` | 3 | gk_cap | 0–3. The source name is `nicknack_gkcap`, and the GK Style page's hat is the only item left over, but no reader of byte 3 was found, and value 3 showed no cap in PCSX2. The cap texture `PLAYER/ACCE_CAP.SVR` is opened by `PlayerAssemblerBase::initialize` (`0x2c9264`) |
+| `+0x59` | 2 | gloves | outfield players, only in a career match when the club's city is below 10 degrees (below): 0 none, 1–4 glove texture `fpglv_00`–`03` |
+| `+0x5a` | 3 | gk_cap | edit players only: non-zero puts a cap on the head (below). The source name is `nicknack_gkcap`, the GK Style page's Hat. The match's style byte 3 has no reader; the cap goes through the face loader instead |
 | `+0x5b` | 4 | gk_gloves | goalkeeper's gloves `gkglv_00`–`05` |
 | `+0x5c` | 5 | gk_pants | goalkeeper only: 0 normal, 1 long |
 | `+0x5d` | 6 | boots | 0–14, one of 15 two-palette colourings |
@@ -1069,10 +1090,10 @@ come from its `.svm` entries (`python SRC/svr.py info`).
 - Wristband: Neville (1) and Ferdinand (4), both with short sleeves,
   wore wristbands.
 - `gk_cap` = 3 showed no cap, neither on the keeper (Robinson) nor on an
-  outfield player (Owen). The source name says it is the cap, so
-  something else must enable it.
-- Outfield gloves (Terry 4, Beckham 1) didn't show in a night match, so
-  night alone doesn't switch on `plGi +0x1f538`.
+  outfield player (Owen). The code explains it: both are database
+  players with fixed faces, and only an edit player's face reads the cap.
+- Outfield gloves (Terry 4, Beckham 1) didn't show in a night match. The
+  code explains it: a VS match never sets the cold-weather flag.
 - The keeper (`gk_pants` 1, `gk_gloves` 5) wore long pants and gloves
   that looked unlike the usual keeper gloves.
 
@@ -1093,8 +1114,23 @@ have both non-zero, where the eight `dissatis` causes are spread
 over 0–3. So a wristband or gloves also makes a player a little more upset
 when a teammate or a staff member he likes or dislikes leaves.
 
-What `plGi_Get() +0x1f538` is (the help text says cold weather) isn't
-traced.
+**Gloves and cold weather (confirmed, table above).** `plGi_Get()
++0x1f538` is the career match's long-sleeve flag: the temperature of
+the player's club's city on the match date is below 10. That is the
+month's average for the city's climate zone plus −2 to +2
+([`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md)). The European
+zones average below 10 from about November to March. The flag counts for
+both teams, home or away, and only in career matches; in a VS match it
+is always 0, so no outfield player wears gloves there.
+
+**The cap (confirmed, table above).** `gk_cap` is read only when an edit
+player's head is built from face parts: a non-zero value adds the cap
+texture to the hair model. Database players use their stored faces, so
+their `gk_cap` is never read. The match's copy of the byte (style byte 3)
+has no reader. So the GK Style page's Hat shows in the retail editor's
+face preview and on that edit player in a match, whatever his position.
+Values above 1 look the same as 1: both paths keep only whether the
+byte is non-zero.
 
 ### explodetype and team combos
 
@@ -1525,18 +1561,17 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
 
 - Whether anything reads `castno` (`+0x30`, always 0) or `explodetype`
   (`+0x43`–`+0x46`); no reader was found.
-- Tendencies ([The tendencies](#the-tendencies)): whose value the pass
-  intentions and the carry helper `0x117480` read (passer or receiver),
+- Tendencies ([The tendencies](#the-tendencies)): whose value the carry
+  helper `0x117480` reads,
   what the press floats measure, which tactics setting the team value
   at match data `+0x9764` is. No screen shows them (user report), so an
   edit can only be seen in how a player plays; reading the match's
   parameter copy over PINE during a match would at least confirm that an
   edited value reaches it.
-- Kit style: what makes the cap (`gk_cap`, `+0x5a`) show (value 3
-  showed no cap in a VS match), what
-  turns the outfield gloves on (`plGi +0x1f538`; not a night match),
-  and whether the dissatisfaction
-  code's use of `+0x58`/`+0x59` is intended ([Kit style](#kit-style)).
+- Kit style: whether the dissatisfaction code's use of `+0x58`/`+0x59`
+  is intended ([Kit style](#kit-style)). The cap on an edit player and
+  the gloves in a cold career match are traced in the code but not yet
+  seen in the game.
 - How much each parameter changes what its readers do
   ([Who reads each parameter](#who-reads-each-parameter) gives the
   readers): what tells apart the kick kinds that share a builder
@@ -1544,8 +1579,9 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
   tackles), where kinds 27–29, 31, 34 and 35 (kick-off, penalty, goal
   kick) are first set, flag bits `0x200`–`0x2000` and kind 5,
   the 45 calls with no class, and the sources of parameters 5, 16 and
-  24. Also which attack pattern letter is which; abilities 59–63 aren't
-  copied into the match record, so their effect is outside it. The
+  24. Also which attack pattern letter is which, and whether abilities
+  59–63 do anything beyond hexagon 2: no reader picks one of them out
+  ([Ability names](#ability-names)). The
   letters may be the club's five pattern slots (`PlTeamData +0x489f`,
   any of the 30 patterns) rather than fixed kinds: training's
   combination A–E practices read those slots, and the match takes its

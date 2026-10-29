@@ -217,8 +217,8 @@ PLAYER_FIELDS = (
     # (messages 2000:1074-1082) and the common pack's texture names.
     ("sleeves", 0x57, 2, 1, None),       # 0 by season, 1 short, 2 long (refresh_uniform_style)
     ("wristband", 0x58, 3, 1, None),     # 0 none, 1-4 colour of the "wristband" texture
-    ("gloves", 0x59, 3, 1, None),        # outfield gloves: 0 none, 1-4 fpglv_00-03 (0x3a1dc8)
-    ("gk_cap", 0x5a, 2, 1, None),        # nicknack_gkcap; no reader found, and 3 showed no cap in PCSX2
+    ("gloves", 0x59, 3, 1, None),        # outfield gloves: 0 none, 1-4 fpglv_00-03 (0x3a1dc8); career matches below 10 degrees (0x2130d4)
+    ("gk_cap", 0x5a, 2, 1, None),        # nicknack_gkcap; non-zero caps an edit player's face (CFaceLoader 0x103594)
     ("gk_gloves", 0x5b, 3, 1, None),     # gkglv_00-05 (0x3a1de0)
     ("gk_pants", 0x5c, 1, 1, None),      # goalkeeper only: 1 long
     ("boots", 0x5d, 4, 1, None),         # 15 palette pairs for "spk_00" (0x3a2238)

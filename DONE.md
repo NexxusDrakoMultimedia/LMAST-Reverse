@@ -94,6 +94,9 @@ evidence and how it was tested; the git history holds the rest.
 - [x] The club and schedule limits the third tier needed: every site of
       440–442 and of 164 ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md),
       [`UID_LIMITS.md`](DOC/UID_LIMITS.md))
+- [x] Kit style's cap and outfield gloves (the cap is an edit player's
+      face part; gloves need a career match below 10 degrees), and the
+      pass tendencies are the passer's ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#kit-style))
 
 ## 3. Write: a writer for every format a mod changes
 

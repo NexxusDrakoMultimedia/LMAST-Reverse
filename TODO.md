@@ -20,9 +20,9 @@ finished item moves to the end of the same section in
 What to work on next, most valuable first.
 
 1. **The player and staff fields** (section 2, "Players and staff"):
-   the player fields still open (`explodetype`, abilities 59–63, the
-   attack pattern letters, the tendencies, the kit style's cap and
-   gloves; an edited tendency can be checked over PINE), then the staff
+   the player fields still open (`explodetype`, abilities 59–63 and the
+   attack pattern letters, the carry and press tendencies; an edited
+   tendency can be checked over PINE), then the staff
    fields, the 25 manager policies, job 5 and how coaches and former
    players become managers
    ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
@@ -116,8 +116,8 @@ shown to have no effect. Grouped by what a mod would change.
 ### Players and staff
 
 - [ ] Player fields still open: `explodetype`, abilities 59–63 and the
-      attack pattern letters, the tendencies, the kit style's cap and
-      outfield gloves ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
+      attack pattern letters (no reader picks one out), the carry and
+      press tendencies ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
 - [ ] Staff: the fields only the developers' field table names, the 25
       manager policies and ranges, what sets job 5 when a manager is
       hired, and how coaches and former players become managers
@@ -274,6 +274,11 @@ disc or the edit to build; the result goes into the doc linked.
       which one a match reads; whether screens outside a match show
       your club's stored keeper kit
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#still-unknown))
+- [ ] Kit style: outfield gloves on a player with `gloves` 1–4 in a
+      career match between November and March (not in VS), and the cap
+      on an edit player made with the GK Style page's Hat, in the
+      editor's preview and in a match
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#kit-style))
 - [ ] The crest editor: whether the three short `EDIT_EMBLEM` layer
       tables lose visible parts
       ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#the-layer-tables-12143))
