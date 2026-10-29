@@ -137,6 +137,9 @@ evidence and how it was tested; the git history holds the rest.
       [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md))
 - [x] `ps2mc.py`: PCSX2 memory card images read and written
       ([`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md))
+- [x] `emblem.py set` and `roundtrip`: the crests, presets, layer records
+      and flag records of `EDIT_EMBLEM.TBB` and `EDIT_FLAG.TBB`
+      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 
 ## 4. Rebuild: edits back on a bootable disc
 

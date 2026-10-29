@@ -33,11 +33,31 @@ colour palette, and the player-editor tables. See DOC/EMBLEM_DIR.md.
 `info` checks the layouts and the counts the tables and packs share.
 `colors` lists the 96 colours with their 32- and 16-colour ids.
 `crests` prints the sample, initial and rival crests field by field.
+`set` edits EDIT_EMBLEM.TBB or EDIT_FLAG.TBB field by field into a new
+file of the same size; `roundtrip` re-encodes every record of both.
 
 Usage:
-    python emblem.py info   <DAT/EMBLEM>
-    python emblem.py colors <DAT/EMBLEM>
-    python emblem.py crests <DAT/EMBLEM> [7|8|9]
+    python emblem.py info      <DAT/EMBLEM>
+    python emblem.py colors    <DAT/EMBLEM>
+    python emblem.py crests    <DAT/EMBLEM> [7|8|9]
+    python emblem.py set       <in.TBB> <out.TBB> <target>=<value> ...
+    python emblem.py roundtrip <DAT/EMBLEM | file.TBB> ...
+
+`set` targets in EDIT_EMBLEM.TBB:
+    crest:<table>:<row>:<field>[.<n>]    table 7 samples, 8 starting, 9 rival;
+        fields id, sample, base, mask, pattern.<area>, acce.<area>,
+        layer_key.<layer>, pattern_color.<area*2+n>, acce_color.<area*3+n>,
+        layer_color.<layer*3+n>; colours are 0-31, or -1/-2/-3 for the
+        club's first, second and third colour
+    preset:<table>:<row>:<field>         table 4 bases, 5 area patterns,
+        6 area accessories; fields part, tx, ty, rot, rev, sx, sy
+    layer:<sample>:<layer>:<record>:<field>   fields key, acce (65535:
+        empty), tx, ty, rot, rev, sx, sy
+    start:<row>:<field>                  starting crest's sample (t10),
+        color1, color2 (t11)
+and in EDIT_FLAG.TBB:
+    flag:pattern:<row>:<field>           fields base, rev
+    flag:place:<row>:<field>             fields pos_x, pos_y, size_x, size_y
 """
 import os
 import struct
@@ -70,10 +90,18 @@ CLUB_COLORS = {-1: "club 1", -2: "club 2", -3: "club 3"}   # 0x103b78: the club'
 CREST_FORMAT = "<55h"
 
 
+TRS_FIELDS = ("tx", "ty", "rot", "rev", "sx", "sy", "pad")
+TRS_FORMAT = "<bbhBBBB"
+
+
 def trs(raw):
     """Param::PlEmblemTrs, 8 bytes {s8 tx, s8 ty, s16 rot, u8 rev, u8 sx,
     u8 sy, pad} (field table 0x53cd08-0x53cde4)."""
-    return dict(zip(("tx", "ty", "rot", "rev", "sx", "sy"), struct.unpack("<bbhBBB", raw[:7])))
+    return dict(zip(TRS_FIELDS, struct.unpack(TRS_FORMAT, raw[:8])))
+
+
+def encode_trs(r):
+    return struct.pack(TRS_FORMAT, *(r[k] for k in TRS_FIELDS))
 
 
 def presets(t, table):
@@ -110,6 +138,258 @@ def layer_records(t, sample, layer):
 
 def color_name(c):
     return CLUB_COLORS.get(c, str(c))
+
+
+# --- Writing -----------------------------------------------------------
+#
+# Every edit changes bytes in place, so the file keeps its size and the
+# three short layer tables (93, 101, 105) keep their odd tails.
+
+FLAG_FILE, EMBLEM_FILE = "EDIT_FLAG.TBB", "EDIT_EMBLEM.TBB"
+CREST_SIZE, PRESET_SIZE = 110, 10
+# Crest fields in PlEmblemPreset order: (name, count) of s16 values.
+CREST_FIELDS = (("id", 1), ("sample", 1), ("base", 1), ("mask", 1), ("pattern", AREAS),
+                ("acce", AREAS), ("layer_key", LAYERS), ("pattern_color", 2 * AREAS),
+                ("acce_color", 3 * AREAS), ("layer_color", 3 * LAYERS))
+COLOR_GROUPS = {"pattern_color": 2, "acce_color": 3, "layer_color": 3}
+TRS_RANGES = {"tx": (-128, 127), "ty": (-128, 127), "rot": (-32768, 32767),
+              # rev: the flag patterns use 0-3 (CFlagData::Initialize copies
+              # table 1's high byte into the pattern's Trs.rev); no crest
+              # part uses anything but 0, and what 1-3 look like isn't checked.
+              "rev": (0, 3), "sx": (0, 255), "sy": (0, 255)}
+COLOR_RANGE = (-3, 31)          # 32-colour ids, or -1..-3 the club's colours (0x103b78)
+
+
+def encode_crest(c):
+    values = [c["id"], c["sample"], c["base"], c["mask"]]
+    values += list(c["pattern"]) + list(c["acce"]) + list(c["layer_key"])
+    for name in ("pattern_color", "acce_color", "layer_color"):
+        values += [x for group in c[name] for x in group]
+    return struct.pack(CREST_FORMAT, *values)
+
+
+def encode_preset(part, r):
+    return struct.pack("<H", part) + encode_trs(r)
+
+
+def encode_layer_record(key, acce, r):
+    return struct.pack("<HH", key, acce) + encode_trs(r)
+
+
+def context(t):
+    """What the range checks need from EDIT_EMBLEM.TBB: rows per table,
+    the mask groups, the number of samples with layer tables."""
+    rows = {i: t[i].size // rec for i, rec in EMBLEM_RECORDS.items()}
+    groups = [struct.unpack_from("<HH", t[1].data, 4 * g) for g in range(rows[1])]
+    return rows, groups, (len(t) - LAYER_BASE) // LAYERS
+
+
+def crest_range(t, field, base=None):
+    """The values a crest field allows, as Initialize (0x103a50) uses them.
+    `mask` needs the crest's base: it indexes that base preset's mask group."""
+    rows, groups, samples = context(t)
+    if field in COLOR_GROUPS:
+        return COLOR_RANGE
+    if field == "id":
+        return 0, 0x7FFF                # not read by Initialize
+    if field == "sample":
+        return 0, samples - 1
+    if field == "base":
+        return 0, rows[4] - 1
+    if field == "mask":
+        part = presets(t, 4)[base][0]
+        return 0, 0 if part == NO_BASE else groups[part][1] - 1
+    if field == "pattern":
+        return 0, rows[5] - 1
+    if field == "acce":
+        return 0, rows[6] - 1
+    if field == "layer_key":
+        return 0, 0x7FFF                # matched against a layer record's u16 key
+    raise ValueError("no crest field %r" % field)
+
+
+def preset_range(t, table, field):
+    rows, groups, _ = context(t)
+    if field == "part":
+        # t4: a mask group or NO_BASE; t5: a pattern; t6: an accessory.
+        return {4: (0, len(groups) - 1), 5: (0, rows[2] - 1), 6: (0, rows[3] - 1)}[table]
+    if field in TRS_RANGES:
+        return TRS_RANGES[field]
+    raise ValueError("no preset field %r" % field)
+
+
+def layer_range(t, field):
+    if field == "key":
+        return 0, 0xFFFF
+    if field == "acce":
+        return 0, context(t)[0][3] - 1  # or NO_BASE: an empty slot
+    if field in TRS_RANGES:
+        return TRS_RANGES[field]
+    raise ValueError("no layer record field %r" % field)
+
+
+def _check_value(value, lo, hi, what, extra=()):
+    if not (lo <= value <= hi or value in extra):
+        raise ValueError("%s takes %d-%d%s, not %d" % (
+            what, lo, hi, "".join(" or %d" % x for x in extra), value))
+
+
+def set_crest(t, table, row, field, value, index=0):
+    """Set one field of crest `row` of table 7, 8 or 9. List fields take
+    `index`: the area (pattern, acce), the layer (layer_key), or the
+    colour's place in the flattened colour list (pattern_color is area x 2
+    + n, acce_color and layer_color area/layer x 3 + n). Returns the old
+    value."""
+    if table not in CREST_TABLES:
+        raise ValueError("crests are in tables 7, 8 and 9")
+    recs = crests(t, table)
+    if not 0 <= row < len(recs):
+        raise ValueError("table %d has rows 0-%d" % (table, len(recs) - 1))
+    c = recs[row]
+    lo, hi = crest_range(t, field, c["base"])
+    _check_value(value, lo, hi, field)
+    if field in COLOR_GROUPS:
+        n = COLOR_GROUPS[field]
+        flat = [x for group in c[field] for x in group]
+        if not 0 <= index < len(flat):
+            raise ValueError("%s has places 0-%d" % (field, len(flat) - 1))
+        old, flat[index] = flat[index], value
+        c[field] = [tuple(flat[k:k + n]) for k in range(0, len(flat), n)]
+    elif field in ("pattern", "acce", "layer_key"):
+        values = list(c[field])
+        if not 0 <= index < len(values):
+            raise ValueError("%s has places 0-%d" % (field, len(values) - 1))
+        old, values[index] = values[index], value
+        c[field] = tuple(values)
+    else:
+        old, c[field] = c[field], value
+        if field == "base":
+            # Keep the mask inside the new base's group.
+            _, mhi = crest_range(t, "mask", value)
+            if c["mask"] > mhi:
+                raise ValueError("mask %d is past base %d's group (0-%d); set the mask first"
+                                 % (c["mask"], value, mhi))
+    data = bytearray(t[table].data)
+    data[row * CREST_SIZE:(row + 1) * CREST_SIZE] = encode_crest(c)
+    t[table].data = bytes(data)
+    return old
+
+
+def set_preset(t, table, row, field, value):
+    """Set the part or a Trs field of preset `row` of table 4, 5 or 6."""
+    if table not in (4, 5, 6):
+        raise ValueError("presets are in tables 4, 5 and 6")
+    recs = presets(t, table)
+    if not 0 <= row < len(recs):
+        raise ValueError("table %d has rows 0-%d" % (table, len(recs) - 1))
+    part, r = recs[row]
+    lo, hi = preset_range(t, table, field)
+    _check_value(value, lo, hi, field, (NO_BASE,) if table == 4 and field == "part" else ())
+    if field == "part":
+        old, part = part, value
+    else:
+        old, r[field] = r[field], value
+    data = bytearray(t[table].data)
+    data[row * PRESET_SIZE:(row + 1) * PRESET_SIZE] = encode_preset(part, r)
+    t[table].data = bytes(data)
+    return old
+
+
+def set_layer(t, sample, layer, record, field, value):
+    """Set a field of one layer record. Only whole records can be edited:
+    in the three short tables the game misreads records 4 onwards."""
+    _, _, samples = context(t)
+    if not (0 <= sample < samples and 0 <= layer < LAYERS):
+        raise ValueError("samples 0-%d, layers 0-%d" % (samples - 1, LAYERS - 1))
+    table = LAYER_BASE + LAYERS * sample + layer
+    recs = layer_records(t, sample, layer)
+    usable = len(recs) if t[table].size % LAYER_RECORD == 0 else 4
+    if not 0 <= record < usable:
+        raise ValueError("sample %d layer %d has records 0-%d%s" % (
+            sample, layer, usable - 1,
+            "" if usable == len(recs) else " the game reads correctly (TBB_FORMAT.md)"))
+    (key, acce), r = recs[record]
+    lo, hi = layer_range(t, field)
+    _check_value(value, lo, hi, field, (NO_BASE,) if field == "acce" else ())
+    if field == "key":
+        old, key = key, value
+    elif field == "acce":
+        old, acce = acce, value
+    else:
+        old, r[field] = r[field], value
+    data = bytearray(t[table].data)
+    o = record * LAYER_RECORD
+    data[o:o + LAYER_RECORD] = encode_layer_record(key, acce, r)
+    t[table].data = bytes(data)
+    return old
+
+
+def set_start(t, row, field, value):
+    """Table 10 (`sample`: the t7 row of starting crest `row`) or table 11
+    (`color1`, `color2`: its first colours, 32-colour ids; byte 0 is the
+    row's own index and isn't editable)."""
+    rows, _, _ = context(t)
+    if not 0 <= row < rows[10]:
+        raise ValueError("starting crests 0-%d" % (rows[10] - 1))
+    if field == "sample":
+        _check_value(value, 0, rows[7] - 1, field)
+        data = bytearray(t[10].data)
+        old, data[row] = data[row], value
+        t[10].data = bytes(data)
+        return old
+    if field in ("color1", "color2"):
+        _check_value(value, 0, 31, field)
+        data = bytearray(t[11].data)
+        o = 3 * row + (1 if field == "color1" else 2)
+        old = struct.unpack_from("<b", data, o)[0]
+        struct.pack_into("<b", data, o, value)
+        t[11].data = bytes(data)
+        return old
+    raise ValueError("starting crest fields: sample, color1, color2")
+
+
+FLAG_PLACE_FIELDS = (("pos_x", "b"), ("pos_y", "b"), ("size_x", "B"), ("size_y", "B"))
+
+
+def set_flag_pattern(t, row, field, value):
+    """EDIT_FLAG table 1: `base` (low byte, a base in EDIT_FLAG.PAC) or
+    `rev` (high byte, 0-3)."""
+    n = t[1].size // 2
+    if not 0 <= row < n:
+        raise ValueError("flag patterns 0-%d" % (n - 1))
+    base, rev = t[1].data[2 * row], t[1].data[2 * row + 1]
+    if field == "base":
+        _check_value(value, 0, t[0].size // 4 - 1, field)
+        old, base = base, value
+    elif field == "rev":
+        _check_value(value, *TRS_RANGES["rev"], what=field)
+        old, rev = rev, value
+    else:
+        raise ValueError("flag pattern fields: base, rev")
+    data = bytearray(t[1].data)
+    data[2 * row:2 * row + 2] = bytes((base, rev))
+    t[1].data = bytes(data)
+    return old
+
+
+def set_flag_place(t, row, field, value):
+    """EDIT_FLAG table 2 (Param::PlFlagEmblemTs): s8 pos_x, s8 pos_y,
+    u8 size_x, u8 size_y."""
+    n = t[2].size // 4
+    if not 0 <= row < n:
+        raise ValueError("crest placements 0-%d" % (n - 1))
+    names = [f for f, _ in FLAG_PLACE_FIELDS]
+    if field not in names:
+        raise ValueError("crest placement fields: %s" % ", ".join(names))
+    k = names.index(field)
+    fmt = FLAG_PLACE_FIELDS[k][1]
+    _check_value(value, *((-128, 127) if fmt == "b" else (0, 255)), what=field)
+    data = bytearray(t[2].data)
+    o = 4 * row + k
+    old = struct.unpack_from("<" + fmt, data, o)[0]
+    struct.pack_into("<" + fmt, data, o, value)
+    t[2].data = bytes(data)
+    return old
 
 PACKS = [("EDIT_EMBLEM_A", 217), ("EDIT_EMBLEM_M", 214), ("EDIT_EMBLEM_P", 22),
          ("EDIT_FLAG", 49)]
@@ -255,24 +535,25 @@ def check_edit_emblem(d, counts):
         out.append(check_crests(t, table, rows, groups, samples))
     problems = []
     initial_samples = list(t[10].data)
+    same = ""
     if any(s >= rows[7] for s in initial_samples):
         problems.append("t10 names a sample past t7's %d rows" % rows[7])
     else:
-        # Each initial crest is its t10 sample's parts, with its own colours.
+        # On the disc each initial crest is its t10 sample's parts with its
+        # own colours. The game doesn't need that, so it's a count, not !!.
         samples7, initial = crests(t, 7), crests(t, 8)
         keys = ("sample", "base", "mask", "pattern", "acce", "layer_key")
-        differ = [i for i, s in enumerate(initial_samples[:len(initial)])
-                  if any(initial[i][k] != samples7[s][k] for k in keys)]
-        if differ:
-            problems.append("initial crests %s don't use their t10 sample's parts" % differ[:5])
+        same = ", %d with their sample's parts" % sum(
+            all(initial[i][k] == samples7[s][k] for k in keys)
+            for i, s in enumerate(initial_samples[:len(initial)]))
     for i in range(rows[11]):
         own, c1, c2 = struct.unpack_from("<3b", t[11].data, 3 * i)
         if own != i or not (0 <= c1 < 32 and 0 <= c2 < 32):
             problems.append("t11 row %d is %d %d %d, expected %d and two 32-colour ids" % (
                 i, own, c1, c2, i))
             break
-    out.append(problems_line("  t10/t11: %d initial crests' samples and first colours" % rows[10],
-                             problems))
+    out.append(problems_line("  t10/t11: %d initial crests' samples and first colours%s" % (
+        rows[10], same), problems))
     # Layer accessory tables, 12 + 4 * sample + layer. The reader walks
     # GetDataTableCount records of 12 bytes (0x1041bc-0x104230).
     short = []
@@ -408,6 +689,144 @@ def cmd_colors(d):
             i, r, g, b, a, to32[i], "*" if i in in32 else " ", to16[i], "*" if i in in16 else ""))
 
 
+def load_file(path):
+    """(buf, end, tables, kind), kind "emblem" or "flag" by table count."""
+    with open(path, "rb") as f:
+        buf = f.read()
+    end, t = tbb.parse(buf)
+    if len(t) == EMBLEM_TABLES:
+        return buf, end, t, "emblem"
+    if len(t) == len(FLAG_RECORDS):
+        return buf, end, t, "flag"
+    raise ValueError("%d tables: not EDIT_EMBLEM.TBB (%d) or EDIT_FLAG.TBB (%d)" % (
+        len(t), EMBLEM_TABLES, len(FLAG_RECORDS)))
+
+
+def edit_problems(t, kind):
+    """The record checks `info` makes, for a file about to be written."""
+    if kind == "flag":
+        return []
+    rows, groups, samples = context(t)
+    lines = check_presets(t, rows, groups)
+    lines += [check_crests(t, table, rows, groups, samples) for table in CREST_TABLES]
+    return [line.split("  !! ", 1)[1] for line in lines if "  !! " in line]
+
+
+def encode_file(buf, end, t, kind):
+    problems = edit_problems(t, kind)
+    if problems:
+        raise ValueError("; ".join(problems))
+    out = tbb.build(t, end, tbb.trailer(buf, t))
+    if len(out) != len(buf):
+        raise ValueError("rebuilt file is %d bytes, not %d" % (len(out), len(buf)))
+    return out
+
+
+def apply_edit(t, kind, edit):
+    """One `set` argument: <target>=<value>. Returns a line for the log."""
+    target, sep, value = edit.partition("=")
+    if not sep:
+        raise ValueError("expected <target>=<value>")
+    value = int(value, 0)
+    p = target.split(":")
+    if kind == "flag":
+        if len(p) == 4 and p[0] == "flag" and p[1] in ("pattern", "place"):
+            fn = set_flag_pattern if p[1] == "pattern" else set_flag_place
+            old = fn(t, int(p[2], 0), p[3], value)
+            return "%s: %d -> %d" % (target, old, value)
+        raise ValueError("EDIT_FLAG.TBB takes flag:pattern:<row>:<field> or "
+                         "flag:place:<row>:<field>")
+    if p[0] == "crest" and len(p) == 4:
+        field, _, index = p[3].partition(".")
+        old = set_crest(t, int(p[1], 0), int(p[2], 0), field, value, int(index or "0", 0))
+    elif p[0] == "preset" and len(p) == 4:
+        old = set_preset(t, int(p[1], 0), int(p[2], 0), p[3], value)
+    elif p[0] == "layer" and len(p) == 5:
+        old = set_layer(t, int(p[1], 0), int(p[2], 0), int(p[3], 0), p[4], value)
+    elif p[0] == "start" and len(p) == 3:
+        old = set_start(t, int(p[1], 0), p[2], value)
+    else:
+        raise ValueError("EDIT_EMBLEM.TBB takes crest:<table>:<row>:<field>[.<n>], "
+                         "preset:<table>:<row>:<field>, "
+                         "layer:<sample>:<layer>:<record>:<field> or start:<row>:<field>")
+    return "%s: %d -> %d" % (target, old, value)
+
+
+def cmd_set(path, out_path, edits):
+    if os.path.abspath(out_path) == os.path.abspath(path):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    buf, end, t, kind = load_file(path)
+    for e in edits:
+        try:
+            print(apply_edit(t, kind, e))
+        except ValueError as err:
+            raise SystemExit("%s: %s" % (e, err))
+    try:
+        out = encode_file(buf, end, t, kind)
+    except ValueError as err:
+        raise SystemExit(str(err))
+    with open(out_path, "wb") as f:
+        f.write(out)
+    print("wrote %s" % out_path)
+
+
+def rebuild_records(t, kind):
+    """Decode every record the writer edits and encode it again from its
+    fields, leaving the bytes no record covers (the short layer tables'
+    tails) as they are. Returns the names of tables that came out
+    different."""
+    differ = []
+
+    def put(i, data):
+        if data != t[i].data:
+            differ.append("t%d" % i)
+        t[i].data = data
+
+    if kind == "flag":
+        put(1, b"".join(struct.pack("<BB", *struct.unpack_from("<BB", t[1].data, k))
+                        for k in range(0, t[1].size, 2)))
+        put(2, b"".join(struct.pack("<bbBB", *struct.unpack_from("<bbBB", t[2].data, k))
+                        for k in range(0, t[2].size, 4)))
+        return differ
+    for i in (4, 5, 6):
+        put(i, b"".join(encode_preset(part, r) for part, r in presets(t, i)))
+    for i in CREST_TABLES:
+        put(i, b"".join(encode_crest(c) for c in crests(t, i)))
+    put(10, bytes(t[10].data))
+    put(11, b"".join(struct.pack("<3b", *struct.unpack_from("<3b", t[11].data, 3 * k))
+                     for k in range(t[11].size // 3)))
+    _, _, samples = context(t)
+    for s in range(samples):
+        for l in range(LAYERS):
+            i = LAYER_BASE + LAYERS * s + l
+            recs = layer_records(t, s, l)
+            whole = len(recs) * LAYER_RECORD
+            put(i, b"".join(encode_layer_record(k, a, r) for (k, a), r in recs)
+                + t[i].data[whole:])
+    return differ
+
+
+def cmd_roundtrip(paths):
+    for path in paths:
+        if os.path.isdir(path):
+            targets = [os.path.join(path, EMBLEM_FILE), os.path.join(path, FLAG_FILE)]
+        else:
+            targets = [path]
+        for p in targets:
+            try:
+                buf, end, t, kind = load_file(p)
+                differ = rebuild_records(t, kind)
+                out = encode_file(buf, end, t, kind)
+            except (OSError, ValueError, struct.error) as e:
+                print("%s  !! %s" % (p, e))
+                continue
+            if differ or out != buf:
+                print("%s  !! rebuilt file differs%s" % (
+                    p, " (tables %s)" % ", ".join(differ) if differ else ""))
+            else:
+                print("%s  %d bytes, every record re-encoded, identical" % (p, len(buf)))
+
+
 def fmt_trs(r):
     return "at %d,%d rot %d rev %d scale %d%%x%d%%" % (r["tx"], r["ty"], r["rot"], r["rev"],
                                                        r["sx"], r["sy"])
@@ -449,6 +868,10 @@ def main(argv):
         cmd_colors(args[0])
     elif cmd == "crests" and len(args) in (1, 2) and all(a in ("7", "8", "9") for a in args[1:]):
         cmd_crests(args[0], [int(a) for a in args[1:]] or sorted(CREST_TABLES))
+    elif cmd == "set" and len(args) >= 3:
+        cmd_set(args[0], args[1], args[2:])
+    elif cmd == "roundtrip" and args:
+        cmd_roundtrip(args)
     else:
         print(__doc__)
         return 1

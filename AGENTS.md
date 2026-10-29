@@ -117,8 +117,10 @@ existing writers are `pac.py` (BINPACs, KC@P packs, PRS), `tbb.py`,
 `save.py`, `ps2mc.py` (`put`, `mkdir`, `copy`: memory card images),
 `schedule.py` (`shift`, `balance`, the league and knockout builders, and
 the encoders behind `roundtrip`), `leaguesize.py` (`build`, which writes
-the schedule packs through `schedule.py`'s encoders) and `pmplayer.py`
-(`set`: Virtua Pro Football's edit players).
+the schedule packs through `schedule.py`'s encoders), `pmplayer.py`
+(`set`: Virtua Pro Football's edit players) and `emblem.py` (`set`: the
+crest, preset, layer and flag records of `EDIT_EMBLEM.TBB` and
+`EDIT_FLAG.TBB`).
 
 A writer can then get a tab in `editor.py` (stage 5). The tab edits through
 the writer's own `set` functions and asks the writer which values each

@@ -271,6 +271,41 @@ table 19 is 319 rows of 144 bytes, table 26 is 100 rows of 151 bytes, and
 the rest are small lists of 1–16-byte rows. Nothing here has been checked
 in the game.
 
+## Editing
+
+`emblem.py set` edits `EDIT_EMBLEM.TBB` and `EDIT_FLAG.TBB` field by
+field into a new file of the same size, which `patch_disc.py` can put on
+a disc. It changes bytes in place, so the three short layer tables keep
+their odd tails. Each field takes the values the game's readers above
+use:
+
+| Target | Fields | Values |
+|---|---|---|
+| `crest:<table>:<row>:<field>` (tables 7–9) | `sample`, `base`, `mask`, `pattern.<area>`, `acce.<area>`, `layer_key.<layer>` | a sample with layer tables (0–32), a row of table 4, an index in that base's mask group, a row of table 5, a row of table 6, a key |
+| the same | `pattern_color.<area × 2 + n>`, `acce_color.<area × 3 + n>`, `layer_color.<layer × 3 + n>` | 0–31, or −1, −2, −3 for the club's colours |
+| `preset:<table>:<row>:<field>` (tables 4–6) | `part`; `tx`, `ty`, `rot`, `rev`, `sx`, `sy` | a mask group (or 65535, no base), a pattern or an accessory; the `Trs` |
+| `layer:<sample>:<layer>:<record>:<field>` | `key`, `acce`; the `Trs` fields | any key, an accessory or 65535 (empty). In the short tables only records 0–3, the ones the game reads correctly |
+| `start:<row>:<field>` | `sample` (table 10), `color1`, `color2` (table 11) | a row of table 7; 32-colour ids |
+| `flag:pattern:<row>:<field>` | `base`, `rev` | 0–48; 0–3 |
+| `flag:place:<row>:<field>` | `pos_x`, `pos_y`, `size_x`, `size_y` | −128–127; 0–255 |
+
+`rev` is limited to 0–3, the values the flag patterns use, as long as
+what it does is unchecked. Changing a crest's `base` is refused when its
+mask is past the new base's group; set the mask first. After the edits
+the file is checked as `info` checks it, and written only if that finds
+nothing.
+
+```bash
+python SRC/emblem.py set DAT/EMBLEM/EDIT_EMBLEM.TBB out.TBB crest:8:0:base=15 crest:8:0:mask=1 start:0:color1=5
+python SRC/emblem.py set DAT/EMBLEM/EDIT_FLAG.TBB out.TBB flag:place:0:pos_x=-20
+python SRC/emblem.py roundtrip DAT/EMBLEM
+```
+
+`roundtrip` decodes every preset, crest, starting-crest, layer and flag
+record, encodes each again from its fields and rebuilds the file: both
+files come out identical, on the PAL and the Japanese disc. No edit made
+with `set` has been tried in the game yet.
+
 ## Still unknown
 
 - What a `Trs`'s `rev` values 1–3 and a flag's variants look like, what

@@ -222,6 +222,7 @@ def checks():
         ("preload", ["preload.py", "info", "DAT"], ["DAT"]),
         ("system", ["system.py", "info", "DAT/0SYSTEM"], ["DAT/0SYSTEM"]),
         ("emblem", ["emblem.py", "info", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
+        ("emblem_roundtrip", ["emblem.py", "roundtrip", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         ("news", ["news.py", "info", "DAT/NEWS"], ["DAT/NEWS"]),
         ("acrobata", ["acrobata.py", "info", "DAT/ACROBATA"], ["DAT/ACROBATA"]),
         # The executable's copy of the pack index and its scene-id table.

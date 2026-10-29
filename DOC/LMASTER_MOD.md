@@ -414,6 +414,21 @@ Ideas the user has agreed on (2026-10-27), not started:
   texture once requantised to its palette, and the few larger ones need
   a choice (scaled down, or left to the pack). The pack's files stay out
   of the repo.
+- **Real names, for LMASTER full and max** (user request, 2026-10-30).
+  Every league, competition, club and national team under its real name
+  of the game's era, where the retail game uses a made-up one: for
+  example Highbury as Arsenal, City as Manchester City, European League
+  as UEFA Champions League. The club names should match the ones LMAST
+  Realism shows on its logos and kits, so text and textures agree. It is
+  a text edit with `mbb.py`'s writer
+  ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing)): the name lists are message
+  categories 3–11, with variants of the same ids in 100001–120000 (such
+  as `100009`'s upper-case league names) that need the same change, in
+  all five European languages. Before it starts: the list of
+  replacements (from Realism's names, checked by the user), how long a
+  name each screen fits, and the club names copied into `PRELOAD`
+  packs. It would be its own group (one switch, `real-names`), in the
+  full and max editions.
 
 ## Not candidates
 

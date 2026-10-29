@@ -38,13 +38,13 @@ What to work on next, most valuable first.
    season's end, saving and loading are tested). The disc
    is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **The stadium and emblem table writers** (section 3): the crest,
-   preset, layer and flag records are decoded, so a writer for
-   `EDIT_EMBLEM.TBB` and `EDIT_FLAG.TBB` with a `roundtrip` check can
-   come first; then the stadium tables (the crowd figure groups need a
-   look at the models, and request `+0x0e`–`+0x10`) and
-   `EDIT_PLAYER.TBB`
-   ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#still-unknown),
+3. **A Crests tab, then the stadium tables** (sections 5 and 3):
+   `emblem.py set` now writes the crest, preset, layer and flag records,
+   so the editor can get a tab for them (starting and rival crests,
+   flag placements), with one edited starting crest checked in game.
+   Then the stadium tables (the crowd figure groups need a look at the
+   models, and request `+0x0e`–`+0x10`) and `EDIT_PLAYER.TBB`
+   ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing),
    [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown)).
 
 ## What a mod can change, and what is left
@@ -55,7 +55,7 @@ aims at:
 | Goal | Where it stands | Left (section) |
 |---|---|---|
 | The starting season | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results have writers and editor tabs, tested in PCSX2; the national-team calendar has a writer and tab | room for bigger second divisions (2), a smaller first division and the national calendar tested (7) |
-| Data | players, staff, clubs, kits, facilities, training, camps, tours, the tactics presets, the PR events and the player links have writers and tabs | the remaining player and staff fields (2), the stadium and emblem tables (3) |
+| Data | players, staff, clubs, kits, facilities, training, camps, tours, the tactics presets, the PR events and the player links have writers and tabs | the remaining player and staff fields (2), the stadium tables (3), a Crests tab for the crest writer (5) |
 | Parameters | every `PARAM/` table's layout is known; `tbb.py replace` swaps any table | the open fields (2) |
 | Text | every message in every language, with a writer and the Text tab | the screen-set variables and a few message categories (2) |
 
@@ -205,9 +205,9 @@ shown to have no effect. Grouped by what a mod would change.
 round-trips every file on the disc. **Done when** each format below has
 a field-level writer with a `roundtrip` check in `regress.py`.
 
-- [ ] The `STADIUM/` tables and `EMBLEM/` edit tables, once their fields
-      are understood ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md),
-      [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md))
+- [ ] The `STADIUM/` tables, once their fields are understood
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md)); `EDIT_PLAYER.TBB` after
+      its tables are decoded ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md))
 - [ ] A texture writer for `svr.py`, which only reads, for LMAST Realism
       on the disc ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 
@@ -235,7 +235,9 @@ per kind of data, each editing through its writer and taking the allowed
 values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
-- [ ] Tabs for the stadium and emblem writers, once they exist (section 3)
+- [ ] A Crests tab for `emblem.py set` (the starting and rival crests,
+      presets, layer records and flag placements), and a stadium tab once
+      that writer exists ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 - [ ] Later: the editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
@@ -275,6 +277,10 @@ disc or the edit to build; the result goes into the doc linked.
       which one a match reads; whether screens outside a match show
       your club's stored keeper kit
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#still-unknown))
+- [ ] An edited starting crest (`emblem.py set`, for example
+      `crest:8:0:base=15 crest:8:0:mask=1`) shows when a new club picks
+      it, and a flag pattern's `rev` 1–3 in the flag editor
+      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 - [ ] Kit style: outfield gloves on a player with `gloves` 1–4 in a
       career match between November and March (not in VS), and the cap
       on an edit player made with the GK Style page's Hat, in the
@@ -360,6 +366,12 @@ is built and tested, or set aside.
 - [ ] Retail text fixes for LMASTER lite: messages wrong in the retail
       game itself, starting with Game Over conditions 1204 and 1205 (the
       third tier's text is done)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
+- [ ] Real names for LMASTER full and max: every league, competition,
+      club and national team under its real name of the era (Highbury as
+      Arsenal, European League as UEFA Champions League), matching LMAST
+      Realism's club names, in all five languages; first the list of
+      names (from Realism, checked by the user)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
