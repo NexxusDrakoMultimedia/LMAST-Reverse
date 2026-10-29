@@ -81,8 +81,9 @@ Switches come in three levels (DOC/LMASTER_MOD.md#the-switch-levels),
 and --mod takes names of any level, comma-separated (or repeated):
     python patch_disc.py switches       # print the editions, groups and switches
 Editions: --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes,
-the groups training-fixes, injury-fixes, club-fixes and match-fixes;
---mod lmaster-full adds leagues, restorations and saves, and --mod
+the groups training-fixes, injury-fixes, club-fixes, match-fixes and
+text-fixes; --mod lmaster-full adds leagues, restorations, names and
+saves, and --mod
 lmaster-max adds the difficulty groups harder-economy and balance to
 full. Both always save to their own folders: full's careers in -F, max's
 in -M (mod-saves picks M when any difficulty switch is on), and the VS
@@ -91,14 +92,16 @@ Groups: training-fixes (camp-types, camp-cities, camp-santiago,
 camp-clubs, drill-names), injury-fixes (injury-value, injury-row),
 club-fixes (sponsor-negotiation, season-status, pr-cycle, mobile-site,
 overseas-pop, cup-last16), match-fixes (rival-manager, national-cups,
-vpf-styles), harder-economy (facility-tiers, wider-tickets, dearer-ads,
+vpf-styles), text-fixes (retail-text), harder-economy (facility-tiers,
+wider-tickets, dearer-ads,
 sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
 merch-costs, pr-costs, camp-costs, tour-costs), leagues
-(league-balance, third-tier), restorations (injury-lines), saves
-(mod-saves),
+(league-balance, third-tier), restorations (injury-lines), names
+(real-names), saves (mod-saves),
 and test-tools (skip-tutorial, launcher), which is in no edition.
-third-tier turns on mod-saves and needs --copies and --dat. Each switch
+third-tier turns on mod-saves and needs --copies and --dat; real-names
+needs them too. Each switch
 also works as a flag of its own (--skip-tutorial, ...). With switches
 and no targets, `patch <image> <out_image>` is enough.
 
@@ -173,6 +176,23 @@ training trained shooting. The names move one message later in
 jackknife name goes to 1045, the dummy drill 74 no coach teaches. A
 MES.PAC target gets the fix in its own bytes. The Japanese release has
 the right numbering and is left alone. See DOC/TRAINING_FORMAT.md.
+
+retail-text fixes messages the retail game gets wrong: point 2 of the
+Game Over conditions for Spain and the Netherlands (MES.PAC 487:1204 and
+1205) names their own league and place where some languages name
+Italy's, Spain's or Germany's, the Spanish intro (487:1100) says 26 clubs
+for 216, and team 435's name is Al-Hyde, not AL-Hyde (categories 3, 4
+and 100003, and the STATIONMES copies of 3 and 4). A MES.PAC target gets
+the fixes in its own bytes; the Japanese release is left alone. See
+DOC/LMASTER_MOD.md#planned.
+
+real-names (LMASTER full and max) gives every league, competition, club
+and national team its real name of the era, in the five European
+languages: realnames.py writes SRC/realnames.csv's names into MES.PAC's
+name lists and the English messages that mention a competition. The
+lists grow, so it brings MES.PAC whole and needs --copies (and --dat) for
+the STATIONMES copies; it runs after the third tier's text. PAL only.
+See DOC/LMASTER_MOD.md#planned.
 
 injury-value (whole disc image only) sets the first minimum of kind-6
 injuries in the value table (SLES 0x532d70) from 1600 to 16001, where the
@@ -3929,6 +3949,135 @@ def target_tier_text(file, data):
     return out
 
 
+# retail-text: messages the retail game gets wrong, for LMASTER lite
+# (DOC/LMASTER_MOD.md#planned). Point 2 of the Game Over conditions for
+# Spain (487:1204) and the Netherlands (1205) names the wrong league in
+# some languages, as the Italian texts show (Spain's 23rd, the
+# Netherlands' 21st); the Spanish intro (487:1100) says 216 clubs for 26;
+# and team 435's name is "AL-Hyde" for "Al-Hyde" (user report; categories
+# 3, 4 and 100003). Category 487 has no PRELOAD copy and may grow inside
+# its slot; the name keeps its size, so its STATIONMES copies take the
+# same bytes. The third tier rewrites point 2 again, and its "216 equipos"
+# edit finds the fix in place.
+RETAIL_POINT2 = {
+    (1204, 1): "{lf}2. Placed lower than 23rd in Spanish League \n"
+               "{lf}   Division 2 for two consecutive years. \n",
+    (1204, 3): "{lf}2. Der Verein ist in zwei aufeinander \n{lf}   folgenden Jahren in der "
+               "Spanischen Liga 2 \n{lf}   23. oder schlechter geworden. \n",
+    (1205, 1): "{lf}2. Placed lower than 21st in the 2nd Dutch \n"
+               "{lf}   League for two consecutive years. \n",
+    (1205, 2): "{lf}2. Ils se classent en-dessous de la 21ème place \n{lf}   dans la deuxième "
+               "division hollandaise pour 2  \n{lf}   années consécutives. \n",
+    (1205, 3): "{lf}2. Der Verein ist in zwei aufeinander \n{lf}   folgenden Jahren in der "
+               "Zweiten Holländischen \n{lf}   Liga 21. oder schlechter geworden. \n",
+    (1205, 5): "{lf}2. Estando por debajo del puesto 21º \n"
+               "{lf}   en la 2ª Liga Holandesa 2 años consec. \n",
+}
+RETAIL_NAMES = ((435, "AL-Hyde", "Al-Hyde"),)      # (team, retail, fixed)
+NAME_LISTS = ((3, 2000), (4, 3000), (100003, 2000))
+STATIONMES = ["PRELOAD/STATIONMES%d.PAC" % n for n in TT_LANGS]
+
+
+def retail_text_edits():
+    """[(category, id, language, edit)] in tier_text_edit's terms."""
+    edits = [(487, rid, lang, ("block", "{lf}2.", "{lf}3.", text))
+             for (rid, lang), text in RETAIL_POINT2.items()]
+    edits.append((487, 1100, 5, ("sub", "216 equipos", "26 equipos")))
+    for team, old, new in RETAIL_NAMES:
+        for cat, base in NAME_LISTS:
+            for lang in TT_LANGS:
+                edits.append((cat, base + team, lang, ("name", old, new)))
+    return edits
+
+
+def fix_retail_text(data):
+    """MES.PAC bytes with the retail text fixed. Each fix finds its old
+    text or its new (a MES.PAC fixed before) and is refused otherwise; a
+    name the real names replaced (real-names, after it) is left."""
+    import mbb
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "MES.PAC")
+        with open(path, "wb") as g:
+            g.write(data)
+        pack = mbb.MesPack(path)
+    errors = []
+    for cat, rid, lang, edit in retail_text_edits():
+        text = pack.text(cat, lang, rid)
+        if edit[0] == "name":
+            if text == edit[1]:
+                pack.set(cat, lang, rid, 0, edit[2])
+            continue
+        try:
+            pack.set(cat, lang, rid, 0, tier_text_edit(text, lang, edit))
+        except ValueError as e:
+            errors.append("%d:%d language %d: %s" % (cat, rid, lang, e))
+    out, _, _, build_errors = pack.build()
+    if errors or build_errors:
+        raise ValueError("retail-text: " + "; ".join(errors + build_errors))
+    if pack.moved:
+        raise ValueError("retail-text: a message file outgrows its slot in %s" % MES_FILE)
+    return out
+
+
+def target_retail_text(file, data):
+    """A MES.PAC target with the retail text fixed in its own bytes."""
+    return fix_retail_text(data) if norm(file) == norm(MES_FILE) else data
+
+
+def plan_retail_text(f, img, adopted=()):
+    """Jobs for --mod retail-text: MES.PAC's changed bytes, and the
+    STATIONMES copies of the name lists it changes (or a MES.PAC target,
+    `adopted`, that has them)."""
+    if img.port is not None:
+        return [], ["note: retail-text: the fixes are to PAL's text; the Japanese release "
+                    "is left alone"]
+    if norm(MES_FILE) in adopted:
+        return [], ["note: retail-text: fixed the text in the target's %s" % MES_FILE]
+    why = "retail-text: messages the retail game gets wrong"
+    path, data = read_file(f, img, MES_FILE)
+    new = fix_retail_text(data)
+    if new == data:
+        return [], ["note: %s already has the retail text fixes" % MES_FILE]
+    jobs = diff_jobs(path, 0, data, new, why)
+    old_entries, new_entries = mes_entries(data), mes_entries(new)
+    for lang, pack in zip(TT_LANGS, STATIONMES):
+        for cat in (3, 4):
+            name = "%d_%d.mbb" % (cat, lang)
+            (o, size), (n, nsize) = old_entries[name], new_entries[name]
+            if data[o:o + size] != new[n:n + nsize]:
+                jobs += pack_copy_jobs(f, img, pack, name, "%s#%s" % (MES_FILE, name),
+                                       data[o:o + size], new[n:n + nsize], why)
+    return jobs, []
+
+
+# real-names: every league, competition, club and national team under its
+# real name of the era (LMASTER full and max; DOC/LMASTER_MOD.md#planned).
+# realnames.py holds the names and writes them into MES.PAC's name lists
+# and the English messages that mention a competition. The lists grow, so
+# their STATIONMES copies grow too: the switch brings MES.PAC as a whole
+# file and needs --copies, like the third tier, whose text it follows
+# (the tier's added sentences name the tiers' leagues).
+def target_real_names(file, data):
+    """A MES.PAC target with the real names in its own bytes."""
+    import realnames
+    return realnames.apply(data)[0] if norm(file) == norm(MES_FILE) else data
+
+
+def file_real_names(f, img, dat):
+    """[(target, data)] for --mod real-names: MES.PAC as the disc has it,
+    for target_real_names to write the names into."""
+    return [(MES_FILE, read_file(f, img, MES_FILE)[1])]
+
+
+def plan_real_names(f, img, adopted=()):
+    """--mod real-names writes no bytes of its own: its MES.PAC is a whole
+    file (file_real_names), which target_real_names edits."""
+    if img.port is not None:
+        raise ValueError("real-names is made for the PAL text only")
+    return [], ["note: real-names: put the names in %s" % MES_FILE]
+
+
 def plan_third_tier(f, img, adopted=()):
     """Jobs for --mod third-tier: the code segment, the bigger save and its
     past records, clubs 442-459, their lists, the tiers' seasons and the
@@ -4232,6 +4381,12 @@ SWITCHES = (
      "Balance: training camps cost twice as much"),
     ("tour-costs", plan_tour_costs, [NEGO_FILE],
      "Balance: tours cost three times as much"),
+    ("retail-text", plan_retail_text, [MES_FILE] + STATIONMES,
+     "Text: the Game Over conditions for Spain and the Netherlands name their own leagues, "
+     "the Spanish intro's 216 clubs are 26, and AL-Hyde is Al-Hyde"),
+    ("real-names", plan_real_names, [MES_FILE],
+     "LMASTER full: every league, competition, club and national team under its real name "
+     "of the era, in five languages; needs --copies"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -4256,7 +4411,11 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                 "injury-lines": (target_injury_lines, [MES_FILE],
                                  sum(INJURY_TEXT_PACKS.values(), [])),
                 "overseas-bases": (target_overseas_bases, [SIM_FILE], LIST_PACKS),
-                "third-tier": (target_tier_text, [MES_FILE], [])}
+                # The retail fixes before the tier's text, which finds them in
+                # place; the real names last, over the tier's sentences too.
+                "retail-text": (target_retail_text, [MES_FILE], STATIONMES),
+                "third-tier": (target_tier_text, [MES_FILE], []),
+                "real-names": (target_real_names, [MES_FILE], [])}
 
 # One switch per feature: parts that need each other are one switch
 # (DOC/LMASTER_MOD.md, the switch levels). Switches that need another switch, that
@@ -4264,8 +4423,8 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
 # whose files have PRELOAD copies the game loads instead (--copies), that
 # turn on others (a bigger save needs saves of its own), and old names.
 SWITCH_NEEDS = {}
-SWITCH_FILES = {"third-tier": file_third_tier}
-SWITCH_COPIES = ("third-tier",)
+SWITCH_FILES = {"third-tier": file_third_tier, "real-names": file_real_names}
+SWITCH_COPIES = ("third-tier", "real-names")
 SWITCH_IMPLIES = {"third-tier": ("mod-saves",)}
 SWITCH_ALIASES = {name: "third-tier" for name in ("save-expand", "tier-clubs", "tier-lists",
                                                   "tier-uids", "one-season-end")}
@@ -4281,6 +4440,7 @@ GROUPS = (       # (name, title, switches)
      ("sponsor-negotiation", "season-status", "pr-cycle", "mobile-site", "overseas-pop",
       "cup-last16")),
     ("match-fixes", "Match and import fixes", ("rival-manager", "national-cups", "vpf-styles")),
+    ("text-fixes", "Text fixes", ("retail-text",)),
     ("harder-economy", "Harder economy",
      ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
       "season-demand")),
@@ -4289,6 +4449,7 @@ GROUPS = (       # (name, title, switches)
       "fanbase", "merch-costs", "pr-costs", "camp-costs", "tour-costs")),
     ("leagues", "Leagues", ("league-balance", "third-tier")),
     ("restorations", "Restored content", ("injury-lines",)),
+    ("names", "Real names", ("real-names",)),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )
@@ -4296,8 +4457,8 @@ GROUPS = (       # (name, title, switches)
 # content and its own saves; LMASTER max adds the difficulty groups to it
 # (the user's split, 2026-10-27). Full and max save careers under their
 # own letters (SAVE_LETTERS), so neither mixes with the retail game's.
-LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes")
-FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "saves")
+LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes", "text-fixes")
+FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "saves")
 DIFFICULTY_GROUPS = ("harder-economy", "balance")
 EDITIONS = (     # (name, title, groups)
     ("lmaster-lite", "LMASTER lite (fixes only)", LITE_GROUPS),

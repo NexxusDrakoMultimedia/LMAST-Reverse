@@ -1,0 +1,347 @@
+category,id,en,fr,de,it,es,short
+3,2008,Manchester City,Manchester City,Manchester City,Manchester City,Manchester City,MCI
+3,2011,Arsenal,Arsenal,Arsenal,Arsenal,Arsenal,ARS
+3,2013,Manchester United,Manchester United,Manchester United,Manchester United,Manchester United,MUN
+3,2019,Aston Villa,Aston Villa,Aston Villa,Aston Villa,Aston Villa,AST
+3,2039,QPR,QPR,QPR,QPR,QPR,QPR
+3,2041,Sheffield Wed,Sheffield Wed,Sheffield Wed,Sheffield Wed,Sheffield Wed,SHW
+3,2042,Sheffield United,Sheffield United,Sheffield United,Sheffield United,Sheffield United,SHU
+3,2046,Wolves,Wolves,Wolves,Wolves,Wolves,WOL
+3,2060,Paris SG,Paris SG,Paris SG,Paris SG,Paris SG,PAR
+3,2088,Hertha BSC,Hertha BSC,Hertha BSC,Hertha BSC,Hertha BSC,HER
+3,2095,Schalke 04,Schalke 04,Schalke 04,Schalke 04,Schalke 04,SCH
+3,2102,Nürnberg,Nuremberg,Nürnberg,Norimberga,Núremberg,NÜR
+3,2112,Erzgebirge Aue,Erzgebirge Aue,Erzgebirge Aue,Erzgebirge Aue,Erzgebirge Aue,ERZ
+3,2116,1860 Munich,1860 Munich,1860 München,1860 Monaco,1860 Múnich,MUN
+3,2245,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FCE
+3,2247,Austria Wien,Austria Vienne,Austria Wien,Austria Vienna,Austria Viena,AUS
+3,2248,Red Bull Salzburg,Red Bull Salzbourg,Red Bull Salzburg,Red Bull Salzburg,Red Bull Salzburgo,RED
+3,2249,Grazer AK,Grazer AK,Grazer AK,Grazer AK,Grazer AK,GRA
+3,2251,Rapid Wien,Rapid Vienne,Rapid Wien,Rapid Vienna,Rapid Viena,RAP
+3,2252,Club Brugge,Club Bruges,Club Brügge,Club Brugge,Club Brujas,CLU
+3,2253,Anderlecht,Anderlecht,Anderlecht,Anderlecht,Anderlecht,AND
+3,2255,Standard Liège,Standard Liège,Standard Lüttich,Standard Liegi,Standard Lieja,STA
+3,2257,Bohemians,Bohemians,Bohemians,Bohemians,Bohemians,BOH
+3,2258,Shamrock Rovers,Shamrock Rovers,Shamrock Rovers,Shamrock Rovers,Shamrock Rovers,SHA
+3,2261,Jeunesse Esch,Jeunesse Esch,Jeunesse Esch,Jeunesse Esch,Jeunesse Esch,JEU
+3,2262,Racing FC Union,Racing FC Union,Racing FC Union,Racing FC Union,Racing FC Union,RAC
+3,2264,Sliema Wanderers,Sliema Wanderers,Sliema Wanderers,Sliema Wanderers,Sliema Wanderers,SLI
+3,2267,Sporting CP,Sporting CP,Sporting CP,Sporting CP,Sporting CP,SPO
+3,2270,Benfica,Benfica,Benfica,Benfica,Benfica,BEN
+3,2274,Celtic,Celtic,Celtic,Celtic,Celtic,CEL
+3,2276,Hearts,Hearts,Hearts,Hearts,Hearts,HEA
+3,2278,Rangers,Rangers,Rangers,Rangers,Rangers,RAN
+3,2280,Young Boys,Young Boys,Young Boys,Young Boys,Young Boys,YOU
+3,2281,Servette,Servette,Servette,Servette,Servette,SER
+3,2283,FC Zürich,FC Zurich,FC Zürich,FC Zurigo,FC Zúrich,FCZ
+3,2286,Dinamo Tirana,Dinamo Tirana,Dinamo Tirana,Dinamo Tirana,Dinamo Tirana,DIN
+3,2287,KF Tirana,KF Tirana,KF Tirana,KF Tirana,KF Tirana,KFT
+3,2288,FK Sarajevo,FK Sarajevo,FK Sarajevo,FK Sarajevo,FK Sarajevo,FKS
+3,2289,Zeljeznicar,Zeljeznicar,Zeljeznicar,Zeljeznicar,Zeljeznicar,ZEL
+3,2290,Hajduk Split,Hajduk Split,Hajduk Split,Hajduk Split,Hajduk Split,HAJ
+3,2291,Radnik V. Gorica,Radnik V. Gorica,Radnik V. Gorica,Radnik V. Gorica,Radnik V. Gorica,RAD
+3,2292,Dinamo Zagreb,Dinamo Zagreb,Dinamo Zagreb,Dinamo Zagreb,Dinamo Zagreb,DIN
+3,2293,Slovan Liberec,Slovan Liberec,Slovan Liberec,Slovan Liberec,Slovan Liberec,SLO
+3,2294,Sigma Olomouc,Sigma Olomouc,Sigma Olomouc,Sigma Olomouc,Sigma Olomouc,SIG
+3,2295,Baník Ostrava,Baník Ostrava,Baník Ostrava,Baník Ostrava,Baník Ostrava,BAN
+3,2296,Sparta Prague,Sparta Prague,Sparta Prag,Sparta Praga,Sparta Praga,SPA
+3,2297,Slavia Prague,Slavia Prague,Slavia Prag,Slavia Praga,Slavia Praga,SLA
+3,2298,MTK Budapest,MTK Budapest,MTK Budapest,MTK Budapest,MTK Budapest,MTK
+3,2299,Ferencváros,Ferencváros,Ferencváros,Ferencváros,Ferencváros,FER
+3,2300,Újpest,Újpest,Újpest,Újpest,Újpest,ÚJP
+3,2301,Sileks,Sileks,Sileks,Sileks,Sileks,SIL
+3,2302,Vardar,Vardar,Vardar,Vardar,Vardar,VAR
+3,2303,Wisla Kraków,Wisla Cracovie,Wisla Krakau,Wisla Cracovia,Wisla Cracovia,WIS
+3,2304,Legia Warsaw,Legia Varsovie,Legia Warschau,Legia Varsavia,Legia Varsovia,LEG
+3,2305,Amica Wronki,Amica Wronki,Amica Wronki,Amica Wronki,Amica Wronki,AMI
+3,2306,Partizan,Partizan,Partizan,Partizan,Partizan,PAR
+3,2307,Red Star Belgrade,Étoile Rouge,Roter Stern,Stella Rossa,Estrella Roja,RED
+3,2308,OFK Beograd,OFK Beograd,OFK Beograd,OFK Beograd,OFK Beograd,OFK
+3,2309,Dukla B. Bystrica,Dukla B. Bystrica,Dukla B. Bystrica,Dukla B. Bystrica,Dukla B. Bystrica,DUK
+3,2310,Inter Bratislava,Inter Bratislava,Inter Bratislava,Inter Bratislava,Inter Bratislava,INT
+3,2311,Slovan Bratislava,Slovan Bratislava,Slovan Bratislava,Slovan Bratislava,Slovan Bratislava,SLO
+3,2315,Ararat Yerevan,Ararat Yerevan,Ararat Yerevan,Ararat Yerevan,Ararat Yerevan,ARA
+3,2317,Qarabagh,Qarabagh,Qarabagh,Qarabagh,Qarabagh,QAR
+3,2318,Inter Baku,Inter Baku,Inter Baku,Inter Baku,Inter Baku,INT
+3,2319,Belshina,Belshina,Belshina,Belshina,Belshina,BEL
+3,2320,Dinamo Minsk,Dinamo Minsk,Dinamo Minsk,Dinamo Minsk,Dinamo Minsk,DIN
+3,2321,CSKA Sofia,CSKA Sofia,ZSKA Sofia,CSKA Sofia,CSKA Sofía,CSK
+3,2323,Slavia Sofia,Slavia Sofia,Slavia Sofia,Slavia Sofia,Slavia Sofía,SLA
+3,2324,APOEL,APOEL,APOEL,APOEL,APOEL,APO
+3,2325,Anorthosis,Anorthosis,Anorthosis,Anorthosis,Anorthosis,ANO
+3,2326,Omonia,Omonia,Omonia,Omonia,Omonia,OMO
+3,2327,Torpedo Kutaisi,Torpedo Kutaisi,Torpedo Kutaisi,Torpedo Kutaisi,Torpedo Kutaisi,TOR
+3,2328,Dinamo Tbilisi,Dinamo Tbilissi,Dinamo Tiflis,Dinamo Tbilisi,Dinamo Tiflis,DIN
+3,2329,AEK Athens,AEK Athènes,AEK Athen,AEK Atene,AEK Atenas,AEK
+3,2330,Panathinaikos,Panathinaikos,Panathinaikos,Panathinaikos,Panathinaikos,PAN
+3,2331,Olympiacos,Olympiacos,Olympiacos,Olympiacos,Olympiacos,OLY
+3,2332,PAOK,PAOK,PAOK,PAOK,PAOK,PAO
+3,2333,Skoda Xanthi,Skoda Xanthi,Skoda Xanthi,Skoda Xanthi,Skoda Xanthi,SKO
+3,2334,Hapoel Tel Aviv,Hapoel Tel Aviv,Hapoel Tel Aviv,Hapoel Tel Aviv,Hapoel Tel Aviv,HAP
+3,2335,Maccabi Haifa,Maccabi Haifa,Maccabi Haifa,Maccabi Haifa,Maccabi Haifa,MAC
+3,2336,Maccabi Tel Aviv,Maccabi Tel Aviv,Maccabi Tel Aviv,Maccabi Tel Aviv,Maccabi Tel Aviv,MAC
+3,2337,Hapoel Petah Tikva,Hapoel Petah Tikva,Hapoel Petah Tikva,Hapoel Petah Tikva,Hapoel Petah Tikva,HAP
+3,2338,Beitar Jerusalem,Beitar Jerusalem,Beitar Jerusalem,Beitar Jerusalem,Beitar Jerusalem,BEI
+3,2339,Kairat,Kairat,Kairat,Kairat,Kairat,KAI
+3,2340,Ordabasy,Ordabasy,Ordabasy,Ordabasy,Ordabasy,ORD
+3,2341,Zimbru,Zimbru,Zimbru,Zimbru,Zimbru,ZIM
+3,2342,Sheriff Tiraspol,Sheriff Tiraspol,Sheriff Tiraspol,Sheriff Tiraspol,Sheriff Tiraspol,SHE
+3,2343,Dinamo Bucharest,Dinamo Bucarest,Dinamo Bukarest,Dinamo Bucarest,Dinamo Bucarest,DIN
+3,2344,Rapid Bucharest,Rapid Bucarest,Rapid Bukarest,Rapid Bucarest,Rapid Bucarest,RAP
+3,2345,Steaua Bucharest,Steaua Bucarest,Steaua Bukarest,Steaua Bucarest,Steaua Bucarest,STE
+3,2346,CSKA Moscow,CSKA Moscou,ZSKA Moskau,CSKA Mosca,CSKA Moscú,CSK
+3,2347,Lokomotiv Moscow,Lokomotiv Moscou,Lok Moskau,Lokomotiv Mosca,Lokomotiv Moscú,LOK
+3,2348,Torpedo Moscow,Torpedo Moscou,Torpedo Moskau,Torpedo Mosca,Torpedo Moscú,TOR
+3,2349,Spartak Moscow,Spartak Moscou,Spartak Moskau,Spartak Mosca,Spartak Moscú,SPA
+3,2350,Zenit,Zénith,Zenit,Zenit,Zenit,ZEN
+3,2351,Besiktas,Besiktas,Besiktas,Besiktas,Besiktas,BES
+3,2352,Fenerbahçe,Fenerbahçe,Fenerbahçe,Fenerbahçe,Fenerbahçe,FEN
+3,2353,Galatasaray,Galatasaray,Galatasaray,Galatasaray,Galatasaray,GAL
+3,2354,Bursaspor,Bursaspor,Bursaspor,Bursaspor,Bursaspor,BUR
+3,2355,Trabzonspor,Trabzonspor,Trabzonspor,Trabzonspor,Trabzonspor,TRA
+3,2356,Dnipro,Dnipro,Dnipro,Dnipro,Dnipro,DNI
+3,2357,Shakhtar Donetsk,Chakhtar Donetsk,Schachtar Donezk,Shakhtar Donetsk,Shajtar Donetsk,SHA
+3,2358,Metalurh Donetsk,Metalurh Donetsk,Metalurh Donezk,Metalurh Donetsk,Metalurh Donetsk,MET
+3,2359,Dynamo Kyiv,Dynamo Kiev,Dynamo Kiew,Dinamo Kiev,Dinamo Kiev,DYN
+3,2360,Chornomorets,Chornomorets,Chornomorets,Chornomorets,Chornomorets,CHO
+3,2362,FC København,FC Copenhague,FC Kopenhagen,FC Copenaghen,FC Copenhague,FCK
+3,2363,Esbjerg,Esbjerg,Esbjerg,Esbjerg,Esbjerg,ESB
+3,2364,Levadia,Levadia,Levadia,Levadia,Levadia,LEV
+3,2365,Flora Tallinn,Flora Tallinn,Flora Tallinn,Flora Tallinn,Flora Tallinn,FLO
+3,2366,B36 Tórshavn,B36 Tórshavn,B36 Tórshavn,B36 Tórshavn,B36 Tórshavn,BTÓ
+3,2367,HB Tórshavn,HB Tórshavn,HB Tórshavn,HB Tórshavn,HB Tórshavn,HBT
+3,2368,HJK,HJK,HJK,HJK,HJK,HJK
+3,2369,Tampere United,Tampere United,Tampere United,Tampere United,Tampere United,TAM
+3,2370,Haka,Haka,Haka,Haka,Haka,HAK
+3,2371,KR Reykjavík,KR Reykjavík,KR Reykjavík,KR Reykjavík,KR Reykjavík,KRR
+3,2373,FK Riga,FK Riga,FK Riga,FK Riga,FK Riga,FKR
+3,2375,FBK Kaunas,FBK Kaunas,FBK Kaunas,FBK Kaunas,FBK Kaunas,FBK
+3,2376,Zalgiris,Zalgiris,Zalgiris,Zalgiris,Zalgiris,ZAL
+3,2377,Hammarby,Hammarby,Hammarby,Hammarby,Hammarby,HAM
+3,2380,Rosenborg,Rosenborg,Rosenborg,Rosenborg,Rosenborg,ROS
+3,2382,IFK Göteborg,IFK Göteborg,IFK Göteborg,IFK Göteborg,IFK Göteborg,IFK
+3,2384,AIK,AIK,AIK,AIK,AIK,AIK
+3,2385,Bolívar,Bolívar,Bolívar,Bolívar,Bolívar,BOL
+3,2388,Grêmio,Grêmio,Grêmio,Grêmio,Grêmio,GRÊ
+3,2390,São Paulo,São Paulo,São Paulo,São Paulo,São Paulo,SÃO
+3,2391,América de Cali,América de Cali,América de Cali,América de Cali,América de Cali,AMÉ
+3,2392,LDU Quito,LDU Quito,LDU Quito,LDU Quito,LDU Quito,LDU
+3,2393,Universitario,Universitario,Universitario,Universitario,Universitario,UNI
+3,2394,Caracas FC,Caracas FC,Caracas FC,Caracas FC,Caracas FC,CAR
+3,2396,Boca Juniors,Boca Juniors,Boca Juniors,Boca Juniors,Boca Juniors,BOC
+3,2397,Racing Club,Racing Club,Racing Club,Racing Club,Racing Club,RAC
+3,2398,River Plate,River Plate,River Plate,River Plate,River Plate,RIV
+3,2399,Colo-Colo,Colo-Colo,Colo-Colo,Colo-Colo,Colo-Colo,COL
+3,2400,Olimpia,Olimpia,Olimpia,Olimpia,Olimpia,OLI
+3,2401,Nacional,Nacional,Nacional,Nacional,Nacional,NAC
+3,2402,Peñarol,Peñarol,Peñarol,Peñarol,Peñarol,PEÑ
+3,2403,JS Kabylie,JS Kabylie,JS Kabylie,JS Kabylie,JS Kabylie,JSK
+3,2404,Al Ahly,Al Ahly,Al Ahly,Al Ahly,Al Ahly,ALA
+3,2405,Raja Casablanca,Raja Casablanca,Raja Casablanca,Raja Casablanca,Raja Casablanca,RAJ
+3,2406,Espérance Tunis,Espérance Tunis,Espérance Tunis,Espérance Tunisi,Espérance Túnez,ESP
+3,2407,Hearts of Oak,Hearts of Oak,Hearts of Oak,Hearts of Oak,Hearts of Oak,HEA
+3,2408,Stade Malien,Stade Malien,Stade Malien,Stade Malien,Stade Malien,STA
+3,2409,Enugu Rangers,Enugu Rangers,Enugu Rangers,Enugu Rangers,Enugu Rangers,ENU
+3,2410,Jeanne d'Arc,Jeanne d'Arc,Jeanne d'Arc,Jeanne d'Arc,Jeanne d'Arc,JEA
+3,2411,Canon Yaoundé,Canon Yaoundé,Canon Yaoundé,Canon Yaoundé,Canon Yaoundé,CAN
+3,2412,Orlando Pirates,Orlando Pirates,Orlando Pirates,Orlando Pirates,Orlando Pirates,ORL
+3,2413,Toronto Lynx,Toronto Lynx,Toronto Lynx,Toronto Lynx,Toronto Lynx,TOR
+3,2414,Saprissa,Saprissa,Saprissa,Saprissa,Saprissa,SAP
+3,2415,Happy Valley,Happy Valley,Happy Valley,Happy Valley,Happy Valley,HAP
+3,2416,Chivas,Chivas,Chivas,Chivas,Chivas,CHI
+3,2418,LA Galaxy,LA Galaxy,LA Galaxy,LA Galaxy,LA Galaxy,LAG
+3,2419,D.C. United,D.C. United,D.C. United,D.C. United,D.C. United,DCU
+3,2420,Dalian Shide,Dalian Shide,Dalian Shide,Dalian Shide,Dalian Shide,DAL
+3,2421,Nagoya Grampus,Nagoya Grampus,Nagoya Grampus,Nagoya Grampus,Nagoya Grampus,NAG
+3,2422,JEF United,JEF United,JEF United,JEF United,JEF United,JEF
+3,2423,Avispa Fukuoka,Avispa Fukuoka,Avispa Fukuoka,Avispa Fukuoka,Avispa Fukuoka,AVI
+3,2424,Consadole Sapporo,Consadole Sapporo,Consadole Sapporo,Consadole Sapporo,Consadole Sapporo,CON
+3,2425,Vissel Kobe,Vissel Kobe,Vissel Kobe,Vissel Kobe,Vissel Kobe,VIS
+3,2426,Yokohama FC,Yokohama FC,Yokohama FC,Yokohama FC,Yokohama FC,YOK
+3,2427,Cerezo Osaka,Cerezo Osaka,Cerezo Osaka,Cerezo Osaka,Cerezo Osaka,CER
+3,2428,Urawa Reds,Urawa Reds,Urawa Reds,Urawa Reds,Urawa Reds,URA
+3,2429,Shimizu S-Pulse,Shimizu S-Pulse,Shimizu S-Pulse,Shimizu S-Pulse,Shimizu S-Pulse,SHI
+3,2430,Tokyo Verdy,Tokyo Verdy,Tokyo Verdy,Tokyo Verdy,Tokyo Verdy,TOK
+3,2431,Seongnam Ilhwa,Seongnam Ilhwa,Seongnam Ilhwa,Seongnam Ilhwa,Seongnam Ilhwa,SEO
+3,2432,Persepolis,Persepolis,Persepolis,Persepolis,Persepolis,PER
+3,2433,Al-Zawraa,Al-Zawraa,Al-Zawraa,Al-Zawraa,Al-Zawraa,ALZ
+3,2435,Al-Sadd,Al-Sadd,Al-Sadd,Al-Sadd,Al-Sadd,ALS
+3,2436,Al-Gharafa,Al-Gharafa,Al-Gharafa,Al-Gharafa,Al-Gharafa,ALG
+3,2441,Auckland City,Auckland City,Auckland City,Auckland City,Auckland City,AUC
+3,2443,Nottingham Forest,Nottingham Forest,Nottingham Forest,Nottingham Forest,Nottingham Forest,NOT
+3,2451,Genoa,Genoa,Genoa,Genoa,Genoa,GEN
+3,2457,Quick Boys,Quick Boys,Quick Boys,Quick Boys,Quick Boys,QUI
+3,2459,ASWH,ASWH,ASWH,ASWH,ASWH,ASW
+3,2469,Rep. of Ireland,,,,,
+3,2486,Serbia-Montenegro,,,,,
+9,10000,Premier League,PREMIER LEAGUE,Premier League,PREMIER LEAGUE,PREMIER LEAGUE,
+9,10001,Championship,CHAMPIONSHIP,Championship,CHAMPIONSHIP,CHAMPIONSHIP,
+9,10002,Championship Play-off,BARRAGES CHAMPIONSHIP,Championship Playoff,PLAY-OFF CHAMPIONSHIP,PLAYOFF CHAMPIONSHIP,
+9,10003,FA Cup Qualifying,QUALIF. FA CUP,FA Cup-Quali,QUALIF. FA CUP,CLASIF. FA CUP,
+9,10004,FA Cup,FA CUP,FA Cup,FA CUP,FA CUP,
+9,10005,League Cup,LEAGUE CUP,League Cup,LEAGUE CUP,LEAGUE CUP,
+9,10006,Ligue 1,LIGUE 1,Ligue 1,LIGUE 1,LIGUE 1,
+9,10007,Ligue 2,LIGUE 2,Ligue 2,LIGUE 2,LIGUE 2,
+9,10008,Coupe de France Qual,QUALIF. COUPE DE FRANCE,Coupe de France-Quali,QUALIF. COUPE DE FRANCE,CLASIF. COUPE DE FRANCE,
+9,10009,Coupe de France,COUPE DE FRANCE,Coupe de France,COUPE DE FRANCE,COUPE DE FRANCE,
+9,10010,Coupe de la Ligue,COUPE DE LA LIGUE,Coupe de la Ligue,COUPE DE LA LIGUE,COUPE DE LA LIGUE,
+9,10011,Bundesliga,BUNDESLIGA,Bundesliga,BUNDESLIGA,BUNDESLIGA,
+9,10012,2. Bundesliga,2. BUNDESLIGA,2. Bundesliga,2. BUNDESLIGA,2. BUNDESLIGA,
+9,10013,DFB-Pokal Qualifying,QUALIF. DFB-POKAL,DFB-Pokal-Quali,QUALIF. DFB-POKAL,CLASIF. DFB-POKAL,
+9,10014,DFB-Pokal,DFB-POKAL,DFB-Pokal,DFB-POKAL,DFB-POKAL,
+9,10015,DFB-Ligapokal,DFB-LIGAPOKAL,DFB-Ligapokal,DFB-LIGAPOKAL,DFB-LIGAPOKAL,
+9,10016,Serie A,SERIE A,Serie A,SERIE A,SERIE A,
+9,10017,Serie B,SERIE B,Serie B,SERIE B,SERIE B,
+9,10018,Serie B Play-off,BARRAGES SERIE B,Serie B Playoff,PLAY-OFF SERIE B,PLAYOFF SERIE B,
+9,10019,Coppa Italia Qual,QUALIF. COPPA ITALIA,Coppa Italia-Quali,QUALIF. COPPA ITALIA,CLASIF. COPPA ITALIA,
+9,10020,Coppa Italia,COPPA ITALIA,Coppa Italia,COPPA ITALIA,COPPA ITALIA,
+9,10021,Coppa Italia Dilettanti,COPPA ITALIA DILETTANTI,Coppa Italia Dilettanti,COPPA ITALIA DILETTANTI,COPPA ITALIA DILETTANTI,
+9,10022,Primera División,PRIMERA DIVISIÓN,Primera División,PRIMERA DIVISIÓN,PRIMERA DIVISIÓN,
+9,10023,Segunda División,SEGUNDA DIVISIÓN,Segunda División,SEGUNDA DIVISIÓN,SEGUNDA DIVISIÓN,
+9,10024,Copa del Rey Qual,QUALIF. COPA DEL REY,Copa del Rey-Quali,QUALIF. COPA DEL REY,CLASIF. COPA DEL REY,
+9,10025,Copa del Rey,COPA DEL REY,Copa del Rey,COPA DEL REY,COPA DEL REY,
+9,10026,Copa Federación de España,COPA FEDERACIÓN DE ESPAÑA,Copa Federación de España,COPA FEDERACIÓN DE ESPAÑA,COPA FEDERACIÓN DE ESPAÑA,
+9,10027,Eredivisie,EREDIVISIE,Eredivisie,EREDIVISIE,EREDIVISIE,
+9,10028,Eerste Divisie,EERSTE DIVISIE,Eerste Divisie,EERSTE DIVISIE,EERSTE DIVISIE,
+9,10029,Eerste Div. Play-off,BARRAGES EERSTE DIV.,Eerste Div. Playoff,PLAY-OFF EERSTE DIV.,PLAYOFF EERSTE DIV.,
+9,10030,KNVB Beker Qual,QUALIF. KNVB BEKER,KNVB Beker-Quali,QUALIF. KNVB BEKER,CLASIF. KNVB BEKER,
+9,10031,KNVB Beker,KNVB BEKER,KNVB Beker,KNVB BEKER,KNVB BEKER,
+9,10032,KNVB Amateur Cup,KNVB AMATEUR CUP,KNVB Amateur Cup,KNVB AMATEUR CUP,KNVB AMATEUR CUP,
+9,10033,Champions League Qual,QUALIF. LIGUE DES CHAMPIONS,Champions League-Quali,QUALIF. CHAMPIONS LEAGUE,CLASIF. LIGA DE CAMPEONES,
+9,10034,Champions League,LIGUE DES CHAMPIONS,Champions League,CHAMPIONS LEAGUE,LIGA DE CAMPEONES,
+9,10035,UEFA Cup,COUPE UEFA,UEFA-Pokal,COPPA UEFA,COPA DE LA UEFA,
+9,10036,Intertoto Cup,COUPE INTERTOTO,UI-Cup,COPPA INTERTOTO,COPA INTERTOTO,
+9,10037,UEFA Super Cup,SUPERCOUPE UEFA,UEFA-Supercup,SUPERCOPPA UEFA,SUPERCOPA UEFA,
+9,10044,Euro Qualifying,QUALIF. EURO,EM-Quali,QUALIF. EUROPEI,CLASIF. EUROCOPA,
+9,10045,European Champ.,EURO,,EUROPEI,EUROCOPA,
+9,10046,World Cup Qualifying,QUALIF. MONDIAL,WM-Quali,QUALIF. MONDIALI,CLASIF. MUNDIAL,
+9,10047,World Cup,COUPE DU MONDE,,COPPA DEL MONDO,COPA DEL MUNDO,
+9,10050,League One,LEAGUE ONE,League One,LEAGUE ONE,LEAGUE ONE,
+9,10051,National,NATIONAL,National,NATIONAL,NATIONAL,
+9,10052,Regionalliga,REGIONALLIGA,Regionalliga,REGIONALLIGA,REGIONALLIGA,
+9,10053,Serie C1,SERIE C1,Serie C1,SERIE C1,SERIE C1,
+9,10054,Segunda División B,SEGUNDA DIVISIÓN B,Segunda División B,SEGUNDA DIVISIÓN B,SEGUNDA DIVISIÓN B,
+9,10055,Hoofdklasse,HOOFDKLASSE,Hoofdklasse,HOOFDKLASSE,HOOFDKLASSE,
+11,1000,Premier League,Premier League,Premier League,Premier League,Premier League,
+11,1001,Championship,Championship,Championship,Championship,Championship,
+11,1002,Championship,Championship,Championship,Championship,Championship,
+11,1003,Championship Play-off,Barrages Championship,Championship Playoff,Play-off Championship,Playoff Championship,
+11,1004,FA Cup Round,Tour de FA Cup,FA Cup Runde,Turno FA Cup,Ronda FA Cup,
+11,1005,FA Cup Round,Tour de FA Cup,FA Cup Runde,Turno FA Cup,Ronda FA Cup,
+11,1006,FA Cup,FA Cup,FA Cup,FA Cup,FA Cup,
+11,1007,FA Cup,FA Cup,FA Cup,FA Cup,FA Cup,
+11,1008,League Cup,League Cup,League Cup,League Cup,League Cup,
+11,1009,League Cup,League Cup,League Cup,League Cup,League Cup,
+11,1010,Ligue 1,Ligue 1,Ligue 1,Ligue 1,Ligue 1,
+11,1011,Ligue 2,Ligue 2,Ligue 2,Ligue 2,Ligue 2,
+11,1012,Ligue 2,Ligue 2,Ligue 2,Ligue 2,Ligue 2,
+11,1013,Coupe de France Rnd,Tour de Coupe de France,Coupe de France Runde,Turno Coupe de France,Ronda Coupe de France,
+11,1014,Coupe de France Rnd,Tour de Coupe de France,Coupe de France Runde,Turno Coupe de France,Ronda Coupe de France,
+11,1015,Coupe de France,Coupe de France,Coupe de France,Coupe de France,Coupe de France,
+11,1016,Coupe de France,Coupe de France,Coupe de France,Coupe de France,Coupe de France,
+11,1017,Coupe de la Ligue,Coupe de la Ligue,Coupe de la Ligue,Coupe de la Ligue,Coupe de la Ligue,
+11,1018,Coupe de la Ligue,Coupe de la Ligue,Coupe de la Ligue,Coupe de la Ligue,Coupe de la Ligue,
+11,1019,Bundesliga,Bundesliga,Bundesliga,Bundesliga,Bundesliga,
+11,1020,2. Bundesliga,2. Bundesliga,2. Bundesliga,2. Bundesliga,2. Bundesliga,
+11,1021,2. Bundesliga,2. Bundesliga,2. Bundesliga,2. Bundesliga,2. Bundesliga,
+11,1022,DFB-Pokal Round,Tour de DFB-Pokal,DFB-Pokal Runde,Turno DFB-Pokal,Ronda DFB-Pokal,
+11,1023,DFB-Pokal Round,Tour de DFB-Pokal,DFB-Pokal Runde,Turno DFB-Pokal,Ronda DFB-Pokal,
+11,1024,DFB-Pokal,DFB-Pokal,DFB-Pokal,DFB-Pokal,DFB-Pokal,
+11,1025,DFB-Pokal,DFB-Pokal,DFB-Pokal,DFB-Pokal,DFB-Pokal,
+11,1026,DFB-Ligapokal,DFB-Ligapokal,DFB-Ligapokal,DFB-Ligapokal,DFB-Ligapokal,
+11,1027,DFB-Ligapokal,DFB-Ligapokal,DFB-Ligapokal,DFB-Ligapokal,DFB-Ligapokal,
+11,1028,Serie A,Serie A,Serie A,Serie A,Serie A,
+11,1029,Serie B,Serie B,Serie B,Serie B,Serie B,
+11,1030,Serie B,Serie B,Serie B,Serie B,Serie B,
+11,1031,Serie B Play-off,Barrages Serie B,Serie B Playoff,Play-off Serie B,Playoff Serie B,
+11,1032,Coppa Italia Round,Tour de Coppa Italia,Coppa Italia Runde,Turno Coppa Italia,Ronda Coppa Italia,
+11,1033,Coppa Italia Round,Tour de Coppa Italia,Coppa Italia Runde,Turno Coppa Italia,Ronda Coppa Italia,
+11,1034,Coppa Italia,Coppa Italia,Coppa Italia,Coppa Italia,Coppa Italia,
+11,1035,Coppa Italia,Coppa Italia,Coppa Italia,Coppa Italia,Coppa Italia,
+11,1036,Coppa Italia Dilettanti,Coppa Italia Dilettanti,Coppa Italia Dilettanti,Coppa Italia Dilettanti,Coppa Italia Dilettanti,
+11,1037,Coppa Italia Dilettanti,Coppa Italia Dilettanti,Coppa Italia Dilettanti,Coppa Italia Dilettanti,Coppa Italia Dilettanti,
+11,1038,Primera División,Primera División,Primera División,Primera División,Primera División,
+11,1039,Segunda División,Segunda División,Segunda División,Segunda División,Segunda División,
+11,1040,Segunda División,Segunda División,Segunda División,Segunda División,Segunda División,
+11,1041,Copa del Rey Round,Tour de Copa del Rey,Copa del Rey Runde,Turno Copa del Rey,Ronda Copa del Rey,
+11,1042,Copa del Rey Round,Tour de Copa del Rey,Copa del Rey Runde,Turno Copa del Rey,Ronda Copa del Rey,
+11,1043,Copa del Rey,Copa del Rey,Copa del Rey,Copa del Rey,Copa del Rey,
+11,1044,Copa del Rey,Copa del Rey,Copa del Rey,Copa del Rey,Copa del Rey,
+11,1045,Copa Federación de España,Copa Federación de España,Copa Federación de España,Copa Federación de España,Copa Federación de España,
+11,1046,Copa Federación de España,Copa Federación de España,Copa Federación de España,Copa Federación de España,Copa Federación de España,
+11,1047,Eredivisie,Eredivisie,Eredivisie,Eredivisie,Eredivisie,
+11,1048,Eerste Divisie,Eerste Divisie,Eerste Divisie,Eerste Divisie,Eerste Divisie,
+11,1049,Eerste Divisie,Eerste Divisie,Eerste Divisie,Eerste Divisie,Eerste Divisie,
+11,1050,Eerste Div. Play-off 1,Barrages 1 Eerste Div.,Eerste Div. Playoff 1,Play-off 1 Eerste Div.,Playoff 1 Eerste Div.,
+11,1051,Eerste Div. Play-off 2,Barrages 2 Eerste Div.,Eerste Div. Playoff 2,Play-off 2 Eerste Div.,Playoff 2 Eerste Div.,
+11,1052,KNVB Beker Round,Tour de KNVB Beker,KNVB Beker Runde,Turno KNVB Beker,Ronda KNVB Beker,
+11,1053,KNVB Beker Round,Tour de KNVB Beker,KNVB Beker Runde,Turno KNVB Beker,Ronda KNVB Beker,
+11,1054,KNVB Beker,KNVB Beker,KNVB Beker,KNVB Beker,KNVB Beker,
+11,1055,KNVB Beker,KNVB Beker,KNVB Beker,KNVB Beker,KNVB Beker,
+11,1056,KNVB Amateur Cup,KNVB Amateur Cup,KNVB Amateur Cup,KNVB Amateur Cup,KNVB Amateur Cup,
+11,1057,KNVB Amateur Cup,KNVB Amateur Cup,KNVB Amateur Cup,KNVB Amateur Cup,KNVB Amateur Cup,
+11,1058,Champions League Qual,Qualif. Ligue des champions,Champions League-Quali,Qualif. Champions League,Clasif. Liga de Campeones,
+11,1059,Champions League Group A,Ligue des champions Groupe A,Champions League Gruppe A,Gruppo A Champions League,Liga de Campeones Grupo A,
+11,1060,Champions League Group B,Ligue des champions Groupe B,Champions League Gruppe B,Gruppo B Champions League,Liga de Campeones Grupo B,
+11,1061,Champions League Group C,Ligue des champions Groupe C,Champions League Gruppe C,Gruppo C Champions League,Liga de Campeones Grupo C,
+11,1062,Champions League Group D,Ligue des champions Groupe D,Champions League Gruppe D,Gruppo D Champions League,Liga de Campeones Grupo D,
+11,1063,Champions League Group E,Ligue des champions Groupe E,Champions League Gruppe E,Gruppo E Champions League,Liga de Campeones Grupo E,
+11,1064,Champions League Group F,Ligue des champions Groupe F,Champions League Gruppe F,Gruppo F Champions League,Liga de Campeones Grupo F,
+11,1065,Champions League Group G,Ligue des champions Groupe G,Champions League Gruppe G,Gruppo G Champions League,Liga de Campeones Grupo G,
+11,1066,Champions League Group H,Ligue des champions Groupe H,Champions League Gruppe H,Gruppo H Champions League,Liga de Campeones Grupo H,
+11,1067,Champions League Final,Finale de Ligue des champions,Champions League-Finale,Finale Champions League,Final Liga de Campeones,
+11,1068,UEFA Cup Group A,Coupe UEFA Groupe A,UEFA-Pokal Gruppe A,Gruppo A Coppa UEFA,Copa de la UEFA Grupo A,
+11,1069,UEFA Cup Group B,Coupe UEFA Groupe B,UEFA-Pokal Gruppe B,Gruppo B Coppa UEFA,Copa de la UEFA Grupo B,
+11,1070,UEFA Cup Group C,Coupe UEFA Groupe C,UEFA-Pokal Gruppe C,Gruppo C Coppa UEFA,Copa de la UEFA Grupo C,
+11,1071,UEFA Cup Group D,Coupe UEFA Groupe D,UEFA-Pokal Gruppe D,Gruppo D Coppa UEFA,Copa de la UEFA Grupo D,
+11,1072,UEFA Cup Group E,Coupe UEFA Groupe E,UEFA-Pokal Gruppe E,Gruppo E Coppa UEFA,Copa de la UEFA Grupo E,
+11,1073,UEFA Cup Group F,Coupe UEFA Groupe F,UEFA-Pokal Gruppe F,Gruppo F Coppa UEFA,Copa de la UEFA Grupo F,
+11,1074,UEFA Cup Group G,Coupe UEFA Groupe G,UEFA-Pokal Gruppe G,Gruppo G Coppa UEFA,Copa de la UEFA Grupo G,
+11,1075,UEFA Cup Group H,Coupe UEFA Groupe H,UEFA-Pokal Gruppe H,Gruppo H Coppa UEFA,Copa de la UEFA Grupo H,
+11,1076,UEFA Cup Final,Finale de Coupe UEFA,UEFA-Pokal-Finale,Finale Coppa UEFA,Final Copa de la UEFA,
+11,1077,Intertoto Cup A,Intertoto Cup A,Intertoto Cup A,Intertoto Cup A,Intertoto Cup A,
+11,1078,Intertoto Cup B,Intertoto Cup B,Intertoto Cup B,Intertoto Cup B,Intertoto Cup B,
+11,1079,Intertoto Cup C,Intertoto Cup C,Intertoto Cup C,Intertoto Cup C,Intertoto Cup C,
+11,1080,UEFA Super Cup,Supercoupe UEFA,UEFA-Supercup,Supercoppa UEFA,Supercopa UEFA,
+11,1087,Euro Qual. Gr A,Qualif. Euro Gr. A,EM-Quali Gruppe A,Gr A Qualif. Europei,Clasif. Eurocopa Gr A,
+11,1088,Euro Qual. Gr B,Qualif. Euro Gr. B,EM-Quali Gruppe B,Gr B Qualif. Europei,Clasif. Eurocopa Gr B,
+11,1089,Euro Qual. Gr C,Qualif. Euro Gr. C,EM-Quali Gruppe C,Gr C Qualif. Europei,Clasif. Eurocopa Gr C,
+11,1090,Euro Qual. Gr D,Qualif. Euro Gr. D,EM-Quali Gruppe D,Gr D Qualif. Europei,Clasif. Eurocopa Gr D,
+11,1091,Euro Qual. Gr E,Qualif. Euro Gr. E,EM-Quali Gruppe E,Gr E Qualif. Europei,Clasif. Eurocopa Gr E,
+11,1092,Euro Qual. Gr F,Qualif. Euro Gr. F,EM-Quali Gruppe F,Gr F Qualif. Europei,Clasif. Eurocopa Gr F,
+11,1093,Euro Qual. Gr G,Qualif. Euro Gr. G,EM-Quali Gruppe G,Gr G Qualif. Europei,Clasif. Eurocopa Gr G,
+11,1094,Euro Qual. Gr H,Qualif. Euro Gr. H,EM-Quali Gruppe H,Gr H Qualif. Europei,Clasif. Eurocopa Gr H,
+11,1095,Euro Qual. Gr I,Qualif. Euro Gr. I,EM-Quali Gruppe I,Gr I Qualif. Europei,Clasif. Eurocopa Gr I,
+11,1096,Euro Qual. Gr J,Qualif. Euro Gr. J,EM-Quali Gruppe J,Gr J Qualif. Europei,Clasif. Eurocopa Gr J,
+11,1097,Euro Qual. Play-off,Barrages qualif. Euro,EM-Quali Playoff,Play-off qualif. Europei,Playoff clasif. Eurocopa,
+11,1098,European Champ. Group A,Euro Groupe A,European Champ. Gruppe A,Gruppo A Europei,Eurocopa Grupo A,
+11,1099,European Champ. Group B,Euro Groupe B,European Champ. Gruppe B,Gruppo B Europei,Eurocopa Grupo B,
+11,1100,European Champ. Group C,Euro Groupe C,European Champ. Gruppe C,Gruppo C Europei,Eurocopa Grupo C,
+11,1101,European Champ. Group D,Euro Groupe D,European Champ. Gruppe D,Gruppo D Europei,Eurocopa Grupo D,
+11,1102,European Champ. Final,Finale de Euro,European Champ.-Finale,Finale Europei,Final Eurocopa,
+11,1103,WC Qual. Gr A,Qualif. Mondial Gr. A,WM-Quali Gruppe A,Gr A Qualif. Mondiali,Clasif. Mundial Gr A,
+11,1104,WC Qual. Gr B,Qualif. Mondial Gr. B,WM-Quali Gruppe B,Gr B Qualif. Mondiali,Clasif. Mundial Gr B,
+11,1105,WC Qual. Gr C,Qualif. Mondial Gr. C,WM-Quali Gruppe C,Gr C Qualif. Mondiali,Clasif. Mundial Gr C,
+11,1106,WC Qual. Gr D,Qualif. Mondial Gr. D,WM-Quali Gruppe D,Gr D Qualif. Mondiali,Clasif. Mundial Gr D,
+11,1107,WC Qual. Gr E,Qualif. Mondial Gr. E,WM-Quali Gruppe E,Gr E Qualif. Mondiali,Clasif. Mundial Gr E,
+11,1108,WC Qual. Gr F,Qualif. Mondial Gr. F,WM-Quali Gruppe F,Gr F Qualif. Mondiali,Clasif. Mundial Gr F,
+11,1109,WC Qual. Gr G,Qualif. Mondial Gr. G,WM-Quali Gruppe G,Gr G Qualif. Mondiali,Clasif. Mundial Gr G,
+11,1110,WC Qual. Gr H,Qualif. Mondial Gr. H,WM-Quali Gruppe H,Gr H Qualif. Mondiali,Clasif. Mundial Gr H,
+11,1111,WC Qual. Gr I,Qualif. Mondial Gr. I,WM-Quali Gruppe I,Gr I Qualif. Mondiali,Clasif. Mundial Gr I,
+11,1112,WC Qual. Gr J,Qualif. Mondial Gr. J,WM-Quali Gruppe J,Gr J Qualif. Mondiali,Clasif. Mundial Gr J,
+11,1113,WC Qual. Play-off,Barrages qualif. Mondial,WM-Quali Playoff,Play-off qualif. Mondiali,Playoff clasif. Mundial,
+11,1114,World Cup Group A,Coupe du monde Groupe A,World Cup Gruppe A,Gruppo A Coppa del Mondo,Copa del Mundo Grupo A,
+11,1115,World Cup Group B,Coupe du monde Groupe B,World Cup Gruppe B,Gruppo B Coppa del Mondo,Copa del Mundo Grupo B,
+11,1116,World Cup Group C,Coupe du monde Groupe C,World Cup Gruppe C,Gruppo C Coppa del Mondo,Copa del Mundo Grupo C,
+11,1117,World Cup Group D,Coupe du monde Groupe D,World Cup Gruppe D,Gruppo D Coppa del Mondo,Copa del Mundo Grupo D,
+11,1118,World Cup Group E,Coupe du monde Groupe E,World Cup Gruppe E,Gruppo E Coppa del Mondo,Copa del Mundo Grupo E,
+11,1119,World Cup Group F,Coupe du monde Groupe F,World Cup Gruppe F,Gruppo F Coppa del Mondo,Copa del Mundo Grupo F,
+11,1120,World Cup Group G,Coupe du monde Groupe G,World Cup Gruppe G,Gruppo G Coppa del Mondo,Copa del Mundo Grupo G,
+11,1121,World Cup Group H,Coupe du monde Groupe H,World Cup Gruppe H,Gruppo H Coppa del Mondo,Copa del Mundo Grupo H,
+11,1122,World Cup Final,Finale de Coupe du monde,World Cup-Finale,Finale Coppa del Mondo,Final Copa del Mundo,
+11,1142,League One,League One,League One,League One,League One,
+11,1143,National,National,National,National,National,
+11,1144,Regionalliga,Regionalliga,Regionalliga,Regionalliga,Regionalliga,
+11,1145,Serie C1,Serie C1,Serie C1,Serie C1,Serie C1,
+11,1146,Segunda División B,Segunda División B,Segunda División B,Segunda División B,Segunda División B,
+11,1147,Hoofdklasse,Hoofdklasse,Hoofdklasse,Hoofdklasse,Hoofdklasse,

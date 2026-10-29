@@ -223,6 +223,8 @@ def checks():
         ("system", ["system.py", "info", "DAT/0SYSTEM"], ["DAT/0SYSTEM"]),
         ("emblem", ["emblem.py", "info", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         ("emblem_roundtrip", ["emblem.py", "roundtrip", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
+        # The real names against the disc's name lists (PAL text only).
+        ("realnames", ["realnames.py", "info", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
         ("news", ["news.py", "info", "DAT/NEWS"], ["DAT/NEWS"]),
         ("acrobata", ["acrobata.py", "info", "DAT/ACROBATA"], ["DAT/ACROBATA"]),
         # The executable's copy of the pack index and its scene-id table.
@@ -304,7 +306,9 @@ def _jp(arg):
 
 # The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15), and its
 # GAMEPRG.REL has the parameter getter at another address.
-JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param"}
+# realnames: the real names are for PAL's text, whose names the Japanese
+# release doesn't share.
+JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "realnames"}
 
 
 def jp_checks(pal):
