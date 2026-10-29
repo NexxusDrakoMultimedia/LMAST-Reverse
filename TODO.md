@@ -23,9 +23,9 @@ What to work on next, most valuable first.
    the player fields still open (`explodetype`, abilities 59–63 and the
    attack pattern letters, the carry and press tendencies; an edited
    tendency can be checked over PINE), then the staff
-   fields, the 25 manager policies, job 5 and how coaches and former
-   players become managers
-   ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
+   fields still open: the selection, match, training and rest
+   policies, the 1–5 tactical values and the staff abilities no bar
+   shows ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
 2. **LMASTER max in game** (sections 7 and 8): every part of
    `--mod harder-economy` is tested in PCSX2, and so are
    `transfer-fees`, `fee-tiers` at the low end, `pr-costs`,
@@ -118,9 +118,9 @@ shown to have no effect. Grouped by what a mod would change.
 - [ ] Player fields still open: `explodetype`, abilities 59–63 and the
       attack pattern letters (no reader picks one out), the carry and
       press tendencies ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
-- [ ] Staff: the fields only the developers' field table names, the 25
-      manager policies and ranges, what sets job 5 when a manager is
-      hired, and how coaches and former players become managers
+- [ ] Staff: the fields only the developers' field table names, the
+      selection, match, training and rest policies, the 1–5 tactical
+      values and the staff abilities no bar shows
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
 - [ ] National teams: what `_getNationalTeamPoint` scores, why team 465
       and the call-up's flag `0x300` matter

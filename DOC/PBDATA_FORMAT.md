@@ -368,11 +368,51 @@ fields. The first page (`0x1560`–`0x1c94`) shows only run-time state
 | `+0x65` | 1 | モデルパターン model pattern | 0 (1,526), 1 (1,474) |
 
 The affinity reader confirms `+0x2f` as well: `pwkDissatis_GetAffintyType`
-takes a manager's column from `PlMinfo +0x33`. The editor prints the
-accepted and best ranges as `%d %d %d %d`, so they are 4 values each; how
-they bound the policy isn't traced. The player editor's policy page draws
-カウンター～ポゼッション "counter to possession" and タレント～チーム
-"talent to team", which are probably the two axes.
+takes a manager's column from `PlMinfo +0x33`.
+
+**The policies (confirmed).** The 25 policies are the cells of a 5 × 5
+grid with two axes: counter to possession, and individual to
+organisation (the player editor's カウンター～ポゼッション and
+タレント～チーム). A player's own point on the grid is in the save
+(`PlPinfo +0x296`, `+0x298`,
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)). The table at
+`0x555340` (`pwkTeamType_GetPolicyBseExp`) gives each policy's centre:
+policy *p* is in row *p* ÷ 5 and column *p* mod 5, one cell is 16,383 on
+each axis.
+
+| Row (policy ÷ 5) | Counter-to-possession point (`+0x296`) | | Column (policy mod 5) | Individual-to-organisation point (`+0x298`) |
+|---|---|---|---|---|
+| 0 (0–4) | 65,535, counter | | 0 | 0, individual |
+| 1 (5–9) | 49,151 | | 1 | 16,383 |
+| 2 (10–14) | 32,767 | | 2 | 32,767 |
+| 3 (15–19) | 16,383 | | 3 | 49,151 |
+| 4 (20–24) | 0, possession | | 4 | 65,535, organisation |
+
+So policy 0 is counter and individual, 12 the middle, 24 possession and
+organisation. Policy 25 (an entry at the end of the table, at policy
+10's point) makes `pwkTeamType_GetFit` return 100 for any manager; no
+record in the database uses it (players and managers use 0–24, each
+value 859–1,441 players and 92–184 managers). `pwkTeamType_Exp2Policy`
+(`0x270260`) turns a point back into a policy.
+
+The manager's two sets of 4 range values (`+0x35` accepted, `+0x39`
+best) draw a diamond around his policy's centre. In
+`pwkTeamType_CheckPolicyAllow` (`0x2708f0`) each value *v* reaches
+*v* × 16,383 ÷ 2, half a cell per unit: the 1st toward counter, the 2nd
+toward possession, the 3rd toward individual and the 4th toward
+organisation. A point is inside when it is within those reaches on both
+axes and below the straight line joining the two reaches of its
+quadrant. The readers:
+
+| Address | Symbol | What it does with the ranges |
+|---|---|---|
+| `0x2703d0` | `pwkTeamType_GetFit` | a player's fit with the manager (the T-FIT bar): 75 if his point is inside the best diamond, else 25 if inside the accepted diamond, else 0; plus (131,070 − the distance from the manager's centre, both axes added) ÷ 2,621, up to 50; at most 100 |
+| `0x23a620` | `pwkDissatis_MPolicy` | the share of your squad whose points are inside the manager's accepted diamond, as a percentage, feeding the manager's dissatisfaction |
+| `0x270770` | `pwkTeamType_PolicyMov` | moves a player's point and recomputes his policy with `Exp2Policy` |
+
+Most managers' best values are smaller than their accepted ones (5,721
+of the 12,000 pairs smaller, 3,630 equal, 2,649 larger; averages about
+2.85 and 3.15), so the best diamond is usually the inner one.
 
 The lists the indices go into (**confirmed**, the editor prints the entry):
 
@@ -1357,17 +1397,64 @@ job in the database (**empirical**) agrees:
 | 4 | 383 | saving bars | goalkeeper coach |
 
 In a save, M. Eulenburg and S. Saioni (job 0 in the database) are the
-manager (5) and youth manager (6), and the coaches keep jobs 1–4. Job 0
-is where managers start, not the only way to become one: in the game,
-coaches and former players can become managers too. The code has a coach
-job-change work area (`pwkTeam_SetCoachJobChangeWork`,
-`pwkTeam_PutCoachJobChangeWork` and neighbours, `0x26b998`–`0x26bc88`),
-and a player's `PlPinfo +0x210` holds a job change
-(`plPinfo_GetChangeJob` / `SetChangeJob`); neither is traced yet.
-`pwkTeam_SetYManager` (`0x26bd28`) writes 6 into the youth manager's
-`+0xa0` after copying him in (**confirmed**); where 5 is set for a manager
-isn't traced (`pwkTeam_SignManager`, `0x269e20`, copies the record as it
-is and sets only the contract years at `+0x9e`).
+manager (5) and youth manager (6), and the coaches keep jobs 1–4.
+
+**Where jobs 5 and 6 are set (confirmed).** The job is the word at
+`PlMinfo +0xa0`; your club's manager is at team data `+0x4854`, so his
+job is at `+0x48f4`. `pwkTeam_SignManager` (`0x269e20`) copies the
+record as it is and sets only the contract years at `+0x9e`, so the job
+is set before it is called:
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x26a240` | `pwkTeam_GetManagerCandidates` | builds each manager candidate's `PlMinfo` from the database (`plMinfo_InitDb`) and writes 5 into `+0xa0`. Every staff member hired from the manager list arrives with job 5, whatever his database job |
+| `SIMPRG.REL 0x78998` | `WP::CManagerChangeTask` | the manager change screen lists your manager and up to 4 of your coaches (`pwkTeam_GetManager`, `pwkTeam_GetCoaches`, `0x771b0`, `0x77270`). Picking a coach writes 5 into his `+0xa0` and calls `pwkTeam_SignManager`; this is how a coach becomes your manager |
+| `SIMPRG.REL 0x78c3c` | `WP::CManagerChangeTask` | sets 5 only while the detail screen shows a coach on that list, so it shows the manager bars, then puts the old job back |
+| `0x26bd7c` | `pwkTeam_SetYManager` | writes 6 into the youth manager's `+0xa0` after copying him in |
+| `SIMPRG.REL 0xd64d4` | (next to `pwkTeam_GetYManager` and `pwkTeam_GetCoachCandidates` calls) | writes 6 into a staff record it lists; which screen this is isn't traced |
+
+The manager candidates come from the manager search
+(`pwkTeam_UpdateManagerCandidates` `0x261500`) and the automatic fill
+(`pwkTeam_AutoListUpManagerCandidates` `0x263650`), both through
+`pwkTeam_AddManagerCandidate` (`0x269658`). They take staff from the
+whole staff database by id, and no test of the database job was found
+in them, so coaches can be found and hired as managers.
+
+**Former players become coaches or scouts (confirmed).** A player of
+yours can be asked to change career. The talk module
+(`TALK_MODULE::CTalkModule`, `SIMPRG.REL 0x11af8`, `0x11b60`) first asks
+`pwkTeam_IsPossibleJobChange` (`0x269c28`), which allows it when the
+player is not an edit player, his `PlPinfo +0x21c` (`life`,
+[`ECONOMY.md`](ECONOMY.md)) is at least 5, `pwkTeam_GetCompAverage` is at
+most 45,000, a coach or scout job-change slot is free, and fewer than 3
+of your players already have a job change set. The answer goes into
+`PlPinfo +0x210` through `plPinfo_SetChangeJob` (`SIMPRG.REL 0x12150`):
+choice 0 takes a value from his position (the table at `SIMPRG.REL
+0x1cd288`, by `plMisc_Apos2Epos`), and choices 1–3 store 4–6.
+
+| `+0x210` | Becomes | Set by choice |
+|---|---|---|
+| 0 | nothing | – |
+| 1 | coach, job 0 (balanced assistant) | 0, for a WB, DM or SM |
+| 2 | coach, job 1 (attacking assistant) | 0, for an OM, WG or FW |
+| 3 | coach, job 2 (defensive assistant) | 0, for a GK, SB or CB |
+| 4 | coach, job 3 (physical coach) | 1 |
+| 5 | coach, job 4 (GK coach) | 2 |
+| 6 | scout | 3 |
+
+At the start of the next season `ZinziYearStart::calcYearStartSecondHalf`
+(`YRSTPRG.REL 0x17164`–`0x17240`) walks your squad. For each player with
+a job change it turns `+0x210` into a coach job through the table at
+`YRSTPRG.REL 0x33288` (7, 0, 1, 2, 3, 4, 7; 7 is none) and makes him a
+coach in one of the 3 coach job-change slots (`0x1a698`, which builds the
+`PlMinfo` with that job; `EVS::SetChangeJobCoach`), or a scout for 6
+(`0x1a5e8`). When that succeeds the player leaves the squad
+(`ZinziMyTeam::DiscardPlayer`, reason 6).
+`pwkTeam_PutCoachJobChangeWork` (`0x26bc88`) then puts each new coach
+with job 0–4 on your coach candidate list (`pwkTeam_AddCoachCandidate`,
+source 8), where he can be hired. As a coach he can later become the
+manager through the manager change screen above. So no player becomes a
+manager directly: former players become coaches first.
 
 The coach page's title (`SetupDetailCoachPageCommon`, jump table
 `0x5577d0`) is the same string for jobs 0, 1 and 2 (`Msg::GetString(0x18,
@@ -1596,11 +1683,12 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
 - What the play styles do in a match, beyond which abilities grow and
   which roles read them ([Who reads each parameter](#who-reads-each-parameter)).
 - The code that turns the leg field into `PlPinfo +0x1c4`.
-- What sets job 5 when a manager is hired.
+- The job change: what `pwkTeam_GetCompAverage` measures (it must be at
+  most 45,000), and which screen writes job 6 at `SIMPRG.REL 0xd64d4`.
 - What reads the staff fields only the source table names (rank, face,
-  appeartype, and the manager's comptype), what the
-  manager's 25 policies (`+0x34`) and the policy ranges mean, and what
-  the 1–5 tactical values and the model pattern do in a match.
+  appeartype, and the manager's comptype), what the selection, match,
+  training and rest policies (`+0x30`–`+0x33`) do, and what the 1–5
+  tactical values and the model pattern do in a match.
 - Which game code reads the staff abilities that no bar shows (6–9,
   23–27, 31–38; scouts 2, 8–20, 26–44). The labels name them, but their
   effects aren't traced.

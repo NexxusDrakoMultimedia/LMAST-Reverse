@@ -324,10 +324,12 @@ table of u16 pairs per policy type at SLES `0x555340`
 screen: Carson (`0xffff`, `0x7fff`) is top centre; Aiblinger comes out
 0.57 up and 0.37 across, where his marker is on both screens.
 
+`0x210` is the job change, the career a player has agreed to take up
+at the next season's start
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars)).
 The rest of the record between `0x18a` and `0x2a0` is read by the functions
-listed by a scan of every `PlPinfo` accessor (flags at `0x20c`, the job
-change at `0x210`, dissatisfaction bytes in the database copy), not decoded
-yet.
+listed by a scan of every `PlPinfo` accessor (flags at `0x20c`,
+dissatisfaction bytes in the database copy), not decoded yet.
 
 **The condition line** under the bars is chosen by
 `WP::CDetailManager::ConvertPlayer_Condition` (`0x285728`), first match

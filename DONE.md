@@ -97,6 +97,9 @@ evidence and how it was tested; the git history holds the rest.
 - [x] Kit style's cap and outfield gloves (the cap is an edit player's
       face part; gloves need a career match below 10 degrees), and the
       pass tendencies are the passer's ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#kit-style))
+- [x] Staff careers and policies: where jobs 5 and 6 are set, how players
+      become coaches or scouts and coaches managers, and the 25 policies
+      as a grid with the range diamonds ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#manager-coach-and-scout-bars))
 
 ## 3. Write: a writer for every format a mod changes
 

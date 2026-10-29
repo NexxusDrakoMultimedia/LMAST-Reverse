@@ -248,9 +248,9 @@ MANAGER_FIELDS = (
     ("match_policy", 0x31, 3, 1, None),
     ("training_policy", 0x32, 3, 1, None),
     ("rest_policy", 0x33, 2, 1, None),
-    ("policy", 0x34, 6, 1, None),        # 0-24
-    ("policy_range", 0x35, 3, 4, None),  # 許容範囲, the policies he accepts
-    ("policy_best", 0x39, 3, 4, None),   # 得意範囲, the ones he is best at
+    ("policy", 0x34, 6, 1, None),        # 0-24: 5 x 5 grid, row counter-possession, column individual-organisation (0x555340)
+    ("policy_range", 0x35, 3, 4, None),  # 許容範囲: half-cell reach toward counter, possession, individual, organisation (0x2708f0)
+    ("policy_best", 0x39, 3, 4, None),   # 得意範囲: the same for the inner diamond; inside it the fit starts at 75 (0x2703d0)
     ("formation", 0x3d, 8, 3, None),     # FORMATIONS
     ("attacking", 0x40, 3, 1, None),     # the 7 tactical leanings, 1-5
     ("possession", 0x41, 3, 1, None),
