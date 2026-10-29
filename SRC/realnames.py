@@ -8,13 +8,16 @@ the name lists): category 3 is every team's name (id 2000 + team), 4 a
 copy (3000 + team), 100003 a long-form list (2000 + team) and 5 the
 three-letter forms (4000 + team); 9 names the competitions (10000 +),
 100009 the same in capitals in every language, 11 and 100011 their
-stages and groups (1000 +). PRELOAD/STATIONMES<lang>.PAC holds each
+stages and groups (1000 +), and 10 each club's stadium (11000 + team,
+"<club> Stadium" in the game). PRELOAD/STATIONMES<lang>.PAC holds each
 language's copy of categories 1 and 3-11 (patch_disc.py --copies).
 
 realnames.csv, next to this script, holds only the real names: one row
-per name to change, keyed by category (3, 9 or 11) and id, with the
+per name to change, keyed by category (3, 10, 9 or 11) and id, with the
 English, French, German, Italian and Spanish names and, for a team, its
-three-letter form. An empty cell keeps the game's name. `apply` writes
+three-letter form. An empty cell keeps the game's name. A stadium is
+named as of 2006-07; a club with a real name and no stadium row gets
+"<real name> Stadium" in its language. `apply` writes
 them into every list above, and puts a competition's real name in place of
 its game name in the other messages that mention it (the rules and
 the news; names of 6 or more characters, outside {tags}). Club names in
@@ -51,8 +54,11 @@ TEAM_LONG = 100003
 SHORT_CAT, SHORT_BASE = 5, 4000
 COMP_CAT, COMP_CAPS = 9, 100009
 STAGE_CAT, STAGE_VARIANT = 11, 100011
-NAME_CATS = (TEAM_CAT, COMP_CAT, STAGE_CAT)
+STADIUM_CAT, STADIUM_BASE = 10, 11000
+CLUB_END = 460                          # teams 3-459 are clubs, with stadiums; 460-542 nations
+NAME_CATS = (TEAM_CAT, STADIUM_CAT, COMP_CAT, STAGE_CAT)
 NAME_LIMIT = 18                         # the player's own club name (user report)
+STADIUM_LIMIT = 30                      # the game's longest ("Athletic Club de Bilbao Stadio")
 MENTION_MIN = 6
 # Mentions are rewritten in English only. The other languages' game names
 # are often plain phrases ("monter en première division"), and a proper
@@ -144,14 +150,29 @@ def edits(pack, rows, mention_langs=MENTION_LANGS):
     out = []
     mention = {l: {} for l in LANGS}        # lang -> {game name, lower case: real name}
     comps = {rid: names for cat, rid, names, _ in rows if cat == COMP_CAT}
+    stadiums = {(rid, l) for cat, rid, names, _ in rows if cat == STADIUM_CAT for l in names}
     for cat, rid, names, short in rows:
         if cat == TEAM_CAT:
             team = rid - TEAM_BASE
             for l, name in names.items():
                 out += [(TEAM_CAT, l, rid, name), (TEAM_COPY, l, TEAM_COPY_BASE + team, name),
                         (TEAM_LONG, l, rid, name)]
+                # A stadium with no name of its own is "<club> Stadium" with
+                # the club's real name (every one is the club's game name,
+                # or its long form, and the language's word).
+                sid = STADIUM_BASE + team
+                if team < CLUB_END and (sid, l) not in stadiums:
+                    stadium = pack.text(STADIUM_CAT, l, sid)
+                    for game in (pack.text(TEAM_CAT, l, rid), pack.text(TEAM_LONG, l, rid)):
+                        game = game.strip()
+                        if stadium.startswith(game + " "):
+                            out.append((STADIUM_CAT, l, sid,
+                                        name + " " + stadium[len(game):].lstrip()))
+                            break
             if short:
                 out += [(SHORT_CAT, l, SHORT_BASE + team, short) for l in LANGS]
+        elif cat == STADIUM_CAT:
+            out += [(cat, l, rid, name) for l, name in names.items()]
         elif cat == COMP_CAT:
             qualifying = QUALIFYING.search(pack.text(cat, 1, rid))
             for l, name in names.items():
@@ -175,7 +196,7 @@ def edits(pack, rows, mention_langs=MENTION_LANGS):
                 elif variant.replace(" ", "") == english.replace(" ", "") and 1 in names:
                     out.append((STAGE_VARIANT, l, rid, names[1]))
         else:
-            raise ValueError("category %d isn't a name list (3, 9 or 11)" % cat)
+            raise ValueError("category %d isn't a name list (3, 10, 9 or 11)" % cat)
     return out + mentions(pack, mention, mention_langs)
 
 
@@ -240,7 +261,8 @@ def cmd_info(mes_path):
                 mbb.encode(name, l)
             except ValueError as e:
                 problems.append("%d:%d %s: %s" % (cat, rid, mbb.LANGS[l], e))
-            if cat == TEAM_CAT and len(name) > NAME_LIMIT:
+            if cat == TEAM_CAT and len(name) > NAME_LIMIT \
+                    or cat == STADIUM_CAT and len(name) > STADIUM_LIMIT:
                 long.append("%s (%d)" % (name, len(name)))
         if cat == TEAM_CAT and short and len(short) != 3:
             problems.append("%d:%d short form %r isn't three letters" % (cat, rid, short))
@@ -261,8 +283,8 @@ def cmd_info(mes_path):
     print("  short forms shared by two clubs or more: %d (%s)" % (
         len(shared), ", ".join("%s %s" % (s, "/".join(map(str, ts))) for s, ts in
                                sorted(shared.items())[:20])))
-    print("  club names over %d characters: %d%s" % (NAME_LIMIT, len(long),
-                                                     " (%s)" % ", ".join(long) if long else ""))
+    print("  club names over %d characters, stadiums over %d: %d%s" % (
+        NAME_LIMIT, STADIUM_LIMIT, len(long), " (%s)" % ", ".join(long) if long else ""))
     try:
         e = edits(pack, rows)
     except ValueError as err:

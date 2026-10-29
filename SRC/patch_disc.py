@@ -98,7 +98,7 @@ sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
 merch-costs, pr-costs, camp-costs, tour-costs), leagues
 (league-balance, third-tier), restorations (injury-lines), names
-(real-names), saves (mod-saves),
+(real-names, own-stadium), saves (mod-saves),
 and test-tools (skip-tutorial, launcher), which is in no edition.
 third-tier turns on mod-saves and needs --copies and --dat; real-names
 needs them too. Each switch
@@ -192,7 +192,12 @@ languages: realnames.py writes SRC/realnames.csv's names into MES.PAC's
 name lists and the English messages that mention a competition. The
 lists grow, so it brings MES.PAC whole and needs --copies (and --dat) for
 the STATIONMES copies; it runs after the third tier's text. PAL only.
-See DOC/LMASTER_MOD.md#real-names.
+The names include each club's stadium (category 10). See
+DOC/LMASTER_MOD.md#real-names.
+
+own-stadium (LMASTER full and max; whole disc image only) names your
+club's stadium after you, "<your name> Stadium", where the game used your
+city: VarBuf_MakeMyStadium reads variable slot 0, not 3 (SLES 0x11eafc).
 
 injury-value (whole disc image only) sets the first minimum of kind-6
 injuries in the value table (SLES 0x532d70) from 1600 to 16001, where the
@@ -4078,6 +4083,25 @@ def plan_real_names(f, img, adopted=()):
     return [], ["note: real-names: put the names in %s" % MES_FILE]
 
 
+# own-stadium: my club's stadium takes my name, "<name> Stadium", in place
+# of the city's (LMASTER full and max, the user's choice, 2026-10-30).
+# Msg::VarBuf_MakeMyStadium (SLES 0x11eaf8) builds the stadium name,
+# variable slot 9, which category 10's message 11001 shows, as
+# snprintf("%s %s", slot 3, the word "Stadium"); slot 3 is the city. Slot
+# 0 is the name typed at the start (SetOwnerName_Keyboard). The slot is
+# the argument of GetVariableBuffer at 0x11eafc.
+OWN_STADIUM_AT = 0x11eafc
+OWN_STADIUM_OLD, OWN_STADIUM_NEW = 0x24040003, 0x24040000   # addiu $a0, $zero, 3 -> 0
+
+
+def plan_own_stadium(f, img):
+    """Jobs for --mod own-stadium."""
+    words = [(SLES_FILE, OWN_STADIUM_AT - 0xff000, struct.pack("<I", OWN_STADIUM_OLD),
+              struct.pack("<I", OWN_STADIUM_NEW),
+              "%s 0x%x (my stadium: my name, not my city)" % (SLES_FILE, OWN_STADIUM_AT))]
+    return word_jobs(f, img, "own-stadium", words)
+
+
 def plan_third_tier(f, img, adopted=()):
     """Jobs for --mod third-tier: the code segment, the bigger save and its
     past records, clubs 442-459, their lists, the tiers' seasons and the
@@ -4385,8 +4409,10 @@ SWITCHES = (
      "Text: the Game Over conditions for Spain and the Netherlands name their own leagues, "
      "the Spanish intro's 216 clubs are 26, and AL-Hyde is Al-Hyde"),
     ("real-names", plan_real_names, [MES_FILE],
-     "LMASTER full: every league, competition, club and national team under its real name "
-     "of the era, in five languages; needs --copies"),
+     "LMASTER full: every league, competition, club, stadium and national team under its "
+     "real name of the era, in five languages; needs --copies"),
+    ("own-stadium", plan_own_stadium, [SLES_FILE],
+     "Names: your club's stadium is named after you (\"<your name> Stadium\"), not your city"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -4449,7 +4475,7 @@ GROUPS = (       # (name, title, switches)
       "fanbase", "merch-costs", "pr-costs", "camp-costs", "tour-costs")),
     ("leagues", "Leagues", ("league-balance", "third-tier")),
     ("restorations", "Restored content", ("injury-lines",)),
-    ("names", "Real names", ("real-names",)),
+    ("names", "Real names", ("real-names", "own-stadium")),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )
