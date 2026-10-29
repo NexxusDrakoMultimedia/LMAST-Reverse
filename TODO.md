@@ -362,6 +362,11 @@ is built and tested, or set aside.
 - [ ] Candidate: let the unused combination records load, and fix the
       pattern repeat check; decide first whether the extra records play
       sensibly ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [ ] Candidates from the manager's fields: the match reading the
+      selection policy instead of the match policy (after the section 7
+      test), the strength ratio above 1.19 getting column 0, and the
+      training plan's rows out of step with the policy names
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] Real names in the other languages' messages: the 75 French,
       German, Italian and Spanish mentions of a competition's game name
       (`realnames.py info` counts them), rewritten by hand with their
