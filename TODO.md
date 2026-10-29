@@ -38,14 +38,12 @@ What to work on next, most valuable first.
    season's end, saving and loading are tested). The disc
    is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **A Crests tab, then the stadium tables** (sections 5 and 3):
-   `emblem.py set` now writes the crest, preset, layer and flag records,
-   so the editor can get a tab for them (starting and rival crests,
-   flag placements), with one edited starting crest checked in game.
-   Then the stadium tables (the crowd figure groups need a look at the
-   models, and request `+0x0e`–`+0x10`) and `EDIT_PLAYER.TBB`
-   ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing),
-   [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown)).
+3. **The stadium tables and `EDIT_PLAYER.TBB`** (sections 2 and 3):
+   the crowd figure groups (they need a look at the models) and request
+   `+0x0e`–`+0x10`, then a stadium writer and tab; `EDIT_PLAYER.TBB`'s
+   32 tables from their accessors' callers
+   ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown),
+   [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#still-unknown)).
 
 ## What a mod can change, and what is left
 
@@ -55,7 +53,7 @@ aims at:
 | Goal | Where it stands | Left (section) |
 |---|---|---|
 | The starting season | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results have writers and editor tabs, tested in PCSX2; the national-team calendar has a writer and tab | room for bigger second divisions (2), a smaller first division and the national calendar tested (7) |
-| Data | players, staff, clubs, kits, facilities, training, camps, tours, the tactics presets, the PR events and the player links have writers and tabs | the remaining player and staff fields (2), the stadium tables (3), a Crests tab for the crest writer (5) |
+| Data | players, staff, clubs, kits, crests and flags, facilities, training, camps, tours, the tactics presets, the PR events and the player links have writers and tabs | the remaining player and staff fields (2), the stadium tables (3) |
 | Parameters | every `PARAM/` table's layout is known; `tbb.py replace` swaps any table | the open fields (2) |
 | Text | every message in every language, with a writer and the Text tab | the screen-set variables and a few message categories (2) |
 
@@ -235,9 +233,7 @@ per kind of data, each editing through its writer and taking the allowed
 values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
-- [ ] A Crests tab for `emblem.py set` (the starting and rival crests,
-      presets, layer records and flag placements), and a stadium tab once
-      that writer exists ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
+- [ ] A stadium tab, once the stadium writer exists (section 3)
 - [ ] Later: the editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
@@ -370,7 +366,8 @@ is built and tested, or set aside.
 - [ ] Real names for LMASTER full and max: every league, competition,
       club and national team under its real name of the era (Highbury as
       Arsenal, European League as UEFA Champions League), matching LMAST
-      Realism's club names, in all five languages; first the list of
+      Realism's club names, in all five languages, each at most 18
+      characters like the player's own club name; first the list of
       names (from Realism, checked by the user)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer

@@ -72,6 +72,7 @@ Each kind of data has a tab along the top:
 | PR events | the Publicity Department's events: when each is offered, what it costs, its chance of success and what success brings |
 | Tactics | the tactics screen's eight Set Formation presets |
 | Kits | every club's home, away and keeper kits, shown as colour swatches, and the licensed clubs' numbers, name, collar and captain mark |
+| Crests | the crests a new club can pick, the rival's crest and the crest editor's samples and presets, part by part with colour swatches, and the flag patterns and where the crest sits on a flag. Pick what to show from the drop-down at the top. A colour can be one of the club's own three ("club colour 1" to "3"), which follow whatever colours the player gives the club. Not yet checked in the game |
 | Text | any message in the game, in all its language slots |
 | Comments | the comment lines on the player, manager, coach and scout detail screens |
 | Log | the commands your saves stood for (below) |

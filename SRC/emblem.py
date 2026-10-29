@@ -689,6 +689,142 @@ def cmd_colors(d):
             i, r, g, b, a, to32[i], "*" if i in in32 else " ", to16[i], "*" if i in in16 else ""))
 
 
+# --- What the editor asks (editor.py's Crests tab) ----------------------
+#
+# A record is named by the prefix of its `set` targets: crest:8:0,
+# preset:5:3, layer:9:1:0, start:4, flag:pattern:2, flag:place:7. Each
+# field's spec is ("choice", [values]) or ("range", low, high), as
+# pbdata.edit_spec gives them, from the same ranges `set` checks.
+
+CREST_LIST_FIELDS = {"pattern": AREAS, "acce": AREAS, "layer_key": LAYERS}
+CREST_COLOR_LABELS = {"pattern_color": ("area", 2), "acce_color": ("area", 3),
+                      "layer_color": ("layer", 3)}
+
+
+def _spec(lo, hi, extra=(), choice_limit=300):
+    if hi - lo < choice_limit:
+        return ("choice", list(range(lo, hi + 1)) + list(extra))
+    return ("range", lo, hi)
+
+
+def color_spec():
+    """The club's three colours first, then the 32-colour ids."""
+    return ("choice", sorted(CLUB_COLORS, reverse=True) + list(range(COLOR_RANGE[1] + 1)))
+
+
+def records(t, section, flag_t=None):
+    """The record prefixes of one section: ("crest", 7|8|9), ("preset",
+    4|5|6), ("layer",), ("start",), ("flag", "pattern"|"place")."""
+    kind = section[0]
+    if kind == "crest":
+        return ["crest:%d:%d" % (section[1], n) for n in range(len(crests(t, section[1])))]
+    if kind == "preset":
+        return ["preset:%d:%d" % (section[1], n) for n in range(len(presets(t, section[1])))]
+    if kind == "layer":
+        out = []
+        _, _, samples = context(t)
+        for s in range(samples):
+            for l in range(LAYERS):
+                table = LAYER_BASE + LAYERS * s + l
+                n = len(layer_records(t, s, l))
+                usable = n if t[table].size % LAYER_RECORD == 0 else 4
+                out += ["layer:%d:%d:%d" % (s, l, r) for r in range(usable)]
+        return out
+    if kind == "start":
+        return ["start:%d" % n for n in range(context(t)[0][10])]
+    if kind == "flag":
+        n = flag_t[1].size // 2 if section[1] == "pattern" else flag_t[2].size // 4
+        return ["flag:%s:%d" % (section[1], k) for k in range(n)]
+    raise ValueError("no section %r" % (section,))
+
+
+def edit_fields(t, record, flag_t=None):
+    """[(target, label, spec)] for one record, in the order the editor
+    shows them."""
+    p = record.split(":")
+    out = []
+    if p[0] == "crest":
+        table, row = int(p[1]), int(p[2])
+        c = crests(t, table)[row]
+        for field in ("id", "sample", "base", "mask"):
+            lo, hi = crest_range(t, field, c["base"])
+            out.append(("%s:%s" % (record, field), field, _spec(lo, hi)))
+        for field, n in CREST_LIST_FIELDS.items():
+            lo, hi = crest_range(t, field)
+            what = "layer" if field == "layer_key" else "area"
+            for k in range(n):
+                out.append(("%s:%s.%d" % (record, field, k), "%s %d %s" % (
+                    what, k, field.replace("_", " ")), _spec(lo, hi)))
+        for field, (what, per) in CREST_COLOR_LABELS.items():
+            for k in range(len(c[field]) * per):
+                out.append(("%s:%s.%d" % (record, field, k), "%s %d %s colour %d" % (
+                    what, k // per, field.split("_")[0], k % per + 1), color_spec()))
+        return out
+    if p[0] == "preset":
+        table = int(p[1])
+        lo, hi = preset_range(t, table, "part")
+        out.append((record + ":part", "part", _spec(lo, hi, (NO_BASE,) if table == 4 else ())))
+        for field in TRS_FIELDS[:-1]:
+            out.append(("%s:%s" % (record, field), field, _spec(*preset_range(t, table, field))))
+        return out
+    if p[0] == "layer":
+        out.append((record + ":key", "key", _spec(*layer_range(t, "key"))))
+        out.append((record + ":acce", "accessory", _spec(*layer_range(t, "acce"), extra=(NO_BASE,))))
+        for field in TRS_FIELDS[:-1]:
+            out.append(("%s:%s" % (record, field), field, _spec(*layer_range(t, field))))
+        return out
+    if p[0] == "start":
+        rows = context(t)[0]
+        return [(record + ":sample", "sample (table 7 row)", _spec(0, rows[7] - 1)),
+                (record + ":color1", "first colour", ("choice", list(range(32)))),
+                (record + ":color2", "second colour", ("choice", list(range(32))))]
+    if p[0] == "flag" and p[1] == "pattern":
+        return [(record + ":base", "base", _spec(0, flag_t[0].size // 4 - 1)),
+                (record + ":rev", "rev", _spec(*TRS_RANGES["rev"]))]
+    if p[0] == "flag" and p[1] == "place":
+        return [("%s:%s" % (record, f), f, _spec(-128, 127) if fmt == "b" else _spec(0, 255))
+                for f, fmt in FLAG_PLACE_FIELDS]
+    raise ValueError("no record %r" % record)
+
+
+def get_value(t, target, flag_t=None):
+    """The current value of one `set` target."""
+    p = target.split(":")
+    if p[0] == "crest":
+        c = crests(t, int(p[1]))[int(p[2])]
+        field, _, index = p[3].partition(".")
+        if field in COLOR_GROUPS:
+            return [x for group in c[field] for x in group][int(index)]
+        if field in CREST_LIST_FIELDS:
+            return c[field][int(index)]
+        return c[field]
+    if p[0] == "preset":
+        part, r = presets(t, int(p[1]))[int(p[2])]
+        return part if p[3] == "part" else r[p[3]]
+    if p[0] == "layer":
+        (key, acce), r = layer_records(t, int(p[1]), int(p[2]))[int(p[3])]
+        return {"key": key, "acce": acce}.get(p[4], r.get(p[4]))
+    if p[0] == "start":
+        row = int(p[1])
+        if p[2] == "sample":
+            return t[10].data[row]
+        return struct.unpack_from("<b", t[11].data, 3 * row + (1 if p[2] == "color1" else 2))[0]
+    if p[0] == "flag" and p[1] == "pattern":
+        return flag_t[1].data[2 * int(p[2]) + (0 if p[3] == "base" else 1)]
+    if p[0] == "flag" and p[1] == "place":
+        k = [f for f, _ in FLAG_PLACE_FIELDS].index(p[3])
+        return struct.unpack_from("<" + FLAG_PLACE_FIELDS[k][1], flag_t[2].data, 4 * int(p[2]) + k)[0]
+    raise ValueError("no target %r" % target)
+
+
+def palette32(d):
+    """[(r, g, b)] for the 32-colour ids the crests use: GetId96FromId32
+    (table 6), then the colour word (table 0)."""
+    t = load_tables(d, "COLOR_TABLE.TBB")
+    words = struct.unpack_from("<%dI" % (t[0].size // 4), t[0].data)
+    return [color_rgba(words[t[6].data[i]])[:3] for i in range(t[6].size)]
+
+
 def load_file(path):
     """(buf, end, tables, kind), kind "emblem" or "flag" by table count."""
     with open(path, "rb") as f:

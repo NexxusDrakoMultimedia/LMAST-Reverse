@@ -164,6 +164,9 @@ evidence and how it was tested; the git history holds the rest.
 - [x] `saveedit.py` (steps 1–3 and 5): every page `save.py set` can
       write, Save to new slot, card files
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
+- [x] The Crests tab: crests, presets, layer records and flag records
+      through `emblem.py set`, tested through its widgets off-screen
+      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 
 ## 6. Distribute: sharing a mod
 

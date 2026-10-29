@@ -306,6 +306,16 @@ record, encodes each again from its fields and rebuilds the file: both
 files come out identical, on the PAL and the Japanese disc. No edit made
 with `set` has been tried in the game yet.
 
+The mod editor's Crests tab ([`USAGE.md`](../USAGE.md#the-window))
+edits the same records through `set`'s functions. It takes the records,
+fields and allowed values from `emblem.records`, `edit_fields` and
+`get_value`, and logs each save as the `emblem.py set` commands that
+make the same files. Tested through its widgets off-screen: nine edits
+across both files, and a base change refused because the crest's mask
+didn't fit the new base; the logged commands rebuilt both saved files
+byte for byte, and a second session read the edits back from the mod
+folder.
+
 ## Still unknown
 
 - What a `Trs`'s `rev` values 1–3 and a flag's variants look like, what

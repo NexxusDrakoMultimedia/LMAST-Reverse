@@ -424,10 +424,13 @@ Ideas the user has agreed on (2026-10-27), not started:
   ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing)): the name lists are message
   categories 3–11, with variants of the same ids in 100001–120000 (such
   as `100009`'s upper-case league names) that need the same change, in
-  all five European languages. Before it starts: the list of
-  replacements (from Realism's names, checked by the user), how long a
-  name each screen fits, and the club names copied into `PRELOAD`
-  packs. It would be its own group (one switch, `real-names`), in the
+  all five European languages. The game lets the player name their own
+  club and themself with at most 18 characters (user report), so the
+  real club and competition names should keep to 18 characters too,
+  using the short form a name is known by where the full one is longer.
+  Before it starts: the list of replacements (from Realism's names,
+  checked by the user), whether any screen fits less than 18, and the
+  club names copied into `PRELOAD` packs. It would be its own group (one switch, `real-names`), in the
   full and max editions.
 
 ## Not candidates

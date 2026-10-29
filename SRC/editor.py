@@ -151,6 +151,13 @@ Tabs:
              written to both copies, the executable's (mod/disc/SLES_541.51,
              which the game draws from) and PLPACK_HOME/AWAY.PAC, as
              `uniform.py setexe` and `setlicence` do.
+    Crests   the club editor's crest and flag tables (EDIT_EMBLEM.TBB,
+             EDIT_FLAG.TBB, emblem.py set; DOC/EMBLEM_DIR.md#editing):
+             the starting, rival and sample crests field by field (parts,
+             mask, layer keys, colours as swatches, -1/-2/-3 the club's
+             own), the starting crests' samples and first colours, the
+             base, pattern and accessory presets, the layer accessories
+             and the flag patterns and crest placements.
     Text     message text in MES.PAC, one message in all 7 language slots,
              found by category, text or id (mbb.py; DOC/MBB_FORMAT.md). A
              file that outgrows its slot makes MES.PAC grow and moves the
@@ -192,6 +199,7 @@ import camp
 import clubevent
 import clubrank
 import clubresult
+import emblem
 import formset
 import regulation
 import sqb
@@ -5749,6 +5757,271 @@ class NationsTab(Tab):
         return True
 
 
+EMBLEM_FILES = {"emblem": "EMBLEM/" + emblem.EMBLEM_FILE, "flag": "EMBLEM/" + emblem.FLAG_FILE}
+CREST_SECTIONS = (
+    (("crest", 8), "Starting crests (table 8)",
+     "The crests a new club can pick. Colours -1, -2 and -3 are the club's own first, second "
+     "and third colours; the rest are the 32-colour palette."),
+    (("start",), "Starting crests' sample and first colours (tables 10, 11)",
+     "Which sample crest each starting crest is shown as in the list, and the two colours a "
+     "club picking it starts with."),
+    (("crest", 9), "Rival crest (table 9)",
+     "The rival club's crest. On the disc all 32 rows are the same crest."),
+    (("crest", 7), "Sample crests (table 7)",
+     "The crest editor's samples. The sample number also picks the layer tables the layer "
+     "keys are looked up in."),
+    (("preset", 4), "Base presets (table 4)",
+     "A crest's base: its mask group (65535: no base) and where it sits. Scale is in percent."),
+    (("preset", 5), "Area pattern presets (table 5)",
+     "An area's pattern texture and where it sits. Rotation is in degrees."),
+    (("preset", 6), "Area accessory presets (table 6)",
+     "An area's accessory. On the disc the one row is empty."),
+    (("layer",), "Layer accessories (tables 12-143)",
+     "The extra accessories of a sample, by layer: a crest gets the records whose key "
+     "matches its layer key. Accessory 65535 is an empty slot. In the three short tables only "
+     "the records the game reads correctly are listed."),
+    (("flag", "pattern"), "Flag patterns (EDIT_FLAG table 1)",
+     "A flag's base texture and its rev value (0-3; what 1-3 look like isn't checked)."),
+    (("flag", "place"), "Flag crest placements (EDIT_FLAG table 2)",
+     "Where the crest sits on the flag, and its size."),
+)
+
+
+def crest_colour_label(v):
+    return emblem.CLUB_COLORS.get(v, "colour %d" % v).replace("club", "club colour")
+
+
+def crest_colour_input(parent, palette, spec, get, apply):
+    """A crest colour: a drop-down of the club's colours and the 32-colour
+    palette, with a swatch of the chosen one."""
+    frame = ttk.Frame(parent)
+    swatch = tk.Label(frame, width=3, relief="solid", borderwidth=1)
+
+    def paint():
+        v = get()
+        if 0 <= v < len(palette):
+            swatch.configure(bg="#%02x%02x%02x" % palette[v], text="")
+        else:
+            swatch.configure(bg=frame.winfo_toplevel().cget("bg"), text="C%d" % -v)
+
+    def commit(text, revert):
+        ok = apply(text, revert)
+        paint()
+        return ok
+    swatch.pack(side="left", padx=(0, 4))
+    value_input(frame, spec, crest_colour_label, get, commit).pack(side="left")
+    paint()
+    return frame
+
+
+class CrestsTab(Tab):
+    """The club editor's crest and flag tables (EDIT_EMBLEM.TBB,
+    EDIT_FLAG.TBB) through emblem.apply_edit and emblem.encode_file, as
+    `emblem.py set` does. The records, the fields and their allowed values
+    come from emblem.records, edit_fields and get_value."""
+    title = "Crests"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.tables = {}
+        self.edits = {"emblem": [], "flag": []}     # set arguments, in edit order
+        self.section = CREST_SECTIONS[0][0]
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Show").pack(side="left")
+        self.section_var = tk.StringVar(value=CREST_SECTIONS[0][1])
+        self.section_box = ttk.Combobox(bar, textvariable=self.section_var, state="readonly",
+                                        values=[s[1] for s in CREST_SECTIONS], width=52)
+        self.section_box.pack(side="left", padx=6)
+        self.section_box.bind("<<ComboboxSelected>>", lambda e: self.pick_section())
+        self.about = ttk.Label(self.frame, foreground="#555", wraplength=1100, justify="left")
+        self.about.pack(fill="x", padx=8)
+
+        panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=6)
+        left = ttk.Frame(panes)
+        self.tree = ttk.Treeview(left, columns=("what",), show="headings", selectmode="browse")
+        self.tree.heading("what", text="Record")
+        self.tree.column("what", width=LIST_MIN)
+        self.tree.tag_configure("edited", foreground="#b03000")
+        scroll = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scroll.set)
+        self.tree.pack(side="left", fill="both", expand=True)
+        scroll.pack(side="left", fill="y")
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.paths = {k: mod.source(rel) for k, rel in EMBLEM_FILES.items()}
+            self.tables = {}
+            for kind, path in self.paths.items():
+                buf, end, t, got = emblem.load_file(path)
+                if got != kind:
+                    raise ValueError("%s isn't %s" % (path, EMBLEM_FILES[kind]))
+                self.tables[kind] = (buf, end, t)
+            self.palette = emblem.palette32(os.path.dirname(mod.source("EMBLEM/COLOR_TABLE.TBB")))
+        except (ValueError, struct.error, OSError) as e:
+            self.tables = {}
+            self.app.status("Couldn't load the crest tables: %s" % e)
+            messagebox.showerror("Crests", "Couldn't load the crest tables:\n%s" % e)
+            return
+        self.edits = {"emblem": [], "flag": []}
+        self.pick_section(keep=True)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def t(self):
+        return self.tables["emblem"][2]
+
+    def flag_t(self):
+        return self.tables["flag"][2]
+
+    def kind_of(self, record):
+        return "flag" if record.startswith("flag:") else "emblem"
+
+    def pick_section(self, keep=False):
+        label = self.section_var.get()
+        for key, title, about in CREST_SECTIONS:
+            if title == label:
+                if key != self.section:
+                    keep = False
+                self.section = key
+                self.about.configure(text=about)
+        if not self.tables:
+            return
+        self.refresh_list()
+        recs = emblem.records(self.t(), self.section, self.flag_t())
+        if keep and self.current in recs:
+            self.tree.selection_set(self.current)
+            self.tree.see(self.current)
+        else:
+            self.current = None
+            self.detail.clear()
+
+    def summary(self, record):
+        g = lambda f: emblem.get_value(self.t(), "%s:%s" % (record, f), self.flag_t())
+        p = record.split(":")
+        if p[0] == "crest":
+            return "row %s: id %d, sample %d, base %d, mask %d" % (
+                p[2], g("id"), g("sample"), g("base"), g("mask"))
+        if p[0] == "preset":
+            part = g("part")
+            return "row %s: %s, at %d,%d, scale %d%%x%d%%" % (
+                p[2], "none" if part == emblem.NO_BASE else "part %d" % part, g("tx"), g("ty"),
+                g("sx"), g("sy"))
+        if p[0] == "layer":
+            acce = g("acce")
+            return "sample %s, layer %s, record %s: key %d, %s" % (
+                p[1], p[2], p[3], g("key"),
+                "empty" if acce == emblem.NO_BASE else "accessory %d" % acce)
+        if p[0] == "start":
+            return "starting crest %s: sample row %d, colours %d and %d" % (
+                p[1], g("sample"), g("color1"), g("color2"))
+        if p[1] == "pattern":
+            return "pattern %s: base %d, rev %d" % (p[2], g("base"), g("rev"))
+        return "placement %s: at %d,%d, size %dx%d" % (
+            p[2], g("pos_x"), g("pos_y"), g("size_x"), g("size_y"))
+
+    def edited_records(self):
+        return {e.split("=")[0].rsplit(":", 1)[0] for edits in self.edits.values() for e in edits}
+
+    def refresh_list(self):
+        self.tree.delete(*self.tree.get_children())
+        edited = self.edited_records()
+        for record in emblem.records(self.t(), self.section, self.flag_t()):
+            self.tree.insert("", "end", iid=record, values=(self.summary(record),),
+                             tags=("edited",) if record in edited else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(sel[0])
+
+    def show(self, record):
+        self.current = record
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text=self.summary(record), font=self.app.title_font).pack(
+            anchor="w", padx=8, pady=(8, 2))
+        frame = ttk.Frame(box)
+        frame.pack(fill="x", padx=8, pady=6)
+        for row, (target, label, spec) in enumerate(
+                emblem.edit_fields(self.t(), record, self.flag_t())):
+            ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", padx=(0, 12),
+                                              pady=1)
+            get = lambda target=target: emblem.get_value(self.t(), target, self.flag_t())
+            apply = lambda text, revert, target=target: self.commit(target, text, revert)
+            if "_color." in target:
+                w = crest_colour_input(frame, self.palette, spec, get, apply)
+            else:
+                w = value_input(frame, spec, str, get, apply)
+            w.grid(row=row, column=1, sticky="w", pady=1)
+
+    def commit(self, target, text, revert):
+        kind = self.kind_of(target)
+        edit = "%s=%s" % (target, text)
+        try:
+            line = emblem.apply_edit(self.tables[kind][2], kind, edit)
+        except ValueError as e:
+            revert()
+            message = "%s: %s" % (edit, e)
+            self.app.status(message)
+            messagebox.showerror("Crests", message)
+            return False
+        self.edits[kind].append(edit)
+        self.app.status(line)
+        record = target.rsplit(":", 1)[0]
+        if self.tree.exists(record):
+            self.tree.item(record, values=(self.summary(record),), tags=("edited",))
+        if target.endswith(":base") and target.startswith("crest:"):
+            # The mask's choices follow the base; redraw once the
+            # drop-down's own event is done.
+            self.frame.after_idle(lambda: self.show(record))
+        self.app.update_title()
+        return True
+
+    def dirty(self):
+        return any(self.edits.values())
+
+    def save(self):
+        if not self.dirty():
+            return True
+        mod = self.app.mod
+        temps, cmds, data = [], [], {}
+        try:
+            for kind, edits in self.edits.items():
+                if not edits:
+                    continue
+                buf, end, t = self.tables[kind]
+                data[kind] = emblem.encode_file(buf, end, t, kind)
+            for kind, out_bytes in data.items():
+                out = mod.target(EMBLEM_FILES[kind])
+                os.makedirs(os.path.dirname(out), exist_ok=True)
+                temps.append((out + ".new", out))
+                with open(out + ".new", "wb") as f:
+                    f.write(out_bytes)
+                cmds.append(["python", "SRC/emblem.py", "set", quote(shown_path(self.paths[kind])),
+                             quote(shown_path(out + ".new"))] + [quote(e) for e in self.edits[kind]])
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Crests", "Can't save: %s" % e)
+            return False
+        replace_new(temps)
+        n = sum(len(e) for e in self.edits.values())
+        lines = log_lines("Crests: %d edits" % n, cmds, temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d edits" % (", ".join(shown_path(f) for _, f in temps), n))
+        return True
+
+
 class LogTab(Tab):
     """The commands each save corresponds to, as written to editor.log."""
     title = "Log"
@@ -6252,10 +6525,11 @@ class App:
         self.tours = ToursTab(self)
         self.tactics = TacticsTab(self)
         self.comments = CommentsTab(self)
+        self.crests = CrestsTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.natcal, self.free,
                      self.links, self.nations, self.bases, self.regulations, self.clubrank, self.training, self.camps, self.tours,
-                     self.facilities, self.clubevents, self.tactics, self.kits, self.text,
-                     self.comments]
+                     self.facilities, self.clubevents, self.tactics, self.kits, self.crests,
+                     self.text, self.comments]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)
