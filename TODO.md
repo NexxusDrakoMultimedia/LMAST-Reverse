@@ -331,14 +331,6 @@ disc or the edit to build; the result goes into the doc linked.
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-V000`,
       and an LMASTER full disc its careers to `-F000`
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
-- [ ] Real names and the retail text fixes on `LMAST-test-names.iso`
-      (LMASTER full with `skip-tutorial`): the league, club and
-      competition names in the club lists, tables and Schedule screen
-      (Arsenal, the Premier League, the Champions League), a long name
-      such as Coppa Italia Dilettanti where it shows, and the Game Over
-      help; one other language if possible
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names),
-      [Retail text fixes](DOC/LMASTER_MOD.md#retail-text-fixes))
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-developer-launcher))
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and

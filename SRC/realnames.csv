@@ -13,7 +13,8 @@ category,id,en,fr,de,it,es,short
 3,2102,Nürnberg,Nuremberg,Nürnberg,Norimberga,Núremberg,NÜR
 3,2112,Erzgebirge Aue,Erzgebirge Aue,Erzgebirge Aue,Erzgebirge Aue,Erzgebirge Aue,ERZ
 3,2116,1860 Munich,1860 Munich,1860 München,1860 Monaco,1860 Múnich,MUN
-3,2245,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FCE
+3,2245,Principat,Principat,Principat,Principat,Principat,PRI
+3,2246,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FCE
 3,2247,Austria Wien,Austria Vienne,Austria Wien,Austria Vienna,Austria Viena,AUS
 3,2248,Red Bull Salzburg,Red Bull Salzbourg,Red Bull Salzburg,Red Bull Salzburg,Red Bull Salzburgo,RED
 3,2249,Grazer AK,Grazer AK,Grazer AK,Grazer AK,Grazer AK,GRA
@@ -61,8 +62,8 @@ category,id,en,fr,de,it,es,short
 3,2310,Inter Bratislava,Inter Bratislava,Inter Bratislava,Inter Bratislava,Inter Bratislava,INT
 3,2311,Slovan Bratislava,Slovan Bratislava,Slovan Bratislava,Slovan Bratislava,Slovan Bratislava,SLO
 3,2315,Ararat Yerevan,Ararat Yerevan,Ararat Yerevan,Ararat Yerevan,Ararat Yerevan,ARA
-3,2317,Qarabagh,Qarabagh,Qarabagh,Qarabagh,Qarabagh,QAR
-3,2318,Inter Baku,Inter Baku,Inter Baku,Inter Baku,Inter Baku,INT
+3,2317,Inter Baku,Inter Baku,Inter Baku,Inter Baku,Inter Baku,INT
+3,2318,Qarabagh,Qarabagh,Qarabagh,Qarabagh,Qarabagh,QAR
 3,2319,Belshina,Belshina,Belshina,Belshina,Belshina,BEL
 3,2320,Dinamo Minsk,Dinamo Minsk,Dinamo Minsk,Dinamo Minsk,Dinamo Minsk,DIN
 3,2321,CSKA Sofia,CSKA Sofia,ZSKA Sofia,CSKA Sofia,CSKA Sofía,CSK

@@ -220,6 +220,9 @@ Each result is recorded in the doc named.
       ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
 - [x] The third tier's clubs in Other Club Info, after its loop was run
       to club 459 ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b))
+- [x] Real names and the retail text fixes on `LMAST-test-names.iso`
+      (2026-10-30): all as intended but two swapped pairs, now fixed
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
 
 ## 8. LMASTER Mod and other patches
 

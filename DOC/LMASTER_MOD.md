@@ -469,7 +469,11 @@ read "League One" and so on. PAL only.
 Manchester City and MUN in `MES.PAC`, the Champions League in each
 language, "Arsenal" and "Stella Rossa" in the English and Italian
 `STATIONMES` copies the game loads, and "League One" in the third tier's
-rules. Not yet seen in the game.
+rules. **Tested in PCSX2** (user report, 2026-10-30): the names showed
+as intended apart from two swapped pairs, since corrected (below).
+The career started in England although the club was made in Germany,
+because the disc was built without `--skip-nation germany`; that is
+the test switch, not the names.
 
 ```bash
 python SRC/realnames.py info DAT/MESSAGE/MES.PAC       # the names against the disc
@@ -529,14 +533,16 @@ name column holds a suggestion only where the game's name isn't how
 the club is known (Highbury → Arsenal, Gelsenkirchen → Schalke 04,
 La Boca → Boca Juniors); an empty cell keeps the game's name, and the
 licensed names stay. 340 suggestions and 220 logo readings are in;
-the user then gave the names of ten clubs (Baki → Qarabagh, Diaconsa
-→ FC Encamp, Sheva → Beitar Jerusalem, North Shore → Auckland
-City and others), and the three "Club Cups": Coppa Italia
-Dilettanti, Copa Federación de España and KNVB Amateur Cup, the
-amateur cups (the first two are 23 and 25 characters). The user
-confirmed the pairings that were in doubt (Velika as Radnik V.
-Gorica, Baku as Inter Baku, Kutaisi as Torpedo Kutaisi, Kulubu as
-Bursaspor); the World Club Championship is a made-up tournament and
+the user then gave the names of ten clubs (Sheva → Beitar Jerusalem,
+North Shore → Auckland City and others), and the three "Club Cups":
+Coppa Italia Dilettanti, Copa Federación de España and KNVB Amateur
+Cup, the amateur cups (the first two are 23 and 25 characters). The
+user confirmed the pairings that were in doubt (Velika as Radnik V.
+Gorica, Kutaisi as Torpedo Kutaisi, Kulubu as Bursaspor). Two pairs
+first went the wrong way round and were swapped after the user saw
+them in the game (2026-10-30): Diaconsa is Principat and the game's
+Principat is FC Encamp; Baki is Inter Baku and Baku is Qarabagh. The
+World Club Championship is a made-up tournament and
 keeps its name. AL-Hyde is Al-Sadd (Sadd Sports Club, user report):
 "Al-Sadd" in full and max, while lite only fixes its casing to
 "Al-Hyde" ([Retail text fixes](#retail-text-fixes)). That leaves Doha, which had the Sadd crest: the
