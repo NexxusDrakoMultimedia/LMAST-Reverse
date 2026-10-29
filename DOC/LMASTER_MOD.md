@@ -480,14 +480,35 @@ Ideas the user has agreed on (2026-10-27), not started:
   name column holds a suggestion only where the game's name isn't how
   the club is known (Highbury → Arsenal, Gelsenkirchen → Schalke 04,
   La Boca → Boca Juniors); an empty cell keeps the game's name, and the
-  licensed names stay. 340 suggestions and 220 logo readings are in.
-  Twelve end in "?" for the user to check: six clubs whose crest and
-  game name don't clearly match, two with no crest found (Baku,
-  AL-Hyde), the Italian, Spanish and Dutch "Club Cups" (no real
-  counterpart in 2005) and the world club championship. 27
+  licensed names stay. 340 suggestions and 220 logo readings are in;
+  the user then gave the names of ten clubs (Baki → Qarabagh, Diaconsa
+  → FC Encamp, Sheva → Beitar Jerusalem, North Shore → Auckland
+  City and others). Nine end in "?" for the user to check: four clubs
+  whose crest and game name don't clearly match (Velika, Baku, Kutaisi,
+  Kulubu), AL-Hyde with no crest found, the Italian, Spanish and Dutch
+  "Club Cups" (no real counterpart in 2005) and the world club
+  championship. Four game names end in a stray space ("Baku ",
+  "Moskva ", "Újpesti ", "Ararat "), which their real names drop. 27
   suggestions, all competition or stage names, are over 18 characters,
-  as many of the game's own are. Only the English column is filled; the
-  other languages are still to do.
+  as many of the game's own are.
+
+  **The other languages.** The table ends with "real fr", "real de",
+  "real it" and "real es" columns (`mbb.py names` adds them), filled
+  from the English suggestions: 1,350 cells. The game's own non-English
+  names are descriptive translations ("Coupe d'Angleterre",
+  "Englischer Pokal"), so the real names are mostly the same proper
+  names in every language: the national leagues and cups (FA Cup,
+  Bundesliga, Copa del Rey) stay untranslated. The UEFA and FIFA
+  competitions take each language's usual name ("Ligue des champions",
+  "UEFA-Pokal", "Coppa UEFA", "Copa de la UEFA"; the German
+  "Weltmeisterschaft" and "Europameisterschaft" are kept). Stage names
+  follow the game's own wording and order in each language ("Tour de
+  …", "Gruppe A", "Gruppo A …", "Final …"), and category 9 stays in
+  capitals in French, Italian and Spanish as the game has it. Clubs copy
+  the English suggestion, except where a language has its own common
+  form ("Étoile Rouge", "Roter Stern", "Sparta Prag", "CSKA Moscou",
+  "1860 München"); every club suggestion fits 18 characters in every
+  language.
 
 ## Not candidates
 

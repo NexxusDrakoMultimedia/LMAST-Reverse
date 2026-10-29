@@ -35,7 +35,8 @@ Usage:
 `names` lists every club (teams 3-459), national team (460-542),
 competition (category 9) and competition stage (11) with its English
 name and length, an empty column for its real name (with a length
-formula for Excel), the French, German, Italian and Spanish names, every
+formula for Excel), the French, German, Italian and Spanish names
+(and at the end of the row, empty columns for their real names), every
 copy of it (the variant lists 4, 100003, 100009, 100011 and the short
 name in 5), the stadium named after it (category 10), and the other
 messages that mention it. The categories also have copies in
@@ -547,7 +548,7 @@ def cmd_names(paths, out_path):
     header = ["section", "category", "id", "team", "game name (en)", "length",
               "real name (fill in)", "real length", "fr", "de", "it", "es",
               "copies of this name", "stadium named after it", "mentioned in (en)",
-              "LMAST Realism logo shows"]
+              "LMAST Realism logo shows"] + ["real %s" % LANGS[l] for l in EU_LANGS[1:]]
     with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f)
         w.writerow(header)
@@ -559,7 +560,7 @@ def cmd_names(paths, out_path):
                         texts[2], texts[3], texts[4], texts[5],
                         "; ".join(copies), "; ".join(stads),
                         "%d: %s" % (len(mentions), " ".join(mentions[:12])) if mentions else "",
-                        ""])
+                        ""] + [""] * (len(EU_LANGS) - 1))
     counts = {}
     for row in rows:
         counts[row[0]] = counts.get(row[0], 0) + 1
