@@ -349,6 +349,11 @@ disc or the edit to build; the result goes into the doc linked.
       substitutions change; that tells whether the match reads the
       selection byte by mistake
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-developers-staff-editors))
+- [ ] The renamed clubs on `LMAST-test-names.iso`, rebuilt 2026-10-30
+      with `--skip-nation germany`: FC Rangers, FC Encamp, Inter Baku
+      and Qarabagh each with the right crest, and a club made in a
+      German city starting in Germany
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
 
 ## 8. LMASTER Mod and other patches
 
