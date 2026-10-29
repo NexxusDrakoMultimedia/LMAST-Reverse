@@ -296,7 +296,7 @@ the 72 competitions (10000 +, 100009 in capitals), 10 the stadiums
 (1000 +), 960 the states and 961 the cities. The longest club name is
 18 characters. `python SRC/mbb.py names` lists the club, national
 team and competition names with all their copies
-([`LMASTER_MOD.md`](LMASTER_MOD.md#planned)).
+([`LMASTER_MOD.md`](LMASTER_MOD.md#real-names)).
 
 Category 100's English file actually holds French text ("Voulez-vous
 personnaliser votre club ?").

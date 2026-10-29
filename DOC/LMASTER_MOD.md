@@ -28,15 +28,17 @@ level:
 | `injury-fixes` | injury-value, injury-row | yes | yes | yes |
 | `club-fixes` | sponsor-negotiation, season-status, pr-cycle, mobile-site, overseas-pop, cup-last16 | yes | yes | yes |
 | `match-fixes` | rival-manager, national-cups, vpf-styles | yes | yes | yes |
+| `text-fixes` | retail-text ([below](#retail-text-fixes)) | yes | yes | yes |
 | `leagues` | league-balance, third-tier | – | yes | yes |
 | `restorations` | injury-lines | – | yes | yes |
+| `names` | real-names ([below](#real-names)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
 | `test-tools` | skip-tutorial, launcher | – | – | – |
 
 LMASTER full is the fixes, the third tier, the balanced league
-schedules and the restored injury lines; LMASTER max adds the two
+schedules, the restored injury lines and the real names; LMASTER max adds the two
 difficulty groups, `harder-economy` and `balance` (the user's split,
 2026-10-27). Until then `lmaster-full` held what `lmaster-max` holds
 now, so the test reports before that date that name a full disc mean
@@ -101,6 +103,8 @@ Rules for an entry:
 | Canberra's last two camp clubs | bug (loop bound), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md): `SIMPRG.REL 0x4c8f8` reads 735 of `CAMP_LIST` table 1's 737 pairs, so Fukuoka and Kanagawa never appear | `--mod camp-clubs`: the bound `0x2de` → `0x2e0` at `SIMPRG.REL 0x4c9d4` (one instruction; whole disc image) | tested in PCSX2 (user report): Canberra's camp lists South Melbourne, Aichi, Fukuoka and Kanagawa |
 | Drills 75–86 under the next drill's name | broken text (PAL: names one message early, an added "Jackknife") | [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early): practice *n*'s name is message 971 + *n* of category 801; the Japanese names (both discs) and the training rows have a dummy at 74 that no coach teaches, PAL's names in all five languages start one early, so the drill named "Pass training." trains shooting | `--mod drill-names`: messages 1045–1056 → 1046–1057 in `801_1`–`6.mbb` of `MES.PAC` and their copies in `PRELOAD/SIMFILE1`–`6.PAC` (entry 28); the jackknife name goes to the dummy's 1045, so the files keep their sizes. No new text; a `MES.PAC` target gets the fix in its own bytes | tested in PCSX2 (user report): coach R.Bloemzaad's drill 76 (short and long pass, cross) reads "Dribble training" on the retail disc and "Pass training." on `LMAST-test-drills.iso` |
 | Play styles of an imported Virtua Pro Football player | bug (a compare function that subtracts pointers) | [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#the-record): the import's qsort compare (`SAVEPRG.REL 0x3df00`) never reads the ratings, so slot t keeps style t when rated 70+, and 18 of the 22 VPF styles never come in; G.Binns, rated 86 in a style that doesn't count, came in with none | `--mod vpf-styles`: the compare's 4 words load both ratings and return b − a through the tail of the executable's `strcmp`, and one more rates style 0 ("none") at 0 in the sorted copy so it never takes a slot ([`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#the-record)) | restored, tested in PCSX2: an edited V. Drake came in with four styles in slots 1–4 where the retail import gives one |
+| Retail text: wrong leagues in two Game Over conditions, the Spanish intro's club count, "AL-Hyde" | broken text, in PAL | [Retail text fixes](#retail-text-fixes) | `--mod retail-text` (lite): the messages' own text in `MES.PAC`, and the name's `STATIONMES` copies | built 2026-10-30 (test disc `LMAST-test-names.iso`); not checked in the game |
+| Made-up league, competition and club names | licensing (the retail game names unlicensed clubs after their cities or grounds) | [Real names](#real-names) | `--mod real-names` (full and max): `SRC/realnames.csv`'s names in `MES.PAC`'s name lists and the English mentions, with `--copies` | built 2026-10-30 (test disc `LMAST-test-names.iso`, read back from the image); not checked in the game. The 75 non-English mentions are left for edits by hand |
 | Crest presets 4–11 in three tables | broken data (a missing byte) | [`EMBLEM_DIR.md`](EMBLEM_DIR.md): tables 93, 101, 105 of `EDIT_EMBLEM.TBB` | add the missing `04 00` key | candidate. Check first whether the crest editor shows the gap |
 | The rival's manager by style | bug (wrong register), in both releases (Japanese `0x25e8e8`) | [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8): the loop at `0x25e6d0` finds the record for the rival's style, but its load reads record 0, so the rival always gets H.Raphanel (898), never I.Ricardo (1,970), L.Alfano (1,247) or L.Nobili (1,246) | one instruction at `0x25e6d8`: `lw $s3, 8($a0)` (`8c930008`) becomes `lw $s3, 4($v1)` (`8c730004`). The rival's style is already the opposite of yours (`0x5531e0`), so its manager then matches it. `--mod rival-manager` | fixed, tested in PCSX2 (user report): in a new Teamwork career in England, the rival SC Dunstable's Information screen showed a different policy area (the big blue area on the right, which follows the manager) from the unpatched game. The game never shows the rival manager's name. The other three styles weren't tried |
 | The World National Cup final on the last turn of the year | bug (schedule data) | the knockout UID 122 plays turns 92–95, and 95 is the year's last turn ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#turns)), so the season ends on the turn of the final and its results can't be viewed in the Competition menu (user report). The group UIDs 114–121 play 89–91. The Euro National Cup ends on 94 | move both national cups back one turn (`schedule.py shift`, masks and start turns; the end turn stays 95): World Cup groups 88–90 and knockout 91–94, Euro groups 88–90 and knockout 91–93. No league or cup plays after turn 87, and the two cups are in different years of the cycle. The national-team calendar ([`SCHEDULE_LIST.TBB`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)) moves with them: match days 88–94 and 88–93, release on the final's turn, and the call-up on 88 with the first group game (87 has the second-division play-off finals). `--mod national-cups` writes `SCHEDULE_SYSTEM.PAC` and its copy in `PRELOAD/STATIONFILE.PAC`, and `SCHEDULE_LIST.TBB` and its copies in `PRELOAD/SIMLOCALMEM0`–`6.PAC`. With a league of another size (`leaguesize.py build`, patched with `--copies`), it moves the cups in the league build's `SCHEDULE_SYSTEM.PAC` instead: a rebuilt league keeps its first and last game day, so it never reaches turn 88. Checked with England at 22 clubs: one build holds both, and `schedule.py info` finds no new problems | tested in PCSX2 (user reports): the Schedule screen's globes follow the new calendar (Euro year 2007-08: turns 88–93, week 4 empty; World Cup year 2009-10: turns 88–94, week 4 late empty). The World Cup's results after its final aren't seen, since that year is the fourth season of a career, but are taken to work: in the retail game the Euro National Cup's final is on turn 94 and its results can be viewed in the Competition menu after it (user report). The moved World Cup final is on that same turn, and both cups' knockouts are built the same way (an end turn of 95 and the same flag); the bug came only from a final on the last turn |
@@ -388,20 +392,182 @@ edit and gets the text. Not seen in game yet.
 The economy switches (tickets, adverts, fees, costs, reputation) need
 no text: no message states their old limits.
 
+## Retail text fixes
+
+Messages the retail game itself gets wrong, fixed in LMASTER lite by
+`--mod retail-text` (group `text-fixes`; built 2026-10-30, not yet
+checked in the game). The third tier's text, which states its own
+rules, is separate ([The text](#the-text)).
+
+| Message | Retail | Fix |
+|---|---|---|
+| Game Over conditions, Spain (`MES.PAC` 487:1204), point 2 | English names "Italian League B" (and says "23th"), German "Italienische Liga B"; French, Italian and Spanish are right | Spain's second division, 23rd place, in English and German |
+| Game Over conditions, the Netherlands (487:1205), point 2 | English "23th in Spanish League Division 2", French "division espagnole", German "23." and "Spanischen Liga 2", Spanish "2ª Liga Alemana"; only Italian is right | the Dutch second division, 21st place, in those four languages |
+| Spanish intro to the division (487:1100) | "Hay 216 equipos" | 26 |
+| Team 435's name (categories 3, 4 and 100003, ids 2435 and 3435) | "AL-Hyde" | "Al-Hyde" (user report), in all five languages |
+
+The point-2 fixes follow the Italian texts, which name each nation's
+own league and place. Category 487 has no `PRELOAD` copy, so its files
+grow inside their slots in `MES.PAC`; the name keeps its size, so the
+switch patches its copies in `PRELOAD/STATIONMES1`-`5.PAC` byte for
+byte, and lite needs no `--copies`. A `MES.PAC` target gets the fixes in
+its own bytes. With `third-tier`, the tier's text rewrites point 2 again
+and finds the Spanish fix in place; with `real-names`, team 435 becomes
+Al-Sadd. The Japanese release is left alone.
+
+Other retail typos seen while making the name table, not fixed:
+"Repulic of Ireland" (category 3) and "Motherwwell" (category 100003).
+
+## Real names
+
+`--mod real-names` (group `names`, in LMASTER full and max; built
+2026-10-30, not yet checked in the game) gives every league,
+competition, club and national team its real name of the game's era
+where the retail game uses a made-up one: Highbury as Arsenal, City as
+Manchester City, the European League as the Champions League (user
+request, 2026-10-30). The club names match the ones LMAST Realism shows
+on its logos and kits, so text and textures agree. The game lets the
+player name their own club and themself with at most 18 characters
+(user report), so the club names keep to 18 too.
+
+**The switch.** `SRC/realnames.csv` holds only the real names (no game
+text): 346 rows, keyed by category (3 teams, 9 competitions, 11 stages)
+and id, with the English, French, German, Italian and Spanish names and
+a team's three-letter form. `realnames.py` writes them into:
+
+| Category | Ids | What |
+|---|---|---|
+| 3, 4, 100003 | 2000, 3000, 2000 + team | the team's name, in each language the row gives |
+| 5 | 4000 + team | the three-letter form, in every language: the name's first three letters in capitals, as the game forms them, or an override where two clubs would share one (MCI, MUN, SHW, SHU) |
+| 9 | 10000 + competition | the competition's name; in capitals where the game has it so (French, Italian and Spanish) |
+| 100009 | the same | the English name in capitals, in every language, as the game has it |
+| 11 | 1000 + stage | the stage or group's name |
+| 100011 | the same | the same name where it repeats 11, or the English one where it holds English (in four languages run together, "European LeagueGroup A") |
+
+Letters the European text's encoding (cp850) has no code for lose their
+accent ("Zeljeznicar", "Besiktas"), as the game's own names do. A
+competition's real name also replaces its game name in the English
+messages that mention it (26: the tournament rules, the news, the
+advisor's lines), matched in any case and outside `{tags}`; a qualifying
+round's mention takes its competition's name ("we'll qualify for the
+Champions League"). The other languages' 75 mentions are left for edits
+by hand: their game names are often plain phrases ("monter en première
+division"), and a proper name in their place needs its article and
+gender changed ("nel campionato italiano B" → "nella Serie B"), which a
+swap can't do. Club names in other messages are left too, since many
+are city names.
+
+Every file still fits its slot in `MES.PAC`, which keeps its size; the
+name lists grow by about 550 bytes in each language, so their
+`STATIONMES` copies grow. The switch brings `MES.PAC` as a whole file
+and needs `--copies` (and `--dat`), like `third-tier`, whose text it
+follows: the tier's added sentences name the tiers' leagues, which then
+read "League One" and so on. PAL only.
+
+**Checked on `LMAST-test-names.iso`** (LMASTER full with
+`skip-tutorial`, built 2026-10-30), read back from the image: Arsenal,
+Manchester City and MUN in `MES.PAC`, the Champions League in each
+language, "Arsenal" and "Stella Rossa" in the English and Italian
+`STATIONMES` copies the game loads, and "League One" in the third tier's
+rules. Not yet seen in the game.
+
+```bash
+python SRC/realnames.py info DAT/MESSAGE/MES.PAC       # the names against the disc
+python SRC/realnames.py import names/realnames.csv     # from the filled name table
+python SRC/realnames.py apply DAT/MESSAGE/MES.PAC out.PAC
+```
+
+How the names were chosen:
+
+**The name table (groundwork, 2026-10-30).** `python SRC/mbb.py names
+DAT/MESSAGE/MES.PAC names/realnames.csv` lists the 776 names to
+consider: 457 clubs (teams 3–459), 83 national teams (460–542), 72
+competitions (category 9) and 164 competition stages and groups
+(category 11). Each row has the game's English name and length, an
+empty column for the real name with a length formula, the French,
+German, Italian and Spanish names, every copy (categories 4, 100003,
+100009, 100011 and the short name in 5), the stadium named after a
+club (category 10, "<name> Stadium") and the other messages that
+mention it. `names/` is ignored, since the file holds the game's text,
+and the command won't overwrite a table that exists. What it shows:
+
+- Every game club name already fits 18 characters (the longest is
+  18). 113 competition and stage names are longer, so the limit can
+  only be a guide for those.
+- 80 club names differ by language (French "Real Madrid Cast."),
+  and most competition names are translated, so each language
+  needs its own real name, not only the English one.
+- Category 100003 differs from 3 in 7 names (spellings such as
+  "Albinoleffe" and the typo "Motherwwell").
+- 142 names appear in other messages too: "European League" in 15
+  (the tournament rules among them), the nations in news and
+  supporter lists. Those messages need the same rename.
+- The `PRELOAD/STATIONMES<lang>.PAC` copies of categories 1 and 3–11
+  have little room to grow: 1,840 free bytes for English, 644 for
+  French, 1,072 for German, 232 for Italian and 1,008 for Spanish
+  (`python SRC/preload.py info DAT`). Longer names past that need the
+  pack rebuilt (`--copies` does it), which the Italian copy will.
+
+LMAST Realism holds no text list of names: its logos are named by
+texture hash, and its kit folders use the game's made-up names. Its
+league folders (`ENG/Premier League` and so on) each hold that
+league's or region's real clubs, so the table's last column, "LMAST
+Realism logo shows", was read from the logos by sight (contact sheets
+of each folder) and paired with the game's clubs of the same league
+or region. Where a game name could fit two crests, the club's kit
+colours decided (`uniform.py show`: Glasgow City wears green and
+white, so it is Celtic). The English folders are the 2005/06 clubs;
+the game's starting divisions are a season older (Crystal Palace,
+Norwich and Southampton in the top flight), which doesn't change any
+name.
+
+**Style (the user's choice, 2026-10-30): short names, like the
+licensed clubs of Italy, Spain and the Netherlands** ("Juventus",
+"Atlético Madrid", "PSV Eindhoven"), never shortened past the name a
+club is known by ("Real Madrid", not "R. Madrid"). The table's real
+name column holds a suggestion only where the game's name isn't how
+the club is known (Highbury → Arsenal, Gelsenkirchen → Schalke 04,
+La Boca → Boca Juniors); an empty cell keeps the game's name, and the
+licensed names stay. 340 suggestions and 220 logo readings are in;
+the user then gave the names of ten clubs (Baki → Qarabagh, Diaconsa
+→ FC Encamp, Sheva → Beitar Jerusalem, North Shore → Auckland
+City and others), and the three "Club Cups": Coppa Italia
+Dilettanti, Copa Federación de España and KNVB Amateur Cup, the
+amateur cups (the first two are 23 and 25 characters). The user
+confirmed the pairings that were in doubt (Velika as Radnik V.
+Gorica, Baku as Inter Baku, Kutaisi as Torpedo Kutaisi, Kulubu as
+Bursaspor); the World Club Championship is a made-up tournament and
+keeps its name. AL-Hyde is Al-Sadd (Sadd Sports Club, user report):
+"Al-Sadd" in full and max, while lite only fixes its casing to
+"Al-Hyde" ([Retail text fixes](#retail-text-fixes)). That leaves Doha, which had the Sadd crest: the
+only Qatari crest left in Realism's Middle East folder is Al-Gharafa's,
+which the user confirmed. No cell is left in doubt. Four game names end in a stray space ("Baku ",
+"Moskva ", "Újpesti ", "Ararat "), which their real names drop. 27
+suggestions, all competition or stage names, are over 18 characters,
+as many of the game's own are.
+
+**The other languages.** The table ends with "real fr", "real de",
+"real it" and "real es" columns (`mbb.py names` adds them), filled
+from the English suggestions: 1,350 cells. The game's own non-English
+names are descriptive translations ("Coupe d'Angleterre",
+"Englischer Pokal"), so the real names are mostly the same proper
+names in every language: the national leagues and cups (FA Cup,
+Bundesliga, Copa del Rey) stay untranslated. The UEFA and FIFA
+competitions take each language's usual name ("Ligue des champions",
+"UEFA-Pokal", "Coppa UEFA", "Copa de la UEFA"; the German
+"Weltmeisterschaft" and "Europameisterschaft" are kept). Stage names
+follow the game's own wording and order in each language ("Tour de
+…", "Gruppe A", "Gruppo A …", "Final …"), and category 9 stays in
+capitals in French, Italian and Spanish as the game has it. Clubs copy
+the English suggestion, except where a language has its own common
+form ("Étoile Rouge", "Roter Stern", "Sparta Prag", "CSKA Moscou",
+"1860 München"); every club suggestion fits 18 characters in every
+language.
+
 ## Planned
 
 Ideas the user has agreed on (2026-10-27), not started:
 
-- **Retail text fixes for LMASTER lite.** The third tier's text is done
-  ([The text](#the-text)); what is left are messages wrong in the retail
-  game itself, as a text fix of LMASTER lite. Known so far: Game Over
-  conditions 1204 and 1205 name the wrong nations (and 1205 Spain's
-  number), the Spanish intro's "216 equipos", fixed only with the
-  third tier now, and the club name "AL-Hyde" (team 435), which should
-  be "Al-Hyde" (user report) in categories 3 and 100003, ids 2435, in
-  all five European languages. Done with `mbb.py`'s writer
-  ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing)) and checked in PCSX2 where
-  a screen shows them.
 - **LMAST Realism on the disc.** Bring the logos, kits, texture fixes
   and real competition names of
   [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism),
@@ -416,107 +582,6 @@ Ideas the user has agreed on (2026-10-27), not started:
   texture once requantised to its palette, and the few larger ones need
   a choice (scaled down, or left to the pack). The pack's files stay out
   of the repo.
-- **Real names, for LMASTER full and max** (user request, 2026-10-30).
-  Every league, competition, club and national team under its real name
-  of the game's era, where the retail game uses a made-up one: for
-  example Highbury as Arsenal, City as Manchester City, European League
-  as UEFA Champions League. The club names should match the ones LMAST
-  Realism shows on its logos and kits, so text and textures agree. It is
-  a text edit with `mbb.py`'s writer
-  ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing)): the name lists are message
-  categories 3–11, with variants of the same ids in 100001–120000 (such
-  as `100009`'s upper-case league names) that need the same change, in
-  all five European languages. The game lets the player name their own
-  club and themself with at most 18 characters (user report), so the
-  real club and competition names should keep to 18 characters too,
-  using the short form a name is known by where the full one is longer.
-  It would be its own group (one switch, `real-names`), in the full and
-  max editions.
-
-  **The name table (groundwork, 2026-10-30).** `python SRC/mbb.py names
-  DAT/MESSAGE/MES.PAC names/realnames.csv` lists the 776 names to
-  consider: 457 clubs (teams 3–459), 83 national teams (460–542), 72
-  competitions (category 9) and 164 competition stages and groups
-  (category 11). Each row has the game's English name and length, an
-  empty column for the real name with a length formula, the French,
-  German, Italian and Spanish names, every copy (categories 4, 100003,
-  100009, 100011 and the short name in 5), the stadium named after a
-  club (category 10, "<name> Stadium") and the other messages that
-  mention it. `names/` is ignored, since the file holds the game's text,
-  and the command won't overwrite a table that exists. What it shows:
-
-  - Every game club name already fits 18 characters (the longest is
-    18). 113 competition and stage names are longer, so the limit can
-    only be a guide for those.
-  - 80 club names differ by language (French "Real Madrid Cast."),
-    and most competition names are translated, so each language
-    needs its own real name, not only the English one.
-  - Category 100003 differs from 3 in 7 names (spellings such as
-    "Albinoleffe" and the typo "Motherwwell").
-  - 142 names appear in other messages too: "European League" in 15
-    (the tournament rules among them), the nations in news and
-    supporter lists. Those messages need the same rename.
-  - The `PRELOAD/STATIONMES<lang>.PAC` copies of categories 1 and 3–11
-    have little room to grow: 1,840 free bytes for English, 644 for
-    French, 1,072 for German, 232 for Italian and 1,008 for Spanish
-    (`python SRC/preload.py info DAT`). Longer names past that need the
-    pack rebuilt (`--copies` does it), which the Italian copy will.
-
-  LMAST Realism holds no text list of names: its logos are named by
-  texture hash, and its kit folders use the game's made-up names. Its
-  league folders (`ENG/Premier League` and so on) each hold that
-  league's or region's real clubs, so the table's last column, "LMAST
-  Realism logo shows", was read from the logos by sight (contact sheets
-  of each folder) and paired with the game's clubs of the same league
-  or region. Where a game name could fit two crests, the club's kit
-  colours decided (`uniform.py show`: Glasgow City wears green and
-  white, so it is Celtic). The English folders are the 2005/06 clubs;
-  the game's starting divisions are a season older (Crystal Palace,
-  Norwich and Southampton in the top flight), which doesn't change any
-  name.
-
-  **Style (the user's choice, 2026-10-30): short names, like the
-  licensed clubs of Italy, Spain and the Netherlands** ("Juventus",
-  "Atlético Madrid", "PSV Eindhoven"), never shortened past the name a
-  club is known by ("Real Madrid", not "R. Madrid"). The table's real
-  name column holds a suggestion only where the game's name isn't how
-  the club is known (Highbury → Arsenal, Gelsenkirchen → Schalke 04,
-  La Boca → Boca Juniors); an empty cell keeps the game's name, and the
-  licensed names stay. 340 suggestions and 220 logo readings are in;
-  the user then gave the names of ten clubs (Baki → Qarabagh, Diaconsa
-  → FC Encamp, Sheva → Beitar Jerusalem, North Shore → Auckland
-  City and others), and the three "Club Cups": Coppa Italia
-  Dilettanti, Copa Federación de España and KNVB Amateur Cup, the
-  amateur cups (the first two are 23 and 25 characters). The user
-  confirmed the pairings that were in doubt (Velika as Radnik V.
-  Gorica, Baku as Inter Baku, Kutaisi as Torpedo Kutaisi, Kulubu as
-  Bursaspor); the World Club Championship is a made-up tournament and
-  keeps its name. AL-Hyde is Al-Sadd (Sadd Sports Club, user report):
-  "Al-Sadd" in full and max, while lite only fixes its casing to
-  "Al-Hyde" (above). That leaves Doha, which had the Sadd crest: the
-  only Qatari crest left in Realism's Middle East folder is Al-Gharafa's,
-  which the user confirmed. No cell is left in doubt. Four game names end in a stray space ("Baku ",
-  "Moskva ", "Újpesti ", "Ararat "), which their real names drop. 27
-  suggestions, all competition or stage names, are over 18 characters,
-  as many of the game's own are.
-
-  **The other languages.** The table ends with "real fr", "real de",
-  "real it" and "real es" columns (`mbb.py names` adds them), filled
-  from the English suggestions: 1,350 cells. The game's own non-English
-  names are descriptive translations ("Coupe d'Angleterre",
-  "Englischer Pokal"), so the real names are mostly the same proper
-  names in every language: the national leagues and cups (FA Cup,
-  Bundesliga, Copa del Rey) stay untranslated. The UEFA and FIFA
-  competitions take each language's usual name ("Ligue des champions",
-  "UEFA-Pokal", "Coppa UEFA", "Copa de la UEFA"; the German
-  "Weltmeisterschaft" and "Europameisterschaft" are kept). Stage names
-  follow the game's own wording and order in each language ("Tour de
-  …", "Gruppe A", "Gruppo A …", "Final …"), and category 9 stays in
-  capitals in French, Italian and Spanish as the game has it. Clubs copy
-  the English suggestion, except where a language has its own common
-  form ("Étoile Rouge", "Roter Stern", "Sparta Prag", "CSKA Moscou",
-  "1860 München"); every club suggestion fits 18 characters in every
-  language.
 
 ## Not candidates
 

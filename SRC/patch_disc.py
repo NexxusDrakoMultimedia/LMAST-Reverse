@@ -184,7 +184,7 @@ Italy's, Spain's or Germany's, the Spanish intro (487:1100) says 26 clubs
 for 216, and team 435's name is Al-Hyde, not AL-Hyde (categories 3, 4
 and 100003, and the STATIONMES copies of 3 and 4). A MES.PAC target gets
 the fixes in its own bytes; the Japanese release is left alone. See
-DOC/LMASTER_MOD.md#planned.
+DOC/LMASTER_MOD.md#retail-text-fixes.
 
 real-names (LMASTER full and max) gives every league, competition, club
 and national team its real name of the era, in the five European
@@ -192,7 +192,7 @@ languages: realnames.py writes SRC/realnames.csv's names into MES.PAC's
 name lists and the English messages that mention a competition. The
 lists grow, so it brings MES.PAC whole and needs --copies (and --dat) for
 the STATIONMES copies; it runs after the third tier's text. PAL only.
-See DOC/LMASTER_MOD.md#planned.
+See DOC/LMASTER_MOD.md#real-names.
 
 injury-value (whole disc image only) sets the first minimum of kind-6
 injuries in the value table (SLES 0x532d70) from 1600 to 16001, where the
@@ -3950,7 +3950,7 @@ def target_tier_text(file, data):
 
 
 # retail-text: messages the retail game gets wrong, for LMASTER lite
-# (DOC/LMASTER_MOD.md#planned). Point 2 of the Game Over conditions for
+# (DOC/LMASTER_MOD.md#retail-text-fixes). Point 2 of the Game Over conditions for
 # Spain (487:1204) and the Netherlands (1205) names the wrong league in
 # some languages, as the Italian texts show (Spain's 23rd, the
 # Netherlands' 21st); the Spanish intro (487:1100) says 216 clubs for 26;
@@ -4052,7 +4052,7 @@ def plan_retail_text(f, img, adopted=()):
 
 
 # real-names: every league, competition, club and national team under its
-# real name of the era (LMASTER full and max; DOC/LMASTER_MOD.md#planned).
+# real name of the era (LMASTER full and max; DOC/LMASTER_MOD.md#real-names).
 # realnames.py holds the names and writes them into MES.PAC's name lists
 # and the English messages that mention a competition. The lists grow, so
 # their STATIONMES copies grow too: the switch brings MES.PAC as a whole

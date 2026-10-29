@@ -19,7 +19,7 @@ them into every list above, and puts a competition's real name in place of
 its game name in the other messages that mention it (the rules and
 the news; names of 6 or more characters, outside {tags}). Club names in
 other messages are left: many are city names too. See
-DOC/LMASTER_MOD.md#planned (the real names) for how the names were chosen.
+DOC/LMASTER_MOD.md#real-names for how the names were chosen.
 
 Usage:
     python realnames.py info   <DAT/MESSAGE/MES.PAC>       # check the names against the disc

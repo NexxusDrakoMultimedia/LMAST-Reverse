@@ -331,6 +331,14 @@ disc or the edit to build; the result goes into the doc linked.
 - [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-V000`,
       and an LMASTER full disc its careers to `-F000`
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
+- [ ] Real names and the retail text fixes on `LMAST-test-names.iso`
+      (LMASTER full with `skip-tutorial`): the league, club and
+      competition names in the club lists, tables and Schedule screen
+      (Arsenal, the Premier League, the Champions League), a long name
+      such as Coppa Italia Dilettanti where it shows, and the Game Over
+      help; one other language if possible
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names),
+      [Retail text fixes](DOC/LMASTER_MOD.md#retail-text-fixes))
 - [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
       LIGHT TEST ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-developer-launcher))
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
@@ -359,21 +367,10 @@ is built and tested, or set aside.
 - [ ] Candidate: let the unused combination records load, and fix the
       pattern repeat check; decide first whether the extra records play
       sensibly ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] Retail text fixes for LMASTER lite: messages wrong in the retail
-      game itself: `--mod retail-text` fixes Game Over conditions 1204
-      and 1205, the Spanish intro and "AL-Hyde"; left: a test in game
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
-- [ ] Real names for LMASTER full and max: every league, competition,
-      club and national team under its real name of the era (Highbury as
-      Arsenal, European League as UEFA Champions League), matching LMAST
-      Realism's club names, in all five languages, each at most 18
-      characters like the player's own club name. The table is made
-      and filled with short-style suggestions from Realism's logos in all
-      five languages (`names/realnames.csv`), and the user has settled
-      every doubtful cell. `--mod real-names` (`realnames.py`,
-      `SRC/realnames.csv`) is built; left: the 75 non-English mentions
-      by hand, and a test on `LMAST-test-names.iso`
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
+- [ ] Real names in the other languages' messages: the 75 French,
+      German, Italian and Spanish mentions of a competition's game name
+      (`realnames.py info` counts them), rewritten by hand with their
+      articles and genders ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))

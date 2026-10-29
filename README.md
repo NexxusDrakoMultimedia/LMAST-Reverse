@@ -244,7 +244,7 @@ markers. `wav` renders the songs with the banks' own instruments instead.
 | Tool | Formats | Doc |
 |---|---|---|
 | [`mbb.py`](SRC/mbb.py) | `MESSAGE/MES.PAC` and its `MBB1` message files, all 7 language slots; `vars` reads what fills each variable from `SLES_541.51` and `SIMPRG.REL`; `names` writes the club, national team and competition names with their copies as a table to fill in with real names | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md) |
-| [`realnames.py`](SRC/realnames.py) | `SRC/realnames.csv`, the real club, national team and competition names for `--mod real-names`: `import` from the `mbb.py names` table, `info` checks them against `MES.PAC`, `apply` writes them | [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned) |
+| [`realnames.py`](SRC/realnames.py) | `SRC/realnames.csv`, the real club, national team and competition names for `--mod real-names`: `import` from the `mbb.py names` table, `info` checks them against `MES.PAC`, `apply` writes them | [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names) |
 
 ```bash
 python SRC/mbb.py info DAT/MESSAGE/MES.PAC

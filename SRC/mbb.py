@@ -540,7 +540,7 @@ def name_rows(table):
 
 
 def cmd_names(paths, out_path):
-    """The name table to fill in with real names (LMASTER_MOD.md#planned)."""
+    """The name table to fill in with real names (LMASTER_MOD.md#real-names)."""
     if os.path.exists(out_path):
         # It may hold names typed in by hand.
         raise SystemExit("%s exists; refusing to overwrite it" % out_path)

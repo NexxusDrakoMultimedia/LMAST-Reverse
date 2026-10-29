@@ -265,3 +265,10 @@ Each result is recorded in the doc named.
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [x] The third tier's text: the messages that state its rules, in the
       five European languages ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-text))
+- [x] `--mod retail-text` (LMASTER lite): the Game Over conditions for
+      Spain and the Netherlands, the Spanish intro's club count and
+      "Al-Hyde" ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#retail-text-fixes))
+- [x] `--mod real-names` (LMASTER full and max): the real league,
+      competition, club and national team names, chosen with the user
+      from LMAST Realism's logos, in five languages (`realnames.py`;
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
