@@ -367,8 +367,158 @@ fields. The first page (`0x1560`–`0x1c94`) shows only run-time state
 | `+0x64` | 1 | 実名？ real name? (Yes/No) | all 0 |
 | `+0x65` | 1 | モデルパターン model pattern | 0 (1,526), 1 (1,474) |
 
+What the four policies (`+0x30`–`+0x33`) and the seven tactical values
+(`+0x40`–`+0x46`) do in the game is below, after the affinity reader.
+
 The affinity reader confirms `+0x2f` as well: `pwkDissatis_GetAffintyType`
 takes a manager's column from `PlMinfo +0x33`.
+
+**Where the game keeps the manager (confirmed).** `PlMinfo` is 4 bytes
+and then the record, so record offset *n* is `PlMinfo +n+4`. My club's
+manager is the `PlMinfo` at `PlTeamData +0x4854` (`pwkTeam_GetManager`,
+`0x269d08`, copies 0xbc bytes from there), so the four policies are at
+`PlTeamData +0x4888`–`+0x488b` and the seven tactical values at
+`+0x4898`–`+0x489e`. A computer club's `PlTeamData` is built by
+`pwkOteam_GetTeamData` with its manager from the database
+(`pwkOteam_GetManager`, `0x24be40`), and the match takes a whole
+0x49a0-byte copy (`PlGiTask::GetTeamData`, `0x211258`), so the same
+offsets hold everywhere.
+
+**The four policies (confirmed).** The developers call them
+`plan_appoint`, `plan_game`, `plan_grow` and `prac_off` (field table,
+`python SRC/sles_disasm.py ISO/SLES_541.51 fields plan_ prac_off`). The
+manager detail screen shows all four: `CDetailManager::ConvertManager`
+(`0x2871a0`) copies `PlMinfo +0x34`–`+0x37`, and
+`SetupDetailManagerPage1` (`0x28b9e0`–`0x28baf0`) prints message
+10300 + *n*, 10310 + *n*, 10320 + *n* and 10330 + *n* of category 201.
+The Japanese names, and what PAL's English shows where it differs:
+
+| Value | Selection (`+0x30`) | Match (`+0x31`) | Training (`+0x32`) | Rest (`+0x33`) |
+|---|---|---|---|---|
+| 0 | バランス重視 balanced | 積極的に動く act boldly | 中央攻撃重視 centre attack | あまり休まない rarely rest |
+| 1 | 選手能力重視 player ability | 戦術変更を多用 change tactics a lot | サイド攻撃重視 side attack | たまに休む rest now and then |
+| 2 | チーム力重視 team strength ("Team player") | 選手交代を多用 use subs a lot | ラインディフェンス重視 line defence | 適度に休む rest moderately |
+| 3 | 若手重視 young players ("Talented youth") | 臨機応変に対応 adapt as needed | マンマークディフェンス重視 man-marking defence | よく休む rest often |
+| 4 | 経験重視 experience | 戦術変更を好む like tactic changes | フィジカル重視 physical | – |
+| 5 | コンディション重視 condition ("Tactically-Fit") | 選手交代を多用 use subs a lot (the same as 2) | フォーメーション重視 formation | – |
+| 6 | モチベーション重視 motivation | 選手交代を好む like subs | コンディション重視 condition | – |
+| 7 | チームフィット重視 team fit ("Suitablity") | あまり動かない rarely change | 実戦重視 match practice | – |
+
+In `PBDATA_EU.PAC` every value occurs (selection 185–477 managers each,
+match 213–455, training 141–546, rest 496–1,027). `pbdata.py` and the
+editor show these names.
+
+*Selection.* `plTeam_RegSel` (`0x2320a0`) picks the starting eleven,
+and its fifth argument is always `PlTeamData +0x4888`: at the start of
+the season (`pwkTeam_Init2`), in `pwkTeam_UpdateEquip`, for each
+computer club (`pwkOteam_GetTeamData`, `SIMPRG.REL 0x130c64`), before a
+match for the side that isn't my club (`PlGiTask::SetTeamData`,
+`0x210a8c`), on the tactics screen's automatic line-up
+(`CTacticsBase::setTeamTacticsAuto`, `0x2a7738`), and through
+`plTeam_RegReset` (`plTeam_ChangeTeamStyleCom`, `0x22f2a8`). The policy
+reaches `CalcuStamemPoint` (`0x22f910`), which scores a player for a
+position. The policy picks a row of 8 floats at `0x53a4f8`:
+
+| Policy | Position fit | Rank × 10 | Physical | Skill | Mental | + condition | + motivation | + fit |
+|---|---|---|---|---|---|---|---|---|
+| 0 balanced | 2 | 1 | 1 | 1 | 1 | 0 | 0 | 0 |
+| 1 player ability | 2 | 1.5 | 1 | 1 | 1 | 0 | 0 | 0 |
+| 2 team strength | 2 | 1 | 1 | 1 | 1 | 0.2 | 0.2 | 0.3 |
+| 3 young players | 2 | 1 | 1.5 | 1 | 1 | 0 | 0 | 0 |
+| 4 experience | 2 | 1 | 1 | 1 | 1.5 | 0 | 0 | 0 |
+| 5 condition | 2 | 1 | 1 | 1 | 1 | 0.5 | 0 | 0 |
+| 6 motivation | 2 | 1 | 1 | 1 | 1 | 0 | 0.5 | 0 |
+| 7 team fit | 2 | 1 | 1 | 1 | 1 | 0 | 0 | 0.5 |
+
+The first five weights multiply `plPinfo_GetPositionFitValue`, the
+rank (`PlPinfo +0x1b0`, record `+0x18`) × 10, and the three growth
+stages: `_GetPhysical/Skill/MentalGrowTypeValue` (`0x22f650`–`0x22f690`)
+look up the player's age against his growth types (`+0x4a`–`+0x4c`),
+and the result goes through `{0, 2, 4, 6, 8, 10, 13, 16, 19, 22, 25}`
+(`0x53a4e8`). Their sum is then multiplied by three factors, each a
+curve value plus the row's last three weights: condition (`PlPinfo
++0x240`) and motivation (`+0x242`), in 10 steps of 6,553, through
+0.70–1.15 (`0x53a488`); T-FIT (`+0x29a`) in steps of 10 through
+0.75–1.10 (`0x53a4b0`). Last comes `GetBasePositionPower`, and the
+score is halved when `PlPinfo +0x20c` has a bit of `0x300` set. So
+"young players" favours the physical growth stage, "experience" the
+mental one, and 5–7 lean on condition, motivation and T-FIT.
+
+The match reads the same byte. `GAMEPRG.REL 0xd96e8` (called from
+`match::MatchManager`) takes the period of the match from `0xaacc0`
+(limits 1,800, 2,700, 3,600, 4,200, 4,800, 5,400 and 7,200 seconds,
+the ends of the 30th to 120th minutes) and the goal difference from
+`0xaadd8` (−3 to +3). Policies 0–1, 2–4 and 5–7 pick one of three 8 × 7
+tables (`0x249500`, `0x249538`, `0x249570`) for a mode 0–4 (2 when level
+or early; 0 when behind late, 4 when ahead late; the third table moves
+later and only to 1 or 3). The mode adds a step (`0x2495ad`, 5 × 5) to
+five tactics sliders of each of the side's three formations: when
+behind (mode 0), +2 to sliders 0, 1, 4 and 5; when ahead (mode 4), −2,
+−2, −1 and −1 there and −1 to the offside trap. `GAMEPRG.REL 0xf3cb0`
+also switches on it, picking one of three 8 × 7 word tables by period
+and score (policies 0, 2 and 5 `0x2495d8`; 1, 3 and 6 `0x2496a0`; 4 and
+7 `0x249768`) for what looks like the substitutions. Both groupings fit
+the match policy's names (act boldly and change tactics a lot together;
+"rarely change" in the mildest group) better than the selection's,
+yet both read `+0x4888`.
+
+*Match.* Nothing reads `+0x31` (`PlMinfo +0x35`, `PlTeamData +0x4889`)
+except the detail screen and the save code (`SAVEPRG.REL`). The match
+reads the selection byte where this one's names would fit (above), so
+it may be a slip in `GAMEPRG.REL`; not tested.
+
+*Training and rest.* The Training screen's coach plan
+(`SIMPRG.REL 0xf06a8`, in `WP::CTrainingTask`; called from
+`0xecbe8`, the branch that sets task `+0xf48` to 1) fills the 8 slots
+at task `+0x198`–`+0x1b4` from my club's manager: the training policy
+picks a row of 7 practices from `SIMPRG.REL 0x228cc0` (6 rows; policies
+6 and 7 use row 5), and a 0 there means the current formation's system.
+Slot 4 is always 27 (rest).
+
+| Row | Practices (`PlPracNo`, [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md#practices-tables-0-and-1)) |
+|---|---|
+| 0 | possession, centre attack, power, stamina, set plays, practice match, teamwork |
+| 1 | direct play, side attack, offside trap, stamina, set plays, practice match, teamwork |
+| 2 | pressing, pressing, covering, offside trap, teamwork, practice match, covering |
+| 3 | speed, power, stamina, speed, power, stamina, practice match |
+| 4 | system, system, pressing, offside trap, practice match, teamwork, system |
+| 5 | practice match, teamwork, practice match, practice match, set plays, set plays, teamwork |
+
+The rows don't follow the names from 3 on: man-marking (3) gets the
+physical row, physical (4) the formation row, and formation, condition
+and match practice (5–7) the match row. The rest policy changes the last
+two slots: 0 keeps the row, 1 puts 26 (conditioning) in the last, 2
+puts 27 (rest) in the last, and 3 puts 26 in the one before and 27 in
+the last. No other reader of `+0x32` or `+0x33` was found, so the
+policies don't change how a computer club trains.
+
+**The tactical values (confirmed).** `plTeam_SetStyleTeamParam`
+(`0x22ed28`) sets the 7 tactics sliders of each formation
+(`PlTeamData +0x4260 + 0x70 ×` formation, `tactics` ×7, 0–6) to the
+manager's value (`+0x4898`–`+0x489e`: attacking, possession, centre or
+sides, left or right, where pressing starts, pressing strength, offside
+trap) plus a step from the table at `0x534438`. The step's column comes
+from the strength ratio, own `plTeam_GetStrength` (+5 for the home side)
+over the opponent's: up to 0.79 column 0, up to 0.89 column 1, up to
+1.09 column 2, up to 1.19 column 3, and above 1.19 column 0 again, so
+column 4 is never used.
+
+| Slider | Column 0 | 1 | 2 | 3 | 4 |
+|---|---|---|---|---|---|
+| attacking | +2 | +1 | 0 | −1 | −2 |
+| possession | −1 | 0 | 0 | 0 | +1 |
+| centre or sides | +2 | +1 | 0 | −1 | −2 |
+| left or right | 0 | 0 | 0 | 0 | 0 |
+| pressing starts | −1 | 0 | 0 | 0 | +1 |
+| pressing strength | +1 | 0 | 0 | 0 | −1 |
+| offside trap | −1 | 0 | 0 | 0 | +1 |
+
+It runs with `plTeam_RegSel` at the same places (season start,
+`pwkTeam_UpdateEquip`, each computer club, and before a match for the
+side that isn't mine). Which end of a slider means more attacking isn't
+traced, so whether the clubs much stronger than their opponent are
+meant to get column 4 is open. `pbdata.py` allows 1–5; the sliders take
+0–6.
 
 **The policies (confirmed).** The 25 policies are the cells of a 5 × 5
 grid with two axes: counter to possession, and individual to
@@ -1686,9 +1836,18 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
 - The job change: what `pwkTeam_GetCompAverage` measures (it must be at
   most 45,000), and which screen writes job 6 at `SIMPRG.REL 0xd64d4`.
 - What reads the staff fields only the source table names (rank, face,
-  appeartype, and the manager's comptype), what the selection, match,
-  training and rest policies (`+0x30`–`+0x33`) do, and what the 1–5
-  tactical values and the model pattern do in a match.
+  appeartype, and the manager's comptype), and what the model pattern
+  (`+0x65`) does.
+- Whether the match's two readers of the selection policy
+  (`GAMEPRG.REL 0xd96e8` and `0xf3cb0`, `PlTeamData +0x4888`) were meant
+  to read the match policy (`+0x4889`), which nothing reads; what the
+  word tables at `0xf3cb0` decide (probably the substitutions). An
+  in-game test could tell: change a computer club's manager's
+  selection or match policy and watch its tactics and substitutions
+  ([The four policies](#the-developers-staff-editors)).
+- Which end of a tactics slider (0–6) means more attacking, and so
+  whether `plTeam_SetStyleTeamParam` giving a strength ratio above 1.19
+  column 0 (the same as up to 0.79) instead of column 4 is intended.
 - Which game code reads the staff abilities that no bar shows (6–9,
   23–27, 31–38; scouts 2, 8–20, 26–44). The labels name them, but their
   effects aren't traced.

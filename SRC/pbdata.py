@@ -244,10 +244,10 @@ MANAGER_FIELDS = (
     # (MinfoEditorTask, DEBUGPRG.REL 0x1c98-0x21f0), which reads each
     # field after drawing its label.
     ("moti_type", 0x2f, 3, 1, None),     # also the affinity column (pwkDissatis_GetAffintyType)
-    ("select_policy", 0x30, 3, 1, None),  # player selection
-    ("match_policy", 0x31, 3, 1, None),
-    ("training_policy", 0x32, 3, 1, None),
-    ("rest_policy", 0x33, 2, 1, None),
+    ("select_policy", 0x30, 3, 1, None),  # weights of plTeam_RegSel's player score (0x22f910); the match reads it too
+    ("match_policy", 0x31, 3, 1, None),   # shown only; no reader found
+    ("training_policy", 0x32, 3, 1, None),  # row of the Training screen's coach plan (SIMPRG.REL 0xf06a8)
+    ("rest_policy", 0x33, 2, 1, None),    # rest days in that plan
     ("policy", 0x34, 6, 1, None),        # 0-24: 5 x 5 grid, row counter-possession, column individual-organisation (0x555340)
     ("policy_range", 0x35, 3, 4, None),  # 許容範囲: half-cell reach toward counter, possession, individual, organisation (0x2708f0)
     ("policy_best", 0x39, 3, 4, None),   # 得意範囲: the same for the inner diamond; inside it the fit starts at 75 (0x2703d0)
@@ -884,6 +884,18 @@ LEGS = ("left", "right", "left, two-footed", "right, two-footed")   # +0x2c, emp
 SLEEVES = ("by season", "short", "long")
 GROWTH = ("physical", "skill", "mental")
 
+# The manager's four policies, as the manager detail screen names them
+# (category 201, messages 10300 + n, 10310 + n, 10320 + n, 10330 + n),
+# translated from the Japanese: PAL's English calls selection 5
+# "Tactically-Fit" and gives match 2 and 5 the same name.
+SELECT_POLICIES = ("balanced", "player ability", "team strength", "young players",
+                   "experience", "condition", "motivation", "team fit")
+MATCH_POLICIES = ("act boldly", "change tactics a lot", "use subs a lot", "adapt as needed",
+                  "like tactic changes", "use subs a lot (2)", "like subs", "rarely change")
+TRAINING_POLICIES = ("centre attack", "side attack", "line defence", "man-marking defence",
+                     "physical", "formation", "condition", "match practice")
+REST_POLICIES = ("rarely rest", "rest now and then", "rest moderately", "rest often")
+
 # The 11 tendencies (+0x66-+0x70), named after the GAMEPRG.REL classes that
 # read each one through the parameter getter 0x9bdb8. Most pick one of five
 # entries of the overlay's tuning table (0x270000), from 0x519 on.
@@ -914,6 +926,10 @@ EDIT_NAMES = {
     ("players", "sleeves"): SLEEVES,
     ("players", "gk_pants"): ("short", "long"),
     ("managers", "job"): JOB_NAMES,
+    ("managers", "select_policy"): SELECT_POLICIES,
+    ("managers", "match_policy"): MATCH_POLICIES,
+    ("managers", "training_policy"): TRAINING_POLICIES,
+    ("managers", "rest_policy"): REST_POLICIES,
     ("managers", "formation"): FORMATIONS,
     ("managers", "attack_pattern"): ATTACK_PATTERNS,
     ("scouts", "search"): SEARCHES + ("none",),

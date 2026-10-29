@@ -103,6 +103,10 @@ evidence and how it was tested; the git history holds the rest.
 - [x] Staff careers and policies: where jobs 5 and 6 are set, how players
       become coaches or scouts and coaches managers, and the 25 policies
       as a grid with the range diamonds ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#manager-coach-and-scout-bars))
+- [x] The manager's selection, match, training and rest policies and the
+      seven tactical values: their names, the starting-eleven score, the
+      coach's training plan and the tactics sliders
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-developers-staff-editors))
 
 ## 3. Write: a writer for every format a mod changes
 

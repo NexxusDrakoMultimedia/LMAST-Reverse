@@ -22,10 +22,8 @@ What to work on next, most valuable first.
 1. **The player and staff fields** (section 2, "Players and staff"):
    the player fields still open (`explodetype`, abilities 59–63 and the
    attack pattern letters, the carry and press tendencies; an edited
-   tendency can be checked over PINE), then the staff
-   fields still open: the selection, match, training and rest
-   policies, the 1–5 tactical values and the staff abilities no bar
-   shows ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
+   tendency can be checked over PINE), then the staff abilities no
+   bar shows ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
 2. **LMASTER max in game** (sections 7 and 8): every part of
    `--mod harder-economy` is tested in PCSX2, and so are
    `transfer-fees`, `fee-tiers` at the low end, `pr-costs`,
@@ -118,8 +116,7 @@ shown to have no effect. Grouped by what a mod would change.
       attack pattern letters (no reader picks one out), the carry and
       press tendencies ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
 - [ ] Staff: the fields only the developers' field table names, the
-      selection, match, training and rest policies, the 1–5 tactical
-      values and the staff abilities no bar shows
+      model pattern and the staff abilities no bar shows
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
 - [ ] National teams: what `_getNationalTeamPoint` scores, why team 465
       and the call-up's flag `0x300` matter
@@ -346,6 +343,12 @@ disc or the edit to build; the result goes into the doc linked.
 - [ ] `pmplayer.py check` on a career saved after importing the edited
       V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`)
       ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#tested))
+- [ ] The match policy: give a computer club's manager selection policy
+      0 and then 7 (match policy unchanged), play a match against it
+      while behind or ahead late, and see whether its tactics and
+      substitutions change; that tells whether the match reads the
+      selection byte by mistake
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-developers-staff-editors))
 
 ## 8. LMASTER Mod and other patches
 
