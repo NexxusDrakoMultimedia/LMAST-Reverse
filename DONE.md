@@ -47,6 +47,9 @@ evidence and how it was tested; the git history holds the rest.
 - [x] `regress.py`: every tool's `info` and `roundtrip` against a
       baseline, one problem marker (`!!`) in every tool
       ([`README.md`](README.md#how-the-tools-fit-together))
+- [x] `EMBLEM/`'s presets, the 110-byte crests (`PlEmblemPreset`), the
+      layer records and `EDIT_FLAG`'s patterns and placements, checked by
+      `emblem.py info` ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#the-crest-structures))
 
 ## 2. Understand: field meanings an edit needs
 

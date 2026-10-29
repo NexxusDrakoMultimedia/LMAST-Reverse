@@ -13,12 +13,13 @@ The folder also holds the player editor's tables (`EDIT_PLAYER.TBB`) and
 an empty `DUMMY.DAT`.
 
 `python SRC/emblem.py info DAT/EMBLEM` checks the layouts described here.
-`python SRC/emblem.py colors DAT/EMBLEM` lists the palette.
+`python SRC/emblem.py colors DAT/EMBLEM` lists the palette, and
+`python SRC/emblem.py crests DAT/EMBLEM` the crests.
 
 | File | Kind | Read by | Contents |
 |---|---|---|---|
 | `COLOR_TABLE.TBB` | TBB, 7 tables | `EDIT::CColor` | 96 colours and the maps to a 32- and a 16-colour palette. **confirmed** |
-| `EDIT_EMBLEM.TBB` | TBB, 144 tables | `EDIT::CEmblemData` | masks, patterns, accessories, presets, sample crests and their layers. **confirmed** (most fields not named) |
+| `EDIT_EMBLEM.TBB` | TBB, 144 tables | `EDIT::CEmblemData` | masks, patterns, accessories, presets, sample crests and their layers. **confirmed** |
 | `EDIT_EMBLEM_M.PAC` / `.HED` | BINPAC, 214 SVR | the crest editor | masks (the crest's outline), in 50 groups. **confirmed** |
 | `EDIT_EMBLEM_P.PAC` / `.HED` | BINPAC, 22 SVR | the same | patterns (the fill). **confirmed** |
 | `EDIT_EMBLEM_A.PAC` / `.HED` | BINPAC, 217 SVR | the same | accessories (the emblems on top). **confirmed** |
@@ -108,15 +109,15 @@ use which copy is listed in each doc; a palette edit has to reach both.
 | 1 | 50 × 4 | `0x103e48`, `GetMaskData` | mask groups: {u16 first mask, u16 count}. `GetMaskData(group, n)` returns mask `first + n`, or `first` when `n` is past the count |
 | 2 | 22 × 4 | `0x103f20` | patterns: u32 0–21, the entry in `EDIT_EMBLEM_P` |
 | 3 | 217 × 4 | `GetAccessaryData` | accessories: u32 0–216, the entry in `EDIT_EMBLEM_A` |
-| 4 | 50 × 10 | `GetPresetBaseData` | preset bases |
-| 5 | 44 × 10 | `0x103fb8` | presets (unnamed) |
-| 6 | 1 × 10 | `0x103ff0` | one more preset record |
-| 7 | 29 × 110 | `GetSampleData` | sample crests. Each starts with a u16 id (0–31; 8, 21 and 24 are absent) |
+| 4 | 50 × 10 | `GetPresetBaseData` | base presets {u16 mask group, `Trs`} (below) |
+| 5 | 44 × 10 | `0x103fb8` | area pattern presets {u16 pattern, `Trs`} |
+| 6 | 1 × 10 | `0x103ff0` | area accessory presets {u16 accessory, `Trs`}; the one row is all 0 |
+| 7 | 29 × 110 | `GetSampleData` | sample crests (`Param::PlEmblemPreset`, below). Ids 0–31; 8, 21 and 24 are absent |
 | 8 | 32 × 110 | `GetInitializeData` | the crests a new club can start with |
-| 9 | 32 × 110 | `GetRivalData` | rival clubs' crests |
-| 10 | 32 × 1 | `GetSampleIndexFromInitializeIndex` | the sample for each starting crest (values 0–28) |
+| 9 | 32 × 110 | `GetRivalData` | rival clubs' crests: 32 copies of one crest |
+| 10 | 32 × 1 | `GetSampleIndexFromInitializeIndex` | the sample row of each starting crest (values 0–28) |
 | 11 | 32 × 3 | `GetFirstColorIdSet` | three signed bytes per starting crest. In the data: the row's own index, then two ids in the 32-colour palette |
-| 12–143 | 12 bytes each | `GetSampleLayerAcceData` | layer accessories, table 12 + 4 × sample + layer (below) |
+| 12–143 | 12 bytes each | `GetSampleLayerAcceData` | layer accessories {u16 key, u16 accessory, `Trs`}, table 12 + 4 × sample + layer (below) |
 
 **The mask groups are the mask pack** (**empirical**, all 214): group *g*
 holds `_mask_GGG_NN` for *GGG* = *g* + 1, in order, so table 1's counts
@@ -124,13 +125,78 @@ are the number of masks in each group, and the groups follow each other
 without gaps. Table 0 has one row per mask, table 2 one per pattern and
 table 3 one per accessory, matching the three packs.
 
-The 10-byte records of tables 4–6 look like {u16 part, ...,
-u8 100, u8 100, u8 0}: the two 100s are probably a scale in percent
-(**empirical**, not checked in the game). The 110-byte crests of tables
-7–9 aren't decoded. Their layout is presumably `Param::PlEmblem`, whose
-part names (`PlEmblemBase`, `Mask`, `Area`, `Pattern`, `Acce`, `Trs`) are
-in the executable's string table (`SLES 0x53b2a0`–`0x53b350`). A club's
-crest is read and written with `pwkTeam_GetEmblemSet`/`SetEmblemSet`.
+### The crest structures
+
+**Confirmed.** The developers' field table
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-field-names);
+here `SLES 0x53cd08`–`0x53d3c8`) names every member of the crest. Its
+parser in `sles_disasm.py fields` skips members that are themselves
+structures but whose names don't start with `_`, so these were read from
+the raw rows:
+
+| Structure | Size | Members |
+|---|---|---|
+| `Trs` | 8 | `tx` s8 +0, `ty` s8 +1, `rot` s16 +2, `rev` u8 +4, `sx` u8 +5, `sy` u8 +6, a pad byte |
+| `Acce` | `0x12` | `trs` +0, `texture_id` +8, `texture_num` +0xa, `aColor` 3 × u16 +0xc |
+| `Pattern` | `0x10` | `trs` +0, `texture_id` +8, `texture_num` +0xa, `aColor` 2 × u16 +0xc |
+| `Area` | `0x22` | an `Acce` +0, a `Pattern` +0x12 |
+| `Mask` | `0xac` | `mask_num` u16 +0, `aArea` 5 × `Area` +2 |
+| `Base` | `0xb6` | `trs` +0, `base_num` u16 +8, `mask` +0xa |
+| `PlEmblem` | `0x168` | `chunk` u32 +0, `base` +4, `aAcce` 9 × `Acce` +0xba, `aLayer` 10 × u8 +0x15c |
+| `PlEmblemPresetNumber` | `0x22` | `sample`, `base`, `mask` +0–+4, `aAreaPattern` 5 × +6, `aAreaAcce` 5 × +0x10, `aLayerAcce` 4 × +0x1a (all u16) |
+| `PlEmblemPresetColor` | `0x4a` | `aAreaPattern` 5 × 2 +0, `aAreaAcce` 5 × 3 +0x14, `aLayerAcce` 4 × 3 +0x32 (all u16) |
+| `PlEmblemPreset` | `0x6e` | `preset` u16 +0, `number` +2, `color` +0x24 |
+
+The next structure holds a club's crest: `emblem` (`PlEmblem`) +0,
+`emblempreset` +0x168 and `main_color_id` +0x1d6. A club's crest is
+read and written with `pwkTeam_GetEmblemSet`/`SetEmblemSet`.
+
+**The 110-byte crests of tables 7–9 are `PlEmblemPreset`s (confirmed,
+`EDIT::CEmblemData::Initialize`, `0x103a50`).** It builds a `PlEmblem`
+from one, and the club's three colours:
+
+| Preset offset | Field | What `Initialize` does |
+|---|---|---|
+| `+0x00` | `preset` | the crest's id; not read |
+| `+0x02` | `sample` | the sample whose layer tables the layer keys search (0–32) |
+| `+0x04` | `base` | a row of table 4: its part goes to `base_num`, its `Trs` to the base's |
+| `+0x06` | `mask` | copied to `mask_num` |
+| `+0x08` | `aAreaPattern` ×5 | rows of table 5: each area's pattern texture and `Trs` |
+| `+0x12` | `aAreaAcce` ×5 | rows of table 6: each area's accessory texture and `Trs` |
+| `+0x1c` | `aLayerAcce` ×4 | the key searched for in each layer table (below) |
+| `+0x24` | colours, 5 × 2 | each area's pattern colours |
+| `+0x38` | colours, 5 × 3 | each area's accessory colours |
+| `+0x56` | colours, 4 × 3 | the colours of each layer's accessories |
+
+A colour is a 32-colour id, turned into a 96-colour id
+(`GetId96FromId32`), or −1, −2 or −3 for the club's first, second or
+third colour (`0x103b78`). The layer part (`0x103cb8`–`0x103e10`) asks
+`GetSampleLayerAcceData` for each layer's records with that key and
+appends each as an accessory at `PlEmblem +0xba` + `0x12` × *n*, at most
+9 in all.
+
+The 10-byte records of tables 4–6 are a part number and a `Trs`; `sx`
+and `sy` are a scale in percent (100 = full size) and `rot` an angle
+(table 5 uses 0, 45, 90 and 295). Table 6 has one row, all 0, and every
+crest names it for every area (**empirical**), so the area accessories
+start empty and a crest's accessories come from its layers.
+
+**Empirical**, over the 93 crests (`python SRC/emblem.py info`):
+
+- `sample` and `base` are always equal.
+- `mask` is an index inside the mask group named by the base preset's
+  part (table 1): all 90 crests with a base fit, and the 3 whose base
+  preset has part 65535 (4 of the 50 base presets: no base) have mask 0.
+- Each starting crest (table 8) has exactly the parts of the sample row
+  table 10 names; only the colours differ.
+- Area accessory colours are all 31. Layer keys are 0 or 1.
+- A layer record with accessory 65535 fills a slot with nothing. The
+  crests get 72 (samples), 94 (starting) and 64 (rival) real layer
+  accessories.
+- The rival table is one crest, id 25 with sample 32, repeated 32 times.
+
+`python SRC/emblem.py crests DAT/EMBLEM 8` prints every crest field by
+field with its layer accessories.
 
 ### The layer tables (12–143)
 
@@ -156,13 +222,31 @@ in the crest editor hasn't been checked.
 | Table | Records | Getter | Contents |
 |---|---|---|---|
 | 0 | 49 × 4 | `0x104578` | flag bases: u32 0–48, the entry in `EDIT_FLAG.PAC` |
-| 1 | 71 × 2 | `GetPresetFlagPatternData` | flag patterns: low byte a base (0–48), high byte a variant (0–3) |
+| 1 | 71 × 2 | `GetPresetFlagPatternData` | flag patterns: low byte a base (0–48), high byte its `rev` (0–3) |
 | 2 | 27 × 4 | `GetPresetEmblemTs` | where the crest sits on the flag (`Param::PlFlagEmblemTs`) |
 
-Table 2's records are {s8 x, s8 y, u8, u8} (**empirical**): 9 positions
-(x −34, 0, 34 and so on) at three sizes, `0x36`/`0x44`, `0x27`/`0x32` and
-`0x1e`/`0x26`. That is three sizes × a 3 × 3 grid. The meaning of each
-byte hasn't been checked in the game.
+**Confirmed** (`EDIT::CFlagData::Initialize`, `0x1044b0`, and the field
+table at `SLES 0x53cac8`–`0x53ccdc`). A flag preset (`PlFlagPreset`, 8
+bytes) is `flag_pattern` u16 +0 (a row of table 1), `emblem_position`
+u16 +2 (a row of table 2) and `aColor` 2 × u16 +4 (32-colour ids). It
+becomes a `PlFlag` (`0x1c` bytes: `flag` `0x14`, then the
+`flagpreset`), whose `flag` part is:
+
+| Offset | Member | From |
+|---|---|---|
+| `+0x00` | `chunk` u32 | – |
+| `+0x04` | `pattern.trs.rev` u8 | table 1's high byte |
+| `+0x06` | `pattern.texture_num` u16 | table 1's low byte: the base in `EDIT_FLAG.PAC` |
+| `+0x08` | `pattern.aColor` 2 × u16 | the preset's colours, as 96-colour ids |
+| `+0x0c` | `emblem` {`pos_x`, `pos_y`, `size_x`, `size_y`} | table 2's 4 bytes |
+| `+0x10` | `disp_emblem` u8 | – |
+
+So the 4 variants of a base are 4 values of its `rev` byte, the same
+member a crest part's `Trs` has; what each looks like (mirrored one way
+or the other is the likely reading) hasn't been checked in the game.
+Table 2 holds 9 positions (x −34, 0, 34 and so on) at three sizes,
+`0x36`/`0x44`, `0x27`/`0x32` and `0x1e`/`0x26`: three sizes × a 3 × 3
+grid (**empirical**).
 
 ## `EDIT_PLAYER.TBB`
 
@@ -174,6 +258,12 @@ launcher, where it hangs ([`SQB_FORMAT.md`](SQB_FORMAT.md)). It is the
 player editor that brings a Virtua Pro Football edit player into a
 career ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)).
 
+The module reads each table through its own accessor (`YRSTPRG.REL
+0x1cc70`–`0x1d418`, one per table, most of them through the row getter
+at `0x1d438`, row × the table's line size). Most accessors have one
+caller; table 24's has none, and table 25's (`0x1d340`) returns its
+first byte ÷ 100 as a float. The callers haven't been traced.
+
 The tables aren't decoded. Their shapes (**empirical**): tables 0–8 are
 14 rows of 33 bytes (values like 30–80, a rating per ability and
 position?), table 14 is 146 rows of 26 rising values (growth curves?),
@@ -183,11 +273,12 @@ in the game.
 
 ## Still unknown
 
-- The fields of the presets (tables 4–6), the 110-byte crests (7–9) and
-  the layer records.
-- Which sample crest each layer table's key selects, and whether the three
-  short tables lose visible parts in the editor.
-- `EDIT_FLAG` table 2's byte meanings, and table 1's variants.
-- All of `EDIT_PLAYER.TBB`.
+- What a `Trs`'s `rev` values 1–3 and a flag's variants look like, what
+  `chunk`, `texture_id` and `aLayer` hold, and which code reads `mask_num`
+  (its match with the mask groups is empirical).
+- Whether the three short layer tables lose visible parts in the editor.
+- What the 33rd sample (32, the rival crest's) is, given table 7 has 29
+  rows.
+- All of `EDIT_PLAYER.TBB` beyond its accessors.
 - Why the 4bpp part textures' palette indices map to the chosen colours
   (the palette build wasn't traced).

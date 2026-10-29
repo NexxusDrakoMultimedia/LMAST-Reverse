@@ -38,11 +38,12 @@ What to work on next, most valuable first.
    season's end, saving and loading are tested). The disc
    is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **The stadium and emblem table writers** (section 3, with the field
-   work they need from section 2): the fields first (the `EMBLEM/`
-   preset, crest and layer records, `EDIT_FLAG` and `EDIT_PLAYER.TBB`;
-   the stadium crowd figure groups and request `+0x0e`–`+0x10`), then a
-   writer for each with a `roundtrip` check
+3. **The stadium and emblem table writers** (section 3): the crest,
+   preset, layer and flag records are decoded, so a writer for
+   `EDIT_EMBLEM.TBB` and `EDIT_FLAG.TBB` with a `roundtrip` check can
+   come first; then the stadium tables (the crowd figure groups need a
+   look at the models, and request `+0x0e`–`+0x10`) and
+   `EDIT_PLAYER.TBB`
    ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#still-unknown),
    [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown)).
 
@@ -71,8 +72,8 @@ type has a doc and a tool whose `info` passes over all of `DAT/`.
       ([`GAME_DIR.md`](DOC/GAME_DIR.md#still-unknown))
 - [ ] `ACROBATA/`: the `ABDT` scene layout and the `ABRS` header table
       ([`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md#still-unknown))
-- [ ] `EMBLEM/`: the preset, crest and layer records, `EDIT_FLAG`'s
-      variants and `EDIT_PLAYER.TBB`
+- [ ] `EMBLEM/`: `EDIT_PLAYER.TBB`'s 32 tables (each has an accessor in
+      `YRSTPRG.REL`; their callers aren't traced)
       ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#still-unknown))
 - [ ] `SEQ/`: `INFORMATION.WPX` and the command sets of the two 2004
       scripts ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#still-unknown))
