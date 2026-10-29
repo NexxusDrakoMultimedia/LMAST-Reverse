@@ -396,8 +396,10 @@ Ideas the user has agreed on (2026-10-27), not started:
   ([The text](#the-text)); what is left are messages wrong in the retail
   game itself, as a text fix of LMASTER lite. Known so far: Game Over
   conditions 1204 and 1205 name the wrong nations (and 1205 Spain's
-  number), and the Spanish intro's "216 equipos", fixed only with the
-  third tier now. Done with `mbb.py`'s writer
+  number), the Spanish intro's "216 equipos", fixed only with the
+  third tier now, and the club name "AL-Hyde" (team 435), which should
+  be "Al-Hyde" (user report) in categories 3 and 100003, ids 2435, in
+  all five European languages. Done with `mbb.py`'s writer
   ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing)) and checked in PCSX2 where
   a screen shows them.
 - **LMAST Realism on the disc.** Bring the logos, kits, texture fixes
@@ -483,11 +485,17 @@ Ideas the user has agreed on (2026-10-27), not started:
   licensed names stay. 340 suggestions and 220 logo readings are in;
   the user then gave the names of ten clubs (Baki → Qarabagh, Diaconsa
   → FC Encamp, Sheva → Beitar Jerusalem, North Shore → Auckland
-  City and others). Nine end in "?" for the user to check: four clubs
-  whose crest and game name don't clearly match (Velika, Baku, Kutaisi,
-  Kulubu), AL-Hyde with no crest found, the Italian, Spanish and Dutch
-  "Club Cups" (no real counterpart in 2005) and the world club
-  championship. Four game names end in a stray space ("Baku ",
+  City and others), and the three "Club Cups": Coppa Italia
+  Dilettanti, Copa Federación de España and KNVB Amateur Cup, the
+  amateur cups (the first two are 23 and 25 characters). The user
+  confirmed the pairings that were in doubt (Velika as Radnik V.
+  Gorica, Baku as Inter Baku, Kutaisi as Torpedo Kutaisi, Kulubu as
+  Bursaspor); the World Club Championship is a made-up tournament and
+  keeps its name. AL-Hyde is Al-Sadd (Sadd Sports Club, user report):
+  "Al-Sadd" in full and max, while lite only fixes its casing to
+  "Al-Hyde" (above). That leaves Doha, which had the Sadd crest: the
+  only Qatari crest left in Realism's Middle East folder is Al-Gharafa's,
+  which the user confirmed. No cell is left in doubt. Four game names end in a stray space ("Baku ",
   "Moskva ", "Újpesti ", "Ararat "), which their real names drop. 27
   suggestions, all competition or stage names, are over 18 characters,
   as many of the game's own are.

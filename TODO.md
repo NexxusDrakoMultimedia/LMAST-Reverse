@@ -360,8 +360,8 @@ is built and tested, or set aside.
       pattern repeat check; decide first whether the extra records play
       sensibly ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] Retail text fixes for LMASTER lite: messages wrong in the retail
-      game itself, starting with Game Over conditions 1204 and 1205 (the
-      third tier's text is done)
+      game itself, starting with Game Over conditions 1204 and 1205 and
+      the club name "AL-Hyde" as "Al-Hyde" (the third tier's text is done)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] Real names for LMASTER full and max: every league, competition,
       club and national team under its real name of the era (Highbury as
@@ -369,8 +369,8 @@ is built and tested, or set aside.
       Realism's club names, in all five languages, each at most 18
       characters like the player's own club name. The table is made
       and filled with short-style suggestions from Realism's logos in all
-      five languages (`names/realnames.csv`); next, the user's check of
-      it (9 marked "?"), then the `real-names` switch
+      five languages (`names/realnames.csv`), and the user has settled
+      every doubtful cell; next, the `real-names` switch
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
