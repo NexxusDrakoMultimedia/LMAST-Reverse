@@ -229,7 +229,10 @@ Each result is recorded in the doc named.
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
 - [x] The real names again, the stadium names, your own stadium and the
       real grounds on the rebuilt `LMAST-test-names.iso` (2026-10-30):
-      they work; the biggest grounds looked too small, now one size up
+      they work; the biggest grounds looked too small
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#stadiums))
+- [x] The 2005-06 grounds with looks by size, the sponsor boards and the
+      rival's own ground on `LMAST-test-stadiums.iso` (2026-10-30): good
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#stadiums))
 
 ## 8. LMASTER Mod and other patches

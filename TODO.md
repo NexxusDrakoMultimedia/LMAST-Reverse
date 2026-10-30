@@ -349,16 +349,8 @@ disc or the edit to build; the result goes into the doc linked.
       substitutions change; that tells whether the match reads the
       selection byte by mistake
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-developers-staff-editors))
-- [ ] The grounds and boards on `LMAST-test-stadiums.iso`
-      (LMASTER full with `skip-tutorial --skip-nation germany`): grounds
-      that look their size (Chelsea and Highbury 40,000, Old Trafford and
-      the Allianz Arena on the 70,000-type bowl, the big bowl only for
-      Camp Nou, San Siro, the Bernabéu, the Westfalenstadion and the like),
-      and the 2005-06 ground names (Highbury, Stadio delle Alpi); varied
-      advert boards at away grounds (`sponsor-boards`), the adidas
-      (Nexxus Drako Multimedia) board still on every ground, and the
-      rival's ground and boards as before; later in a career, the Special
-      stadium as a 100,000 ground that fills when sold out
+- [ ] The Special stadium late in a career: a 100,000 ground (`--mod
+      special-stadium`) that fills when sold out
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#stadiums))
 
 ## 8. LMASTER Mod and other patches
