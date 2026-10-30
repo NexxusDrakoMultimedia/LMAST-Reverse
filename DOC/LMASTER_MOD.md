@@ -792,10 +792,15 @@ variety of sponsors at the grounds). A computer club's ground shows the
 boards of its `BUILD_STADIUM` row, bytes 116–127 (`InitStadium` clears
 the match's own 12 at `0x2136a8`); value *v* is logo *v* − 1 of
 `SPONSOR_TEXTURE_M`, 1–205 ([Adverts](STADIUM_DIR.md#adverts)). The
-retail rows use 119 of them, 12 different ones a row. The switch draws 12
-different logos for each of the 119 rows, a fixed shuffle per stadium
-(`stadium.sponsor_boards`), so every build is the same: 204 of the 205
-logos appear. The rival's ground (114) keeps its own boards. The adidas board every ground shows (the user's LMAST
+retail rows use 119 of them, 12 different ones a row. The switch draws each
+row's boards afresh, a fixed random draw per stadium
+(`stadium.sponsor_boards`), so every build is the same. How many
+different sponsors a ground shows grows with its size (the user's
+request, 2026-10-31): 3 up to 8,000, then one more for each step of
+15,000, 20,000, 25,000 ... 50,000, and all 12 boards different from
+55,000 (`sponsor_count`, sizes as `real-grounds` gives them); each
+drawn sponsor is on at least one board and the rest repeat them. 202 of
+the 205 logos appear. The rival's ground (114) keeps its own boards. The adidas board every ground shows (the user's LMAST
 Realism makes it Nexxus Drako Multimedia) isn't one of the 12: it is
 `ADT_TEXCMN` entry 212, which no row names (they use 1–200); the match
 request's `+0x10` moves a row's boards up one and puts it first

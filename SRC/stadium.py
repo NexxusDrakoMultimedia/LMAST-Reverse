@@ -203,19 +203,52 @@ RIVAL_STADIUM = 114                 # the rival's ground (TEAM_INIT_DATA table 7
 SPONSOR_SEED = 0x4c4d               # "LM": any fixed seed, so every build is the same
 
 
+# How many different sponsors a ground shows grows with its size (the
+# user's request, 2026-10-31): SPONSOR_KINDS[k] is the most capacity (in
+# thousands) that gets k + SPONSOR_FEWEST different logos; bigger grounds
+# get all 12. A ground's size is the one --mod real-grounds gives it
+# (initteam.ground_bands; the ladder's ids keep the retail size).
+SPONSOR_FEWEST = 3
+SPONSOR_KINDS = (8, 15, 20, 25, 30, 35, 40, 45, 50)     # 3 at 8,000 ... 11 at 50,000
+SPONSOR_BOARDS = 12
+
+
+def sponsor_count(capacity):
+    """How many different sponsors a ground of `capacity` thousand shows."""
+    for k, top in enumerate(SPONSOR_KINDS):
+        if capacity <= top:
+            return SPONSOR_FEWEST + k
+    return SPONSOR_BOARDS
+
+
+def ground_sizes():
+    """{stadium id: capacity in thousands} as --mod real-grounds has them."""
+    import initteam
+    sizes = {}
+    for band, ids in initteam.ground_bands().items():
+        for i in ids:
+            sizes[i] = 40 if band == "small 40" else band
+    return sizes
+
+
 def sponsor_boards(data):
     """BUILD_STADIUM.TBB bytes with every stadium's 12 advert textures but
-    the rival's drawn from SPONSOR_LOGOS, 12 different ones each; None when
-    they already are. The file keeps its size."""
+    the rival's drawn from SPONSOR_LOGOS: sponsor_count(its size) different
+    ones, each on at least one board, in a random order; None when they
+    already are. The file keeps its size."""
     import random
     _, t = tbb.parse(data)
     old = rows(t[0].data, BUILD_ROW)
     base = t[0].offset + t[0].data_offset
     out = bytearray(data)
+    sizes = ground_sizes()
     for i in range(len(old)):
         if i == RIVAL_STADIUM:
             continue
-        boards = random.Random(SPONSOR_SEED * 1000 + i).sample(SPONSOR_LOGOS, 12)
+        rng = random.Random(SPONSOR_SEED * 1000 + i)
+        kinds = rng.sample(SPONSOR_LOGOS, sponsor_count(sizes.get(i, 40)))
+        boards = kinds + [rng.choice(kinds) for _ in range(SPONSOR_BOARDS - len(kinds))]
+        rng.shuffle(boards)
         at = base + i * BUILD_ROW
         out[at + BUILD_ADVERT.start:at + BUILD_ADVERT.stop] = bytes(boards)
     return None if bytes(out) == data else bytes(out)
