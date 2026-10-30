@@ -98,7 +98,8 @@ sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
 merch-costs, pr-costs, camp-costs, tour-costs), leagues
 (league-balance, third-tier), restorations (injury-lines), names
-(real-names, own-stadium), stadiums (special-stadium), saves (mod-saves),
+(real-names, own-stadium), stadiums (special-stadium, real-grounds),
+saves (mod-saves),
 and test-tools (skip-tutorial, launcher), which is in no edition.
 third-tier turns on mod-saves and needs --copies and --dat; real-names
 needs them too. Each switch
@@ -199,6 +200,14 @@ special-stadium (LMASTER full and max) makes the Special stadium, the
 biggest a club can build, hold 100,000 at each level instead of 110,000,
 and the match stadiums of such a ground (STADIUM_DATA 96-101) with it.
 See DOC/LMASTER_MOD.md#stadiums.
+
+real-grounds (LMASTER full and max) puts each club at a ground of its
+real 2006-07 capacity, rounded to 5,000 (SRC/grounds.csv): STADIUM_DATA
+ids 102-118 take the sizes the ladder of your own ground lacks (45,000,
+65,000-85,000), and the clubs of one size are spread over every id of
+that size, so they look different. It turns on special-stadium (the
+100,000 ids). A target PLRESOURCESIM.PAC or STADIUM_DATA.TBB takes the
+change in its own bytes, unless its own edit is in the way.
 
 own-stadium (LMASTER full and max; whole disc image only) names your
 club's stadium after you, "<your name> Stadium", where the game used your
@@ -2370,31 +2379,89 @@ def special_stadium_data(data):
     return table.encode()
 
 
-def plan_special_stadium(f, img):
+def hook_or_keep(edit, data):
+    """`edit(data)` for a target hook, or the target as it is when the
+    switch's change is already there (None) or the target's own edit has
+    replaced the bytes it expects (ValueError): the target's value wins."""
+    try:
+        new = edit(data)
+    except ValueError:
+        return data
+    return data if new is None else new
+
+
+def target_special_stadium(file, data):
+    """A PLRESOURCECOMMON.PAC or STADIUM_DATA.TBB target (the editor's
+    Facilities or Nations & stadiums tab) with the Special stadium at
+    100,000 in its own bytes."""
+    import plrcommon
+    if norm(file) == norm(COMMON_FILE):
+        return hook_or_keep(plrcommon.special_stadium, data)
+    if norm(file) == norm(STADIUM_DATA_FILE):
+        return hook_or_keep(special_stadium_data, data)
+    return data
+
+
+def file_jobs(f, img, file, edit, packs, entry, why, adopted, already):
+    """Only-the-changed-bytes jobs for `edit` of `file` and its copies as
+    `entry` in `packs`; a note when a target (`adopted`) has it or it's
+    already there."""
+    if norm(file) in adopted:
+        return [], ["note: %s in the target's %s" % (why.split(":")[0], file)]
+    path, data = read_file(f, img, file)
+    new = edit(data)
+    if new is None:
+        return [], ["note: %s already %s" % (file, already)]
+    jobs = diff_jobs(path, 0, data, new, why, gap=1)
+    for pack in packs:
+        jobs += pack_copy_jobs(f, img, pack, entry, file, data, new, why, gap=1)
+    return jobs, []
+
+
+def plan_special_stadium(f, img, adopted=()):
     """Jobs for --mod special-stadium: PLRESOURCECOMMON.PAC and its
     STATIONFILE copy, STADIUM_DATA.TBB and its SIMFILE copies, only the
-    changed bytes (facility-tiers writes the same stadium records)."""
+    changed bytes (facility-tiers and real-grounds write the same tables)."""
     import plrcommon
     why = "special-stadium: the Special stadium holds 100,000"
-    jobs, notes = [], []
-    path, data = read_file(f, img, COMMON_FILE)
-    new = plrcommon.special_stadium(data)
-    if new is None:
-        notes.append("note: %s already has the Special stadium at 100,000" % COMMON_FILE)
-    else:
-        jobs += (diff_jobs(path, 0, data, new, why, gap=1)
-                 + pack_copy_jobs(f, img, STATION_FILE, COMMON_ENTRY, COMMON_FILE, data, new,
-                                  why, gap=1))
-    path, data = read_file(f, img, STADIUM_DATA_FILE)
-    new = special_stadium_data(data)
-    if new is None:
-        notes.append("note: %s already has stadiums 96-101 at 100,000" % STADIUM_DATA_FILE)
-    else:
-        jobs += diff_jobs(path, 0, data, new, why, gap=1)
-        for pack in STADIUM_DATA_PACKS:
-            jobs += pack_copy_jobs(f, img, pack, STADIUM_DATA_ENTRY, STADIUM_DATA_FILE, data,
-                                   new, why, gap=1)
-    return jobs, notes
+    jobs, notes = file_jobs(f, img, COMMON_FILE, plrcommon.special_stadium, [STATION_FILE],
+                            COMMON_ENTRY, why, adopted, "has the Special stadium at 100,000")
+    j, n = file_jobs(f, img, STADIUM_DATA_FILE, special_stadium_data, STADIUM_DATA_PACKS,
+                     STADIUM_DATA_ENTRY, why, adopted, "has stadiums 96-101 at 100,000")
+    return jobs + j, notes + n
+
+
+# real-grounds: each computer club plays at a ground of its real 2006-07
+# capacity, rounded to 5,000, the clubs of one size spread over the stadium
+# ids of that size (LMASTER full and max, the user's request, 2026-10-30;
+# DOC/LMASTER_MOD.md#stadiums). initteam.real_grounds_stadiums gives ids
+# 102-118 the bands the ladder lacks, and initteam.real_grounds_clubs
+# points each club record at its ground (SRC/grounds.csv). The 100,000 band
+# is 96-101, so it turns on special-stadium.
+def target_real_grounds(file, data):
+    """A PLRESOURCESIM.PAC or STADIUM_DATA.TBB target (the editor's Clubs
+    or Nations & stadiums tab) with the real grounds in its own bytes."""
+    import initteam
+    if norm(file) == norm(SIM_FILE):
+        return hook_or_keep(initteam.real_grounds_clubs, data)
+    if norm(file) == norm(STADIUM_DATA_FILE):
+        return hook_or_keep(initteam.real_grounds_stadiums, data)
+    return data
+
+
+def plan_real_grounds(f, img, adopted=()):
+    """Jobs for --mod real-grounds: the club records in PLRESOURCESIM.PAC
+    and its SIMLOCALMEM copies, ids 102-118 in STADIUM_DATA.TBB and its
+    SIMFILE copies, only the changed bytes (overseas-bases and
+    special-stadium write the same files)."""
+    import initteam
+    why = "real-grounds: clubs at grounds of their real size"
+    jobs, notes = file_jobs(f, img, SIM_FILE, initteam.real_grounds_clubs, LIST_PACKS,
+                            SIM_ENTRY, why, adopted, "has the real grounds")
+    j, n = file_jobs(f, img, STADIUM_DATA_FILE, initteam.real_grounds_stadiums,
+                     STADIUM_DATA_PACKS, STADIUM_DATA_ENTRY, why, adopted,
+                     "has stadiums 102-118 at their bands")
+    return jobs + j, notes + n
 
 
 def word_jobs(f, img, switch, words):
@@ -4484,6 +4551,10 @@ SWITCHES = (
     ("special-stadium", plan_special_stadium,
      [COMMON_FILE, STATION_FILE, STADIUM_DATA_FILE] + STADIUM_DATA_PACKS,
      "Stadiums: the Special stadium holds 100,000, not 110,000"),
+    ("real-grounds", plan_real_grounds,
+     [SIM_FILE, STADIUM_DATA_FILE] + LIST_PACKS + STADIUM_DATA_PACKS,
+     "Stadiums: every club plays at a ground of its real 2006-07 size (to 5,000), and clubs "
+     "of one size at grounds that look different"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -4512,7 +4583,11 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                 # place; the real names last, over the tier's sentences too.
                 "retail-text": (target_retail_text, [MES_FILE], STATIONMES),
                 "third-tier": (target_tier_text, [MES_FILE], []),
-                "real-names": (target_real_names, [MES_FILE], [])}
+                "real-names": (target_real_names, [MES_FILE], []),
+                "special-stadium": (target_special_stadium, [COMMON_FILE, STADIUM_DATA_FILE],
+                                    [STATION_FILE] + STADIUM_DATA_PACKS),
+                "real-grounds": (target_real_grounds, [SIM_FILE, STADIUM_DATA_FILE],
+                                 LIST_PACKS + STADIUM_DATA_PACKS)}
 
 # One switch per feature: parts that need each other are one switch
 # (DOC/LMASTER_MOD.md, the switch levels). Switches that need another switch, that
@@ -4522,7 +4597,7 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
 SWITCH_NEEDS = {}
 SWITCH_FILES = {"third-tier": file_third_tier, "real-names": file_real_names}
 SWITCH_COPIES = ("third-tier", "real-names")
-SWITCH_IMPLIES = {"third-tier": ("mod-saves",)}
+SWITCH_IMPLIES = {"third-tier": ("mod-saves",), "real-grounds": ("special-stadium",)}
 SWITCH_ALIASES = {name: "third-tier" for name in ("save-expand", "tier-clubs", "tier-lists",
                                                   "tier-uids", "one-season-end")}
 # The switch levels: editions are made of groups, groups of switches, and
@@ -4547,7 +4622,7 @@ GROUPS = (       # (name, title, switches)
     ("leagues", "Leagues", ("league-balance", "third-tier")),
     ("restorations", "Restored content", ("injury-lines",)),
     ("names", "Real names", ("real-names", "own-stadium")),
-    ("stadiums", "Stadiums", ("special-stadium",)),
+    ("stadiums", "Stadiums", ("special-stadium", "real-grounds")),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )

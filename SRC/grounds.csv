@@ -1,0 +1,458 @@
+team,ground,capacity
+3,St Andrew's,30.0
+4,Ewood Park,31.4
+5,Reebok,28.7
+6,The Valley,27.1
+7,Stamford Bridge,42.4
+8,City of Manchester,47.7
+9,Goodison,40.6
+10,Craven Cottage,24.6
+11,Emirates,60.4
+12,Anfield,45.4
+13,Old Trafford,76.0
+14,Riverside,35.1
+15,St James' Park,52.4
+16,Fratton Park,20.7
+17,Stadium of Light,49.0
+18,White Hart Lane,36.3
+19,Villa Park,42.6
+20,Hawthorns,28.0
+21,Boleyn Ground,35.3
+22,JJB,25.1
+23,Withdean,8.9
+24,Turf Moor,22.6
+25,Ninian Park,20.0
+26,Ricoh Arena,32.6
+27,Gresty Road,10.1
+28,Selhurst Park,26.3
+29,Pride Park,33.6
+30,KC Stadium,25.4
+31,Portman Road,30.3
+32,Elland Road,40.2
+33,Walkers,32.3
+34,Kenilworth Road,10.3
+35,The Den,20.1
+36,Carrow Road,26.0
+37,Home Park,19.5
+38,Deepdale,24.5
+39,Loftus Road,18.4
+40,Madejski,24.2
+41,Hillsborough,39.7
+42,Bramall Lane,32.6
+43,St Mary's,32.7
+44,Britannia,28.4
+45,Vicarage Road,19.9
+46,Molineux,29.3
+47,Francois Coty,10.7
+48,Abbe-Deschamps,23.5
+49,Chaban-Delmas,34.3
+50,Leon-Bollee,17.8
+51,Bollaert,41.2
+52,Stadium Lille Metropole,21.8
+53,Gerland,41.0
+54,Velodrome,60.0
+55,Saint-Symphorien,26.7
+56,Louis II,18.5
+57,Marcel Picot,20.1
+58,Beaujoire,38.3
+59,Stade du Ray,17.4
+60,Parc des Princes,48.7
+61,Route de Lorient,31.1
+62,Auguste Bonal,20.0
+63,Geoffroy-Guichard,35.6
+64,Meinau,29.2
+65,Stadium de Toulouse,35.5
+66,Stade de l'Aube,20.4
+67,La Licorne,12.1
+68,Armand Cesari,16.5
+69,Francis-Le Ble,10.2
+70,Michel d'Ornano,21.2
+71,Gaston Petit,17.1
+72,Gabriel Montpied,11.0
+73,Duvauchelle,12.1
+74,Gaston Gerard,7.5
+75,Lesdiguieres,12.0
+76,Jean Laville,15.0
+77,Roudourou,18.0
+78,Parsemain,17.4
+79,Francis Le Basser,18.0
+80,Jules Deschaseaux,16.4
+81,Moustoir,16.0
+82,La Mosson,32.9
+83,Auguste Delaune,10.0
+84,Louis Dugauguez,23.2
+85,Louis Michel,8.0
+86,Nungesser,16.5
+87,Allianz Arena,69.9
+88,Olympiastadion,74.2
+89,Alm,26.6
+90,Weserstadion,42.1
+91,Mungersdorf,50.4
+92,Westfalenstadion,81.3
+93,MSV-Arena,31.5
+94,Waldstadion,52.3
+95,AufSchalke,61.5
+96,Borussia-Park,54.1
+97,Volksparkstadion,57.3
+98,Niedersachsenstadion,49.0
+99,Fritz-Walter,48.5
+100,BayArena,22.5
+101,Bruchweg,20.3
+102,Frankenstadion,46.8
+103,Neckarstadion,57.0
+104,Volkswagen Arena,30.0
+105,Tivoli,21.3
+106,Wersestadion,12.5
+107,Ruhrstadion,31.3
+108,Eintracht-Stadion,24.4
+109,Wacker-Arena,10.0
+110,Stadion der Freundschaft,22.5
+111,Rudolf-Harbig,23.9
+112,Erzgebirgsstadion,16.5
+113,Dreisamstadion,25.0
+114,Ronhof,15.5
+115,Wildpark,29.7
+116,Allianz Arena,69.9
+117,Bieberer Berg,26.5
+118,Hermann-Lons,15.3
+119,Ostseestadion,29.0
+120,Ludwigspark,35.3
+121,Leimbach,18.5
+122,Sportpark Unterhaching,15.1
+123,San Siro,85.7
+124,Del Duca,20.0
+125,Sant'Elia,23.5
+126,Bentegodi,38.4
+127,Castellani,19.8
+128,Franchi,47.3
+129,San Siro,85.7
+130,Delle Alpi,69.0
+131,Olimpico,72.7
+132,Via del Mare,40.7
+133,Picchi,19.2
+134,San Filippo,39.0
+135,Barbera,37.2
+136,Tardini,27.9
+137,Granillo,27.5
+138,Olimpico,72.7
+139,Ferraris,36.6
+140,Franchi Siena,15.4
+141,Tenni,10.0
+142,Friuli,41.7
+143,Atleti Azzurri,26.6
+144,Citta di Arezzo,13.1
+145,Atleti Azzurri,26.6
+146,Partenio,26.3
+147,San Nicola,58.3
+148,Dall'Ara,38.3
+149,Rigamonti,27.6
+150,Massimino,23.4
+151,Ceravolo,14.6
+152,Manuzzi,23.9
+153,Zini,20.6
+154,Scida,9.6
+155,Bentegodi,38.4
+156,Martelli,14.9
+157,Braglia,20.5
+158,Adriatico,24.4
+159,Garilli,21.6
+160,Romeo Neri,9.8
+161,Liberati,22.0
+162,Olimpico Torino,27.9
+163,Nereo Rocco,32.5
+164,Menti,20.9
+165,San Mames,39.8
+166,Calderon,54.9
+167,Camp Nou,98.8
+168,Carranza,20.7
+169,Riazor,34.6
+170,Mendizorrotza,19.8
+171,Coliseum,14.4
+172,La Rosaleda,28.9
+173,El Sadar,19.6
+174,Balaidos,31.8
+175,El Sardinero,22.3
+176,Montjuic,55.9
+177,Son Moix,23.1
+178,Ruiz de Lopera,52.5
+179,Bernabeu,80.4
+180,Anoeta,32.0
+181,Romareda,34.6
+182,Pizjuan,45.5
+183,Mestalla,55.0
+184,El Madrigal,23.0
+185,Carlos Belmonte,17.3
+186,Juegos Mediterraneos,22.0
+187,La Condomina,6.2
+188,Castalia,15.0
+189,Ipurua,5.3
+190,Santo Domingo,7.9
+191,Martinez Valero,36.0
+192,Rico Perez,30.0
+193,Ciutat de Valencia,25.4
+194,Artes Carrasco,8.1
+195,Malaga B,3.0
+196,Los Pajaritos,9.0
+197,A Malata,12.0
+198,Di Stefano,6.0
+199,Nueva Condomina,31.2
+200,Zorrilla,26.5
+201,Colombino,21.6
+202,Molinon,29.8
+203,Nou Estadi,14.5
+204,Heliodoro,22.8
+205,Camp d'Esports,13.5
+206,Chapin,20.0
+207,Zuiderpark,10.0
+208,ArenA,51.6
+209,DSB,17.0
+210,Euroborg,20.0
+211,Arke,13.3
+212,De Kuip,51.1
+213,Polman,8.5
+214,Rat Verlegh,16.4
+215,Goffert,12.5
+216,Philips,35.0
+217,Rosada,5.0
+218,Mandemakers,7.5
+219,Parkstad,19.2
+220,Abe Lenstra,26.1
+221,Kasteel,11.0
+222,Galgenwaard,24.4
+223,GelreDome,26.6
+224,Willem II,14.7
+225,Berg en Bos,3.0
+226,Cambuur,10.5
+227,Vijverberg,12.6
+228,Krommedijk,4.1
+229,Jan Louwers,4.6
+230,Meerdijk,8.6
+231,Woudestein,3.5
+232,Vliert,8.5
+233,Omniworld,3.0
+234,Sittard,12.5
+235,Adelaarshorst,10.0
+236,Haarlem,3.4
+237,De Braak,4.1
+238,Geusselt,10.0
+239,Telstar,3.6
+240,Oss,4.6
+241,Veendam,6.5
+242,De Koel,6.0
+243,Kras,6.6
+244,Zwolle,6.2
+245,Andorra,3.0
+246,Andorra,3.0
+247,Horr,11.8
+248,Wals-Siezenheim,18.2
+249,Graz-Liebenau,15.3
+250,Pasching,7.9
+251,Hanappi,17.5
+252,Jan Breydel,29.0
+253,Vanden Stock,26.4
+254,Fenix,24.9
+255,Sclessin,30.0
+256,Kuipje,8.0
+257,Dalymount,8.5
+258,Tolka,9.0
+259,Rheinau,2.0
+260,Rheinpark,7.5
+261,Frontiere,5.0
+262,Luxembourg,3.0
+263,Floriana,2.0
+264,Sliema,2.0
+265,The Oval,15.0
+266,Windsor Park,20.3
+267,Alvalade,50.0
+268,Bessa,28.3
+269,Braga,30.2
+270,Luz,65.4
+271,Dragao,50.4
+272,Serravalle,4.8
+273,Serravalle,4.8
+274,Celtic Park,60.4
+275,East End,11.8
+276,Tynecastle,17.4
+277,Fir Park,13.7
+278,Ibrox,51.1
+279,St. Jakob-Park,42.5
+280,Stade de Suisse,32.0
+281,Stade de Geneve,30.1
+282,Lachen,5.0
+283,Letzigrund,23.6
+284,Belle Vue,3.0
+285,Farrar Road,2.0
+286,Qemal Stafa,19.7
+287,Qemal Stafa,19.7
+288,Kosevo,34.6
+289,Grbavica,14.0
+290,Poljud,35.0
+291,Velika Gorica,5.0
+292,Maksimir,38.0
+293,U Nisy,9.9
+294,Olomouc,12.5
+295,Bazaly,17.4
+296,Letna,20.6
+297,Slavia,14.0
+298,MTK,7.7
+299,Ulloi,18.1
+300,Szusza,13.5
+301,Kratovo,5.0
+302,Gradski Skopje,17.0
+303,Wisla,15.0
+304,Legia,13.6
+305,Wronki,5.0
+306,Partizan,32.7
+307,Marakana,51.8
+308,Omladinski,20.0
+309,Banska Bystrica,10.0
+310,Inter Bratislava,12.0
+311,Tehelne pole,30.1
+312,Nova Gorica,3.0
+313,Ljudski vrt,12.4
+314,Bezigrad,5.0
+315,Ararat,15.0
+316,Pyunik,15.0
+317,Inter Baku,10.0
+318,Qarabagh,15.0
+319,Bobruisk,6.0
+320,Dinamo Minsk,40.0
+321,Balgarska Armia,22.0
+322,Georgi Asparuhov,25.0
+323,Ovcha Kupel,25.0
+324,GSP,22.9
+325,Papadopoulos,9.4
+326,GSP,22.9
+327,Kutaisi,11.0
+328,Paichadze,54.0
+329,OAKA,69.6
+330,OAKA,69.6
+331,Karaiskakis,33.3
+332,Toumba,28.7
+333,Xanthi,7.2
+334,Bloomfield,14.4
+335,Kiryat Eliezer,14.0
+336,Bloomfield,14.4
+337,Petah Tikva,6.8
+338,Teddy,21.6
+339,Almaty Central,23.8
+340,Shymkent,20.0
+341,Zimbru,10.5
+342,Sheriff,13.0
+343,Dinamo Bucharest,15.0
+344,Giulesti,19.1
+345,Ghencea,27.5
+346,Dinamo Moscow,36.5
+347,Lokomotiv,28.8
+348,Streltsov,13.4
+349,Luzhniki,78.4
+350,Petrovsky,21.4
+351,Inonu,32.1
+352,Saracoglu,50.5
+353,Ali Sami Yen,22.8
+354,Ataturk Bursa,18.6
+355,Avni Aker,24.2
+356,Meteor,24.4
+357,RSK Olimpiyskyi,25.8
+358,Metalurh,5.1
+359,Lobanovsky,16.9
+360,Chornomorets,34.4
+361,Brondby,29.0
+362,Parken,38.1
+363,Esbjerg,13.3
+364,Levadia,3.0
+365,A. Le Coq,9.7
+366,Gundadalur,6.0
+367,Gundadalur,6.0
+368,Finnair,10.8
+369,Ratina,16.8
+370,Tehtaan,3.5
+371,KR,2.8
+372,Valur,3.0
+373,Riga,5.0
+374,Skonto,8.1
+375,Kaunas,8.2
+376,Zalgiris,15.0
+377,Soderstadion,16.2
+378,Arasen,11.6
+379,Alfheim,7.4
+380,Lerkendal,21.2
+381,Ullevaal,25.6
+382,Ullevi,43.0
+383,Gamla Ullevi,18.4
+384,Rasunda,36.6
+385,Hernando Siles,42.0
+386,Mineirao,70.0
+387,Maracana,88.0
+388,Olimpico Monumental,51.0
+389,Vila Belmiro,17.9
+390,Morumbi,80.0
+391,Pascual Guerrero,45.0
+392,Casa Blanca,41.6
+393,Monumental Lima,80.1
+394,UCV,30.0
+395,Doble Visera,52.8
+396,Bombonera,49.0
+397,Cilindro,51.4
+398,Monumental,65.6
+399,Monumental Arellano,47.0
+400,Manuel Ferreira,25.0
+401,Parque Central,26.5
+402,Centenario,65.2
+403,Tizi Ouzou,20.0
+404,Cairo,74.1
+405,Mohammed V,67.0
+406,Rades,60.0
+407,Ohene Djan,40.0
+408,Bamako,30.0
+409,Nnamdi Azikiwe,22.0
+410,Senghor,60.0
+411,Ahidjo,40.0
+412,Orlando,24.0
+413,Toronto,3.0
+414,Saprissa,23.0
+415,Happy Valley,9.0
+416,Jalisco,62.0
+417,Victoria,23.9
+418,Home Depot,27.0
+419,RFK,45.6
+420,Dalian,30.8
+421,Mizuho,27.0
+422,Fukuda Denshi,19.8
+423,Hakata,22.6
+424,Sapporo Dome,41.5
+425,Kobe Wing,30.0
+426,Mitsuzawa,15.0
+427,Nagai,47.8
+428,Saitama,63.7
+429,Nihondaira,20.3
+430,Tokyo Stadium,50.0
+431,Seongnam,27.0
+432,Azadi,90.0
+433,Al-Shaab,35.0
+434,Al-Kuwait,18.5
+435,Jassim Bin Hamad,13.0
+436,Thani bin Jassim,21.2
+437,King Fahd,67.0
+438,Al-Ain,15.0
+439,Pakhtakor,35.0
+440,Lakeside,12.0
+441,Kiwitea,3.5
+442,Priestfield,11.6
+443,City Ground,30.6
+444,Millmoor,8.3
+445,Jean Bouin,17.8
+446,Pompidou,15.1
+447,Rene Gaillard,10.9
+448,Georg-Melches,20.6
+449,Niederrheinstadion,21.3
+450,Moselstadion,10.3
+451,Ferraris,36.6
+452,Penzo,9.9
+453,Conero,26.0
+454,Arcangel,21.8
+455,Pasaron,12.0
+456,Helmantico,17.3
+457,Quick Boys,3.0
+458,VVA'71,3.0
+459,ASWH,3.0

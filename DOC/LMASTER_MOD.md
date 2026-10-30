@@ -32,7 +32,7 @@ level:
 | `leagues` | league-balance, third-tier | – | yes | yes |
 | `restorations` | injury-lines | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
-| `stadiums` | special-stadium ([below](#stadiums)) | – | yes | yes |
+| `stadiums` | special-stadium, real-grounds ([below](#stadiums)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -651,7 +651,58 @@ hold 100,000 too. The switch writes only the changed bytes, like
 `facility-tiers`, which writes the same records' costs (it now does the
 same): on a scratch disc with both, record 8 cost £350M and held 100,000,
 and the `STATIONFILE` copy and the seven `SIMFILE` copies of
-`STADIUM_DATA` matched. Not yet tested in the game.
+`STADIUM_DATA` matched. An editor target (Facilities, Nations &
+stadiums) takes the change in its own bytes. Not yet tested in the game.
+
+**`--mod real-grounds`.** Each computer club plays at a ground of its
+real 2006-07 capacity, rounded to 5,000 (the user's choice, closer to the
+retail game's few sizes than a figure to the thousand), and clubs of one
+size are spread over every stadium id of that size, so grounds of the
+same size look different (user request, 2026-10-30). `SRC/grounds.csv`
+holds each club's ground and real capacity in thousands (suggestions,
+from memory: lower-division and far-away figures are approximate, which
+the rounding mostly absorbs). `initteam.py` does the rest:
+
+- **Bands.** Ids 0–101 keep your ladder's capacities. The club-only ids
+  102–118 take the sizes the ladder lacks, on the models big enough
+  for them (`BUILD_STADIUM` fixes each id's model; the level byte
+  follows the model):
+
+| Ids | Model | Retail | Now |
+|---|---|---|---|
+| 102 | `ho00b` | 8,000 | 8,000 |
+| 103, 105, 107 | `aw01a` | 18,500 | 20,500 (20 + the 500 `GetCapacityFromID` adds to these three) |
+| 104 | `ho01a` | 15,000 | 15,000 |
+| 106 | `ho01b` | 20,000 | 25,000 |
+| 108, 111 | `ho02a` | 40,000 | 45,000 |
+| 109, 110 | `ho02a` | 35,000 | 30,000, 35,000 |
+| 112, 113 | `aw03a` | 42,000 | 65,000 |
+| 114, 115 | `aw03a` | 42,000 | 70,000, 75,000 |
+| 116 | `aw04b` | 70,000 | 70,000 |
+| 118 | `aw04b` | 70,000 | 80,000 |
+| 117 | `ho04a` | 110,000 | 85,000 |
+
+- **Clubs.** A club goes to the nearest band the ids offer (the bigger
+  on a tie); under 12,500 to the 8,000 grounds, and 90,000 (Azadi;
+  Maracanã's 88,000) to 85,000, since no id is left for 90,000–95,000.
+  Camp Nou alone is at 100,000, on the Special stadium's ids, which is
+  why the switch turns on `special-stadium`. Within a band the clubs take
+  its ids in turn, in team order; clubs naming the same ground (AC Milan
+  and Inter, Lazio and Roma, Bayern and 1860) share one.
+- **Result.** 444 bytes of the club records change; the clubs use 104
+  ids (89 in retail) and 17 sizes (14). The mean distance from the real
+  capacity, over the clubs above 12,500, is 1,200 seats, the largest
+  5,000. Where a band has one id, its clubs share a look (Old Trafford
+  and the Olimpico at 75,000).
+
+The club records (`PLRESOURCESIM.PAC` entry 3, `+0x06`) and `STADIUM_DATA`
+go in with their PRELOAD copies, only the changed bytes, next to
+`overseas-bases` and `special-stadium`, which write the same files. A
+`PLRESOURCESIM.PAC` or `STADIUM_DATA.TBB` from the editor takes the change
+in its own bytes (target hooks, as for `special-stadium`); where its own
+edit replaced what the switch expects, the editor's value stays. Not yet
+tested in the game: what to look at is the grounds' sizes on the club
+screens and the crowds in an away match.
 
 ```bash
 python SRC/plrcommon.py show DAT/PARAM 0.7          # your stadium types

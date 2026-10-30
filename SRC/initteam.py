@@ -325,8 +325,15 @@ def read_pac_entry(path, index):
 
 
 class TeamDb:
-    def __init__(self, path):
-        buf, off, size = read_pac_entry(path, 3)
+    def __init__(self, path=None, data=None):
+        """The club records of PLRESOURCESIM.PAC at `path`, or in its bytes
+        `data`."""
+        if data is None:
+            buf, off, size = read_pac_entry(path, 3)
+        else:
+            import pac
+            h = pac.BinPac(data[:struct.unpack_from("<I", data)[0]])
+            buf, (off, size, _, _) = data, h.entries[3]
         self.buf = buf
         _, tables = tbb.parse(buf[off:off + size])
         t = tables[0]
@@ -461,9 +468,12 @@ class StadiumData:
     # capacity is in thousands.
     RANGES = {"roof": (0, 1), "level": (0, 4), "capacity": (0, 0xff)}
 
-    def __init__(self, path):
-        with open(path, "rb") as f:
-            self.buf = f.read()
+    def __init__(self, path=None, data=None):
+        """STADIUM_DATA.TBB at `path`, or its bytes `data`."""
+        if data is None:
+            with open(path, "rb") as f:
+                data = f.read()
+        self.buf = data
         self.end, self.tables = tbb.parse(self.buf)
         d = self.tables[0].data
         if len(d) != self.ROW * self.COUNT:
@@ -493,6 +503,115 @@ class StadiumData:
 
     def capacity(self, i):
         return self.rows[i][2] * 1000 + self.BONUS.get(i, 0)
+
+
+# The LMASTER Mod's real grounds (DOC/LMASTER_MOD.md#stadiums): each club
+# plays at a ground of its real 2006-07 capacity, rounded to 5,000 (the
+# user's choice), and clubs of one size are spread over every stadium id of
+# that size, so they look different. grounds.csv, next to this script,
+# holds {team, ground, capacity in thousands}; clubs naming the same ground
+# share an id.
+#
+# Stadium ids 0-101 are the ones a club's own ground reaches as it is built
+# (CONV_INFO_BUILD), and InitStadium fills the stands by their capacity, so
+# they keep it: 8, 15-25, 30-40 and 50-60 thousand, and 100 for 96-101 with
+# special-stadium. Ids 102-118 are the computer clubs' own; their model
+# (BUILD_STADIUM) is fixed, so the bands the ladder lacks go to the models
+# big enough: {id: (capacity in thousands, level)}. GetCapacityFromID adds
+# 500 seats to 103, 105 and 107, so those hold 20,500.
+GROUNDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grounds.csv")
+GROUND_IDS = {
+    102: (8, 0),                                    # ho00b
+    103: (20, 1), 104: (15, 1), 105: (20, 1), 106: (25, 1), 107: (20, 1),  # aw01a, ho01a/b
+    108: (45, 2), 109: (30, 2), 110: (35, 2), 111: (45, 2),               # ho02a
+    112: (65, 3), 113: (65, 3), 114: (70, 3), 115: (75, 3),               # aw03a
+    116: (70, 4), 118: (80, 4),                     # aw04b
+    117: (85, 4),                                   # ho04a
+}
+GROUND_RETAIL = {102: 8, 103: 18, 104: 15, 105: 18, 106: 20, 107: 18, 108: 40, 109: 35,
+                 110: 35, 111: 40, 112: 42, 113: 42, 114: 42, 115: 42, 116: 70, 117: 110,
+                 118: 70}
+SPECIAL_GROUND = (range(96, 102), 100)              # with special-stadium
+SMALLEST_BAND = 12.5                                # below it, the 8,000 ground
+# The ladder's ids by level: 0-5 hold 8; then 30 ids a level, 6 leagues x
+# 5 variants (no stand, 1 or 2 stands, roof, lights), the variants holding
+# the type's three stand capacities and then the third again.
+LADDER = ((range(0, 6), (8,)), (range(6, 36), (15, 20, 25, 25, 25)),
+          (range(36, 66), (30, 35, 40, 40, 40)), (range(66, 96), (50, 55, 60, 60, 60)))
+
+
+def load_grounds(path=GROUNDS_FILE):
+    """[(team, ground, capacity in thousands)]."""
+    import csv
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        return [(int(r["team"]), r["ground"], float(r["capacity"])) for r in csv.DictReader(f)]
+
+
+def ground_capacities():
+    """{stadium id: capacity in thousands} once the grounds are in: the
+    ladder's (as the retail table has them), 96-101 at the Special
+    stadium's and 102-118 at their bands."""
+    caps = {}
+    for ids, sizes in LADDER:
+        caps.update((i, sizes[(i - ids[0]) % len(sizes)]) for i in ids)
+    caps.update((i, c) for i, (c, _) in GROUND_IDS.items())
+    caps.update((i, SPECIAL_GROUND[1]) for i in SPECIAL_GROUND[0])
+    return caps
+
+
+def ground_band(capacity, bands):
+    """The band a capacity goes to: the nearest 5,000 the ids offer, the
+    bigger one on a tie; under 12,500 the smallest ground."""
+    if capacity < SMALLEST_BAND:
+        return min(bands)
+    target = 5 * round(capacity / 5)
+    return min(bands, key=lambda b: (abs(b - target), -b))
+
+
+def ground_ids(grounds=None):
+    """{team: stadium id} for every club in grounds.csv."""
+    caps = ground_capacities()
+    by_band = {}
+    for i in sorted(caps):
+        by_band.setdefault(caps[i], []).append(i)
+    turn = {b: 0 for b in by_band}
+    shared, out = {}, {}
+    for team, ground, capacity in sorted(grounds or load_grounds()):
+        if ground not in shared:
+            band = ground_band(capacity, by_band)
+            ids = by_band[band]
+            shared[ground] = ids[turn[band] % len(ids)]
+            turn[band] += 1
+        out[team] = shared[ground]
+    return out
+
+
+def real_grounds_stadiums(data):
+    """STADIUM_DATA.TBB bytes with ids 102-118 at their bands; None when
+    they already are."""
+    table = StadiumData(data=data)
+    held = {i: table.rows[i][2] for i in GROUND_IDS}
+    if held == {i: c for i, (c, _) in GROUND_IDS.items()}:
+        return None
+    if held != GROUND_RETAIL:
+        raise ValueError("%s: stadiums 102-118 hold %s thousand; not the retail table?"
+                         % (STADIUM_TBB, held))
+    for i, (capacity, level) in GROUND_IDS.items():
+        table.set(i, "capacity", capacity)
+        table.set(i, "level", level)
+    return table.encode()
+
+
+def real_grounds_clubs(data):
+    """PLRESOURCESIM.PAC bytes with each club at its ground's id; None when
+    they already are."""
+    db = TeamDb(data=data)
+    ids = ground_ids()
+    if all(db.records[t]["stadium"] == i for t, i in ids.items()):
+        return None
+    for team, i in ids.items():
+        set_team_field(db.records[team], "stadium", i)
+    return db.encode()
 
 
 def category_names(mes_path, category, lang=1):

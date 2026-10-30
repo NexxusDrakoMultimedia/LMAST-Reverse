@@ -357,6 +357,13 @@ disc or the edit to build; the result goes into the doc linked.
       di Torino, and one with ß, Fußball Arena München); and your own
       stadium as "\<your name\> Stadium" (`own-stadium`)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
+- [ ] The stadiums group on `LMAST-test-names.iso`: other clubs' grounds
+      at their real sizes on the club screens (Chelsea 40,000, Old
+      Trafford 75,000, a small club at 8,000), an away match at a big
+      ground (Camp Nou 100,000, San Siro 85,000) whose crowd and stands
+      look right, and, later in a career, the Special stadium as a
+      100,000 ground that fills when sold out
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#stadiums))
 
 ## 8. LMASTER Mod and other patches
 
