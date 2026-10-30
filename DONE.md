@@ -50,6 +50,11 @@ evidence and how it was tested; the git history holds the rest.
 - [x] `EMBLEM/`'s presets, the 110-byte crests (`PlEmblemPreset`), the
       layer records and `EDIT_FLAG`'s patterns and placements, checked by
       `emblem.py info` ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#the-crest-structures))
+- [x] `EDIT_PLAYER.TBB`'s 32 tables traced to their readers: base abilities
+      by position and nation, aptitudes, personality and growth ranges,
+      policy by nation, tendencies and skills by position, the editor's
+      choices; `emblem.py info` checks their shapes
+      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#edit_playertbb))
 
 ## 2. Understand: field meanings an edit needs
 

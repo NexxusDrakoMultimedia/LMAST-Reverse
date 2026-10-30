@@ -38,10 +38,8 @@ What to work on next, most valuable first.
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 3. **The stadium tables and `EDIT_PLAYER.TBB`** (sections 2 and 3):
    the crowd figure groups (they need a look at the models) and request
-   `+0x0e`–`+0x10`, then a stadium writer and tab; `EDIT_PLAYER.TBB`'s
-   32 tables from their accessors' callers
-   ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown),
-   [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#still-unknown)).
+   `+0x0e`–`+0x10`, then a stadium writer and tab
+   ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown)).
 
 ## What a mod can change, and what is left
 
@@ -68,9 +66,9 @@ type has a doc and a tool whose `info` passes over all of `DAT/`.
       ([`GAME_DIR.md`](DOC/GAME_DIR.md#still-unknown))
 - [ ] `ACROBATA/`: the `ABDT` scene layout and the `ABRS` header table
       ([`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md#still-unknown))
-- [ ] `EMBLEM/`: `EDIT_PLAYER.TBB`'s 32 tables (each has an accessor in
-      `YRSTPRG.REL`; their callers aren't traced)
-      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#still-unknown))
+- [ ] `EMBLEM/`: which player-editor choices pick the rows of
+      `EDIT_PLAYER.TBB` tables 19–21, 25 and 26, and tables 29–31
+      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#edit_playertbb))
 - [ ] `SEQ/`: `INFORMATION.WPX` and the command sets of the two 2004
       scripts ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#still-unknown))
 - [ ] Outside `DATA.CVM`: `OPMOVIE.SFD` (Sofdec;
@@ -200,8 +198,9 @@ round-trips every file on the disc. **Done when** each format below has
 a field-level writer with a `roundtrip` check in `regress.py`.
 
 - [ ] The `STADIUM/` tables, once their fields are understood
-      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md)); `EDIT_PLAYER.TBB` after
-      its tables are decoded ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md))
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md)); `EDIT_PLAYER.TBB`, whose
+      tables are now read (base abilities by position and nation, the
+      personality ranges; [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#edit_playertbb))
 - [ ] A texture writer for `svr.py`, which only reads, for LMAST Realism
       on the disc ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 

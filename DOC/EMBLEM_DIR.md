@@ -25,7 +25,7 @@ an empty `DUMMY.DAT`.
 | `EDIT_EMBLEM_A.PAC` / `.HED` | BINPAC, 217 SVR | the same | accessories (the emblems on top). **confirmed** |
 | `EDIT_FLAG.TBB` | TBB, 3 tables | `EDIT::CFlagData` | flag bases, flag patterns, crest placements. **confirmed** |
 | `EDIT_FLAG.PAC` / `.HED` | BINPAC, 49 SVR | the flag editor | flag bases. **confirmed** |
-| `EDIT_PLAYER.TBB` | TBB, 32 tables | `PLAYEREDIT_MODULE` (`YRSTPRG.REL`) | the player editor's tables. Not decoded |
+| `EDIT_PLAYER.TBB` | TBB, 32 tables | `PLAYEREDIT_MODULE` (`YRSTPRG.REL`) | the player editor's tables: base abilities by position and nation, personality and growth ranges, the editor's choices ([below](#edit_playertbb)) |
 | `DUMMY.DAT` | 0 bytes | nothing | a placeholder |
 
 The 4 part packs hold 128×128 textures at 4 bits per pixel with an
@@ -258,18 +258,55 @@ launcher, where it hangs ([`SQB_FORMAT.md`](SQB_FORMAT.md)). It is the
 player editor that brings a Virtua Pro Football edit player into a
 career ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)).
 
-The module reads each table through its own accessor (`YRSTPRG.REL
-0x1cc70`–`0x1d418`, one per table, most of them through the row getter
-at `0x1d438`, row × the table's line size). Most accessors have one
-caller; table 24's has none, and table 25's (`0x1d340`) returns its
-first byte ÷ 100 as a float. The callers haven't been traced.
+**How the tables are read (confirmed, `YRSTPRG.REL`, 2026-10-30).** Each
+table has its own accessor (`0x1d128`–`0x1d418`, tables 9–31, through the
+row getter `0x1d438`, row × line size; tables 0–8 through `0x1cf98`). All
+but three are called from the code after `WP::CPlayerEditFrameResult`
+that makes the finished player, in two drivers: `0x1a9c8` (tables 0–18
+and 26–28) and `0x1aa70` (19–25). The player is the edit work's
+`PlPbase` (decoded, `0x1d4f8` returns work `+4`; field offsets as in
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)), written through small setters:
+`0x1d700` an ability (index < 64, capped at 99), `0x1d7e0` a
+dissatisfaction weight (< 8), `0x1d850`/`0x1d870` a tendency (< 11, set
+or added, 0–4), `0x1d8c0` a skill (< 16), `0x1d928` a play-style slot
+(< 5, style < 23), `0x1d6d8` a position (< 3, apos < 14).
 
-The tables aren't decoded. Their shapes (**empirical**): tables 0–8 are
-14 rows of 33 bytes (values like 30–80, a rating per ability and
-position?), table 14 is 146 rows of 26 rising values (growth curves?),
-table 19 is 319 rows of 144 bytes, table 26 is 100 rows of 151 bytes, and
-the rest are small lists of 1–16-byte rows. Nothing here has been checked
-in the game.
+| Table | Rows × bytes | Read by | What it holds |
+|---|---|---|---|
+| 0–8 | 14 × 33 | `0x1ae98` | the base abilities 0–32: the table by the main position's cell (`plMisc_Apos2Epos`, 9 cells), the row by the nation (`0x1d040`: rows 0–5 England, France, Germany, Italy, Spain, the Netherlands; 6 the rest of the first scouting region; 7–13 the other regions by `plMisc_Nati2DRegion`, several sharing a row) |
+| 9 | 4 × 13 | `WP::CPlayerEditWindowPositionSettingTask` (`0x128e8`, `0x12f58`) | which of the 13 positions (GK, LSB, RSB, CB, LWB, RWB, DM, LSM, RSM, OM, LWG, RWG, FW) belong to each of 4 groups: GK; LSB–CB; LWB–OM; LWG–FW (*empirical* reading of the 0/1 grid) |
+| 10 | 9 × 9 | `0x1af68` | the 9 position aptitudes (abilities 33–41) by the cell of each of the player's positions (`+0x1c`–`+0x24`), 50 on its own cell; with two or three positions the rows are blended through `0x1cde8` (weights 3; 2 and 0; 1 and 1) |
+| 11 | 3 × 3 | `0x1b2d0` | the same for the 3 side aptitudes (42–44), by `plMisc_Apos2Side` |
+| 12 | 8 × 2 | `0x1b5d8` | the 8 dissatisfaction weights: {min, max}, min + rand(max − min + 1) (all 0–1) |
+| 13 | 21 × 2 | `0x1b660` (`0x1cea0`) | {min, max} of single fields, in this order: tone, professionalism, pressure, loyalty, star, the first `explodetype`, moti_type, cond_type, potential, three unused rows (the growth types come from table 28), travel, injury_res, recovery, foul_avoid, weak_foot, policy, adapt, ball_touch, dribble_style |
+| 14 | 146 × 26 | `0x1b7e0` (`0x1cc70`) | the player's policy (`+0x52`) by nation: each row a cumulative weighting, a random number below its last value picks the first entry at or above it |
+| 15 | 19 × 2 | `0x1b828` | {min, max} of abilities 45–63 (all 51–80) |
+| 16 | 11 × 2 | `0x1b8b8` | {min, max} of the 11 tendencies (all 0–1) |
+| 17 | 16 × 1 | `0x1b940` | the 16 skills (all 0) |
+| 18 | 22 × 1 | `0x1b9b8` | the 22 play styles, for the 5 style slots (all 0) |
+| 19 | 319 × 144 | `0x1c078` | the effects of the editor's choices: the row is one of up to 8 choices the task keeps at `+0x38`; its bytes override the fields in table 13's order (byte 1 tone, 5 star, 6 `explodetype`, 7 moti_type, 9 the growth types …) and further fields, `0xff` leaving a field as it is (`0x1cef0`) |
+| 20, 21 | 28 × 16, 28 × 116 | `0x1c5d0` | the same kind of overrides for another set of 28 choices |
+| 22 | 13 × 11 | `0x1cb18` | added to the 11 tendencies by the player's position (13 positions), clamped to 0–4 |
+| 23 | 13 × 16 | `0x1cb88` (`0x1cda0`) | the 16 skills by position |
+| 24 | 22 × 16 | none | its accessor (`0x1d320`) has no caller |
+| 25 | 32 × 1 | `0x1cc08` | a factor (byte ÷ 100, all 94) that scales abilities 0–32 (`0x1d780`); the row is the task's `+0x64` |
+| 26 | 100 × 151 | `0x1ade0`, `0x1ae38`, `0x1ba58` | 100 player templates: byte 0 a nation and byte 6 a position, checked against the player's (`0x1ade0`, `0x1ae38`); the row is the task's `+0x60`, and `0x1a9c8` stores the result at `+0x58` |
+| 27 | 1 × 2 | `0x1ae98` | the spread of the base abilities: each gets rand(5) − 2 |
+| 28 | 3 × 16 | `0x1cd08` | the three growth types (physical, skill, mental, `+0x4a`–`+0x4c`), 0–15, drawn from cumulative weights like table 14 |
+| 29 | 8 × 10 | `0x1cde8` | used by the position aptitude blend (`+4` 100–160 and `+6` 3–6 in steps); not traced further |
+| 30, 31 | 13 × 16, 13 × 19 | `WP::CPlayerEditWindowHexagonGraphTask` (`0x13a98`, `0x13ce8`) | data for the editor's hexagon graph, one row per position; not traced further |
+
+So the editor makes a player from his nation and position (tables 0–11,
+14, 22, 23), personality and growth ranges (12, 13, 15–18, 28), and the
+choices made in the editor (19–21, 25, 26), with ±2 randomness (27).
+Whether this runs for a player brought in from Virtua Pro Football
+(whose import fills the same edit work, [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md))
+or only for one made in the editor isn't traced. Which screen choices fill the
+task's `+0x38`, `+0x60` and `+0x64`, and so which rows of 19–21, 25 and
+26 a player gets, isn't traced. `python SRC/emblem.py info DAT/EMBLEM`
+checks every table's shape, that the {min, max} rows (12, 13, 15, 16)
+are in order and that the cumulative rows (14, 28) never fall, on both
+releases. Nothing here has been checked in the game.
 
 ## Editing
 
@@ -324,6 +361,8 @@ folder.
 - Whether the three short layer tables lose visible parts in the editor.
 - What the 33rd sample (32, the rival crest's) is, given table 7 has 29
   rows.
-- All of `EDIT_PLAYER.TBB` beyond its accessors.
+- `EDIT_PLAYER.TBB`: which editor choices pick the rows of tables 19–21,
+  25 and 26 (task `+0x38`, `+0x60`, `+0x64`), the rest of table 19's
+  144 bytes, and tables 29–31 ([`EDIT_PLAYER.TBB`](#edit_playertbb)).
 - Why the 4bpp part textures' palette indices map to the chosen colours
   (the palette build wasn't traced).

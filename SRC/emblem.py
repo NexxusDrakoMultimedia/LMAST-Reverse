@@ -405,6 +405,43 @@ def load_tables(d, name):
     return tables
 
 
+# EDIT_PLAYER.TBB: the player editor's tables (YRSTPRG.REL, accessors
+# 0x1cf98 and 0x1d128-0x1d418; DOC/EMBLEM_DIR.md#edit_playertbb). (rows,
+# line size) of each table as the code reads them.
+EDIT_PLAYER_SHAPES = [(14, 33)] * 9 + [
+    (4, 13), (9, 9), (3, 3), (8, 2), (21, 2), (146, 26), (19, 2), (11, 2), (16, 1),
+    (22, 1), (319, 144), (28, 16), (28, 116), (13, 11), (13, 16), (22, 16), (32, 1),
+    (100, 151), (1, 2), (3, 16), (8, 10), (13, 16), (13, 19)]
+EDIT_PLAYER_RANGES = (12, 13, 15, 16)      # {min, max} rows: min + rand(max - min + 1)
+EDIT_PLAYER_CUMULATIVE = (14, 28)          # weights summed along the row (0x1cc70)
+
+
+def check_edit_player(d):
+    """One line for EDIT_PLAYER.TBB: the shapes the code reads, {min, max}
+    rows in order, cumulative rows that never fall."""
+    try:
+        t = load_tables(d, "EDIT_PLAYER.TBB")
+    except (OSError, ValueError, struct.error) as e:
+        return "EDIT_PLAYER.TBB  !! %s" % e
+    probs = []
+    if len(t) != len(EDIT_PLAYER_SHAPES):
+        probs.append("%d tables, expected %d" % (len(t), len(EDIT_PLAYER_SHAPES)))
+    for i, (table, (rows, line)) in enumerate(zip(t, EDIT_PLAYER_SHAPES)):
+        if (table.row_count, table.line_size) != (rows, line):
+            probs.append("table %d is %d x %d, expected %d x %d" % (
+                i, table.row_count, table.line_size, rows, line))
+    for i in EDIT_PLAYER_RANGES:
+        bad = [n for n, r in enumerate(t[i].rows()) if r[0] > r[1]]
+        if bad:
+            probs.append("table %d: min above max in rows %s" % (i, bad))
+    for i in EDIT_PLAYER_CUMULATIVE:
+        bad = [n for n, r in enumerate(t[i].rows()) if any(a > b for a, b in zip(r, r[1:]))]
+        if bad:
+            probs.append("table %d: weights fall in rows %s" % (i, bad))
+    return "EDIT_PLAYER.TBB  %d tables, %d rows%s" % (
+        len(t), sum(x.row_count for x in t), "  !! " + "; ".join(probs) if probs else "")
+
+
 def color_rgba(word):
     """EDIT::CColor colour word -> (r, g, b, a): GetColor16 (0x2b9bf8)
     takes red from bits 24-31, green 16-23, blue 8-15, alpha 0-7."""
@@ -668,12 +705,7 @@ def cmd_info(d):
     for line in check_edit_emblem(d, counts):
         print(line)
     print(check_edit_flag(d, counts))
-    try:
-        t = load_tables(d, "EDIT_PLAYER.TBB")
-        print("EDIT_PLAYER.TBB  %d tables, %d rows (layout not decoded)" % (
-            len(t), sum(x.row_count for x in t)))
-    except (OSError, ValueError, struct.error) as e:
-        print("EDIT_PLAYER.TBB  !! %s" % e)
+    print(check_edit_player(d))
     size = os.path.getsize(os.path.join(d, "DUMMY.DAT"))
     print("DUMMY.DAT  %d bytes" % size)
 
