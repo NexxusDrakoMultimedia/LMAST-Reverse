@@ -268,9 +268,9 @@ disc or the edit to build; the result goes into the doc linked.
       which one a match reads; whether screens outside a match show
       your club's stored keeper kit
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#still-unknown))
-- [ ] An edited starting crest (`emblem.py set`, for example
-      `crest:8:0:base=15 crest:8:0:mask=1`) shows when a new club picks
-      it, and a flag pattern's `rev` 1–3 in the flag editor
+- [ ] An edited starting crest (`emblem.py set`) shows when a new club
+      picks its design: edit all 32 rows of table 8, since the design
+      the player picks chooses the row (a row-0 edit showed nothing)
       ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 - [ ] Kit style: outfield gloves on a player with `gloves` 1–4 in a
       career match between November and March (not in VS), and the cap

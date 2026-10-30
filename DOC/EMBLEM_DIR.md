@@ -327,7 +327,18 @@ use:
 | `flag:place:<row>:<field>` | `pos_x`, `pos_y`, `size_x`, `size_y` | −128–127; 0–255 |
 
 `rev` is limited to 0–3, the values the flag patterns use, as long as
-what it does is unchecked. Changing a crest's `base` is refused when its
+what it does is unchecked. **User report** (2026-10-31): flag patterns
+2–5, which are base 1 with `rev` 0, 1, 2 and 3 (`EDIT_FLAG.TBB` table 1
+rows 1–4), looked the same in the flag editor.
+
+**Which starting crest a new club gets (confirmed).** The club
+set-up (`CEDITPRG.REL 0x20b0`) takes one index, 0–31, for the starting
+design the player picks: it sets the club's kits from the 32 at
+`CEDITPRG.REL 0x150a0` and copies table 8's row of that index as the
+crest (`GetInitializeData`, `0x21a0`), with table 10's sample and table
+11's colours. So an edit to table 8 row *n* shows only for design *n*.
+A test with row 0 edited showed no change (user report, 2026-10-31), so
+which design was picked decides whether that means anything. Changing a crest's `base` is refused when its
 mask is past the new base's group; set the mask first. After the edits
 the file is checked as `info` checks it, and written only if that finds
 nothing.
@@ -355,7 +366,8 @@ folder.
 
 ## Still unknown
 
-- What a `Trs`'s `rev` values 1–3 and a flag's variants look like, what
+- What a `Trs`'s `rev` values 1–3 do (a flag's four `rev` variants look
+  the same in the flag editor, user report), what
   `chunk`, `texture_id` and `aLayer` hold, and which code reads `mask_num`
   (its match with the mask groups is empirical).
 - Whether the three short layer tables lose visible parts in the editor.
