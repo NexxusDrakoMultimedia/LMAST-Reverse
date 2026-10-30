@@ -135,6 +135,9 @@ evidence and how it was tested; the git history holds the rest.
       defensive line ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#combi2s-areas))
 - [x] `Combi3`'s preset areas, all but presets 5, 6, 16 and 19, and
       `Combi16` ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#combi3s-preset-areas))
+- [x] The set plays' id lists: a free kick's first list is direct
+      shots and its second passes first; corners are crosses (70%) or
+      short corners ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#which-play-is-which))
 
 ## 3. Write: a writer for every format a mod changes
 

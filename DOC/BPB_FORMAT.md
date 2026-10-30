@@ -149,18 +149,32 @@ setter `0x108d00`. Only two functions call it, both from
   group × 16, else one of the 8 at `0x2796a0` + group × 16, shuffled the
   same way. The ids are type 1, 2 and 3 for groups 0, 1 and 2:
 
-  | Group | Zones | Below the threshold | Otherwise |
+  | Group | Zones | Below the threshold: a direct shot | Otherwise: a pass first |
   |---|---|---|---|
   | 0 | the middle, 12–30 m | 100, 108, 116, 124 | 102, 103, 104, 105, 115 |
   | 1 | wide, 12–30 m | 132, 149 | 141, 143, 145, 155, 162 |
   | 2 | within 12 m | 164, 180, 181 | 167, 178, 179, 192, 193 |
 
+**What the lists hold (empirical**, from the plays' ball routes,
+`python SRC/bpb.py dump DAT/GAME/PLAYBOOK.BPB <record>`). Every ball
+route ends at the goal, (0, 53.0) m. In each free-kick group the first
+list's plays send the ball from the spot straight there, a shot, and
+the second list's plays pass to a team-mate first (one to three
+passes). So the thresholds are the chance of a direct shot: 80% from
+the middle, 60% from wide and 10% from near the goal line. Of the
+corners, the 70% list's ten are all a cross from the flag into the box
+(the ball's first stop at x −12.0 to +8.9 m, y 42.2–49.6 m), and the
+30% list's six are all short corners, played first to a team-mate on
+the flag's side (x 20.2–28.9 m). All 100
+corner records start at the same flag, (33.0, 51.4).
+
 So a match can use 40 of the 256 plays: 16 corners and 24 free kicks.
 Records 196–255, the type −1 range, are never asked for: no code builds
 an id from `0x4000` to `0x6fff`, and their path kinds (249–253) aren't
-role types. The corner ids in range 0 group 4 and up (records 40–89)
-show the groups are not one per corner side; what the groups and
-indexes stand for isn't traced.
+role types. Within the 100 corner records the groups are loose themes
+at most: short corners (a first pass to x > 19 m) are records 30–36,
+40–42, 45–49, 78–79 and all of 90–99 (to a team-mate beside the flag),
+and the rest go straight into the box.
 
 **`COMBINATION.BPB` is the tactics screen's.** Its copies in the
 `PRELOAD/TACTICS*` packs (all 14 identical to `GAME/COMBINATION.BPB`)
@@ -663,8 +677,9 @@ participants are the ones the record's slots found
   ways of running: no names were found), why `COMBINATION.BPB` uses
   code 3, which orders nothing, and whether anything reads the ball's
   point codes. What a path kind's value and flag select for its role.
-- What the id groups and indexes stand for within corners and free
-  kicks, and what records 196–255 (kind 3, roles 249–253) were for.
+- Whether the corner records' ten groups meant anything to the
+  developers beyond loose themes, and what records 196–255 (kind 3,
+  roles 249–253) were for.
 - `TACTICS_PLAYBOOK_EDIT.TBB` (180 rows of 4 bytes, read through
   `CTacticsLoader::getPlayBookEditTable`).
 - Whether anything reads A's two values, block B and C's four u32
