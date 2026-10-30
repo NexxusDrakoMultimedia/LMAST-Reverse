@@ -32,7 +32,8 @@ level:
 | `leagues` | league-balance, third-tier | – | yes | yes |
 | `restorations` | injury-lines | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
-| `stadiums` | special-stadium, real-grounds ([below](#stadiums)) | – | yes | yes |
+| `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
+| `title` | title-movie, demo-teams ([below](#the-title-screen)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -429,7 +430,7 @@ Other retail typos seen while making the name table, not fixed:
 competition, club and national team its real name of the game's era
 where the retail game uses a made-up one: Highbury as Arsenal, City as
 Manchester City, the European League as the Champions League (user
-request, 2026-10-30). It also names each club's stadium as of 2006-07,
+request, 2026-10-30). It also names each club's stadium as of 2005-06, the game's season,
 without sponsors where the ground has another name (Westfalenstadion,
 not Signal Iduna Park; user's choice, 2026-10-30). The club names match the ones LMAST Realism shows
 on its logos and kits, so text and textures agree. The game lets the
@@ -453,11 +454,13 @@ Italian and Spanish names and a team's three-letter form.
 | 100011 | the same | the same name where it repeats 11, or the English one where it holds English (in four languages run together, "European LeagueGroup A") |
 
 **Stadiums (2026-10-30).** 382 of the 457 clubs have a stadium row,
-the grounds they played at in 2006-07 (Emirates Stadium for Arsenal and
-Alfredo Di Stéfano for Real Madrid Castilla, both opened that year).
-One exception, the user's choice: Juventus keep the Stadio delle Alpi,
-their ground until 2006, not the Stadio Olimpico di Torino they
-shared with Torino in 2006-07. Sponsor names give way to the
+the grounds they played at in 2005-06 (the user's choice, 2026-10-30,
+after a first list of 2006-07): Highbury for Arsenal, not the Emirates
+Stadium; the Stadio delle Alpi for Juventus and Torino, not the Stadio
+Olimpico di Torino they moved to in 2006; the Alkmaarderhout for AZ, not
+the DSB Stadion; La Condomina for Real Murcia, not the Nueva Condomina;
+the Ciudad Deportiva for Real Madrid Castilla, not the Alfredo Di
+Stéfano. Sponsor names give way to the
 ground's own (Westfalenstadion, Arena AufSchalke, Volksparkstadion,
 Son Moix, El Sadar, Stadion Letná); where a ground had no other name
 (Reebok Stadium, JJB Stadium, Ricoh Arena, KC Stadium, Walkers Stadium,
@@ -466,7 +469,7 @@ Mandemakers Stadion, Kras Stadion, Finnair Stadium, Home Depot Center,
 Fukuda Denshi Arena) the row is left out. Names that belong to the club
 or its owner rather than a sponsor stay (Madejski Stadium, BayArena,
 Volkswagen Arena, Philips Stadion, MSV-Arena, Wacker-Arena). The other
-75 clubs, mostly the small and far-away ones whose 2006-07 ground isn't
+75 clubs, mostly the small and far-away ones whose 2005-06 ground isn't
 certain or needs letters cp850 lacks (Bežigrad, Andrův stadion), keep
 "\<club\> Stadium". The game's names are at most 30 characters
 ("Athletic Club de Bilbao Stadio"), and so are the rows; `info` lists
@@ -517,7 +520,9 @@ rules. **Tested in PCSX2** (user report, 2026-10-30): the names showed
 as intended apart from two swapped pairs, since corrected (below).
 The career started in England although the club was made in Germany,
 because the disc was built without `--skip-nation germany`; that is
-the test switch, not the names.
+the test switch, not the names. On the rebuilt disc (with
+`--skip-nation germany`) the names, the stadium names and the new grounds
+work (user report, 2026-10-30).
 
 ```bash
 python SRC/realnames.py info DAT/MESSAGE/MES.PAC       # the names against the disc
@@ -655,59 +660,147 @@ and the `STATIONFILE` copy and the seven `SIMFILE` copies of
 stadiums) takes the change in its own bytes. Not yet tested in the game.
 
 **`--mod real-grounds`.** Each computer club plays at a ground of its
-real 2006-07 capacity, rounded to 5,000 (the user's choice, closer to the
-retail game's few sizes than a figure to the thousand), and clubs of one
-size are spread over every stadium id of that size, so grounds of the
-same size look different (user request, 2026-10-30). `SRC/grounds.csv`
-holds each club's ground and real capacity in thousands (suggestions,
-from memory: lower-division and far-away figures are approximate, which
-the rounding mostly absorbs). `initteam.py` does the rest:
+real 2005-06 capacity (the game's season; the user's choice, after a
+first build with 2006-07 figures), rounded to 5,000 (the user's choice,
+closer to the retail game's few sizes than a figure to the thousand),
+and clubs of one size are spread over the stadium ids of that size, so
+grounds of the same size look different (user request, 2026-10-30).
+`SRC/grounds.csv` holds each club's ground and real capacity in
+thousands (suggestions, from memory: lower-division and far-away
+figures are approximate, which the rounding mostly absorbs; Old Trafford
+68,200, the Allianz Arena 66,000 and the Olimpico 82,300 are their
+2005-06 sizes). `initteam.py` does the rest:
 
-- **Bands.** Ids 0–101 keep your ladder's capacities. The club-only ids
-  102–118 take the sizes the ladder lacks, on the models big enough
-  for them (`BUILD_STADIUM` fixes each id's model; the level byte
-  follows the model):
+- **Looks.** Ids 0–101 keep your ladder's capacities, and their models
+  follow those sizes. The ladder's models look small for their numbers
+  at the top (user report on the first build: Chelsea, Manchester United
+  and Bayern), but only the biggest grounds should get the 110,000 bowl
+  (user's choice), so a ground's look follows its size:
 
-| Ids | Model | Retail | Now |
-|---|---|---|---|
-| 102 | `ho00b` | 8,000 | 8,000 |
-| 103, 105, 107 | `aw01a` | 18,500 | 20,500 (20 + the 500 `GetCapacityFromID` adds to these three) |
-| 104 | `ho01a` | 15,000 | 15,000 |
-| 106 | `ho01b` | 20,000 | 25,000 |
-| 108, 111 | `ho02a` | 40,000 | 45,000 |
-| 109, 110 | `ho02a` | 35,000 | 30,000, 35,000 |
-| 112, 113 | `aw03a` | 42,000 | 65,000 |
-| 114, 115 | `aw03a` | 42,000 | 70,000, 75,000 |
-| 116 | `aw04b` | 70,000 | 70,000 |
-| 118 | `aw04b` | 70,000 | 80,000 |
-| 117 | `ho04a` | 110,000 | 85,000 |
+| Band | Look | Ids |
+|---|---|---|
+| 8,000–35,000 | the ladder's models (`ho00`–`ho02a`) | the ladder's, 6–18 a band |
+| 40,000, under 40,000 real | the ladder's `ho02a` | the ladder's 40,000 ids |
+| 40,000, 45,000 | `ho03a` with roof (and lights at 45,000) | 102–104, 105–107 |
+| 50,000–60,000 | `ho03a` | the ladder's 66–95 |
+| 65,000, 70,000, 75,000 | the `aw04b` bowl | 108–109, 110–111, 116 and 118 |
+| 80,000, 85,000 | the `ho04a` bowl | 112–113, 115 and 117 |
+| 100,000 | the `ho04a` bowl | the Special stadium's 96–101 |
 
-- **Clubs.** A club goes to the nearest band the ids offer (the bigger
-  on a tie); under 12,500 to the 8,000 grounds, and 90,000 (Azadi;
-  Maracanã's 88,000) to 85,000, since no id is left for 90,000–95,000.
-  Camp Nou alone is at 100,000, on the Special stadium's ids, which is
-  why the switch turns on `special-stadium`. Within a band the clubs take
-  its ids in turn, in team order; clubs naming the same ground (AC Milan
-  and Inter, Lazio and Roma, Bayern and 1860) share one.
-- **Result.** 444 bytes of the club records change; the clubs use 104
-  ids (89 in retail) and 17 sizes (14). The mean distance from the real
+  The club-only ids 102–118 take the look of a ground (its
+  `BUILD_STADIUM` row: model, parts, crowd set, but not its advert
+  boards, which stay the id's own; `stadium.copy_rows`), its roof and the level of its model: 102–104
+  rows 69, 79, 89 (`ho03a`, roof), 105–107 rows 75, 85, 95 (roof and
+  lights), 108, 110 row 116 and 109, 111 row 118 (`aw04b`), 112 row 97,
+  113 and 117 row 117, 115 row 99 (`ho04a`). A look is copied only from
+  a row the switch leaves alone (116–118 keep their own), so applying it
+  twice changes nothing. `GetCapacityFromID` adds 500 seats to 103, 105
+  and 107. Stadium 114 is the rival's ground in every league
+  (`TEAM_INIT_DATA` table 7, [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8)):
+  it keeps its look, boards and 42,000, and no other club is put on it,
+  so the rival's ground stays its own (the user's request).
+- **Clubs.** As many grounds as possible, each close to its real size
+  (the user's request): a ground may take any band within 3,000 of its
+  real capacity, or its nearest band (the bigger on a tie) if none is;
+  under 12,500 the 8,000 grounds. The ladder's own 40,000 grounds, with
+  the smaller `ho02a` look, only go to grounds really under 40,000
+  (Highbury, 38,400). Each ground takes the least-used of its choices,
+  nearer bands first on a tie, the grounds with the fewest choices first;
+  clubs naming the same ground (AC Milan and Inter, Lazio and Roma,
+  Juventus and Torino, Bayern and 1860) share one. 90,000 (Azadi;
+  Maracanã's 88,000) goes to 85,000, since no id is left for
+  90,000–95,000. Camp Nou alone is at 100,000, which is why the switch
+  turns on `special-stadium`. The 12 on the `ho04a` bowl: Camp Nou, San
+  Siro (twice), the Bernabéu, the Westfalenstadion, the Olimpico
+  (twice), Luzhniki, Maracanã, Morumbi, the Monumental in Lima and
+  Azadi.
+- **Result.** 453 bytes of the club records change; the clubs use 96
+  of the 118 ids (89 in retail; the rival's 114 apart) and 17 sizes (14).
+  The ids left are the ladder's 40,000 and 60,000 ones and the Special's,
+  with no ground within 3,000 of them. The mean distance from the real
   capacity, over the clubs above 12,500, is 1,200 seats, the largest
-  5,000. Where a band has one id, its clubs share a look (Old Trafford
-  and the Olimpico at 75,000).
+  5,000 (Azadi).
 
 The club records (`PLRESOURCESIM.PAC` entry 3, `+0x06`) and `STADIUM_DATA`
-go in with their PRELOAD copies, only the changed bytes, next to
-`overseas-bases` and `special-stadium`, which write the same files. A
+go in with their PRELOAD copies, and `BUILD_STADIUM.TBB` (no copies), only
+the changed bytes, next to `overseas-bases` and `special-stadium`, which
+write the same files. A
 `PLRESOURCESIM.PAC` or `STADIUM_DATA.TBB` from the editor takes the change
 in its own bytes (target hooks, as for `special-stadium`); where its own
-edit replaced what the switch expects, the editor's value stays. Not yet
-tested in the game: what to look at is the grounds' sizes on the club
-screens and the crowds in an away match.
+edit replaced what the switch expects, the editor's value stays.
+**Tested in PCSX2** (user report, 2026-10-30, the first build): the new
+grounds work; the biggest looked too small. The looks by size above
+answer that and are not yet seen in the game.
+
+**`--mod sponsor-boards`.** Every stadium's 12 advert boards are drawn
+afresh from all 205 sponsor logos (user request, 2026-10-30: more
+variety of sponsors at the grounds). A computer club's ground shows the
+boards of its `BUILD_STADIUM` row, bytes 116–127 (`InitStadium` clears
+the match's own 12 at `0x2136a8`); value *v* is logo *v* − 1 of
+`SPONSOR_TEXTURE_M`, 1–205 ([Adverts](STADIUM_DIR.md#adverts)). The
+retail rows use 119 of them, 12 different ones a row. The switch draws 12
+different logos for each of the 119 rows, a fixed shuffle per stadium
+(`stadium.sponsor_boards`), so every build is the same: 204 of the 205
+logos appear. The rival's ground (114) keeps its own boards. The adidas board every ground shows (the user's LMAST
+Realism makes it Nexxus Drako Multimedia) isn't one of the 12: it is
+`ADT_TEXCMN` entry 212, which no row names (they use 1–200); the match
+request's `+0x10` moves a row's boards up one and puts it first
+(`0x1cd618`), so it stays on every ground (the user's request), and the
+switch's draws never pick it (value 206; *v* − 1 is clamped to 205, so
+any value from 206 on would be adidas too). It writes only those bytes,
+so it sits beside `real-grounds`. Clubs that share a stadium id still share its boards;
+boards of each club's own would need code in the match set-up. Not yet
+tested in the game.
 
 ```bash
 python SRC/plrcommon.py show DAT/PARAM 0.7          # your stadium types
 python SRC/initteam.py stadiums DAT/PARAM           # the 119 match stadiums
 python SRC/stadium.py info DAT/STADIUM DAT/PARAM    # CONV_INFO_BUILD's ids by level
+```
+
+## The title screen
+
+Group `title` (LMASTER full and max, the user's request, 2026-10-30).
+
+**How the title loops (confirmed, `MOVIEPRG.REL`).** After the Logo
+module, `RootMainSeq` starts the Title module (45); an idle title ends
+with result 0, which runs `RootDemoMatchSeq` and comes back to the Title
+module ([`GAME_FLOW.md`](GAME_FLOW.md#boot-and-title-rootmainseq)).
+`TITLE_MODULE::CTitleModule` runs phases (jump table `0x4c030`): 0–3 the
+opening movie (`CDV:/Audio/opmovie.sfd`, `0x4c010`; skippable with Start
+or the developers' `s_WatchMovie`), 4 the title with its music, 5–7 the
+memory-card check and the title menu, 8 the end. Its constructor
+(`0x1640`) picks a row of `{s32}` × 4 at `0x4c0c8` by
+`fcEuroDummy_GetMovieFlag` (1 at boot, `0x34d474`; the destructor,
+`0x1820`, clears it): row 0 `{0, 5, -1, -1}` at boot, row 1
+`{4, 0, 5, -1}` after. Phase 4 goes on to the menu by itself (`0x1dec`);
+an idle menu (phase 7, `0x2058`) moves to the row's next phase, and at
+−1 the module ends with 0. So the retail loop is: boot, movie, title,
+demo; then title, movie, title, demo, round again.
+
+**`--mod title-movie`.** Row 1's 2nd and 3rd entries (`0x4c0dc`) become
+−1: after a demo the title waits, then the next demo starts, and the
+movie plays only once, at boot (user request: not again while sitting at
+"press any button"). Not yet tested in the game.
+
+**`--mod demo-teams`.** The demo match (`ScheCallbackCommand_EntryDemoMatch`,
+SLES `0x114870`) took `etc::GetGlobalCounterGameSystem` mod 50 and played
+that pair of the table at `0x35c9b8`: 50 pairings of a few famous clubs
+(Chelsea, Real Madrid, Barcelona, Juventus, AC Milan, Inter, Arsenal,
+Manchester United, Bayern, Liverpool, Ajax, PSV …), unless the
+developers' flag `0x34d480` held a pair of its own (`0x34d478`). The
+switch replaces the lookup's 20 instructions (`0x1148b8`–`0x114904`):
+home = 3 + counter mod 438, away = 3 + (counter ÷ 438) mod 439, the
+away club moved one on if they clash. Any two of clubs 3–441 can meet:
+the clubs with retail squads (442–459 only get theirs with the third
+tier). The counter counts frames, so the pair depends on how long the
+title was left. The two clubs still go to `0x34d478`/`0x34d47c`, as the
+retail code stored them. Not yet tested in the game.
+
+```bash
+python SRC/sqb.py dis DAT/SEQ/ROOTMAINSEQ.SQB root            # the title and demo loop
+python SRC/snr2.py dis ISO/DLL/MOVIEPRG.REL 0x1888 120 --sles ISO/SLES_541.51   # the title's phases
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x114870 60    # the demo match's two clubs
 ```
 
 ## Planned

@@ -155,6 +155,56 @@ def rows(data, size):
     return [data[i:i + size] for i in range(0, len(data), size)]
 
 
+def copy_rows(data, pairs):
+    """BUILD_STADIUM.TBB bytes with each stadium `dst` of `pairs` ({dst:
+    src}) built like `src`: its table-0 row (model, parts, crowd set),
+    copied from the rows as they were, but for the 12 advert textures,
+    which stay the stadium's own. None when every `dst` already matches.
+    The file keeps its size."""
+    def look(row):
+        return row[:BUILD_ADVERT.start] + row[BUILD_ADVERT.stop:]
+    _, t = tbb.parse(data)
+    old = rows(t[0].data, BUILD_ROW)
+    if all(look(old[d]) == look(old[s]) for d, s in pairs.items()):
+        return None
+    out = bytearray(data)
+    base = t[0].offset + t[0].data_offset
+    for d, s in pairs.items():
+        at = base + d * BUILD_ROW
+        out[at:at + BUILD_ADVERT.start] = old[s][:BUILD_ADVERT.start]
+        out[at + BUILD_ADVERT.stop:at + BUILD_ROW] = old[s][BUILD_ADVERT.stop:]
+    return bytes(out)
+
+
+# The LMASTER Mod's sponsor boards (DOC/LMASTER_MOD.md#stadiums): each
+# stadium's 12 advert textures are drawn afresh from all the sponsor logos
+# (value v is logo v - 1 of SPONSOR_TEXTURE_M: 1-205, 0x1d31b8), a fixed
+# shuffle per stadium, where the retail rows use 119 of them. Value 206 and
+# up is ADT_TEXCMN entry 212, adidas, which the match puts first on every
+# ground by itself (request +0x10, 0x1cd618); the draws leave it out.
+SPONSOR_LOGOS = range(1, 206)
+RIVAL_STADIUM = 114                 # the rival's ground (TEAM_INIT_DATA table 7): kept as it is
+SPONSOR_SEED = 0x4c4d               # "LM": any fixed seed, so every build is the same
+
+
+def sponsor_boards(data):
+    """BUILD_STADIUM.TBB bytes with every stadium's 12 advert textures but
+    the rival's drawn from SPONSOR_LOGOS, 12 different ones each; None when
+    they already are. The file keeps its size."""
+    import random
+    _, t = tbb.parse(data)
+    old = rows(t[0].data, BUILD_ROW)
+    base = t[0].offset + t[0].data_offset
+    out = bytearray(data)
+    for i in range(len(old)):
+        if i == RIVAL_STADIUM:
+            continue
+        boards = random.Random(SPONSOR_SEED * 1000 + i).sample(SPONSOR_LOGOS, 12)
+        at = base + i * BUILD_ROW
+        out[at + BUILD_ADVERT.start:at + BUILD_ADVERT.stop] = bytes(boards)
+    return None if bytes(out) == data else bytes(out)
+
+
 class Build:
     def __init__(self, path):
         _, t = tbb.load(path)

@@ -98,8 +98,8 @@ sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
 merch-costs, pr-costs, camp-costs, tour-costs), leagues
 (league-balance, third-tier), restorations (injury-lines), names
-(real-names, own-stadium), stadiums (special-stadium, real-grounds),
-saves (mod-saves),
+(real-names, own-stadium), stadiums (special-stadium, real-grounds, sponsor-boards), title (title-movie,
+demo-teams), saves (mod-saves),
 and test-tools (skip-tutorial, launcher), which is in no edition.
 third-tier turns on mod-saves and needs --copies and --dat; real-names
 needs them too. Each switch
@@ -202,12 +202,28 @@ and the match stadiums of such a ground (STADIUM_DATA 96-101) with it.
 See DOC/LMASTER_MOD.md#stadiums.
 
 real-grounds (LMASTER full and max) puts each club at a ground of its
-real 2006-07 capacity, rounded to 5,000 (SRC/grounds.csv): STADIUM_DATA
-ids 102-118 take the sizes the ladder of your own ground lacks (45,000,
-65,000-85,000), and the clubs of one size are spread over every id of
-that size, so they look different. It turns on special-stadium (the
+real 2005-06 capacity, rounded to 5,000 (SRC/grounds.csv), with a look to
+fit: your own ground's ladder up to 35,000 and at 50,000-60,000,
+STADIUM_DATA ids 102-118 for 40,000-45,000 (the ho03a model), 65,000-75,000
+(the aw04b bowl) and 80,000-85,000 (the ho04a bowl, only for the biggest),
+built like those grounds (BUILD_STADIUM rows copied). The clubs of one size
+are spread over as many ids as possible, each within 3,000 of its real
+size. The rival's ground (114) stays its
+own. It turns on special-stadium (the
 100,000 ids). A target PLRESOURCESIM.PAC or STADIUM_DATA.TBB takes the
 change in its own bytes, unless its own edit is in the way.
+
+sponsor-boards (LMASTER full and max) draws every stadium's 12 advert
+boards afresh from all 205 sponsor logos (BUILD_STADIUM.TBB), a fixed
+shuffle per stadium (the rival's ground keeps its own); the retail grounds
+use 119 of them. The adidas board the match adds stays.
+
+title-movie (LMASTER full and max; whole disc image only) plays the
+opening movie only at boot: after a demo match the title goes straight back
+to waiting (MOVIEPRG.REL's title phase table, 0x4c0dc). demo-teams (the
+same) makes the demo match two clubs at random (SLES 0x1148b8), not one of
+the 50 retail pairings of a few famous clubs. See
+DOC/LMASTER_MOD.md#the-title-screen.
 
 own-stadium (LMASTER full and max; whole disc image only) names your
 club's stadium after you, "<your name> Stadium", where the game used your
@@ -2431,13 +2447,106 @@ def plan_special_stadium(f, img, adopted=()):
     return jobs + j, notes + n
 
 
-# real-grounds: each computer club plays at a ground of its real 2006-07
+# sponsor-boards: every stadium's 12 advert boards are drawn afresh from
+# all 205 sponsor logos, a fixed shuffle per stadium (LMASTER full and max,
+# the user's request, 2026-10-30; DOC/LMASTER_MOD.md#stadiums). A computer
+# club's ground shows its BUILD_STADIUM row's boards (InitStadium leaves
+# the match's own empty), and the retail rows use 119 of the logos.
+def plan_sponsor_boards(f, img):
+    """Jobs for --mod sponsor-boards: the advert bytes of every
+    BUILD_STADIUM row (real-grounds writes the rest of some rows)."""
+    import stadium
+    return file_jobs(f, img, BUILD_STADIUM_FILE, stadium.sponsor_boards, [], None,
+                     "sponsor-boards: every ground's boards from all the sponsors", (),
+                     "has the sponsor boards")
+
+
+# title-movie: the opening movie plays once, at boot, not again after each
+# demo match (LMASTER full and max, the user's request, 2026-10-30;
+# DOC/LMASTER_MOD.md#the-title-screen). TITLE_MODULE::CTitleModule
+# (MOVIEPRG.REL) runs its phases from a row of the table at 0x4c0c8, picked
+# by the Dummy module's movie flag (1 at boot, cleared when the module
+# ends): row 0 {0 movie, 5 title menu} at boot, row 1 {4 title, 0 movie,
+# 5 title menu} after a demo. Phase 4 goes on to the menu by itself, and an
+# idle menu moves to the row's next phase; at the row's end the module
+# returns 0, which starts the demo match. Row 1 becomes {4}.
+MOVIE_FILE = DISC + "DLL/MOVIEPRG.REL"
+TITLE_ROW1_AT = 0x4c0dc                 # row 1's 2nd and 3rd entries
+TITLE_ROW1_OLD, TITLE_ROW1_NEW = (0, 5), (-1, -1)
+
+
+def plan_title_movie(f, img):
+    """Jobs for --mod title-movie."""
+    if img.port is not None:
+        return [], ["note: title-movie: made for the PAL overlay; the Japanese one is left "
+                    "alone"]
+    words = [(MOVIE_FILE, TITLE_ROW1_AT, struct.pack("<2i", *TITLE_ROW1_OLD),
+              struct.pack("<2i", *TITLE_ROW1_NEW),
+              "%s 0x%x (title phases after a demo: no movie)" % (MOVIE_FILE, TITLE_ROW1_AT))]
+    return word_jobs(f, img, "title-movie", words)
+
+
+# demo-teams: the title's demo match is between two clubs at random, not
+# one of 50 pairings of a few famous clubs (LMASTER full and max, the
+# user's request, 2026-10-30). ScheCallbackCommand_EntryDemoMatch (SLES
+# 0x114870) takes etc::GetGlobalCounterGameSystem (a frame counter) mod 50
+# and reads that pair of u32 team ids from 0x35c9b8, unless the developers'
+# flag 0x34d480 holds a pair of its own. The new code: home = 3 + counter
+# mod 438, away = 3 + (counter / 438) mod 439, away + 1 if they clash, so
+# any two of clubs 3-441 (the ones with retail squads; 442-459 only get
+# theirs with the third tier).
+DEMO_TEAMS_AT = 0x1148b8
+DEMO_TEAMS_NEW = (
+    0x0c052912,         # jal   etc::GetGlobalCounterGameSystem   $v0 = counter
+    0x240301b6,         # addiu $v1, $zero, 438
+    0x0043001b,         # divu  $v0, $v1
+    0x00002010,         # mfhi  $a0                 counter mod 438
+    0x00002812,         # mflo  $a1                 counter / 438
+    0x240301b7,         # addiu $v1, $zero, 439
+    0x00000000,         # nop
+    0x00a3001b,         # divu  $a1, $v1
+    0x00002810,         # mfhi  $a1                 (counter / 438) mod 439
+    0x24840003,         # addiu $a0, $a0, 3         home, 3-440
+    0x24a50003,         # addiu $a1, $a1, 3         away, 3-441
+    0x14850002,         # bne   $a0, $a1, +2
+    0x3c060035,         # lui   $a2, 0x35
+    0x24a50001,         # addiu $a1, $a1, 1         a clash: the next club
+    0xacc4d478,         # sw    $a0, -0x2b88($a2)   as the original keeps them
+    0xacc5d47c,         # sw    $a1, -0x2b84($a2)
+    0xafa40008,         # sw    $a0, 8($sp)         the match's two teams
+    0x10000002,         # b     0x114908
+    0xafa5000c,         # sw    $a1, 0xc($sp)
+    0x00000000)         # nop
+
+
+def plan_demo_teams(f, img):
+    """Jobs for --mod demo-teams."""
+    if img.port is not None:
+        return [], ["note: demo-teams: made for the PAL executable; the Japanese one is "
+                    "left alone"]
+    off, n = DEMO_TEAMS_AT - 0xff000, len(DEMO_TEAMS_NEW)
+    held = read_at(f, img, SLES_FILE, off, 4 * n)
+    words = struct.unpack("<%dI" % n, held)
+    # The retail lookup: the same jal, then addiu $v1, $zero, 50 (the 50 pairs).
+    if words != DEMO_TEAMS_NEW and (words[0] != DEMO_TEAMS_NEW[0] or words[2] != 0x24030032):
+        raise ValueError("demo-teams: %s 0x%x doesn't hold the demo match's pair lookup"
+                         % (SLES_FILE, DEMO_TEAMS_AT))
+    return word_jobs(f, img, "demo-teams", [(
+        SLES_FILE, off, held, struct.pack("<%dI" % n, *DEMO_TEAMS_NEW),
+        "%s 0x%x (demo match: two clubs at random)" % (SLES_FILE, DEMO_TEAMS_AT))])
+
+
+# real-grounds: each computer club plays at a ground of its real 2005-06
 # capacity, rounded to 5,000, the clubs of one size spread over the stadium
 # ids of that size (LMASTER full and max, the user's request, 2026-10-30;
-# DOC/LMASTER_MOD.md#stadiums). initteam.real_grounds_stadiums gives ids
-# 102-118 the bands the ladder lacks, and initteam.real_grounds_clubs
-# points each club record at its ground (SRC/grounds.csv). The 100,000 band
-# is 96-101, so it turns on special-stadium.
+# DOC/LMASTER_MOD.md#stadiums). Its look follows its size more closely than
+# the ladder's models do: initteam.real_grounds_build gives ids 102-118 the
+# look of the right grounds
+# (STADIUM/BUILD_STADIUM.TBB, no copies), real_grounds_stadiums their
+# bands, and real_grounds_clubs points each club record at its ground
+# (SRC/grounds.csv). The 100,000 band is 96-101, so it turns on
+# special-stadium.
+BUILD_STADIUM_FILE = "STADIUM/BUILD_STADIUM.TBB"
 def target_real_grounds(file, data):
     """A PLRESOURCESIM.PAC or STADIUM_DATA.TBB target (the editor's Clubs
     or Nations & stadiums tab) with the real grounds in its own bytes."""
@@ -2461,7 +2570,9 @@ def plan_real_grounds(f, img, adopted=()):
     j, n = file_jobs(f, img, STADIUM_DATA_FILE, initteam.real_grounds_stadiums,
                      STADIUM_DATA_PACKS, STADIUM_DATA_ENTRY, why, adopted,
                      "has stadiums 102-118 at their bands")
-    return jobs + j, notes + n
+    j2, n2 = file_jobs(f, img, BUILD_STADIUM_FILE, initteam.real_grounds_build, [], None, why,
+                       adopted, "has stadiums 102-118 built like bigger grounds")
+    return jobs + j + j2, notes + n + n2
 
 
 def word_jobs(f, img, switch, words):
@@ -4552,9 +4663,16 @@ SWITCHES = (
      [COMMON_FILE, STATION_FILE, STADIUM_DATA_FILE] + STADIUM_DATA_PACKS,
      "Stadiums: the Special stadium holds 100,000, not 110,000"),
     ("real-grounds", plan_real_grounds,
-     [SIM_FILE, STADIUM_DATA_FILE] + LIST_PACKS + STADIUM_DATA_PACKS,
-     "Stadiums: every club plays at a ground of its real 2006-07 size (to 5,000), and clubs "
-     "of one size at grounds that look different"),
+     [SIM_FILE, STADIUM_DATA_FILE, BUILD_STADIUM_FILE] + LIST_PACKS + STADIUM_DATA_PACKS,
+     "Stadiums: every club plays at a ground of its real 2005-06 size (to 5,000), with a "
+     "look to fit (the biggest bowl only for 80,000 and up), clubs of one size varied"),
+    ("sponsor-boards", plan_sponsor_boards, [BUILD_STADIUM_FILE],
+     "Stadiums: every ground's advert boards drawn afresh from all 205 sponsors, so "
+     "they vary"),
+    ("title-movie", plan_title_movie, [MOVIE_FILE],
+     "Title screen: the opening movie plays once at boot, not again after every demo match"),
+    ("demo-teams", plan_demo_teams, [SLES_FILE],
+     "Title screen: the demo match is between two clubs at random, not a few famous ones"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -4622,7 +4740,8 @@ GROUPS = (       # (name, title, switches)
     ("leagues", "Leagues", ("league-balance", "third-tier")),
     ("restorations", "Restored content", ("injury-lines",)),
     ("names", "Real names", ("real-names", "own-stadium")),
-    ("stadiums", "Stadiums", ("special-stadium", "real-grounds")),
+    ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
+    ("title", "Title screen", ("title-movie", "demo-teams")),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )
@@ -4631,7 +4750,7 @@ GROUPS = (       # (name, title, switches)
 # (the user's split, 2026-10-27). Full and max save careers under their
 # own letters (SAVE_LETTERS), so neither mixes with the retail game's.
 LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes", "text-fixes")
-FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "saves")
+FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "title", "saves")
 DIFFICULTY_GROUPS = ("harder-economy", "balance")
 EDITIONS = (     # (name, title, groups)
     ("lmaster-lite", "LMASTER lite (fixes only)", LITE_GROUPS),

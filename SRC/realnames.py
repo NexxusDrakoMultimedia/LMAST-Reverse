@@ -16,7 +16,7 @@ realnames.csv, next to this script, holds only the real names: one row
 per name to change, keyed by category (3, 10, 9 or 11) and id, with the
 English, French, German, Italian and Spanish names and, for a team, its
 three-letter form. An empty cell keeps the game's name. A stadium is
-named as of 2006-07; a club with a real name and no stadium row gets
+named as of 2005-06; a club with a real name and no stadium row gets
 "<real name> Stadium" in its language. `apply` writes
 them into every list above, and puts a competition's real name in place of
 its game name in the other messages that mention it (the rules and

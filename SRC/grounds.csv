@@ -7,9 +7,9 @@ team,ground,capacity
 8,City of Manchester,47.7
 9,Goodison,40.6
 10,Craven Cottage,24.6
-11,Emirates,60.4
+11,Highbury,38.4
 12,Anfield,45.4
-13,Old Trafford,76.0
+13,Old Trafford,68.2
 14,Riverside,35.1
 15,St James' Park,52.4
 16,Fratton Park,20.7
@@ -83,7 +83,7 @@ team,ground,capacity
 84,Louis Dugauguez,23.2
 85,Louis Michel,8.0
 86,Nungesser,16.5
-87,Allianz Arena,69.9
+87,Allianz Arena,66.0
 88,Olympiastadion,74.2
 89,Alm,26.6
 90,Weserstadion,42.1
@@ -112,7 +112,7 @@ team,ground,capacity
 113,Dreisamstadion,25.0
 114,Ronhof,15.5
 115,Wildpark,29.7
-116,Allianz Arena,69.9
+116,Allianz Arena,66.0
 117,Bieberer Berg,26.5
 118,Hermann-Lons,15.3
 119,Ostseestadion,29.0
@@ -126,15 +126,15 @@ team,ground,capacity
 127,Castellani,19.8
 128,Franchi,47.3
 129,San Siro,85.7
-130,Delle Alpi,69.0
-131,Olimpico,72.7
+130,Delle Alpi,67.2
+131,Olimpico,82.3
 132,Via del Mare,40.7
 133,Picchi,19.2
 134,San Filippo,39.0
 135,Barbera,37.2
 136,Tardini,27.9
 137,Granillo,27.5
-138,Olimpico,72.7
+138,Olimpico,82.3
 139,Ferraris,36.6
 140,Franchi Siena,15.4
 141,Tenni,10.0
@@ -158,7 +158,7 @@ team,ground,capacity
 159,Garilli,21.6
 160,Romeo Neri,9.8
 161,Liberati,22.0
-162,Olimpico Torino,27.9
+162,Delle Alpi,67.2
 163,Nereo Rocco,32.5
 164,Menti,20.9
 165,San Mames,39.8
@@ -183,7 +183,7 @@ team,ground,capacity
 184,El Madrigal,23.0
 185,Carlos Belmonte,17.3
 186,Juegos Mediterraneos,22.0
-187,La Condomina,6.2
+187,La Condomina,15.8
 188,Castalia,15.0
 189,Ipurua,5.3
 190,Santo Domingo,7.9
@@ -194,8 +194,8 @@ team,ground,capacity
 195,Malaga B,3.0
 196,Los Pajaritos,9.0
 197,A Malata,12.0
-198,Di Stefano,6.0
-199,Nueva Condomina,31.2
+198,Ciudad Deportiva,3.5
+199,La Condomina,15.8
 200,Zorrilla,26.5
 201,Colombino,21.6
 202,Molinon,29.8
@@ -205,7 +205,7 @@ team,ground,capacity
 206,Chapin,20.0
 207,Zuiderpark,10.0
 208,ArenA,51.6
-209,DSB,17.0
+209,Alkmaarderhout,8.4
 210,Euroborg,20.0
 211,Arke,13.3
 212,De Kuip,51.1

@@ -506,31 +506,45 @@ class StadiumData:
 
 
 # The LMASTER Mod's real grounds (DOC/LMASTER_MOD.md#stadiums): each club
-# plays at a ground of its real 2006-07 capacity, rounded to 5,000 (the
-# user's choice), and clubs of one size are spread over every stadium id of
-# that size, so they look different. grounds.csv, next to this script,
-# holds {team, ground, capacity in thousands}; clubs naming the same ground
-# share an id.
+# plays at a ground of its real 2005-06 capacity (the game's season),
+# rounded to 5,000 (the user's choice), and clubs of one size are spread
+# over the stadium ids of that size, so they look different. grounds.csv,
+# next to this script, holds {team, ground, capacity in thousands}; clubs
+# naming the same ground share an id.
 #
 # Stadium ids 0-101 are the ones a club's own ground reaches as it is built
 # (CONV_INFO_BUILD), and InitStadium fills the stands by their capacity, so
 # they keep it: 8, 15-25, 30-40 and 50-60 thousand, and 100 for 96-101 with
-# special-stadium. Ids 102-118 are the computer clubs' own; their model
-# (BUILD_STADIUM) is fixed, so the bands the ladder lacks go to the models
-# big enough: {id: (capacity in thousands, level)}. GetCapacityFromID adds
-# 500 seats to 103, 105 and 107, so those hold 20,500.
+# special-stadium. A ground's look follows its size, closer than the
+# ladder's models allow at the top (user reports, 2026-10-30: the big clubs
+# looked too small, but only the biggest deserve the 110,000 bowl):
+#   8-35 thousand   the ladder's own ids and models
+#   40-60           ho03a: 40 and 45 on the ids below, 50-60 the ladder's
+#   65-75           the aw04b bowl, 80 and over the ho04a bowl
+# Ids 102-118 are the computer clubs' own: each takes the look of a ground
+# (its BUILD_STADIUM row, stadium.copy_rows, and its roof) and a band of its
+# own: {id: (capacity in thousands, level, the ground it looks like)}.
+# GetCapacityFromID adds 500 seats to 103, 105 and 107. A look is copied
+# only from a row the switch leaves as it is (116-118 keep their own), so
+# the copy is the same however often it is made.
 GROUNDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grounds.csv")
 GROUND_IDS = {
-    102: (8, 0),                                    # ho00b
-    103: (20, 1), 104: (15, 1), 105: (20, 1), 106: (25, 1), 107: (20, 1),  # aw01a, ho01a/b
-    108: (45, 2), 109: (30, 2), 110: (35, 2), 111: (45, 2),               # ho02a
-    112: (65, 3), 113: (65, 3), 114: (70, 3), 115: (75, 3),               # aw03a
-    116: (70, 4), 118: (80, 4),                     # aw04b
-    117: (85, 4),                                   # ho04a
+    102: (40, 3, 69), 103: (40, 3, 79), 104: (40, 3, 89),     # ho03a, roof
+    105: (45, 3, 75), 106: (45, 3, 85), 107: (45, 3, 95),     # ho03a, roof and lights
+    108: (65, 4, 116), 109: (65, 4, 118),                     # aw04b
+    110: (70, 4, 116), 111: (70, 4, 118),
+    116: (75, 4, 116), 118: (75, 4, 118),                     # aw04b, their own
+    112: (80, 4, 97), 113: (80, 4, 117),                      # ho04a
+    115: (85, 4, 99), 117: (85, 4, 117),                      # 117 its own
 }
+# Stadium 114 is the rival's ground in every league (TEAM_INIT_DATA table
+# 7, DOC/TEAMINIT_FORMAT.md): it keeps its look, boards and size, and no
+# other club is put on it (the user's request).
+RIVAL_STADIUM = 114
 GROUND_RETAIL = {102: 8, 103: 18, 104: 15, 105: 18, 106: 20, 107: 18, 108: 40, 109: 35,
                  110: 35, 111: 40, 112: 42, 113: 42, 114: 42, 115: 42, 116: 70, 117: 110,
                  118: 70}
+LADDER_SKIPPED = {40}           # the ladder's 40,000 grounds are ho02a; 40 uses the ids above
 SPECIAL_GROUND = (range(96, 102), 100)              # with special-stadium
 SMALLEST_BAND = 12.5                                # below it, the 8,000 ground
 # The ladder's ids by level: 0-5 hold 8; then 30 ids a level, 6 leagues x
@@ -547,59 +561,96 @@ def load_grounds(path=GROUNDS_FILE):
         return [(int(r["team"]), r["ground"], float(r["capacity"])) for r in csv.DictReader(f)]
 
 
-def ground_capacities():
-    """{stadium id: capacity in thousands} once the grounds are in: the
-    ladder's (as the retail table has them), 96-101 at the Special
-    stadium's and 102-118 at their bands."""
-    caps = {}
+GROUND_SLACK = 3.0              # thousands a club may be put from its real size
+SMALL_FORTY = 40.0              # the ladder's 40,000 grounds (ho02a) only below this
+
+
+def ground_bands():
+    """{band in thousands: [stadium ids]}: the ladder's ids (its 40,000
+    ones under the key "small 40"), the ids above, and 96-101 at the
+    Special stadium's."""
+    bands = {}
     for ids, sizes in LADDER:
-        caps.update((i, sizes[(i - ids[0]) % len(sizes)]) for i in ids)
-    caps.update((i, c) for i, (c, _) in GROUND_IDS.items())
-    caps.update((i, SPECIAL_GROUND[1]) for i in SPECIAL_GROUND[0])
-    return caps
+        for i in ids:
+            size = sizes[(i - ids[0]) % len(sizes)]
+            bands.setdefault("small 40" if size in LADDER_SKIPPED else size, []).append(i)
+    for i, (size, _, _) in sorted(GROUND_IDS.items()):
+        bands.setdefault(size, []).append(i)
+    bands[SPECIAL_GROUND[1]] = list(SPECIAL_GROUND[0])
+    return bands
 
 
 def ground_band(capacity, bands):
     """The band a capacity goes to: the nearest 5,000 the ids offer, the
     bigger one on a tie; under 12,500 the smallest ground."""
+    bands = [b for b in bands if not isinstance(b, str)]
     if capacity < SMALLEST_BAND:
         return min(bands)
     target = 5 * round(capacity / 5)
     return min(bands, key=lambda b: (abs(b - target), -b))
 
 
-def ground_ids(grounds=None):
-    """{team: stadium id} for every club in grounds.csv."""
-    caps = ground_capacities()
-    by_band = {}
-    for i in sorted(caps):
-        by_band.setdefault(caps[i], []).append(i)
-    turn = {b: 0 for b in by_band}
-    shared, out = {}, {}
-    for team, ground, capacity in sorted(grounds or load_grounds()):
-        if ground not in shared:
-            band = ground_band(capacity, by_band)
-            ids = by_band[band]
-            shared[ground] = ids[turn[band] % len(ids)]
-            turn[band] += 1
-        out[team] = shared[ground]
+def ground_choices(capacity, bands):
+    """[(band, id)] a club of `capacity` may get: every band within
+    GROUND_SLACK of it, or its nearest band if none is; the ladder's
+    40,000 grounds too when it is under SMALL_FORTY."""
+    sizes = [b for b in bands if not isinstance(b, str)]
+    near = ground_band(capacity, sizes)
+    if capacity < SMALLEST_BAND:
+        ok = [near]
+    else:
+        ok = [b for b in sizes if abs(b - capacity) <= GROUND_SLACK] or [near]
+    out = [(b, i) for b in sorted(ok) for i in bands[b]]
+    if 40 in ok and capacity < SMALL_FORTY:
+        out += [(40, i) for i in bands["small 40"]]
     return out
 
 
+def ground_ids(grounds=None):
+    """{team: stadium id} for every club in grounds.csv, using as many
+    grounds as it can: each ground (clubs naming the same one share it)
+    takes the least-used of its choices, nearer bands first on a tie; the
+    grounds with the fewest choices pick first."""
+    bands = ground_bands()
+    grounds = sorted(grounds or load_grounds())
+    sizes = {}
+    for team, ground, capacity in grounds:
+        sizes.setdefault(ground, (capacity, team))
+    order = sorted(sizes, key=lambda g: (len(ground_choices(sizes[g][0], bands)), sizes[g][1]))
+    used, pick = {}, {}
+    for ground in order:
+        capacity = sizes[ground][0]
+        band, i = min(ground_choices(capacity, bands),
+                      key=lambda c: (used.get(c[1], 0), abs(c[0] - capacity), c[1]))
+        pick[ground] = i
+        used[i] = used.get(i, 0) + 1
+    return {team: pick[ground] for team, ground, _ in grounds}
+
+
 def real_grounds_stadiums(data):
-    """STADIUM_DATA.TBB bytes with ids 102-118 at their bands; None when
-    they already are."""
+    """STADIUM_DATA.TBB bytes with ids 102-118 at their bands, with the
+    level of their new model and the roof of the ground they look like;
+    None when they already are."""
     table = StadiumData(data=data)
-    held = {i: table.rows[i][2] for i in GROUND_IDS}
-    if held == {i: c for i, (c, _) in GROUND_IDS.items()}:
+    want = {i: (table.rows[src][0], level, size) for i, (size, level, src) in GROUND_IDS.items()}
+    if all(table.rows[i] == r for i, r in want.items()):
         return None
-    if held != GROUND_RETAIL:
+    held = {i: table.rows[i][2] for i in GROUND_IDS}
+    if held != {i: GROUND_RETAIL[i] for i in GROUND_IDS}:
         raise ValueError("%s: stadiums 102-118 hold %s thousand; not the retail table?"
                          % (STADIUM_TBB, held))
-    for i, (capacity, level) in GROUND_IDS.items():
-        table.set(i, "capacity", capacity)
+    for i, (roof, level, size) in want.items():
+        table.set(i, "roof", roof)
         table.set(i, "level", level)
+        table.set(i, "capacity", size)
     return table.encode()
+
+
+def real_grounds_build(data):
+    """STADIUM/BUILD_STADIUM.TBB bytes with ids 102-118 looking like the
+    grounds GROUND_IDS names; None when they already do."""
+    import stadium
+    return stadium.copy_rows(data, {i: src for i, (_, _, src) in GROUND_IDS.items()})
 
 
 def real_grounds_clubs(data):

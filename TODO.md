@@ -349,21 +349,20 @@ disc or the edit to build; the result goes into the doc linked.
       substitutions change; that tells whether the match reads the
       selection byte by mistake
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-developers-staff-editors))
-- [ ] The names on `LMAST-test-names.iso` (LMASTER full with
-      `skip-tutorial --skip-nation germany`): FC Rangers, FC Encamp,
-      Inter Baku and Qarabagh each with the right crest; a club made in
-      a German city starting in Germany; the stadiums' real names where
-      the game shows a club's ground (a long one such as Stadio Olimpico
-      di Torino, and one with ß, Fußball Arena München); and your own
-      stadium as "\<your name\> Stadium" (`own-stadium`)
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
-- [ ] The stadiums group on `LMAST-test-names.iso`: other clubs' grounds
-      at their real sizes on the club screens (Chelsea 40,000, Old
-      Trafford 75,000, a small club at 8,000), an away match at a big
-      ground (Camp Nou 100,000, San Siro 85,000) whose crowd and stands
-      look right, and, later in a career, the Special stadium as a
-      100,000 ground that fills when sold out
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#stadiums))
+- [ ] The grounds, boards and title screen on `LMAST-test-stadiums.iso`
+      (LMASTER full with `skip-tutorial --skip-nation germany`): grounds
+      that look their size (Chelsea and Highbury 40,000, Old Trafford and
+      the Allianz Arena on the 70,000-type bowl, the big bowl only for
+      Camp Nou, San Siro, the Bernabéu, the Westfalenstadion and the like),
+      and the 2005-06 ground names (Highbury, Stadio delle Alpi); varied
+      advert boards at away grounds (`sponsor-boards`), the adidas
+      (Nexxus Drako Multimedia) board still on every ground, and the
+      rival's ground and boards as before; left at the title, the demo match
+      comes back without the opening movie, and two demo matches show
+      clubs other than the famous few; later in a career, the Special
+      stadium as a 100,000 ground that fills when sold out
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#stadiums),
+      [the title screen](DOC/LMASTER_MOD.md#the-title-screen))
 
 ## 8. LMASTER Mod and other patches
 
