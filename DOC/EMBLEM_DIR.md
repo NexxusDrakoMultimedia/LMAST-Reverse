@@ -112,7 +112,7 @@ use which copy is listed in each doc; a palette edit has to reach both.
 | 4 | 50 × 10 | `GetPresetBaseData` | base presets {u16 mask group, `Trs`} (below) |
 | 5 | 44 × 10 | `0x103fb8` | area pattern presets {u16 pattern, `Trs`} |
 | 6 | 1 × 10 | `0x103ff0` | area accessory presets {u16 accessory, `Trs`}; the one row is all 0 |
-| 7 | 29 × 110 | `GetSampleData` | sample crests (`Param::PlEmblemPreset`, below). Ids 0–31; 8, 21 and 24 are absent |
+| 7 | 29 × 110 | `GetSampleData` | sample crests (`Param::PlEmblemPreset`, below). Ids 0–31; 8, 21 and 24 are absent. They are Edit Emblem's Sample list: 29 crests over three pages of 10, 10 and 9 (user report, 2026-10-31) |
 | 8 | 32 × 110 | `GetInitializeData` | the crests a new club can start with |
 | 9 | 32 × 110 | `GetRivalData` | rival clubs' crests: 32 copies of one crest |
 | 10 | 32 × 1 | `GetSampleIndexFromInitializeIndex` | the sample row of each starting crest (values 0–28) |
