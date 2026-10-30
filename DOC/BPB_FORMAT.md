@@ -89,8 +89,34 @@ become 28.
 
 **Point codes.** The play setter (`0x108d00`) scales each point by 10
 (to the match's tenths of a metre) and passes its code to `0xf4c18`,
-which keeps it at `+0x10` of the path's 32-byte entries. What reads it
-there isn't traced.
+which keeps it at `+0x10` of the path's 32-byte entries (`0xf52f0`
+returns entry *i*, `0xf5338` the count).
+
+**What a code does (confirmed).** `fb::PlaySPAttack` and `fb::PlaySP_TP3`
+(vtables `0x256758`, `0x256590`) walk a player along his path with
+`0x104c90`. When the player reaches a point, it moves on to the next and
+switches on that point's code (`0x104e98`): codes 0, 1, 2 and 20 pick a
+method pointer at `0x278dd0` + 8 × *k*, which gives the player a move
+order toward the point, facing along the path (the angle from
+`0x1c5ff0`). The order is the type-1 order at the player's `+0x5c`
+(`0x1120b8`), with the target at `+4`, the angle at `+0x1c` and a kind
+at `+0x20`:
+
+| Code | Method | Order kind |
+|---|---|---|
+| 0 | `0x112320` | 8 |
+| 1 | `0x112428` | 1 |
+| 2 | `0x112480` | 2 |
+| 20 | `0x1123d0` | 4 |
+
+Any other code gives no order at that point, so the player goes on
+with the order he has. `fb::PlayRunOnPath` (`0x103900`, vtable
+`0x2551b8`) copies a point's code with it but never reads it.
+
+**Empirical** (`python SRC/bpb.py info DAT/GAME`): the players' points
+in `PLAYBOOK.BPB` use codes 0 (118), 1 (3,394), 2 (2,277), 3 (1) and 20
+(413); in `COMBINATION.BPB` 0 (78), 1 (212), 2 (150) and 3 (88). The
+ball's points use only 1, 2 and 3, and no reader of them was found.
 
 **Play ids** (`SplitID`, `0x2e8370`, gives a type, a group and an
 index; `GetPLAYBOOK` turns them into a record):
@@ -489,8 +515,10 @@ participants are the ones the record's slots found
 
 - The header's `+0x10`, `+0x14` and `+0x1c`, the flags, and the
   starting-positions block's `+0x02` bytes.
-- What reads a point's code (path entry `+0x10`) and what each code
-  does; what a path kind's value and flag select for its role.
+- What the move order kinds 1, 2, 4 and 8 mean (most likely speeds or
+  ways of running: no names were found), why `COMBINATION.BPB` uses
+  code 3, which orders nothing, and whether anything reads the ball's
+  point codes. What a path kind's value and flag select for its role.
 - What the id groups and indexes stand for within corners and free
   kicks, and what records 196–255 (kind 3, roles 249–253) were for.
 - `TACTICS_PLAYBOOK_EDIT.TBB` (180 rows of 4 bytes, read through

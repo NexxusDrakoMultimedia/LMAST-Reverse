@@ -124,6 +124,9 @@ evidence and how it was tested; the git history holds the rest.
       sets the advert bytes, your own ground's boards from its advert
       slots and the adidas board at computer clubs' grounds outside Spain
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#the-request-in-a-match))
+- [x] The play books' point codes: on a player's path, codes 0, 1, 2
+      and 20 give a move order toward the point; `bpb.py info` counts
+      them ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md))
 
 ## 3. Write: a writer for every format a mod changes
 

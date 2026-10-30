@@ -37,8 +37,8 @@ What to work on next, most valuable first.
    is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 3. **The tactics AI files** (section 2): the combination commands'
-   areas, what reads the play books' point codes and path kinds, the
-   corner and free-kick id groups
+   areas, the move order kinds the point codes give and what the path
+   kinds' values select, the corner and free-kick id groups
    ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown)).
 
 ## What a mod can change, and what is left
@@ -121,9 +121,9 @@ shown to have no effect. Grouped by what a mod would change.
 
 ### The match
 
-- [ ] The tactics AI files: the combination commands' areas, what reads
-      the play books' point codes and path kinds, the corner and
-      free-kick id groups ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
+- [ ] The tactics AI files: the combination commands' areas, the move
+      order kinds the point codes give and what the path kinds' values
+      select, the corner and free-kick id groups ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
 - [ ] `GAMEDATA.BIN`: the rest of a ball-contact record, what sets a
       player's record, and whether anything reads `AI_PARAM.BIN`
       ([`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md#still-unknown))

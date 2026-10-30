@@ -14,7 +14,9 @@ Confirmed from Pwk::PlayBookData::CPlayBookDataBase in SLES_541.51:
           +0x18 4 bytes, the ball's route through the paths (0xff = none,
           IBOOK::GetBallFlowID); +0x1c u16 (GetPLAYBOOK 0x2e7ec8)
   point   two u16, x and y: (value >> 3) / 64 metres, bit 2 the sign, bits
-          0-1 a code (0x2e8338); the point's code is y bits * 10 + x bits
+          0-1 a code (0x2e8338); the point's code is y bits * 10 + x bits.
+          On a player's path, codes 0, 1, 2 and 20 give a move order of
+          kind 8, 1, 2 and 4 toward the point (GAMEPRG.REL 0x104e98)
   ids     a play id maps to a record (SplitID 0x2e8370): below 0x1000
           (id >> 8) * 10 + (id & 0xff); 0x1000-0x3fff (id >> 12 - 1) * 32 +
           ((id >> 8) & 0xf) * 8 + 100 + (id & 0xff); 0x4000-0x6fff
@@ -68,6 +70,9 @@ import struct
 import sys
 
 BALL_KIND = 0xfe                 # path kind high byte of the ball's path
+# A player's point code -> the move order kind it gives on reaching the
+# point before it (GAMEPRG.REL 0x104e98, method pointers at 0x278dd0).
+MOVE_CODES = {0: 8, 1: 1, 2: 2, 20: 4}
 COORD_SHIFT, COORD_SCALE, COORD_SIGN = 3, 64.0, 4
 ROUTE_OFF, ROUTE_LEN, NONE = 0x18, 4, 0xff
 FORM_MAX = 22                    # GetFormationData stops at 0x16 values
@@ -295,9 +300,20 @@ def cmd_info(paths):
         paths_n = sum(p.n for p in plays)
         points = sum(sum(p.counts) for p in plays)
         balls = sum(1 for p in plays if any(k >> 8 == BALL_KIND for k in p.kinds))
-        print("%s  %d plays, %d paths, %d points, %d with a ball path, header 0x%x%s" % (
+        # Player points by code: 0, 1, 2 and 20 order a move at the point
+        # (MOVE_CODES); any other code orders nothing there.
+        codes = {}
+        for p in plays:
+            for kind, _, pts in p.paths():
+                if kind >> 8 != BALL_KIND:
+                    for _, _, c in pts:
+                        codes[c] = codes.get(c, 0) + 1
+        print("%s  %d plays, %d paths, %d points, %d with a ball path, header 0x%x, "
+              "player point codes %s (%d order nothing)%s" % (
             path, len(plays), paths_n, points, balls,
             plays[0].header if plays else 0,
+            " ".join("%d:%d" % kv for kv in sorted(codes.items())),
+            sum(v for c, v in codes.items() if c not in MOVE_CODES),
             "  !! " + "; ".join(bad[:3]) if bad else ""))
 
 
