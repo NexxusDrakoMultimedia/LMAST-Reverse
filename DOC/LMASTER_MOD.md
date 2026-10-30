@@ -456,10 +456,19 @@ request, 2026-10-31). The Standings menu's "European League Ranking" is
 a ranking of clubs, not the competition, so it reads "UEFA Ranking"
 (English, Italian, Spanish; user report: it had read "Champions League
 Ranking").
+The nations and national teams take FIFA's 2005-06 names (user
+request, 2026-10-31): Serbia-Montenegro, United States, Republic of
+Ireland, United Arab Emirates (the team; the nation list, whose names
+run to 19 characters, says UAE), Côte d'Ivoire, Suriname, Trinidad and
+Tobago, FYR Macedonia and Cape Verde Islands; China PR, Korea Republic
+and Korea DPR already were. The nations are categories 6 and 7 (5000 +
+`PlNati`, the same names twice), which `realnames.csv` rows of
+category 6 write to both. National team names run to 22 characters in
+the game's own lists, so they aren't held to the clubs' 18.
 
 **The switch.** `SRC/realnames.csv` holds only the real names (no game
-text): 984 rows, keyed by category (3 teams, 10 stadiums, 9
-competitions, 11 stages) and id, with the English, French, German,
+text): 1069 rows, keyed by category (3 teams, 10 stadiums, 9
+competitions, 11 stages, 6 nations) and id, with the English, French, German,
 Italian and Spanish names and a team's three-letter form.
 `realnames.py` writes them into:
 

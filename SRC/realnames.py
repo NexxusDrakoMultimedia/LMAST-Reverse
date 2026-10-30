@@ -9,11 +9,12 @@ copy (3000 + team), 100003 a long-form list (2000 + team) and 5 the
 three-letter forms (4000 + team); 9 names the competitions (10000 +),
 100009 the same in capitals in every language, 11 and 100011 their
 stages and groups (1000 +), and 10 each club's stadium (11000 + team,
-"<club> Stadium" in the game). PRELOAD/STATIONMES<lang>.PAC holds each
+"<club> Stadium" in the game), and 6 and its copy 7 the nations (5000 +
+PlNati). PRELOAD/STATIONMES<lang>.PAC holds each
 language's copy of categories 1 and 3-11 (patch_disc.py --copies).
 
 realnames.csv, next to this script, holds only the real names: one row
-per name to change, keyed by category (3, 10, 9 or 11) and id, with the
+per name to change, keyed by category (3, 10, 9, 11 or 6) and id, with the
 English, French, German, Italian and Spanish names and, for a team, its
 three-letter form. An empty cell keeps the game's name. A stadium is
 named as of 2005-06; a club with a real name and no stadium row gets
@@ -58,9 +59,10 @@ TEAM_LONG = 100003
 SHORT_CAT, SHORT_BASE = 5, 4000
 COMP_CAT, COMP_CAPS = 9, 100009
 STAGE_CAT, STAGE_VARIANT = 11, 100011
+NATION_CAT, NATION_COPY = 6, 7       # the nations (5000 + PlNati), and a copy
 STADIUM_CAT, STADIUM_BASE = 10, 11000
 CLUB_END = 460                          # teams 3-459 are clubs, with stadiums; 460-542 nations
-NAME_CATS = (TEAM_CAT, STADIUM_CAT, COMP_CAT, STAGE_CAT)
+NAME_CATS = (TEAM_CAT, STADIUM_CAT, COMP_CAT, STAGE_CAT, NATION_CAT)
 NAME_LIMIT = 18                         # the player's own club name (user report)
 STADIUM_LIMIT = 30                      # the game's longest ("Athletic Club de Bilbao Stadio")
 MENTION_MIN = 6
@@ -224,6 +226,8 @@ def edits(pack, rows, mention_langs=MENTION_LANGS, phrases=None):
                     mention[l][game.lower()] = said
             if 1 in names:
                 out += [(COMP_CAPS, l, rid, names[1].upper()) for l in LANGS]
+        elif cat == NATION_CAT:
+            out += [(c, l, rid, name) for l, name in names.items() for c in (NATION_CAT, NATION_COPY)]
         elif cat == STAGE_CAT:
             english = pack.text(cat, 1, rid)
             for l, name in names.items():
@@ -237,7 +241,7 @@ def edits(pack, rows, mention_langs=MENTION_LANGS, phrases=None):
                 elif variant.replace(" ", "") == english.replace(" ", "") and 1 in names:
                     out.append((STAGE_VARIANT, l, rid, names[1]))
         else:
-            raise ValueError("category %d isn't a name list (3, 10, 9 or 11)" % cat)
+            raise ValueError("category %d isn't a name list (3, 10, 9, 11 or 6)" % cat)
     said = mentions(pack, mention, mention_langs, texts)
     done = {(cat, l, rid) for cat, l, (rid, k), _ in said if k == 0}
     return out + said + [(cat, l, (rid, 0), text) for (cat, l, rid), text in sorted(texts.items())
@@ -306,7 +310,9 @@ def cmd_info(mes_path):
                 mbb.encode(name, l)
             except ValueError as e:
                 problems.append("%d:%d %s: %s" % (cat, rid, mbb.LANGS[l], e))
-            if cat == TEAM_CAT and len(name) > NAME_LIMIT \
+            # The limit is the player's own club name's; national teams'
+            # names run to 22 in the game's own lists.
+            if cat == TEAM_CAT and rid < TEAM_BASE + CLUB_END and len(name) > NAME_LIMIT \
                     or cat == STADIUM_CAT and len(name) > STADIUM_LIMIT:
                 long.append("%s (%d)" % (name, len(name)))
         if cat == TEAM_CAT and short and len(short) != 3:
