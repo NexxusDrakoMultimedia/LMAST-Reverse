@@ -351,6 +351,32 @@ def facility_tiers(data):
     return encode(data, tables)
 
 
+# The LMASTER Mod's Special stadium (DOC/LMASTER_MOD.md#stadiums): the
+# biggest stadium a club can build, record 8 of table 0.7, holds 100,000 at
+# each of its three levels instead of 110,000 (the user's choice). The
+# match's stadium ids for it (STADIUM_DATA 96-101, initteam.StadiumData)
+# change with it, in patch_disc.py.
+SPECIAL_STADIUM = ((0, 7), 8, 110000, 100000)
+
+
+def special_stadium(data):
+    """PLRESOURCECOMMON.PAC with the Special stadium at 100,000; None when
+    it already is. Raises ValueError for a pack that is neither."""
+    _, entries = load_bytes(data)
+    tables = [bytearray(t) for t in entries[0]]
+    key, record, retail, new = SPECIAL_STADIUM
+    names = ["capacity%d" % n for n in range(STADIUM_LEVELS)]
+    held = [get_field(tables, key, record, name) for name in names]
+    if held == [new] * len(names):
+        return None
+    if held != [retail] * len(names):
+        raise ValueError("%s: the Special stadium holds %s, expected %d; not the retail pack?"
+                         % (FILE, held, retail))
+    for name in names:
+        set_field(tables, key, record, name, new)
+    return encode(data, tables)
+
+
 def parse_edit(text):
     """(key, record, field, value) from "<table>:<record>:<field>=<value>"."""
     target, sep, value = text.partition("=")

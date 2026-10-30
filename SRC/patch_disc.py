@@ -98,7 +98,7 @@ sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
 merch-costs, pr-costs, camp-costs, tour-costs), leagues
 (league-balance, third-tier), restorations (injury-lines), names
-(real-names, own-stadium), saves (mod-saves),
+(real-names, own-stadium), stadiums (special-stadium), saves (mod-saves),
 and test-tools (skip-tutorial, launcher), which is in no edition.
 third-tier turns on mod-saves and needs --copies and --dat; real-names
 needs them too. Each switch
@@ -194,6 +194,11 @@ lists grow, so it brings MES.PAC whole and needs --copies (and --dat) for
 the STATIONMES copies; it runs after the third tier's text. PAL only.
 The names include each club's stadium (category 10). See
 DOC/LMASTER_MOD.md#real-names.
+
+special-stadium (LMASTER full and max) makes the Special stadium, the
+biggest a club can build, hold 100,000 at each level instead of 110,000,
+and the match stadiums of such a ground (STADIUM_DATA 96-101) with it.
+See DOC/LMASTER_MOD.md#stadiums.
 
 own-stadium (LMASTER full and max; whole disc image only) names your
 club's stadium after you, "<your name> Stadium", where the game used your
@@ -1853,7 +1858,7 @@ def plan_league_balance(f, img, adopted=()):
                      "at one venue (UIDs %s)" % " ".join(map(str, done))), []
 
 
-def pack_copy_jobs(f, img, pack, entry, of, old, new, why):
+def pack_copy_jobs(f, img, pack, entry, of, old, new, why, gap=0x20):
     """diff_jobs for the copy of `of` stored as `entry` in BINPAC `pack`."""
     import pac
     s = img.entry(pack)
@@ -1861,7 +1866,7 @@ def pack_copy_jobs(f, img, pack, entry, of, old, new, why):
     i = pac.find_entry(sh, entry)
     if sblobs[i] != old:
         raise ValueError("%s#%s isn't a copy of %s" % (pack, entry, of))
-    return diff_jobs(s.path, sh.entries[i][0], old, new, why)
+    return diff_jobs(s.path, sh.entries[i][0], old, new, why, gap)
 
 
 # --- archive indexes held by the executable (DOC/REBUILD.md#archives) ----------
@@ -2325,8 +2330,71 @@ def plan_facility_tiers(f, img, adopted=()):
     new = plrcommon.facility_tiers(data)
     if new is None:
         return [], ["note: %s already has the facility tiers" % COMMON_FILE]
-    return (diff_jobs(path, 0, data, new, why)
-            + pack_copy_jobs(f, img, STATION_FILE, COMMON_ENTRY, COMMON_FILE, data, new, why)), []
+    # gap=1: only the changed words, so special-stadium's capacities in the
+    # same stadium records don't overlap these (each plan sees the original).
+    return (diff_jobs(path, 0, data, new, why, gap=1)
+            + pack_copy_jobs(f, img, STATION_FILE, COMMON_ENTRY, COMMON_FILE, data, new, why,
+                             gap=1)), []
+
+
+# special-stadium: the biggest stadium a club can build holds 100,000, not
+# 110,000 (LMASTER full and max, the user's choice, 2026-10-30;
+# DOC/LMASTER_MOD.md#stadiums). plrcommon.special_stadium sets its three
+# levels; the match's stadium ids for it, STADIUM_DATA 96-101 (level 4 of
+# CONV_INFO_BUILD), go to 100 too, since InitStadium (SLES 0x213780) divides
+# the crowd by that capacity to fill the stands.
+STADIUM_DATA_FILE, STADIUM_DATA_ENTRY = "PARAM/STADIUM_DATA.TBB", "Stadium_Data.tbb"
+STADIUM_DATA_PACKS = ["PRELOAD/SIMFILE%d.PAC" % n for n in range(7)]
+SPECIAL_IDS, SPECIAL_THOUSANDS = range(96, 102), (110, 100)
+
+
+def special_stadium_data(data):
+    """STADIUM_DATA.TBB bytes with ids 96-101 at 100,000; None when they
+    already are."""
+    import initteam
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, STADIUM_DATA_ENTRY)
+        with open(path, "wb") as g:
+            g.write(data)
+        table = initteam.StadiumData(path)
+    retail, new = SPECIAL_THOUSANDS
+    held = [table.rows[i][2] for i in SPECIAL_IDS]
+    if held == [new] * len(held):
+        return None
+    if held != [retail] * len(held):
+        raise ValueError("special-stadium: %s stadiums 96-101 hold %s thousand, expected %d"
+                         % (STADIUM_DATA_FILE, held, retail))
+    for i in SPECIAL_IDS:
+        table.set(i, "capacity", new)
+    return table.encode()
+
+
+def plan_special_stadium(f, img):
+    """Jobs for --mod special-stadium: PLRESOURCECOMMON.PAC and its
+    STATIONFILE copy, STADIUM_DATA.TBB and its SIMFILE copies, only the
+    changed bytes (facility-tiers writes the same stadium records)."""
+    import plrcommon
+    why = "special-stadium: the Special stadium holds 100,000"
+    jobs, notes = [], []
+    path, data = read_file(f, img, COMMON_FILE)
+    new = plrcommon.special_stadium(data)
+    if new is None:
+        notes.append("note: %s already has the Special stadium at 100,000" % COMMON_FILE)
+    else:
+        jobs += (diff_jobs(path, 0, data, new, why, gap=1)
+                 + pack_copy_jobs(f, img, STATION_FILE, COMMON_ENTRY, COMMON_FILE, data, new,
+                                  why, gap=1))
+    path, data = read_file(f, img, STADIUM_DATA_FILE)
+    new = special_stadium_data(data)
+    if new is None:
+        notes.append("note: %s already has stadiums 96-101 at 100,000" % STADIUM_DATA_FILE)
+    else:
+        jobs += diff_jobs(path, 0, data, new, why, gap=1)
+        for pack in STADIUM_DATA_PACKS:
+            jobs += pack_copy_jobs(f, img, pack, STADIUM_DATA_ENTRY, STADIUM_DATA_FILE, data,
+                                   new, why, gap=1)
+    return jobs, notes
 
 
 def word_jobs(f, img, switch, words):
@@ -4413,6 +4481,9 @@ SWITCHES = (
      "real name of the era, in five languages; needs --copies"),
     ("own-stadium", plan_own_stadium, [SLES_FILE],
      "Names: your club's stadium is named after you (\"<your name> Stadium\"), not your city"),
+    ("special-stadium", plan_special_stadium,
+     [COMMON_FILE, STATION_FILE, STADIUM_DATA_FILE] + STADIUM_DATA_PACKS,
+     "Stadiums: the Special stadium holds 100,000, not 110,000"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -4476,6 +4547,7 @@ GROUPS = (       # (name, title, switches)
     ("leagues", "Leagues", ("league-balance", "third-tier")),
     ("restorations", "Restored content", ("injury-lines",)),
     ("names", "Real names", ("real-names", "own-stadium")),
+    ("stadiums", "Stadiums", ("special-stadium",)),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )
@@ -4484,7 +4556,7 @@ GROUPS = (       # (name, title, switches)
 # (the user's split, 2026-10-27). Full and max save careers under their
 # own letters (SAVE_LETTERS), so neither mixes with the retail game's.
 LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes", "text-fixes")
-FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "saves")
+FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "saves")
 DIFFICULTY_GROUPS = ("harder-economy", "balance")
 EDITIONS = (     # (name, title, groups)
     ("lmaster-lite", "LMASTER lite (fixes only)", LITE_GROUPS),

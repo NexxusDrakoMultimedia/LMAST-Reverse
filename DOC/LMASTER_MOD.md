@@ -32,6 +32,7 @@ level:
 | `leagues` | league-balance, third-tier | – | yes | yes |
 | `restorations` | injury-lines | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
+| `stadiums` | special-stadium ([below](#stadiums)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -613,6 +614,50 @@ the English suggestion, except where a language has its own common
 form ("Étoile Rouge", "Roter Stern", "Sparta Prag", "CSKA Moscou",
 "1860 München"); every club suggestion fits 18 characters in every
 language.
+
+## Stadiums
+
+Group `stadiums` (LMASTER full and max, the user's request,
+2026-10-30). Its switches change how big grounds are; the names of the
+grounds are in [Real names](#real-names).
+
+**How a ground's size works (confirmed).** Two tables hold capacities:
+
+| Table | Whose | What |
+|---|---|---|
+| `PLRESOURCECOMMON.PAC` table 0.7 ([`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md)) | your club's | 9 stadium types with up to three stand levels each: types 0–1 8,000 (the start), 2–5 15,000/20,000/25,000, 6 30,000/35,000/40,000, 7 50,000/55,000/60,000, 8 (the Special stadium) 110,000 at every level. Gate money and the crowd use these |
+| `STADIUM_DATA.TBB` ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) | the 119 match stadiums | roof, level and capacity in thousands for each stadium id; a computer club's record names one id |
+
+In a match at your ground, `PlGiTask::InitStadium` (`0x2131c0`) turns
+your stadium type, league and the stand, roof and lights you have built
+into a stadium id through `CONV_INFO_BUILD` (`plTeam_GetStadiumDataIndex`,
+[`STADIUM_DIR.md`](STADIUM_DIR.md#conv_info_buildtbb)), and `SetMyAudience`
+(`0x212d9c`) divides your crowd by that id's `STADIUM_DATA` capacity to
+fill the stands. The ids your builds reach are 0–101 (each level's ids
+hold that level's capacities: 0–5 8,000; 6–35 15,000–25,000; 36–65
+30,000–40,000; 66–95 50,000–60,000; 96–101 110,000), so their capacities
+must follow your ladder. Ids 102–118 are only used by computer clubs.
+Computer clubs use 89 ids, 219 clubs on ids your builds share and 238 on
+the other 17, with 14 different capacities.
+
+**`--mod special-stadium`.** The Special stadium (type 8) holds 100,000
+at each level, not 110,000 (user's choice of 90,000 or 100,000).
+`plrcommon.special_stadium` writes the three capacity words of record 8
+(`+0x38`, `+0x48`, `+0x58`), and ids 96–101, the match stadiums of a
+level-4 ground, go from 110 to 100 thousand so a full house still fills
+the stands. Computer clubs on ids 96–100 (Chelsea, Arsenal, Monaco,
+Bayern, Dortmund, Leverkusen, AC Milan, Inter, Barcelona, Boca Juniors)
+hold 100,000 too. The switch writes only the changed bytes, like
+`facility-tiers`, which writes the same records' costs (it now does the
+same): on a scratch disc with both, record 8 cost £350M and held 100,000,
+and the `STATIONFILE` copy and the seven `SIMFILE` copies of
+`STADIUM_DATA` matched. Not yet tested in the game.
+
+```bash
+python SRC/plrcommon.py show DAT/PARAM 0.7          # your stadium types
+python SRC/initteam.py stadiums DAT/PARAM           # the 119 match stadiums
+python SRC/stadium.py info DAT/STADIUM DAT/PARAM    # CONV_INFO_BUILD's ids by level
+```
 
 ## Planned
 
