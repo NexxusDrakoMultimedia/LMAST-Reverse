@@ -20,8 +20,11 @@ named as of 2005-06; a club with a real name and no stadium row gets
 "<real name> Stadium" in its language. `apply` writes
 them into every list above, and puts a competition's real name in place of
 its game name in the other messages that mention it (the rules and
-the news; names of 6 or more characters, outside {tags}). Club names in
-other messages are left: many are city names too. See
+the news; names of 6 or more characters, outside {tags}), in English.
+realnames_phrases.csv holds the other languages' mentions, edited by
+hand: per row a message (category, id, language), a phrase of its game
+text and what replaces it (empty to keep it). Club names in other
+messages are left: many are city names too. See
 DOC/LMASTER_MOD.md#real-names for how the names were chosen.
 
 Usage:
@@ -46,6 +49,7 @@ import tempfile
 import mbb
 
 FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "realnames.csv")
+PHRASES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "realnames_phrases.csv")
 LANGS = (1, 2, 3, 4, 5)                 # en, fr, de, it, es
 LANG_CODES = tuple(mbb.LANGS[l] for l in LANGS)
 TEAM_CAT, TEAM_BASE = 3, 2000
@@ -64,7 +68,8 @@ MENTION_MIN = 6
 # are often plain phrases ("monter en première division"), and a proper
 # name in their place needs its article and gender changed ("nel
 # campionato italiano B" -> "nella Serie B"), which a swap can't do;
-# `info` counts those mentions, for edits by hand.
+# those are edited by hand in realnames_phrases.csv, and `info` counts
+# any it doesn't cover.
 MENTION_LANGS = (1,)
 # Lists of names and places, where a competition's name isn't a mention.
 LIST_CATS = {3, 4, 5, 6, 7, 8, 9, 10, 11, 960, 961, 100003, 100006, 100009, 100011,
@@ -121,6 +126,34 @@ def load(path=FILE):
     return rows
 
 
+def load_phrases(path=PHRASES):
+    """{(category, lang, id): [(old, new)]}; new "" keeps the phrase (a
+    generic one, such as "première division", decided on and left)."""
+    out = {}
+    codes = {c: l for l, c in zip(LANGS, LANG_CODES)}
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        for r in csv.DictReader(f):
+            key = (int(r["category"]), codes[r["lang"]], int(r["id"]))
+            out.setdefault(key, []).append((r["old"], r["new"]))
+    return out
+
+
+def phrased(pack, phrases):
+    """{(category, lang, id): text} with the hand edits made; ValueError
+    if a phrase isn't in its message (the edits are written against the
+    game's text, before the automatic mentions)."""
+    out = {}
+    for (cat, l, rid), pairs in sorted(phrases.items()):
+        text = pack.text(cat, l, rid)
+        for old, new in pairs:
+            if old not in text:
+                raise ValueError("%d:%d %s: no %r" % (cat, rid, mbb.LANGS[l], old))
+            if new:
+                text = text.replace(old, new)
+        out[(cat, l, rid)] = text
+    return out
+
+
 def open_pack(data):
     """A mbb.MesPack of MES.PAC bytes."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -144,9 +177,11 @@ def same_case(game, name):
 QUALIFYING = re.compile(r" (Qualifying|Round)$")
 
 
-def edits(pack, rows, mention_langs=MENTION_LANGS):
-    """[(category, lang, id, text)] the names make: every list, and the
-    competitions' mentions in other messages in `mention_langs`."""
+def edits(pack, rows, mention_langs=MENTION_LANGS, phrases=None):
+    """[(category, lang, id, text)] the names make: every list, the hand
+    edits of `phrases` (load_phrases()), and the competitions' mentions
+    in other messages in `mention_langs`."""
+    texts = phrased(pack, load_phrases() if phrases is None else phrases)
     out = []
     mention = {l: {} for l in LANGS}        # lang -> {game name, lower case: real name}
     comps = {rid: names for cat, rid, names, _ in rows if cat == COMP_CAT}
@@ -197,12 +232,16 @@ def edits(pack, rows, mention_langs=MENTION_LANGS):
                     out.append((STAGE_VARIANT, l, rid, names[1]))
         else:
             raise ValueError("category %d isn't a name list (3, 10, 9 or 11)" % cat)
-    return out + mentions(pack, mention, mention_langs)
+    said = mentions(pack, mention, mention_langs, texts)
+    done = {(cat, l, rid) for cat, l, (rid, k), _ in said if k == 0}
+    return out + said + [(cat, l, (rid, 0), text) for (cat, l, rid), text in sorted(texts.items())
+                         if (cat, l, rid) not in done and text != pack.text(cat, l, rid)]
 
 
-def mentions(pack, mention, langs):
+def mentions(pack, mention, langs, texts={}):
     """[(category, lang, (id, copy), text)]: the messages outside the name
-    lists with a competition's game name in `mention` replaced."""
+    lists with a competition's game name in `mention` replaced, in the
+    text of `texts` ({(category, lang, id): text}) where it has one."""
     out = []
     for l in langs:
         if not mention[l]:
@@ -218,7 +257,7 @@ def mentions(pack, mention, langs):
             for rid, _ in m.records:
                 k = seen[rid] = seen.get(rid, -1) + 1
                 text = pack.text(cat, l, rid, k)
-                parts = TAG.split(text)
+                parts = TAG.split(texts.get((cat, l, rid), text) if k == 0 else text)
                 new = "".join(p if i % 2 else pat.sub(lambda x: mention[l][x.group(0).lower()], p)
                               for i, p in enumerate(parts))
                 if new != text:
@@ -291,11 +330,19 @@ def cmd_info(mes_path):
         print("  !! %s" % err)
         return
     lists = sum(1 for cat, _, _, _ in e if cat in LIST_CATS)
-    left = [x for x in edits(pack, rows, LANGS) if x[0] not in LIST_CATS and x[1] not in MENTION_LANGS]
-    print("  %d list messages, %d mentions in English; %d mentions in the other languages "
-          "left for edits by hand (%s)" % (
-              lists, len(e) - lists, len(left), ", ".join(
-                  "%s %d" % (mbb.LANGS[l], sum(x[1] == l for x in left)) for l in LANGS[1:])))
+    # A message with a hand edit is settled, kept phrases included.
+    phrases = load_phrases()
+    hand = sum(1 for (_, l, _) in phrases if l not in MENTION_LANGS)
+    kept = sum(1 for pairs in phrases.values() for _, new in pairs if not new)
+    left = [x for x in edits(pack, rows, LANGS) if x[0] not in LIST_CATS and x[1] not in MENTION_LANGS
+            and (x[0], x[1], x[2][0]) not in phrases]
+    print("  %d list messages, %d mentions in English; %d messages in the other languages "
+          "edited by hand (%d phrases kept as they are); %d mentions left (%s)%s" % (
+              lists, sum(1 for x in e if x[0] not in LIST_CATS and x[1] in MENTION_LANGS),
+              hand, kept, len(left), ", ".join(
+                  "%s %d" % (mbb.LANGS[l], sum(x[1] == l for x in left)) for l in LANGS[1:]),
+              ": " + ", ".join("%d:%d %s" % (x[0], x[2][0], mbb.LANGS[x[1]]) for x in left)
+              if left else ""))
 
 
 def cmd_import(table, out_path):

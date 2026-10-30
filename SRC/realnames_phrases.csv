@@ -1,0 +1,88 @@
+category,id,lang,old,new
+30001,100,en,European League Rank,UEFA Rank
+30001,100,en,European League position,UEFA position
+30001,106,en,European League Rank,UEFA Rank
+30001,106,en,European League position,UEFA position
+30001,111,en,European League Rank,UEFA Rank
+30001,111,en,European League position,UEFA position
+30001,116,en,European League position,UEFA position
+30001,122,en,European League position,UEFA position
+30001,127,en,European League position,UEFA position
+487,3,fr,la Série B italienne,la Serie B
+487,23,fr,la Série B italienne,la Serie B
+487,752,fr,première division,
+487,1205,fr,la deuxième division espagnole,la Segunda División
+830,30,fr,Première division,
+832,379,fr,la coupe internationale des clubs,la Coupe Intertoto
+832,380,fr,la super coupe européenne,la Supercoupe de l'UEFA
+832,398,fr,la première division,
+950,820,fr,la première division,
+30001,134,fr,Super Coupe européenne,Supercoupe de l'UEFA
+30001,135,fr,Super Coupe européenne,Supercoupe de l'UEFA
+430,492,de,in die erste Liga,in die Serie A
+487,0,de,für Meisterliga,für die Championship
+487,3,de,für italienische Serie B,für die Serie B
+487,4,de,für spanische 2. Liga,für die Segunda División
+487,21,de,in die 2. französische Liga,in die Ligue 2
+487,23,de,in die italienische Serie B,in die Serie B
+487,1200,de,in der Meisterliga,in der Championship
+830,30,de,Erste Liga,
+832,398,de,in die erste Liga,
+950,810,de,in die erste Liga,
+35557,0,de,Europapokalsieg,
+487,0,it,a Divisione Campioni,alla Championship
+487,1,it,alla seconda divisione francese,alla Ligue 2
+487,2,it,alla seconda divisione tedesca,alla 2. Bundesliga
+487,3,it,a Campionato Italiano B,alla Serie B
+487,4,it,alla seconda divisione spagnola,alla Segunda División
+487,5,it,a prima divisione olandese,all'Eerste Divisie
+487,11,it,di terza divisione francese,del National
+487,12,it,di terza divisione tedesca,della Regionalliga
+487,14,it,di terza divisione spagnola,della Segunda División B
+487,15,it,di terza divisione olandese,della Hoofdklasse
+487,21,it,in seconda divisione francese,in Ligue 2
+487,22,it,in seconda divisione tedesca,in 2. Bundesliga
+487,23,it,nel campionato italiano B,in Serie B
+487,24,it,in seconda divisione spagnola,in Segunda División
+487,25,it,in seconda divisione olandese,in Eerste Divisie
+487,1200,it,Divisione Campioni,Championship
+487,1203,it,posizione nel ,posizione nella
+487,1203,it,campionato italiano B,Serie B
+563,1009,it,per il torneo Turno Campionato Europeo,per la Champions League
+563,1010,it,per il torneo Turno Campionato Europeo,per la Champions League
+832,377,it,il campionato europeo,la Champions League
+832,380,it,la supercoppa europea,la Supercoppa UEFA
+1000,11,it,del Campionato Europeo,della Champions League
+1000,35,it,del Campionato Europeo,della Champions League
+1000,36,it,del Campionato Europeo,della Champions League
+30001,100,it,classificata del Campionato Europeo,classificata nel ranking UEFA
+30001,106,it,classificata del Campionato Europeo,classificata nel ranking UEFA
+30001,111,it,classificata del Campionato Europeo,classificata nel ranking UEFA
+30001,116,it,classificata del Campionato Europeo,classificata nel ranking UEFA
+30001,122,it,classificata del Campionato Europeo,classificata nel ranking UEFA
+30001,122,it,classificata del campionato europeo,classificata nel ranking UEFA
+30001,127,it,classificata del Campionato Europeo,classificata nel ranking UEFA
+30001,134,it,Supercoppa europea,Supercoppa UEFA
+30001,135,it,Supercoppa europea,Supercoppa UEFA
+487,1,es,para liga francesa 2ª división,para la Ligue 2
+487,4,es,para liga española 2ª división,para la Segunda División
+487,752,es,primera división,
+563,1009,es,para Ronda Liga Europea,para la Liga de Campeones
+563,1010,es,para Ronda Liga Europea,para la Liga de Campeones
+832,377,es,la Liga Europea,la Liga de Campeones
+832,378,es,la Copa Europea,
+832,380,es,la Supercopa de Europa,la Supercopa de la UEFA
+832,398,es,la primera división,
+832,469,es,la Copa Mundial de Clubes,
+1001,11,es,Liga Europea,Liga de Campeones
+1001,35,es,Liga Europea,Liga de Campeones
+1001,36,es,Liga Europea,Liga de Campeones
+30001,100,es,de Liga Europea,UEFA
+30001,106,es,de la Liga Europea,UEFA
+30001,106,es,en la Liga Europea,UEFA
+30001,111,es,en la Liga Europea,UEFA
+30001,116,es,la Liga Europea,la clasificación UEFA
+30001,122,es,la Liga Europea,la clasificación UEFA
+30001,127,es,la Liga Europea,la clasificación UEFA
+30001,134,es,Supercopa de Europa,Supercopa de la UEFA
+30001,135,es,Supercopa de Europa,Supercopa de la UEFA

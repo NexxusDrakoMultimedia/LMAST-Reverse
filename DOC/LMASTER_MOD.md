@@ -496,12 +496,27 @@ competition's real name also replaces its game name in the English
 messages that mention it (26: the tournament rules, the news, the
 advisor's lines), matched in any case and outside `{tags}`; a qualifying
 round's mention takes its competition's name ("we'll qualify for the
-Champions League"). The other languages' 75 mentions are left for edits
-by hand: their game names are often plain phrases ("monter en première
-division"), and a proper name in their place needs its article and
-gender changed ("nel campionato italiano B" → "nella Serie B"), which a
-swap can't do. Club names in other messages are left too, since many
-are city names.
+Champions League"). The other languages' 75 mentions are edited by hand,
+in `SRC/realnames_phrases.csv`: their game names are often plain phrases
+("monter en première division"), and a proper name in their place needs
+its article and gender changed ("nel campionato italiano B" → "in Serie
+B"), which a swap can't do. Each row is one phrase of one message and
+its replacement, written against the game's text; `apply` stops if a
+phrase isn't in its message. 63 messages get real names; 12 keep a
+generic phrase (an empty replacement), such as "première division" or
+"erste Liga" where any nation's top flight is meant, the World Club
+Championship's own name, and two European-cup wins that may be any cup
+(German 35557:0 "Europapokalsieg", Spanish 832:378 "Copa Europea").
+
+The league rules' "European League Rank/position" (30001:100 to 127) is
+the nation's place in the European ranking (563:1009: "country X is
+ranked Nth in Europe… we'll qualify… if we're in the top 4"), not the
+Champions League, so the hand edits name it "UEFA Rank" in English
+before the automatic swap runs, and "ranking UEFA", "clasificación
+UEFA" in Italian and Spanish. The Italian "prima divisione olandese"
+(487:5) is the Eerste Divisie, the Dutch second tier, not the
+Eredivisie. Club names in other messages are left, since many are city
+names.
 
 Every file still fits its slot in `MES.PAC`, which keeps its size; the
 name lists grow by about 550 bytes in each language, so their

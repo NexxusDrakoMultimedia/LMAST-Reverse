@@ -302,3 +302,8 @@ Each result is recorded in the doc named.
       competition, club and national team names, chosen with the user
       from LMAST Realism's logos, in five languages (`realnames.py`;
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
+- [x] Real names in the other languages' messages: the 75 French, German,
+      Italian and Spanish competition mentions edited by hand
+      (`SRC/realnames_phrases.csv`), and the rules' European ranking
+      renamed "UEFA Rank" instead of the Champions League
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))

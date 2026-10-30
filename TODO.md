@@ -373,10 +373,6 @@ is built and tested, or set aside.
       test), the strength ratio above 1.19 getting column 0, and the
       training plan's rows out of step with the policy names
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] Real names in the other languages' messages: the 75 French,
-      German, Italian and Spanish mentions of a competition's game name
-      (`realnames.py info` counts them), rewritten by hand with their
-      articles and genders ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
