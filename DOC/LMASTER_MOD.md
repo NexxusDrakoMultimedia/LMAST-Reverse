@@ -714,31 +714,35 @@ figures are approximate, which the rounding mostly absorbs; Old Trafford
 - **Looks.** Ids 0–101 keep your ladder's capacities, and their models
   follow those sizes. The ladder's models look small for their numbers
   at the top (user report on the first build: Chelsea, Manchester United
-  and Bayern), but only the biggest grounds should get the 110,000 bowl
-  (user's choice), so a ground's look follows its size:
+  and Bayern), so a ground's look follows its size, but the `ho04a` bowl
+  is Camp Nou's alone, and the retail game's own away grounds (`aw01a`,
+  `aw03a`) are used again, so more clubs have a ground of their own
+  (the user's choices, 2026-10-31):
 
 | Band | Look | Ids |
 |---|---|---|
 | 8,000–35,000 | the ladder's models (`ho00`–`ho02a`) | the ladder's, 6–18 a band |
+| 20,000, 25,000, 30,000 | `aw01a`, their own look | 103, 105, 107 |
 | 40,000, under 40,000 real | the ladder's `ho02a` | the ladder's 40,000 ids |
-| 40,000, 45,000 | `ho03a` with roof (and lights at 45,000) | 102–104, 105–107 |
+| 40,000, 45,000 | `ho03a` with roof (and lights at 45,000) | 102, 104 and 106 |
+| 40,000, 45,000, 50,000 | `aw03a`, their own look (the rival's model) | 112, 113, 115 |
 | 50,000–60,000 | `ho03a` | the ladder's 66–95 |
-| 65,000, 70,000, 75,000 | the `aw04b` bowl | 108–109, 110–111, 116 and 118 |
-| 80,000, 85,000 | the `ho04a` bowl | 112–113, 115 and 117 |
+| 65,000–90,000 | the `aw04b` bowl | 108 (65), 109 and 116 (70), 110 (75), 111 (80), 117 (85), 118 (90) |
 | 100,000 | the `ho04a` bowl | the Special stadium's 96–101 |
 
   The club-only ids 102–118 take the look of a ground (its
   `BUILD_STADIUM` row: model, parts, crowd set, but not its advert
-  boards, which stay the id's own; `stadium.copy_rows`), its roof and the level of its model: 102–104
-  rows 69, 79, 89 (`ho03a`, roof), 105–107 rows 75, 85, 95 (roof and
-  lights), 108, 110 row 116 and 109, 111 row 118 (`aw04b`), 112 row 97,
-  113 and 117 row 117, 115 row 99 (`ho04a`). A look is copied only from
-  a row the switch leaves alone (116–118 keep their own), so applying it
-  twice changes nothing. `GetCapacityFromID` adds 500 seats to 103, 105
-  and 107. Stadium 114 is the rival's ground in every league
-  (`TEAM_INIT_DATA` table 7, [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8)):
+  boards, which stay the id's own; `stadium.copy_rows`), its roof and
+  the level of its model: 102 row 69 (`ho03a`, roof), 104 and 106 rows
+  75 and 85 (roof and lights), 108, 110 and 117 row 116 and 109 and 111
+  row 118 (`aw04b`); 103, 105, 107, 112, 113, 115, 116 and 118 keep
+  their own. A look is copied only from a row the switch leaves alone,
+  so applying it twice changes nothing. `GetCapacityFromID` adds 500
+  seats to 103, 105 and 107. Stadium 114 is the rival's ground in every
+  league (`TEAM_INIT_DATA` table 7, [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8)):
   it keeps its look, boards and 42,000, and no other club is put on it,
-  so the rival's ground stays its own (the user's request).
+  so the rival's ground stays its own (the user's request); other
+  grounds may use its `aw03a` model (the user's choice).
 - **Clubs.** As many grounds as possible, each close to its real size
   (the user's request): a ground may take any band within 3,000 of its
   real capacity, or its nearest band (the bigger on a tie) if none is;
@@ -750,16 +754,13 @@ figures are approximate, which the rounding mostly absorbs; Old Trafford
   Juventus and Torino, Bayern and 1860) share one. 90,000 (Azadi;
   Maracanã's 88,000) goes to 85,000, since no id is left for
   90,000–95,000. Camp Nou alone is at 100,000, which is why the switch
-  turns on `special-stadium`. The 12 on the `ho04a` bowl: Camp Nou, San
-  Siro (twice), the Bernabéu, the Westfalenstadion, the Olimpico
-  (twice), Luzhniki, Maracanã, Morumbi, the Monumental in Lima and
-  Azadi.
-- **Result.** 453 bytes of the club records change; the clubs use 96
-  of the 118 ids (89 in retail; the rival's 114 apart) and 17 sizes (14).
-  The ids left are the ladder's 40,000 and 60,000 ones and the Special's,
-  with no ground within 3,000 of them. The mean distance from the real
-  capacity, over the clubs above 12,500, is 1,200 seats, the largest
-  5,000 (Azadi).
+  turns on `special-stadium`, and it is the only club on the `ho04a`
+  bowl.
+- **Result.** The clubs use 96 of the 118 ids (89 in retail; the
+  rival's 114 apart). By model: `ho04a` 1 club, `aw04b` 27, `aw03a` 10,
+  `aw01a` 16, `ho03a` 50 and the smaller ladder models the rest. The
+  mean distance from the real capacity, over the clubs above 12,500, is
+  1,200 seats, the largest 3,000.
 
 The club records (`PLRESOURCESIM.PAC` entry 3, `+0x06`) and `STADIUM_DATA`
 go in with their PRELOAD copies, and `BUILD_STADIUM.TBB` (no copies), only

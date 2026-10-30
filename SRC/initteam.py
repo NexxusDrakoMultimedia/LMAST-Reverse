@@ -517,25 +517,29 @@ class StadiumData:
 # they keep it: 8, 15-25, 30-40 and 50-60 thousand, and 100 for 96-101 with
 # special-stadium. A ground's look follows its size, closer than the
 # ladder's models allow at the top (user reports, 2026-10-30: the big clubs
-# looked too small, but only the biggest deserve the 110,000 bowl):
-#   8-35 thousand   the ladder's own ids and models
-#   40-60           ho03a: 40 and 45 on the ids below, 50-60 the ladder's
-#   65-75           the aw04b bowl, 80 and over the ho04a bowl
+# looked too small), but the ho04a bowl is Camp Nou's alone, on the
+# Special stadium's ids, and the retail game's own away grounds (aw01a,
+# aw03a) come back on their ids (the user's choices, 2026-10-31):
+#   8-35 thousand   the ladder's own ids and models, and aw01a at 20-30
+#   40-60           ho03a: 40 and 45 on the ids below, 50-60 the ladder's;
+#                   aw03a at 40-50
+#   65-90           the aw04b bowl; 100 the ho04a bowl (96-101)
 # Ids 102-118 are the computer clubs' own: each takes the look of a ground
 # (its BUILD_STADIUM row, stadium.copy_rows, and its roof) and a band of its
 # own: {id: (capacity in thousands, level, the ground it looks like)}.
 # GetCapacityFromID adds 500 seats to 103, 105 and 107. A look is copied
-# only from a row the switch leaves as it is (116-118 keep their own), so
+# only from a row the switch leaves as it is (103, 105, 107, 112, 113, 115,
+# 116 and 118 keep their own), so
 # the copy is the same however often it is made.
 GROUNDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grounds.csv")
 GROUND_IDS = {
-    102: (40, 3, 69), 103: (40, 3, 79), 104: (40, 3, 89),     # ho03a, roof
-    105: (45, 3, 75), 106: (45, 3, 85), 107: (45, 3, 95),     # ho03a, roof and lights
-    108: (65, 4, 116), 109: (65, 4, 118),                     # aw04b
-    110: (70, 4, 116), 111: (70, 4, 118),
-    116: (75, 4, 116), 118: (75, 4, 118),                     # aw04b, their own
-    112: (80, 4, 97), 113: (80, 4, 117),                      # ho04a
-    115: (85, 4, 99), 117: (85, 4, 117),                      # 117 its own
+    102: (40, 3, 69),                                         # ho03a, roof
+    104: (45, 3, 75), 106: (45, 3, 85),                       # ho03a, roof and lights
+    103: (20, 1, 103), 105: (25, 1, 105), 107: (30, 1, 107),  # aw01a, their own
+    112: (40, 3, 112), 113: (45, 3, 113), 115: (50, 3, 115),  # aw03a, their own
+    108: (65, 4, 116), 109: (70, 4, 118), 116: (70, 4, 116),  # aw04b (116, 118 their own)
+    110: (75, 4, 116), 111: (80, 4, 118), 117: (85, 4, 116),
+    118: (90, 4, 118),
 }
 # Stadium 114 is the rival's ground in every league (TEAM_INIT_DATA table
 # 7, DOC/TEAMINIT_FORMAT.md): it keeps its look, boards and size, and no
