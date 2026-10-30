@@ -33,7 +33,6 @@ level:
 | `restorations` | injury-lines | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
-| `title` | title-movie, demo-teams ([below](#the-title-screen)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -756,51 +755,6 @@ tested in the game.
 python SRC/plrcommon.py show DAT/PARAM 0.7          # your stadium types
 python SRC/initteam.py stadiums DAT/PARAM           # the 119 match stadiums
 python SRC/stadium.py info DAT/STADIUM DAT/PARAM    # CONV_INFO_BUILD's ids by level
-```
-
-## The title screen
-
-Group `title` (LMASTER full and max, the user's request, 2026-10-30).
-
-**How the title loops (confirmed, `MOVIEPRG.REL`).** After the Logo
-module, `RootMainSeq` starts the Title module (45); an idle title ends
-with result 0, which runs `RootDemoMatchSeq` and comes back to the Title
-module ([`GAME_FLOW.md`](GAME_FLOW.md#boot-and-title-rootmainseq)).
-`TITLE_MODULE::CTitleModule` runs phases (jump table `0x4c030`): 0–3 the
-opening movie (`CDV:/Audio/opmovie.sfd`, `0x4c010`; skippable with Start
-or the developers' `s_WatchMovie`), 4 the title with its music, 5–7 the
-memory-card check and the title menu, 8 the end. Its constructor
-(`0x1640`) picks a row of `{s32}` × 4 at `0x4c0c8` by
-`fcEuroDummy_GetMovieFlag` (1 at boot, `0x34d474`; the destructor,
-`0x1820`, clears it): row 0 `{0, 5, -1, -1}` at boot, row 1
-`{4, 0, 5, -1}` after. Phase 4 goes on to the menu by itself (`0x1dec`);
-an idle menu (phase 7, `0x2058`) moves to the row's next phase, and at
-−1 the module ends with 0. So the retail loop is: boot, movie, title,
-demo; then title, movie, title, demo, round again.
-
-**`--mod title-movie`.** Row 1's 2nd and 3rd entries (`0x4c0dc`) become
-−1: after a demo the title waits, then the next demo starts, and the
-movie plays only once, at boot (user request: not again while sitting at
-"press any button"). Not yet tested in the game.
-
-**`--mod demo-teams`.** The demo match (`ScheCallbackCommand_EntryDemoMatch`,
-SLES `0x114870`) took `etc::GetGlobalCounterGameSystem` mod 50 and played
-that pair of the table at `0x35c9b8`: 50 pairings of a few famous clubs
-(Chelsea, Real Madrid, Barcelona, Juventus, AC Milan, Inter, Arsenal,
-Manchester United, Bayern, Liverpool, Ajax, PSV …), unless the
-developers' flag `0x34d480` held a pair of its own (`0x34d478`). The
-switch replaces the lookup's 20 instructions (`0x1148b8`–`0x114904`):
-home = 3 + counter mod 438, away = 3 + (counter ÷ 438) mod 439, the
-away club moved one on if they clash. Any two of clubs 3–441 can meet:
-the clubs with retail squads (442–459 only get theirs with the third
-tier). The counter counts frames, so the pair depends on how long the
-title was left. The two clubs still go to `0x34d478`/`0x34d47c`, as the
-retail code stored them. Not yet tested in the game.
-
-```bash
-python SRC/sqb.py dis DAT/SEQ/ROOTMAINSEQ.SQB root            # the title and demo loop
-python SRC/snr2.py dis ISO/DLL/MOVIEPRG.REL 0x1888 120 --sles ISO/SLES_541.51   # the title's phases
-python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x114870 60    # the demo match's two clubs
 ```
 
 ## Planned

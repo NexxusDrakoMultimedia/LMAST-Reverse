@@ -59,6 +59,34 @@ season.
 | 2 | `L8` | Continue (Load) |
 | 3 or more | `L11` | `RootVsModeSeq` |
 
+**The title's loop (confirmed, `MOVIEPRG.REL`).** An idle title ends with
+result 0, which runs `RootDemoMatchSeq` and comes back to the Title module
+at `L2` (the Logo module isn't run again). `TITLE_MODULE::CTitleModule`
+runs phases (jump table `0x4c030`): 0–3 the opening movie
+(`CDV:/Audio/opmovie.sfd`, `0x4c010`; skippable with Start or the
+developers' `s_WatchMovie`), 4 the title with its music, 5–7 the
+memory-card check and the title menu, 8 the end. Its constructor
+(`0x1640`) picks a row of `{s32}` × 4 at `0x4c0c8` by
+`fcEuroDummy_GetMovieFlag` (1 at boot, `SLES 0x34d474`; the destructor,
+`0x1820`, clears it): row 0 `{0, 5, -1, -1}` at boot, row 1
+`{4, 0, 5, -1}` after. Phase 4 goes on to the menu by itself (`0x1dec`);
+an idle menu (phase 7, `0x2058`) moves to the row's next phase, and at
+−1 the module ends with 0. So the loop is: boot, movie, title, demo; then
+title, movie, title, demo, round again.
+
+**The demo match's clubs (confirmed).** `ScheCallbackCommand_EntryDemoMatch`
+(`0x114870`) takes `etc::GetGlobalCounterGameSystem` (the word at
+`0x35d4a0`) mod 50 and plays that pair of u32 team ids from the table at
+`0x35c9b8`: 50 pairings of a few famous clubs (Chelsea, Real Madrid,
+Barcelona, Juventus, AC Milan, Inter, Arsenal, Manchester United, Bayern,
+Liverpool, Ajax, PSV …), and stores it at `0x34d478`/`0x34d47c`, unless
+the developers' flag `0x34d480` is 1, which plays the stored pair instead
+(3 and 4 in the executable). An LMASTER switch that picked two clubs from
+the counter instead (2026-10-30) showed Birmingham v Birmingham in
+PCSX2 and crashed (user report); it was removed at the user's request,
+with one that kept the movie to the first boot (row 1 cut to `{4}`). Why
+the picked pair didn't reach the match isn't traced.
+
 ## New game
 
 `L5`: `Pwk.NewGame`, then `RootClubEditSeq` with `m4[5]` = 0:
