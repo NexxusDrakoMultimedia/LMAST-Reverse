@@ -501,8 +501,26 @@ count at `+1`) from the participant's node and tests each neighbour's
 direction against that angle with a π/2 tolerance (`0x3fc90fdc`). So
 `Combi17`–`Combi24` mark the neighbouring area of the pitch in one of
 eight directions, at 270°, 90°, 180°, 0°, 225°, 315°, 135° and 45°.
-Which angle is forward isn't checked; 90° and 270° are opposite along
-one axis.
+
+**Which way is forward.** The angles are the usual ones, 0° along +x and
+90° along +y (**confirmed**): the direction test takes `0x1c5ff0`(−dx,
+dy) + 90°, and `0x1c5ff0` is atan2 of its two arguments in that order
+(the swap and quadrant fixes at `0x1c603c`–`0x1c60c4`). Side 0 is the
+one the code doesn't mirror, and in the side-0 frame a team attacks
+toward +y (**empirical**: every corner in `PLAYBOOK.BPB` starts at the
++y end, play 0's ball at (33.6, 52.1), and the set plays mirror a path
+only for the other side, `0xa5af8`). So:
+
+| Command | Angle | Direction |
+|---|---|---|
+| `Combi18` | 90° | forward, toward the opponents' goal |
+| `Combi24`, `Combi23` | 45°, 135° | forward and to either side |
+| `Combi20`, `Combi19` | 0°, 180° | straight across, to either side |
+| `Combi22`, `Combi21` | 315°, 225° | back and to either side |
+| `Combi17` | 270° | back, toward the team's own goal |
+
+Which of 0° and 180° is the left as the attacking team sees it isn't
+checked.
 
 So script 0, `Combi3 8; Combi0 1; Combi3 13; Combi0 2; Combi12 0`, makes
 preset area 8, sends participants 1 and 2 to area 0 (`Combi3 13` returns
@@ -530,8 +548,8 @@ participants are the ones the record's slots found
   what `+0x15e0` and `0xc6288` do when a candidate is tried.
 - What the controller's `+0x1608` "line" value is, and type 6's
   position (`0xc3270`).
-- The area types of `Combi2` and `Combi3`, which of `Combi17`–`Combi24`'s
-  angles is forward, what `Combi12`'s target and
+- The area types of `Combi2` and `Combi3`, which side (left or right)
+  `Combi19` and `Combi20` mark, what `Combi12`'s target and
   mode 7's flag are, and the plays at the player's `+0xfc`, `+0x100`
   and `+0x108` that modes 2 and 3 switch to.
 
