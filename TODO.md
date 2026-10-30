@@ -36,8 +36,8 @@ What to work on next, most valuable first.
    season's end, saving and loading are tested). The disc
    is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **The tactics AI files** (section 2): `Combi3`'s preset
-   areas, the move order kinds the point codes give and what the path
+3. **The tactics AI files** (section 2): four of `Combi3`'s
+   presets, the move order kinds the point codes give and what the path
    kinds' values select, the corner and free-kick id groups
    ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown)).
 
@@ -121,7 +121,7 @@ shown to have no effect. Grouped by what a mod would change.
 
 ### The match
 
-- [ ] The tactics AI files: `Combi3`'s preset areas, the move
+- [ ] The tactics AI files: four of `Combi3`'s presets, the move
       order kinds the point codes give and what the path kinds' values
       select, the corner and free-kick id groups ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
 - [ ] `GAMEDATA.BIN`: the rest of a ball-contact record, what sets a

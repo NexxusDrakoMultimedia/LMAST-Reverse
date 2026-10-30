@@ -472,7 +472,7 @@ The 29 commands (argument counts at `0x274790`, including the result):
 | `Combi27` | *p*, *x*, *y* | *p* runs to area 0, with offsets *x*, *y* |
 | `Combi28` | *p*, *a*, *x*, *y* | *p* runs to area *a*, with offsets |
 | `Combi2` | *t* | makes an area of type *t*, a zone chosen by channel and depth ([below](#combi2s-areas)) |
-| `Combi3` | *n* | makes preset area *n* through the table at `0x249370`; entries 13–15, 17, 18 and 21 are empty, so those *n* do nothing |
+| `Combi3` | *n* | makes preset area *n* through the table at `0x249370` ([below](#combi3s-preset-areas)); entries 13–15, 17, 18 and 21 are empty, so those *n* do nothing |
 | `Combi4` | *p*, *k* | *p* passes to area 0 with pass type *k* (mode 0) |
 | `Combi5` | *p*, *a*, *k* | *p* passes to area *a* |
 | `Combi6` | *p*, *x*, *k* | *p* passes to a point it builds from *x* |
@@ -485,7 +485,7 @@ The 29 commands (argument counts at `0x274790`, including the result):
 | `Combi13` | *p* | mode 5, the kick; waits until it's done (`+0x188`) |
 | `Combi14` | *x* | stores 1 in the result |
 | `Combi15` | *p* | stores 1 if *p*'s player holds the ball, else 0 |
-| `Combi16` | *x* | makes an area through `0xc62a8` |
+| `Combi16` | *x* | makes participant *x*'s own zone the area (`0xc62a8`, which finds the zone of that participant's player) |
 | `Combi17`–`Combi24` | – | each makes an area around participant 0 by `0xc6150` with a fixed direction: 5, 1, 3, 7, 4, 6, 2 and 8 in command order (below) |
 | `Combi25` | *c* | stores 1 with a chance of *c* % (`fcEuroRand_Get0to1`, the game's seeded random numbers), else 0 |
 | `Combi26` | *p*, *d* | makes an area *d* × 10 from participant *p*, trying sideways offsets of 20, 30 or 50 until `0xc63a8` accepts one |
@@ -559,6 +559,44 @@ known, as for [the direction commands](#the-combination-commands).
 `0x249270` would switch every search to another set of functions
 (`0xc6f28`, `0xc71f0`, ...), but it is 0 in play and no code stores to
 it.
+
+### `Combi3`'s preset areas
+
+**Confirmed.** Most presets run `Combi2`'s search (`0xc5bc8`) with
+their own settings: the channel *c* (as above, or 2 for the whole
+width, which skips the column test), the depth *d*, a scoring mode *m*
+and a participant *p*. The mode decides which candidate comes first
+(`0xc6fc8`, jump table `0x2748b0`; the candidates are sorted lowest
+score first, in the attacking team's frame):
+
+| Mode | Score |
+|---|---|
+| 0 | the zone's y: the least advanced first (what `Combi2` uses) |
+| 1 | the zone's x: the one furthest to one side first |
+| 2 | −x: the one furthest to the other side first |
+| 3, 4 | −1000 for a zone whose centre has a greater x than participant *p* (`0xc7300`), so those come first |
+| 5 | −1000 when the zone's backward neighbour (direction 5, `0xc6150`) is missing or past *p* in x, likewise |
+
+| *n* | How the area is made |
+|---|---|
+| 0, 1 | centre, behind the line, the side of participant 0 with greater x first (modes 4 and 3) |
+| 2 | any width, behind the line, past participant 1 first |
+| 3 | centre, in front of the line, mode 5 with participant 2 |
+| 4, 20 | any width, behind the line, past participant 2 first (modes 4 and 3) |
+| 7 | wing *c* = 1, in front of the line, smallest x first |
+| 8 | wing *c* = 1, in front of the line, largest x first |
+| 9 | participant 1's zone, then its neighbour at 0°, or at 45° if there is none (`0xc67d0`) |
+| 10 | the same at 180°, or at 135° |
+| 11 | the same at 315° |
+| 12 | the same at 225° |
+| 5 | starts from participant 2 (`0xc2848`) and a direction search (`0xc6150`); not decoded |
+| 6 | an area at participant 1's position (`0xa62c0`, `0xc38f8`); not decoded |
+| 16, 19 | participant 2's zone (`0xc62a8`), then `0xc5cf0` with the tables at `0x274728` and `0x274738`; not decoded |
+
+The angles are those of [the direction commands](#the-combination-commands):
+90° forward, 0° and 180° across. In the centre channel behind the line,
+`0xc5bc8` also moves the area's point back by 0.9 along the attacking
+direction (`0xc5c90`, `0x1321b8`).
 
 ### The defensive line
 
@@ -638,7 +676,7 @@ participants are the ones the record's slots found
 - What builds the [zone network](#the-zone-network) and when, which
   players it takes (one team's 11 and one of the other's in the state
   read), what a zone's byte `+8` and the `0xa23b0` test in `Combi2`'s
-  search mean, and what `Combi3`'s 22 preset areas are.
+  search mean, and `Combi3`'s presets 5, 6, 16 and 19.
 - Which side (left or right)
   `Combi19` and `Combi20` mark, what `Combi12`'s target and
   mode 7's flag are, and the plays at the player's `+0xfc`, `+0x100`
