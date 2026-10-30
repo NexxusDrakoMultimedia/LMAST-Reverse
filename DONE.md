@@ -138,6 +138,8 @@ evidence and how it was tested; the git history holds the rest.
 - [x] The set plays' id lists: a free kick's first list is direct
       shots and its second passes first; corners are crosses (70%) or
       short corners ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#which-play-is-which))
+- [x] The path kinds' flag: a flagged path is drawn relative to a
+      stored position, not the pitch ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md))
 
 ## 3. Write: a writer for every format a mod changes
 

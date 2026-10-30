@@ -75,6 +75,18 @@ each type makes. The types the play book uses:
 | 254 (`0xfe`) | – | the ball |
 | 249–253 | none: not role types | only in records 196–255 |
 
+**The value and the flag** (**confirmed**). `0x108bd8` hands a path's
+type, value and flag to the set-play assignment, which keeps them per
+path at `+0xe4`, `+0xe8` and `+0xec` (`0x12efd8`; records of 0x14
+bytes, 0xdc per side). When the flag is set, `0x12d1d8` stores a
+16-byte position from the set play's own record for that path (0x70
+bytes each, `+0x20`) and `0xf53d8` adds it to every point of the path
+(`0x12d214`), so a flagged path is drawn relative to that position
+instead of the pitch. No reader of the value at `+0xe8` was found.
+**Empirical**, over records 0–195: the value is 0 in all 1,845
+attackers' paths (type 26) and 0–6 for the takers and runners; the flag
+is set on 73 paths, most of them type 16 (37) and type 18 (11).
+
 For reference, the factory's other types: 0 `RoleGoalKeeper`, 1
 `RoleBallCarrier`, 2 `RoleBallCarrierMarker`, 3 `RoleSupporter`, 6
 `RoleSpaceMarker`, 7 `RoleSpaceMarkCover`, 9 `RoleKOKicker`, 10
@@ -676,7 +688,8 @@ participants are the ones the record's slots found
 - What the move order kinds 1, 2, 4 and 8 mean (most likely speeds or
   ways of running: no names were found), why `COMBINATION.BPB` uses
   code 3, which orders nothing, and whether anything reads the ball's
-  point codes. What a path kind's value and flag select for its role.
+  point codes. What reads a path kind's value (`+0xe8`), and whose
+  position a flagged path is drawn from.
 - Whether the corner records' ten groups meant anything to the
   developers beyond loose themes, and what records 196–255 (kind 3,
   roles 249–253) were for.
