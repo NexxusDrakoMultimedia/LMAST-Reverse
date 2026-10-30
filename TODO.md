@@ -21,8 +21,8 @@ What to work on next, most valuable first.
 
 1. **The player and staff fields** (section 2, "Players and staff"):
    the player fields still open (`explodetype`, abilities 59–63 and the
-   attack pattern letters, the carry and press tendencies; an edited
-   tendency can be checked over PINE)
+   attack pattern letters, the carry tendency's player; the press
+   tendency is done)
    ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)).
 2. **LMASTER max in game** (sections 7 and 8): every part of
    `--mod harder-economy` is tested in PCSX2, and so are
@@ -34,7 +34,8 @@ What to work on next, most valuable first.
    (2026-10-27). Left: the other `--mod balance` switches and `pr-cycle`, and the lower cups' seeded
    brackets and the `-V` VS folder (the third tier's transfer windows,
    season's end, saving and loading are tested). The disc
-   is `LMAST-test-max-germany.iso`, built 2026-10-27
+   is `LMAST-test-season4.iso`, built 2026-10-31, with its test sheet
+   `names/test-sheet-season.md`
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 3. **The tactics AI files** (section 2): four of `Combi3`'s
    presets, the move order kinds the point codes give and what reads a
