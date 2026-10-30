@@ -93,7 +93,7 @@ names the fields the editor labels leave out.
 | 4 | 1 | `+0x40` | pressure | pressure resistance. Read by the match engine (`GAMEPRG.REL`), not traced |
 | 4 | 1 | `+0x41` | loyalty | club loyalty; sets a promoted youth player's contract years. **confirmed** |
 | 4 | 1 | `+0x42` | star | star quality; scales popularity changes. **confirmed** |
-| 4 | 4 | `+0x43` | explodetype | source name `explodetype`, 0–15 ×4: probably meant for the growth spurts (`pwkExplo_*`, see [explodetype](#explodetype-and-team-combos)). No label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players), more often set for low-ranked players. No reader found |
+| 4 | 4 | `+0x43` | explodetype | source name `explodetype`, 0–15 ×4: probably meant for the growth spurts (`pwkExplo_*`, see [explodetype](#explodetype-and-team-combos)). No label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players), more often set for low-ranked players. No reader found: no load of `PlPinfo +0x1db`–`+0x1de` (its game copy) in the executable or any overlay (scan, 2026-10-30) |
 | 3 | 1 | `+0x47` | moti_type | motivation type, 0–7. **confirmed** |
 | 3 | 1 | `+0x48` | cond_type | condition type, 0–7. No reader found outside the debug and save code |
 | 5 | 1 | `+0x49` | potential | 0–7; read by `plPinfo_InitEditAbil` (`0x21b2b8`) |
@@ -246,7 +246,9 @@ code tells the five apart. No call to the three functions that take an
 ability number (`plPinfo_Abil2PSM`, `pwkGUtl_GetGrowCoe`,
 `pwkGUtl_AddExp`) passes 59–63 as a constant; the match doesn't copy
 them ([The match engine's player parameters](#the-match-engines-player-parameters));
-and every practice grows all five equally. Their only reader found is
+and every practice grows all five equally. Nor does any player code in
+the executable load their slots (`PlPinfo +0x16c`, `+0x172`, `+0x178`,
+`+0x17e`, `+0x184`; scan, 2026-10-30). Their only reader found is
 the hexagon table, which weights 60 alone. Training's combinations A–E
 (practices 12–16) are a different set: they pick their row from the
 club's five pattern slots, and rows 12–16 train the left side, right
