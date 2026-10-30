@@ -53,7 +53,7 @@ category,id,lang,old,new
 563,1010,it,per il torneo Turno Campionato Europeo,per la Champions League
 832,377,it,il campionato europeo,la Champions League
 832,380,it,la supercoppa europea,la Supercoppa UEFA
-1000,11,it,del Campionato Europeo,della Champions League
+1000,11,it,del Campionato Europeo,UEFA
 1000,35,it,del Campionato Europeo,della Champions League
 1000,36,it,del Campionato Europeo,della Champions League
 30001,100,it,classificata del Campionato Europeo,classificata nel ranking UEFA
@@ -75,7 +75,7 @@ category,id,lang,old,new
 832,380,es,la Supercopa de Europa,la Supercopa de la UEFA
 832,398,es,la primera división,
 832,469,es,la Copa Mundial de Clubes,
-1001,11,es,Liga Europea,Liga de Campeones
+1001,11,es,Liga Europea,UEFA
 1001,35,es,Liga Europea,Liga de Campeones
 1001,36,es,Liga Europea,Liga de Campeones
 30001,100,es,de Liga Europea,UEFA
@@ -87,3 +87,8 @@ category,id,lang,old,new
 30001,127,es,la Liga Europea,la clasificación UEFA
 30001,134,es,Supercopa de Europa,Supercopa de la UEFA
 30001,135,es,Supercopa de Europa,Supercopa de la UEFA
+1000,11,en,European League rankings,UEFA rankings
+1001,11,en,European League Ranking,UEFA Ranking
+832,473,de,Europameisterschaft,
+832,475,de,Weltmeisterschaft,
+832,476,de,Weltmeisterschaft,

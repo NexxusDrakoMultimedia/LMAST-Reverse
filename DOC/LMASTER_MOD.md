@@ -449,6 +449,13 @@ so do every other club (`AS Roma`, `AFC Ajax`, `AC Sparta Prague`,
 `CA Boca Juniors`). The Spanish clubs' names, licensed ones included,
 have no dots (`FC Barcelona`, `Real Madrid CF`, `RCD Espanyol`; the
 user's choice).
+The international competitions carry their governing body, as their
+official names do: UEFA Champions League, UEFA Cup, UEFA Intertoto Cup,
+UEFA Super Cup, UEFA EURO, FIFA World Cup and their qualifiers (user
+request, 2026-10-31). The Standings menu's "European League Ranking" is
+a ranking of clubs, not the competition, so it reads "UEFA Ranking"
+(English, Italian, Spanish; user report: it had read "Champions League
+Ranking").
 
 **The switch.** `SRC/realnames.csv` holds only the real names (no game
 text): 984 rows, keyed by category (3 teams, 10 stadiums, 9
