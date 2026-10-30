@@ -1062,8 +1062,21 @@ data `+0x8e84`, and reads that slot's player
 `0xe8554`). For carry in `0x117480` the player is picked from a team
 slot by the off-ball role, and which player that is isn't traced. Also
 not traced: what the press
-floats measure (they look like distances and a closing speed), and which
-tactics setting the team value at `+0x9764` is.
+floats measure (they look like distances and a closing speed).
+
+**The press cap is always 2 (confirmed).** The team value is byte 0 of
+a 4-byte record per side at match data `+0x8e84` + `0x8e0` + side × 4
+(`+0x9764`, `+0x9768`). `0x74380` fills it at the start of each match
+(called at `0x73c6c` and `0x73c74`) from match data `+0x976d`, and the
+match set-up always stores 2 there (`GAMEPRG.REL 0x26f0`, a constant).
+No other code writes byte 0. Both press readers then clamp the
+player's level with the EE's `pmaxw` and `pminw` (`0x9a48c`,
+`0x9a53c`) to 0–1. So in every match a press tendency of 2, 3 or 4
+acts as 1: only 0 against anything higher makes a difference, which
+in the second table (`0x26e440`, 5 and 5) is none at all. **Read from
+a mid-match save state** (England v England): both sides' records were
+`02 02 07 00`. Byte 1 is set from a menu during the match (`0x1e4afc`,
+values 4, 3, 2, 1 from `0x29ab00`) and isn't traced further.
 
 **Empirical**, over all 27,950 players: every item uses 0–4, mostly 1–3,
 and items 0–9 each have 2,000–3,600 players at 4. Averaged by main
@@ -1822,8 +1835,9 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
   (`+0x43`–`+0x46`); no reader was found.
 - Tendencies ([The tendencies](#the-tendencies)): whose value the carry
   helper `0x117480` reads,
-  what the press floats measure, which tactics setting the team value
-  at match data `+0x9764` is. No screen shows them (user report), so an
+  what the press floats measure, and what byte 1 of the per-side record
+  at match data `+0x9764` (set from a match menu) does. No screen shows
+  them (user report), so an
   edit can only be seen in how a player plays; reading the match's
   parameter copy over PINE during a match would at least confirm that an
   edited value reaches it.

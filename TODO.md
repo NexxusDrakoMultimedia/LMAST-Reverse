@@ -373,6 +373,11 @@ is built and tested, or set aside.
       test), the strength ratio above 1.19 getting column 0, and the
       training plan's rows out of step with the policy names
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [ ] Candidate: let the press tendency count in full. The match set-up
+      stores a constant 2 at match data `+0x976d` (`GAMEPRG.REL
+      0x26dc`/`0x26f0`), which caps every player's press level at 1; 3
+      or more would lift the cap to 4 (check what else reads the byte
+      first) ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))

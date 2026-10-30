@@ -140,6 +140,8 @@ evidence and how it was tested; the git history holds the rest.
       short corners ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#which-play-is-which))
 - [x] The path kinds' flag: a flagged path is drawn relative to a
       stored position, not the pitch ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md))
+- [x] The press tendency's team cap: always 2 at the start of a match,
+      so press levels 2–4 act as 1 ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
 
 ## 3. Write: a writer for every format a mod changes
 
