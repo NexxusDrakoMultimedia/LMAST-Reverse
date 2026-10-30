@@ -62,7 +62,8 @@ as a u32:
 build cost: the cost getters behind `SIMPRG.REL 0x154b78` read it (sites
 `+0x8`, office equipment `+0x8`, the other equipment and club houses
 `+0xc`, stadiums `+0x2c`). The game scales it by the business cycle and
-any sponsor discount before charging it ([`ECONOMY.md`](ECONOMY.md#build-costs)).
+any sponsor discount before charging it
+([`ECONOMY.md`](ECONOMY.md#build-costs)).
 It is 0 or −1 where the build time is 0 (what a club starts with), and
 it grows with the facility (club houses 0, 45,000,000 and 90,000,000;
 sites 0, 60,000,000 and 120,000,000; stadium equipment 900,000 to
@@ -126,7 +127,7 @@ the 494 fields of the 113 records on its own and checks that only that
 field's word changes and reads back. It passes on the PAL and Japanese
 packs.
 
-**Tested in PCSX2** (user report, `LMAST-test-facility.iso`: every
+**Tested in PCSX2** (Nexxus's report, `LMAST-test-facility.iso`: every
 build cost set to (record + 1) × 120,000, club houses 1 and 2 to 3 and
 4 turns, patched with `--copies`): in a career, the facility window
 showed £40,000 for club house 1 and for training ground 2 (record 1,

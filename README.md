@@ -4,7 +4,9 @@
 # Let's Make A Soccer Team Reverse Engineering Project
 
 Reverse-engineering notes and tools for the PAL PS2 release of
-**Let's Make a Soccer Team!** (`SLES_541.51`).
+**Let's Make a Soccer Team!** (`SLES_541.51`), and the mod built with
+them, the [LMASTER Mod](DOC/LMASTER_MOD.md): fixes for what the release
+cut or broke, real names, a hidden third tier and a harder economy.
 
 The repo has two halves:
 
@@ -19,20 +21,29 @@ was inferred from the data and checked against every file on the disc.
 
 No game data is included. You need your own copy of the disc.
 
-**Just want to play a mod?** See [`INSTALL.md`](INSTALL.md): checking
-your disc, applying a patch, and keeping your saves safe. **Want to
-make one, or edit a career?** See [`USAGE.md`](USAGE.md): how to use the
-mod editor and the save editor.
+Where to start:
 
-**Sister project:** [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
+| You want to | Read |
+|---|---|
+| play a mod someone made | [`INSTALL.md`](INSTALL.md): checking your disc, applying a patch, keeping your saves safe |
+| make a mod, or edit a career | [`USAGE.md`](USAGE.md): the mod editor and the save editor, tab by tab |
+| know what a file or system does | the [documentation index](#documentation-index) below |
+| help | [`CONTRIBUTING.md`](CONTRIBUTING.md), and "Next up" in [`TODO.md`](TODO.md) |
+
+**Sister project:**
+[VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
 reverse-engineers *Virtua Pro Football* (`SLES_541.53`), which runs on the
 same engine and whose edit players this game imports
 ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md)). Formats the two games
 share are documented here first, and VPF-Reverse builds on them.
 
-The long-term aim is GUI tools for editing the game's data to build mods.
-See [`GOALS.md`](GOALS.md) for the plan, [`TODO.md`](TODO.md) for the
-next tasks and [`DONE.md`](DONE.md) for what's finished.
+The long-term aim is GUI tools for editing the game's data to build
+mods, and most of that is here now: every file on the disc is
+documented, the data a starting-season mod changes has writers and
+editor tabs, and edited files go back on a disc that boots. See
+[`GOALS.md`](GOALS.md) for the plan and where each stage stands,
+[`TODO.md`](TODO.md) for the next tasks and [`DONE.md`](DONE.md) for
+what's finished.
 
 ## Disclaimer
 
@@ -161,7 +172,7 @@ disassemble as unrelated MIPS instructions.
 | [`tbb.py`](SRC/tbb.py) | `TBB1`/`TBL1` parameter tables; reads and writes (all 70 files round-trip) | [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md) |
 | [`packdata.py`](SRC/packdata.py) | `etc::PackData` inside KC@P entries (face packs, licensed kits, edit face, cut-ins); `names` lists each head's model and texture name | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md) |
 | [`pbdata.py`](SRC/pbdata.py) | player database `PBDATA_*.PAC`: 27,950 players, 3,000 managers, 1,000 scouts (bit-packed records); list, show, CSV; writes edits (`set`, CSV `import`; every record round-trips; `--sles` re-sorts the ranking and patches the executable for rank, position and nationality edits) | [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) |
-| [`initteam.py`](SRC/initteam.py) | starting divisions, last season's order and computer-team squads (`PLRRSRC_INITTEAMDATA.TBB`, `OTEAMMEMBER.TBB`), with club names; club records, nations and stadiums; edits squad slots (`set`), club records (`setteam`), nations (`setnation`) and stadiums (`setstadium`), and swaps two clubs' places in the starting divisions and last season's results (`swap`); all five files round-trip. Also `--mod real-grounds`' writer, from `SRC/grounds.csv` (each club's real 2006-07 ground and capacity) | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) |
+| [`initteam.py`](SRC/initteam.py) | starting divisions, last season's order and computer-team squads (`PLRRSRC_INITTEAMDATA.TBB`, `OTEAMMEMBER.TBB`), with club names; club records, nations and stadiums; edits squad slots (`set`), club records (`setteam`), nations (`setnation`) and stadiums (`setstadium`), and swaps two clubs' places in the starting divisions and last season's results (`swap`); all five files round-trip. Also `--mod real-grounds`' writer, from `SRC/grounds.csv` (each club's real 2005-06 ground and capacity) | [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md) |
 | [`teaminit.py`](SRC/teaminit.py) | the player's new club (`TEAM_INIT_DATA.TBB`) by league and team style: squad, youth team, staff, staff lists and the rival club, named from the player database; edits records (`set`), round-trips; decodes the game's salary, transfer-fee and loan-fee limits from the executable (`limits`) | [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) |
 | [`clubresult.py`](SRC/clubresult.py) | how a final place is reported (`CLUBRESULT.TBB`), one row per schedule: league, cup or not ranked, the third-place match, and the clubs a cup's round names depend on ("Champion" to "Defeated 1st Rnd"); edits fields (`set`), round-trips | [`CLUBRESULT_FORMAT.md`](DOC/CLUBRESULT_FORMAT.md) |
 | [`training.py`](SRC/training.py) | the training tables (`TRAINING_LIST.TBB`): what each of the 139 practice menus trains and how tiring it is, the facility and camp bonuses, match growth by position, ability groups, the coaching staff ability per ability, and decline with age; edits values (`set`), round-trips | [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md) |
@@ -317,14 +328,15 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
 - **Switches** (`--mod <name>,...`, or each as a flag of its own).
   The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) comes in three
   editions, `--mod lmaster-lite` (the fixes), `--mod lmaster-full` (the
-  fixes, the third tier, the restored injury lines, with the modded
+  fixes, the third tier, the restored injury lines, real names and
+  grounds, with the modded
   disc's own saves in `-F`) and `--mod lmaster-max` (full and the
-  difficulty groups, saves in `-M`; both keep VS data in `-V`), made of groups of
-  switches; `--mod` takes a name of any level
+  difficulty groups, saves in `-M`; both keep VS data in `-V`), made of
+  groups of switches; `--mod` takes a name of any level
   ([the switch levels](DOC/LMASTER_MOD.md#the-switch-levels)), and
   `python SRC/patch_disc.py switches` prints the tree with a line on
-  each switch. [`INSTALL.md`](INSTALL.md#4-building-a-patch) says what
-  each group does for a player. The test tools, in no edition, are
+  each switch; [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md) has the details
+  of each. The test tools, in no edition, are
   `skip-tutorial` (skips the opening playoffs; `--skip-nation` picks the
   league) and `launcher` (boots into the developers' debug menu).
 - `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
@@ -356,7 +368,8 @@ python SRC/save.py rename <card>/BESLES-54151-G003 <card> F  # to BESLES-54151-F
 python SRC/pmplayer.py show <card>/BESLES-54153FASYS00/pmplayer.bin
 ```
 
-See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) and [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md).
+See [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) and
+[`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md).
 
 ### Editor
 
@@ -453,7 +466,7 @@ saves.
 | Doc | Covers |
 |---|---|
 | [`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md) | the `DATA.CVM` container, how the ROFS key is derived from its header, regenerating `DATA.ISO` |
-| [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc (in-place patching, size changes inside a file's last sector, copies and rebuilt `PRELOAD` packs), sharing mods as xdelta patches, what's still needed for size changes |
+| [`REBUILD.md`](DOC/REBUILD.md) | putting edited files back on the disc (in-place patching, size changes, moved files, a grown disc, copies and rebuilt archives), sharing mods as xdelta patches, compressed images (CSO, ZSO, CHD) |
 | [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md) | `DAT/PRELOAD`: the bulk-load packs, the load lists and folder ids, and which copy of a file the game reads, and rebuilding a pack |
 | [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md) | the Japanese release (SLPM-66316): setting it up, how `gamever.py` finds addresses in it, and how its code and data differ from PAL |
 | [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) | the original ROFS key recovery in PCSX2 and `cvm_tool` workflow (historical) |
@@ -467,20 +480,20 @@ saves.
 | [`GAME_FLOW.md`](DOC/GAME_FLOW.md) | the root scripts as a flow chart: title routes, new game, loading, the season loop, year start, main menu, match day, game over, the event timings |
 | [`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md) | the scouting, transfer and loan procedures (code-only events), scout-list search criteria, squad and loan limits, the 13 regions |
 | [`INJURIES.md`](DOC/INJURIES.md) | how injuries are rolled (fatigue and age pick the kind), the value table, recovery, and the condition-line messages, two of which were cut |
-| [`ECONOMY.md`](DOC/ECONOMY.md) | the club's economy: what a build costs (record cost × business cycle × sponsor discount), the plan screen's limits, attendance, ticket, shop and season-ticket income, and the ad budget's effect on popularity |
+| [`ECONOMY.md`](DOC/ECONOMY.md) | the club's economy: what a build costs (record cost × business cycle × sponsor discount), the plan screen's limits, attendance, tickets and season tickets, popularity, sponsors and TV, merchandise, transfer fees, PR events, camps and tours, and the switches that change them |
 | [`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md) | the PR events in the executable: the offer, chance and success records field by field, the names in `MES.PAC`, when each event is offered, the cut Renew Mobile Site, and the Japanese differences |
-| [`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md) | where the code fixes the clubs at 441 (resident clubs 1–441, the non-resident 442–459): every site of 440–442, sorted into club loops, resident checks, buffers and the rest |
-| [`UID_LIMITS.md`](DOC/UID_LIMITS.md) | where the game fixes the schedules at 164: UID 164 as the default rules, the files that set the count, the code that names it, and the save pools the schedules share |
+| [`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md) | where the code fixes the clubs at 441 (resident clubs 1–441, the non-resident 442–459): every site of 440–442, sorted into club loops, resident checks, buffers and the rest, and how the third tier makes 442–459 full clubs |
+| [`UID_LIMITS.md`](DOC/UID_LIMITS.md) | where the game fixes the schedules at 164: UID 164 as the default rules, the files that set the count, the code that names it, the save pools the schedules share, and the third tier's leagues and seasons |
 | [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
 | [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md) | PCSX2's memory card image files: pages and their ECC, the superblock, the FAT, directory entries, and how `ps2mc.py` writes a card |
 | [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md) | Virtua Pro Football's edit players (`pmplayer.bin`): file layout, CRC, each record field and what the career import makes of it, and its play-style bug |
-| [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | plan for a separate save editor on top of `save.py`: pages, steps, and the decisions still open |
+| [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | the save editor's design on top of `save.py`: its pages, the steps it was built in, the decisions made, and what is tested in the game |
 
 ### Mods and patches
 
 | Doc | Covers |
 |---|---|
-| [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md) | the LMASTER Mod: cut or broken content to restore, with evidence and status |
+| [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md) | the LMASTER Mod: its editions, groups and switches, each fix and improvement with its evidence and test status, the third tier, the real names, the real grounds, and the candidates still to build |
 | [`SPONSOR_NEGOTIATION.md`](DOC/SPONSOR_NEGOTIATION.md) | the Sponsor screen's main sponsor negotiation, switched off in PAL by a stub check, and the `patch_disc.py --sponsor-negotiation` patch that restores it |
 | [`WIDESCREEN.md`](DOC/WIDESCREEN.md) | the PCSX2 16:9 patch (`PNACH/`): Hor+ 3D, and the UI fix that draws the HUD, menus and season-mode backdrops at 4:3 |
 
@@ -557,6 +570,10 @@ workflow for a new format or writer, and where each kind of record goes:
 facts and open questions in `DOC/`, tasks by stage in
 [`TODO.md`](TODO.md), finished items in [`DONE.md`](DONE.md). It is
 written for AI assistants but applies to anyone.
+
+The project is run by Nexxus (Pyra Drake, Nexxus Drako Multimedia), who
+directs the research and makes the in-game tests; the docs record those
+results as "Nexxus's report".
 
 ## License
 

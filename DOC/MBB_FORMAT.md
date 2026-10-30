@@ -72,7 +72,8 @@ All values are little-endian.
 ```
 
 Records aren't always in id order (9 categories aren't sorted), which is why
-the game sorts them after loading. Ids are unique within a file except in two categories: category 0 has three copies of
+the game sorts them after loading. Ids are unique within a file except
+in two categories: category 0 has three copies of
 ids 0–36, and category 570 has id 5051 twice, with different text. Because the
 game `bsearch`es a `qsort`ed list, which copy it finds is undefined. `mbb.py
 csv` keeps both copies and numbers them in its `copy` column.
@@ -173,7 +174,7 @@ Konzern event (`{var:1:131}, is there any truth in the rumour ...`).
 league in league order by their nationality (English 760–763, French,
 German, Italian, Spanish, Dutch 780–783), like the rival's stadium name,
 which is `league × 4 + rand(4)` ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md)).
-**Tested in PCSX2** (user report): with all 24 set to "The FRC" in the
+**Tested in PCSX2** (Nexxus's report): with all 24 set to "The FRC" in the
 editor's Text tab, the reporter in an England career said "The FRC, is
 there any truth ...". Which code picks one of the four isn't traced.
 
@@ -205,7 +206,8 @@ scene's posture**. The two packs don't line up:
 (`mendan` is 面談, "interview/meeting"; `tati` is 立ち, "standing".) The
 packs end with entries without the `A` prefix (`mendan_sit_001`,
 `mendan_sit_ang_001`, `mendan_sit_sad_001`; `mendan_tati_001`,
-`mendan_tati_ang_001`, `mendan_tati_sad_001`). No text uses them as reactions, and what they're for isn't
+`mendan_tati_ang_001`, `mendan_tati_sad_001`). No text uses them as
+reactions, and what they're for isn't
 traced.
 
 The talk managers in `SIMPRG.REL` pass the posture. Contract, dismiss,
@@ -353,7 +355,8 @@ archive uses that form.
 
 ### Size
 
-An edited file that still fits its **original size** keeps it. Shorter text is followed by
+An edited file that still fits its **original size** keeps it. Shorter
+text is followed by
 zero bytes up to the old size, and `data_size` still counts them. That is
 safe. `Initialize` (`0x30d1c8`) allocates `data_size − 3 × count` bytes
 for the strings at `0x30d1f4` (each record loses its 4-byte `{id, len}`
@@ -452,7 +455,7 @@ pack) was worked out with these tests; the rule is in
   10,240-byte slot. Every line showed in full, and the window wrapped the
   long lines on its own. So the game takes a grown file with a larger
   `data_size`.
-- **A file moved past its slot** (user report): on
+- **A file moved past its slot** (Nexxus's report): on
   `LMAST-test-camps-mes.iso`, `3_6.mbb` grown past its slot moved the
   later files and the executable's index was rewritten; the welcome mail,
   changed in `MES.PAC` only, showed "MOVED FILE TEST." in the new-game
@@ -460,7 +463,7 @@ pack) was worked out with these tests; the rule is in
 - **A rebuilt `PRELOAD` copy.** Two lengthened club names in a rebuilt
   `STATIONMES1.PAC` showed in VS mode
   ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)).
-- **Through the editor's Text tab** (user reports). Seven English club
+- **Through the editor's Text tab** (Nexxus's reports). Seven English club
   names in `3_1.mbb` (Arsenal 2011, Man Utd 2013, Man City 2008, Aston
   Villa 2019, Schalke 2095, Sheffield W 2041, Cardiff 2025), the file kept
   at its size, built with Build disc: Arsenal, Man Utd, Man City, Aston

@@ -82,7 +82,8 @@ includes the chunk's `+8`, all pointers, and the NOF0 entries.
 words. The loader adds the data address to each one. A tool can use the set
 to tell pointers from plain values.
 
-`NFN0` (**empirical**, 974 files): 8 zero bytes, then the NUL-padded original file
+`NFN0` (**empirical**, 974 files): 8 zero bytes, then the NUL-padded
+original file
 name (`M_player.sno`).
 
 ## `NNS_OBJECT` (`NSOB`, `NSNT`, `NSME`)
@@ -245,7 +246,8 @@ correctly.
 
 The vertex-list pointer type decides the kind (confirmed at `0x19969c`).
 If `type & 0xff0000` is set (`0x10000`), it's a **common vertices** list,
-described below. Otherwise the list is `{u32 type, u32 qwords, ptr data, ...}`, and `data` is a ready-made
+described below. Otherwise the list is `{u32 type, u32 qwords, ptr data,
+...}`, and `data` is a ready-made
 **VIF stream** that `PXPutRef` sends to VU1 unchanged. The stream uses only
 `STCYCL`, `STMASK`, `STROW`, `UNPACK`, `MSCNT` and `NOP`, and it always
 ends exactly at `qwords`.
@@ -391,7 +393,8 @@ also 104 `NSTL`-only files in archives.
 
 Layout confirmed by `nnGetNodeName`: `{u32 type, u32 count, ptr entries}`,
 with 8-byte entries `{u32 node id, ptr name}`. Type 0 (sorted by id, binary
-search) in 173 files and type 1 (linear) in 5. For example, `CSE/PITCH.SNA` names `away_l`, `away_r`, `home_l`, ...
+search) in 173 files and type 1 (linear) in 5. For example,
+`CSE/PITCH.SNA` names `away_l`, `away_r`, `home_l`, ...
 
 ## Motions (`NSMO`)
 

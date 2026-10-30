@@ -142,7 +142,7 @@ A national-team record repeats a club player under the same name, as a
 separate record: Gianluigi Buffon is 3,175 at Juventus and 26,110 (shirt
 1) in Italy's block, John Terry 101 at Chelsea and 26,046 (shirt 6) in
 England's. The two can differ (that Terry's height, abilities and age
-aren't the club Terry's). The user identified these as national-team
+aren't the club Terry's). Nexxus identified these as national-team
 players.
 
 **Tested in PCSX2:** with record 26,046 (England's Terry) renamed
@@ -160,8 +160,10 @@ from `PwkCallbackCommand_PromotionEnd`) isn't traced.
 
 `char[19]` name, then (bits × count at offset): 8 `+0x14` (nationality,
 *empirical*: same range and position as the players'), 5 `+0x18` (rank),
-3 `+0x1c` (job, see below), 16 `+0x20` (face), 6 `+0x22` (age, see below), 16 `+0x24` (required status, **confirmed**
-table lookup), 4 ×4 `+0x26` (appeartype), 2 ×5 `+0x2a` (comptype), 3 ×4 `+0x2f`, 2 `+0x33`,
+3 `+0x1c` (job, see below), 16 `+0x20` (face), 6 `+0x22` (age, see
+below), 16 `+0x24` (required status, **confirmed**
+table lookup), 4 ×4 `+0x26` (appeartype), 2 ×5 `+0x2a` (comptype), 3 ×4
+`+0x2f`, 2 `+0x33`,
 6 `+0x34`, 3 ×8 `+0x35`, 8 ×3 `+0x3d`, 3 ×7 `+0x40`, 5 ×5 `+0x47`,
 signed 9 ×2 `+0x4c`, signed 9 ×4 `+0x54`, 1 ×2 `+0x64`, and 48 abilities
 (5 bits, mapped to 38–99) at `+0x66`. The 6 bits left over are zero.
@@ -171,7 +173,8 @@ The fields from `+0x2f` on are named in
 ### Scouts (71 bytes, 565 bits used)
 
 `char[19]` name, then 8 `+0x14` (nationality, *empirical*), 8 `+0x18`
-(age, see below), 5 `+0x1c` (rank), 16 `+0x20` (face), 16 `+0x22` (required status), 4 ×4 `+0x24` (appeartype), 1 `+0x28`,
+(age, see below), 5 `+0x1c` (rank), 16 `+0x20` (face), 16 `+0x22`
+(required status), 4 ×4 `+0x24` (appeartype), 1 `+0x28`,
 and 49 × 7 bits at `+0x29`. The first 4 are special searches and the last
 45 are abilities, clamped to 31 and mapped to 38–99. The 3 bits left over
 are zero. See
@@ -245,7 +248,8 @@ which pattern is which letter isn't traced. Nothing in the data or the
 code tells the five apart. No call to the three functions that take an
 ability number (`plPinfo_Abil2PSM`, `pwkGUtl_GetGrowCoe`,
 `pwkGUtl_AddExp`) passes 59–63 as a constant; the match doesn't copy
-them ([The match engine's player parameters](#the-match-engines-player-parameters));
+them ([The match engine's player
+parameters](#the-match-engines-player-parameters));
 and every practice grows all five equally. Nor does any player code in
 the executable load their slots (`PlPinfo +0x16c`, `+0x172`, `+0x178`,
 `+0x17e`, `+0x184`; scan, 2026-10-30). Their only reader found is
@@ -1051,7 +1055,7 @@ which is then added to that kind of play's score, or multiplies it. Level
 
 The item names are the ones `pbdata.py` uses. They come from the class
 names, not from the game's text: no screen in the game shows the
-tendencies (user report). "RWTB" is probably "run with the ball".
+tendencies (Nexxus's report). "RWTB" is probably "run with the ball".
 The classes for dribble, shoot, clear, press and goalkeeping act for one
 player, the one on the ball or marking it. The pass intentions (feed,
 side change, back, killer and the liner cross) and the one-two read the
@@ -1181,7 +1185,7 @@ first: Virtua Pro Football's English names and values. `pbdata.py` uses
 VPF's English name where VPF has the same parameter.
 
 Virtua Pro Football (VPF) runs on the same engine, and its Player Edit
-screen names its parameters on 8 pages. The user supplied screenshots of
+screen names its parameters on 8 pages. Nexxus supplied screenshots of
 that screen for four players in this database: Maik Taylor (player 0, a
 goalkeeper), Wayne Rooney (258, a forward), David Beckham (4408, a right
 midfielder), and Lucio (2102, a defender; Physical page only). VPF's pages
@@ -1314,7 +1318,8 @@ Spikes item, and there is only one wristband and one boots byte.
 **Empirical:** across all 27,950 players the values stay within the
 clamps (`pbdata.py info` prints the ranges and marks a value above them
 with `!!`). Sleeves are always 0. Boots value 1 is held by several
-goalkeepers (Dudek, Kiely, Hoult, Howarth); the other values look random, with no link to nationality or position.
+goalkeepers (Dudek, Kiely, Hoult, Howarth); the other values look
+random, with no link to nationality or position.
 
 **Also read by the dissatisfaction code.** `pwkDissatis_PlayerResign`
 (`0x239a30`) and `pwkDissatis_StaffResign` (`0x23a018`) use `+0x58` and
@@ -1696,7 +1701,7 @@ at 25,585 (row 15, column 12). The readers:
   `0x63f7`, **the game's rank and main position come from the place**,
   not from `+0x18`/`+0x1c`.
 
-User report: the game never shows a player's rank (no number, class or
+Nexxus's report: the game never shows a player's rank (no number, class or
 stars), so an edit to it can only be seen through what it controls: the
 Transfer List bands
 ([`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md)), national
@@ -1752,8 +1757,8 @@ squad is picked from the club players when it is called up:
 | `0x2272f8`, `0x227200` | `_sortBaseListFromNationalTeamPoint`, `_getNationalTeamPoint` | sort the pool by a national-team score before the squad is kept |
 
 `plTeam_CreateNationTeam` takes only players whose current team (bits 22
-and up of the run-time core info) is the user's club (1), another club
-(2–459) or team 465. From the user's club it takes at most 8, and none
+and up of the run-time core info) is your club (1), another club
+(2–459) or team 465. From your club it takes at most 8, and none
 with flag `0x300` in `PlPinfo +0x20c`. The search stops at `0x63f7`, so
 the fixed national records (26,041+) are never called up.
 
@@ -1761,7 +1766,7 @@ So to change who plays for a country in a career, edit the club players
 (their nationality and their place in the ranking, see above). The fixed
 blocks only change VS mode.
 
-**User report (PCSX2):** with record 26,046 renamed `NT.Terry.VS`, the
+**Nexxus's report (PCSX2):** with record 26,046 renamed `NT.Terry.VS`, the
 career national squads list each player's club, so they are drawn only
 from club players. The renamed fixed record doesn't appear, as the
 search limit above says.
@@ -1843,7 +1848,7 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
   helper `0x117480` reads,
   what the press floats measure, and what byte 1 of the per-side record
   at match data `+0x9764` (set from a match menu) does. No screen shows
-  them (user report), so an
+  them (Nexxus's report), so an
   edit can only be seen in how a player plays; reading the match's
   parameter copy over PINE during a match would at least confirm that an
   edited value reaches it.

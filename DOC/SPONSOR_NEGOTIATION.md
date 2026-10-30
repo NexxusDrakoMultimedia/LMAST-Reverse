@@ -128,8 +128,9 @@ want to negotiate with Africmap Airways." (message 120). Yes opened the
 money." (121). Before the patch, the same pick goes straight to the
 contract question. A bid of £1,500,000 (11% over the fee) was accepted,
 and the screen went on to ask whether to sign Africmap Airways as main
-sponsor (state 0x17; user report). The signed contract pays the
-negotiated fee, not the listed one (user report). After a reload, a higher bid was
+sponsor (state 0x17; Nexxus's report). The signed contract pays the
+negotiated fee, not the listed one (Nexxus's report). After a reload, a
+higher bid was
 refused: a "Broken Down" banner and "Unfortunately negotiations have
 broken down. Africmap Airways cannot do a deal for the season now."
 (message 124). The refused sponsors left the list. With only Yogurens

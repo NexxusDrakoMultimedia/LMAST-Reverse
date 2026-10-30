@@ -9,13 +9,18 @@ conventions for docs and tools are in [`AGENTS.md`](AGENTS.md); it is
 written for AI assistants but applies to everyone. Everyone taking part
 follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
+The project is maintained by Nexxus (Pyra Drake), who reviews every
+change and makes most of the in-game tests. Questions are welcome on the
+[LMAST/SFCC English Fan Discord](https://discord.gg/7DNrGye9TZ) or in an
+issue.
+
 ## Ways to help
 
 You don't need to write code to help.
 
 | Kind | How |
 |---|---|
-| Test something in the game | pick a check from section 7 of [`TODO.md`](TODO.md); each names the disc or edit to build. Report what you changed and what you saw on screen |
+| Test something in the game | pick a check from section 7 of [`TODO.md`](TODO.md); each names the disc or edit to build. Report what you changed, what you saw on screen and the date. A screenshot or a PCSX2 save state helps |
 | Report a bug | open an [issue](https://github.com/NexxusDrakoMultimedia/LMAST-Reverse/issues) (below) |
 | Share what you know about the game | gameplay knowledge, screen names, what a menu does, translations of Japanese text. Open an issue or post on the [LMAST/SFCC English Fan Discord](https://discord.gg/7DNrGye9TZ) |
 | Improve the docs | fix an error, or answer a question from a doc's `## Still unknown` section |
@@ -85,8 +90,9 @@ python SRC/regress.py bless
    doc index, the doc's open questions, and `TODO.md` and `DONE.md`
    ([Where things are recorded](AGENTS.md#where-things-are-recorded)).
    A change to the mod editor or the save editor updates
-   [`USAGE.md`](USAGE.md); a new `--mod` switch updates
-   [`INSTALL.md`](INSTALL.md).
+   [`USAGE.md`](USAGE.md); a new `--mod` edition or group updates
+   [`INSTALL.md`](INSTALL.md), and a new switch
+   [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md).
 6. Open a pull request against `master`.
 
 ## Style
@@ -103,6 +109,10 @@ The details are in [`AGENTS.md`](AGENTS.md). The main points:
 - `info` marks every problem with `!!` and nothing else.
 - Docs use short sentences and tables, hex addresses with `0x`, exact
   counts from the full data set, and commands in `bash` code blocks.
+  They say what is true now, keep each fact in one doc and link to it
+  from the others, and use no em dashes.
+- A result from the game names who saw it and when, for example
+  "Tested in PCSX2 (Nexxus's report, 2026-10-31, `LMAST-test-season.iso`)".
 
 ## Commits and pull requests
 

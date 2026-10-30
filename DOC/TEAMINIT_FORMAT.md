@@ -161,7 +161,8 @@ at `0x5eb068 + kind × 0x30 + currency × 0xc`, in units of 100
 `0x24a2f0`) fills it from constants in its code, and the constructor
 (`0x246b08`) rounds min and max up to the step. Kind 1 is the transfer
 fees, capped at 7,200,000 (£120M), which `patch_disc.py --mod
-transfer-fees` raises ([`ECONOMY.md`](ECONOMY.md#transfer-fees)). The currency is the
+transfer-fees` raises ([`ECONOMY.md`](ECONOMY.md#transfer-fees)). The
+currency is the
 money option (`pwkOpt_GetMoney`, `0x24a4c8`); it starts as 2 for
 language 0 and as 1 otherwise (`0x24a360`). Its values index the money
 rates in [`SAVE_FORMAT.md`](SAVE_FORMAT.md): 0 the stored unit, 1 the
@@ -185,13 +186,14 @@ Kinds 1 and 2 are named from their callers (`pwkMoney_CalcMove*` and
 condition: `pwkTeam_SetSalary` (`0x266350`) stores a `PlPCont_Cond` at
 `PlPinfo +0x220` and keeps its amount at `+0x224` within kind 3
 (`0x2663bc`); `pwkTeam_ArrivePlayer` (`0x265450`) does the same. Which
-condition it is (a bonus?) isn't traced. The Japanese executable has the same table (at `0x5e8c68`,
+condition it is (a bonus?) isn't traced. The Japanese executable has the
+same table (at `0x5e8c68`,
 filled by `0x24a5a8`).
 
 So in pounds a salary from this file shows as the value rounded up to a
 multiple of 60,000, ÷ 6, at least £10,000 and at most £12,000,000. This
 explains the tests below: Dale's 450,000 became 480,000, £80,000, and
-the user's report that the highest salary is £12 million. The editor's
+Nexxus's report that the highest salary is £12 million. The editor's
 New club tab offers 60,000–72,000,000 and shows each salary in pounds
 as the game will show it.
 
@@ -220,7 +222,7 @@ rival's manager is always record 0's (manager 898), and records 1–3
 (1,970, 1,247, 1,246) are never read. The Japanese build has the same
 load (`0x25e8e8`). `patch_disc.py --mod rival-manager` changes it to
 `lw $s3, 4($v1)`, the matching record's manager
-([`LMASTER_MOD.md`](LMASTER_MOD.md)). Tested in PCSX2 (user report):
+([`LMASTER_MOD.md`](LMASTER_MOD.md)). Tested in PCSX2 (Nexxus's report):
 with it, a Teamwork career's rival showed a different policy area (the
 big blue area on its Information screen) from the unpatched game. The
 manager's name isn't shown anywhere in the game.
@@ -280,7 +282,7 @@ game shows (not one year more, unlike `OTEAMMEMBER`'s squads, which a
 new game shows a year older). The captain is chosen by
 `plTeam_GetCaptainFitPoint`, not by record order.
 
-**From playing the game (user report).** The team style sets the
+**From playing the game (Nexxus's report).** The team style sets the
 starting players, and the rival club gets the opposite style. This
 matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
 
@@ -314,7 +316,8 @@ matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
 
 - Whether the candidate lists' "List criteria" counts down from the
   entry's last byte.
-- Which contract condition the money of price kind 3 is (`PlPinfo +0x220`, `+0x224`).
+- Which contract condition the money of price kind 3 is (`PlPinfo
+  +0x220`, `+0x224`).
 
 ## Checking the claims
 

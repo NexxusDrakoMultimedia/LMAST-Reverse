@@ -843,7 +843,7 @@ PLAN_FIELDS = (("ad budget", 0x0), ("ticket price", 0x4), ("season-ticket rate",
                ("season-ticket price", 0xc), ("season tickets", 0x10))
 PLAN_OTHER, PLAN_OTHER_IDS, PLAN_OTHERS = 0x18, 0x38, 8
 PLAN_MONEY = ("ad budget", "ticket price", "season-ticket price")   # stored unit
-# The plan screen's limits (user report: £0-5,000,000 in steps of £10,000,
+# The plan screen's limits (Nexxus's report: £0-5,000,000 in steps of £10,000,
 # tickets £10-50, rate 50-150 in steps of 10, season tickets in steps of
 # 100 up to 80% of capacity; euros are 1.5 times the pound values). In the
 # stored unit the ranges are the same in either currency; the money steps

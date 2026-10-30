@@ -40,7 +40,8 @@ BCB3, DTPK) are **empirical**, checked against every file on the disc.
 
 ## `SOUNDDAT.PAC`
 
-There is no directory in the file. The `TBB1` header at offset 0 belongs to the first
+There is no directory in the file. The `TBB1` header at offset 0 belongs
+to the first
 piece (`ROUTEBOX_EU.BCR`), not to the pack. The offsets are hardcoded in
 `GAMEPRG.REL` (see [How the game indexes it](#how-the-game-indexes-it)).
 
@@ -139,7 +140,8 @@ A TBB1 container whose tables are `BCR2` rather than `TBL1`:
 `ROUTEBOX_EU` has 106 records and `ROUTEBOX_KAN` has 11. After the
 TBB1's end-of-data field there is a **0x350-byte trailer**. It starts with
 the magic `RBD0`, then `u32 0x10` and a size (`0x340` in EU, `0x334` in KAN),
-and continues with u16 values ending in `ff 00`. It differs between the two files and its purpose is unknown.
+and continues with u16 values ending in `ff 00`. It differs between the
+two files and its purpose is unknown.
 
 #### `.BCB`: vbox table
 

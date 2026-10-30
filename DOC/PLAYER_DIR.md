@@ -116,7 +116,8 @@ PRSH-compressed, and expands to a 5-block `PackData`.
 `fc_euro_facepack_00.bin`. That is the player database's face number,
 record `+0x32` in the `PlPbase` copy at `PlPinfo +0x198`
 ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)). The value `0xFFFF` there means
-the face is built in the face editor instead. `LoadRequestEvent` (`0x103770`) loads from
+the face is built in the face editor instead. `LoadRequestEvent`
+(`0x103770`) loads from
 `fc_euro_facepack_01.bin`.
 
 | Block | Type | Contents | Used by `l_realize_facepack` as |
@@ -132,7 +133,8 @@ All 21,171 + 215 entries have exactly this shape: 5 blocks, types
 entries of pack 00 and 22 of pack 01. The first four bytes of block 4 are
 small values such as `00 03 02 02`, or `ff ff ff ff`. The `ff ff ff ff`
 entries are exactly the ones without hair, in both packs (**empirical**,
-all 891 + 22), so those four bytes probably describe the hair. The meaning of the 0x18-byte header is
+all 891 + 22), so those four bytes probably describe the hair. The
+meaning of the 0x18-byte header is
 unknown. It also holds three u32s that are usually 1000 (`0x3e8`).
 
 Pack 00's head-texture names fall into groups:
@@ -155,7 +157,7 @@ the texture `base_face_sc`). The 3 other entries, 212–214, are the
 untextured `HUMAN_head_9000/9500/9600.snj` and have no `.svr` name in the
 model. The last entry (214) has no hair and a two-texture `PVMH`
 (`camskin`, `came_hair`). Put in entry 0's place, it showed in SATO TEST
-as one of the rival's women companions (user report), so 214 is probably
+as one of the rival's women companions (Nexxus's report), so 214 is probably
 that character's head. `python SRC/packdata.py names` lists every
 entry's model and texture name.
 
@@ -208,7 +210,8 @@ case (`NED_280`).
 `SRC/packdata.py` parses `PackData` in every KC@P pack it finds. Its
 `info` check covers the layout and the packing rule. The same check also
 passes on `GAME/CUTINPACK.BIN`, whose 277 entries are `PackData` with block
-types 19–24 ([`GAME_DIR.md`](GAME_DIR.md#directory-overview)). `FC_EURO_FACEPACK_00` is sampled (494 of 21,171 entries)
+types 19–24 ([`GAME_DIR.md`](GAME_DIR.md#directory-overview)).
+`FC_EURO_FACEPACK_00` is sampled (494 of 21,171 entries)
 unless `--all` is given. The full scan used for the counts above took
 several minutes.
 

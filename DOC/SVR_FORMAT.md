@@ -29,7 +29,8 @@ packs ([`CSE_FORMAT.md`](CSE_FORMAT.md)).
 | `0x1adb10` | `nvPrepareSVRTexImagePacket` | CLUT upload, then each level: if `w >= minW && h >= minH` (per-PSM table at `0x527620`) the level is sent **as PSMCT32** of `w>>shW × h>>shH` (i.e. it is stored swizzled), else in its native PSM; levels advance by `(w*h*bpp/8 + 15) & ~15` |
 | `0x167a00` | `nnuSvmGetSvrCount` | `PVMH+0x0A` = texture count |
 
-Table at `0x527620` (8-byte entries indexed by PSM: `u8 bpp, u8 shW, u8 shH, pad, u16 minW, u16 minH`):
+Table at `0x527620` (8-byte entries indexed by PSM: `u8 bpp, u8 shW, u8
+shH, pad, u16 minW, u16 minH`):
 
 | PSM | bpp | upload as CT32 | swizzled when |
 |---|---|---|---|

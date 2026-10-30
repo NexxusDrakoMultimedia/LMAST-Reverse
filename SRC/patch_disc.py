@@ -1180,7 +1180,7 @@ def plan_grow_disc(f, img, cvm_end):
     in the ISO9660 PVD (+80/+84), the UDF Partition Descriptors of the
     main and reserve volume descriptor sequences (+192, the partition runs
     to the anchor), the Logical Volume Integrity Descriptor's size table,
-    and the end anchor's own position. The user reports that an image with
+    and the end anchor's own position. Nexxus reports that an image with
     extra files added, so bigger than the original, still ran."""
     new_disc = -(-(cvm_end + 1) // DVD_BLOCK) * DVD_BLOCK
     if new_disc > DVD5_SECTORS:
@@ -1616,7 +1616,7 @@ def plan_sponsor_negotiation(f, img):
 # Career saves take F on a disc without the difficulty groups (LMASTER
 # full) and M on one with any of their switches (LMASTER max), since a
 # career from one economy isn't one to load in the other; VS data takes V
-# on both, as a VS team is the same either way (the user's choice,
+# on both, as a VS team is the same either way (Nexxus's choice,
 # 2026-10-27; earlier builds used M and D).
 SLES_FILE = DISC + "SLES_541.51"
 SAVE_LETTERS = {"full": "F", "max": "M"}
@@ -1716,7 +1716,7 @@ def plan_rival_manager(f, img):
 
 # The World National Cup's knockout (UID 122) plays turns 92-95, and 95 is
 # the last turn of the year: the season ends on the turn of the final, and
-# its results can't be viewed in the Competition menu (user report).
+# its results can't be viewed in the Competition menu (Nexxus's report).
 # Its groups (114-121) and the Euro National Cup's (98-101, knockout 102)
 # move back with it: groups 88-90, knockouts 91-94 and 91-93. The game
 # loads the system pack from PRELOAD/STATIONFILE.PAC as well, so both are
@@ -2384,7 +2384,7 @@ def plan_facility_tiers(f, img, adopted=()):
 
 
 # special-stadium: the biggest stadium a club can build holds 100,000, not
-# 110,000 (LMASTER full and max, the user's choice, 2026-10-30;
+# 110,000 (LMASTER full and max, Nexxus's choice, 2026-10-30;
 # DOC/LMASTER_MOD.md#stadiums). plrcommon.special_stadium sets its three
 # levels; the match's stadium ids for it, STADIUM_DATA 96-101 (level 4 of
 # CONV_INFO_BUILD), go to 100 too, since InitStadium (SLES 0x213780) divides
@@ -2470,7 +2470,7 @@ def plan_special_stadium(f, img, adopted=()):
 
 # sponsor-boards: every stadium's 12 advert boards are drawn afresh from
 # all 205 sponsor logos, a fixed shuffle per stadium (LMASTER full and max,
-# the user's request, 2026-10-30; DOC/LMASTER_MOD.md#stadiums). A computer
+# Nexxus's request, 2026-10-30; DOC/LMASTER_MOD.md#stadiums). A computer
 # club's ground shows its BUILD_STADIUM row's boards (InitStadium leaves
 # the match's own empty), and the retail rows use 119 of the logos.
 def plan_sponsor_boards(f, img, adopted=()):
@@ -2502,7 +2502,7 @@ def target_sponsor_boards(file, data, old):
 
 # real-grounds: each computer club plays at a ground of its real 2005-06
 # capacity, rounded to 5,000, the clubs of one size spread over the stadium
-# ids of that size (LMASTER full and max, the user's request, 2026-10-30;
+# ids of that size (LMASTER full and max, Nexxus's request, 2026-10-30;
 # DOC/LMASTER_MOD.md#stadiums). Its look follows its size more closely than
 # the ladder's models do: initteam.real_grounds_build gives ids 102-118 the
 # look of the right grounds
@@ -2931,7 +2931,7 @@ def plan_injury_lines(f, img, adopted=()):
 # upkeep (GetMaintenanceExpence 0x233648), so doubling the 13 costs
 # doubles all three. The game reads the pack's PRELOAD/SIMLOCALMEM0-6.PAC
 # copies too. What a level does (the popularity factor at 0x268e18) stays,
-# so each pound spent on a base buys half as much (the user's choice,
+# so each pound spent on a base buys half as much (Nexxus's choice,
 # 2026-10-26: like dearer-ads, not a stronger level).
 SIM_FILE, SIM_ENTRY = "PARAM/PLRESOURCESIM.PAC", "plresourcesim.pac"
 BRANCH_COST_X = 2
@@ -2994,7 +2994,7 @@ def plan_transfer_fees(f, img):
 
 
 # fee-tiers: transfer fees by player rank, on top of transfer-fees'
-# doubling (the user's choice, 2026-10-26). The base fee (0x247130) is
+# doubling (Nexxus's choice, 2026-10-26). The base fee (0x247130) is
 # 1,350,000.0 x A[player rank][club-rank band] x (B[affiliation] +
 # C[growth row][age]) x D[contract] x E[business cycle]; A, 16 rows of 6
 # floats at 0x398478 (bands by club rank up to 5, 11, 17, 23, 29, 31 at
@@ -3031,7 +3031,7 @@ def plan_fee_tiers(f, img):
 
 
 # slow-reputation: club status (the reputation behind the club rank,
-# status >> 11) rises half as fast; losses stay (the user's choice,
+# status >> 11) rises half as fast; losses stay (Nexxus's choice,
 # 2026-10-26). It rises from three places, all in SLES_541.51:
 # - after each match (0x26ddd8): 4 x ((opponent's rank - yours) / 2 + 16,
 #   or - 16 for a loss) x a competition factor x a result factor x a
@@ -3085,7 +3085,7 @@ def plan_slow_reputation(f, img):
 
 
 # third-tier, the game over: finishing in the second division's bottom ends the
-# game after one season, not two running (the user's third-tier idea,
+# game after one season, not two running (Nexxus's third-tier idea,
 # DOC/LMASTER_MOD.md). SIMPRG.REL 0x15d958 (from 2007, with your club in
 # the second division) reads your final rank in the latest season ($s1)
 # and the one before ($s0) and returns 1 when both are past the
@@ -3626,17 +3626,17 @@ TIER_UID_FILES = ("PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/SCHEDULE_COMPETITION.PAC",
                   "PARAM/CLUBRESULT.TBB")
 # The lower cups (the English League Cup, the other nations' Club Cups,
 # England to the Netherlands) take every club of their tier's record (the
-# user's choice): a knockout grown by 3 clubs, 5 in your nation's version,
+# Nexxus's choice): a knockout grown by 3 clubs, 5 in your nation's version,
 # its qualifying round as it was. The bracket is seeded with byes in the
-# first round only (schedule.knockout_bracket_seeded; the user's choice,
+# first round only (schedule.knockout_bracket_seeded; Nexxus's choice,
 # 2026-10-27): the top slots go straight to the second round. Every lower cup starts on Dec w1 midweek
-# (turn 40, the user's choice), the cups' start turn and the main cup's
+# (turn 40, Nexxus's choice), the cups' start turn and the main cup's
 # first round, whose clubs (the qualifying winners and the first
 # division) a lower cup doesn't have, as on the turns they already share.
 # Its other rounds stay on the disc's midweeks for that many rounds (44,
 # 50, 54, 76: the first of them moves to 40), and a 5th round (England's
 # own version, 17 clubs) keeps 44. Never a European or national-team day
-# (the user's rule).
+# (Nexxus's rule).
 TIER_CUP_COMPE = (5, 10, 15, 21, 26, 32)
 TIER_CUP_TURNS = {2: (40, 76), 3: (40, 54, 76), 4: (40, 50, 54, 76), 5: (40, 44, 50, 54, 76)}
 TIER_CAVE = CAVE + 0x280                    # past the save wrappers and their variables
@@ -4172,7 +4172,7 @@ def target_tier_text(file, data):
 # Spain (487:1204) and the Netherlands (1205) names the wrong league in
 # some languages, as the Italian texts show (Spain's 23rd, the
 # Netherlands' 21st); the Spanish intro (487:1100) says 216 clubs for 26;
-# and team 435's name is "AL-Hyde" for "Al-Hyde" (user report; categories
+# and team 435's name is "AL-Hyde" for "Al-Hyde" (Nexxus's report; categories
 # 3, 4 and 100003). Category 487 has no PRELOAD copy and may grow inside
 # its slot; the name keeps its size, so its STATIONMES copies take the
 # same bytes. The third tier rewrites point 2 again, and its "216 equipos"
@@ -4297,14 +4297,14 @@ def plan_real_names(f, img, adopted=()):
 
 
 # own-stadium: my club's stadium takes my name, "<name> Stadium", in place
-# of the city's (LMASTER full and max, the user's choice, 2026-10-30).
+# of the city's (LMASTER full and max, Nexxus's choice, 2026-10-30).
 # Msg::VarBuf_MakeMyStadium (SLES 0x11eaf8) builds the stadium name,
 # variable slot 9, which category 10's message 11001 shows, as
 # snprintf("%s %s", slot 3, the word "Stadium"); slot 3 is the city. Slot
 # 0 is the name typed at the start (SetOwnerName_Keyboard). The slot is
 # the argument of GetVariableBuffer at 0x11eafc. A new career builds the
 # stadium name before the name is typed (slot 0 blank: "  Stadium", read
-# over PINE, user report 2026-10-31), so SetOwnerName_Keyboard (0x11ec58)
+# over PINE, Nexxus's report 2026-10-31), so SetOwnerName_Keyboard (0x11ec58)
 # ends by jumping to VarBuf_MakeMyStadium instead of returning: $ra is
 # already restored and the delay slot pops the frame, so the stadium's
 # own return goes back to the caller. A load rebuilds it from the saved
@@ -4733,7 +4733,7 @@ GROUPS = (       # (name, title, switches)
 )
 # LMASTER lite is the fixes. LMASTER full adds the leagues, the restored
 # content and its own saves; LMASTER max adds the difficulty groups to it
-# (the user's split, 2026-10-27). Full and max save careers under their
+# (Nexxus's split, 2026-10-27). Full and max save careers under their
 # own letters (SAVE_LETTERS), so neither mixes with the retail game's.
 LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes", "text-fixes")
 FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "saves")

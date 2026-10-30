@@ -38,7 +38,8 @@ pack's header.
 
 53 of the 163 files are named in the code. Everything that uses them is a
 test or debug feature (**confirmed** where an address is given; the
-launcher results are from [`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)).
+launcher results are from
+[`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)).
 
 | Files | Read by | Notes |
 |---|---|---|

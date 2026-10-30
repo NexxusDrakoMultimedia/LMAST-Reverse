@@ -70,7 +70,7 @@ The city record:
 - `plCity_GetListProbability` copies the city's month's row of table 4.
   Below 4 degrees it moves the third chance to the fourth and sets the
   third to 0 (`0x21fcd4`): rain turns to snow. **From playing the game
-  (user report):** the game's four weathers are sunny, overcast, rain
+  (Nexxus's report):** the game's four weathers are sunny, overcast, rain
   and snow, which fits the chances in that order.
 - State 48 counts the cities of three nations (table at `0x533d70`), and
   state 71 is special-cased too (`0x21f4c0`).
@@ -112,7 +112,7 @@ In English: 0 Western Europe, 1 Central Europe, 2 Eastern Europe, 3
 Northern Europe, 4 South America A, 5 South America B, 6 North Africa, 7
 West Africa, 8 East and South Africa, 9 North Central America,
 Caribbean, 10 East Asia, 11 South Asia and Middle East, 12 Oceania.
-**User report:** the game uses this one numbering for every region list
+**Nexxus's report:** the game uses this one numbering for every region list
 (tours, camps, scouting, popularity). `tour.py` and the Tours tab use
 these names.
 `patch_disc.py --mod overseas-bases` (in `--mod balance` and
@@ -121,7 +121,7 @@ these names.
 double too. What a level does stays as in retail (the popularity factor,
 the scouting delays in [`EVS_PROCEDURES.md`](EVS_PROCEDURES.md),
 `pwkRental_OverseasBranchCheck`), so every pound spent on a base buys
-half as much, as with `dearer-ads` (the user's choice, 2026-10-26; an
+half as much, as with `dearer-ads` (Nexxus's choice, 2026-10-26; an
 earlier version also made each level stronger). Not checked in the
 game.
 
@@ -240,7 +240,7 @@ stops at the scout's first group, so a scout listed twice would lose
 his second group. With scout −1 it searches every group, which is how
 `plPinfo_CheckExclusive` asks whether any scout has the player.
 
-Exclusive players weren't known to the user from playing, so nothing on
+Exclusive players weren't known to Nexxus from playing, so nothing on
 screen has been matched to these lists yet.
 
 **Empirical:** entry 11 has 153 scouts and 486 players, entry 12 has 132
@@ -258,7 +258,7 @@ ids and return the level of the first group that holds both. The
 **Empirical:** entry 13 has 189 groups (159 pairs, 20 trios, 7 of four, 3
 of five) with 56 managers among the members, for example Owen, Gerrard
 and Carragher. Entry 14 has 63 pairs, with 29 managers. How the level
-changes a match or a player hasn't been traced. **User report:** the
+changes a match or a player hasn't been traced. **Nexxus's report:** the
 combinations are hidden: no screen shows them.
 
 ## Writing the streams
@@ -326,7 +326,7 @@ new career J.Galvan was gone from the in-game Transfer List, so the
 game's free agents come from this entry. Buffon didn't appear there
 either. `pwkDb_addFreePlayer` (`0x235f08`) refuses only edit players
 (`plPinfo_IsEdit`: id 31,950 and up), so Buffon should be in the pool.
-The screen shows only part of the pool, gated by rank (the user's
+The screen shows only part of the pool, gated by rank (Nexxus's
 suggestion; Buffon is rank 14, J.Galvan rank 5): see
 [below](#which-free-agents-the-transfer-list-shows).
 `SIMPRG.REL 0x15b030` moves one named free agent from the pool to the
@@ -338,9 +338,9 @@ goalkeeper, 26,455, rank 5 like J.Galvan) in the same slot showed on the
 Transfer List (Club House / Scouting, "Acquire transfer list") in
 2006–07, with no team, aged 32. So national-team records can be free
 agents, and Buffon was held back by something else, most likely his
-rank (14) against the club's reputation, as the user suggested.
+rank (14) against the club's reputation, as Nexxus suggested.
 
-**Tested in PCSX2, through the editor's Free agents tab** (user
+**Tested in PCSX2, through the editor's Free agents tab** (Nexxus's
 report). Slot 21, P.Camp (rank 5), was replaced by J.Montsalvatge
 (11,567, a rank 3 goalkeeper aged 16) with `plrsim.py setfree ... 21=11567`.
 In a new career he showed on the Transfer List in 2006–07, week 1, aged

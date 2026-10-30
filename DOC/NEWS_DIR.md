@@ -80,7 +80,8 @@ as the competition ids below.
 ## Article pictures: `NEWS_ART`
 
 286 pictures, 128×128, 8 bits per pixel (284 with a 32-bit palette, and
-entries 91 and 92, `…rss_three_00`/`01`, with a 16-bit one). An article's picture comes from
+entries 91 and 92, `…rss_three_00`/`01`, with a 16-bit one). An
+article's picture comes from
 NEWS record `+0x14`/`+0x18`/`+0x1c`, through the selectors described in
 [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#news-record-192-bytes). The
 result, at article `+0x134`, is the entry number.

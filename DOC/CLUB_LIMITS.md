@@ -56,7 +56,8 @@ About 140 sites use the same numbers for something else:
 ## `--mod third-tier`: the clubs (phase 2a)
 
 `patch_disc.py --mod third-tier` (built as `tier-clubs`), with the
-bigger save's block 2 records, makes clubs 442–459 full clubs, as far as code that
+bigger save's block 2 records, makes clubs 442–459 full clubs, as far as
+code that
 works one club at a time goes:
 
 - `pwkOteam_Team2Otindex` maps clubs 3–459 to records 1–457.
@@ -75,7 +76,7 @@ they leave 442–459 out; [the lists](#--mod-third-tier-the-lists-phase-2b)
 grows them. A save from before the switch has empty records for the new
 clubs; start a new career.
 
-**Tested in PCSX2** (user report, 2026-10-26): with `save-expand`,
+**Tested in PCSX2** (Nexxus's report, 2026-10-26): with `save-expand`,
 `tier-clubs` and `mod-saves`, a new career (tutorial skipped) plays
 through a transfer window and saves and loads, and the tutorial's
 promotion playoff against the third-tier clubs plays; "all working".
@@ -106,18 +107,18 @@ lists are allocated by the count), and the past-record points by nation
 by nation and region run to 459 too; they stop at 50 clubs.
 
 **Other Club Info** (My Room > Information > Club Info): you pick a
-nation, then a club from one list of its clubs (user report). The list
+nation, then a club from one list of its clubs (Nexxus's report). The list
 comes from `SIMPRG.REL` `0x8e0`, which walks clubs 2–441 (`slti …,
 0x1ba` at `0x918`), keeps those of the nation (`plMisc_Club2Nati`) and
 stores each club's id and name, up to the count its caller gives: 50
 for the list itself (`0x1848`, names at `0x248410` and ids at
 `+0x55cc` of the module, menu entries of `0x54` bytes in its `0x1100`
 frame) and for the map window's count of each nation's clubs
-(`0x1ae8`). **Confirmed** from the code. So 442–459 were left out (the
-user's report on `LMAST-test-tiers-germany.iso`), and `third-tier`
+(`0x1ae8`). **Confirmed** from the code. So 442–459 were left out
+(Nexxus's report on `LMAST-test-tiers-germany.iso`), and `third-tier`
 makes the bound 460. With the tier, the most clubs a nation has is 47
 (nation 1, 44 before; **empirical**, `PLRESOURCECOMMON.PAC` entry 3
-table 5), so the cap of 50 cuts none off. **Tested in PCSX2** (user
+table 5), so the cap of 50 cuts none off. **Tested in PCSX2** (Nexxus's
 report, 2026-10-27, `LMAST-test-max-germany.iso`): Other Club Info
 lists the tier's clubs and shows their info.
 
@@ -129,7 +130,7 @@ The **All Clubs Ranking** screen (Information, `SIMPRG.REL` `0x84df0`)
 lists the clubs from a table at `0x1cf848` (52 nations, 145 national
 teams, 441 clubs, each from id 1). Each club's rank is its own (block 2
 `+0xa4`), so with only the count raised to 459, 442–459 would still
-miss the list and leave gaps in its numbers. **Seen in PCSX2** (user
+miss the list and leave gaps in its numbers. **Seen in PCSX2** (Nexxus's
 report): before this, the list showed ranks 437, 440, 441, 442 (your
 club) and 443, with 438 and 439 missing. The list's object
 (`INFORMATION_MODULE + 0x4074`, cleared for `0xe80` bytes) has room for
@@ -152,14 +153,14 @@ Left as they are:
 - `CScheEuro::clearPlayerRecord` and `movePlayerRecord`, not yet
   understood.
 
-**Tested in PCSX2** (user report, 2026-10-27): on
+**Tested in PCSX2** (Nexxus's report, 2026-10-27): on
 `LMAST-test-tierlists2.iso`, the All Clubs Ranking at the start of the
 first season lists every club, numbered with no gaps. A German career
-on an LMASTER max build (user report, 2026-10-27; then built as
+on an LMASTER max build (Nexxus's report, 2026-10-27; then built as
 `--mod lmaster-full`) passed both transfer windows and the season's
 end, and saved and loaded. The world ranking's update at the season's
 end wasn't looked at in that career; an earlier test showed it working
-(user report).
+(Nexxus's report).
 
 ## Each loop's body
 

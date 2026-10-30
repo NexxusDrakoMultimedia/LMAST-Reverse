@@ -33,7 +33,7 @@ The pack isn't in any `PRELOAD` pack. It isn't listed in the folder's
 | `SIMPRG.REL 0x183208` | (Acroarts loader) | the same checks for an `ABRS` chunk, without the version |
 | `SIMPRG.REL 0x247848`–`0x2478b0` | (strings) | the errors name the format: "ABDA(Acroarts Native Data) Version is incorrect", and print the expected and found versions as "Ver%8d R%d" |
 | `SIMPRG.REL 0x1f408` | `PLAY_ACROBATA_MODULE` | sequencer module 36, PlayAcrobata, which the root scripts start with a number that isn't a scene id (scene 7 is a club house background); how it maps to a scene is open ([`GAME_FLOW.md`](GAME_FLOW.md#game-over)) |
-| `TESTPRG.REL 0xf320` | `ACROBATA_VIEWER_MODULE` | launcher module 107, ACROBATA VIEWER, which shows a club house room and nothing else (user report, [`SQB_FORMAT.md`](SQB_FORMAT.md)) |
+| `TESTPRG.REL 0xf320` | `ACROBATA_VIEWER_MODULE` | launcher module 107, ACROBATA VIEWER, which shows a club house room and nothing else (Nexxus's report, [`SQB_FORMAT.md`](SQB_FORMAT.md)) |
 
 The version word `0x77831b45` is 2005080901, printed as "Ver 20050809 R1":
 a date stamp, 9 August 2005, revision 1. The code compares it with its own
@@ -45,7 +45,7 @@ found. The copy matches the header for all 875 entries (**empirical**,
 `acrobata.py scenes`). A rebuilt pack whose entries move or change size
 therefore needs the table at `SLES 0x3a3b08` patched; `patch_disc.py`
 does that on a whole disc image ([`REBUILD.md`](REBUILD.md#archives)).
-**Tested in PCSX2** (user report): the pack with entry 0 grown past its
+**Tested in PCSX2** (Nexxus's report): the pack with entry 0 grown past its
 sector, so all 874 later scenes moved and the executable's index was
 rewritten, played its scenes as normal.
 

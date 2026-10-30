@@ -198,7 +198,7 @@ the 30 attack patterns' diagrams, in the order `LS00`–`LS05`, `RS`,
 `CT`, `CA`, `PO` ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)), and the
 screen's list (`CPlayBookList::MakeList`, `0x2f9618`) shows the club's
 choices from `PlTeamData +0x498c`/`+0x498f`, the bytes the match takes a
-user's club's attack patterns from
+your club's attack patterns from
 ([below](#how-a-team-uses-the-combinations)).
 
 ## Empirical

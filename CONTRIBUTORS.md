@@ -11,13 +11,13 @@ records who did the work and who made it possible.
 
 | Name | Role | Contact |
 |---|---|---|
-| **Pyra Drake** (Nexxus Drako Multimedia) | project owner and maintainer; directs the research, runs the in-game tests in PCSX2, and reviews every change | [NexxusDrakoMultimedia](https://github.com/NexxusDrakoMultimedia) on GitHub |
+| **Pyra Drake**, also known as **Nexxus Drako** (Nexxus Drako Multimedia) | project owner and maintainer; directs the research, runs the in-game tests in PCSX2, and reviews every change. The docs call them Nexxus | [NexxusDrakoMultimedia](https://github.com/NexxusDrakoMultimedia) on GitHub |
 
 ## Code and documentation
 
 | Contributor | Contribution |
 |---|---|
-| **Pyra Drake** | every commit in the repository, the in-game test results ("Tested in PCSX2", "user report") recorded in `DOC/`, and the project's goals and conventions |
+| **Pyra Drake** (Nexxus) | every commit in the repository, the in-game test results recorded in `DOC/` ("Tested in PCSX2", "Nexxus's report"), the choices behind the LMASTER Mod ("Nexxus's choice"), [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism), and the project's goals and conventions |
 | **Claude** (Anthropic; Claude Opus 5.5, with one commit by Claude Sonnet 5) | the reverse engineering, the docs in `DOC/` and the tools in `SRC/`, written under the maintainer's direction; credited with a `Co-Authored-By` line on each commit it helped write |
 
 The README's [Disclaimer](README.md#disclaimer) explains how AI is used

@@ -107,7 +107,8 @@ were; a heavy match injury is then six months or longer this often:
 | `injury-odds` | 5 | 5 | 5 | 10 | 22 | 30 | 38 | 40 | 46 | 62 | 78 |
 
 The practice column becomes 2, 2, 2, 2, 8, 12, 20, 30, 44, 58, 62.
-`python -c "import sys; sys.path.insert(0, 'SRC'); import patch_disc as p; print(p.injury_odds(open('ISO/SLES_541.51', 'rb').read()))"`
+`python -c "import sys; sys.path.insert(0, 'SRC'); import patch_disc as
+p; print(p.injury_odds(open('ISO/SLES_541.51', 'rb').read()))"`
 prints both tables before and after. Not checked in the game.
 
 **Row 11 is out of bounds.** Fatigue 1000 with an age of 35 or more gives
@@ -171,7 +172,8 @@ injuries are rare and their value is random.
 | heavy | else | 9 | 10 "... two years' ..." |
 
 chno 3 and 6 are never returned, so messages 4 ("two months") and 7
-("nine months") are never shown in the retail game. They were cut before either release:
+("nine months") are never shown in the retail game. They were cut before
+either release:
 the Japanese build's `plPinfo_KegaRecoverDaysChno` (SLPM_663.16
 `0x217618`) is the same code (**confirmed**, see
 [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)). In PAL French, German,
@@ -193,7 +195,8 @@ of `0x532d98`, 8 a kind) and with that chance turns the injury light
 ### The two cut lines back: `injury-lines`
 
 `patch_disc.py --mod injury-lines` (in `--mod restorations`,
-and so in `--mod lmaster-full` and `--mod lmaster-max`) rewrites the heavy part of
+and so in `--mod lmaster-full` and `--mod lmaster-max`) rewrites the
+heavy part of
 `plPinfo_KegaRecoverDaysChno` (`0x216e14`, 15 words) as a count: chno
 = 9, less one for each of 4,000, 6,000, 10,000, 12,500, 16,000 and
 25,000 the value is under.

@@ -110,7 +110,7 @@ flags:
 
 | Bit | Function | Meaning |
 |---|---|---|
-| 1 | `pwkSche_IsNationalMatch` `0x256b30` | national teams play (the globes on the Schedule screen, user report; `SIMPRG.REL 0x4dd84`) |
+| 1 | `pwkSche_IsNationalMatch` `0x256b30` | national teams play (the globes on the Schedule screen, Nexxus's report; `SIMPRG.REL 0x4dd84`) |
 | 2 | `pwkSche_IsNationalFMatch` `0x256b90` | finals tournament: `SIMPRG.REL 0x160a48` takes it as the competition the call-up and release are for, the finals (45 Euro, 47 World, by `pwkGen_Keika` mod 4) instead of their qualifying (44, 46) |
 | 4 | `pwkSche_IsNationalConvene` `0x256c50` | call-up: `SIMPRG.REL` `jmNT_CallCheck` `0x160b68` picks every squad |
 | 8 | `pwkSche_IsNationalBreak` `0x256bf0` | release: `jmNT_FreeCheck` `0x160c50` sends the players back; with bit 2 it also asks `getChampionTeam` for the cup's winner |
@@ -124,7 +124,7 @@ The retail tables (turn: flags):
 | 3 | World National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–94: 1+2; 95: 1+2+8 |
 
 A season starting in 2009 or 2025 uses table 3, a World Cup year, and
-one starting in 2007 table 1, a Euro year (user report). Copies sit in
+one starting in 2007 table 1, a Euro year (Nexxus's report). Copies sit in
 `PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 31). `patch_disc.py --mod
 national-cups` moves tables 1 and 3 a turn earlier
 ([`LMASTER_MOD.md`](LMASTER_MOD.md)).
@@ -303,7 +303,7 @@ order. Its caller (`0xa44d8`) takes the region from the screen's list
 
 The regions are the game's 13 overseas regions, named in
 [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)
-(user report: the game numbers its regions the same way everywhere; the
+(Nexxus's report: the game numbers its regions the same way everywhere; the
 clubs below fit the names).
 
 **Empirical**: regions 0–12 hold 10, 8, 8, … 8 clubs: 0 Western Europe

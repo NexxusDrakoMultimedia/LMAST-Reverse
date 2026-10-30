@@ -3,7 +3,8 @@
 
 # `DAT/CSE`: 2D screens (`*.CSP`, `*.CSE`)
 
-`DAT/CSE` (688 files, 80 MB, plus `CVS/`) holds the game's 2D graphics: every menu screen,
+`DAT/CSE` (688 files, 80 MB, plus `CVS/`) holds the game's 2D graphics:
+every menu screen,
 window, icon set and pre-rendered room background. Nearly all of it is
 `.CSP` packs. Each one holds a **CSE** layout (sprites, a node hierarchy and
 keyframe animation) and the SVR textures the layout uses.
@@ -55,7 +56,8 @@ The digit is added at run time: a file request for folder 100 + *n*
 puts the language digit before the dot (**confirmed**,
 `CFcEuro_FileResource::CommonSetup` `0x10c9a0`,
 [`PRELOAD_DIR.md`](PRELOAD_DIR.md#confirmed-from-the-game-code)), and the
-digits are the `MES.PAC` language slots (0 Japanese, 1 English, ...). `WP_KEYBOAD.CSP` is on the disc but not in the table.
+digits are the `MES.PAC` language slots (0 Japanese, 1 English, ...).
+`WP_KEYBOAD.CSP` is on the disc but not in the table.
 The code only loads `wp_keyboad_JP` and `wp_keyboad_PAL`.
 
 ### The `CVS/` folder

@@ -6,7 +6,8 @@
 `DAT/EVENT/EVSDATABIN_{EVENT,NEWS,MAIL}.BIN` drive the club-management
 events: scripted office/locker/meeting scenes (EVENT), newspaper items
 (NEWS) and inbox mail (MAIL). They replaced the string-based
-`EVENTDATA_TURN.TBB` prototype ([`EVENTDATA_TURN.md`](EVENTDATA_TURN.md)). All three are
+`EVENTDATA_TURN.TBB` prototype
+([`EVENTDATA_TURN.md`](EVENTDATA_TURN.md)). All three are
 headerless arrays of fixed-size little-endian records, loaded whole by
 `DLL/SIMPRG.REL`.
 
@@ -262,7 +263,8 @@ with a speech from 36000–36008. It then plays the result with
 `0x12d350(object, 0x1c6150, message ref)`.
 
 `0x167f38` returns `CLUBRESULT.TBB`'s `kind` for the schedule UID at
-`+0x1c` (**confirmed**, [`CLUBRESULT_FORMAT.md`](CLUBRESULT_FORMAT.md#who-reads-it)):
+`+0x1c` (**confirmed**,
+[`CLUBRESULT_FORMAT.md`](CLUBRESULT_FORMAT.md#who-reads-it)):
 0 a league, 1 a cup, 2 not ranked.
 
 | Handler | `0x167f38` result | `+0x28` | `+0x24` | Category |
@@ -307,7 +309,8 @@ transfer-list alert (`35640`), important-mail and off-season notices
 Code that builds a category arithmetically (base + offset) wouldn't show
 up in this search, so "unused" isn't confirmed. The same search over the
 Japanese release (SLPM_663.16 and its overlays) finds no reference
-either, so if they were cut, it was before both releases. Editing their text has no
+either, so if they were cut, it was before both releases. Editing their
+text has no
 known effect in game.
 
 ## Shared condition block
@@ -407,7 +410,9 @@ column with data now has a name.
 - What EVENT `+0x0c`, `+0x1c` and the five triplets at `+0x24`–`+0x5c`
   are. They aren't read through the getter in the functions traced so
   far; the 32-byte unaligned copies of `+0x00`–`+0x1f` (e.g. at
-  `0x13578c`) are a lead.
+  `0x13578c`) are a lead. The triplets may be variable specs like
+  NEWS's (same offsets, same arg1 values 2/46/47); their third value
+  also matches speaker-name ids used in `ESC 0xC1` (e.g. 3110).
 - The meaning of `date[2]` and `date[3]` in the date struct.
 - How the 48×21 pattern table is laid out.
 - NEWS `+0x20`, `+0x60` and `+0x70`; the NEWS/MAIL check types, handler
@@ -418,9 +423,6 @@ column with data now has a name.
 - Whether any of the 32 unreferenced dialogue categories is reached by an
   arithmetic category (base + offset), which the immediate/data search
   can't see.
-- Whether the five EVENT triplets at `+0x24`–`+0x5c` are variable specs
-  like NEWS's (same offsets, same arg1 values 2/46/47). Their third value
-  also matches speaker-name ids used in `ESC 0xC1` (e.g. 3110).
 
 ## Tool
 

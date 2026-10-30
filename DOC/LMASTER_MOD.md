@@ -39,8 +39,9 @@ level:
 | `test-tools` | skip-tutorial, launcher | – | – | – |
 
 LMASTER full is the fixes, the third tier, the balanced league
-schedules, the restored injury lines and the real names; LMASTER max adds the two
-difficulty groups, `harder-economy` and `balance` (the user's split,
+schedules, the restored injury lines, the real names, the real grounds
+and the modded disc's own saves; LMASTER max adds the two
+difficulty groups, `harder-economy` and `balance` (Nexxus's split,
 2026-10-27). Until then `lmaster-full` held what `lmaster-max` holds
 now, so the test reports before that date that name a full disc mean
 today's max.
@@ -99,22 +100,22 @@ Rules for an entry:
 | Injury rows past fatigue 1000 | bug (out-of-bounds read) | [`INJURIES.md`](INJURIES.md#the-kind-tables): row 11 for ages 35+ | `--mod injury-row`: the row clamped to 10 in `judgeKegaKind`'s own words (`0x21a08c`, 6 words) | built; checked in a MIPS simulator over 18,018 cases (only the six out-of-bounds ones change), not in the game (rare) |
 | "Two months" and "nine months" injury lines | cut before both releases (the Japanese code is the same) | [`INJURIES.md`](INJURIES.md#the-condition-line): `plPinfo_KegaRecoverDaysChno` never returns chno 3 or 6; French, German, Italian and Spanish hold "See Let's Make revised text 0425" | `--mod injury-lines`: the heavy ladder (`0x216e14`, 15 words) gets thresholds 4,000 (two months) and 12,500 (nine months), and messages 4 and 7 of category 200 get text in the four languages, in the placeholders' bytes ([`INJURIES.md`](INJURIES.md#the-two-cut-lines-back-injury-lines)). It adds new text and shows lines the released game never did, so it is in `--mod restorations` (LMASTER full and max), not lite | built (thresholds chosen 2026-10-24); not checked in the game |
 | Training camps train as the next camp type | bug (off by one), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#two-bugs): `CAMP_LIST` numbers the types 1–87, the training table and the theme check read them as 0–86; Parma, a goalkeeper camp, trains no keeping | `--mod camp-types`: every type lowered by one in `CAMP_LIST.TBB` | tested in PCSX2: one keeper camp raised all three keepers' saving, aerial ability and GK aptitude most (559–617 experience), then catching and rushing out (444–488), and left pace and acceleration alone, the fixed row's pattern ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)) |
-| Seven English camps in the wrong town | PAL left the camp tables on the Japanese city numbers when it renumbered the English cities | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#seven-english-camps-in-the-wrong-town-pal): Liverpool's camp is in Scunthorpe, Manchester's in West London, and five more | `--mod camp-cities`: the seven city ids in `CAMP_LIST.TBB` and `CAMP_EXPLANE.TBB` | tested in PCSX2 (user report): with low popularity the England list shows Southampton, Blackburn and Sheffield, not Basingstoke, Newport and Oakham. The other four need more popularity (Liverpool a sponsor) and weren't seen; the switch moves them the same way |
-| Santiago's camp description | bug (wrong city id), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md): `CAMP_EXPLANE` keys message 6146 to city 764, the camp is 774; the lookup (`SIMPRG.REL 0xa4a80`) finds nothing | `--mod camp-santiago`: the description's city 764 → 774 in `CAMP_EXPLANE.TBB` | tested in PCSX2 (user report): Santiago's camp shows "The Chilean capital is a hub of South American finance …" |
-| Canberra's last two camp clubs | bug (loop bound), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md): `SIMPRG.REL 0x4c8f8` reads 735 of `CAMP_LIST` table 1's 737 pairs, so Fukuoka and Kanagawa never appear | `--mod camp-clubs`: the bound `0x2de` → `0x2e0` at `SIMPRG.REL 0x4c9d4` (one instruction; whole disc image) | tested in PCSX2 (user report): Canberra's camp lists South Melbourne, Aichi, Fukuoka and Kanagawa |
-| Drills 75–86 under the next drill's name | broken text (PAL: names one message early, an added "Jackknife") | [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early): practice *n*'s name is message 971 + *n* of category 801; the Japanese names (both discs) and the training rows have a dummy at 74 that no coach teaches, PAL's names in all five languages start one early, so the drill named "Pass training." trains shooting | `--mod drill-names`: messages 1045–1056 → 1046–1057 in `801_1`–`6.mbb` of `MES.PAC` and their copies in `PRELOAD/SIMFILE1`–`6.PAC` (entry 28); the jackknife name goes to the dummy's 1045, so the files keep their sizes. No new text; a `MES.PAC` target gets the fix in its own bytes | tested in PCSX2 (user report): coach R.Bloemzaad's drill 76 (short and long pass, cross) reads "Dribble training" on the retail disc and "Pass training." on `LMAST-test-drills.iso` |
+| Seven English camps in the wrong town | PAL left the camp tables on the Japanese city numbers when it renumbered the English cities | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#seven-english-camps-in-the-wrong-town-pal): Liverpool's camp is in Scunthorpe, Manchester's in West London, and five more | `--mod camp-cities`: the seven city ids in `CAMP_LIST.TBB` and `CAMP_EXPLANE.TBB` | tested in PCSX2 (Nexxus's report): with low popularity the England list shows Southampton, Blackburn and Sheffield, not Basingstoke, Newport and Oakham. The other four need more popularity (Liverpool a sponsor) and weren't seen; the switch moves them the same way |
+| Santiago's camp description | bug (wrong city id), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md): `CAMP_EXPLANE` keys message 6146 to city 764, the camp is 774; the lookup (`SIMPRG.REL 0xa4a80`) finds nothing | `--mod camp-santiago`: the description's city 764 → 774 in `CAMP_EXPLANE.TBB` | tested in PCSX2 (Nexxus's report): Santiago's camp shows "The Chilean capital is a hub of South American finance …" |
+| Canberra's last two camp clubs | bug (loop bound), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md): `SIMPRG.REL 0x4c8f8` reads 735 of `CAMP_LIST` table 1's 737 pairs, so Fukuoka and Kanagawa never appear | `--mod camp-clubs`: the bound `0x2de` → `0x2e0` at `SIMPRG.REL 0x4c9d4` (one instruction; whole disc image) | tested in PCSX2 (Nexxus's report): Canberra's camp lists South Melbourne, Aichi, Fukuoka and Kanagawa |
+| Drills 75–86 under the next drill's name | broken text (PAL: names one message early, an added "Jackknife") | [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early): practice *n*'s name is message 971 + *n* of category 801; the Japanese names (both discs) and the training rows have a dummy at 74 that no coach teaches, PAL's names in all five languages start one early, so the drill named "Pass training." trains shooting | `--mod drill-names`: messages 1045–1056 → 1046–1057 in `801_1`–`6.mbb` of `MES.PAC` and their copies in `PRELOAD/SIMFILE1`–`6.PAC` (entry 28); the jackknife name goes to the dummy's 1045, so the files keep their sizes. No new text; a `MES.PAC` target gets the fix in its own bytes | tested in PCSX2 (Nexxus's report): coach R.Bloemzaad's drill 76 (short and long pass, cross) reads "Dribble training" on the retail disc and "Pass training." on `LMAST-test-drills.iso` |
 | Play styles of an imported Virtua Pro Football player | bug (a compare function that subtracts pointers) | [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#the-record): the import's qsort compare (`SAVEPRG.REL 0x3df00`) never reads the ratings, so slot t keeps style t when rated 70+, and 18 of the 22 VPF styles never come in; G.Binns, rated 86 in a style that doesn't count, came in with none | `--mod vpf-styles`: the compare's 4 words load both ratings and return b − a through the tail of the executable's `strcmp`, and one more rates style 0 ("none") at 0 in the sorted copy so it never takes a slot ([`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#the-record)) | restored, tested in PCSX2: an edited V. Drake came in with four styles in slots 1–4 where the retail import gives one |
-| Retail text: wrong leagues in two Game Over conditions, the Spanish intro's club count, "AL-Hyde" | broken text, in PAL | [Retail text fixes](#retail-text-fixes) | `--mod retail-text` (lite): the messages' own text in `MES.PAC`, and the name's `STATIONMES` copies | built 2026-10-30 (test disc `LMAST-test-names.iso`); not checked in the game |
-| Made-up league, competition and club names | licensing (the retail game names unlicensed clubs after their cities or grounds) | [Real names](#real-names) | `--mod real-names` (full and max): `SRC/realnames.csv`'s names, the stadiums' too, in `MES.PAC`'s name lists and the English mentions, with `--copies`; `--mod own-stadium` names your stadium after you | built 2026-10-30 (test disc `LMAST-test-names.iso`, read back from the image); not checked in the game. The 75 non-English mentions are left for edits by hand |
+| Retail text: wrong leagues in two Game Over conditions, the Spanish intro's club count, "AL-Hyde" | broken text, in PAL | [Retail text fixes](#retail-text-fixes) | `--mod retail-text` (lite): the messages' own text in `MES.PAC`, and the name's `STATIONMES` copies | tested in PCSX2 with the real names on `LMAST-test-names.iso` (Nexxus's report, 2026-10-30) |
+| Made-up league, competition and club names | licensing (the retail game names unlicensed clubs after their cities or grounds) | [Real names](#real-names) | `--mod real-names` (full and max): `SRC/realnames.csv`'s names, the stadiums' too, in `MES.PAC`'s name lists and the English mentions, with `--copies`; `--mod own-stadium` names your stadium after you | tested in PCSX2 (Nexxus's report, 2026-10-30, `LMAST-test-names.iso`): the names, the stadium names and the new grounds work. The 75 non-English mentions are hand edits (`SRC/realnames_phrases.csv`), checked by `realnames.py info` but not seen in the game. `own-stadium`, the official names and the nations' names tested too (2026-10-31, [below](#real-names)) |
 | Crest presets 4–11 in three tables | broken data (a missing byte) | [`EMBLEM_DIR.md`](EMBLEM_DIR.md): tables 93, 101, 105 of `EDIT_EMBLEM.TBB` | add the missing `04 00` key | candidate. Check first whether the crest editor shows the gap |
-| The rival's manager by style | bug (wrong register), in both releases (Japanese `0x25e8e8`) | [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8): the loop at `0x25e6d0` finds the record for the rival's style, but its load reads record 0, so the rival always gets H.Raphanel (898), never I.Ricardo (1,970), L.Alfano (1,247) or L.Nobili (1,246) | one instruction at `0x25e6d8`: `lw $s3, 8($a0)` (`8c930008`) becomes `lw $s3, 4($v1)` (`8c730004`). The rival's style is already the opposite of yours (`0x5531e0`), so its manager then matches it. `--mod rival-manager` | fixed, tested in PCSX2 (user report): in a new Teamwork career in England, the rival SC Dunstable's Information screen showed a different policy area (the big blue area on the right, which follows the manager) from the unpatched game. The game never shows the rival manager's name. The other three styles weren't tried |
-| The press tendency counts only as 0 or 1 | bug (a constant), in both releases | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-tendencies): both press readers clamp a player's level to a per-side cap, which a career match leaves at its constructor's 2 (`GAMEPRG.REL 0x74320`), and each reader turns 2 into the cap 1 with a `movz` in the delay slot after setting 4, so levels 2–4 act as 1 | `movz $s0, $a1, $v0` (`0x9a474`, `00a2800a`) and `movz $s0, $a3, $v0` (`0x9a52c`, `00e2800a`) become `nop`, which keeps the cap 4 for all five levels. `--mod press-tendency` (lite) | built. A first version patched the cap's setter `0x74380`, which a career match never runs: over PINE in a German league match its patched word was in memory and both caps still read 2 (2026-10-31). **Checked over PINE** in a German league match on `LMAST-test-season2.iso` (2026-10-31): both readers' words read 0 (`nop`) in memory, with the caps at `02` as expected. Whether high-press sides play differently is a judgement left to the user (section 7) |
-| The World National Cup final on the last turn of the year | bug (schedule data) | the knockout UID 122 plays turns 92–95, and 95 is the year's last turn ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#turns)), so the season ends on the turn of the final and its results can't be viewed in the Competition menu (user report). The group UIDs 114–121 play 89–91. The Euro National Cup ends on 94 | move both national cups back one turn (`schedule.py shift`, masks and start turns; the end turn stays 95): World Cup groups 88–90 and knockout 91–94, Euro groups 88–90 and knockout 91–93. No league or cup plays after turn 87, and the two cups are in different years of the cycle. The national-team calendar ([`SCHEDULE_LIST.TBB`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)) moves with them: match days 88–94 and 88–93, release on the final's turn, and the call-up on 88 with the first group game (87 has the second-division play-off finals). `--mod national-cups` writes `SCHEDULE_SYSTEM.PAC` and its copy in `PRELOAD/STATIONFILE.PAC`, and `SCHEDULE_LIST.TBB` and its copies in `PRELOAD/SIMLOCALMEM0`–`6.PAC`. With a league of another size (`leaguesize.py build`, patched with `--copies`), it moves the cups in the league build's `SCHEDULE_SYSTEM.PAC` instead: a rebuilt league keeps its first and last game day, so it never reaches turn 88. Checked with England at 22 clubs: one build holds both, and `schedule.py info` finds no new problems | tested in PCSX2 (user reports): the Schedule screen's globes follow the new calendar (Euro year 2007-08: turns 88–93, week 4 empty; World Cup year 2009-10: turns 88–94, week 4 late empty). The World Cup's results after its final aren't seen, since that year is the fourth season of a career, but are taken to work: in the retail game the Euro National Cup's final is on turn 94 and its results can be viewed in the Competition menu after it (user report). The moved World Cup final is on that same turn, and both cups' knockouts are built the same way (an end turn of 95 and the same flag); the bug came only from a final on the last turn |
+| The rival's manager by style | bug (wrong register), in both releases (Japanese `0x25e8e8`) | [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8): the loop at `0x25e6d0` finds the record for the rival's style, but its load reads record 0, so the rival always gets H.Raphanel (898), never I.Ricardo (1,970), L.Alfano (1,247) or L.Nobili (1,246) | one instruction at `0x25e6d8`: `lw $s3, 8($a0)` (`8c930008`) becomes `lw $s3, 4($v1)` (`8c730004`). The rival's style is already the opposite of yours (`0x5531e0`), so its manager then matches it. `--mod rival-manager` | fixed, tested in PCSX2 (Nexxus's report): in a new Teamwork career in England, the rival SC Dunstable's Information screen showed a different policy area (the big blue area on the right, which follows the manager) from the unpatched game. The game never shows the rival manager's name. The other three styles weren't tried |
+| The press tendency counts only as 0 or 1 | bug (a constant), in both releases | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-tendencies): both press readers clamp a player's level to a per-side cap, which a career match leaves at its constructor's 2 (`GAMEPRG.REL 0x74320`), and each reader turns 2 into the cap 1 with a `movz` in the delay slot after setting 4, so levels 2–4 act as 1 | `movz $s0, $a1, $v0` (`0x9a474`, `00a2800a`) and `movz $s0, $a3, $v0` (`0x9a52c`, `00e2800a`) become `nop`, which keeps the cap 4 for all five levels. `--mod press-tendency` (lite) | built. A first version patched the cap's setter `0x74380`, which a career match never runs: over PINE in a German league match its patched word was in memory and both caps still read 2 (2026-10-31). **Checked over PINE** in a German league match on `LMAST-test-season2.iso` (2026-10-31): both readers' words read 0 (`nop`) in memory, with the caps at `02` as expected. Whether high-press sides play differently is a judgement left to Nexxus (section 7) |
+| The World National Cup final on the last turn of the year | bug (schedule data) | the knockout UID 122 plays turns 92–95, and 95 is the year's last turn ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#turns)), so the season ends on the turn of the final and its results can't be viewed in the Competition menu (Nexxus's report). The group UIDs 114–121 play 89–91. The Euro National Cup ends on 94 | move both national cups back one turn (`schedule.py shift`, masks and start turns; the end turn stays 95): World Cup groups 88–90 and knockout 91–94, Euro groups 88–90 and knockout 91–93. No league or cup plays after turn 87, and the two cups are in different years of the cycle. The national-team calendar ([`SCHEDULE_LIST.TBB`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)) moves with them: match days 88–94 and 88–93, release on the final's turn, and the call-up on 88 with the first group game (87 has the second-division play-off finals). `--mod national-cups` writes `SCHEDULE_SYSTEM.PAC` and its copy in `PRELOAD/STATIONFILE.PAC`, and `SCHEDULE_LIST.TBB` and its copies in `PRELOAD/SIMLOCALMEM0`–`6.PAC`. With a league of another size (`leaguesize.py build`, patched with `--copies`), it moves the cups in the league build's `SCHEDULE_SYSTEM.PAC` instead: a rebuilt league keeps its first and last game day, so it never reaches turn 88. Checked with England at 22 clubs: one build holds both, and `schedule.py info` finds no new problems | tested in PCSX2 (Nexxus's reports): the Schedule screen's globes follow the new calendar (Euro year 2007-08: turns 88–93, week 4 empty; World Cup year 2009-10: turns 88–94, week 4 late empty). The World Cup's results after its final aren't seen, since that year is the fourth season of a career, but are taken to work: in the retail game the Euro National Cup's final is on turn 94 and its results can be viewed in the Competition menu after it (Nexxus's report). The moved World Cup final is on that same turn, and both cups' knockouts are built the same way (an end turn of 95 and the same flag); the bug came only from a final on the last turn |
 | Season-ticket demand by club status | bug (branch order), in both releases (Japanese `0x2728f0`) | [`ECONOMY.md`](ECONOMY.md#season-tickets): `pwkUnkei_GetExpectSeat` has factors 0.5–1.0 for status bands of 10,000, but its first test takes every status over 10,000, so no club gets more than 0.6 | `--mod season-status`: the ladder (`0x272840`, 31 words) rewritten as a straight run of the intended bands | restored, tested in PCSX2: a top-status club put 88,000 season tickets on sale and sold 72%, the fixed band's value (43% on retail; [`ECONOMY.md`](ECONOMY.md#season-tickets)). Makes big clubs richer, so with `--mod harder-economy` it softens `season-demand` |
 | PR events and the business cycle | bug (branch order), in both releases (Japanese `0x20e7f0`) | [`ECONOMY.md`](ECONOMY.md#pr-events): each event holds +20, +10, −5, −10 for business cycles 0, 1, 3 and 4, but `plClubEvent_Execute`'s ladder reads byte 2 for 0–1, byte 4 for 2 and byte 3 for 3–4, so the boom's +20 never applies and an average economy takes 10% off every event (41% success instead of 51%) | `--mod pr-cycle`: the ladder's first 11 words (`0x20dfb0`) read the byte of each cycle, none for cycle 2 | built 2026-10-25; not checked in the game |
-| PR event 37, Renew Mobile Site | cut (one store clears it), in both releases (Japanese `0x20f108`) | [`CLUBEVENT_FORMAT.md`](CLUBEVENT_FORMAT.md#the-offer-record-32-bytes): its three records are complete (from 2010–11, popularity 30,001, Jan–Aug, £50,000, +200 home and overseas popularity) and its mail texts are in `MES.PAC` (563: 11233–11234, the report 1290–1291), but `plClubEvent_GetList` clears its flag after every check (`sw $zero, 0xa4($sp)` at `0x20e868`) | `--mod mobile-site`: that store becomes a nop, so the event follows its own record like Renew Home Page | built 2026-10-26. **Tested in PCSX2** (user report, 2026-10-31, `LMAST-test-season.iso` with event 37 offered from the start): Renew Mobile Site is in the PR activities list, can be booked, and the month-end mail reports it |
+| PR event 37, Renew Mobile Site | cut (one store clears it), in both releases (Japanese `0x20f108`) | [`CLUBEVENT_FORMAT.md`](CLUBEVENT_FORMAT.md#the-offer-record-32-bytes): its three records are complete (from 2010–11, popularity 30,001, Jan–Aug, £50,000, +200 home and overseas popularity) and its mail texts are in `MES.PAC` (563: 11233–11234, the report 1290–1291), but `plClubEvent_GetList` clears its flag after every check (`sw $zero, 0xa4($sp)` at `0x20e868`) | `--mod mobile-site`: that store becomes a nop, so the event follows its own record like Renew Home Page | built 2026-10-26. **Tested in PCSX2** (Nexxus's report, 2026-10-31, `LMAST-test-season.iso` with event 37 offered from the start): Renew Mobile Site is in the PR activities list, can be booked, and the month-end mail reports it |
 | Overseas popularity ten times as fast with a rank-2 player | broken data (a misplaced decimal point), in both releases (Japanese `0x550bf8`) | [`ECONOMY.md`](ECONOMY.md#supporter-popularity): the overseas factor by your best player's rank from that region (`0x554ec8`) runs 1.02, 1.05, 10.8, 1.11, … in steps of 0.03, so a best player of rank 2 multiplies the monthly, match and title changes there by 10.8 | `--mod overseas-pop`: the float at `0x554ed0` becomes 1.08 | built 2026-10-26, confirmed from the code (the disassembled patch reads as intended). No in-game test: player rank and popularity are hidden, so a rank-2 player can't be picked out on screen |
-| No European Club Cup popularity for the last 16 | bug (compares the wrong competition), in both releases (Japanese `0x268aec`) | [`ECONOMY.md`](ECONOMY.md#titles): `0x268858` gives the 4th points column (European League 120, European Club Cup 60) to places 8–15 only for compe 34 and to places 16–31 only for 35, so the European Club Cup pays its last-32 losers and not its last-16 ones | `--mod cup-last16`: places 8–15 get the column for both cups and 16–31 none. `xori $v1, $v1, 0x22` at `0x26894c` becomes `sltiu $v1, $v1, 0x24` (1 for 34 and 35), `xori $v1, $v1, 0x23` at `0x26896c` becomes `move $v1, $zero`, and the shared `movz` at `0x268970` becomes `movn` | filed by the user and built 2026-10-26, confirmed from the code (the disassembled patch reads as intended). No in-game test: the points are hidden, and a last-16 exit takes a long run |
+| No European Club Cup popularity for the last 16 | bug (compares the wrong competition), in both releases (Japanese `0x268aec`) | [`ECONOMY.md`](ECONOMY.md#titles): `0x268858` gives the 4th points column (European League 120, European Club Cup 60) to places 8–15 only for compe 34 and to places 16–31 only for 35, so the European Club Cup pays its last-32 losers and not its last-16 ones | `--mod cup-last16`: places 8–15 get the column for both cups and 16–31 none. `xori $v1, $v1, 0x22` at `0x26894c` becomes `sltiu $v1, $v1, 0x24` (1 for 34 and 35), `xori $v1, $v1, 0x23` at `0x26896c` becomes `move $v1, $zero`, and the shared `movz` at `0x268970` becomes `movn` | filed by Nexxus and built 2026-10-26, confirmed from the code (the disassembled patch reads as intended). No in-game test: the points are hidden, and a last-16 exit takes a long run |
 | 475 combination records that never load | unused data (and a repeat check that only works for pattern 1) | [`BPB_FORMAT.md`](BPB_FORMAT.md#how-a-team-uses-the-combinations): `0x14c3f0` takes a team's records only from three 12-entry tables (`GAMEPRG.REL 0x28c7f0`, `0x28c820`, `0x28c850`) and from `0x24a5e8`[pattern − 1], the first of each attack pattern's 16. So 15 of each 16 (450 records, same script as the first, slightly different areas, no distance limits) and 25 basic records in no table never load. 22 of those 25 could start; 0, 1 and 18 have block A kind 1, which never triggers | **Basic records (data only):** swap entries of the three tables, same size, at their file offsets in `DLL/GAMEPRG.REL` (a `disc:` target). The duplicate 12 in set 0 is a free slot. More than 12 a set needs bigger tables: no free bytes follow them (strings do), so a new table elsewhere in the image, its address in the `lui`/`addiu` pairs at `0x14c484`/`0x14c488`, `0x14c4fc`/`0x14c504` and `0x14c56c`/`0x14c574` (local relocations, so only the immediates change), and the shuffle's count 12 (`addiu $a2, $zero, 0xc` at `0x14c468`, `0x14c4f4`, `0x14c564`). **Pattern variants (code):** a random 0–15 added to `0x24a5e8`[*p* − 1] in both branches of `0x14c3f0` (`fcEuroRand_Get0toI`, as `0x14c6f8` calls it), which needs room for the extra call: rewrite the branch's three repeated loads as one. A data-only fallback points `0x24a5e8`[*p* − 1] at another fixed variant. **Repeat check:** compare with the record (`0x24a5e8`[*p* − 1]), not *p* + 60, at `0x14c718`. Each change needs its Japanese addresses through `gamever.py` | candidate. Check first whether the extra records play sensibly: their areas are untested, and only the first of each 16 has distance limits. The effect is hard to see in a match, so a test needs a way to tell which combination ran (PINE: the controller, the team's `+0x1788`, keeps the running entry at `+0x6c0` (`0xc1af0`); that entry's `+0x80` points at the combination, whose `+0x4c` is the record) |
 | 32 dialogue categories | cut before both releases (no reference in the Japanese code either) | [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md): derby interviews, a facilities tour, notices | needs triggers in the event system and English text | research |
 | The manager's match policy | bug? (reads the wrong field), in both releases (Japanese `GAMEPRG.REL 0xd8f44`, `0xf34e8`) | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors): nothing reads the match policy (`PlTeamData +0x4889`); the match's tactic shifts by period and score (`GAMEPRG.REL 0xd96e8`) and what looks like its substitution tables (`0xf3cb0`) read the selection policy (`+0x4888`) instead, in groups that fit the match policy's names (act boldly and change tactics a lot together, "rarely change" in the mildest group) | two instructions: the offset `0x4888` → `0x4889` in `lbu $s2, 0x4888($v0)` at `GAMEPRG.REL 0xd970c` (`90524888` → `90524889`) and `lbu $v1, 0x4888($sp)` at `0xf3cb0` (`93a34888` → `93a34889`), through `gamever.py` for the Japanese ones | candidate. Check first in the game that the selection policy changes a computer club's in-match tactics or substitutions (`TODO.md` section 7) |
@@ -129,25 +130,25 @@ stay separate switches, so the restorations can be used without them
 (LMASTER lite). LMASTER full has the league schedules, and LMASTER max
 all of them. `--mod harder-economy` and `--mod balance` are the
 difficulty groups, in max only; `balance` is the switches built
-2026-10-24 to 26 with the values the user chose (the groups' lists are
+2026-10-24 to 26 with the values Nexxus chose (the groups' lists are
 in [the switch levels](#the-switch-levels); `injury-lines` is in
 [Status](#status), and in `--mod restorations`).
 
 | Change | Evidence | Fix | Status |
 |---|---|---|---|
-| Better home and away runs in the league schedules | [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-league-of-another-size): the disc has one schedule per size, and some send a club to one venue up to 7 times running (the 22-club leagues, UIDs 11, 30, 40, 48) or 9 (the 26-club English second division with your club, UID 1); the 8-club VS league (UIDs 154–155) reaches 5 | `--mod league-balance` rebuilds those seven UIDs with `schedule.balance_pack` (`set_league` at the same size): no more than 2 running, same clubs, game days and turns, and game bit `w0` 8 kept on its day. Only `PARAM/SCHEDULE_COMPETITION.PAC` changes, by 7 entries that keep their size, so its `.HED` and the `STATIONFILE` copy stay. With a league of another size (`leaguesize.py build`) it balances the build's pack, skipping the leagues the build already rebuilt. Checked with England at 22 and France at 18 plus national-cups in one patch. An improvement, so not in LMASTER lite | tested in PCSX2 (user report): in a new England career on `LMAST-test-leagues.iso` (with the tutorial skip), the Schedule screen shows the club's league games alternating `AHAHAHAHAHAH…`, and each game's details screen agrees with it, where retail's first 16 in the English second division (UID 1, slot 24 or 25) are `HHAHAAHHAHHHHHAA` or `AAAAHHAAAAAAAHHH`. So the game takes its fixtures from the rebuilt pack. Not played to the end of a season, and the other rebuilt leagues (the 22-club ones, VS) weren't looked at; they are built the same way. `python SRC/schedule.py league DAT/PARAM` shows what it rebuilds |
-| A harder economy that punishes mistakes: dearer facilities, a wider ticket price range, dearer advertising, and the like | [`ECONOMY.md`](ECONOMY.md), **confirmed**: a build charges the facility record's cost (`PLRESOURCECOMMON.PAC` entry 0) × the business cycle (75–125%) × any sponsor discount; the plan screen's limits are constants in its set-up (`SIMPRG.REL 0x3eda0`); the ad budget and ticket price set attendance through a 21 × 11 table that only covers prices 60–300 and budgets up to 30,000,000, and the budget adds up to 50 supporter popularity a month; the salary limits, £10,000–£12,000,000 ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | `--mod harder-economy`, six switches with the values the user chose (2026-10-23). The cost side: **`facility-tiers`** (`plrcommon.facility_tiers`, data): build costs and upkeep ×2 for all equipment and adverts; grounds (sites) ×2 and ×4 (their upkeep is never charged); club houses: the starting one's upkeep ×2 (£25,000 → £50,000), the next ×2 (£15M, £150,000), the top ×4 (£60M, £600,000); stadiums: 15,000–25,000 ×2 (£15M, £45,000 a stand), 30,000–40,000 ×3 (£52.5M, £124,500), 50,000–60,000 cost ×5 and upkeep ×4 (£150M, £290,000), 110,000 cost ×3.5 and upkeep ×6 (£350M, close to the record's limit of about £358M; £600,000). The stand costs within a stadium aren't traced, so they stay. **`wider-tickets`** (code and table): both ticket screens go to 480 (£80), and the ticket demand table is respaced over 60–480 in steps of 21: up to 300 the old curve, above it crowds fall as (300 ÷ price)^1.47, so £80 draws half of £50's crowd. **`dearer-ads`** (code): the ad budget buys half as much per pound (popularity budget ÷ 1,200,000, a demand column per 6,000,000) and goes up to 60,000,000 (£10M), so the full effect costs twice as much. The income side, for the late game (chosen 2026-10-23): **`sponsor-fees`** and **`tv-fees`** (tables in `SIMPRG.REL`) keep a sponsor fee or TV offer up to £2M and halve the part above (£45M → £23.5M, the £50M TV offer → £26M; G006's TV £31.2M → £19.1M a season); **`season-demand`** (code) halves season-ticket demand (G006 would sell about half its 36,000, £20.5M → about £10.5M). The season-ticket status bug is fixed separately, by the restoration `--mod season-status` ([Status](#status)) | tested in PCSX2 (user report, `LMAST-test-economy.iso` with `--mod harder-economy`): the facility window showed the tiered costs, the plan screen and the other competitions' ticket screen went to £80 and the ad budget to £10M, and a home match at the new prices drew a crowd; "all seems fine". The three income switches were then tested on the same disc with all six (user report: sponsor fees, TV offers and season-ticket sales as on the test sheet; "all fine"). Not yet played through a whole season. The scripts named after season tickets, spectators and popularity are never run ([`SQB_FORMAT.md`](SQB_FORMAT.md#which-scripts-run)); the C code above is what runs. Played through a season with every max switch (user report, 2026-10-27, a German career on an LMASTER max build): the fanbase grows much more slowly, as the ad budget's halved popularity (`dearer-ads`) predicts, and the game feels much harder economically |
+| Better home and away runs in the league schedules | [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-league-of-another-size): the disc has one schedule per size, and some send a club to one venue up to 7 times running (the 22-club leagues, UIDs 11, 30, 40, 48) or 9 (the 26-club English second division with your club, UID 1); the 8-club VS league (UIDs 154–155) reaches 5 | `--mod league-balance` rebuilds those seven UIDs with `schedule.balance_pack` (`set_league` at the same size): no more than 2 running, same clubs, game days and turns, and game bit `w0` 8 kept on its day. Only `PARAM/SCHEDULE_COMPETITION.PAC` changes, by 7 entries that keep their size, so its `.HED` and the `STATIONFILE` copy stay. With a league of another size (`leaguesize.py build`) it balances the build's pack, skipping the leagues the build already rebuilt. Checked with England at 22 and France at 18 plus national-cups in one patch. An improvement, so not in LMASTER lite | tested in PCSX2 (Nexxus's report): in a new England career on `LMAST-test-leagues.iso` (with the tutorial skip), the Schedule screen shows the club's league games alternating `AHAHAHAHAHAH…`, and each game's details screen agrees with it, where retail's first 16 in the English second division (UID 1, slot 24 or 25) are `HHAHAAHHAHHHHHAA` or `AAAAHHAAAAAAAHHH`. So the game takes its fixtures from the rebuilt pack. Not played to the end of a season, and the other rebuilt leagues (the 22-club ones, VS) weren't looked at; they are built the same way. `python SRC/schedule.py league DAT/PARAM` shows what it rebuilds |
+| A harder economy that punishes mistakes: dearer facilities, a wider ticket price range, dearer advertising, and the like | [`ECONOMY.md`](ECONOMY.md), **confirmed**: a build charges the facility record's cost (`PLRESOURCECOMMON.PAC` entry 0) × the business cycle (75–125%) × any sponsor discount; the plan screen's limits are constants in its set-up (`SIMPRG.REL 0x3eda0`); the ad budget and ticket price set attendance through a 21 × 11 table that only covers prices 60–300 and budgets up to 30,000,000, and the budget adds up to 50 supporter popularity a month; the salary limits, £10,000–£12,000,000 ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | `--mod harder-economy`, six switches with the values Nexxus chose (2026-10-23). The cost side: **`facility-tiers`** (`plrcommon.facility_tiers`, data): build costs and upkeep ×2 for all equipment and adverts; grounds (sites) ×2 and ×4 (their upkeep is never charged); club houses: the starting one's upkeep ×2 (£25,000 → £50,000), the next ×2 (£15M, £150,000), the top ×4 (£60M, £600,000); stadiums: 15,000–25,000 ×2 (£15M, £45,000 a stand), 30,000–40,000 ×3 (£52.5M, £124,500), 50,000–60,000 cost ×5 and upkeep ×4 (£150M, £290,000), 110,000 cost ×3.5 and upkeep ×6 (£350M, close to the record's limit of about £358M; £600,000). The stand costs within a stadium aren't traced, so they stay. **`wider-tickets`** (code and table): both ticket screens go to 480 (£80), and the ticket demand table is respaced over 60–480 in steps of 21: up to 300 the old curve, above it crowds fall as (300 ÷ price)^1.47, so £80 draws half of £50's crowd. **`dearer-ads`** (code): the ad budget buys half as much per pound (popularity budget ÷ 1,200,000, a demand column per 6,000,000) and goes up to 60,000,000 (£10M), so the full effect costs twice as much. The income side, for the late game (chosen 2026-10-23): **`sponsor-fees`** and **`tv-fees`** (tables in `SIMPRG.REL`) keep a sponsor fee or TV offer up to £2M and halve the part above (£45M → £23.5M, the £50M TV offer → £26M; G006's TV £31.2M → £19.1M a season); **`season-demand`** (code) halves season-ticket demand (G006 would sell about half its 36,000, £20.5M → about £10.5M). The season-ticket status bug is fixed separately, by the restoration `--mod season-status` ([Status](#status)) | tested in PCSX2 (Nexxus's report, `LMAST-test-economy.iso` with `--mod harder-economy`): the facility window showed the tiered costs, the plan screen and the other competitions' ticket screen went to £80 and the ad budget to £10M, and a home match at the new prices drew a crowd; "all seems fine". The three income switches were then tested on the same disc with all six (Nexxus's report: sponsor fees, TV offers and season-ticket sales as on the test sheet; "all fine"). Not yet played through a whole season. The scripts named after season tickets, spectators and popularity are never run ([`SQB_FORMAT.md`](SQB_FORMAT.md#which-scripts-run)); the C code above is what runs. Played through a season with every max switch (Nexxus's report, 2026-10-27, a German career on an LMASTER max build): the fanbase grows much more slowly, as the ad budget's halved popularity (`dearer-ads`) predicts, and the game feels much harder economically |
 | Long injuries more common | [`INJURIES.md`](INJURIES.md#the-kind-tables), **confirmed**: a heavy match injury is six months or more 0% of the time for a rested player and 39% at full fatigue, so rotation all but rules them out | `--mod injury-odds`: kinds 4–8 doubled in every row of both kind tables, to at least 2% (practice) and 5% (match) of a row, taken from kind 3 and then kind 0 so light match injuries stay as they were; a heavy match injury is then six months or longer 5% of the time rested and 78% at full fatigue ([`INJURIES.md`](INJURIES.md#more-long-injuries-injury-odds)) | built; not checked in the game |
-| Overseas bases: dearer, each pound buying half as much | [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches), **confirmed**: one cost per region sets the set-up, the investment per level and the upkeep; the level (0–3) scales the region's popularity change by 0.6–1.2 | `--mod overseas-bases`: the 13 costs doubled in `PLRESOURCESIM.PAC` and its `SIMLOCALMEM0`–`6` copies, so the investment per level and the upkeep double too; what a level does stays as in retail (the user's choice, 2026-10-26: like `dearer-ads`) | built; not checked in the game |
-| Reputation harder to raise | [`SAVE_FORMAT.md`](SAVE_FORMAT.md), **confirmed**: the club status (your club rank is status >> 11) rises after each match (win and draw factors at `0x399668`), at final places (points at `0x555188`, `0x555260`, `0x555288`) and by 500 each year end (`0x26e2c4`) | `--mod slow-reputation`: every gain halved, losses as before (the user's choice, 2026-10-26) | tested in PCSX2 (save states, 2026-10-27): a league win gained 47 status where retail gives 95 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)). The club status is hidden in game (user report), so it is read from saves or save states. The year-end and final-place halves aren't seen yet |
-| Transfer fees by player rank: lesser players dearer, the best up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: the player's rank enters the fee only through table A (`0x398478`, 16 ranks × 6 club-rank bands), which only the fee function reads | `--mod fee-tiers`: table A's rows ×2 for ranks 0–5, ×1.5 for 6–11, ×2 for 12–14 and ×3 for rank 15 (the user's choice, 2026-10-26); with `transfer-fees` the best player at a top club reaches about £246M | tested in PCSX2 at the low end (user report, 2026-10-27, a German career on an LMASTER max build): lesser players' fees about 4× retail, with `transfer-fees`; a fee above £120M not yet seen |
-| Transfer fees higher, up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: one base (1,350,000.0, `0x247288`) starts every fee you pay and every offer you get; price kind 1 caps them at £120M | `--mod transfer-fees`: the base 2,700,000.0 and the cap 15,000,000 (£250M) in all four currencies (`0x24a1c8`–`0x24a21c`) | tested in PCSX2 (user report, 2026-10-25): fees doubled; a save state holds the 15,000,000 cap in all four currencies. A fee above £120M, and any limit of the transfer screens, not yet seen ([`ECONOMY.md`](ECONOMY.md#transfer-fees)) |
-| A bigger fanbase counts for more | [`ECONOMY.md`](ECONOMY.md#merchandise), **confirmed**: merchandise starts from a base by supporters, a flat table (12.5× from the smallest fanbase to the biggest); crowds and season tickets weigh popularity against a fixed part; TV offers vary only 0.9–1.15 by popularity | `--mod fanbase`: the merchandise bases ×0.5 at the bottom to ×3 at the top (`SIMPRG.REL 0x1d9ec8`), popularity weighted 195 for 130 and the fixed part 1,500 for 3,000 in crowds and season tickets, and the TV factor 0.75–1.25 | merchandise income much lower (user report, 2026-10-27, a German career on an LMASTER max build), as the halved bases of a small fanbase and `merch-costs` predict; the top of the scale, crowds and TV offers not yet compared. Goods prices stay, and their costs are `merch-costs` (below) |
-| Dearer PR events | [`ECONOMY.md`](ECONOMY.md#pr-events), **confirmed**: an event costs its record's `+0x14` × 300, £5,000–£500,000 | `--mod pr-costs`: × 600 (`0x20deec`), so the booking and the refund both double | tested in PCSX2 (user report, 2026-10-27, a German career on an LMASTER max build): PR events cost double |
+| Overseas bases: dearer, each pound buying half as much | [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches), **confirmed**: one cost per region sets the set-up, the investment per level and the upkeep; the level (0–3) scales the region's popularity change by 0.6–1.2 | `--mod overseas-bases`: the 13 costs doubled in `PLRESOURCESIM.PAC` and its `SIMLOCALMEM0`–`6` copies, so the investment per level and the upkeep double too; what a level does stays as in retail (Nexxus's choice, 2026-10-26: like `dearer-ads`) | built; not checked in the game |
+| Reputation harder to raise | [`SAVE_FORMAT.md`](SAVE_FORMAT.md), **confirmed**: the club status (your club rank is status >> 11) rises after each match (win and draw factors at `0x399668`), at final places (points at `0x555188`, `0x555260`, `0x555288`) and by 500 each year end (`0x26e2c4`) | `--mod slow-reputation`: every gain halved, losses as before (Nexxus's choice, 2026-10-26) | tested in PCSX2 (save states, 2026-10-27): a league win gained 47 status where retail gives 95 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)). The club status is hidden in game (Nexxus's report), so it is read from saves or save states. The year-end and final-place halves aren't seen yet |
+| Transfer fees by player rank: lesser players dearer, the best up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: the player's rank enters the fee only through table A (`0x398478`, 16 ranks × 6 club-rank bands), which only the fee function reads | `--mod fee-tiers`: table A's rows ×2 for ranks 0–5, ×1.5 for 6–11, ×2 for 12–14 and ×3 for rank 15 (Nexxus's choice, 2026-10-26); with `transfer-fees` the best player at a top club reaches about £246M | tested in PCSX2 at the low end (Nexxus's report, 2026-10-27, a German career on an LMASTER max build): lesser players' fees about 4× retail, with `transfer-fees`; a fee above £120M not yet seen |
+| Transfer fees higher, up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: one base (1,350,000.0, `0x247288`) starts every fee you pay and every offer you get; price kind 1 caps them at £120M | `--mod transfer-fees`: the base 2,700,000.0 and the cap 15,000,000 (£250M) in all four currencies (`0x24a1c8`–`0x24a21c`) | tested in PCSX2 (Nexxus's report, 2026-10-25): fees doubled; a save state holds the 15,000,000 cap in all four currencies. A fee above £120M, and any limit of the transfer screens, not yet seen ([`ECONOMY.md`](ECONOMY.md#transfer-fees)) |
+| A bigger fanbase counts for more | [`ECONOMY.md`](ECONOMY.md#merchandise), **confirmed**: merchandise starts from a base by supporters, a flat table (12.5× from the smallest fanbase to the biggest); crowds and season tickets weigh popularity against a fixed part; TV offers vary only 0.9–1.15 by popularity | `--mod fanbase`: the merchandise bases ×0.5 at the bottom to ×3 at the top (`SIMPRG.REL 0x1d9ec8`), popularity weighted 195 for 130 and the fixed part 1,500 for 3,000 in crowds and season tickets, and the TV factor 0.75–1.25 | merchandise income much lower (Nexxus's report, 2026-10-27, a German career on an LMASTER max build), as the halved bases of a small fanbase and `merch-costs` predict; the top of the scale, crowds and TV offers not yet compared. Goods prices stay, and their costs are `merch-costs` (below) |
+| Dearer PR events | [`ECONOMY.md`](ECONOMY.md#pr-events), **confirmed**: an event costs its record's `+0x14` × 300, £5,000–£500,000 | `--mod pr-costs`: × 600 (`0x20deec`), so the booking and the refund both double | tested in PCSX2 (Nexxus's report, 2026-10-27, a German career on an LMASTER max build): PR events cost double |
 | Dearer camps and tours | [`ECONOMY.md`](ECONOMY.md#camps-and-tours), **confirmed**: rates by camp level and region, and by tour region, × the squad × 300; a tour earns £1.2M–£6.3M against under £1M | `--mod camp-costs`: the camp rates × 2 (`SIMPRG.REL 0x1ce4e8`); `--mod tour-costs`: the tour rates × 3 (`0x1ce6c0`), so a tour where the club is little known about breaks even. Tour income unchanged | built; not checked in the game |
-| Dearer merchandise stock, smaller margins | [`ECONOMY.md`](ECONOMY.md#making-the-stock), **confirmed**: a unit of stock costs 30% of its price, less a bulk discount of up to 40%, paid when ordered (payment 22), so goods sell at margins of 70–82% | `--mod merch-costs`: the unit cost 50% (`SIMPRG.REL 0xbcce4`) and the discounts halved, down to 80% for the biggest lot (`0x1d10d8`); margins 50–60% | tested in PCSX2 (user report, 2026-10-25): orders cost half the price a unit, the biggest lot gets 20% off, margins 50% ([`ECONOMY.md`](ECONOMY.md#making-the-stock)) |
+| Dearer merchandise stock, smaller margins | [`ECONOMY.md`](ECONOMY.md#making-the-stock), **confirmed**: a unit of stock costs 30% of its price, less a bulk discount of up to 40%, paid when ordered (payment 22), so goods sell at margins of 70–82% | `--mod merch-costs`: the unit cost 50% (`SIMPRG.REL 0xbcce4`) and the discounts halved, down to 80% for the biggest lot (`0x1d10d8`); margins 50–60% | tested in PCSX2 (Nexxus's report, 2026-10-25): orders cost half the price a unit, the biggest lot gets 20% off, margins 50% ([`ECONOMY.md`](ECONOMY.md#making-the-stock)) |
 
-Ideas for the harder economy (the user's), with where each lives. All
+Ideas for the harder economy (Nexxus's), with where each lives. All
 are built now: the first three as `--mod harder-economy`, the fourth as
 `--mod season-status` and the rest in `--mod balance` (above):
 
@@ -162,7 +163,7 @@ are built now: the first three as `--mod harder-economy`, the fourth as
 | Reputation harder to raise | your club rank is the club status >> 11 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)) | built as `--mod slow-reputation` (above) |
 | Lesser players dearer, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the price limits ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | built as `--mod transfer-fees` and `--mod fee-tiers` (above) |
 
-Built as `--mod third-tier` (the user's idea, design agreed
+Built as `--mod third-tier` (Nexxus's idea, design agreed
 2026-10-26): **a third tier and a harsher end.**
 
 The design:
@@ -176,7 +177,7 @@ The design:
   your club and the rival in it has its real size (England 24). The
   other nations' second divisions don't take your club and the rival,
   so they keep their clubs, and their third tiers start with their
-  three real clubs (the user's correction, 2026-10-27). One club down
+  three real clubs (Nexxus's correction, 2026-10-27). One club down
   and one up each season keeps every tier at its starting size.
 - A player who finishes last in the second division loses at once,
   after one season, so they never end up in the third tier.
@@ -233,7 +234,7 @@ What is known so far:
   only 3–441, and −1 becomes record 1), so code that updates a league
   club's block 2 record (main league, rank) would change club 3's. In
   the retail layout block 2 has no room for more records.
-- **The plan: grow the save (the user's choice, 2026-10-26).** LMASTER
+- **The plan: grow the save (Nexxus's choice, 2026-10-26).** LMASTER
   full saves are separate already (`mod-saves`), so the third tier may
   break save compatibility. **Confirmed** for the approach: the blocks'
   sizes come from the table at `0x533ac8`, and `PlPworkTask`
@@ -246,17 +247,18 @@ What is known so far:
      seven past records for competitions 49–55 at its end, with
      `pwkRec_GetCompePastRecord` sending them there; the serializers
      read and write the new space (`save.py` follows, as it runs them).
-     **Built** (as `save-expand`, now part of `--mod third-tier`), with an LMASTER code segment in
+     **Built** (as `save-expand`, now part of `--mod third-tier`), with
+     an LMASTER code segment in
      the executable for the new code
      ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-bigger-save---mod-third-tier));
      tested in PCSX2: a converted career loads, saves and loads again
-     (user report).
+     (Nexxus's report).
   2. Clubs 442–459 as full clubs: the game's limits 440 (`0x1b8`), 441
      (`0x1b9`) and 442 (`0x1ba`), each checked; their records and squads at
      the start. The club info screen and the world rankings should then
      list them. The 206 sites are sorted in
      [`CLUB_LIMITS.md`](CLUB_LIMITS.md), about 65 of them about clubs.
-     The order (the user's choice to go on carefully,
+     The order (Nexxus's choice to go on carefully,
      2026-10-26): (a) the resident checks and the club loops, with
      squads for 442–459 added to `OTEAMMEMBER.TBB`; (b) the buffers and
      arrays sized for 441 clubs (`ClubRank`, the club-rank list, the
@@ -266,15 +268,16 @@ What is known so far:
      ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-clubs-phase-2a)),
      tested in PCSX2 (a new career and the tutorial's playoff). Step
      (b) is **built** (as `tier-lists`)
-     ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)): the
+     ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)):
+     the
      club-rank list, the transfer AI's lists, the offers' lists and the
      world ranking hold 459 clubs; tested in PCSX2 so far: the All
-     Clubs Ranking lists every club (user report).
+     Clubs Ranking lists every club (Nexxus's report).
   3. The schedules: six hidden third-tier leagues every season (three
      real clubs, and in your nation the two sent down), the second
      divisions' last club down and the tier's winner up, two clubs sent
      down at the start in your nation,
-     `REGULATION.TBB`'s down count 1, and the one-season game over. The user's
+     `REGULATION.TBB`'s down count 1, and the one-season game over. Nexxus's
      choices (2026-10-27): the third tiers get **new UIDs**, 165–170
      and their own-nation versions 171–176 (UID 164 is the default
      rules, [`UID_LIMITS.md`](UID_LIMITS.md#164-is-no-competition)), so
@@ -284,11 +287,13 @@ What is known so far:
      that comes up is the **tier's winner** (`LAST_RANK` rank 1 of its
      competition), which changes each season as the games are simulated.
      **Built** (as `tier-uids`), (a) the leagues and (b) the
-     movements ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3));
+     movements
+     ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3));
      tested in PCSX2: a German career's season end moves the second
      division's last club down and the tier's winner up, in your nation
      and the others, after the fix that keeps the tiers' results
-     ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)). The rival goes down like any club (the user's
+     ([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
+     The rival goes down like any club (Nexxus's
      choice, 2026-10-27). Step (b): the movements, and your nation's
      tier at 5 clubs (an own-nation version of each tier, as the second
      divisions have). Found for (b), **confirmed**:
@@ -327,8 +332,9 @@ What is known so far:
      tiers' winners up, the last clubs down).
 
   The five switches it was built as are **one switch now, `--mod
-  third-tier`** (the user's rule: switches that need each other are one
-  feature), in `--mod leagues` (LMASTER full and max); it turns on `mod-saves` itself and
+  third-tier`** (Nexxus's rule: switches that need each other are one
+  feature), in `--mod leagues` (LMASTER full and max); it turns on
+  `mod-saves` itself and
   needs `--copies` and `--dat`. The machinery under it is no switch: the
   LMASTER code segment (`code_segment_words`) and the save-growing
   wrappers (`save_grow_words`) are there for any later feature, and the
@@ -340,14 +346,14 @@ What is known so far:
   `facility-tiers`) land as entry edits of the rebuilt packs.
 - **Other Club Info** lists a nation's clubs from a loop that stopped at
   441; `third-tier` runs it to 459, so the tier's clubs are listed
-  (tested in PCSX2, user report, 2026-10-27;
+  (tested in PCSX2, Nexxus's report, 2026-10-27;
   [`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)).
   What is left to trace is in [`UID_LIMITS.md`](UID_LIMITS.md#still-unknown).
 
 ## The text
 
 `--mod third-tier` rewrites the messages that state the rules the tier
-changes, in English, French, German, Italian and Spanish (the user's
+changes, in English, French, German, Italian and Spanish (Nexxus's
 choice, 2026-10-27, from a reviewed draft): 136 messages, 27 in each
 language and one name. With the tier your second division has its real
 size, two clubs fewer than retail's own version, its last club goes
@@ -392,7 +398,7 @@ copies in `PRELOAD/NEWS1`–`5.PAC` and 11_5 to `STATIONMES5.PAC`.
 messages read back as built, every other message equals the build
 without the text, and the five `NEWS` copies of 832 equal `MES.PAC`'s; a
 `--mod lmaster-full` build with a `MES.PAC` target keeps the target's
-edit and gets the text. **Tested in PCSX2** (user report, 2026-10-31,
+edit and gets the text. **Tested in PCSX2** (Nexxus's report, 2026-10-31,
 `LMAST-test-season.iso`, a German career in English): the advisor's
 intro gives 18 clubs, 34 matches and the game over at the bottom, the
 help's Game Over conditions say last place (18th), the 2nd German
@@ -405,8 +411,8 @@ no text: no message states their old limits.
 ## Retail text fixes
 
 Messages the retail game itself gets wrong, fixed in LMASTER lite by
-`--mod retail-text` (group `text-fixes`; built 2026-10-30, not yet
-checked in the game). The third tier's text, which states its own
+`--mod retail-text` (group `text-fixes`; built 2026-10-30, tested in
+PCSX2 with the real names, below). The third tier's text, which states its own
 rules, is separate ([The text](#the-text)).
 
 | Message | Retail | Fix |
@@ -414,7 +420,7 @@ rules, is separate ([The text](#the-text)).
 | Game Over conditions, Spain (`MES.PAC` 487:1204), point 2 | English names "Italian League B" (and says "23th"), German "Italienische Liga B"; French, Italian and Spanish are right | Spain's second division, 23rd place, in English and German |
 | Game Over conditions, the Netherlands (487:1205), point 2 | English "23th in Spanish League Division 2", French "division espagnole", German "23." and "Spanischen Liga 2", Spanish "2ª Liga Alemana"; only Italian is right | the Dutch second division, 21st place, in those four languages |
 | Spanish intro to the division (487:1100) | "Hay 216 equipos" | 26 |
-| Team 435's name (categories 3, 4 and 100003, ids 2435 and 3435) | "AL-Hyde" | "Al-Hyde" (user report), in all five languages |
+| Team 435's name (categories 3, 4 and 100003, ids 2435 and 3435) | "AL-Hyde" | "Al-Hyde" (Nexxus's report), in all five languages |
 
 The point-2 fixes follow the Italian texts, which name each nation's
 own league and place. Category 487 has no `PRELOAD` copy, so its files
@@ -430,33 +436,34 @@ Other retail typos seen while making the name table, not fixed:
 
 ## Real names
 
-`--mod real-names` (group `names`, in LMASTER full and max; built
-2026-10-30, not yet checked in the game) gives every league,
+`--mod real-names` (group `names`, in LMASTER full and max; built and
+tested in PCSX2 on 2026-10-30) gives every league,
 competition, club and national team its real name of the game's era
 where the retail game uses a made-up one: Highbury as Arsenal, City as
-Manchester City, the European League as the Champions League (user
-request, 2026-10-30). It also names each club's stadium as of 2005-06, the game's season,
-without sponsors where the ground has another name (Westfalenstadion,
-not Signal Iduna Park; user's choice, 2026-10-30). The club names match the ones LMAST Realism shows
+Manchester City, the European League as the Champions League (Nexxus's
+request, 2026-10-30). It also names each club's stadium as of
+2005-06, the game's season, without sponsors where the ground has
+another name (Westfalenstadion, not Signal Iduna Park; Nexxus's
+choice, 2026-10-30). The club names match the ones LMAST Realism shows
 on its logos and kits, so text and textures agree. The game lets the
 player name their own club and themself with at most 18 characters
-(user report), so the club names keep to 18 too. Like the licensed
+(Nexxus's report), so the club names keep to 18 too. Like the licensed
 Spanish and Dutch clubs, the English, French and German ones use their
 official names as far as 18 characters allow (`Arsenal FC`, `Olympique
 Lyonnais`, `Borussia Dortmund`), abbreviated where they don't fit
-(`Eintr. Frankfurt`, `Paris St-Germain`; user request, 2026-10-31), and
+(`Eintr. Frankfurt`, `Paris St-Germain`; Nexxus's request, 2026-10-31), and
 so do every other club (`AS Roma`, `AFC Ajax`, `AC Sparta Prague`,
 `CA Boca Juniors`). The Spanish clubs' names, licensed ones included,
-have no dots (`FC Barcelona`, `Real Madrid CF`, `RCD Espanyol`; the
-user's choice).
+have no dots (`FC Barcelona`, `Real Madrid CF`, `RCD Espanyol`;
+Nexxus's choice).
 The international competitions carry their governing body, as their
 official names do: UEFA Champions League, UEFA Cup, UEFA Intertoto Cup,
-UEFA Super Cup, UEFA EURO, FIFA World Cup and their qualifiers (user
+UEFA Super Cup, UEFA EURO, FIFA World Cup and their qualifiers (Nexxus's
 request, 2026-10-31). The Standings menu's "European League Ranking" is
 a ranking of clubs, not the competition, so it reads "UEFA Ranking"
-(English, Italian, Spanish; user report: it had read "Champions League
+(English, Italian, Spanish; Nexxus's report: it had read "Champions League
 Ranking").
-The nations and national teams take FIFA's 2005-06 names (user
+The nations and national teams take FIFA's 2005-06 names (Nexxus's
 request, 2026-10-31): Serbia-Montenegro, United States, Republic of
 Ireland, United Arab Emirates (the team; the nation list, whose names
 run to 19 characters, says UAE), Côte d'Ivoire, Suriname, Trinidad and
@@ -483,7 +490,7 @@ Italian and Spanish names and a team's three-letter form.
 | 100011 | the same | the same name where it repeats 11, or the English one where it holds English (in four languages run together, "European LeagueGroup A") |
 
 **Stadiums (2026-10-30).** 382 of the 457 clubs have a stadium row,
-the grounds they played at in 2005-06 (the user's choice, 2026-10-30,
+the grounds they played at in 2005-06 (Nexxus's choice, 2026-10-30,
 after a first list of 2006-07): Highbury for Arsenal, not the Emirates
 Stadium; the Stadio delle Alpi for Juventus and Torino, not the Stadio
 Olimpico di Torino they moved to in 2006; the Alkmaarderhout for AZ, not
@@ -502,16 +509,16 @@ Volkswagen Arena, Philips Stadion, MSV-Arena, Wacker-Arena). The other
 certain or needs letters cp850 lacks (Bežigrad, Andrův stadion), keep
 "\<club\> Stadium". The game's names are at most 30 characters
 ("Athletic Club de Bilbao Stadio"), and so are the rows; `info` lists
-any longer. The rows are suggestions for the user to check.
+any longer. The rows are suggestions for Nexxus to check.
 
 **`--mod own-stadium`** (group `names`): your club's stadium is named
-after you, "\<your name\> Stadium", where the game used your city (user
+after you, "\<your name\> Stadium", where the game used your city (Nexxus's
 request, 2026-10-30). **Confirmed:** `Msg::VarBuf_MakeMyStadium`
 (`0x11eaf8`) builds the name into variable slot 9, which message 11001
 of category 10 (team 1, "USE Stadium") shows, as `snprintf("%s %s")` of
 slot 3 and the word "Stadium" (`GetString` type `0x28`, message `0x52`,
 in each language: Stade, Stadion, Stadio, Estadio). Slot 3 holds the
-city (user report: the stadium defaults to "\<City\> Stadium"); slot 0
+city (Nexxus's report: the stadium defaults to "\<City\> Stadium"); slot 0
 holds the name typed at the start (`SetOwnerName_Keyboard`, the
 `{var:1:7}` of the messages). The switch changes the slot,
 `addiu $a0, $zero, 3` → `0` at `0x11eafc` (`24040003` → `24040000`).
@@ -520,14 +527,16 @@ The rival's stadium (`VarBuf_MakeRivalStadium`, slot 10) is built the
 same way from the rival club's name and is left alone.
 
 A new career builds the stadium name before you type your own, so it
-came out as "  Stadium" (user report, 2026-10-31; over PINE slot 0 held
+came out as "  Stadium" (Nexxus's report, 2026-10-31; over PINE slot 0 held
 the name and slot 9 "  Stadium"). A load rebuilds it from the saved
 slot 0 (`SAVEPRG.REL 0x32f24`, after restoring slots 0 and 1), but a new
 career doesn't, so the switch also ends `SetOwnerName_Keyboard`
 (`0x11ec58`) with a jump to `VarBuf_MakeMyStadium`: its `jr $ra` at
 `0x11ec74` (`03e00008`) becomes `j 0x11eaf8` (`08047abe`), with `$ra`
 already restored and the frame popped in the delay slot (Japanese
-build: `0x11e6f4`, jumping to `0x11e580`). Not yet seen in the game.
+build: `0x11e6f4`, jumping to `0x11e580`). **Tested in PCSX2**
+(Nexxus's report, 2026-10-31, `LMAST-test-season4.iso`): a new career
+shows "\<your name\> Stadium" straight away, and so does a loaded one.
 
 Letters the European text's encoding (cp850) has no code for lose their
 accent ("Zeljeznicar", "Besiktas"), as the game's own names do. A
@@ -574,13 +583,27 @@ read "League One" and so on. PAL only.
 Manchester City and MUN in `MES.PAC`, the Champions League in each
 language, "Arsenal" and "Stella Rossa" in the English and Italian
 `STATIONMES` copies the game loads, and "League One" in the third tier's
-rules. **Tested in PCSX2** (user report, 2026-10-30): the names showed
+rules. **Tested in PCSX2** (Nexxus's report, 2026-10-30): the names showed
 as intended apart from two swapped pairs, since corrected (below).
 The career started in England although the club was made in Germany,
 because the disc was built without `--skip-nation germany`; that is
 the test switch, not the names. On the rebuilt disc (with
 `--skip-nation germany`) the names, the stadium names and the new grounds
-work (user report, 2026-10-30).
+work (Nexxus's report, 2026-10-30).
+
+The official club names, the UEFA and FIFA competition names, the
+"UEFA Ranking" label and the stadium names of every club were then
+**tested in PCSX2** on `LMAST-test-season3.iso` (Nexxus's report,
+2026-10-31, a German career loaded from the memory card): Arsenal FC,
+Bayern Munich, Juventus FC, FC Barcelona, Real Madrid CF and SK Rapid
+Wien read in full; the UEFA Champions League, UEFA Intertoto Cup, UEFA
+EURO and FIFA World Cup show; Standings has "UEFA Ranking" with "Here
+are the UEFA rankings."; and grounds without a row show the club's
+real name ("Bolton Wanderers Stadium"). On `LMAST-test-season4.iso`
+(the same day) the 2005-06 nation and national team names show,
+"United Arab Emirates" and "Republic of Ireland" fit wherever team
+names appear, and the nation list says UAE. The other languages aren't
+seen yet.
 
 ```bash
 python SRC/realnames.py info DAT/MESSAGE/MES.PAC       # the names against the disc
@@ -632,7 +655,7 @@ the game's starting divisions are a season older (Crystal Palace,
 Norwich and Southampton in the top flight), which doesn't change any
 name.
 
-**Style (the user's choice, 2026-10-30): short names, like the
+**Style (Nexxus's choice, 2026-10-30): short names, like the
 licensed clubs of Italy, Spain and the Netherlands** ("Juventus",
 "Atlético Madrid", "PSV Eindhoven"), never shortened past the name a
 club is known by ("Real Madrid", not "R. Madrid"). The table's real
@@ -640,22 +663,24 @@ name column holds a suggestion only where the game's name isn't how
 the club is known (Highbury → Arsenal, Gelsenkirchen → Schalke 04,
 La Boca → Boca Juniors); an empty cell keeps the game's name, and the
 licensed names stay. 340 suggestions and 220 logo readings are in;
-the user then gave the names of ten clubs (Sheva → Beitar Jerusalem,
+Nexxus then gave the names of ten clubs (Sheva → Beitar Jerusalem,
 North Shore → Auckland City and others), and the three "Club Cups":
 Coppa Italia Dilettanti, Copa Federación de España and KNVB Amateur
-Cup, the amateur cups (the first two are 23 and 25 characters). The
-user confirmed the pairings that were in doubt (Velika as Radnik V.
+Cup, the amateur cups (the first two are 23 and 25 characters). Nexxus
+confirmed the pairings that were in doubt (Velika as Radnik V.
 Gorica, Kutaisi as Torpedo Kutaisi, Kulubu as Bursaspor). Two pairs
-first went the wrong way round and were swapped after the user saw
+first went the wrong way round and were swapped after Nexxus saw
 them in the game (2026-10-30): the game's Principat is FC Encamp, and
 Diaconsa, whose Realism crest is FC Rangers' (1981), is FC Rangers;
 Baki is Inter Baku and Baku is Qarabagh. The
 World Club Championship is a made-up tournament and
-keeps its name. AL-Hyde is Al-Sadd (Sadd Sports Club, user report):
+keeps its name. AL-Hyde is Al-Sadd (Sadd Sports Club, Nexxus's report):
 "Al-Sadd" in full and max, while lite only fixes its casing to
-"Al-Hyde" ([Retail text fixes](#retail-text-fixes)). That leaves Doha, which had the Sadd crest: the
+"Al-Hyde" ([Retail text fixes](#retail-text-fixes)). That leaves Doha,
+which had the Sadd crest: the
 only Qatari crest left in Realism's Middle East folder is Al-Gharafa's,
-which the user confirmed. No cell is left in doubt. Four game names end in a stray space ("Baku ",
+which Nexxus confirmed. No cell is left in doubt. Four game names end
+in a stray space ("Baku ",
 "Moskva ", "Újpesti ", "Ararat "), which their real names drop. 27
 suggestions, all competition or stage names, are over 18 characters,
 as many of the game's own are.
@@ -680,7 +705,7 @@ language.
 
 ## Stadiums
 
-Group `stadiums` (LMASTER full and max, the user's request,
+Group `stadiums` (LMASTER full and max, Nexxus's request,
 2026-10-30). Its switches change how big grounds are; the names of the
 grounds are in [Real names](#real-names).
 
@@ -704,7 +729,7 @@ Computer clubs use 89 ids, 219 clubs on ids your builds share and 238 on
 the other 17, with 14 different capacities.
 
 **`--mod special-stadium`.** The Special stadium (type 8) holds 100,000
-at each level, not 110,000 (user's choice of 90,000 or 100,000).
+at each level, not 110,000 (Nexxus's choice of 90,000 or 100,000).
 `plrcommon.special_stadium` writes the three capacity words of record 8
 (`+0x38`, `+0x48`, `+0x58`), and ids 96–101, the match stadiums of a
 level-4 ground, go from 110 to 100 thousand so a full house still fills
@@ -718,11 +743,11 @@ and the `STATIONFILE` copy and the seven `SIMFILE` copies of
 stadiums) takes the change in its own bytes. Not yet tested in the game.
 
 **`--mod real-grounds`.** Each computer club plays at a ground of its
-real 2005-06 capacity (the game's season; the user's choice, after a
-first build with 2006-07 figures), rounded to 5,000 (the user's choice,
+real 2005-06 capacity (the game's season; Nexxus's choice, after a
+first build with 2006-07 figures), rounded to 5,000 (Nexxus's choice,
 closer to the retail game's few sizes than a figure to the thousand),
 and clubs of one size are spread over the stadium ids of that size, so
-grounds of the same size look different (user request, 2026-10-30).
+grounds of the same size look different (Nexxus's request, 2026-10-30).
 `SRC/grounds.csv` holds each club's ground and real capacity in
 thousands (suggestions, from memory: lower-division and far-away
 figures are approximate, which the rounding mostly absorbs; Old Trafford
@@ -731,11 +756,11 @@ figures are approximate, which the rounding mostly absorbs; Old Trafford
 
 - **Looks.** Ids 0–101 keep your ladder's capacities, and their models
   follow those sizes. The ladder's models look small for their numbers
-  at the top (user report on the first build: Chelsea, Manchester United
+  at the top (Nexxus's report on the first build: Chelsea, Manchester United
   and Bayern), so a ground's look follows its size, but the `ho04a` bowl
   is Camp Nou's alone, and the retail game's own away grounds (`aw01a`,
   `aw03a`) are used again, so more clubs have a ground of their own
-  (the user's choices, 2026-10-31):
+  (Nexxus's choices, 2026-10-31):
 
 | Band | Look | Ids |
 |---|---|---|
@@ -757,12 +782,13 @@ figures are approximate, which the rounding mostly absorbs; Old Trafford
   their own. A look is copied only from a row the switch leaves alone,
   so applying it twice changes nothing. `GetCapacityFromID` adds 500
   seats to 103, 105 and 107. Stadium 114 is the rival's ground in every
-  league (`TEAM_INIT_DATA` table 7, [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8)):
+  league (`TEAM_INIT_DATA` table 7,
+  [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8)):
   it keeps its look, boards and 42,000, and no other club is put on it,
-  so the rival's ground stays its own (the user's request); other
-  grounds may use its `aw03a` model (the user's choice).
+  so the rival's ground stays its own (Nexxus's request); other
+  grounds may use its `aw03a` model (Nexxus's choice).
 - **Clubs.** As many grounds as possible, each close to its real size
-  (the user's request): a ground may take any band within 3,000 of its
+  (Nexxus's request): a ground may take any band within 3,000 of its
   real capacity, or its nearest band (the bigger on a tie) if none is;
   under 12,500 the 8,000 grounds. The ladder's own 40,000 grounds, with
   the smaller `ho02a` look, only go to grounds really under 40,000
@@ -790,13 +816,17 @@ edit replaced what the switch expects, the editor's value stays. A
 `BUILD_STADIUM.TBB` from the editor's Stadiums tab takes the looks row by
 row: rows whose look the editor changed keep it
 ([`STADIUM_DIR.md`](STADIUM_DIR.md#editing)).
-**Tested in PCSX2** (user report, 2026-10-30, the first build): the new
+**Tested in PCSX2** (Nexxus's report, 2026-10-30, the first build): the new
 grounds work; the biggest looked too small. With the looks by size above,
-on `LMAST-test-stadiums.iso` (2026-10-30): "Stadiums are good" (user
-report).
+on `LMAST-test-stadiums.iso` (2026-10-30): "Stadiums are good" (Nexxus's
+report). With the looks of 2026-10-31 above, on `LMAST-test-season3.iso`
+(Nexxus's report, 2026-10-31): only Camp Nou uses the `ho04a` bowl, San
+Siro, the Bernabéu and the Westfalenstadion use the `aw04b` bowl, some
+smaller clubs play at the retail away grounds, and the rival's ground
+is still its own.
 
 **`--mod sponsor-boards`.** Every stadium's 12 advert boards are drawn
-afresh from all 205 sponsor logos (user request, 2026-10-30: more
+afresh from all 205 sponsor logos (Nexxus's request, 2026-10-30: more
 variety of sponsors at the grounds). A computer club's ground shows the
 boards of its `BUILD_STADIUM` row, bytes 116–127 (`InitStadium` clears
 the match's own 12 at `0x2136a8`); value *v* is logo *v* − 1 of
@@ -804,26 +834,31 @@ the match's own 12 at `0x2136a8`); value *v* is logo *v* − 1 of
 retail rows use 119 of them, 12 different ones a row. The switch draws each
 row's boards afresh, a fixed random draw per stadium
 (`stadium.sponsor_boards`), so every build is the same. How many
-different sponsors a ground shows grows with its size (the user's
+different sponsors a ground shows grows with its size (Nexxus's
 request, 2026-10-31): 3 up to 8,000, then one more for each step of
 15,000, 20,000, 25,000 ... 50,000, and all 12 boards different from
 55,000 (`sponsor_count`, sizes as `real-grounds` gives them); each
 drawn sponsor is on at least one board and the rest repeat them. 202 of
-the 205 logos appear. The rival's ground (114) keeps its own boards. The adidas board every ground shows (the user's LMAST
-Realism makes it Nexxus Drako Multimedia) isn't one of the 12: it is
+the 205 logos appear. The rival's ground (114) keeps its own boards.
+The adidas board every ground shows (Nexxus's LMAST Realism makes it
+Nexxus Drako Multimedia) isn't one of the 12: it is
 `ADT_TEXCMN` entry 212, which no row names (they use 1–200); the match
 request's `+0x10` moves a row's boards up one and puts it first
 (`0x1cd618`). `InitStadium` sets `+0x10` at every computer club's home
 game except in Spain ([the request in a
 match](STADIUM_DIR.md#the-request-in-a-match)), so it stays on those
-grounds (the user's request), and the
+grounds (Nexxus's request), and the
 switch's draws never pick it (value 206; *v* − 1 is clamped to 205, so
 any value from 206 on would be adidas too). It writes only those bytes,
 so it sits beside `real-grounds`. An edited `BUILD_STADIUM.TBB` keeps
 the boards of the rows the editor changed and takes the draws in the
-rest ([`STADIUM_DIR.md`](STADIUM_DIR.md#editing)). Clubs that share a stadium id still share its boards;
-boards of each club's own would need code in the match set-up.
-**Tested in PCSX2** with the grounds (user report, 2026-10-30).
+rest ([`STADIUM_DIR.md`](STADIUM_DIR.md#editing)). Clubs that share a
+stadium id still share its boards; boards of each club's own would need
+code in the match set-up.
+**Tested in PCSX2** with the grounds (Nexxus's report, 2026-10-30), and
+with the counts by size on `LMAST-test-season4.iso` (Nexxus's report,
+2026-10-31): small grounds repeat a few sponsors (3 at the smallest), big
+grounds show 12 different ones, and the rival's boards are unchanged.
 
 ```bash
 python SRC/plrcommon.py show DAT/PARAM 0.7          # your stadium types
@@ -833,22 +868,41 @@ python SRC/stadium.py info DAT/STADIUM DAT/PARAM    # CONV_INFO_BUILD's ids by l
 
 ## Planned
 
-Ideas the user has agreed on (2026-10-27), not started:
+Ideas Nexxus has agreed on (2026-10-27), not started:
 
 - **LMAST Realism on the disc.** Bring the logos, kits, texture fixes
   and real competition names of
   [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism),
-  the user's own PCSX2 texture pack, onto the disc, so it works without
+  Nexxus's own PCSX2 texture pack, onto the disc, so it works without
   PCSX2's texture replacement. It needs: (1) which disc texture each of
   its PNGs replaces, from the hash PCSX2 names it by (computed the same
   way from each texture `svr.py` decodes, or matched against a dump of
   the originals); (2) a texture writer, since `svr.py` only reads
   ([`SVR_FORMAT.md`](SVR_FORMAT.md)): palette, swizzle and the containers
   the textures sit in; (3) a palette for each: Realism keeps the native
-  sizes for the most part (user report), so most replacements fit their
+  sizes for the most part (Nexxus's report), so most replacements fit their
   texture once requantised to its palette, and the few larger ones need
   a choice (scaled down, or left to the pack). The pack's files stay out
   of the repo.
+
+## Still unknown
+
+The in-game checks still to make are in each row's status above, and
+[`TODO.md`](../TODO.md) sections 7 and 8 hold them as tasks. The open
+questions behind the candidates:
+
+- Whether the 475 unused combination records play sensibly, and how to
+  tell in a match which combination ran
+  ([`BPB_FORMAT.md`](BPB_FORMAT.md#still-unknown)).
+- Whether the match's two readers of the selection policy were meant to
+  read the match policy, and which end of a tactics slider is attacking
+  ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#still-unknown)).
+- Whether the three short `EDIT_EMBLEM` layer tables lose visible parts
+  in the crest editor ([`EMBLEM_DIR.md`](EMBLEM_DIR.md#still-unknown)).
+- Which code picks the advisor's intro and the Game Over texts that the
+  third tier rewrites ([The text](#the-text)).
+- Why Renew Mobile Site was disabled
+  ([`CLUBEVENT_FORMAT.md`](CLUBEVENT_FORMAT.md#still-unknown)).
 
 ## Not candidates
 

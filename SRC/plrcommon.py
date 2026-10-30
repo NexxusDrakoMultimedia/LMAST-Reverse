@@ -353,7 +353,7 @@ def facility_tiers(data):
 
 # The LMASTER Mod's Special stadium (DOC/LMASTER_MOD.md#stadiums): the
 # biggest stadium a club can build, record 8 of table 0.7, holds 100,000 at
-# each of its three levels instead of 110,000 (the user's choice). The
+# each of its three levels instead of 110,000 (Nexxus's choice). The
 # match's stadium ids for it (STADIUM_DATA 96-101, initteam.StadiumData)
 # change with it, in patch_disc.py.
 SPECIAL_STADIUM = ((0, 7), 8, 110000, 100000)

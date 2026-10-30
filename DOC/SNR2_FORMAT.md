@@ -10,7 +10,8 @@ come a symbol table and two relocation lists. The loader adds the load base to
 every local reference and patches imports by name.
 
 The layout was worked out from the files. It holds with no exceptions for
-all ten overlays (`python SRC/snr2.py info <REL>` runs the checks). The module-path
+all ten overlays (`python SRC/snr2.py info <REL>` runs the checks). The
+module-path
 strings (`../PS2_EE_Release/gameprg.elf`) show they were converted from ELF.
 The header fields the loader reads are **confirmed** from SN Systems' DLL
 runtime in `SLES_541.51` (see [Loader](#loader-confirmed)).
@@ -240,7 +241,8 @@ card"):
 So an event can end by opening a management screen, for example a forced
 player dismissal or the captain selection. The EVENT record's scene type
 (`+0xe0`…) picks which one; see
-[`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#scene-types). The wild card never queues an id
+[`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#scene-types). The wild
+card never queues an id
 above 69, so it's not a route to the test modules. Only
 `RootLauncherSeq.sqb` starts the launcher (69) and the test modules,
 and the retail boot skips it
@@ -259,7 +261,8 @@ end:         00 00000000
 ```
 
 Every HI16 site is a `lui` and every J26 site is a `j`/`jal`. LO16 sites
-are the immediate of `addiu`, `lw`, `sw`, `lwc1`, `swc1`, `ldc1`, `lbu`, ... As in
+are the immediate of `addiu`, `lw`, `sw`, `lwc1`, `swc1`, `ldc1`, `lbu`,
+... As in
 ELF, each LO16 pairs with the most recent HI16 in list order, and the stream
 reorders sites so that each `lui` comes just before its low halves. The
 target is `(hi << 16) + sext(lo)`. That's how `snr2.py xref` finds, for

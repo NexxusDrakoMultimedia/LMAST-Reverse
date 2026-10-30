@@ -218,7 +218,7 @@ after which the executable's table equals the new header; a grown
 `MES.PAC` moved 810 files and rewrote their records. A second run finds
 nothing to do in each case.
 
-**Tested in PCSX2** (user report), on two discs:
+**Tested in PCSX2** (Nexxus's report), on two discs:
 - `LMAST-test-archives.iso` (11 files moved, the disc grown past its
   spare sectors): `NEWS/NEWS_TITLE.PAC` rebuilt around two mastheads
   grown past their slots, with its `.HED` and the seven
@@ -333,7 +333,7 @@ checksum:
 | UDF end anchor (last sector) | moved to the new last sector, with its tag location; the old one is cleared |
 
 The anchor at sector 256 and the volume descriptor sequences stay where
-they are. The user reports that an image with extra fan-work files added,
+they are. Nexxus reports that an image with extra fan-work files added,
 so bigger than the original, still ran.
 
 **Tested.** A disc with the grown `PBDATA_EU.PAC` and
@@ -385,7 +385,8 @@ executable edited by `pbdata.py --sles` or `uniform.py setexe`) or
 `disc:DLL/SAVEPRG.REL=...`. `--mod-saves` moves a modded disc's saves
 to their own memory-card folders, and every patch of a whole image
 prints the executable's PCSX2 CRC (see
-[`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)). These keep their size: `patch` doesn't
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)).
+These keep their size: `patch` doesn't
 rewrite the outer disc's directory records (or its UDF copies of them).
 
 `--rename disc:<path>=<NAME>` renames an outer file without changing the
@@ -480,7 +481,8 @@ A patch describes the 3.5 GB ISO. Applied to a CSO (compressed ISO,
 which PCSX2 also runs), Delta Patcher fails with "The file you are trying
 to patch is not the right one" (xdelta3: `source file too short:
 XD3_INVALID_INPUT`). This project's tools read CSO, ZSO and CHD directly
-(`SRC/cso.py`, `SRC/chd.py`, below): `vcdiff.py apply` and `make` take one wherever they take
+(`SRC/cso.py`, `SRC/chd.py`, below): `vcdiff.py apply` and `make` take
+one wherever they take
 an image, and `patch_disc.py patch` decompresses one into its output
 `.iso` and patches that. The output is always an ISO, which can be
 compressed again afterwards.
@@ -499,7 +501,7 @@ set; CSO v2 blocks at least a block long are stored, others LZ4 when bit
 31 is set and deflate otherwise; ZSO blocks are LZ4, or stored when bit
 31 is set. LZ4 is decoded in Python.
 
-**Tested** (2026-10-24): the user's CSO (CSO v1, 16 KiB blocks, index
+**Tested** (2026-10-24): Nexxus's CSO (CSO v1, 16 KiB blocks, index
 shift 1, 2,775,024,620 bytes) decompresses to the Redump SHA-1 in about
 22 seconds, and `vcdiff.py apply` from it gave the built image's SHA-1
 (`f9f5e94c…` above) in about 40 seconds. maxcso 1.13.0 made CSO v1

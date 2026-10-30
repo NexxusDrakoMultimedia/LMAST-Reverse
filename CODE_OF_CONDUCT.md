@@ -5,8 +5,8 @@
 
 These rules apply everywhere the project meets people: issues, pull
 requests, commit messages, discussions, and anywhere else you speak for
-or about LMAST-Reverse. They are based on the rules of the maintainer's
-Discord community.
+or about LMAST-Reverse. They are based on the rules of the Discord
+community of the maintainer, Nexxus (Pyra Drake).
 
 ## The rules
 

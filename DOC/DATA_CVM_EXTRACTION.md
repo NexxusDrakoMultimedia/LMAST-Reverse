@@ -10,7 +10,8 @@ The repo layout and the one-command setup are in the
 
 ## Format
 
-`DATA.CVM` is a CRI ROFS container built with "ROFSBLD Ver.1.52": a 3-sector (0x1800
+`DATA.CVM` is a CRI ROFS container built with "ROFSBLD Ver.1.52": a
+3-sector (0x1800
 byte) `CVMH`/`ZONE` header followed by a plain ISO9660 image. Only the
 ISO's table of contents is encrypted: the primary volume descriptor at
 sector 16 and the directory record sectors reachable from its root,
@@ -56,3 +57,9 @@ python SRC/extract_disc.py extract ISO/DATA.ISO DAT
 
 Mounting `ISO/DATA.ISO` (for example with PowerShell's `Mount-DiskImage`)
 and copying its contents works too.
+
+## Still unknown
+
+Nothing that the tools need: the container, the key and how the game
+derives it are known, and a resized `DATA.CVM` is handled
+([`REBUILD.md`](REBUILD.md#moving-files)).

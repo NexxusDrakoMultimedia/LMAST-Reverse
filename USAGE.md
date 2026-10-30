@@ -73,7 +73,7 @@ Each kind of data has a tab along the top:
 | PR events | the Publicity Department's events: when each is offered, what it costs, its chance of success and what success brings |
 | Tactics | the tactics screen's eight Set Formation presets |
 | Kits | every club's home, away and keeper kits, shown as colour swatches, and the licensed clubs' numbers, name, collar and captain mark |
-| Crests | the crests a new club can pick, the rival's crest and the crest editor's samples and presets, part by part with colour swatches, and the flag patterns and where the crest sits on a flag. Pick what to show from the drop-down at the top. A colour can be one of the club's own three ("club colour 1" to "3"), which follow whatever colours the player gives the club. Not yet checked in the game |
+| Crests | the crests a new club can pick, the rival's crest and the crest editor's samples and presets, part by part with colour swatches, and the flag patterns and where the crest sits on a flag. Pick what to show from the drop-down at the top. A colour can be one of the club's own three ("club colour 1" to "3"), which follow whatever colours the player gives the club. A new club's starting crest is checked in the game (it follows the club's main colour, so an edit to row *n* shows on a club of colour *n*); the other crest tables aren't yet |
 | Text | any message in the game, in all its language slots |
 | Comments | the comment lines on the player, manager, coach and scout detail screens |
 | Log | the commands your saves stood for (below) |
@@ -133,8 +133,8 @@ can play or share.
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels)), and
    **None** clears them. Each group has a box that ticks all its
    switches; press its **+** to see them and tick them one by one.
-   [`INSTALL.md`](INSTALL.md#4-building-a-patch) says what each group
-   does. Tick **Separate saves** (the `saves` group) if the modded disc
+   [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels) says what
+   each group does. Tick **Separate saves** (the `saves` group) if the modded disc
    should keep its careers apart from the original game's; LMASTER full
    and max always have it, and the window shows the letters the saves
    get (careers in `-F`, or `-M` with any difficulty switch; VS data in
@@ -173,8 +173,9 @@ Cards shows where). A card is either:
   per save inside it, or
 - a **card file**: a single file named like `Mcd001.ps2`.
 
-Career saves are named `BESLES-54151-G000`, `-G001` and so on, or
-`-M000` and up for a modded disc that has its own saves.
+Career saves are named `BESLES-54151-G000`, `-G001` and so on. A
+modded disc with its own saves uses `-F000` and up (LMASTER full) or
+`-M000` and up (LMASTER max, or any build with a difficulty switch).
 
 ```bash
 python SRC/saveedit.py open

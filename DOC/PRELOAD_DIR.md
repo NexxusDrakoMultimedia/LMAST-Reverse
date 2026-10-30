@@ -143,7 +143,8 @@ A test disc was patched with different text in each copy:
   skip a copy because a quick look in the game shows the other one.
 - A club-name edit made only in `MES.PAC` doesn't show: the names are read
   from `STATIONMES<n>.PAC` all game.
-- A message file that grows in `MES.PAC` ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing))
+- A message file that grows in `MES.PAC`
+  ([`MBB_FORMAT.md`](MBB_FORMAT.md#writing))
   also grows in its `PRELOAD` copies: `patch_disc.py --copies` rebuilds
   the packs that hold it (below), and moves a pack that outgrows its
   last sector ([`REBUILD.md`](REBUILD.md#moving-files)).
@@ -158,7 +159,8 @@ of new sizes, as long as it still ends in the same sector. Only the
 pack's bytes and the size in its directory record change; no other file
 moves.
 
-How `patch_disc.py` does it ([`REBUILD.md`](REBUILD.md#size-changes-inside-the-last-sector)):
+How `patch_disc.py` does it
+([`REBUILD.md`](REBUILD.md#size-changes-inside-the-last-sector)):
 
 - Every edit to an entry of a `PRELOAD` pack is collected per pack: a
   copy found by `--copies`, or a `PRELOAD/<pack>#<entry>` target.
@@ -166,7 +168,8 @@ How `patch_disc.py` does it ([`REBUILD.md`](REBUILD.md#size-changes-inside-the-l
   a second run works on a pack an earlier run rebuilt.
 - If every entry keeps its size, the entries are written in place.
   Otherwise the pack is rebuilt with `pac.build_binpac`, which lays it
-  out exactly as the original packer did ([`PAC_FORMAT.md`](PAC_FORMAT.md#how-the-packer-laid-them-out-empirical);
+  out exactly as the original packer did
+  ([`PAC_FORMAT.md`](PAC_FORMAT.md#how-the-packer-laid-them-out-empirical);
   all 139 packs rebuild byte for byte). A pack that would need another
   sector is moved to the end of `DATA.ISO`
   ([`REBUILD.md`](REBUILD.md#moving-files)).

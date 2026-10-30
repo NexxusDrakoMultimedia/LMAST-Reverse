@@ -139,23 +139,23 @@ with your club and the rival).
 **The lower cups.** Each nation's lower cup (competitions 5, 10, 15, 21,
 26 and 32: the English League Cup and the Club Cups) takes every club of
 its tier's record, last season's ranks 1–3 (your nation: 1–5), in
-slots after its own (the user's choice, 2026-10-27; the qualifying
+slots after its own (Nexxus's choice, 2026-10-27; the qualifying
 round and the main cup are as they were). Its knockout is rebuilt at the
 new size with `schedule.py`'s builder in its seeded layout
 ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#building-a-knockout)): the
 cup's own clubs and then the tier's, in slot order, are the seeds, byes
 go to the top seeds in the first round only, and each round is played
-on one day (the user's choice, 2026-10-27, after the disc layout's byes
+on one day (Nexxus's choice, 2026-10-27, after the disc layout's byes
 spread over several rounds looked odd on the bracket screen). In your
 nation's version the German cup of 9 opens with one tie, and the French
 one of 13 with five.
 `REGULATION.TBB` and `CLUBRESULT.TBB` get its club count (the round
 names depend on it). Every lower cup starts on Dec w1 midweek (turn 40,
-the user's choice), the main cup's first round, whose clubs (the
+Nexxus's choice), the main cup's first round, whose clubs (the
 qualifying winners and the first division) a lower cup doesn't have, as
 on the turns they shared already; its other rounds stay on the disc's
 midweeks for that many rounds. No round falls on a European or
-national-team day (the user's rule).
+national-team day (Nexxus's rule).
 
 | Nation | Clubs (other nations / yours) | Rounds | Turns |
 |---|---|---|---|
@@ -171,7 +171,7 @@ nation, as yours and not, the qualifying round, the main cup and the
 lower cup take no club twice by last season's records, with
 `ProcPromotion`'s moves (below) in your nation. The tier's rank 1 is
 the club now in the second division (the one promoted, or in season 1
-the one seeded there), as the user's rule wants. Not seen in game yet.
+the one seeded there), as Nexxus's rule wants. Not seen in game yet.
 
 **Season 1.** The seeding loop (`0x253200`) reads the seed table's rows
 to 55, and `PLRRSRC_INITTEAMDATA.TBB` table 1 gets rows 50–55: each
@@ -203,11 +203,11 @@ detours in the LMASTER code segment (`0xf8280`, after the save wrappers'
 `pwkRec_ShiftCompeConventionRecord` (`0x205fc0`), and everything after
 the table (`0x20631c`: the winner, best eleven, MVP, top scorer, title
 effects), which goes to the function's clean-up (`0x20651c`). A rival
-in a tier is a club like any other (the user's choice); its year-end
+in a tier is a club like any other (Nexxus's choice); its year-end
 division record (`pwkRec_UpdateCompeRecordYearEnd`) is skipped there.
 
 **No code** in the ticket module's loop (`0x3cfcc`), which stays at
-164. **Seen in PCSX2** (user report): with only its bound raised to
+164. **Seen in PCSX2** (Nexxus's report): with only its bound raised to
 171, the "none found" test at `0x3cfb8` (still 164) failed, and the Set
 Up Ticket Price screen came up again and again with no competition
 named.
@@ -216,7 +216,8 @@ The packs' headers grow to 177 entries in the same 4,096 bytes
 (`pac.grow_binpac_header`), so the `.HED` files keep their size. The
 switch writes the `PRELOAD` copies too (`STATIONFILE.PAC`'s
 `schedule_system.pac` and `.HED` copies, which the game loads, and the
-seven `SIMFILE*.PAC` copies of `REGULATION.TBB` and `CLUBRESULT.TBB`), so it refuses to run
+seven `SIMFILE*.PAC` copies of `REGULATION.TBB` and `CLUBRESULT.TBB`),
+so it refuses to run
 without `--copies`. `python SRC/schedule.py info` accepts the 177-UID
 layout and finds no new problem (UID 117 as on the retail disc).
 
@@ -229,7 +230,7 @@ club is in a schedule twice, and each nation's clubs are split once
 between its first division, second division and tier, 262 clubs in all,
 the sizes the same every season.
 
-**Seen in PCSX2** (user reports, 2026-10-27), with the leagues alone
+**Seen in PCSX2** (Nexxus's reports, 2026-10-27), with the leagues alone
 (`LMAST-test-tieruids2.iso`, UIDs 165–170 then): a new career plays
 into September past the tiers' first game days, the All Clubs Ranking
 lists the tier clubs, and the Information screen's Competitions tab
@@ -237,25 +238,26 @@ doesn't list the tiers, as the design wants (it must take its
 competitions from a list of its own; not traced). With the movements
 (`LMAST-test-tiers.iso`, an England career with the tutorial skip): the
 Champions Division's table after its first game day has 24 clubs, your
-club and the rival among them (user report, with a screenshot). In a
+club and the rival among them (Nexxus's report, with a screenshot). In a
 German career (`LMAST-test-tiers-germany.iso`, `--skip-nation
 Germany`), the two clubs sent down to the Third German League at the
-start were Siegen and Offenbach (user report). Your nation's cups, now
+start were Siegen and Offenbach (Nexxus's report). Your nation's cups, now
 copies of the other nations' versions, run on their usual turns: the
 German Club Cup's semi-finals were on December week 3 midweek with its
 4 clubs, the qualifying round's losers, one of them Trier, the tier
-club in the seeded last place (user report, with a screenshot). On
+club in the seeded last place (Nexxus's report, with a screenshot). On
 that disc the cup had 2 rounds where your nation's retail version had
 3 (6 clubs); it now takes the tier's clubs as well ([The lower
 cups](#--mod-third-tier-the-tiers-seasons-phase-3), 9 clubs in 4 rounds).
-On `LMAST-test-full-germany.iso` (user report, with screenshots,
+On `LMAST-test-full-germany.iso` (Nexxus's report, with screenshots,
 2026-10-27) the bracket screens drew the German Club Cup with 9 clubs
 (your nation's version) and the French Club Cup with 11, the sizes the
-switch builds, so both cups took their tiers' clubs. The disc layout's byes, spread over three rounds, looked odd
+switch builds, so both cups took their tiers' clubs. The disc layout's
+byes, spread over three rounds, looked odd
 there, and the lower cups now use the seeded layout
 (`LMAST-test-max-germany.iso`, not yet seen in game).
 
-**The first season's end failed, and is fixed** (user report, with
+**The first season's end failed, and is fixed** (Nexxus's report, with
 screenshots and the save, 2026-10-27). The tiers' year rows had `+7` at
 0, so `calcCompetetionFinish` (`0x205f88`) kept none of their results:
 the save's records for competitions 50–55 still held their seeds (count
@@ -275,7 +277,7 @@ written into the save by hand, from their true final tables read out
 of block 5's pools ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-blocks)): in
 Germany Siegen won the tier and Trier was last.
 
-**Tested in PCSX2** (user report, with screenshots, 2026-10-27): that
+**Tested in PCSX2** (Nexxus's report, with screenshots, 2026-10-27): that
 career, loaded on `LMAST-test-tiers-germany2.iso`, plays through the
 year end into 2007–08. The 2nd German League's 18 clubs have Siegen, the
 tier's winner, and not Paderborn, last the season before; Burghausen,

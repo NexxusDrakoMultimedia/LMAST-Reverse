@@ -105,7 +105,8 @@ the size of the record the consumer actually walks:
 
 ### `EDIT_EMBLEM.TBB` t93, t101 and t105 (empirical)
 
-These are the only tables on the disc whose size isn't a whole number of lines. Each
+These are the only tables on the disc whose size isn't a whole number of
+lines. Each
 is 143 bytes, one byte short of the 144 (12 × 12) that most of their
 neighbours hold. The neighbours' 12-byte records start with the record's
 own index as a u16 (`00 00`, `01 00`, ... `0b 00`) and end with a `00`

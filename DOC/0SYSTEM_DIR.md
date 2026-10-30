@@ -81,10 +81,11 @@ that hasn't been checked.
 
 **The two packs differ in one crest (empirical).** `emb_C140`, Siena, is a
 made-up crest (a white animal on a black and white oval) in
-`EMBLEM_TEXTURE`, and the real A.C. Siena crest in `FLAG_TEXTURE`. The other 633 entries are
+`EMBLEM_TEXTURE`, and the real A.C. Siena crest in `FLAG_TEXTURE`. The
+other 633 entries are
 byte-identical. The file dates are June 2006 for `EMBLEM_TEXTURE` and
 May 2006 for `FLAG_TEXTURE`, so the real crest was probably replaced late.
-**Seen in the game (reported by the user):** Siena is unlicensed and always
+**Seen in the game (reported by Nexxus):** Siena is unlicensed and always
 shows the made-up crest. The real one in `FLAG_TEXTURE` is never seen. The
 only type-1 request is `CDetailTeamFlag`'s first one (`0x28e354`, state 0
 at `Init`), so that class is probably not drawing club crests. Its name
@@ -146,7 +147,8 @@ One `TBL1` table of 528 bytes, line size 1. The values are 0 (197),
 1 (318), 2 (9) and 3 (4). `CDetailManager` only copies bytes 0–98, and the
 game code doesn't show what they switch, except that a set byte lets a
 fixed comment replace a player's detail-screen comment
-([`SQB_FORMAT.md`](SQB_FORMAT.md#the-detail-screen-comments)). 528 = 16 × 33, and the manager
+([`SQB_FORMAT.md`](SQB_FORMAT.md#the-detail-screen-comments)). 528 = 16
+× 33, and the manager
 clears a 33-byte array next to the copy, so the table may be 16 rows of 33
 flags. That is a guess.
 

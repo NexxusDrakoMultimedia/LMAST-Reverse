@@ -122,11 +122,12 @@ messages 1045–1056 to 1046–1057 in `801_1`–`6.mbb` and their copies in
 `PRELOAD/SIMFILE1`–`6.PAC` (entry 28), so each drill shows its own
 name; the jackknife name goes to 1045, which is never shown, and the
 files keep their sizes ([`LMASTER_MOD.md`](LMASTER_MOD.md)).
-**Tested in PCSX2** (user report): coach R.Bloemzaad teaches drills 76
+**Tested in PCSX2** (Nexxus's report): coach R.Bloemzaad teaches drills 76
 and 62; drill 76, whose row trains short pass, long pass and cross +10,
 reads "Dribble training" on the retail disc and "Pass training." on
 `LMAST-test-drills.iso`. The coach was found in a career's staff
-candidate list read from a save state (block 1 `+0x9ac8`). `python SRC/training.py show DAT/PARAM/TRAINING_LIST.TBB
+candidate list read from a save state (block 1 `+0x9ac8`). `python
+SRC/training.py show DAT/PARAM/TRAINING_LIST.TBB
 practice` prints the rows; `python SRC/mbb.py dump DAT/MESSAGE/MES.PAC
 --cat 801` the names.
 
@@ -225,7 +226,7 @@ player's age decline), the shooting practice added about 77–87 to shot
 skill and 12–14 to shot technique. On the retail row the two would be
 equal, so the edit is read; the ratio is 6–7 rather than 10, so growth
 seems to rise less than linearly with the value. Training runs when the
-turn advances, not when "Conduct Training" is chosen (user report).
+turn advances, not when "Conduct Training" is chosen (Nexxus's report).
 
 ## Still unknown
 

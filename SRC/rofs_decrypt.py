@@ -380,11 +380,14 @@ def cvm_to_iso(cvm_path, iso_path, key=None, verbose=True):
         print(f"Wrote {iso_path}")
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
+def main(argv):
+    if len(argv) not in (3, 4):
         print(__doc__)
-        sys.exit(1)
-    in_path = sys.argv[1]
-    out_path = sys.argv[2]
-    key = bytes.fromhex(sys.argv[3]) if len(sys.argv) > 3 else None
-    cvm_to_iso(in_path, out_path, key)
+        return 1
+    key = bytes.fromhex(argv[3]) if len(argv) > 3 else None
+    cvm_to_iso(argv[1], argv[2], key)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

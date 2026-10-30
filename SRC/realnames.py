@@ -63,7 +63,7 @@ NATION_CAT, NATION_COPY = 6, 7       # the nations (5000 + PlNati), and a copy
 STADIUM_CAT, STADIUM_BASE = 10, 11000
 CLUB_END = 460                          # teams 3-459 are clubs, with stadiums; 460-542 nations
 NAME_CATS = (TEAM_CAT, STADIUM_CAT, COMP_CAT, STAGE_CAT, NATION_CAT)
-NAME_LIMIT = 18                         # the player's own club name (user report)
+NAME_LIMIT = 18                         # the player's own club name (Nexxus's report)
 STADIUM_LIMIT = 30                      # the game's longest ("Athletic Club de Bilbao Stadio")
 MENTION_MIN = 6
 # Mentions are rewritten in English only. The other languages' game names

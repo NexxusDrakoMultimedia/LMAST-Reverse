@@ -317,7 +317,7 @@ scheme.
   the launcher's Uniform Viewer showed Birmingham in a red shirt with white
   panels and trim instead of blue. The shorts and socks were unchanged. The
   viewer lists Birmingham as an "original team" (`オリジナルチーム`).
-- **Through the editor's Kits tab** (user report): Birmingham's home
+- **Through the editor's Kits tab** (Nexxus's report): Birmingham's home
   outfield kit set to shirt L3, shorts F3, socks B3, numbers B3/A4, the
   home keeper kit to shirt I4, shorts D3, socks A3, numbers A3/G8, and
   the away shirt colour 1 to B1 (21 fields), built with the editor's
@@ -326,7 +326,7 @@ scheme.
 - **Licensed number colour.** AC Milan, a "licence team"
   (`ライセンスチーム`), as described above: the executable's copy of the
   descriptor sets the colour of the shirt number.
-- **Licensed kit in a match, through the editor's Kits tab** (user
+- **Licensed kit in a match, through the editor's Kits tab** (Nexxus's
   report): AC Milan's home outfield back number, shorts number and front
   number colours set to L3 (pink), in both copies (`setexe` and
   `setlicence`, built with Build disc). In a match against Juventus the
@@ -340,10 +340,10 @@ scheme.
   `PRELOAD/SIMFILE0`–`6.PAC` (disc `LMAST-gk-test.iso`), a new career's
   keeper (Dunstable Utd) wore pink sleeves, shorts and socks in a match,
   with the shirt's main colour unchanged.
-- **Keeper scheme through the editor's Kits tab** (user report): a
+- **Keeper scheme through the editor's Kits tab** (Nexxus's report): a
   `UNIFORM_GK` scheme edited in the Kits tab and built with Build disc
   showed on your club's keeper in a match.
-- **User report:** the club editor only lets you choose your outfield
+- **Nexxus's report:** the club editor only lets you choose your outfield
   kits. The keeper kit is never chosen, so `UNIFORM_GK` is the only place
   it comes from.
 
@@ -353,7 +353,7 @@ scheme.
 - Descriptor bytes 14 and 15, and what the pack's copy of the descriptor
   is used for: which copy a match reads (an edit to one copy only would
   tell), and whether a front number can show at all (a front number
-  colour showed nothing on AC Milan's shirt, user report).
+  colour showed nothing on AC Milan's shirt, Nexxus's report).
 - What the 121 rows with team id 0 are.
 - What the keeper kit stored with your club holds, and whether screens
   outside a match show it rather than the `UNIFORM_GK` kit (the code says
@@ -392,4 +392,5 @@ pack's data from an already edited copy instead of the one next to the
 header, which stays in `DAT/` (the pack keeps its size).
 
 `setexe`'s output is patched onto a disc image with
-`python SRC/patch_disc.py patch <in.iso> <out.iso> disc:SLES_541.51=out/SLES_541.51`.
+`python SRC/patch_disc.py patch <in.iso> <out.iso>
+disc:SLES_541.51=out/SLES_541.51`.

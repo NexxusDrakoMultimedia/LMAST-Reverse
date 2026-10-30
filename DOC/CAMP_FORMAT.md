@@ -47,7 +47,8 @@ Tottenham, Fulham, Charlton, Crystal Palace and West Ham, and one club
 from abroad). **Confirmed**: `SIMPRG.REL 0x4c8f8` collects up to 20
 clubs for the camp city chosen on screen (`+0x1e1c`), walking the pairs
 in order. Its loop runs 735 times (`0x2de` + 1, both releases), so the
-last two pairs, Canberra's Fukuoka and Kanagawa, are never offered. `patch_disc.py
+last two pairs, Canberra's Fukuoka and Kanagawa, are never offered.
+`patch_disc.py
 --mod camp-clubs` raises the bound to `0x2e0` (one instruction at
 `SIMPRG.REL 0x4c9d4`).
 
@@ -129,7 +130,8 @@ shows which numbering it was made for: the theme table's goalkeeper rows
 (theme 2) are 72–83, the same rows where table 10 trains saving,
 catching and keeping, and the goalkeeper camps' types are 81–84. With the
 game's reading Parma (type 84, "excellent goalkeepers") trains no keeper
-ability, only GK aptitude +1; with `type − 1` every goalkeeper camp falls in the keeper
+ability, only GK aptitude +1; with `type − 1` every goalkeeper camp
+falls in the keeper
 rows. The Japanese files and executable are the same.
 
 `python SRC/camp.py fixtypes` (and `patch_disc.py --mod camp-types`)
@@ -161,7 +163,7 @@ both, apart from spellings (Nates → Nantes, Malaga → Málaga, La Coruna →
 La Coruña). `python SRC/camp.py fixcities` (and `--mod camp-cities`)
 moves the seven in both files.
 
-**Tested in PCSX2** (user report, test disc `LMAST-test-camps-mes.iso`,
+**Tested in PCSX2** (Nexxus's report, test disc `LMAST-test-camps-mes.iso`,
 a career in its second season): `camp-cities` shows Southampton,
 Blackburn and Sheffield on the England list, the three that need no
 popularity, in place of Basingstoke, Newport and Oakham; `camp-santiago`

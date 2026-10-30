@@ -83,7 +83,7 @@ Liverpool, Ajax, PSV …), and stores it at `0x34d478`/`0x34d47c`, unless
 the developers' flag `0x34d480` is 1, which plays the stored pair instead
 (3 and 4 in the executable). An LMASTER switch that picked two clubs from
 the counter instead (2026-10-30) showed Birmingham v Birmingham in
-PCSX2 and crashed (user report); it was removed at the user's request,
+PCSX2 and crashed (Nexxus's report); it was removed at Nexxus's request,
 with one that kept the movie to the first boot (row 1 cut to `{4}`). Why
 the picked pair didn't reach the match isn't traced.
 

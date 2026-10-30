@@ -67,7 +67,8 @@ Empirical, checked by `initteam.py info`:
 Only records 0–48 are read. Records 38–43 and 48 are empty, as are the
 unread 49–55, so 42 of the 49 read records have teams. (`--mod
 third-tier` fills records 50–55 and has the game read them,
-[`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3).) For a league the
+[`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3).)
+For a league the
 list is its starting table: record 0 is the English first division in
 the same order as table 0. Records 44–47 hold national teams. Knockout
 competitions have their entrants. The schedule's `LAST_RANK` team entries
@@ -125,10 +126,10 @@ Champions Division (the English second division), at home to the
 player's club. A club that finishes low in a second division stays
 there: the English second division's own-nation schedule (UID 1) keeps
 ranks 7–26 of last season's second division, and the retail game has
-no third tier to relegate to (user report; `--mod third-tier` adds one,
+no third tier to relegate to (Nexxus's report; `--mod third-tier` adds one,
 [`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
 
-**Across leagues** (user report, PCSX2): F.C. Barcelona, swapped into
+**Across leagues** (Nexxus's report, PCSX2): F.C. Barcelona, swapped into
 the English Champions Division in the Season tab, has fixtures in that
 league in 2006–07 (fixture 22, away at the player's Dunstable Utd). Its
 Information page still shows Spain and Barcelona and world ranking 12.
@@ -184,7 +185,8 @@ have no squad in this file.
 squads after club 441, for clubs 442–459 (457 squads, 182,848 bytes);
 `initteam.py` reads either size. `initteam.add_tier_squads` builds them
 from the database (each club's 25 players from `0x63f7`), as the
-LMASTER third tier needs ([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-clubs-phase-2a)).
+LMASTER third tier needs
+([`CLUB_LIMITS.md`](CLUB_LIMITS.md#--mod-third-tier-the-clubs-phase-2a)).
 
 ## Names
 

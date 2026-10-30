@@ -507,7 +507,7 @@ class StadiumData:
 
 # The LMASTER Mod's real grounds (DOC/LMASTER_MOD.md#stadiums): each club
 # plays at a ground of its real 2005-06 capacity (the game's season),
-# rounded to 5,000 (the user's choice), and clubs of one size are spread
+# rounded to 5,000 (Nexxus's choice), and clubs of one size are spread
 # over the stadium ids of that size, so they look different. grounds.csv,
 # next to this script, holds {team, ground, capacity in thousands}; clubs
 # naming the same ground share an id.
@@ -516,10 +516,10 @@ class StadiumData:
 # (CONV_INFO_BUILD), and InitStadium fills the stands by their capacity, so
 # they keep it: 8, 15-25, 30-40 and 50-60 thousand, and 100 for 96-101 with
 # special-stadium. A ground's look follows its size, closer than the
-# ladder's models allow at the top (user reports, 2026-10-30: the big clubs
+# ladder's models allow at the top (Nexxus's reports, 2026-10-30: the big clubs
 # looked too small), but the ho04a bowl is Camp Nou's alone, on the
 # Special stadium's ids, and the retail game's own away grounds (aw01a,
-# aw03a) come back on their ids (the user's choices, 2026-10-31):
+# aw03a) come back on their ids (Nexxus's choices, 2026-10-31):
 #   8-35 thousand   the ladder's own ids and models, and aw01a at 20-30
 #   40-60           ho03a: 40 and 45 on the ids below, 50-60 the ladder's;
 #                   aw03a at 40-50
@@ -543,7 +543,7 @@ GROUND_IDS = {
 }
 # Stadium 114 is the rival's ground in every league (TEAM_INIT_DATA table
 # 7, DOC/TEAMINIT_FORMAT.md): it keeps its look, boards and size, and no
-# other club is put on it (the user's request).
+# other club is put on it (Nexxus's request).
 RIVAL_STADIUM = 114
 GROUND_RETAIL = {102: 8, 103: 18, 104: 15, 105: 18, 106: 20, 107: 18, 108: 40, 109: 35,
                  110: 35, 111: 40, 112: 42, 113: 42, 114: 42, 115: 42, 116: 70, 117: 110,

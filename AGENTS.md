@@ -69,8 +69,10 @@ In that case:
 
 ## Workflow for a new format
 
-1. Find the loader in the game code: `python SRC/sles_disasm.py ISO/SLES_541.51 dis <symbol>`
-   or `python SRC/snr2.py dis ISO/DLL/<X>.REL <addr> <n> --sles ISO/SLES_541.51`.
+1. Find the loader in the game code: `python SRC/sles_disasm.py
+   ISO/SLES_541.51 dis <symbol>`
+   or `python SRC/snr2.py dis ISO/DLL/<X>.REL <addr> <n> --sles
+   ISO/SLES_541.51`.
    About 12,600 symbol names are recovered, so search by name first.
 2. Write `DOC/<NAME>_FORMAT.md`.
 3. Write `SRC/<name>.py`.
@@ -92,10 +94,10 @@ In that case:
 |---|---|
 | `DOC/*.md` | every fact about a file or system, how it was shown, the in-game tests, and the questions still open (its "Still unknown" section; every format and folder doc has one) |
 | `GOALS.md` | what the project is for, what a mod should be able to change, each stage's status in a few lines, and the coverage table. No task lists |
-| `TODO.md` | "Next up", a table of the mod goals and what each still needs, then tasks by the stages of `GOALS.md` (read, understand, write, rebuild, edit, distribute), each section opening with its goal and when it is done, then the in-game tests and the LMASTER Mod. Each item links the doc that holds its details instead of repeating them |
-| `DONE.md` | finished items, one or two lines each with a link to the doc, under the same section numbers as `TODO.md`. No test details: those are in the doc |
+| `TODO.md` | "Next up"; a table of the goals (the kinds of change in `GOALS.md`, playing a mod, graphics) with what works, what is still in the way and the sections that hold the tasks; then tasks by the stages of `GOALS.md` (read, understand, write, rebuild, edit, distribute), each section opening with its goal and when it is done, section 2 grouped by the goal each task serves; then the in-game tests and the LMASTER Mod. Each item links the doc that holds its details instead of repeating them |
+| `DONE.md` | finished work, under the same section numbers as `TODO.md`: a line or two per piece of work with a link to the doc, related items merged. No dates or test details: those are in the doc |
 | `README.md` | setup, every tool with what it does, how the tools depend on each other, and the doc index |
-| `INSTALL.md` | the players' guide: checking the disc, applying a patch, saves, and building a patch. Update it when a `--mod` switch or group is added or changes what it does |
+| `INSTALL.md` | the players' guide, kept short: checking the disc, applying a patch, saves, and building a patch with the editions and groups in one line each. Release-specific notes (what changed between LMASTER versions, upgrading a career) belong in the LMASTER-Mod repo, and each switch's details in `DOC/LMASTER_MOD.md`. Update it when an edition or group is added or changes |
 | `USAGE.md` | the guide to the mod editor and the save editor: every tab, Build disc, the save editor's pages. Update it when a tab, page or Build disc control is added or changes |
 | `CODE_OF_CONDUCT.md` | the rules for everyone taking part, and how they are enforced |
 | `CONTRIBUTING.md` | the guide for people sending a change or a report: ways to help, the ground rules, bug reports, the steps of a pull request. It summarises this file and links here for the details; update it when a step here changes |
@@ -140,8 +142,9 @@ Some things can only be checked by a person: that an edit shows in the game
 (PCSX2), what a screen shows, or how audio sounds. Ask the user to check
 (the pending checks are `TODO.md` section 7, each naming the disc or edit
 to build), then record the result in the doc ("Tested in PCSX2: ...",
-"identified by ear", "user report") and move the item to `DONE.md`. The
-user doesn't write code, so don't hand code tasks to them.
+"identified by ear", and who saw it, below) and move the item to
+`DONE.md`. The user doesn't write code, so don't hand code tasks to
+them.
 
 After changing any tool, run `python SRC/regress.py run`. A diff is a
 regression unless the change was intended. Only then run `bless <name>`, and
@@ -178,13 +181,28 @@ Commits usually add a doc and its tool together, with messages like
 - Formatting: link another doc as ``[`NAME.md`](NAME.md)``, with
   `#anchor` for a section; put commands in code blocks tagged `bash`;
   write table separators as `|---|`; use "–" for an empty table cell, and
-  no em dashes.
+  no em dashes. Wrap prose at about 72 characters; table rows stay on
+  one line.
+- People: a doc names who saw a result or made a choice, never just
+  "the user". Find out who you are working with from git
+  (`git config user.name` and `git config user.email`) and look them up
+  in [`CONTRIBUTORS.md`](CONTRIBUTORS.md) for the name they want used:
+  "\<name\>'s report, 2026-10-31" for a result they saw in the game,
+  "\<name\>'s choice" for a decision they made. The maintainer, Pyra
+  Drake, is credited as Nexxus ("Nexxus's report"); don't assume
+  that's who you are working with. If git names nobody, or someone not
+  in `CONTRIBUTORS.md`, ask how they want to be credited. In the game's
+  own terms the person playing is "you" or "the player" ("your club").
+- Write for people. Say what something does in the game before the
+  addresses that prove it, keep sentences short, and prefer the game's
+  own screen names to internal ones where both exist.
 
 ## Code conventions (`SRC/`)
 
 - The repo is GPL-3.0-or-later (`LICENSE`). Every new `.py` file starts with
   `# SPDX-License-Identifier: GPL-3.0-or-later` and
-  `# Copyright (C) 2026 Nexxus Drako Multimedia`, before the docstring. Every new `.md`
+  `# Copyright (C) 2026 Nexxus Drako Multimedia`, before the docstring.
+  Every new `.md`
   file starts with the same two lines as HTML comments (`<!-- ... -->`).
 - Each tool is a single standalone script run from the repo root as
   `python SRC/<tool>.py <command> ...`. There is no package, no
@@ -243,3 +261,9 @@ Commits usually add a doc and its tool together, with messages like
 - Text encodings: European message text is cp850 and Japanese is cp932 with
   extra kana bytes (see `DOC/MBB_FORMAT.md`). Don't assume ASCII or UTF-8 in
   game data.
+- Shell heredocs (`<<'EOF'`) mangle backslashes and quotes on this setup.
+  Write a multi-line script or text to a file (in an ignored path or
+  outside the repo) and run it, instead of passing it through the shell.
+  Big doc edits go through a file editor, not shell commands.
+- Docs are UTF-8 with LF line endings. On Windows, Python's console is
+  cp1252, so set `PYTHONIOENCODING=utf-8` when printing doc text.

@@ -27,7 +27,8 @@ present, `python SRC/regress.py run` also runs every check over them as
 `jp_<name>`.
 
 `patch_disc.py` patches a Japanese disc too, with every switch but the
-third tier ([below](#patching-a-japanese-disc)), and `save.py --iso ISO_JP` reads
+third tier ([below](#patching-a-japanese-disc)), and `save.py --iso
+ISO_JP` reads
 and writes Japanese saves
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)). Still
 PAL-only: the editor and the save editor.
@@ -97,7 +98,7 @@ were patched onto it on 2026-10-27):
 |---|---|
 | `sponsor-negotiation` | nothing to do: the release negotiates with the main sponsor ([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md)) |
 | `drill-names` | nothing to do: `801_1`–`6.mbb` already have the names in the Japanese numbering |
-| `mod-saves` | renames the memory-card folders `BISLPM-66316-G` and `-C` (to `-M` and `-D`), found by name |
+| `mod-saves` | renames the memory-card folders `BISLPM-66316-G` and `-C`, found by name, to the same letters as PAL (`-F` or `-M`, and `-V`) |
 | `skip-tutorial` | as PAL; the undo of the earlier PAL-only skip is left out |
 | `injury-lines` | the code fix only: the Japanese text of the two lines (category 200, messages 4 and 7, "about 2 months", "about 9 months") is already there; slots 1–6 hold `test` |
 | `fanbase` | the merchandise table holds half the PAL bases (5,000 at the top, 400 at the bottom); it is scaled from those with the same factors, ×3 at the top to ×0.5 at the bottom |

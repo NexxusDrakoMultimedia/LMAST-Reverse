@@ -17,7 +17,8 @@ A **schedule UID** (0–163) is one run of games: a league division, a cup
 round, a group of a group stage. The game calls it `PLSCHE_GROUP`. Several
 UIDs belong to one **competition** (`PLSCHE_COMPE`, 0–71). For example, UIDs 1
 and 2 are both competition 1: one is used when it is the player's own
-league, the other when it isn't. Entry *n* of both 164-entry packs belongs to UID
+league, the other when it isn't. Entry *n* of both 164-entry packs
+belongs to UID
 *n*, and `REGULATION.TBB` is indexed by the same number.
 
 The layouts below are **confirmed** from the game code unless marked
@@ -35,12 +36,12 @@ Spanish divisions, 34 has 8 group UIDs and its name list has groups A–H).
 Category 100011 has the names per group and round (`European League
 Group A`, ...), which weren't matched to UIDs.
 
-The career's Information screen lists the competitions by country (user
+The career's Information screen lists the competitions by country (Nexxus's
 report, with screenshots from a Spanish club in its first season). The
 heading of your own nation reads "Your Country", and the order within a
 country is not the id order. An entry is greyed out while its
 competition has no fixtures yet, and again some time after it has
-finished (user report). The Greyed column is the state in those
+finished (Nexxus's report). The Greyed column is the state in those
 screenshots. That the game drops finished competitions to save memory
 is a guess: schedules are loaded one UID at a time
 (`CScheEuro::OneLoadCompCB`), but the code that greys the menu and the
@@ -361,11 +362,12 @@ and away (3rd v 6th, 4th v 5th), then their winners in one game. So
 competition 2 is the **promotion playoffs**: the top two go up, 3rd to
 6th play off for the third place, and the three losers stay down. The
 second division keeps every other club; nothing is relegated from it, as
-the retail game has no third tier (user report; `--mod third-tier` adds
-one, [`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
+the retail game has no third tier (Nexxus's report; `--mod third-tier` adds
+one,
+[`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3)).
 
 **Your club and the rival.** After the tutorial the game adds your club
-and the rival to your nation's second division, which grows by 2 (user
+and the rival to your nation's second division, which grows by 2 (Nexxus's
 report). That fits the slot counts: the own-nation UID 1 has 26 slots
 and takes ranks 7–26 of competition 1, whose record holds 24 clubs, so
 ranks 25 and 26 are the two new clubs; the other-nations UID 2 has 24.
@@ -395,7 +397,8 @@ that changes size moves the entries after it, and the pack and its
 `.HED` must be written together; `patch_disc.py --copies` then updates
 the `STATIONFILE` copies.
 
-`python SRC/schedule.py shift <SCHEDULE_SYSTEM.PAC> <out.PAC> <delta> <uid>[-<uid>] ...`
+`python SRC/schedule.py shift <SCHEDULE_SYSTEM.PAC> <out.PAC> <delta>
+<uid>[-<uid>] ...`
 moves UIDs' game days by `delta` turns: the turn mask and the start turn.
 The end turn stays, a UID that runs across the year end is refused, and
 the start may not pass the first game day. The games are by game day, so
@@ -407,7 +410,8 @@ so neither does the `.HED`. `patch_disc.py --mod national-cups` uses it
 python SRC/schedule.py shift DAT/PARAM/SCHEDULE_SYSTEM.PAC out/SCHEDULE_SYSTEM.PAC -1 98-102 114-122
 ```
 
-`python SRC/schedule.py balance <SCHEDULE_COMPETITION.PAC> <out.PAC> [<uid> ...]`
+`python SRC/schedule.py balance <SCHEDULE_COMPETITION.PAC> <out.PAC>
+[<uid> ...]`
 rebuilds the badly balanced league templates
 ([below](#building-a-league-of-another-size)) with `set_league` at their
 own size: by default UIDs 1, 11, 30, 40, 48, 154 and 155, the ones with
@@ -585,7 +589,7 @@ their largest in one go. The free turns are counted on the
 disc's calendar; a mod that already moved a league's game days gets a
 range from its own files.
 
-**Tested in PCSX2** (user report): England's first division at 22
+**Tested in PCSX2** (Nexxus's report): England's first division at 22
 clubs (`leaguesize.py build`, patched with `--copies` and
 `--skip-tutorial`, disc `LMAST-eng22-test.iso`). In 2006–07 the Premier
 Division table had 22 clubs, Reading and Sheffield U among them with
@@ -596,7 +600,7 @@ last three on May week 1 weekend, May week 2 midweek and May week 2
 weekend, the last three turns `league_turns` gave UID 1. Saving and
 reloading during the season worked.
 
-The second season worked too (user report, with screenshots). The
+The second season worked too (Nexxus's report, with screenshots). The
 2006–07 Premier Division ended with all 22 clubs on 42 games, and the
 bottom three (Sunderland, Reading and Sheffield U) went down. The
 Champions Division ended on 46 games: Ipswich and Leeds went up, and
@@ -607,7 +611,7 @@ Southampton won it. In 2007–08 the Premier Division table again ran to
 Division had Sunderland, Reading and Sheffield U, and Crystal Palace
 and SC Nottingham, two of the losing playoff clubs, were still there.
 The screenshots show that table only down to 15th place, so its 24
-clubs rest on the user's report.
+clubs rest on Nexxus's report.
 
 ### Game days for a league of another size
 
@@ -734,9 +738,11 @@ nation's lower cup by its tier's clubs
   schedule table.
 - `PARAM/GROUP2COMPE.TBB`: each UID's competition, shifted by one entry,
   with the group stages given the competition before theirs. Nothing
-  reads it ([`PARAM_DIR.md`](PARAM_DIR.md#group2competbb-each-schedules-competition-unread)).
+  reads it
+  ([`PARAM_DIR.md`](PARAM_DIR.md#group2competbb-each-schedules-competition-unread)).
 - `PARAM/SCHEDULE_LIST.TBB`: the national-team calendar, flags per turn
-  for each year of the 4-year cycle ([`PARAM_DIR.md`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)).
+  for each year of the 4-year cycle
+  ([`PARAM_DIR.md`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)).
 
 ## Still unknown
 
@@ -748,7 +754,8 @@ nation's lower cup by its tier's clubs
   1–8. (The `savectrl` values are the save pools' types,
   [`UID_LIMITS.md`](UID_LIMITS.md#the-save-pools).)
 - Whether the save-buffer pools have room for bigger leagues than the
-  ones tested ([Building a league of another size](#building-a-league-of-another-size)),
+  ones tested ([Building a league of another
+  size](#building-a-league-of-another-size)),
   and how other nations' and sizes' promotion and relegation play out in
   game (only England at 22 is tested). What the game does with UID 117's
   extra game days.

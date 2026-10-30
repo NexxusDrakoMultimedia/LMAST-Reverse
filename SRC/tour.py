@@ -31,7 +31,7 @@ CLUBS = 0x22e                   # team ids 1-0x22d (SCHEDULE_FORMAT.md, PLTEAMID
 REGIONS = 13
 # The game's English names for the 13 overseas regions: message category 1,
 # record 310 + region (getRegionDetail 0x202310; see plrsim.py). The game
-# uses one region numbering throughout (user report), and each region's
+# uses one region numbering throughout (Nexxus's report), and each region's
 # tour clubs fit its name.
 REGION_NAMES = ("Western Europe", "Central Europe", "Eastern Europe", "Northern Europe",
                 "South America A", "South America B", "North Africa", "West Africa",

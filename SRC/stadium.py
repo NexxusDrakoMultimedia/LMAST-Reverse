@@ -204,7 +204,7 @@ SPONSOR_SEED = 0x4c4d               # "LM": any fixed seed, so every build is th
 
 
 # How many different sponsors a ground shows grows with its size (the
-# user's request, 2026-10-31): SPONSOR_KINDS[k] is the most capacity (in
+# Nexxus's request, 2026-10-31): SPONSOR_KINDS[k] is the most capacity (in
 # thousands) that gets k + SPONSOR_FEWEST different logos; bigger grounds
 # get all 12. A ground's size is the one --mod real-grounds gives it
 # (initteam.ground_bands; the ladder's ids keep the retail size).

@@ -13,7 +13,8 @@ step sends mail from `EvsDataBin_MAIL.bin` and can schedule the next step.
 All addresses are in `SIMPRG.REL` unless noted. The structure is
 **confirmed** from the code. What each procedure is *about* is
 **empirical**, read from the MAIL records it registers (English text,
-`python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN mail.csv --text DAT/MESSAGE/MES.PAC`).
+`python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN mail.csv --text
+DAT/MESSAGE/MES.PAC`).
 
 ## Requests
 
@@ -95,7 +96,8 @@ So the processes are:
 - **Signing a player (14–18).** Started from the negotiation code at
   `0x6b5f8`, which picks the procedure from a byte at `+0x21c` of its
   object: 0 → 14, 1 → 16, 2 → 18. 14 and 18 also call
-  `Param::Set_aaNegoPlayerNo`, with 0 and 1 as its second argument. From the mail text, 0 is a
+  `Param::Set_aaNegoPlayerNo`, with 0 and 1 as its second argument. From
+  the mail text, 0 is a
   player at another club, 1 a free agent ("the currently unaffiliated…")
   and 2 a youth player.
 - **Offers for your players (19–21).** Another club's offer, then the
@@ -142,7 +144,8 @@ players with bit `0x40` set at `+0x20c`. The age and position checks end
 in a random roll against one of the scout's skill bytes (`+0x35`–`+0x38`
 for the four age brackets; `+0x39`, `+0x3c`, … by position), and the scout
 also has a byte per country (`+0x4a` + country) and per region (`+0x51` +
-region) that the search reads. So a better scout finds more. `0x260590` combines the month, a byte of the
+region) that the search reads. So a better scout finds more. `0x260590`
+combines the month, a byte of the
 candidate's club (`+0x9a`), the candidate's value at `+0x1b0`, float tables
 at `0x553648`–`0x553688` and `plTeam_GetPositionEnhancementLevel` for that
 club. What it decides isn't traced.
@@ -327,8 +330,10 @@ happen. The offers they react to come from `Param` code.
   (1, 6, 7, 8, 21) mean.
 - How `0x260590` decides that a player is available for loan.
 - How the instruction-age screen rows map to values 1–4 (the labels
-  suggest 1 16–22 … 4 youth), which tactical approach is which grid half,
-  and what each of the 25 manager policies (`+0x34`) is.
+  suggest 1 16–22 … 4 youth), and which tactical approach is which half
+  of the policy grid (the 25 manager policies themselves are the cells
+  of that grid,
+  [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors)).
 - Which screens own the start functions for 9 (`0x9e7d0`), 14/16/18
   (`0x6b5f8`), 22 and 28. They're `WS::CPlateWindow` dialogs created through
   tables, so the usual symbol and caller searches don't name them.

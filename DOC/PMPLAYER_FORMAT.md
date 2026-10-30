@@ -127,7 +127,7 @@ else), so "none" sorts last and never reaches 70.
 `pmplayer.py check` says which one a career's styles match (equally
 rated styles may come in either order).
 
-**Tested in PCSX2** (user screenshot, `LMAST-test-vpfstyles.iso` with
+**Tested in PCSX2** (Nexxus's screenshot, `LMAST-test-vpfstyles.iso` with
 the `LMAST-vpftest.ps2` card): V. Drake, edited with `pmplayer.py set`
 to 190 cm and rated 95/90/88/80 in styles 5, 12, 17 and 3 (84 in byte
 `+0xb9`), was imported into career G000 at the 2012–2013 season break
@@ -139,14 +139,14 @@ style, in slot 4. So the edited file imports, and the sort works. That
 test ran the compare fix alone; with the fifth word (rating byte
 `+0xb9` as 0) V. Drake should come in as Second Striker, Covering,
 Sweeper and Postplayer in slots 1–4, slot 5 empty. **Tested in PCSX2**
-(user screenshot, the same disc updated with the fifth word, the same
+(Nexxus's screenshot, the same disc updated with the fifth word, the same
 route): V. Drake came in at 190 cm with style icons in slots 1–4 and
 slot 5 empty, Postplayer moved up from slot 5 to slot 4.
 
 ## Tested
 
-**Checked against a career** (`pmplayer.py check`): save G000 on the
-user's card holds G.Binns, imported from slot 1 of the card's
+**Checked against a career** (`pmplayer.py check`): save G000 on
+Nexxus's card holds G.Binns, imported from slot 1 of the card's
 `pmplayer.bin`. Every field the conversion computes from the record
 matches the career's edit work: name, nation (38 → 1), age, height,
 weight, foot, shirt, castno, the derived personality values, the kit
@@ -176,7 +176,7 @@ bytes the import doesn't read are kept. To use the file, copy it over
 backup); PCSX2 folder memory cards hold it as a plain file. On a card
 file, put it with `ps2mc.py put` ([`PS2MC_FORMAT.md`](PS2MC_FORMAT.md)).
 
-**Tested in PCSX2** (user screenshot, 2026-10-23): on the user's folder
+**Tested in PCSX2** (Nexxus's screenshot, 2026-10-23): on Nexxus's folder
 card `Pyra.ps2`, `set 0 name=V.Drake` (was `V. Drake`), copied over
 `pmplayer.bin` with `file.inf` and `pmplayer.inf` unchanged. Virtua Pro
 Football's Develop Players list showed V.Drake with his other values as

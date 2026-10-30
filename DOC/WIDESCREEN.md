@@ -17,12 +17,12 @@ ratio to 16:9. [`PNACH/pcsx2/`](../PNACH/pcsx2/) holds the same patch
 without the comments, for submitting to PCSX2's patch collection.
 The FMVs (the intro and the event movies) stay stretched to 16:9.
 PCSX2's FMV Aspect Ratio Override didn't switch them back to 4:3 in a
-test (user report); the user is happy to leave them.
+test (Nexxus's report); Nexxus is happy to leave them.
 
 Tested in PCSX2: in an exhibition match the pitch widens at the sides
 and players keep their proportions, in play and in close-ups; shadows
 stay under the players; the Club House staff and the player-card
-portraits keep their shape (user report, 2026-10-04).
+portraits keep their shape (Nexxus's report, 2026-10-04).
 
 ## How it works
 
@@ -57,7 +57,7 @@ All code patches use `patch=0`, applied once when the executable loads.
 With `patch=1` PCSX2 rewrote the code every frame, which makes it
 recompile those pages each frame; a custom (VPF) player's face, which the
 match builds at load time, then came out striped (tested in PCSX2: fixed
-by `patch=0`, user report). Only the two Ninja 2D table words of the UI
+by `patch=0`, Nexxus's report). Only the two Ninja 2D table words of the UI
 fix stay `patch=1`, because the game writes that table itself after boot.
 
 Each run of consecutive words is one `bytes` line (PCSX2 writes the hex
@@ -86,11 +86,12 @@ shadow's projection, which is why the patch works one step later.
 The second half of the patch draws the match HUD at 4:3 proportions in
 the middle of the 16:9 screen. (It was a separate section, "Widescreen
 16:9 UI fix", until it was tested everywhere; the two are now one.
-Tested in PCSX2 as one section from boot, user report, 2026-10-09.) Tested in
+Tested in PCSX2 as one section from boot, Nexxus's report, 2026-10-09.)
+Tested in
 PCSX2: in an exhibition match the scoreboard, clock, radar and their text
 line up at 4:3 proportions; in season mode the Club House and Pre-match
 menus and the pre-match intro panel line up too, and faces look normal
-(user report, 2026-10-04). On the Pre-match screen the striped
+(Nexxus's report, 2026-10-04). On the Pre-match screen the striped
 background still runs past the 4:3 area.
 
 The HUD and menus draw through three paths, and all have to be squeezed
@@ -103,7 +104,8 @@ the same way (PAL is 512 pixels wide; GS units are 1/16 pixel, centre 2048):
 | CSE: `cseCastFacePutTriStripParamPS2` (`0x1f2040`) copies each cast node's 3×3 matrix (rows at `$t1`, `x' = x·m00 + y·m10 + tx`) into the VU1 packet in the loop at `0x1f20b4` | menu panels | the node matrix | `0x1f20e0` jumps to `0x12fa30`, which scales the copied x column by 0.75 and adds 64 to tx, then returns; CSE's own matrices are unchanged. It only does so while the CSE screen's offX (context `0x38f458` `+0x68`) is −0.5, the menus' value, so `CEditFaceRender::Render` (`0x151858`), which sets its own screen to build custom players' faces, is left alone |
 
 Which functions run in a match was found by hooking each candidate with
-a stub that stored its return address (live, over PINE): `CSpriteDirect::SetPrimData`,
+a stub that stored its return address (live, over PINE):
+`CSpriteDirect::SetPrimData`,
 `nnuPrimitive2DSetVertex` and `nnDrawPrimitive2D` ran; `CSprite::Draw`,
 `nnDrawPrimitiveSprite2DPS2` and every CSE draw routine
 (`cseCastFaceDrawCorePS2`, `cseCastFaceNonTexDrawCore`, `0x1f1378`,
@@ -122,12 +124,12 @@ projection matrix in `graphics::Scene` (`+0x10`, built by
 patch only widens the global copy at `0x365ad0`. A tag placed with the
 4:3 matrix and then squeezed by the UI fix's text path lands where the
 widened 3D draws the player. Tested in PCSX2: the tags stay over their
-players (user report). Which match function places them hasn't been
+players (Nexxus's report). Which match function places them hasn't been
 traced.
 
 The black letterbox bars of the special-tactics replays are 2D, so they
 are squeezed and clipped to 4:3 like the rest of the UI, and the 3D
-shows beside them. That is the intended look (user's choice): drawing
+shows beside them. That is the intended look (Nexxus's choice): drawing
 full-width bars would need telling them apart from sliding panels.
 
 ### Clipping to 4:3
@@ -153,7 +155,7 @@ y1<<48`), kept in two draw contexts at `0x369dc0` and `0x369f20` and sent by
 `graphics::GlareFilter::display_reduction_buffer` (`0x13be98`, 0x140
 bytes), a debug display nothing calls. Tested in PCSX2: the hidden squad
 list no longer shows in the match, the ticker and the menu slide-ins stop
-at the 4:3 edge, list rows are intact (user report, 2026-10-04).
+at the 4:3 edge, list rows are intact (Nexxus's report, 2026-10-04).
 
 ### Match HUD and cut-ins
 
@@ -189,14 +191,15 @@ address so it returns through the cave. The caves sit in
 `0x114` bytes), called only from the dead `display_menu`.
 
 Tested in PCSX2: the substitution cut-in stays inside 4:3, the rest of
-the match HUD is unchanged, and the speed is unaffected (user report,
+the match HUD is unchanged, and the speed is unaffected (Nexxus's report,
 2026-10-09), first with the code written over PINE and then from boot
 with the pnach.
 
 ### Season-mode backdrops
 
 The season-mode screens draw an Acrobata scene behind their menus, such as
-the scrolling map behind the Edit club screen ([`ACROBATA_DIR.md`](ACROBATA_DIR.md)). The
+the scrolling map behind the Edit club screen
+([`ACROBATA_DIR.md`](ACROBATA_DIR.md)). The
 scene reaches past the 4:3 area, and it isn't drawn in the 2D pass, so the
 clip above doesn't cover it. With the scissor held at 4:3 for the whole
 frame the margin was clean, so the scene does respect the scissor.
@@ -224,7 +227,7 @@ table; the menus it calls are only called from it.
 Tested in PCSX2 from boot with the pnach: the map behind Edit club and the
 Pre-match screen's background stop at the 4:3 edge; the Club House rooms,
 staff and portraits look as before; in a match the 3D still fills 16:9
-and the HUD is unchanged (user report, 2026-10-09).
+and the HUD is unchanged (Nexxus's report, 2026-10-09).
 
 Found by live hooks over PINE that logged each caller with the scissor
 value at the time. Ruled out on the way:
@@ -262,7 +265,7 @@ primitive goes straight on. The cave follows the backdrop cave in
 `display_menu`, at `0x13cd40`–`0x13cdb8`.
 
 Tested in PCSX2 from boot: changing rooms in season mode, the old room
-keeps its full 4:3 width while the next one loads and fades in (user
+keeps its full 4:3 width while the next one loads and fades in (Nexxus's
 report, 2026-10-09).
 
 ### Room depth
@@ -297,7 +300,7 @@ pixel is read before it is overwritten. The 64 columns at each side keep
 their old values; they are outside the 4:3 area.
 
 Tested in PCSX2 from boot: in My Room the secretary walks behind the
-desk and lamp without being cut by stray shapes (user report,
+desk and lamp without being cut by stray shapes (Nexxus's report,
 2026-10-09).
 
 ### Face builds
@@ -321,15 +324,24 @@ other callers (`0x12ea18`, `0x12f794`) run when the video mode is set;
 the table line covers those.
 
 Tested in PCSX2: scrolling the player cards no longer flashes stretched
-text (user report, 2026-10-09).
+text (Nexxus's report, 2026-10-09).
 
 ## Known behaviour
 
 - The FMVs stay stretched to 16:9 (see the top of this page).
 - The stadium ad boards floating above the pitch in replays are the
-  game's normal behaviour, not the patch (user report).
+  game's normal behaviour, not the patch (Nexxus's report).
 - Nothing is known to be broken: every UI item found so far is fixed or
   is the intended look.
+
+## Still unknown
+
+- Which match function places the name tags over the players. The
+  patch doesn't need it (above).
+- Whether the patch works on a modded disc. A disc whose executable is
+  patched has its own PCSX2 CRC, so the pnach has to be copied under
+  that CRC's name, and that hasn't been tried
+  ([`INSTALL.md`](../INSTALL.md#pcsx2-patches)).
 
 ## Checking the claims
 

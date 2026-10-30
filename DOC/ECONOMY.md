@@ -81,7 +81,9 @@ table costs (1,650,000 is stadium equipment 4's 1,500,000). G003
 are 100% (2,400,000 is stadium equipment 1). So a mod that changes a
 facility's cost only edits the record. **Tested in PCSX2** with
 `plrcommon.py set`: edited costs showed in the facility window and were
-charged ([`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records)). The cycle and any sponsor
+charged
+([`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md#editing-the-facility-records)).
+The cycle and any sponsor
 discount still apply on top.
 
 ## The season plan screen's limits
@@ -100,7 +102,7 @@ instructions are the only check.
 | season-ticket rate | 50 | 150 | 10 | min `0x3f05c`, max `0x3f060`, step `0x3f034` |
 | season tickets | 0 | capacity × 0.8 | 100 | factor `0x3f17c`/`0x3f180` (float 0.8), step `0x3f154` |
 
-This confirms the limits the user reported in
+This confirms the limits Nexxus reported in
 [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far). The ticket
 minimum's register also fills a second field of the control (`+0x478`),
 so a patch should change only the immediate at `0x3ef94` and check that
@@ -165,7 +167,8 @@ this way. `pwkTeam_PopUpdateAnnualy`, `…Monthly` and `…Turnly`
 **Overseas factors.** The monthly, match and title changes in an
 overseas region are multiplied by two factors: the branch's level,
 (level + 1) ÷ 5 + 0.4 (`0x268e18`: 0.6–1.2 for levels 0–3;
-[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)), and a float from
+[`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)),
+and a float from
 `0x554ec8` indexed by the best player rank (`PlPinfo +0x1b0`, 0–15,
 [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)) among your players from that
 region (`0x268e70`; 0 with none): 1.02, 1.05, **10.8**, 1.11, 1.14, …
@@ -193,7 +196,8 @@ The change from `0x268b00` is the sum of:
 
 `0x268640` works out, for each of your matches:
 
-> change = ((opponent's club rank − yours) ÷ 2 + *r*) × result factor × grade factor × streak factor × 2
+> change = ((opponent's club rank − yours) ÷ 2 + *r*) × result factor ×
+> grade factor × streak factor × 2
 
 Club ranks are `pwkOteam_GetRank`, 0–31, higher is better. *r* is −16
 for a loss and +16 otherwise (`0x26871c`, `0x268754`). The two sides
@@ -239,7 +243,8 @@ runner-up, 2–3 the semi-finals, 4–7, 8–15 and 16–31 the earlier rounds.
 
 A player who joins (`0x2683e0`) adds
 
-> (star + 1) × squad factor × 3, or 4 for a player of your nation or a youth graduate (`plPinfo_IsYouthUp`) × 0.9–1.1
+> (star + 1) × squad factor × 3, or 4 for a player of your nation or a
+> youth graduate (`plPinfo_IsYouthUp`) × 0.9–1.1
 
 at home, and the same with 2, or 4 for a player from that region, in
 each overseas region. Star is `PlPinfo +0x1da` (database `+0x42`, 0–15).
@@ -253,7 +258,8 @@ squad) of your own nation brings up to about 16 × 31.5 × 4 × 1.1 ≈
 
 A player who leaves (`0x2684e0`) takes away
 
-> popularity × 10 × (1.5 for your nation, 2.0 for a youth graduate, 1.0 otherwise) × (`+0x21c` ÷ 10 + 1) × (squad factor + 1) × 0.9–1.1 ÷ 65,535
+> popularity × 10 × (1.5 for your nation, 2.0 for a youth graduate, 1.0
+> otherwise) × (`+0x21c` ÷ 10 + 1) × (squad factor + 1) × 0.9–1.1 ÷ 65,535
 
 using the player's home popularity (`PlPinfo +0x238`) in every region; overseas
 the first factor is 2.0 for a player from that region. `+0x21c` is the
@@ -275,7 +281,7 @@ half that (`0x553110`) where only byte `+0` is set, and none otherwise.
 popularity: the cap of rank 4 allows about 580,000 at home, rank 1
 about 6.3 million, rank 0 about 10.8 million.
 
-**Checked on three saves** against the Supporters Club screen (user
+**Checked on three saves** against the Supporters Club screen (Nexxus's
 report, 2026-10-26). The screen's "No. of fans" is the sum over every
 region; "No. of local fans" is the highlighted region, and Western
 Europe also counts the home region:
@@ -320,14 +326,16 @@ price outside 60–300 behaves like the nearest end.
 `pwkUnkei_GetAllAudience` (`0x272128`), **confirmed**, for your home
 match:
 
-> walk-ups = (home popularity ÷ 10 × 130 + (*k* + 1) × 3,000) × demand × (grade + importance) × weather × (95–104) ÷ 60,000,000
+> walk-ups = (home popularity ÷ 10 × 130 + (*k* + 1) × 3,000) × demand ×
+> (grade + importance) × weather × (95–104) ÷ 60,000,000
 
 The result is capped at the stadium's capacity. Home popularity is the
 region value above. `patch_disc.py --mod fanbase` (in `--mod balance`)
 makes the 130 195 and the 3,000 1,500 (`addiu` immediates at `0x2722d8`
 and `0x2722f0`), so the crowd follows popularity more and the fixed part
 less: at the full 65,535 the first part grows by about half, while a
-club of popularity 5,000 and *k* = 10 keeps about what it had. *k* is the function's u8 argument, 0–32 by its
+club of popularity 5,000 and *k* = 10 keeps about what it had. *k* is
+the function's u8 argument, 0–32 by its
 tables (the club rank would fit; not traced). Grade is 11, 10, 9, 8, 8,
 8, 5, 0 by `PlMatchGrade` (`0x556218`). Importance is 11, 13, 12, 11,
 11, 40 by `IMPORTANT_MATCH` (`0x556238`). Weather is 10, 10, 5, 5, or
@@ -382,9 +390,12 @@ status × 30, each × (90–109) ÷ 100. The other slots add nothing.
 `pwkUnkei_CalcSeat` (`0x2733a0`) stores the share sold, 0–100, at plan
 `+0x14` from `pwkUnkei_GetExpectSeat` (`0x2727c8`):
 
-> demand = (home popularity ÷ 10 × 130 + 27,000) × ticket demand(season-ticket price, budget) × status factor ÷ (rate ÷ 100) × 18,000 ÷ 60,000,000
+> demand = (home popularity ÷ 10 × 130 + 27,000) × ticket
+> demand(season-ticket price, budget) × status factor ÷ (rate ÷ 100) ×
+> 18,000 ÷ 60,000,000
 >
-> sold% = demand × `pwkUnkei_GetSeasonRate`(popularity, club status) ÷ season tickets on sale, at most 100
+> sold% = demand × `pwkUnkei_GetSeasonRate`(popularity, club status) ÷
+> season tickets on sale, at most 100
 
 (27,000 and 18,000 are for the bool argument `CalcSeat` passes, false;
 true gives 66,000 and 19,000.) The first part is the walk-up formula's
@@ -407,7 +418,7 @@ rewrites them as the intended ladder: 0.5 up to 10,000, then 0.6, 0.7,
 0.8 and 0.9 a band of 10,000, and 1.0 above 50,000. Checked by running
 both versions in a small MIPS simulator over the band edges.
 
-**Tested in PCSX2** (`LMAST-test-seasonstatus.iso`, user's career saved
+**Tested in PCSX2** (`LMAST-test-seasonstatus.iso`, Nexxus's career saved
 to `Mcd001.ps2` as G002 and read off it with `ps2mc.py get`): with
 popularity and club status at 65,535 and 88,000 season tickets on sale
 at the start of 2025–2026, the save holds 72% sold. That is the
@@ -448,7 +459,8 @@ offered bigger ones (which sponsors a club is offered isn't traced).
 **Empirical:** 210 records have fees. `+0x14` runs £500,000–£45M
 (median £3.45M), `+0x18` £50,000–£45M (median £345,000). Four records
 (170, 174, 186, 194) hold the £1,350,000 of Africmap Airways, the first
-main sponsor of a new career ([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md#tested-in-pcsx2)).
+main sponsor of a new career
+([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md#tested-in-pcsx2)).
 
 ## TV contracts
 
@@ -465,7 +477,8 @@ home-popularity factor: 0.9, 0.95, 1.0, 1.05 or 1.15 for popularity in
 fifths of 0–65,535 (`pwkTeam_Pop(0)`; each factor a double built in
 `$s1` by 7 instructions, `0x163a60`, `0x163a90`, 1.0 at `0x163a34`,
 `0x163ad8`, `0x163b14`). `--mod fanbase` makes them 0.75, 0.875, 1.0,
-1.125 and 1.25, each built by `ori` and `dsll32` as the 1.0 is. The bases are the 19 records of
+1.125 and 1.25, each built by `ori` and `dsll32` as the 1.0 is. The
+bases are the 19 records of
 0x1c bytes at `0x241780` (`+0x0` station, `+0x8` base, `+0xc` key):
 £1M–£4.75M for the 13 smaller offers, £8.5M–£16.5M for four bigger
 ones and £30M and £50M at the top (base × 100 ÷ 6). Which stations
@@ -548,7 +561,7 @@ price, so margins in an average cycle are 50–60%, and stock that doesn't
 sell costs more. The £30 shirt costs £15 a unit in a lot of 1,000 and
 £12 in a lot of 100,000. The prices stay.
 
-**Tested in PCSX2** (user report, 2026-10-25, a `--mod lmaster-full`
+**Tested in PCSX2** (Nexxus's report, 2026-10-25, a `--mod lmaster-full`
 disc): ordering goods costs half the price a unit, the biggest lot gets
 only 20% off, and the margins come out at 50%. The save state of that
 career shows `SIMPRG.REL` loaded at `0xc75000` with the new unit cost
@@ -559,7 +572,8 @@ merchandise bases and TV factors, also in place.
 bottom, evenly on a log scale: 30,000, 21,457, 16,786, 12,864, 7,667,
 6,170, 4,903, 3,836, 2,939, 2,409, 1,958, 1,575, 1,252, 979, 751, 559
 and 400, so the biggest fanbase sells 75 times the smallest. On a
-max build (user report, 2026-10-27, a German career on an LMASTER max build) merchandise income
+max build (Nexxus's report, 2026-10-27, a German career on an LMASTER
+max build) merchandise income
 came out much lower, as a small fanbase's halved base and `merch-costs`
 predict; a big fanbase's ×3 isn't seen yet.
 
@@ -604,12 +618,13 @@ rank 15, and a top club in a boom at most about £41M (£82M with
 `transfer-fees`). Which arguments are the growth type and the contract
 isn't traced from the callers.
 
-`--mod fee-tiers` (in `--mod balance`, the user's choice of tiers,
+`--mod fee-tiers` (in `--mod balance`, Nexxus's choice of tiers,
 2026-10-26) multiplies table A's rows: ranks 0–5 ×2, 6–11 ×1.5, 12–14
 ×2 and rank 15, the "football icon", ×3. With `transfer-fees` a mid club
 pays about £1.7M for a rank-0 player and £125M for a rank-15 one, and the
 best player at a top club in a boom reaches about £246M, under the £250M
-cap. **Tested in PCSX2** at the low end (user report, 2026-10-27, a German career on an LMASTER max build):
+cap. **Tested in PCSX2** at the low end (Nexxus's report, 2026-10-27, a
+German career on an LMASTER max build):
 lesser players' fees came out about four times retail. A top player's
 fee above £120M isn't seen yet.
 
@@ -623,7 +638,7 @@ the dissatisfaction check), 30,000 × form factors × two tables × 48.
 currency's step. Fees within the old cap double; fees the old cap held
 at £120M can now reach £250M.
 
-**Tested in PCSX2** (user report, 2026-10-25, a `--mod lmaster-full`
+**Tested in PCSX2** (Nexxus's report, 2026-10-25, a `--mod lmaster-full`
 disc): transfer fees came out doubled. In a save state of that career
 (slot 1 of the CRC `59D884B2` build, `--mod lmaster-full` without the
 tutorial skip) the running game holds the new code and price kind 1's
@@ -673,7 +688,8 @@ which byte the code reads for each cycle is **confirmed**.
 ladder's first 11 words to read byte *K* + 1 below cycle 2, nothing at
 2 and byte *K* above it; `--mod pr-costs` (in `--mod balance`) makes
 the cost `+0x14` × 600 (the `addiu` at `0x20deec`), which doubles the
-booking and the refunds alike. **Tested in PCSX2** (user report, 2026-10-27, a German career on an LMASTER max build): PR
+booking and the refunds alike. **Tested in PCSX2** (Nexxus's report,
+2026-10-27, a German career on an LMASTER max build): PR
 events cost double.
 
 **Success** changes popularity, youth development and supporter
@@ -691,9 +707,11 @@ price a booking, keep it at `+0x520` and pay it as payment 21 (Camp
 Tour) when it is booked (`0xa2548`, `0xa2690`); cancelling refunds it
 (`0xa4d04`, `0xa4df4`). **Confirmed:**
 
-> camp = rate[level][region] × players × 300 × cycle ÷ 100 × (100 − sponsor discount 16) ÷ 100 (`0x4ded8`)
+> camp = rate[level][region] × players × 300 × cycle ÷ 100 × (100 −
+> sponsor discount 16) ÷ 100 (`0x4ded8`)
 >
-> tour = rate[region + 1] × (players ÷ 2) × 300 × cycle ÷ 100 × (100 − sponsor discount 28) ÷ 100 (`0x4e080`)
+> tour = rate[region + 1] × (players ÷ 2) × 300 × cycle ÷ 100 × (100 −
+> sponsor discount 28) ÷ 100 (`0x4e080`)
 
 *players* counts the filled slots of the 25-man squad. A camp's *level*
 is its `CAMP_LIST` level (0–7, [`CAMP_FORMAT.md`](CAMP_FORMAT.md)) and
@@ -713,7 +731,9 @@ With 25 players in an average cycle and no discount, a camp costs
 **Tour income** (`pwkSche_GetTourIncome`, `0x2566f8`; booked as income
 11, Other income, at `SIMPRG.REL 0x134bd0`) is
 
-> (T1[band][region] × 300 + T0[band] × matches) × cycle ÷ 100, halved unless each of the tour's named players (up to 4, `pwkSche_GetTourPlayer`, `0x256630`) is in its matches' entries
+> (T1[band][region] × 300 + T0[band] × matches) × cycle ÷ 100, halved
+> unless each of the tour's named players (up to 4,
+> `pwkSche_GetTourPlayer`, `0x256630`) is in its matches' entries
 
 where *band* is your popularity in the tour's region against 10
 thresholds (`0x399478`: 0, 3,001, 8,001 … 60,001), T1 is 10 × 13 u32 at

@@ -127,7 +127,7 @@ python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x20e2d8 70
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x20e3f0 38
 ```
 
-**Tested in PCSX2** (user report, 2026-10-31, `LMAST-test-season.iso`
+**Tested in PCSX2** (Nexxus's report, 2026-10-31, `LMAST-test-season.iso`
 with `--mod lmaster-max`): `38:cost=200 38:ticket=50` made Ticket
 Campaign cost £20,000 (£10,000, doubled by `pr-costs`) and raised that
 match's ticket sales clearly; `37:month_rule=0 37:first_season=0
@@ -140,5 +140,6 @@ first September.
   the day (`SIMPRG.REL 0xa411c`: the day's `+0x4`, `+0x8` and `+0x40`),
   and so whether `+0x1c` events need a home match.
 - Which office equipment kind 3 is (the office's four kinds by name).
-- Why event 37 is disabled, and whether `--mod mobile-site` brings it
-  back in game.
+- Why event 37 is disabled. `--mod mobile-site` brings it back in the
+  game (tested in PCSX2,
+  [`LMASTER_MOD.md`](LMASTER_MOD.md#status)).

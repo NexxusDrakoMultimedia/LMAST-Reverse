@@ -428,7 +428,7 @@ These scripts can be edited and tested in game: the thresholds in table
 1, the reputation and message numbers in table 2 (`sqb.py settable`), or
 a group's abilities (with `setcmd` or a hex edit of a literal).
 
-**Tested in PCSX2** (user report): with every cell of `seicyoMS` table 1
+**Tested in PCSX2** (Nexxus's report): with every cell of `seicyoMS` table 1
 set to 207 and every cell of `manager_syousai_nouryokuMS` table 2 set to
 186 (`settable`, in `PSCCOMMON.PAC` and its `STATIONFILE.PAC` copy),
 every player's second comment line read "Reaching the end of his
@@ -539,7 +539,7 @@ disc with `patch_disc.py`. It re-checks the script's labels before writing.
 ## Skipping the tutorial (the opening playoffs)
 
 A new career starts with a scripted promotion playoff, with cutscenes:
-the club's way into the league (the game has no third division; user
+the club's way into the league (the game has no third division; Nexxus's
 report). `RootClubEditSeq.sqb` runs it after club creation and the first
 save, behind a developer switch:
 
@@ -612,7 +612,7 @@ ranking 1. The club started with £3,350,000, so the year end also
 settles the playoff season's money. At the first Sponsor screen the
 sponsors were normal: a £2.2 million main sponsor and the usual
 sub-sponsors, where a normal career gets sponsors around £2.5 million
-(user report).
+(Nexxus's report).
 
 ### The first version
 
@@ -666,7 +666,7 @@ its contract at the season's year start, and the Sponsor screen showed
 Doclla again: the game signed it anew, so the supplier is chosen, not
 left over. The Sponsor module's setup (`SIMPRG.REL 0xc49c0`) signs an
 offer by itself when `pwkGen_Keika` is 0 or less (`0xc49e0`–`0xc49f0`).
-**User report:** in a normal career Egamucho is the supplier at the
+**Nexxus's report:** in a normal career Egamucho is the supplier at the
 first Sponsor screen. (EVENT 338, timing 16 in season 2, has Jane say
 the supplier contract "ends soon", and the manual says other suppliers
 become available after the first year; neither contradicts this.)
@@ -791,7 +791,7 @@ the real game screen, opened on its own with the launcher's new game.
 | 102, 103 | TACTICS, TRAINING | menu tests |
 | 104 | CHARACTER VIEWER | **works.** A standing player (training kit) over the training ground, with the debug menu SET / PUSH / BLEND (a motion, e.g. `mendan_Asit_ang_001.snm`), LINK TIME, DO-LINK, DO-BLEND, DO-MIRROR, DO-REVERSE and CHARACTER (Player), and `Play = NULL`, `Play List Num = 0`. Setting CHARACTER to null shows a column of garbled Japanese and `(null)` entries. The motion names are in `DAT/TEST3D/VIEWERPLAYERMOTION.PAC` |
 | 105 | PLAYER CONTRACT | hangs |
-| 106, 107 | NEWS VIEWER, ACROBATA VIEWER | NEWS VIEWER is a newspaper menu test. ACROBATA VIEWER shows a 3D club house room and does nothing else (user report) |
+| 106, 107 | NEWS VIEWER, ACROBATA VIEWER | NEWS VIEWER is a newspaper menu test. ACROBATA VIEWER shows a 3D club house room and does nothing else (Nexxus's report) |
 | 108 | MEMORYCARD UTILITY | hangs |
 | 109 | MAIL VIEWER | the e-mail menu test |
 | 110 | GAME INCOME | goes straight back to the launcher |
@@ -799,7 +799,7 @@ the real game screen, opened on its own with the launcher's new game.
 | 112 | SPONSOR | a sponsor menu test |
 | 113 | CSE TEST 2 | a separate news viewer |
 | 114 | HAYASI TEST | hangs |
-| 115 | PLAYER EDIT | hangs. In a career the same module (63, `YRSTPRG.REL`) is opened by an event and brings in a Virtua Pro Football edit player ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)); the user's view is that the Japanese version also edited players in it |
+| 115 | PLAYER EDIT | hangs. In a career the same module (63, `YRSTPRG.REL`) is opened by an event and brings in a Virtua Pro Football edit player ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)); Nexxus's view is that the Japanese version also edited players in it |
 | 116 | BG LIGHT TEST | not recorded |
 | 117 | TICKET SET TEST | shows a block of text |
 | 118 | TICKET SET | the mid-year competition ticket-price screen, in a loop |

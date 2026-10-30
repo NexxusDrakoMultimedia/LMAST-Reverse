@@ -6,7 +6,7 @@
 How PCSX2 stores a memory card in a single file, so the save tools can
 read and write saves on it. PCSX2 also offers *folder* cards: a
 directory named `<card>.ps2` holding each save folder as an ordinary
-folder (the user's `Pyra.ps2` and `Hax.ps2`). `save.py` reads those
+folder (Nexxus's `Pyra.ps2` and `Hax.ps2`). `save.py` reads those
 directly; this format is the file kind (`Mcd001.ps2`).
 
 The game doesn't read the card's file system itself: the PS2's memory
@@ -136,7 +136,7 @@ the card and writes every file back to an identical image. On a copy of
 `put --touch`, read back byte-identical, and `save.py show` read the new
 money; 23 bytes of the card changed.
 
-**Tested in PCSX2** (user screenshot, `LMAST-cardtest.ps2`:
+**Tested in PCSX2** (Nexxus's screenshot, `LMAST-cardtest.ps2`:
 `Mcd001.ps2` with G000's save edited to money
 123,456 and put back with `put --touch`, then `mkdir LMAST-TEST` and a
 47-byte file put into it): the game loaded G000 from the card, at
@@ -144,7 +144,7 @@ money; 23 bytes of the card changed.
 4). So a card written by `ps2mc.py` is read by the game, through a
 folder whose root directory and cluster chains `ps2mc.py` grew. The
 card's other saves still loaded, and the PS2 browser listed the
-`LMAST-TEST` folder `mkdir` made as "Corrupted Data" (user report): the
+`LMAST-TEST` folder `mkdir` made as "Corrupted Data" (Nexxus's report): the
 browser shows each folder as a save through its `icon.sys`, and this one
 held only a text file. So the browser reads the new root entry; a folder
 meant to show as a save needs the files a game writes.

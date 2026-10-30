@@ -108,7 +108,8 @@ palettes, 21 when they don't, and 22 to 24 for `PP`.
 ### Which room a scene shows
 
 `SIMPRG.REL 0x1d3e50` holds a table of 198 records of `0x38` bytes (14
-s32), ended by a record whose first field is `-0x80`. `0xfd250` matches a request against
+s32), ended by a record whose first field is `-0x80`. `0xfd250` matches
+a request against
 it field by field, `-0x80` matching anything, and copies the first match
 (**confirmed**). The rest is **empirical**: fields 4 and 5 are ranges
 (18–99, 6–19, −10–7) that look like the temperature bands

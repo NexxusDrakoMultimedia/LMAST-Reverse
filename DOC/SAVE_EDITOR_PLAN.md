@@ -79,7 +79,7 @@ Each page shows what `save.py` can already read, and edits only what
    status, status rank), tested on a copy of save G003: an edit of each,
    a refused status above the cap, File > Save, the backup beside the
    card, and the logged command giving the saved bytes. Tested in PCSX2
-   (user): money set to 10,000,000,000 in the editor showed £1,666,666,666
+   (Nexxus): money set to 10,000,000,000 in the editor showed £1,666,666,666
    in game. Finances (the season plan's ad budget, ticket price,
    season-ticket rate and season tickets), tested the same way. *Done:*
    the other pages. Squad (a player's 64 abilities, one or all, and the
@@ -95,7 +95,7 @@ Each page shows what `save.py` can already read, and edits only what
    ability edit raises its growth limit and cap, and a pair edit its cap,
    so an ability set to 80 and then 30 keeps the raised limit, which
    only the full sequence reproduces.
-4. **PCSX2 test** (by the user): one save edited in each page, loaded in
+4. **PCSX2 test** (by Nexxus): one save edited in each page, loaded in
    game, the change seen on its screen. The Club page is tested. Recorded in
    [`SAVE_FORMAT.md`](SAVE_FORMAT.md) and `DONE.md`.
 5. **More player fields** (done 2026-10-23): salary, contract years,
@@ -116,7 +116,7 @@ Each page shows what `save.py` can already read, and edits only what
 
 ## Decisions
 
-Decided (user, 2026-10-09):
+Decided (Nexxus, 2026-10-09):
 
 - **Memory card format: folder cards, and card files** (card files added
   2026-10-23). `save.py` reads PCSX2 folder memory cards, where a save is
@@ -132,12 +132,12 @@ Decided (user, 2026-10-09):
   the card to its lowest free slot (`ps2mc.py copy`, every file with its
   mode and times, the main file renamed) and writes the edit there,
   logging the copy first. Tested through the widgets, off-screen, on a
-  copy of the user's `Mcd001.ps2`: G002 opened through the card dialog, a
+  copy of Nexxus's `Mcd001.ps2`: G002 opened through the card dialog, a
   money edit saved (111,111 on the card), then another saved to a new
   slot, G003 (222,222 there, G002 unchanged, all five files in the new
   folder); after each, the logged commands gave the same card byte for
   byte, and the card passed `ps2mc.py info`'s checks. **Tested in
-  PCSX2** (user report, 2026-10-23): a save the editor copied to a new
+  PCSX2** (Nexxus's report, 2026-10-23): a save the editor copied to a new
   slot on `Mcd001.ps2` (Save to new slot, through `ps2mc.py copy`)
   showed in the game's load list and loaded.
 - **Where an edit goes: over the save, after a backup.** Before each
@@ -161,7 +161,7 @@ Decided (user, 2026-10-09):
   `save.py rename` does. The log gets `python SRC/save.py copy <save
   folder> <slot>` and `python SRC/save.py set <original main file> <new
   main file>.new ...`; with no edits, only the copy. Tested through the
-  widgets on a copy of the user's card (G000, G001, G003): a money edit
+  widgets on a copy of Nexxus's card (G000, G001, G003): a money edit
   saved from G003 to G002, G003 unchanged, the two logged commands giving
   the same folder byte for byte, a second copy without edits to G004
   identical to G002, and a refusal when the main file changed on disk.
@@ -177,7 +177,8 @@ Still open:
   warn when the card is in use is undecided.
 - **Japanese saves.** `save.py --iso ISO_JP` reads and writes them
   ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)), but the
-  save editor is PAL-only, left for later ([`TODO.md`](../TODO.md#5-edit-the-gui)).
+  save editor is PAL-only, left for later
+  ([`TODO.md`](../TODO.md#5-edit-the-gui)).
 
 ## Still unknown
 

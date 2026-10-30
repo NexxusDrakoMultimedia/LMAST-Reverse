@@ -74,7 +74,8 @@ field with only as many bits as it needs.
 | 9 | 8 | not traced |
 
 **The schedules' pools in block 5.** **Confirmed** (the getters'
-offsets; `ScheEuro_Memory::init`, [`UID_LIMITS.md`](UID_LIMITS.md#the-save-pools)):
+offsets; `ScheEuro_Memory::init`,
+[`UID_LIMITS.md`](UID_LIMITS.md#the-save-pools)):
 
 | Offset | Getter | Holds |
 |---|---|---|
@@ -238,7 +239,7 @@ the ad budget, ticket price, rate and season tickets, and sets the
 season-ticket price to ticket price × rate ÷ 100. So the rate is the
 season-ticket price as a percentage of the ticket price.
 
-**The plan screen's limits** (user report, then **confirmed** from
+**The plan screen's limits** (Nexxus's report, then **confirmed** from
 the screen's set-up at `SIMPRG.REL 0x3eda0`, which holds them as
 constants: [`ECONOMY.md`](ECONOMY.md#the-season-plan-screens-limits)):
 the ad budget runs from 0
@@ -367,7 +368,8 @@ back to the old limit.
 (**confirmed**: `AddPlate_PLAYSTYLE` `0x289e50` calls `Msg::GetString(5,
 style)`, and type 5's base is 150; category 100001 holds the same text).
 A player's database styles are the record's `+0x5e`
-([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#play-styles)): 0 none, 1 Centre Forward, 2 Moving, 3 Postplayer, 4 Dash
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#play-styles)): 0 none, 1 Centre
+Forward, 2 Moving, 3 Postplayer, 4 Dash
 out, 5 Second Striker, 6 Wing, 7 Play maker, 8 Shadow striker, 9
 Attacker, 10 Dynamo, 11 Man marker, 12 Covering, 13 Centre MF, 14 Winger,
 15 Threaten to cut in, 16 Full back, 17 Sweeper, 18 Defensive Sweeper, 19
@@ -478,7 +480,7 @@ not in this block. **Confirmed:**
 |---|---|---|---|
 | `0x0` | u32 | team id | empirical: all 440 records in all 5 saves hold the team their position gives |
 | `0x4` | 25 × 6 bytes | the squad (`PlOpinfo`, `pwkOteam_GetOpinfoPointer` `0x24b920`) | the loop at `0x24b520` steps 6 bytes 25 times |
-| `0x9a` | u8 | friendship with your club, 0–100 | the `pwkOteam_ChangeFS_*` functions (matches, players moving to or from your club, overseas branches) all go through `0x24a760`, which caps it at 20 for the rival, at 70 for a club in your city or abroad without your branch, and at 100 otherwise. Shown as the FRIENDLY bar under the crest on a club's Information screen (user report; F.C. Barcelona's bar is about a third full at 34) |
+| `0x9a` | u8 | friendship with your club, 0–100 | the `pwkOteam_ChangeFS_*` functions (matches, players moving to or from your club, overseas branches) all go through `0x24a760`, which caps it at 20 for the rival, at 70 for a club in your city or abroad without your branch, and at 100 otherwise. Shown as the FRIENDLY bar under the crest on a club's Information screen (Nexxus's report; F.C. Barcelona's bar is about a third full at 34) |
 | `0x9c` | s32 | main league, −1 for none | `plTeam_GetTeamMainLeague` (`0x22bf00`) reads it (your club's is PlTeamData `+0x41f4`); `SIMPRG.REL 0x150a80` sets it for each club entered in a league (`0x151f10`). The club ranking groups the Euro6 clubs by it (below) |
 | `0xa0` | u8 | club rank, 0–31 | `pwkOteam_GetRank` (`0x24bec8`); `pwkOteam_Init2` starts it from the club record's rank ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)). Picks the club's reputation text (below) |
 | `0xa2` | u16 | world rank points | `pwkOteam_Init2` starts it from the club record's points (0–1,020) |
@@ -511,8 +513,9 @@ follows the points: sorted by world rank, the points never rise (0 to
 1,023, AC Milan first with 1,023). The club rank
 isn't the League Ranking shown there (26 and 24 against 7 and 5): the
 League Ranking is the club's place in its league table, and only clubs in
-the Euro6 (the six main leagues and their two divisions) have one (user
-report). The club rank is what `pwkOteam_GetRank` returns. **Empirical:** it runs
+the Euro6 (the six main leagues and their two divisions) have one (Nexxus's
+report). The club rank is what `pwkOteam_GetRank` returns.
+**Empirical:** it runs
 29–31 for the clubs at the top of the world ranking and 0–5 at the
 bottom, and the Information screen calls F.C. Barcelona (26) and
 Marseille (24) a "World-class club" and Pirouzi (5) a "Local club", so
@@ -622,12 +625,12 @@ or draw and at most −1 for a loss. A league win over an equal club adds
 128; a club rank is 2,048. Which byte of the match
 record picks the league factor isn't traced.
 
-`patch_disc.py --mod slow-reputation` (in `--mod balance`, the user's
+`patch_disc.py --mod slow-reputation` (in `--mod balance`, Nexxus's
 choice, 2026-10-26) halves every gain: the win and draw factors, every
 place's points and the yearly 500 (250.0). Losses stay. Only this code
 reads those tables.
 
-**Tested in PCSX2** (user report and save states, 2026-10-27, a German
+**Tested in PCSX2** (Nexxus's report and save states, 2026-10-27, a German
 career on an LMASTER max build, CRC `E2A9E3B9`). The club status is
 hidden in game, so it was read from two save states a turn apart (turn
 81 to 82 of 2005–06): the live blocks are at `*(pwork + 0x1c) +
@@ -760,7 +763,7 @@ as u32s (2025, 3, 26, 22, 25, 13). The edit players are in
 in [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md), and `pmplayer.py` reads
 and writes it.
 
-Seen in a career (save G000, user's import G.Binns): the edit work holds
+Seen in a career (save G000, Nexxus's import G.Binns): the edit work holds
 `0x7cce`, then "G.Binns" at `+0x4`, the start of its `PlPbase`; the squad
 player in slot 13 has id `0x7cce`, and its own Pbase copy carries the
 name too. `pmplayer.py check` compares an edit work with the
@@ -791,8 +794,9 @@ be accepted and the values just outside refused (`!!` otherwise). Money
 takes any s64 value: `pwkGen_Pay` (`0x2445f8`) subtracts with no floor,
 so debt is negative, and `pwkGen_Income` (`0x244570`) only resets it
 to 0x7fffffff when the s64 itself would overflow. Save G000 holds
-7,308,451,892. **Tested in PCSX2** (user): a save edited to
-10,000,000,000 showed £1,666,666,666 in game. The save editor ([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md))
+7,308,451,892. **Tested in PCSX2** (Nexxus): a save edited to
+10,000,000,000 showed £1,666,666,666 in game. The save editor
+([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md))
 takes its ranges from the same list (`save.edit_spec`).
 
 ## Decoding
@@ -915,7 +919,7 @@ python SRC/save.py show out.bin --iso <patched ISO folder>
 
 **Checked offline:** `save.py fields` on the patched files matches the
 game's serializers both ways on random data, and G006 converted reads
-back the same. **Tested in PCSX2** (user report, 2026-10-26,
+back the same. **Tested in PCSX2** (Nexxus's report, 2026-10-26,
 `LMAST-test-saveexpand.iso` with `save-expand`, `mod-saves` and the
 tutorial skip): the converted G006 loads, and saves and loads fine.
 
@@ -943,7 +947,7 @@ changing the letter after the serial, one byte each:
 `mod-saves` takes `M` when any switch of the difficulty groups
 (`harder-economy`, `balance`) is on and `F` otherwise, so a career never
 loads on a disc whose economy differs from the one it was played on,
-while VS teams are the same on both and share `-V` (the user's choice,
+while VS teams are the same on both and share `-V` (Nexxus's choice,
 2026-10-27). Discs built before then used `-M` and `-D`; `python
 SRC/save.py rename <folder> <parent> V` moves old VS data to `-V`, and
 `rename <folder> <parent> F` a career to full's letter. The original game
@@ -956,7 +960,7 @@ The editor's Build disc dialog has a box for it and shows the letters
 a build gets, and `--mod lmaster-full` and `--mod lmaster-max` always
 include it.
 
-**Tested in PCSX2** (user report, 2026-10-25, a `--mod lmaster-full`
+**Tested in PCSX2** (Nexxus's report, 2026-10-25, a `--mod lmaster-full`
 disc, today's max): a career saved on it went to `BESLES-54151-M000` on
 the folder card `Pyra.ps2`, beside the original's `-G` saves. No VS data
 was saved, so the VS folder (then `-D000`, now `-V000`) isn't tested, nor
@@ -974,7 +978,7 @@ command, which renamed the executable to `PYRA_313.96`; it booted as
 PYRA-31396). `BESLES-54151-M000` (and `-F`, `-V`) still contains
 `SLES-54151`, so the filter shows it. That earlier command is removed.
 
-**Tested in PCSX2** (user report, disc `LMAST-savetest.iso`,
+**Tested in PCSX2** (Nexxus's report, disc `LMAST-savetest.iso`,
 `--mod-saves` only). A career saved to `BESLES-54151-M000` on a folder
 memory card, beside the original game's `-C000` and `-G000`–`-G006`, and
 loaded again. The original `-G` saves weren't listed, left and right on
@@ -994,8 +998,9 @@ executable edits change it again.
 of a whole disc image. The Japanese `SLPM_663.16` is `8E66FF4E`.
 
 The game opens `<folder>/<folder>`, so moving a save needs both names
-changed. `save.py rename <folder> <parent>` copies a save folder from
-`-G` to `-M` (or `-C` to `-D`, and back), and fixes the name in PCSX2's
+changed. `save.py rename <folder> <parent> [F|M|V|G|C]` copies a save
+folder between the retail letters (`-G`, `-C`) and a modded disc's
+(`-F`, `-M`, `-V`), and fixes the name in PCSX2's
 `_pcsx2_meta_directory` (`+0x40`) and `_pcsx2_index` for folder memory
 cards. That carries a career into a mod that keeps the save layout; a
 mod that changes the season (a division of another size) shouldn't take
@@ -1005,7 +1010,7 @@ an old save.
 0–100 and turns anything higher into 0 (**confirmed**). `save.py copy
 <folder> [<slot>]` copies a game save to another slot on the same card,
 the lowest free one unless a slot is given, with the same name fixes as
-`rename`. **Tested in PCSX2** (user report): G003 copied to the free
+`rename`. **Tested in PCSX2** (Nexxus's report): G003 copied to the free
 slot G002 with `money=999999996` showed in the load list and loaded with
 £166,666,666, and G003 still loaded with £2,511,807. So the game takes a
 save in a slot other than the one it was written to; whether the save's
@@ -1028,7 +1033,8 @@ own files name their slot wasn't checked.
   `+0x64`–`+0x8f`, and how far the manager's popularity goes in play.
 - The club ranking: when in the season it runs, which competitions
   `0x22`–`0x24` lower the status rank, the match record's byte behind
-  the league factor of a status change, the three weighted values behind the world rank
+  the league factor of a status change, the three weighted values behind
+  the world rank
   points (`SIMPRG.REL 0x151568`), and whether the club rank limits the
   players an AI club signs.
 - The Special Mention texts of dissatisfaction kinds 0–3 (kind 4 is

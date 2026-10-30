@@ -93,7 +93,8 @@ checked by `emblem.py info`).
 This is a different table from `0SYSTEM/COLORDATATABLE.TBB`, the 77 UI
 colours, which stores R, G, B, A in byte order. Its near twin is
 `PARAM/PLRESOURCESIM.PAC` entry 9, which the same `EDIT::CColor` wraps for
-the season-mode screens ([`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-9-the-edit-screens-colour-palette)):
+the season-mode screens
+([`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-9-the-edit-screens-colour-palette)):
 the same size and the same 96 colours, but 10 bytes of the maps differ
 (8 in table 1, one each in tables 3 and 5; **empirical**). Which screens
 use which copy is listed in each doc; a palette edit has to reach both.
@@ -112,7 +113,7 @@ use which copy is listed in each doc; a palette edit has to reach both.
 | 4 | 50 × 10 | `GetPresetBaseData` | base presets {u16 mask group, `Trs`} (below) |
 | 5 | 44 × 10 | `0x103fb8` | area pattern presets {u16 pattern, `Trs`} |
 | 6 | 1 × 10 | `0x103ff0` | area accessory presets {u16 accessory, `Trs`}; the one row is all 0 |
-| 7 | 29 × 110 | `GetSampleData` | sample crests (`Param::PlEmblemPreset`, below). Ids 0–31; 8, 21 and 24 are absent. They are Edit Emblem's Sample list: 29 crests over three pages of 10, 10 and 9 (user report, 2026-10-31) |
+| 7 | 29 × 110 | `GetSampleData` | sample crests (`Param::PlEmblemPreset`, below). Ids 0–31; 8, 21 and 24 are absent. They are Edit Emblem's Sample list: 29 crests over three pages of 10, 10 and 9 (Nexxus's report, 2026-10-31) |
 | 8 | 32 × 110 | `GetInitializeData` | the crests a new club can start with |
 | 9 | 32 × 110 | `GetRivalData` | rival clubs' crests: 32 copies of one crest |
 | 10 | 32 × 1 | `GetSampleIndexFromInitializeIndex` | the sample row of each starting crest (values 0–28) |
@@ -256,7 +257,8 @@ sequencer module 63 (PlayerEdit), started from events
 ([`SNR2_FORMAT.md`](SNR2_FORMAT.md)), and module 115 in the developer
 launcher, where it hangs ([`SQB_FORMAT.md`](SQB_FORMAT.md)). It is the
 player editor that brings a Virtua Pro Football edit player into a
-career ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)).
+career
+([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)).
 
 **How the tables are read (confirmed, `YRSTPRG.REL`, 2026-10-30).** Each
 table has its own accessor (`0x1d128`–`0x1d418`, tables 9–31, through the
@@ -300,7 +302,8 @@ So the editor makes a player from his nation and position (tables 0–11,
 14, 22, 23), personality and growth ranges (12, 13, 15–18, 28), and the
 choices made in the editor (19–21, 25, 26), with ±2 randomness (27).
 Whether this runs for a player brought in from Virtua Pro Football
-(whose import fills the same edit work, [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md))
+(whose import fills the same edit work,
+[`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md))
 or only for one made in the editor isn't traced. Which screen choices fill the
 task's `+0x38`, `+0x60` and `+0x64`, and so which rows of 19–21, 25 and
 26 a player gets, isn't traced. `python SRC/emblem.py info DAT/EMBLEM`
@@ -327,7 +330,7 @@ use:
 | `flag:place:<row>:<field>` | `pos_x`, `pos_y`, `size_x`, `size_y` | −128–127; 0–255 |
 
 `rev` is limited to 0–3, the values the flag patterns use, as long as
-what it does is unchecked. **User report** (2026-10-31): flag patterns
+what it does is unchecked. **Nexxus's report** (2026-10-31): flag patterns
 2–5, which are base 1 with `rev` 0, 1, 2 and 3 (`EDIT_FLAG.TBB` table 1
 rows 1–4), looked the same in the flag editor.
 
@@ -336,18 +339,20 @@ set-up (`CEDITPRG.REL 0x20b0`) takes one index, 0–31, for the starting
 design the player picks: it sets the club's kits from the 32 at
 `CEDITPRG.REL 0x150a0` and copies table 8's row of that index as the
 crest (`GetInitializeData`, `0x21a0`), with table 10's sample and table
-11's colours. The starting crest follows the club's colour (user
+11's colours. The starting crest follows the club's colour (Nexxus's
 report), and table 11's first byte in each row is the row's own index,
 so the index is most likely the club's main colour, an id in the
 32-colour palette: row 0 goes with colour 0, the first, a light pink
 (`#ffbfbf`). So an edit to table 8 row *n* shows only for a new club of
-colour *n*. **Tested in PCSX2** (user report, 2026-10-31,
+colour *n*. **Tested in PCSX2** (Nexxus's report, 2026-10-31,
 `LMAST-test-season2.iso`, `crest:8:0:mask=1 crest:8:0:base=15`): a
 club of another colour showed no change, as expected, and a new light
 pink club started with row 0's crest on the edited base, a flat-topped
 shield (mask `_mask_012_02`) instead of retail's notched top
-(`_mask_031_03`), its accessories and layers as before. Changing a crest's `base` is refused when its
-mask is past the new base's group; set the mask first. After the edits
+(`_mask_031_03`), its accessories and layers as before.
+
+Changing a crest's `base` is refused when its mask is past the new
+base's group; set the mask first. After the edits
 the file is checked as `info` checks it, and written only if that finds
 nothing.
 
@@ -359,8 +364,9 @@ python SRC/emblem.py roundtrip DAT/EMBLEM
 
 `roundtrip` decodes every preset, crest, starting-crest, layer and flag
 record, encodes each again from its fields and rebuilds the file: both
-files come out identical, on the PAL and the Japanese disc. No edit made
-with `set` has been tried in the game yet.
+files come out identical, on the PAL and the Japanese disc. Of the
+edits `set` makes, the starting crest's (above) is tested in the game;
+the presets, layer records and flag records aren't yet.
 
 The mod editor's Crests tab ([`USAGE.md`](../USAGE.md#the-window))
 edits the same records through `set`'s functions. It takes the records,
@@ -375,7 +381,7 @@ folder.
 ## Still unknown
 
 - What a `Trs`'s `rev` values 1–3 do (a flag's four `rev` variants look
-  the same in the flag editor, user report), what
+  the same in the flag editor, Nexxus's report), what
   `chunk`, `texture_id` and `aLayer` hold, and which code reads `mask_num`
   (its match with the mask groups is empirical).
 - Whether the three short layer tables lose visible parts in the editor.

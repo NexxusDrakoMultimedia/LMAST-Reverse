@@ -477,7 +477,7 @@ NAME_SECTIONS = (
 )
 EU_LANGS = (1, 2, 3, 4, 5)      # en, fr, de, it, es: the languages PAL players see
 STATIONMES = "PRELOAD/STATIONMES%d.PAC"
-NAME_LIMIT = 18                 # the player's own club and own name (user report)
+NAME_LIMIT = 18                 # the player's own club and own name (Nexxus's report)
 MENTION_MIN = 6                 # shorter names match too many words to count mentions
 # Lists of real places that share names with clubs and national teams (the
 # nations 6, 7, 8, 100006; states 960, 100960; cities 961, 100961): a

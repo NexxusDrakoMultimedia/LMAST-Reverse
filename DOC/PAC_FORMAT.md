@@ -6,7 +6,8 @@
 `DAT/` uses two archive formats:
 
 - **BINPAC**: a self-describing archive. `.PAC` and `.MRG` files are
-  BINPACs (662 archives, plus 194 `.HED` headers). A `.HED` is almost always a **byte-for-byte copy of
+  BINPACs (662 archives, plus 194 `.HED` headers). A `.HED` is almost
+  always a **byte-for-byte copy of
   its partner's header**. The game loads the small `.HED` files first (some are
   bundled into `PRELOAD/GAMEFILE*.PAC`), so it knows every entry's
   offset before it touches the big archive, then reads single entries from
@@ -228,7 +229,7 @@ move while the disc has room for another copy of it (about 1.1 GB of
 the 1.1 GB a single-layer DVD has spare). Checked on a copy of
 `DATA.CVM`: face 5 of `FC_EURO_FACEPACK_01` grown by three sectors moved
 the data file and rewrote the header in all eight places. **Tested in
-PCSX2** (user report): a rebuilt `FC_EURO_FACEPACK_01` with entry 0
+PCSX2** (Nexxus's report): a rebuilt `FC_EURO_FACEPACK_01` with entry 0
 recompressed and its data file moved loads in game
 ([`REBUILD.md`](REBUILD.md#archives)).
 
