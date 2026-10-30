@@ -36,10 +36,9 @@ What to work on next, most valuable first.
    season's end, saving and loading are tested). The disc
    is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **The stadium tables and `EDIT_PLAYER.TBB`** (sections 2 and 3):
-   the crowd figure groups (they need a look at the models) and request
-   `+0x0e`–`+0x10`
-   ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown)).
+3. **The stadium request** (section 2): who sets request
+   `+0x0e`–`+0x10` in a real match (the adidas board every league ground
+   shows) ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown)).
 
 ## What a mod can change, and what is left
 
@@ -134,8 +133,7 @@ shown to have no effect. Grouped by what a mod would change.
 - [ ] Injuries: how many game days an injury value lasts, the injury
       chance and what makes the match report a heavy injury
       ([`INJURIES.md`](DOC/INJURIES.md#still-unknown))
-- [ ] Stadiums: which crowd figure group is which, and who sets request
-      `+0x0e`–`+0x10` in a real match
+- [ ] Stadiums: who sets request `+0x0e`–`+0x10` in a real match
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown))
 
 ### Text, events and game flow

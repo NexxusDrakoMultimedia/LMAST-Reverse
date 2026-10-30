@@ -40,9 +40,14 @@ from a model. See DOC/STADIUM_DIR.md. Addresses are GAMEPRG.REL offsets.
                          0x1d7d00); t10: 40-byte crowd blocks {char[32] name,
                          u8 section, u8 tier, u8 flag, ...}; t11: 1 byte, the
                          number of high-detail tiers (0x1d6ac4).
+  AUD_MODEL_<model>_<v>  crowd models: with 2+ materials and 3+ nodes
+                         (0x1d5340), nodes 1-3 are the figure groups
+                         AUD_JAM_HI thins (front to back rows) and
+                         materials 0/1 the tier's two crowd kinds.
 
 `info` checks all of these and the cross-references between them: every
-crowd block has a model in its AUD_MODEL packs, every crowd set matches its
+crowd block has a model in its AUD_MODEL packs (counting the three-group
+and single ones, and marking an empty one a stadium can reach), every crowd set matches its
 stadium's model, every table-2 entry names a node list of its own model and
 variant, the collision entries exist in GAME/SHADOWCOLLI and GAME/WALLCOLLI
 (when DAT/GAME is next to DAT/STADIUM), and BUILD_STADIUM has one row per
@@ -117,6 +122,7 @@ JAM_ONE = 1024
 AUD_SECTIONS = 9
 AUD_BLOCK = 0x28
 AUD_NAME = 0x20
+CROWD_GROUP_MATS, CROWD_GROUP_NODES = 2, 3    # 0x1d5340: object +0x10 >= 2, +0x28 >= 3
 # Row bytes 1-109 that switch parts on, from the builders called at 0x1cec70:
 # (first byte, last byte, step, slot, pack, first entry, entry step, what).
 # A byte shows its part in the variants whose bit it has (01 02 04 04 at
@@ -385,6 +391,27 @@ def pack_names(root, name):
     return [e[2] for e in h.entries] if h else None
 
 
+def crowd_model_forms(path):
+    """{model name: form} for one AUD_MODEL pack. 0x1d5340 takes a model
+    with 2 or more materials and 3 or more nodes as a three-group crowd
+    ("groups"): its nodes 1-3 are the figure groups AUD_JAM_HI thins
+    (0x1d836c), and its materials 0 and 1 take the tier's two crowd kinds
+    (0x1d83dc). Any other model ("single") is drawn with material 0 in the
+    tier's main kind (0x1d84e8). "empty" has no meshes."""
+    import ninja
+    out = {}
+    for label, blob in ninja._iter_blobs([path], prs=True):
+        nf = ninja.NinjaFile(blob)
+        for c in nf.chunks:
+            if c[0] in ninja.OBJECT_CHUNKS:
+                o = ninja.NinjaObject(nf, nf.main_struct(c))
+                out[label.split(":", 1)[-1].lower()] = (
+                    "empty" if not o.meshes else
+                    "groups" if o.nmat >= CROWD_GROUP_MATS and o.nnode >= CROWD_GROUP_NODES
+                    else "single")
+    return out
+
+
 def report(path, line, probs):
     if probs:
         line += "  !! " + "; ".join(probs)
@@ -502,22 +529,41 @@ def cmd_info(root, param):
         report(os.path.join(root, f.upper()), "", ["not one of the 18 crowd sets"])
     for f in sorted(expected - present):
         report(os.path.join(root, f.upper()), "", ["missing"])
+    forms = {}                      # AUD_MODEL pack -> crowd_model_forms
+    # Sets a stadium with LIGHT_1 uses, so seen in N2 at night.
+    night2 = {r[BUILD_CROWD] for r in b.rows if r[BUILD_NIGHT2]} if b else set()
     for idx, (m, n) in enumerate(CROWD_SETS):
         def crowd(path):
             c = Crowd(path)
             probs = c.problems()
             share = sum(s[0] for s in c.sections)
+            kinds = Counter()
             for v in VARIANTS:
-                have = pack_names(root, "aud_model_%s_%s.pac" % (MODELS[m], v))
-                if have is None:
+                pack = find(root, "aud_model_%s_%s.pac" % (MODELS[m], v))
+                if pack is None:
                     continue
-                lost = [x[0] for x in c.blocks
-                        if "%s_%s_aud_%s.snj" % (MODELS[m], v, x[0]) not in have]
+                if pack not in forms:
+                    forms[pack] = crowd_model_forms(pack)
+                names = ["%s_%s_aud_%s.snj" % (MODELS[m], v, x[0]) for x in c.blocks]
+                lost = [x[0] for x, k in zip(c.blocks, names) if k not in forms[pack]]
                 if lost:
                     probs.append("no model for %s in AUD_MODEL_%s_%s" % (
                         " ".join(lost), MODELS[m].upper(), v.upper()))
-            return report(path, "set %2d: %2d blocks, shares %d/%d" % (
-                idx, len(c.blocks), share, JAM_ONE), probs)
+                empty = [x[0] for x, k in zip(c.blocks, names) if forms[pack].get(k) == "empty"]
+                if empty and (v != "n2" or idx in night2):
+                    probs.append("empty model for %s in AUD_MODEL_%s_%s" % (
+                        " ".join(empty), MODELS[m].upper(), v.upper()))
+                if v == "d1":
+                    kinds.update(("hi" if x[2] < c.last[0] else "lw", forms[pack].get(k))
+                                 for x, k in zip(c.blocks, names))
+                elif v == "n2" and empty:
+                    kinds["n2 empty"] = len(empty)
+            return report(path, "set %2d: %2d blocks, shares %d/%d; high-detail tiers %d "
+                          "three-group, %d single; low %d single, %d three-group%s" % (
+                              idx, len(c.blocks), share, JAM_ONE, kinds[("hi", "groups")],
+                              kinds[("hi", "single")], kinds[("lw", "single")],
+                              kinds[("lw", "groups")], "; N2 empty %d (no N2 stadium)" %
+                              kinds["n2 empty"] if kinds["n2 empty"] else ""), probs)
         check(find(root, "aud_set_%s_%d.tbb" % (MODELS[m], n)), crowd)
 
 

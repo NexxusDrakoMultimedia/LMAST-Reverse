@@ -360,13 +360,51 @@ visitors, starting order at `0x29a1e0`) by count. It stores the largest
 kind in the tier's work record at `+8` and the second at `+0xc`. The
 debug line `  %s %3d%% [%d:%d]` prints the fill and these two kinds.
 
-Each crowd block has two figure groups. `0x1d83dc` gives one group the
-tier's main kind and the other its second kind, and the block flag
-decides which: with flag 0 the home supporters (when they are one of the
-two) go to group 0, with flag 1 to group 1. When home fans aren't in the
-top two, the flag swaps the away fans and visitors the same way. The
-tier's work records are `+0x27c + section × 0x64 + tier × 0x14` in the
-crowd object.
+A crowd block's model has two materials, and `0x1d83dc` gives material
+0 or 1 (`GetSingleMaterial` through `0x1d53a0`) the tier's main kind and
+the other its second kind. The block flag decides which: with flag 0 the
+home supporters (when they are one of the two) go to material 0, with
+flag 1 to material 1. When home fans aren't in the top two, the flag
+swaps the away fans and visitors the same way. Each material then gets
+palette `kind × 3 + p` of the 9 at crowd object `+0x264`
+(`change_pallet_texturelist`; the table at `0x29a448` is 0–8 in order),
+where p is the `AUD_JAM_HI` row's palette. The tier's work records are
+`+0x27c + section × 0x64 + tier × 0x14` in the crowd object.
+
+### Crowd models
+
+**Confirmed.** `0x1d5340` sorts the models: one with 2 or more materials
+and 3 or more nodes (object `+0x10`, `+0x28`) is a **three-group** crowd.
+For it `0x1d836c` passes `AUD_JAM_HI`'s three amounts to `0x1d5540` as
+groups 1–3, and `0x1dbba8` takes group *g* to be the meshsets whose node
+(meshset `+0x10`) is *g*. Any other model is drawn with material 0 only,
+in the tier's main kind (`0x1d84e8`), without the groups.
+
+**Empirical** (`python SRC/stadium.py info DAT/STADIUM`, over all 2,800
+models in the 40 `AUD_MODEL` packs):
+
+- Every three-group model has 4 nodes (a root and nodes 1–3) and 6
+  meshes, one per node and material. Every figure is one 4-vertex quad.
+  The low-detail models have 2 nodes and one mesh, on node 1 with
+  material 0. The rest have no meshes.
+- In the `D1`, `D2` and `N1` packs, 292 of the 294 blocks on a
+  high-detail tier (below table 11's count) have a three-group model, and
+  all 230 on a low-detail tier have a low-detail one. The two exceptions
+  are `aw01a` blocks `2b` and `2k`, high-detail tiers with low-detail
+  models.
+- **The three groups are the block's front, middle and back rows.** In
+  all 172 three-group models of a `D1` pack, group 1's figures sit
+  lowest on average, then group 2, then group 3; in 63 of them the three
+  height bands don't overlap at all. Group 1 holds 64% of the figures on
+  average, groups 2 and 3 about 18% each. A figure's nearest neighbour is
+  in its own group 89% of the time (34% if the groups were mixed).
+- `N2` has no crowd at all for the six models with one set (`ho00a`,
+  `ho00b`, `ho04a`, `aw01a`, `aw03a`, `aw04b`: 182 blocks with empty
+  models). No stadium reaches them: the 19 stadiums with `LIGHT_1` (so
+  `N2` at night) all use a `_3` set of `ho01a`, `ho01b`, `ho02a` or
+  `ho03a`, whose `N2` models are all there. A stadium edited to use one
+  of the six with `LIGHT_1` would play night matches to empty stands;
+  `info` marks that with `!!`.
 
 ### Fill curves
 
@@ -377,9 +415,19 @@ line `  %s %3d%% [%d:%d]` at `0x29a210` prints `hi`/`lw` and a percentage):
   of 8): `{u16 amount[3], u16 palette, u16 threshold}`. `0x1d8188` picks
   the last row whose threshold/1024 is at or below the fill ratio.
   `0x1d836c` passes the three amounts as `1 − v/1024` to `0x1d5540`, one
-  per figure group 1–3 of the crowd model. `0x1dbe40` then takes that
-  fraction of the group's figures, most likely leaving those seats empty.
-  `+6` selects a palette through `0x29a448`.
+  per figure group 1–3 of the crowd model ([above](#crowd-models)).
+  `0x1dbe40` then takes that fraction of the group's figures, most likely
+  leaving those seats empty, so v/1024 is the share of the group still
+  shown. `+6` is the palette p, 0–2 ([crowd kinds](#crowd-kinds)).
+
+  The two tables read that way (**empirical**): table 0 (tier flag 0)
+  fills from the front, with group 1 at half by 5% full and complete by
+  20%, group 2 complete by 60% and group 3 last, complete at 90%. Table 1
+  (flag 1) fills the three rows evenly, each a step ahead of the fill
+  ratio (10% shown at 5% full, 50% at 40%), all complete from 80%. The
+  palette goes from 2 at low fill to 1 from 30% (table 0) or 50% (table
+  1), and to 0 from 70% or 80%. In table 0
+  group 1 drops from 1024 to 819 where the palette first changes (row 4).
 - **`AUD_JAM_LW`**: 4 rows of `{u16 threshold, u16 level}`, searched the
   same way (`0x1d8548`). Thresholds are 0, 307, 512 and 716.
 
@@ -388,8 +436,10 @@ All thresholds ascend. The names suggest the high- and low-detail crowds
 
 ## Still unknown
 
-- Which figure group of a crowd model is which on screen, and what the
-  two `AUD_JAM_HI` tables look like when drawn.
+- What the crowd palettes 0–2 of each kind look like on screen (the 9
+  palettes at crowd object `+0x264`; `AUD_TEAM_COLOR_CLUT_CMN` is the
+  likely source), and so why table 0 thins the front rows as the palette
+  changes.
 - Who sets request `+0x0e`–`+0x10` in a real match (the viewer doesn't).
   `+0x10` is set in league matches: every ground shows the adidas board,
   advert texture 212, which only `+0x10` puts there (user report,

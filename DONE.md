@@ -116,6 +116,10 @@ evidence and how it was tested; the git history holds the rest.
       coaching in training growth, a scout's money negotiation, positions
       and regions; manager ability 6 and the scouts' nations have no reader
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#manager-coach-and-scout-bars))
+- [x] The crowd figure groups: a high-detail crowd model's nodes 1–3 are
+      its front, middle and back rows, which `AUD_JAM_HI` fills, and its
+      two materials take the two crowd kinds; `stadium.py info` checks
+      every model ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#crowd-models))
 
 ## 3. Write: a writer for every format a mod changes
 
