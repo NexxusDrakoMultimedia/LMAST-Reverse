@@ -138,18 +138,24 @@ def load_phrases(path=PHRASES):
     return out
 
 
-def phrased(pack, phrases):
-    """{(category, lang, id): text} with the hand edits made; ValueError
-    if a phrase isn't in its message (the edits are written against the
-    game's text, before the automatic mentions)."""
+def phrased(pack, phrases, missing=None):
+    """{(category, lang, id): text} with the hand edits made, before the
+    automatic mentions. A phrase that isn't in its message is skipped:
+    in a build, retail-text and the third tier rewrite point 2 of the
+    Game Over conditions first (patch_disc.py), so a message may hold
+    either wording, and a row for each is given. `missing`, a list,
+    collects the messages none of whose rows matched (`info` marks them)."""
     out = {}
     for (cat, l, rid), pairs in sorted(phrases.items()):
         text = pack.text(cat, l, rid)
+        found = False
         for old, new in pairs:
-            if old not in text:
-                raise ValueError("%d:%d %s: no %r" % (cat, rid, mbb.LANGS[l], old))
-            if new:
-                text = text.replace(old, new)
+            if old in text:
+                found = True
+                if new:
+                    text = text.replace(old, new)
+        if not found and missing is not None:
+            missing.append("%d:%d %s" % (cat, rid, mbb.LANGS[l]))
         out[(cat, l, rid)] = text
     return out
 
@@ -343,6 +349,12 @@ def cmd_info(mes_path):
                   "%s %d" % (mbb.LANGS[l], sum(x[1] == l for x in left)) for l in LANGS[1:]),
               ": " + ", ".join("%d:%d %s" % (x[0], x[2][0], mbb.LANGS[x[1]]) for x in left)
               if left else ""))
+    # Every hand-edited message must match one of its rows in the game's
+    # own text (the other wording is the one retail-text leaves).
+    missing = []
+    phrased(pack, phrases, missing)
+    if missing:
+        print("  !! no phrase of theirs in %s" % ", ".join(missing))
 
 
 def cmd_import(table, out_path):

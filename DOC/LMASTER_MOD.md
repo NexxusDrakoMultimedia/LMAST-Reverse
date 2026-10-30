@@ -502,8 +502,13 @@ in `SRC/realnames_phrases.csv`: their game names are often plain phrases
 ("monter en première division"), and a proper name in their place needs
 its article and gender changed ("nel campionato italiano B" → "in Serie
 B"), which a swap can't do. Each row is one phrase of one message and
-its replacement, written against the game's text; `apply` stops if a
-phrase isn't in its message. 63 messages get real names; 12 keep a
+its replacement, written against the game's text. In a build,
+`retail-text` and the third tier rewrite point 2 of the Game Over
+conditions first, so a row whose phrase isn't there is skipped, and the
+Netherlands' French conditions (487:1205, which the retail text calls
+the Spanish second division) have a row for each wording, both giving
+the Eerste Divisie; `info` marks a message that none of its rows
+matches in the game's own text. 63 messages get real names; 12 keep a
 generic phrase (an empty replacement), such as "première division" or
 "erste Liga" where any nation's top flight is meant, the World Club
 Championship's own name, and two European-cup wins that may be any cup
