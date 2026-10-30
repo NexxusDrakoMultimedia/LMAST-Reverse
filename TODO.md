@@ -36,9 +36,10 @@ What to work on next, most valuable first.
    season's end, saving and loading are tested). The disc
    is `LMAST-test-max-germany.iso`, built 2026-10-27
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **Division sizes** (section 2): room for bigger second divisions and
-   a smaller English or Italian first division
-   ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size)).
+3. **The tactics AI files** (section 2): the combination commands'
+   areas, what reads the play books' point codes and path kinds, the
+   corner and free-kick id groups
+   ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown)).
 
 ## What a mod can change, and what is left
 
