@@ -91,8 +91,8 @@ data of both in -V.
 Groups: training-fixes (camp-types, camp-cities, camp-santiago,
 camp-clubs, drill-names), injury-fixes (injury-value, injury-row),
 club-fixes (sponsor-negotiation, season-status, pr-cycle, mobile-site,
-overseas-pop, cup-last16), match-fixes (rival-manager, national-cups,
-vpf-styles), text-fixes (retail-text), harder-economy (facility-tiers,
+overseas-pop, cup-last16), match-fixes (rival-manager, press-tendency,
+national-cups, vpf-styles), text-fixes (retail-text), harder-economy (facility-tiers,
 wider-tickets, dearer-ads,
 sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
@@ -132,6 +132,12 @@ rival-manager (whole disc image only) gives the rival club the manager of
 its own style. pwkTeam_Init2 finds TEAM_INIT_DATA table 6's record for the
 rival's style, but its load reads record 0, so every rival had H.Raphanel;
 one instruction of SLES_541.51 (0x25e6d8). See DOC/TEAMINIT_FORMAT.md.
+
+press-tendency (whole disc image only) lets every level of a player's
+press tendency count. The press readers cap it by a per-side value that
+the match always set to 2 (cap at level 1), so levels 2-4 acted as 1;
+one instruction of DLL/GAMEPRG.REL (0x7439c) loads 4 instead. See
+DOC/PBDATA_FORMAT.md#the-tendencies.
 
 national-cups moves the World National Cup (UIDs 114-122) and the Euro
 National Cup (98-102) one turn earlier (schedule.shift_pack), so the World
@@ -2254,6 +2260,27 @@ def plan_vpf_styles(f, img):
               struct.pack("<%dI" % len(new), *new), "%s 0x%x (%s)" % (SAVE_FILE, off, what))
              for off, what, old, new in VPF_STYLES]
     return word_jobs(f, img, "vpf-styles", words)
+
+
+# --- the press tendency's team cap (DOC/PBDATA_FORMAT.md#the-tendencies) -------
+
+# The press readers (GAMEPRG.REL 0x9a418, 0x9a4c8) clamp a player's press
+# tendency to 0..cap, the cap from byte 0 of the side's record at match
+# data +0x9764: 1 caps at 0, 2 at 1, more at 4. 0x74380 fills it at each
+# kick-off from match data +0x976d, which the set-up always stores as 2
+# (0x26f0), so levels 2-4 acted as 1. Loading 4 instead lifts the cap.
+GAME_FILE = DISC + "DLL/GAMEPRG.REL"
+PRESS_CAP = (0x7439c,
+             bytes.fromhex("6d174390"),          # lbu   $v1, 0x176d($v0)
+             bytes.fromhex("04000324"))          # addiu $v1, $zero, 4
+
+
+def plan_press_tendency(f, img):
+    """Jobs for --mod press-tendency."""
+    off, old, new = PRESS_CAP
+    return word_jobs(f, img, "press-tendency",
+                     [(GAME_FILE, off, old, new,
+                       "%s 0x%x (press cap 2 -> 4)" % (GAME_FILE, off))])
 
 
 # --- the season-ticket status factor (DOC/ECONOMY.md#season-tickets) -----------
@@ -4510,6 +4537,9 @@ SWITCHES = (
      "Sponsor negotiation: negotiate with the main sponsor, as in the Japanese release"),
     ("rival-manager", plan_rival_manager, [SLES_FILE],
      "Rival's manager: the rival gets the manager of its own style"),
+    ("press-tendency", plan_press_tendency, [GAME_FILE],
+     "Pressing: every level of a player's press tendency counts in matches "
+     "(levels 2-4 all acted as 1)"),
     ("national-cups", plan_national_cups, [SCHEDULE_FILE, STATION_FILE, LIST_FILE] + LIST_PACKS,
      "National cups a turn earlier, so the World National Cup's results can be viewed"),
     ("league-balance", plan_league_balance, [COMPE_FILE],
@@ -4668,7 +4698,8 @@ GROUPS = (       # (name, title, switches)
     ("club-fixes", "Club fixes",
      ("sponsor-negotiation", "season-status", "pr-cycle", "mobile-site", "overseas-pop",
       "cup-last16")),
-    ("match-fixes", "Match and import fixes", ("rival-manager", "national-cups", "vpf-styles")),
+    ("match-fixes", "Match and import fixes",
+     ("rival-manager", "press-tendency", "national-cups", "vpf-styles")),
     ("text-fixes", "Text fixes", ("retail-text",)),
     ("harder-economy", "Harder economy",
      ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",

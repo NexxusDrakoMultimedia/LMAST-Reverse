@@ -333,3 +333,6 @@ Each result is recorded in the doc named.
       (`SRC/realnames_phrases.csv`), and the rules' European ranking
       renamed "UEFA Rank" instead of the Champions League
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
+- [x] The press tendency counts at every level (`press-tendency`, in
+      `match-fixes`): the per-side cap the match always set to level 1
+      is loaded as 4 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))

@@ -355,6 +355,10 @@ disc or the edit to build; the result goes into the doc linked.
       its boards changed, on a test disc built from the editor (File >
       Build disc); play a match there, with and without LMASTER full
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
+- [ ] `--mod press-tendency`: in a match on a disc built with it, match
+      data `+0x9764` and `+0x9768` read `04` (PINE), and a club of
+      high-press players closes down harder than without it
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 
 ## 8. LMASTER Mod and other patches
 
@@ -373,11 +377,6 @@ is built and tested, or set aside.
       test), the strength ratio above 1.19 getting column 0, and the
       training plan's rows out of step with the policy names
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] Candidate: let the press tendency count in full. The match set-up
-      stores a constant 2 at match data `+0x976d` (`GAMEPRG.REL
-      0x26dc`/`0x26f0`), which caps every player's press level at 1; 3
-      or more would lift the cap to 4 (check what else reads the byte
-      first) ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
