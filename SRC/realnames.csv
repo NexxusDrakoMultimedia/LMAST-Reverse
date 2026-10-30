@@ -119,129 +119,260 @@ category,id,en,fr,de,it,es,short
 3,2120,1. FC Saarbrücken,1. FC Saarbrücken,1. FC Saarbrücken,1. FC Saarbrücken,1. FC Saarbrücken,
 3,2121,Sportfr. Siegen,Sportfr. Siegen,Sportfr. Siegen,Sportfr. Siegen,Sportfr. Siegen,
 3,2122,SpVgg Unterhaching,SpVgg Unterhaching,SpVgg Unterhaching,SpVgg Unterhaching,SpVgg Unterhaching,
+3,2124,Ascoli Calcio,Ascoli Calcio,Ascoli Calcio,Ascoli Calcio,Ascoli Calcio,
+3,2125,Cagliari Calcio,Cagliari Calcio,Cagliari Calcio,Cagliari Calcio,Cagliari Calcio,
+3,2126,AC Chievo Verona,AC Chievo Verona,AC Chievo Verona,AC Chievo Verona,AC Chievo Verona,
+3,2127,Empoli FC,Empoli FC,Empoli FC,Empoli FC,Empoli FC,
+3,2128,ACF Fiorentina,ACF Fiorentina,ACF Fiorentina,ACF Fiorentina,ACF Fiorentina,
+3,2130,Juventus FC,Juventus FC,Juventus FC,Juventus FC,Juventus FC,
+3,2132,US Lecce,US Lecce,US Lecce,US Lecce,US Lecce,
+3,2133,AS Livorno Calcio,AS Livorno Calcio,AS Livorno Calcio,AS Livorno Calcio,AS Livorno Calcio,
+3,2134,ACR Messina,ACR Messina,ACR Messina,ACR Messina,ACR Messina,
+3,2135,US Palermo,US Palermo,US Palermo,US Palermo,US Palermo,
+3,2136,Parma FC,Parma FC,Parma FC,Parma FC,Parma FC,
+3,2137,Reggina Calcio,Reggina Calcio,Reggina Calcio,Reggina Calcio,Reggina Calcio,
+3,2138,AS Roma,AS Roma,AS Roma,AS Roma,AS Roma,
+3,2139,UC Sampdoria,UC Sampdoria,UC Sampdoria,UC Sampdoria,UC Sampdoria,
+3,2140,AC Siena,AC Siena,AC Siena,AC Siena,AC Siena,
+3,2141,Treviso FBC,Treviso FBC,Treviso FBC,Treviso FBC,Treviso FBC,
+3,2142,Udinese Calcio,Udinese Calcio,Udinese Calcio,Udinese Calcio,Udinese Calcio,
+3,2143,UC AlbinoLeffe,UC AlbinoLeffe,UC AlbinoLeffe,UC AlbinoLeffe,UC AlbinoLeffe,
+3,2144,AC Arezzo,AC Arezzo,AC Arezzo,AC Arezzo,AC Arezzo,
+3,2145,Atalanta BC,Atalanta BC,Atalanta BC,Atalanta BC,Atalanta BC,
+3,2146,US Avellino,US Avellino,US Avellino,US Avellino,US Avellino,
+3,2147,AS Bari,AS Bari,AS Bari,AS Bari,AS Bari,
+3,2148,Bologna FC,Bologna FC,Bologna FC,Bologna FC,Bologna FC,
+3,2149,Brescia Calcio,Brescia Calcio,Brescia Calcio,Brescia Calcio,Brescia Calcio,
+3,2150,Calcio Catania,Calcio Catania,Calcio Catania,Calcio Catania,Calcio Catania,
+3,2151,FC Catanzaro,FC Catanzaro,FC Catanzaro,FC Catanzaro,FC Catanzaro,
+3,2152,AC Cesena,AC Cesena,AC Cesena,AC Cesena,AC Cesena,
+3,2153,US Cremonese,US Cremonese,US Cremonese,US Cremonese,US Cremonese,
+3,2154,FC Crotone,FC Crotone,FC Crotone,FC Crotone,FC Crotone,
+3,2155,Hellas Verona FC,Hellas Verona FC,Hellas Verona FC,Hellas Verona FC,Hellas Verona FC,
+3,2156,AC Mantova,AC Mantova,AC Mantova,AC Mantova,AC Mantova,
+3,2157,Modena FC,Modena FC,Modena FC,Modena FC,Modena FC,
+3,2158,Pescara Calcio,Pescara Calcio,Pescara Calcio,Pescara Calcio,Pescara Calcio,
+3,2159,Piacenza Calcio,Piacenza Calcio,Piacenza Calcio,Piacenza Calcio,Piacenza Calcio,
+3,2160,Rimini Calcio,Rimini Calcio,Rimini Calcio,Rimini Calcio,Rimini Calcio,
+3,2161,Ternana Calcio,Ternana Calcio,Ternana Calcio,Ternana Calcio,Ternana Calcio,
+3,2162,Torino FC,Torino FC,Torino FC,Torino FC,Torino FC,
+3,2163,US Triestina,US Triestina,US Triestina,US Triestina,US Triestina,
+3,2164,Vicenza Calcio,Vicenza Calcio,Vicenza Calcio,Vicenza Calcio,Vicenza Calcio,
+3,2165,Athletic Club,Athletic Club,Athletic Club,Athletic Club,Athletic Club,
+3,2166,Atlético de Madrid,Atlético de Madrid,Atlético de Madrid,Atlético de Madrid,Atlético de Madrid,
+3,2167,FC Barcelona,FC Barcelona,FC Barcelona,FC Barcelona,FC Barcelona,
+3,2168,Cádiz CF,Cádiz CF,Cádiz CF,Cádiz CF,Cádiz CF,
+3,2169,RC Deportivo,RC Deportivo,RC Deportivo,RC Deportivo,RC Deportivo,
+3,2170,Deportivo Alavés,Deportivo Alavés,Deportivo Alavés,Deportivo Alavés,Deportivo Alavés,
+3,2171,Getafe CF,Getafe CF,Getafe CF,Getafe CF,Getafe CF,
+3,2172,Málaga CF,Málaga CF,Málaga CF,Málaga CF,Málaga CF,
+3,2173,CA Osasuna,CA Osasuna,CA Osasuna,CA Osasuna,CA Osasuna,
+3,2174,RC Celta de Vigo,RC Celta de Vigo,RC Celta de Vigo,RC Celta de Vigo,RC Celta de Vigo,
+3,2175,Real Racing Club,Real Racing Club,Real Racing Club,Real Racing Club,Real Racing Club,
+3,2176,RCD Espanyol,RCD Espanyol,RCD Espanyol,RCD Espanyol,RCD Espanyol,
+3,2177,RCD Mallorca,RCD Mallorca,RCD Mallorca,RCD Mallorca,RCD Mallorca,
+3,2178,Real Betis,Real Betis,Real Betis,Real Betis,Real Betis,
+3,2179,Real Madrid CF,Real Madrid CF,Real Madrid CF,Real Madrid CF,Real Madrid CF,
+3,2180,Real Sociedad,Real Sociedad,Real Sociedad,Real Sociedad,Real Sociedad,
+3,2181,Real Zaragoza,Real Zaragoza,Real Zaragoza,Real Zaragoza,Real Zaragoza,
+3,2182,Sevilla FC,Sevilla FC,Sevilla FC,Sevilla FC,Sevilla FC,
+3,2183,Valencia CF,Valencia CF,Valencia CF,Valencia CF,Valencia CF,
+3,2184,Villarreal CF,Villarreal CF,Villarreal CF,Villarreal CF,Villarreal CF,
+3,2185,Albacete Balompié,Albacete Balompié,Albacete Balompié,Albacete Balompié,Albacete Balompié,
+3,2186,UD Almería,UD Almería,UD Almería,UD Almería,UD Almería,
+3,2187,CF Ciudad Murcia,CF Ciudad Murcia,CF Ciudad Murcia,CF Ciudad Murcia,CF Ciudad Murcia,
+3,2188,CD Castellón,CD Castellón,CD Castellón,CD Castellón,CD Castellón,
+3,2189,SD Eibar,SD Eibar,SD Eibar,SD Eibar,SD Eibar,
+3,2190,CP Ejido,CP Ejido,CP Ejido,CP Ejido,CP Ejido,
+3,2191,Elche CF,Elche CF,Elche CF,Elche CF,Elche CF,
+3,2192,Hércules CF,Hércules CF,Hércules CF,Hércules CF,Hércules CF,
+3,2193,Levante UD,Levante UD,Levante UD,Levante UD,Levante UD,
+3,2194,Lorca Deportiva,Lorca Deportiva,Lorca Deportiva,Lorca Deportiva,Lorca Deportiva,
+3,2195,Málaga CF B,Málaga CF B,Málaga CF B,Málaga CF B,Málaga CF B,
+3,2196,CD Numancia,CD Numancia,CD Numancia,CD Numancia,CD Numancia,
+3,2197,Racing de Ferrol,Racing de Ferrol,Racing de Ferrol,Racing de Ferrol,Racing de Ferrol,
+3,2198,Real Madrid B,Real Madrid B,Real Madrid B,Real Madrid B,Real Madrid B,
+3,2199,Real Murcia CF,Real Murcia CF,Real Murcia CF,Real Murcia CF,Real Murcia CF,
+3,2200,Real Valladolid CF,Real Valladolid CF,Real Valladolid CF,Real Valladolid CF,Real Valladolid CF,
+3,2201,Recreativo Huelva,Recreativo Huelva,Recreativo Huelva,Recreativo Huelva,Recreativo Huelva,
+3,2202,Sporting de Gijón,Sporting de Gijón,Sporting de Gijón,Sporting de Gijón,Sporting de Gijón,
+3,2203,Nàstic Tarragona,Nàstic Tarragona,Nàstic Tarragona,Nàstic Tarragona,Nàstic Tarragona,
+3,2204,CD Tenerife,CD Tenerife,CD Tenerife,CD Tenerife,CD Tenerife,
+3,2205,UE Lleida,UE Lleida,UE Lleida,UE Lleida,UE Lleida,
+3,2206,Xerez CD,Xerez CD,Xerez CD,Xerez CD,Xerez CD,
+3,2208,AFC Ajax,AFC Ajax,AFC Ajax,AFC Ajax,AFC Ajax,
+3,2213,Heracles Almelo,Heracles Almelo,Heracles Almelo,Heracles Almelo,Heracles Almelo,
+3,2219,Roda JC Kerkrade,Roda JC Kerkrade,Roda JC Kerkrade,Roda JC Kerkrade,Roda JC Kerkrade,
+3,2222,FC Utrecht,FC Utrecht,FC Utrecht,FC Utrecht,FC Utrecht,
+3,2224,Willem II Tilburg,Willem II Tilburg,Willem II Tilburg,Willem II Tilburg,Willem II Tilburg,
+3,2225,AGOVV Apeldoorn,AGOVV Apeldoorn,AGOVV Apeldoorn,AGOVV Apeldoorn,AGOVV Apeldoorn,
+3,2226,Cambuur Leeuwarden,Cambuur Leeuwarden,Cambuur Leeuwarden,Cambuur Leeuwarden,Cambuur Leeuwarden,
+3,2228,FC Dordrecht,FC Dordrecht,FC Dordrecht,FC Dordrecht,FC Dordrecht,
+3,2229,FC Eindhoven,FC Eindhoven,FC Eindhoven,FC Eindhoven,FC Eindhoven,
+3,2230,FC Emmen,FC Emmen,FC Emmen,FC Emmen,FC Emmen,
+3,2231,SBV Excelsior,SBV Excelsior,SBV Excelsior,SBV Excelsior,SBV Excelsior,
+3,2236,HFC Haarlem,HFC Haarlem,HFC Haarlem,HFC Haarlem,HFC Haarlem,
+3,2237,Helmond Sport,Helmond Sport,Helmond Sport,Helmond Sport,Helmond Sport,
+3,2241,BV Veendam,BV Veendam,BV Veendam,BV Veendam,BV Veendam,
+3,2242,VVV-Venlo,VVV-Venlo,VVV-Venlo,VVV-Venlo,VVV-Venlo,
+3,2243,FC Volendam,FC Volendam,FC Volendam,FC Volendam,FC Volendam,
+3,2244,FC Zwolle,FC Zwolle,FC Zwolle,FC Zwolle,FC Zwolle,
 3,2245,FC Rangers,FC Rangers,FC Rangers,FC Rangers,FC Rangers,FCR
 3,2246,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FCE
-3,2247,Austria Wien,Austria Vienne,Austria Wien,Austria Vienna,Austria Viena,AUS
+3,2247,FK Austria Wien,FK Austria Vienne,FK Austria Wien,FK Austria Vienna,FK Austria Viena,AUS
 3,2248,Red Bull Salzburg,Red Bull Salzbourg,Red Bull Salzburg,Red Bull Salzburg,Red Bull Salzburgo,RED
 3,2249,Grazer AK,Grazer AK,Grazer AK,Grazer AK,Grazer AK,GRA
-3,2251,Rapid Wien,Rapid Vienne,Rapid Wien,Rapid Vienna,Rapid Viena,RAP
+3,2250,FC Superfund,FC Superfund,FC Superfund,FC Superfund,FC Superfund,
+3,2251,SK Rapid Wien,SK Rapid Vienne,SK Rapid Wien,SK Rapid Vienna,SK Rapid Viena,RAP
 3,2252,Club Brugge,Club Bruges,Club Brügge,Club Brugge,Club Brujas,CLU
-3,2253,Anderlecht,Anderlecht,Anderlecht,Anderlecht,Anderlecht,AND
+3,2253,RSC Anderlecht,RSC Anderlecht,RSC Anderlecht,RSC Anderlecht,RSC Anderlecht,AND
+3,2254,KRC Genk,KRC Genk,KRC Genk,KRC Genk,KRC Genk,
 3,2255,Standard Liège,Standard Liège,Standard Lüttich,Standard Liegi,Standard Lieja,STA
-3,2257,Bohemians,Bohemians,Bohemians,Bohemians,Bohemians,BOH
+3,2256,KVC Westerlo,KVC Westerlo,KVC Westerlo,KVC Westerlo,KVC Westerlo,
+3,2257,Bohemian FC,Bohemian FC,Bohemian FC,Bohemian FC,Bohemian FC,BOH
 3,2258,Shamrock Rovers,Shamrock Rovers,Shamrock Rovers,Shamrock Rovers,Shamrock Rovers,SHA
+3,2259,FC Balzers,FC Balzers,FC Balzers,FC Balzers,FC Balzers,
+3,2260,FC Vaduz,FC Vaduz,FC Vaduz,FC Vaduz,FC Vaduz,
 3,2261,Jeunesse Esch,Jeunesse Esch,Jeunesse Esch,Jeunesse Esch,Jeunesse Esch,JEU
 3,2262,Racing FC Union,Racing FC Union,Racing FC Union,Racing FC Union,Racing FC Union,RAC
+3,2263,Floriana FC,Floriana FC,Floriana FC,Floriana FC,Floriana FC,
 3,2264,Sliema Wanderers,Sliema Wanderers,Sliema Wanderers,Sliema Wanderers,Sliema Wanderers,SLI
+3,2265,Glentoran FC,Glentoran FC,Glentoran FC,Glentoran FC,Glentoran FC,
+3,2266,Linfield FC,Linfield FC,Linfield FC,Linfield FC,Linfield FC,
 3,2267,Sporting CP,Sporting CP,Sporting CP,Sporting CP,Sporting CP,SPO
-3,2270,Benfica,Benfica,Benfica,Benfica,Benfica,BEN
-3,2274,Celtic,Celtic,Celtic,Celtic,Celtic,CEL
+3,2268,Boavista FC,Boavista FC,Boavista FC,Boavista FC,Boavista FC,
+3,2269,SC Braga,SC Braga,SC Braga,SC Braga,SC Braga,
+3,2270,SL Benfica,SL Benfica,SL Benfica,SL Benfica,SL Benfica,BEN
+3,2271,FC Porto,FC Porto,FC Porto,FC Porto,FC Porto,
+3,2272,AC Libertas,AC Libertas,AC Libertas,AC Libertas,AC Libertas,
+3,2273,SP Tre Fiori,SP Tre Fiori,SP Tre Fiori,SP Tre Fiori,SP Tre Fiori,
+3,2274,Celtic FC,Celtic FC,Celtic FC,Celtic FC,Celtic FC,CEL
+3,2275,Dunfermline Ath.,Dunfermline Ath.,Dunfermline Ath.,Dunfermline Ath.,Dunfermline Ath.,
 3,2276,Hearts,Hearts,Hearts,Hearts,Hearts,HEA
-3,2278,Rangers,Rangers,Rangers,Rangers,Rangers,RAN
-3,2280,Young Boys,Young Boys,Young Boys,Young Boys,Young Boys,YOU
-3,2281,Servette,Servette,Servette,Servette,Servette,SER
+3,2277,Motherwell FC,Motherwell FC,Motherwell FC,Motherwell FC,Motherwell FC,
+3,2278,Rangers FC,Rangers FC,Rangers FC,Rangers FC,Rangers FC,RAN
+3,2279,FC Basel,FC Bâle,FC Basel,FC Basilea,FC Basilea,
+3,2280,BSC Young Boys,BSC Young Boys,BSC Young Boys,BSC Young Boys,BSC Young Boys,YOU
+3,2281,Servette FC,Servette FC,Servette FC,Servette FC,Servette FC,SER
+3,2282,FC Thun,FC Thun,FC Thun,FC Thun,FC Thun,
 3,2283,FC Zürich,FC Zurich,FC Zürich,FC Zurigo,FC Zúrich,FCZ
-3,2286,Dinamo Tirana,Dinamo Tirana,Dinamo Tirana,Dinamo Tirana,Dinamo Tirana,DIN
+3,2286,KS Dinamo Tirana,KS Dinamo Tirana,KS Dinamo Tirana,KS Dinamo Tirana,KS Dinamo Tirana,DIN
 3,2287,KF Tirana,KF Tirana,KF Tirana,KF Tirana,KF Tirana,KFT
 3,2288,FK Sarajevo,FK Sarajevo,FK Sarajevo,FK Sarajevo,FK Sarajevo,FKS
-3,2289,Zeljeznicar,Zeljeznicar,Zeljeznicar,Zeljeznicar,Zeljeznicar,ZEL
-3,2290,Hajduk Split,Hajduk Split,Hajduk Split,Hajduk Split,Hajduk Split,HAJ
+3,2289,FK Zeljeznicar,FK Zeljeznicar,FK Zeljeznicar,FK Zeljeznicar,FK Zeljeznicar,ZEL
+3,2290,HNK Hajduk Split,HNK Hajduk Split,HNK Hajduk Split,HNK Hajduk Split,HNK Hajduk Split,HAJ
 3,2291,Radnik V. Gorica,Radnik V. Gorica,Radnik V. Gorica,Radnik V. Gorica,Radnik V. Gorica,RAD
-3,2292,Dinamo Zagreb,Dinamo Zagreb,Dinamo Zagreb,Dinamo Zagreb,Dinamo Zagreb,DIN
-3,2293,Slovan Liberec,Slovan Liberec,Slovan Liberec,Slovan Liberec,Slovan Liberec,SLO
-3,2294,Sigma Olomouc,Sigma Olomouc,Sigma Olomouc,Sigma Olomouc,Sigma Olomouc,SIG
-3,2295,Baník Ostrava,Baník Ostrava,Baník Ostrava,Baník Ostrava,Baník Ostrava,BAN
-3,2296,Sparta Prague,Sparta Prague,Sparta Prag,Sparta Praga,Sparta Praga,SPA
-3,2297,Slavia Prague,Slavia Prague,Slavia Prag,Slavia Praga,Slavia Praga,SLA
+3,2292,NK Dinamo Zagreb,NK Dinamo Zagreb,NK Dinamo Zagreb,NK Dinamo Zagreb,NK Dinamo Zagreb,DIN
+3,2293,FC Slovan Liberec,FC Slovan Liberec,FC Slovan Liberec,FC Slovan Liberec,FC Slovan Liberec,SLO
+3,2294,SK Sigma Olomouc,SK Sigma Olomouc,SK Sigma Olomouc,SK Sigma Olomouc,SK Sigma Olomouc,SIG
+3,2295,FC Baník Ostrava,FC Baník Ostrava,FC Baník Ostrava,FC Baník Ostrava,FC Baník Ostrava,BAN
+3,2296,AC Sparta Prague,AC Sparta Prague,AC Sparta Prag,AC Sparta Praga,AC Sparta Praga,SPA
+3,2297,SK Slavia Prague,SK Slavia Prague,SK Slavia Prag,SK Slavia Praga,SK Slavia Praga,SLA
 3,2298,MTK Budapest,MTK Budapest,MTK Budapest,MTK Budapest,MTK Budapest,MTK
-3,2299,Ferencváros,Ferencváros,Ferencváros,Ferencváros,Ferencváros,FER
-3,2300,Újpest,Újpest,Újpest,Újpest,Újpest,ÚJP
-3,2301,Sileks,Sileks,Sileks,Sileks,Sileks,SIL
-3,2302,Vardar,Vardar,Vardar,Vardar,Vardar,VAR
+3,2299,Ferencvárosi TC,Ferencvárosi TC,Ferencvárosi TC,Ferencvárosi TC,Ferencvárosi TC,FER
+3,2300,Újpest FC,Újpest FC,Újpest FC,Újpest FC,Újpest FC,ÚJP
+3,2301,FK Sileks,FK Sileks,FK Sileks,FK Sileks,FK Sileks,SIL
+3,2302,FK Vardar,FK Vardar,FK Vardar,FK Vardar,FK Vardar,VAR
 3,2303,Wisla Kraków,Wisla Cracovie,Wisla Krakau,Wisla Cracovia,Wisla Cracovia,WIS
 3,2304,Legia Warsaw,Legia Varsovie,Legia Warschau,Legia Varsavia,Legia Varsovia,LEG
 3,2305,Amica Wronki,Amica Wronki,Amica Wronki,Amica Wronki,Amica Wronki,AMI
-3,2306,Partizan,Partizan,Partizan,Partizan,Partizan,PAR
+3,2306,FK Partizan,FK Partizan,FK Partizan,FK Partizan,FK Partizan,PAR
 3,2307,Red Star Belgrade,Étoile Rouge,Roter Stern,Stella Rossa,Estrella Roja,RED
 3,2308,OFK Beograd,OFK Beograd,OFK Beograd,OFK Beograd,OFK Beograd,OFK
 3,2309,Dukla B. Bystrica,Dukla B. Bystrica,Dukla B. Bystrica,Dukla B. Bystrica,Dukla B. Bystrica,DUK
 3,2310,Inter Bratislava,Inter Bratislava,Inter Bratislava,Inter Bratislava,Inter Bratislava,INT
 3,2311,Slovan Bratislava,Slovan Bratislava,Slovan Bratislava,Slovan Bratislava,Slovan Bratislava,SLO
+3,2312,ND Gorica,ND Gorica,ND Gorica,ND Gorica,ND Gorica,
+3,2313,NK Maribor,NK Maribor,NK Maribor,NK Maribor,NK Maribor,
+3,2314,Olimpija Ljubljana,Olimpija Ljubljana,Olimpija Ljubljana,Olimpija Ljubljana,Olimpija Ljubljana,
 3,2315,Ararat Yerevan,Ararat Yerevan,Ararat Yerevan,Ararat Yerevan,Ararat Yerevan,ARA
+3,2316,FC Pyunik,FC Pyunik,FC Pyunik,FC Pyunik,FC Pyunik,
 3,2317,Inter Baku,Inter Baku,Inter Baku,Inter Baku,Inter Baku,INT
 3,2318,Qarabagh,Qarabagh,Qarabagh,Qarabagh,Qarabagh,QAR
-3,2319,Belshina,Belshina,Belshina,Belshina,Belshina,BEL
-3,2320,Dinamo Minsk,Dinamo Minsk,Dinamo Minsk,Dinamo Minsk,Dinamo Minsk,DIN
-3,2321,CSKA Sofia,CSKA Sofia,ZSKA Sofia,CSKA Sofia,CSKA Sofía,CSK
-3,2323,Slavia Sofia,Slavia Sofia,Slavia Sofia,Slavia Sofia,Slavia Sofía,SLA
-3,2324,APOEL,APOEL,APOEL,APOEL,APOEL,APO
+3,2319,FC Belshina,FC Belshina,FC Belshina,FC Belshina,FC Belshina,BEL
+3,2320,FC Dinamo Minsk,FC Dinamo Minsk,FC Dinamo Minsk,FC Dinamo Minsk,FC Dinamo Minsk,DIN
+3,2321,PFC CSKA Sofia,PFC CSKA Sofia,PFC ZSKA Sofia,PFC CSKA Sofia,PFC CSKA Sofía,CSK
+3,2322,Levski Sofia,Levski Sofia,Levski Sofia,Levski Sofia,Levski Sofía,
+3,2323,PFC Slavia Sofia,PFC Slavia Sofia,PFC Slavia Sofia,PFC Slavia Sofia,PFC Slavia Sofía,SLA
+3,2324,APOEL FC,APOEL FC,APOEL FC,APOEL FC,APOEL FC,APO
 3,2325,Anorthosis,Anorthosis,Anorthosis,Anorthosis,Anorthosis,ANO
-3,2326,Omonia,Omonia,Omonia,Omonia,Omonia,OMO
+3,2326,Omonia Nicosia,Omonia Nicosia,Omonia Nicosia,Omonia Nicosia,Omonia Nicosia,OMO
 3,2327,Torpedo Kutaisi,Torpedo Kutaisi,Torpedo Kutaisi,Torpedo Kutaisi,Torpedo Kutaisi,TOR
-3,2328,Dinamo Tbilisi,Dinamo Tbilissi,Dinamo Tiflis,Dinamo Tbilisi,Dinamo Tiflis,DIN
+3,2328,FC Dinamo Tbilisi,FC Dinamo Tbilissi,FC Dinamo Tiflis,FC Dinamo Tbilisi,FC Dinamo Tiflis,DIN
 3,2329,AEK Athens,AEK Athènes,AEK Athen,AEK Atene,AEK Atenas,AEK
 3,2330,Panathinaikos,Panathinaikos,Panathinaikos,Panathinaikos,Panathinaikos,PAN
 3,2331,Olympiacos,Olympiacos,Olympiacos,Olympiacos,Olympiacos,OLY
-3,2332,PAOK,PAOK,PAOK,PAOK,PAOK,PAO
+3,2332,PAOK FC,PAOK FC,PAOK FC,PAOK FC,PAOK FC,PAO
 3,2333,Skoda Xanthi,Skoda Xanthi,Skoda Xanthi,Skoda Xanthi,Skoda Xanthi,SKO
 3,2334,Hapoel Tel Aviv,Hapoel Tel Aviv,Hapoel Tel Aviv,Hapoel Tel Aviv,Hapoel Tel Aviv,HAP
 3,2335,Maccabi Haifa,Maccabi Haifa,Maccabi Haifa,Maccabi Haifa,Maccabi Haifa,MAC
 3,2336,Maccabi Tel Aviv,Maccabi Tel Aviv,Maccabi Tel Aviv,Maccabi Tel Aviv,Maccabi Tel Aviv,MAC
 3,2337,Hapoel Petah Tikva,Hapoel Petah Tikva,Hapoel Petah Tikva,Hapoel Petah Tikva,Hapoel Petah Tikva,HAP
 3,2338,Beitar Jerusalem,Beitar Jerusalem,Beitar Jerusalem,Beitar Jerusalem,Beitar Jerusalem,BEI
-3,2339,Kairat,Kairat,Kairat,Kairat,Kairat,KAI
-3,2340,Ordabasy,Ordabasy,Ordabasy,Ordabasy,Ordabasy,ORD
-3,2341,Zimbru,Zimbru,Zimbru,Zimbru,Zimbru,ZIM
+3,2339,FC Kairat,FC Kairat,FC Kairat,FC Kairat,FC Kairat,KAI
+3,2340,FC Ordabasy,FC Ordabasy,FC Ordabasy,FC Ordabasy,FC Ordabasy,ORD
+3,2341,Zimbru Chisinau,Zimbru Chisinau,Zimbru Chisinau,Zimbru Chisinau,Zimbru Chisinau,ZIM
 3,2342,Sheriff Tiraspol,Sheriff Tiraspol,Sheriff Tiraspol,Sheriff Tiraspol,Sheriff Tiraspol,SHE
 3,2343,Dinamo Bucharest,Dinamo Bucarest,Dinamo Bukarest,Dinamo Bucarest,Dinamo Bucarest,DIN
 3,2344,Rapid Bucharest,Rapid Bucarest,Rapid Bukarest,Rapid Bucarest,Rapid Bucarest,RAP
 3,2345,Steaua Bucharest,Steaua Bucarest,Steaua Bukarest,Steaua Bucarest,Steaua Bucarest,STE
-3,2346,CSKA Moscow,CSKA Moscou,ZSKA Moskau,CSKA Mosca,CSKA Moscú,CSK
+3,2346,PFC CSKA Moscow,PFC CSKA Moscou,PFC ZSKA Moskau,PFC CSKA Mosca,PFC CSKA Moscú,CSK
 3,2347,Lokomotiv Moscow,Lokomotiv Moscou,Lok Moskau,Lokomotiv Mosca,Lokomotiv Moscú,LOK
 3,2348,Torpedo Moscow,Torpedo Moscou,Torpedo Moskau,Torpedo Mosca,Torpedo Moscú,TOR
 3,2349,Spartak Moscow,Spartak Moscou,Spartak Moskau,Spartak Mosca,Spartak Moscú,SPA
-3,2350,Zenit,Zénith,Zenit,Zenit,Zenit,ZEN
-3,2351,Besiktas,Besiktas,Besiktas,Besiktas,Besiktas,BES
-3,2352,Fenerbahçe,Fenerbahçe,Fenerbahçe,Fenerbahçe,Fenerbahçe,FEN
-3,2353,Galatasaray,Galatasaray,Galatasaray,Galatasaray,Galatasaray,GAL
+3,2350,FC Zenit,FC Zénith,FC Zenit,FC Zenit,FC Zenit,ZEN
+3,2351,Besiktas JK,Besiktas JK,Besiktas JK,Besiktas JK,Besiktas JK,BES
+3,2352,Fenerbahçe SK,Fenerbahçe SK,Fenerbahçe SK,Fenerbahçe SK,Fenerbahçe SK,FEN
+3,2353,Galatasaray SK,Galatasaray SK,Galatasaray SK,Galatasaray SK,Galatasaray SK,GAL
 3,2354,Bursaspor,Bursaspor,Bursaspor,Bursaspor,Bursaspor,BUR
 3,2355,Trabzonspor,Trabzonspor,Trabzonspor,Trabzonspor,Trabzonspor,TRA
-3,2356,Dnipro,Dnipro,Dnipro,Dnipro,Dnipro,DNI
+3,2356,FC Dnipro,FC Dnipro,FC Dnipro,FC Dnipro,FC Dnipro,DNI
 3,2357,Shakhtar Donetsk,Chakhtar Donetsk,Schachtar Donezk,Shakhtar Donetsk,Shajtar Donetsk,SHA
 3,2358,Metalurh Donetsk,Metalurh Donetsk,Metalurh Donezk,Metalurh Donetsk,Metalurh Donetsk,MET
-3,2359,Dynamo Kyiv,Dynamo Kiev,Dynamo Kiew,Dinamo Kiev,Dinamo Kiev,DYN
-3,2360,Chornomorets,Chornomorets,Chornomorets,Chornomorets,Chornomorets,CHO
+3,2359,FC Dynamo Kyiv,FC Dynamo Kiev,FC Dynamo Kiew,FC Dinamo Kiev,FC Dinamo Kiev,DYN
+3,2360,Chornomorets Odesa,Chornomorets Odesa,Chornomorets Odesa,Chornomorets Odesa,Chornomorets Odesa,CHO
+3,2361,Brøndby IF,Brøndby IF,Brøndby IF,Brøndby IF,Brøndby IF,
 3,2362,FC København,FC Copenhague,FC Kopenhagen,FC Copenaghen,FC Copenhague,FCK
-3,2363,Esbjerg,Esbjerg,Esbjerg,Esbjerg,Esbjerg,ESB
-3,2364,Levadia,Levadia,Levadia,Levadia,Levadia,LEV
-3,2365,Flora Tallinn,Flora Tallinn,Flora Tallinn,Flora Tallinn,Flora Tallinn,FLO
+3,2363,Esbjerg fB,Esbjerg fB,Esbjerg fB,Esbjerg fB,Esbjerg fB,ESB
+3,2364,FC Levadia,FC Levadia,FC Levadia,FC Levadia,FC Levadia,LEV
+3,2365,FC Flora Tallinn,FC Flora Tallinn,FC Flora Tallinn,FC Flora Tallinn,FC Flora Tallinn,FLO
 3,2366,B36 Tórshavn,B36 Tórshavn,B36 Tórshavn,B36 Tórshavn,B36 Tórshavn,BTÓ
 3,2367,HB Tórshavn,HB Tórshavn,HB Tórshavn,HB Tórshavn,HB Tórshavn,HBT
-3,2368,HJK,HJK,HJK,HJK,HJK,HJK
+3,2368,HJK Helsinki,HJK Helsinki,HJK Helsinki,HJK Helsinki,HJK Helsinki,HJK
 3,2369,Tampere United,Tampere United,Tampere United,Tampere United,Tampere United,TAM
-3,2370,Haka,Haka,Haka,Haka,Haka,HAK
+3,2370,FC Haka,FC Haka,FC Haka,FC Haka,FC Haka,HAK
 3,2371,KR Reykjavík,KR Reykjavík,KR Reykjavík,KR Reykjavík,KR Reykjavík,KRR
+3,2372,Valur Reykjavík,Valur Reykjavík,Valur Reykjavík,Valur Reykjavík,Valur Reykjavík,
 3,2373,FK Riga,FK Riga,FK Riga,FK Riga,FK Riga,FKR
+3,2374,Skonto Riga,Skonto Riga,Skonto Riga,Skonto Riga,Skonto Riga,
 3,2375,FBK Kaunas,FBK Kaunas,FBK Kaunas,FBK Kaunas,FBK Kaunas,FBK
-3,2376,Zalgiris,Zalgiris,Zalgiris,Zalgiris,Zalgiris,ZAL
-3,2377,Hammarby,Hammarby,Hammarby,Hammarby,Hammarby,HAM
-3,2380,Rosenborg,Rosenborg,Rosenborg,Rosenborg,Rosenborg,ROS
+3,2376,Zalgiris Vilnius,Zalgiris Vilnius,Zalgiris Vilnius,Zalgiris Vilnius,Zalgiris Vilnius,ZAL
+3,2377,Hammarby IF,Hammarby IF,Hammarby IF,Hammarby IF,Hammarby IF,HAM
+3,2378,Lillestrøm SK,Lillestrøm SK,Lillestrøm SK,Lillestrøm SK,Lillestrøm SK,
+3,2379,Tromsø IL,Tromsø IL,Tromsø IL,Tromsø IL,Tromsø IL,
+3,2380,Rosenborg BK,Rosenborg BK,Rosenborg BK,Rosenborg BK,Rosenborg BK,ROS
+3,2381,Vålerenga IF,Vålerenga IF,Vålerenga IF,Vålerenga IF,Vålerenga IF,
 3,2382,IFK Göteborg,IFK Göteborg,IFK Göteborg,IFK Göteborg,IFK Göteborg,IFK
-3,2384,AIK,AIK,AIK,AIK,AIK,AIK
-3,2385,Bolívar,Bolívar,Bolívar,Bolívar,Bolívar,BOL
-3,2388,Grêmio,Grêmio,Grêmio,Grêmio,Grêmio,GRÊ
-3,2390,São Paulo,São Paulo,São Paulo,São Paulo,São Paulo,SÃO
+3,2383,Örgryte IS,Örgryte IS,Örgryte IS,Örgryte IS,Örgryte IS,
+3,2384,AIK Fotboll,AIK Fotboll,AIK Fotboll,AIK Fotboll,AIK Fotboll,AIK
+3,2385,Club Bolívar,Club Bolívar,Club Bolívar,Club Bolívar,Club Bolívar,BOL
+3,2386,Cruzeiro EC,Cruzeiro EC,Cruzeiro EC,Cruzeiro EC,Cruzeiro EC,
+3,2387,CR Flamengo,CR Flamengo,CR Flamengo,CR Flamengo,CR Flamengo,
+3,2388,Grêmio FBPA,Grêmio FBPA,Grêmio FBPA,Grêmio FBPA,Grêmio FBPA,GRÊ
+3,2389,Santos FC,Santos FC,Santos FC,Santos FC,Santos FC,
+3,2390,São Paulo FC,São Paulo FC,São Paulo FC,São Paulo FC,São Paulo FC,SÃO
 3,2391,América de Cali,América de Cali,América de Cali,América de Cali,América de Cali,AMÉ
 3,2392,LDU Quito,LDU Quito,LDU Quito,LDU Quito,LDU Quito,LDU
 3,2393,Universitario,Universitario,Universitario,Universitario,Universitario,UNI
 3,2394,Caracas FC,Caracas FC,Caracas FC,Caracas FC,Caracas FC,CAR
-3,2396,Boca Juniors,Boca Juniors,Boca Juniors,Boca Juniors,Boca Juniors,BOC
+3,2395,CA Independiente,CA Independiente,CA Independiente,CA Independiente,CA Independiente,
+3,2396,CA Boca Juniors,CA Boca Juniors,CA Boca Juniors,CA Boca Juniors,CA Boca Juniors,BOC
 3,2397,Racing Club,Racing Club,Racing Club,Racing Club,Racing Club,RAC
-3,2398,River Plate,River Plate,River Plate,River Plate,River Plate,RIV
+3,2398,CA River Plate,CA River Plate,CA River Plate,CA River Plate,CA River Plate,RIV
 3,2399,Colo-Colo,Colo-Colo,Colo-Colo,Colo-Colo,Colo-Colo,COL
-3,2400,Olimpia,Olimpia,Olimpia,Olimpia,Olimpia,OLI
-3,2401,Nacional,Nacional,Nacional,Nacional,Nacional,NAC
-3,2402,Peñarol,Peñarol,Peñarol,Peñarol,Peñarol,PEÑ
+3,2400,Club Olimpia,Club Olimpia,Club Olimpia,Club Olimpia,Club Olimpia,OLI
+3,2401,Club Nacional,Club Nacional,Club Nacional,Club Nacional,Club Nacional,NAC
+3,2402,CA Peñarol,CA Peñarol,CA Peñarol,CA Peñarol,CA Peñarol,PEÑ
 3,2403,JS Kabylie,JS Kabylie,JS Kabylie,JS Kabylie,JS Kabylie,JSK
 3,2404,Al Ahly,Al Ahly,Al Ahly,Al Ahly,Al Ahly,ALA
 3,2405,Raja Casablanca,Raja Casablanca,Raja Casablanca,Raja Casablanca,Raja Casablanca,RAJ
@@ -249,34 +380,52 @@ category,id,en,fr,de,it,es,short
 3,2407,Hearts of Oak,Hearts of Oak,Hearts of Oak,Hearts of Oak,Hearts of Oak,HEA
 3,2408,Stade Malien,Stade Malien,Stade Malien,Stade Malien,Stade Malien,STA
 3,2409,Enugu Rangers,Enugu Rangers,Enugu Rangers,Enugu Rangers,Enugu Rangers,ENU
-3,2410,Jeanne d'Arc,Jeanne d'Arc,Jeanne d'Arc,Jeanne d'Arc,Jeanne d'Arc,JEA
+3,2410,ASC Jeanne d'Arc,ASC Jeanne d'Arc,ASC Jeanne d'Arc,ASC Jeanne d'Arc,ASC Jeanne d'Arc,JEA
 3,2411,Canon Yaoundé,Canon Yaoundé,Canon Yaoundé,Canon Yaoundé,Canon Yaoundé,CAN
 3,2412,Orlando Pirates,Orlando Pirates,Orlando Pirates,Orlando Pirates,Orlando Pirates,ORL
 3,2413,Toronto Lynx,Toronto Lynx,Toronto Lynx,Toronto Lynx,Toronto Lynx,TOR
-3,2414,Saprissa,Saprissa,Saprissa,Saprissa,Saprissa,SAP
+3,2414,Deportivo Saprissa,Deportivo Saprissa,Deportivo Saprissa,Deportivo Saprissa,Deportivo Saprissa,SAP
 3,2415,Happy Valley,Happy Valley,Happy Valley,Happy Valley,Happy Valley,HAP
-3,2416,Chivas,Chivas,Chivas,Chivas,Chivas,CHI
+3,2416,CD Guadalajara,CD Guadalajara,CD Guadalajara,CD Guadalajara,CD Guadalajara,CHI
+3,2417,Club Necaxa,Club Necaxa,Club Necaxa,Club Necaxa,Club Necaxa,
 3,2418,LA Galaxy,LA Galaxy,LA Galaxy,LA Galaxy,LA Galaxy,LAG
 3,2419,D.C. United,D.C. United,D.C. United,D.C. United,D.C. United,DCU
 3,2420,Dalian Shide,Dalian Shide,Dalian Shide,Dalian Shide,Dalian Shide,DAL
 3,2421,Nagoya Grampus,Nagoya Grampus,Nagoya Grampus,Nagoya Grampus,Nagoya Grampus,NAG
-3,2422,JEF United,JEF United,JEF United,JEF United,JEF United,JEF
+3,2422,JEF United Chiba,JEF United Chiba,JEF United Chiba,JEF United Chiba,JEF United Chiba,JEF
 3,2423,Avispa Fukuoka,Avispa Fukuoka,Avispa Fukuoka,Avispa Fukuoka,Avispa Fukuoka,AVI
 3,2424,Consadole Sapporo,Consadole Sapporo,Consadole Sapporo,Consadole Sapporo,Consadole Sapporo,CON
 3,2425,Vissel Kobe,Vissel Kobe,Vissel Kobe,Vissel Kobe,Vissel Kobe,VIS
 3,2426,Yokohama FC,Yokohama FC,Yokohama FC,Yokohama FC,Yokohama FC,YOK
 3,2427,Cerezo Osaka,Cerezo Osaka,Cerezo Osaka,Cerezo Osaka,Cerezo Osaka,CER
-3,2428,Urawa Reds,Urawa Reds,Urawa Reds,Urawa Reds,Urawa Reds,URA
+3,2428,Urawa Red Diamonds,Urawa Red Diamonds,Urawa Red Diamonds,Urawa Red Diamonds,Urawa Red Diamonds,URA
 3,2429,Shimizu S-Pulse,Shimizu S-Pulse,Shimizu S-Pulse,Shimizu S-Pulse,Shimizu S-Pulse,SHI
-3,2430,Tokyo Verdy,Tokyo Verdy,Tokyo Verdy,Tokyo Verdy,Tokyo Verdy,TOK
+3,2430,Tokyo Verdy 1969,Tokyo Verdy 1969,Tokyo Verdy 1969,Tokyo Verdy 1969,Tokyo Verdy 1969,TOK
 3,2431,Seongnam Ilhwa,Seongnam Ilhwa,Seongnam Ilhwa,Seongnam Ilhwa,Seongnam Ilhwa,SEO
-3,2432,Persepolis,Persepolis,Persepolis,Persepolis,Persepolis,PER
+3,2432,Persepolis FC,Persepolis FC,Persepolis FC,Persepolis FC,Persepolis FC,PER
 3,2433,Al-Zawraa,Al-Zawraa,Al-Zawraa,Al-Zawraa,Al-Zawraa,ALZ
-3,2435,Al-Sadd,Al-Sadd,Al-Sadd,Al-Sadd,Al-Sadd,ALS
+3,2434,Al-Kuwait SC,Al-Kuwait SC,Al-Kuwait SC,Al-Kuwait SC,Al-Kuwait SC,
+3,2435,Al-Sadd SC,Al-Sadd SC,Al-Sadd SC,Al-Sadd SC,Al-Sadd SC,ALS
 3,2436,Al-Gharafa,Al-Gharafa,Al-Gharafa,Al-Gharafa,Al-Gharafa,ALG
-3,2441,Auckland City,Auckland City,Auckland City,Auckland City,Auckland City,AUC
+3,2437,Al-Hilal FC,Al-Hilal FC,Al-Hilal FC,Al-Hilal FC,Al-Hilal FC,
+3,2438,Al-Ain FC,Al-Ain FC,Al-Ain FC,Al-Ain FC,Al-Ain FC,
+3,2439,Pakhtakor Tashkent,Pakhtakor Tashkent,Pakhtakor Tashkent,Pakhtakor Tashkent,Pakhtakor Tashkent,
+3,2440,South Melbourne FC,South Melbourne FC,South Melbourne FC,South Melbourne FC,South Melbourne FC,
+3,2441,Auckland City FC,Auckland City FC,Auckland City FC,Auckland City FC,Auckland City FC,AUC
+3,2442,Gillingham FC,Gillingham FC,Gillingham FC,Gillingham FC,Gillingham FC,
 3,2443,Nottingham Forest,Nottingham Forest,Nottingham Forest,Nottingham Forest,Nottingham Forest,NOT
-3,2451,Genoa,Genoa,Genoa,Genoa,Genoa,GEN
+3,2444,Rotherham United,Rotherham United,Rotherham United,Rotherham United,Rotherham United,
+3,2445,SCO Angers,SCO Angers,SCO Angers,SCO Angers,SCO Angers,
+3,2447,Chamois Niortais,Chamois Niortais,Chamois Niortais,Chamois Niortais,Chamois Niortais,
+3,2448,Rot-Weiss Essen,Rot-Weiss Essen,Rot-Weiss Essen,Rot-Weiss Essen,Rot-Weiss Essen,
+3,2449,RW Oberhausen,RW Oberhausen,RW Oberhausen,RW Oberhausen,RW Oberhausen,
+3,2450,Eintracht Trier,Eintracht Trier,Eintracht Trier,Eintracht Trier,Eintracht Trier,
+3,2451,Genoa CFC,Genoa CFC,Genoa CFC,Genoa CFC,Genoa CFC,GEN
+3,2452,SSC Venezia,SSC Venezia,SSC Venezia,SSC Venezia,SSC Venezia,
+3,2453,AC Ancona,AC Ancona,AC Ancona,AC Ancona,AC Ancona,
+3,2454,Córdoba CF,Córdoba CF,Córdoba CF,Córdoba CF,Córdoba CF,
+3,2455,Pontevedra CF,Pontevedra CF,Pontevedra CF,Pontevedra CF,Pontevedra CF,
+3,2456,UD Salamanca,UD Salamanca,UD Salamanca,UD Salamanca,UD Salamanca,
 3,2457,Quick Boys,Quick Boys,Quick Boys,Quick Boys,Quick Boys,QUI
 3,2459,ASWH,ASWH,ASWH,ASWH,ASWH,ASW
 3,2469,Rep. of Ireland,,,,,

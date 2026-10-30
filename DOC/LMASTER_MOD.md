@@ -444,10 +444,14 @@ player name their own club and themself with at most 18 characters
 Spanish and Dutch clubs, the English, French and German ones use their
 official names as far as 18 characters allow (`Arsenal FC`, `Olympique
 Lyonnais`, `Borussia Dortmund`), abbreviated where they don't fit
-(`Eintr. Frankfurt`, `Paris St-Germain`; user request, 2026-10-31).
+(`Eintr. Frankfurt`, `Paris St-Germain`; user request, 2026-10-31), and
+so do every other club (`AS Roma`, `AFC Ajax`, `AC Sparta Prague`,
+`CA Boca Juniors`). The Spanish clubs' names, licensed ones included,
+have no dots (`FC Barcelona`, `Real Madrid CF`, `RCD Espanyol`; the
+user's choice).
 
 **The switch.** `SRC/realnames.csv` holds only the real names (no game
-text): 835 rows, keyed by category (3 teams, 10 stadiums, 9
+text): 984 rows, keyed by category (3 teams, 10 stadiums, 9
 competitions, 11 stages) and id, with the English, French, German,
 Italian and Spanish names and a team's three-letter form.
 `realnames.py` writes them into:
