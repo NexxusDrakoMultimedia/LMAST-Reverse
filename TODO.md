@@ -343,10 +343,8 @@ disc or the edit to build; the result goes into the doc linked.
       its boards changed, on a test disc built from the editor (File >
       Build disc); play a match there, with and without LMASTER full
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
-- [ ] `--mod press-tendency`: in a match on a disc built with it, the
-      overlay's words at `0x9a474` and `0x9a52c` read 0 in memory (PINE;
-      the caps at match data `+0x9764` stay `02`), and a club of
-      high-press players closes down harder than without it
+- [ ] `--mod press-tendency` by eye: a club of high-press players closes
+      down harder than without it (the patch is checked in memory)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 
 ## 8. LMASTER Mod and other patches
