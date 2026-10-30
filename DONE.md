@@ -120,6 +120,10 @@ evidence and how it was tested; the git history holds the rest.
       its front, middle and back rows, which `AUD_JAM_HI` fills, and its
       two materials take the two crowd kinds; `stadium.py info` checks
       every model ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#crowd-models))
+- [x] The stadium request in a match: `InitStadium` (`SLES 0x212fa0`)
+      sets the advert bytes, your own ground's boards from its advert
+      slots and the adidas board at computer clubs' grounds outside Spain
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#the-request-in-a-match))
 
 ## 3. Write: a writer for every format a mod changes
 

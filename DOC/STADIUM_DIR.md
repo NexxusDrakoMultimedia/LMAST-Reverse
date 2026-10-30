@@ -97,6 +97,32 @@ jump table `0x298a50`) names these fields (**confirmed**):
 | `+0x2c`–`+0x35` | – | the stand node lists (table 2) |
 | `+0x36`–`+0xb6` | – | the stadium's `BUILD_STADIUM` row |
 
+### The request in a match
+
+**Confirmed.** In a match, `GAMEPRG.REL 0x1b88` fills the request on
+the stack from the career's match record (`Param::PlGiTask`'s stadium
+block, `PlGi_Stadium`, which `GetStadium` (`SLES 0x212c60`) returns), and
+`0x16678` copies it into the stadium object for the builder `0x1cd648`.
+Most fields are copied byte for byte; the nation goes through `0x1b20`,
+which turns `PlNati` 1–6 into NATION_ID 0–5. `+0x0c` and `+0x13` stay 0.
+
+| Request | Match record | Set by `InitStadium` (`SLES 0x212fa0`) |
+|---|---|---|
+| `+0x08` | `+0x14` | the home club's nation, or the competition's host nation (`getOpenNation`, `0x2134e4`) |
+| `+0x0d` adverts on | `+0x75` | 1; at your own home game 0 unless byte `+0x0c` of your stadium (`pwkTeam_GetStadium`) is 2 (`0x2131e8`) |
+| `+0x0e` board style | `+0x76` | 0; at your own home game 1 if advert slot 4 is built, else 2 if slot 5 is (`0x213380`) |
+| `+0x0f` board level | `+0x77` | 0; at your own home game `pwkTeam_CheckAdvertise` (`0x25da78`): the highest of advert slots 0–3 built, through the table at `0x5313e0` (slot 0 → 2, 1 → 3, 2 → 4, 3 → 5, none → 1) |
+| `+0x10` adidas first | `+0x78` | 1 at every other club's home game, except when the nation is 5 (Spain) (`0x213720`); not set at your own or the rival's home games |
+| `+0x20`–`+0x2b` adverts | `+0x79`–`+0x84` | your sponsors' logos at your own home game, repeated to fill 12 (`0x21362c`, `0x212f38`); 201–204 three times at the rival's (club 2, `0x2136c8`); 0 elsewhere, so the builder takes the `BUILD_STADIUM` row's bytes 116–127 (`0x1cd768`) |
+
+Your stadium's 6 advert slots are the bytes `+0x2f` + 2 × slot, 1 when
+built (`plTeam_CountStadiumAdvertise`, `0x22a4c8`); they are the 6
+records of `PLRESOURCECOMMON` table 0.8
+([`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md)). So the
+electric and LCD boards (`+0x0e`) and the extra boards 95–97 (`+0x0f`)
+appear only at your own ground, once you build those adverts, and the
+adidas board only at computer clubs' grounds outside Spain.
+
 The value names (DAY/NIGHT, FINE…SNOW, SPRING…WINTER, ENGLAND…HOLLAND,
 JAN…DEC) are the viewer's lists at `GAMEPRG.REL 0x24d4c8`–`0x24d554`. Its
 CREATE panel has STADIUM_LEVEL, NATION_ID and STAND_LEVEL instead of
@@ -440,14 +466,11 @@ All thresholds ascend. The names suggest the high- and low-detail crowds
   palettes at crowd object `+0x264`; `AUD_TEAM_COLOR_CLUT_CMN` is the
   likely source), and so why table 0 thins the front rows as the palette
   changes.
-- Who sets request `+0x0e`–`+0x10` in a real match (the viewer doesn't).
-  `+0x10` is set in league matches: every ground shows the adidas board,
-  advert texture 212, which only `+0x10` puts there (user report,
-  2026-10-30, [`LMASTER_MOD.md`](LMASTER_MOD.md#stadiums)). Only the
-  Stadium Viewer calls the builder `0x1cd648`; a real match goes through
-  `STADIUM::CBuildData` (vtable `0x25d270`), and no code in `GAMEPRG.REL`
-  stores bytes `+0x0e`–`+0x10` together, so the request is probably
-  filled as words or by another module (searched 2026-10-30).
+- What byte `+0x0c` of your stadium record is (it must be 2 for your
+  own ground's adverts to show), and the names of the 6 advert slots.
+- Whether `+0x10` is 0 at your own and the rival's home games: the match
+  record is cleared when it is made (`bufer_clear`, `0x210100`), but no
+  running game has been read.
 - Slot 6 (`BENCH_HIGH`): every `.PRI` file gives it a priority (60), but
   nothing loads a part into it.
 - Request byte `+0x13` (not read by the stadium code).

@@ -763,7 +763,10 @@ logos appear. The rival's ground (114) keeps its own boards. The adidas board ev
 Realism makes it Nexxus Drako Multimedia) isn't one of the 12: it is
 `ADT_TEXCMN` entry 212, which no row names (they use 1–200); the match
 request's `+0x10` moves a row's boards up one and puts it first
-(`0x1cd618`), so it stays on every ground (the user's request), and the
+(`0x1cd618`). `InitStadium` sets `+0x10` at every computer club's home
+game except in Spain ([the request in a
+match](STADIUM_DIR.md#the-request-in-a-match)), so it stays on those
+grounds (the user's request), and the
 switch's draws never pick it (value 206; *v* − 1 is clamped to 205, so
 any value from 206 on would be adidas too). It writes only those bytes,
 so it sits beside `real-grounds`. An edited `BUILD_STADIUM.TBB` keeps
