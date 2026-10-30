@@ -336,9 +336,13 @@ set-up (`CEDITPRG.REL 0x20b0`) takes one index, 0–31, for the starting
 design the player picks: it sets the club's kits from the 32 at
 `CEDITPRG.REL 0x150a0` and copies table 8's row of that index as the
 crest (`GetInitializeData`, `0x21a0`), with table 10's sample and table
-11's colours. So an edit to table 8 row *n* shows only for design *n*.
-A test with row 0 edited showed no change (user report, 2026-10-31), so
-which design was picked decides whether that means anything. Changing a crest's `base` is refused when its
+11's colours. The starting crest follows the club's colour (user
+report), and table 11's first byte in each row is the row's own index,
+so the index is most likely the club's main colour, an id in the
+32-colour palette: row 0 goes with colour 0, the first, a light pink
+(`#ffbfbf`). So an edit to table 8 row *n* shows only for a new club of
+colour *n*. A test with row 0 edited showed no change on a club of
+another colour (user report, 2026-10-31), as expected. Changing a crest's `base` is refused when its
 mask is past the new base's group; set the mask first. After the edits
 the file is checked as `info` checks it, and written only if that finds
 nothing.

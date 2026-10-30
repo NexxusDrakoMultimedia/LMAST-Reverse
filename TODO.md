@@ -269,8 +269,9 @@ disc or the edit to build; the result goes into the doc linked.
       your club's stored keeper kit
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#still-unknown))
 - [ ] An edited starting crest (`emblem.py set`) shows when a new club
-      picks its design: edit all 32 rows of table 8, since the design
-      the player picks chooses the row (a row-0 edit showed nothing)
+      picks its colour: edit all 32 rows of table 8, since the club's
+      main colour chooses the row (a row-0 edit showed nothing on a club
+      of another colour)
       ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 - [ ] Kit style: outfield gloves on a player with `gloves` 1–4 in a
       career match between November and March (not in VS), and the cap
