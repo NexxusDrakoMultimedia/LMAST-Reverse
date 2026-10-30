@@ -281,6 +281,9 @@ Each result is recorded in the doc named.
       (`mobile-site`), and a PR event's cost and ticket bonus edited
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-text),
       [`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md#editing))
+- [x] An edited starting crest shows on a new club of that crest's
+      colour (light pink, row 0; user report)
+      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 
 ## 8. LMASTER Mod and other patches
 

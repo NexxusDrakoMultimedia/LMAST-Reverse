@@ -341,8 +341,12 @@ report), and table 11's first byte in each row is the row's own index,
 so the index is most likely the club's main colour, an id in the
 32-colour palette: row 0 goes with colour 0, the first, a light pink
 (`#ffbfbf`). So an edit to table 8 row *n* shows only for a new club of
-colour *n*. A test with row 0 edited showed no change on a club of
-another colour (user report, 2026-10-31), as expected. Changing a crest's `base` is refused when its
+colour *n*. **Tested in PCSX2** (user report, 2026-10-31,
+`LMAST-test-season2.iso`, `crest:8:0:mask=1 crest:8:0:base=15`): a
+club of another colour showed no change, as expected, and a new light
+pink club started with row 0's crest on the edited base, a flat-topped
+shield (mask `_mask_012_02`) instead of retail's notched top
+(`_mask_031_03`), its accessories and layers as before. Changing a crest's `base` is refused when its
 mask is past the new base's group; set the mask first. After the edits
 the file is checked as `info` checks it, and written only if that finds
 nothing.
