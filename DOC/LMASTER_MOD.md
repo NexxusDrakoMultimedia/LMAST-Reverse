@@ -440,10 +440,14 @@ without sponsors where the ground has another name (Westfalenstadion,
 not Signal Iduna Park; user's choice, 2026-10-30). The club names match the ones LMAST Realism shows
 on its logos and kits, so text and textures agree. The game lets the
 player name their own club and themself with at most 18 characters
-(user report), so the club names keep to 18 too.
+(user report), so the club names keep to 18 too. Like the licensed
+Spanish and Dutch clubs, the English, French and German ones use their
+official names as far as 18 characters allow (`Arsenal FC`, `Olympique
+Lyonnais`, `Borussia Dortmund`), abbreviated where they don't fit
+(`Eintr. Frankfurt`, `Paris St-Germain`; user request, 2026-10-31).
 
 **The switch.** `SRC/realnames.csv` holds only the real names (no game
-text): 729 rows, keyed by category (3 teams, 10 stadiums, 9
+text): 835 rows, keyed by category (3 teams, 10 stadiums, 9
 competitions, 11 stages) and id, with the English, French, German,
 Italian and Spanish names and a team's three-letter form.
 `realnames.py` writes them into:

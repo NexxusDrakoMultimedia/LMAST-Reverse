@@ -1,18 +1,124 @@
 category,id,en,fr,de,it,es,short
-3,2008,Manchester City,Manchester City,Manchester City,Manchester City,Manchester City,MCI
-3,2011,Arsenal,Arsenal,Arsenal,Arsenal,Arsenal,ARS
+3,2003,Birmingham City FC,Birmingham City FC,Birmingham City FC,Birmingham City FC,Birmingham City FC,
+3,2004,Blackburn Rovers,Blackburn Rovers,Blackburn Rovers,Blackburn Rovers,Blackburn Rovers,
+3,2005,Bolton Wanderers,Bolton Wanderers,Bolton Wanderers,Bolton Wanderers,Bolton Wanderers,
+3,2006,Charlton Athletic,Charlton Athletic,Charlton Athletic,Charlton Athletic,Charlton Athletic,
+3,2007,Chelsea FC,Chelsea FC,Chelsea FC,Chelsea FC,Chelsea FC,
+3,2008,Manchester City FC,Manchester City FC,Manchester City FC,Manchester City FC,Manchester City FC,MCI
+3,2009,Everton FC,Everton FC,Everton FC,Everton FC,Everton FC,
+3,2010,Fulham FC,Fulham FC,Fulham FC,Fulham FC,Fulham FC,
+3,2011,Arsenal FC,Arsenal FC,Arsenal FC,Arsenal FC,Arsenal FC,ARS
+3,2012,Liverpool FC,Liverpool FC,Liverpool FC,Liverpool FC,Liverpool FC,
 3,2013,Manchester United,Manchester United,Manchester United,Manchester United,Manchester United,MUN
-3,2019,Aston Villa,Aston Villa,Aston Villa,Aston Villa,Aston Villa,AST
-3,2039,QPR,QPR,QPR,QPR,QPR,QPR
-3,2041,Sheffield Wed,Sheffield Wed,Sheffield Wed,Sheffield Wed,Sheffield Wed,SHW
+3,2014,Middlesbrough FC,Middlesbrough FC,Middlesbrough FC,Middlesbrough FC,Middlesbrough FC,
+3,2015,Newcastle United,Newcastle United,Newcastle United,Newcastle United,Newcastle United,
+3,2016,Portsmouth FC,Portsmouth FC,Portsmouth FC,Portsmouth FC,Portsmouth FC,
+3,2017,Sunderland AFC,Sunderland AFC,Sunderland AFC,Sunderland AFC,Sunderland AFC,
+3,2018,Tottenham Hotspur,Tottenham Hotspur,Tottenham Hotspur,Tottenham Hotspur,Tottenham Hotspur,
+3,2019,Aston Villa FC,Aston Villa FC,Aston Villa FC,Aston Villa FC,Aston Villa FC,AST
+3,2020,West Bromwich A.,West Bromwich A.,West Bromwich A.,West Bromwich A.,West Bromwich A.,
+3,2021,West Ham United,West Ham United,West Ham United,West Ham United,West Ham United,
+3,2022,Wigan Athletic,Wigan Athletic,Wigan Athletic,Wigan Athletic,Wigan Athletic,
+3,2023,Brighton & Hove A.,Brighton & Hove A.,Brighton & Hove A.,Brighton & Hove A.,Brighton & Hove A.,
+3,2024,Burnley FC,Burnley FC,Burnley FC,Burnley FC,Burnley FC,
+3,2025,Cardiff City FC,Cardiff City FC,Cardiff City FC,Cardiff City FC,Cardiff City FC,
+3,2026,Coventry City FC,Coventry City FC,Coventry City FC,Coventry City FC,Coventry City FC,
+3,2027,Crewe Alexandra,Crewe Alexandra,Crewe Alexandra,Crewe Alexandra,Crewe Alexandra,
+3,2028,Crystal Palace FC,Crystal Palace FC,Crystal Palace FC,Crystal Palace FC,Crystal Palace FC,
+3,2029,Derby County FC,Derby County FC,Derby County FC,Derby County FC,Derby County FC,
+3,2030,Hull City AFC,Hull City AFC,Hull City AFC,Hull City AFC,Hull City AFC,
+3,2031,Ipswich Town FC,Ipswich Town FC,Ipswich Town FC,Ipswich Town FC,Ipswich Town FC,
+3,2032,Leeds United AFC,Leeds United AFC,Leeds United AFC,Leeds United AFC,Leeds United AFC,
+3,2033,Leicester City FC,Leicester City FC,Leicester City FC,Leicester City FC,Leicester City FC,
+3,2034,Luton Town FC,Luton Town FC,Luton Town FC,Luton Town FC,Luton Town FC,
+3,2035,Millwall FC,Millwall FC,Millwall FC,Millwall FC,Millwall FC,
+3,2036,Norwich City FC,Norwich City FC,Norwich City FC,Norwich City FC,Norwich City FC,
+3,2037,Plymouth Argyle FC,Plymouth Argyle FC,Plymouth Argyle FC,Plymouth Argyle FC,Plymouth Argyle FC,
+3,2038,Preston North End,Preston North End,Preston North End,Preston North End,Preston North End,
+3,2039,Queens Park R.,Queens Park R.,Queens Park R.,Queens Park R.,Queens Park R.,QPR
+3,2040,Reading FC,Reading FC,Reading FC,Reading FC,Reading FC,
+3,2041,Sheff. Wednesday,Sheff. Wednesday,Sheff. Wednesday,Sheff. Wednesday,Sheff. Wednesday,SHW
 3,2042,Sheffield United,Sheffield United,Sheffield United,Sheffield United,Sheffield United,SHU
-3,2046,Wolves,Wolves,Wolves,Wolves,Wolves,WOL
-3,2060,Paris SG,Paris SG,Paris SG,Paris SG,Paris SG,PAR
-3,2088,Hertha BSC,Hertha BSC,Hertha BSC,Hertha BSC,Hertha BSC,HER
-3,2095,Schalke 04,Schalke 04,Schalke 04,Schalke 04,Schalke 04,SCH
-3,2102,Nürnberg,Nuremberg,Nürnberg,Norimberga,Núremberg,NÜR
-3,2112,Erzgebirge Aue,Erzgebirge Aue,Erzgebirge Aue,Erzgebirge Aue,Erzgebirge Aue,ERZ
-3,2116,1860 Munich,1860 Munich,1860 München,1860 Monaco,1860 Múnich,MUN
+3,2043,Southampton FC,Southampton FC,Southampton FC,Southampton FC,Southampton FC,
+3,2044,Stoke City FC,Stoke City FC,Stoke City FC,Stoke City FC,Stoke City FC,
+3,2045,Watford FC,Watford FC,Watford FC,Watford FC,Watford FC,
+3,2046,Wolverhampton W.,Wolverhampton W.,Wolverhampton W.,Wolverhampton W.,Wolverhampton W.,WOL
+3,2047,AC Ajaccio,AC Ajaccio,AC Ajaccio,AC Ajaccio,AC Ajaccio,
+3,2048,AJ Auxerre,AJ Auxerre,AJ Auxerre,AJ Auxerre,AJ Auxerre,
+3,2049,Girondins Bordeaux,Girondins Bordeaux,Girondins Bordeaux,Girondins Bordeaux,Girondins Bordeaux,
+3,2050,Le Mans UC 72,Le Mans UC 72,Le Mans UC 72,Le Mans UC 72,Le Mans UC 72,
+3,2051,RC Lens,RC Lens,RC Lens,RC Lens,RC Lens,
+3,2052,Lille OSC,Lille OSC,Lille OSC,Lille OSC,Lille OSC,
+3,2053,Olympique Lyonnais,Olympique Lyonnais,Olympique Lyonnais,Olympique Lyonnais,Olympique Lyonnais,
+3,2054,Olymp. Marseille,Olymp. Marseille,Olymp. Marseille,Olymp. Marseille,Olymp. Marseille,
+3,2055,FC Metz,FC Metz,FC Metz,FC Metz,FC Metz,
+3,2056,AS Monaco,AS Monaco,AS Monaco,AS Monaco,AS Monaco,
+3,2057,AS Nancy-Lorraine,AS Nancy-Lorraine,AS Nancy-Lorraine,AS Nancy-Lorraine,AS Nancy-Lorraine,
+3,2058,FC Nantes,FC Nantes,FC Nantes,FC Nantes,FC Nantes,
+3,2059,OGC Nice,OGC Nice,OGC Nice,OGC Nice,OGC Nice,
+3,2060,Paris St-Germain,Paris St-Germain,Paris St-Germain,Paris St-Germain,Paris St-Germain,PAR
+3,2061,Stade Rennais FC,Stade Rennais FC,Stade Rennais FC,Stade Rennais FC,Stade Rennais FC,
+3,2062,FC Sochaux,FC Sochaux,FC Sochaux,FC Sochaux,FC Sochaux,
+3,2063,AS Saint-Etienne,AS Saint-Etienne,AS Saint-Etienne,AS Saint-Etienne,AS Saint-Etienne,
+3,2064,RC Strasbourg,RC Strasbourg,RC Strasbourg,RC Strasbourg,RC Strasbourg,
+3,2065,Toulouse FC,Toulouse FC,Toulouse FC,Toulouse FC,Toulouse FC,
+3,2066,ES Troyes AC,ES Troyes AC,ES Troyes AC,ES Troyes AC,ES Troyes AC,
+3,2067,Amiens SC,Amiens SC,Amiens SC,Amiens SC,Amiens SC,
+3,2068,SC Bastia,SC Bastia,SC Bastia,SC Bastia,SC Bastia,
+3,2069,Stade Brestois 29,Stade Brestois 29,Stade Brestois 29,Stade Brestois 29,Stade Brestois 29,
+3,2070,SM Caen,SM Caen,SM Caen,SM Caen,SM Caen,
+3,2071,LB Châteauroux,LB Châteauroux,LB Châteauroux,LB Châteauroux,LB Châteauroux,
+3,2072,Clermont Foot,Clermont Foot,Clermont Foot,Clermont Foot,Clermont Foot,
+3,2073,US Créteil,US Créteil,US Créteil,US Créteil,US Créteil,
+3,2074,Dijon FCO,Dijon FCO,Dijon FCO,Dijon FCO,Dijon FCO,
+3,2075,Grenoble Foot 38,Grenoble Foot 38,Grenoble Foot 38,Grenoble Foot 38,Grenoble Foot 38,
+3,2076,FC Gueugnon,FC Gueugnon,FC Gueugnon,FC Gueugnon,FC Gueugnon,
+3,2077,EA Guingamp,EA Guingamp,EA Guingamp,EA Guingamp,EA Guingamp,
+3,2078,FC Istres,FC Istres,FC Istres,FC Istres,FC Istres,
+3,2079,Stade Lavallois,Stade Lavallois,Stade Lavallois,Stade Lavallois,Stade Lavallois,
+3,2080,Le Havre AC,Le Havre AC,Le Havre AC,Le Havre AC,Le Havre AC,
+3,2081,FC Lorient,FC Lorient,FC Lorient,FC Lorient,FC Lorient,
+3,2082,Montpellier HSC,Montpellier HSC,Montpellier HSC,Montpellier HSC,Montpellier HSC,
+3,2083,Stade de Reims,Stade de Reims,Stade de Reims,Stade de Reims,Stade de Reims,
+3,2084,CS Sedan Ardennes,CS Sedan Ardennes,CS Sedan Ardennes,CS Sedan Ardennes,CS Sedan Ardennes,
+3,2085,FC Sète,FC Sète,FC Sète,FC Sète,FC Sète,
+3,2086,Valenciennes FC,Valenciennes FC,Valenciennes FC,Valenciennes FC,Valenciennes FC,
+3,2087,Bayern Munich,Bayern Munich,FC Bayern München,Bayern Monaco,Bayern Múnich,
+3,2088,Hertha BSC Berlin,Hertha BSC Berlin,Hertha BSC Berlin,Hertha BSC Berlin,Hertha BSC Berlin,HER
+3,2089,Arminia Bielefeld,Arminia Bielefeld,Arminia Bielefeld,Arminia Bielefeld,Arminia Bielefeld,
+3,2090,SV Werder Bremen,SV Werder Bremen,SV Werder Bremen,SV Werder Bremen,SV Werder Bremen,
+3,2091,1. FC Köln,1. FC Köln,1. FC Köln,1. FC Köln,1. FC Köln,
+3,2092,Borussia Dortmund,Borussia Dortmund,Borussia Dortmund,Borussia Dortmund,Borussia Dortmund,
+3,2093,MSV Duisburg,MSV Duisburg,MSV Duisburg,MSV Duisburg,MSV Duisburg,
+3,2094,Eintr. Frankfurt,Eintr. Frankfurt,Eintr. Frankfurt,Eintr. Frankfurt,Eintr. Frankfurt,
+3,2095,FC Schalke 04,FC Schalke 04,FC Schalke 04,FC Schalke 04,FC Schalke 04,SCH
+3,2096,B. Mönchengladbach,B. Mönchengladbach,B. Mönchengladbach,B. Mönchengladbach,B. Mönchengladbach,
+3,2097,Hamburger SV,Hamburger SV,Hamburger SV,Hamburger SV,Hamburger SV,
+3,2098,Hannover 96,Hannover 96,Hannover 96,Hannover 96,Hannover 96,
+3,2099,1. FC K'lautern,1. FC K'lautern,1. FC K'lautern,1. FC K'lautern,1. FC K'lautern,
+3,2100,Bayer Leverkusen,Bayer Leverkusen,Bayer Leverkusen,Bayer Leverkusen,Bayer Leverkusen,
+3,2101,1. FSV Mainz 05,1. FSV Mainz 05,1. FSV Mainz 05,1. FSV Mainz 05,1. FSV Mainz 05,
+3,2102,1. FC Nuremberg,1. FC Nuremberg,1. FC Nürnberg,1. FC Norimberga,1. FC Núremberg,NÜR
+3,2103,VfB Stuttgart,VfB Stuttgart,VfB Stuttgart,VfB Stuttgart,VfB Stuttgart,
+3,2104,VfL Wolfsburg,VfL Wolfsburg,VfL Wolfsburg,VfL Wolfsburg,VfL Wolfsburg,
+3,2105,Alemannia Aachen,Alemannia Aachen,Alemannia Aachen,Alemannia Aachen,Alemannia Aachen,
+3,2106,Rot Weiss Ahlen,Rot Weiss Ahlen,Rot Weiss Ahlen,Rot Weiss Ahlen,Rot Weiss Ahlen,
+3,2107,VfL Bochum,VfL Bochum,VfL Bochum,VfL Bochum,VfL Bochum,
+3,2108,E. Braunschweig,E. Braunschweig,E. Braunschweig,E. Braunschweig,E. Braunschweig,
+3,2109,Wacker Burghausen,Wacker Burghausen,Wacker Burghausen,Wacker Burghausen,Wacker Burghausen,
+3,2110,Energie Cottbus,Energie Cottbus,Energie Cottbus,Energie Cottbus,Energie Cottbus,
+3,2111,Dynamo Dresden,Dynamo Dresden,Dynamo Dresden,Dynamo Dresden,Dynamo Dresden,
+3,2112,FC Erzgebirge Aue,FC Erzgebirge Aue,FC Erzgebirge Aue,FC Erzgebirge Aue,FC Erzgebirge Aue,ERZ
+3,2113,SC Freiburg,SC Freiburg,SC Freiburg,SC Freiburg,SC Freiburg,
+3,2114,SpVgg Gr. Fürth,SpVgg Gr. Fürth,SpVgg Gr. Fürth,SpVgg Gr. Fürth,SpVgg Gr. Fürth,
+3,2115,Karlsruher SC,Karlsruher SC,Karlsruher SC,Karlsruher SC,Karlsruher SC,
+3,2116,TSV 1860 Munich,TSV 1860 Munich,TSV 1860 München,TSV 1860 Monaco,TSV 1860 Múnich,MUN
+3,2117,Kickers Offenbach,Kickers Offenbach,Kickers Offenbach,Kickers Offenbach,Kickers Offenbach,
+3,2118,SC Paderborn 07,SC Paderborn 07,SC Paderborn 07,SC Paderborn 07,SC Paderborn 07,
+3,2119,Hansa Rostock,Hansa Rostock,Hansa Rostock,Hansa Rostock,Hansa Rostock,
+3,2120,1. FC Saarbrücken,1. FC Saarbrücken,1. FC Saarbrücken,1. FC Saarbrücken,1. FC Saarbrücken,
+3,2121,Sportfr. Siegen,Sportfr. Siegen,Sportfr. Siegen,Sportfr. Siegen,Sportfr. Siegen,
+3,2122,SpVgg Unterhaching,SpVgg Unterhaching,SpVgg Unterhaching,SpVgg Unterhaching,SpVgg Unterhaching,
 3,2245,FC Rangers,FC Rangers,FC Rangers,FC Rangers,FC Rangers,FCR
 3,2246,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FC Encamp,FCE
 3,2247,Austria Wien,Austria Vienne,Austria Wien,Austria Vienna,Austria Viena,AUS
