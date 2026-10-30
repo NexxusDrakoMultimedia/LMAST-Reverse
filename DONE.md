@@ -127,6 +127,9 @@ evidence and how it was tested; the git history holds the rest.
 - [x] The play books' point codes: on a player's path, codes 0, 1, 2
       and 20 give a move order toward the point; `bpb.py info` counts
       them ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md))
+- [x] The combinations' zone network: a mesh over the players' positions
+      and the pitch's corners, so an area is a gap between players
+      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#the-zone-network))
 
 ## 3. Write: a writer for every format a mod changes
 

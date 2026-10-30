@@ -495,10 +495,10 @@ mirrors the value through `0x274870` (0, 5, 6, 7, 8, 1, 2, 3, 4) when
 the team's side (`0xa9d58`) is 1, so value *d* and *d* + 4 are opposite
 directions. `0xc7108` passes it to `0xa39d8`, which turns it into an
 angle (`0xa3900`, jump table `0x26fa90`): 1 90°, 2 135°, 3 180°, 4 225°,
-5 270°, 6 315°, 7 360°, 8 45°. It then walks the field's node network
-(match `+0x102d0`; each node keeps its neighbours from `+0x50`, their
-count at `+1`) from the participant's node and tests each neighbour's
-direction against that angle with a π/2 tolerance (`0x3fc90fdc`). So
+5 270°, 6 315°, 7 360°, 8 45°. It then goes through the zones of the
+[zone network](#the-zone-network), takes those that share a player
+corner with the participant's zone, and tests each one's direction
+against that angle with a π/2 tolerance (`0x3fc90fdc`). So
 `Combi17`–`Combi24` mark the neighbouring area of the pitch in one of
 eight directions, at 270°, 90°, 180°, 0°, 225°, 315°, 135° and 45°.
 
@@ -521,6 +521,46 @@ only for the other side, `0xa5af8`). So:
 
 Which of 0° and 180° is the left as the attacking team sees it isn't
 checked.
+
+### The zone network
+
+The areas the combinations make are zones of a mesh the match builds
+over the players, not fixed parts of the pitch. It lives at match
+`+0x102d0` (match = `*0x249058`): `+0` the number of zone slots, `+8` a
+pointer to the slot array (a null slot is unused), and from `+0x20` a
+list of extra points, 16 bytes each.
+
+**Confirmed** (`0x130e38`, `0x1311e8`, the corner lookup `0xa3230`): a
+zone is a 0x120-byte record:
+
+| Offset | Type | What |
+|---|---|---|
+| `+0x00` | s8 | the zone's id |
+| `+0x01` | s8 | number of corners |
+| `+0x03` | s8 | number of triangles |
+| `+0x14` | f32 | area, summed over its triangles (`0x130e38`) |
+| `+0x30` | 4 × f32 | centre, the mean of its corners, recomputed when `+0x10` is clear (`0x1311e8`) |
+| `+0x50` | s8 list | the corners, as vertex ids |
+| `+0x5c` | 4 bytes each | the triangles: three vertex ids and a pad |
+
+A vertex id *v* is a player or a fixed point (`0xa3230`). With *A* and
+*B* the two teams' player counts (`*0x2490fc +0x8e8c`, ordered by
+`+0x10c`), *v* < *A* is player *v* of the first team, *v* < *A* + *B*
+player *v* − *A* of the second (position at match + team × 0x3c80 +
+player × 0x580 + 0x40), and any higher *v* the network's extra point
+*v* − *A* − *B*.
+
+**Empirical**, read from a mid-match save state (England v England):
+positions are in tenths of a metre, the first team's keeper stood near
+its own goal at y −390 and the other's at +497 (so the unmirrored team
+attacks toward +y, as [above](#the-combination-commands)), and the 8 extra
+points were the pitch's corners and touchline points at x ±328.66,
+y ±527.81. 15 of the 28 slots were in use, with 3 to 6 corners each; their
+corners were all 11 players of one team, one of the other, and extra
+points. So a zone is a gap between the players, mostly the opponents,
+and the zones move as the players do. The centres in that state didn't
+match their corners, so the network is rebuilt and its centres
+recomputed during play; when isn't traced.
 
 So script 0, `Combi3 8; Combi0 1; Combi3 13; Combi0 2; Combi12 0`, makes
 preset area 8, sends participants 1 and 2 to area 0 (`Combi3 13` returns
@@ -548,7 +588,11 @@ participants are the ones the record's slots found
   what `+0x15e0` and `0xc6288` do when a candidate is tried.
 - What the controller's `+0x1608` "line" value is, and type 6's
   position (`0xc3270`).
-- The area types of `Combi2` and `Combi3`, which side (left or right)
+- What builds the [zone network](#the-zone-network) and when, which
+  players it takes (one team's 11 and one of the other's in the state
+  read), and how `Combi2` and `Combi3` pick a zone: types 0–5 step
+  from a starting zone by the direction pair, 6 and 7 aren't read.
+- Which side (left or right)
   `Combi19` and `Combi20` mark, what `Combi12`'s target and
   mode 7's flag are, and the plays at the player's `+0xfc`, `+0x100`
   and `+0x108` that modes 2 and 3 switch to.
