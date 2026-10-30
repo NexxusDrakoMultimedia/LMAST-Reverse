@@ -508,8 +508,17 @@ holds the name typed at the start (`SetOwnerName_Keyboard`, the
 `addiu $a0, $zero, 3` → `0` at `0x11eafc` (`24040003` → `24040000`).
 The buffer is 33 bytes, so an 18-character name and " Estadio" fit.
 The rival's stadium (`VarBuf_MakeRivalStadium`, slot 10) is built the
-same way from the rival club's name and is left alone. Not yet tested
-in the game.
+same way from the rival club's name and is left alone.
+
+A new career builds the stadium name before you type your own, so it
+came out as "  Stadium" (user report, 2026-10-31; over PINE slot 0 held
+the name and slot 9 "  Stadium"). A load rebuilds it from the saved
+slot 0 (`SAVEPRG.REL 0x32f24`, after restoring slots 0 and 1), but a new
+career doesn't, so the switch also ends `SetOwnerName_Keyboard`
+(`0x11ec58`) with a jump to `VarBuf_MakeMyStadium`: its `jr $ra` at
+`0x11ec74` (`03e00008`) becomes `j 0x11eaf8` (`08047abe`), with `$ra`
+already restored and the frame popped in the delay slot (Japanese
+build: `0x11e6f4`, jumping to `0x11e580`). Not yet seen in the game.
 
 Letters the European text's encoding (cp850) has no code for lose their
 accent ("Zeljeznicar", "Besiktas"), as the game's own names do. A

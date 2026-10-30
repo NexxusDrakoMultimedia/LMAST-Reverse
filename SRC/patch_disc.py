@@ -4302,16 +4302,31 @@ def plan_real_names(f, img, adopted=()):
 # variable slot 9, which category 10's message 11001 shows, as
 # snprintf("%s %s", slot 3, the word "Stadium"); slot 3 is the city. Slot
 # 0 is the name typed at the start (SetOwnerName_Keyboard). The slot is
-# the argument of GetVariableBuffer at 0x11eafc.
+# the argument of GetVariableBuffer at 0x11eafc. A new career builds the
+# stadium name before the name is typed (slot 0 blank: "  Stadium", read
+# over PINE, user report 2026-10-31), so SetOwnerName_Keyboard (0x11ec58)
+# ends by jumping to VarBuf_MakeMyStadium instead of returning: $ra is
+# already restored and the delay slot pops the frame, so the stadium's
+# own return goes back to the caller. A load rebuilds it from the saved
+# slot 0 anyway (SAVEPRG.REL 0x32f24).
 OWN_STADIUM_AT = 0x11eafc
 OWN_STADIUM_OLD, OWN_STADIUM_NEW = 0x24040003, 0x24040000   # addiu $a0, $zero, 3 -> 0
+OWN_NAME_RETURN = 0x11ec74                                  # jr $ra -> j VarBuf_MakeMyStadium
+OWN_STADIUM_FUNC = 0x11eaf8
 
 
 def plan_own_stadium(f, img):
     """Jobs for --mod own-stadium."""
+    func = OWN_STADIUM_FUNC
+    if img.port is not None:            # the jump's target in the other build
+        import gamever
+        func = gamever.at(img.port.copy(JP_EXE_FILE), func)
     words = [(SLES_FILE, OWN_STADIUM_AT - 0xff000, struct.pack("<I", OWN_STADIUM_OLD),
               struct.pack("<I", OWN_STADIUM_NEW),
-              "%s 0x%x (my stadium: my name, not my city)" % (SLES_FILE, OWN_STADIUM_AT))]
+              "%s 0x%x (my stadium: my name, not my city)" % (SLES_FILE, OWN_STADIUM_AT)),
+             (SLES_FILE, OWN_NAME_RETURN - 0xff000, struct.pack("<I", 0x03e00008),
+              struct.pack("<I", 0x08000000 | (func >> 2)),
+              "%s 0x%x (my stadium rebuilt once my name is typed)" % (SLES_FILE, OWN_NAME_RETURN))]
     return word_jobs(f, img, "own-stadium", words)
 
 
