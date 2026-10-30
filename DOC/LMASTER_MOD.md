@@ -726,7 +726,10 @@ the changed bytes, next to `overseas-bases` and `special-stadium`, which
 write the same files. A
 `PLRESOURCESIM.PAC` or `STADIUM_DATA.TBB` from the editor takes the change
 in its own bytes (target hooks, as for `special-stadium`); where its own
-edit replaced what the switch expects, the editor's value stays.
+edit replaced what the switch expects, the editor's value stays. A
+`BUILD_STADIUM.TBB` from the editor's Stadiums tab takes the looks row by
+row: rows whose look the editor changed keep it
+([`STADIUM_DIR.md`](STADIUM_DIR.md#editing)).
 **Tested in PCSX2** (user report, 2026-10-30, the first build): the new
 grounds work; the biggest looked too small. With the looks by size above,
 on `LMAST-test-stadiums.iso` (2026-10-30): "Stadiums are good" (user
@@ -748,7 +751,9 @@ request's `+0x10` moves a row's boards up one and puts it first
 (`0x1cd618`), so it stays on every ground (the user's request), and the
 switch's draws never pick it (value 206; *v* − 1 is clamped to 205, so
 any value from 206 on would be adidas too). It writes only those bytes,
-so it sits beside `real-grounds`. Clubs that share a stadium id still share its boards;
+so it sits beside `real-grounds`. An edited `BUILD_STADIUM.TBB` keeps
+the boards of the rows the editor changed and takes the draws in the
+rest ([`STADIUM_DIR.md`](STADIUM_DIR.md#editing)). Clubs that share a stadium id still share its boards;
 boards of each club's own would need code in the match set-up.
 **Tested in PCSX2** with the grounds (user report, 2026-10-30).
 

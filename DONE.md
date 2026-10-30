@@ -153,6 +153,9 @@ evidence and how it was tested; the git history holds the rest.
 - [x] `emblem.py set` and `roundtrip`: the crests, presets, layer records
       and flag records of `EDIT_EMBLEM.TBB` and `EDIT_FLAG.TBB`
       ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
+- [x] `stadium.py setlook`, `setboards` and `roundtrip`: a stadium built
+      like another and its 12 advert boards, in `BUILD_STADIUM.TBB`
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
 
 ## 4. Rebuild: edits back on a bootable disc
 
@@ -180,6 +183,10 @@ evidence and how it was tested; the git history holds the rest.
 - [x] The Crests tab: crests, presets, layer records and flag records
       through `emblem.py set`, tested through its widgets off-screen
       ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
+- [x] The Stadiums tab: each ground's look and boards through
+      `stadium.py`, with its size, clubs and the rival's ground; the
+      LMASTER `stadiums` switches keep its edits row by row
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
 
 ## 6. Distribute: sharing a mod
 

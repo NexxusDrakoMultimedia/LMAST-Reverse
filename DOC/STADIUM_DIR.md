@@ -245,6 +245,40 @@ The 119 rows match the 119 stadiums of `PARAM/STADIUM_DATA.TBB`
 ([`PARAM_DIR.md`](PARAM_DIR.md)). Models 3–5 (`ho01b`, `ho02a`, `ho03a`)
 cover 90 of them. `stadium.py build DAT/STADIUM <id>` prints one row.
 
+### Editing
+
+`stadium.py` writes table 0 in place; the file keeps its size and every
+other byte. Both commands take `<in> <out>` and never change the input.
+
+| Command | What it writes |
+|---|---|
+| `setlook <in> <out> <id>=<src id> ...` | stadium *id* built like stadium *src*: its row's bytes 0–115 and 128 (model, parts, crowd set, collision) copied from *src* as the file held it (`copy_rows`, which `--mod real-grounds` uses too). Bytes 116–127, the boards, stay the stadium's own |
+| `setboards <in> <out> <id> <v1> ... <v12> [<id> ...]` | the stadium's 12 advert textures, bytes 116–127. Value *v* is logo *v* − 1 of `SPONSOR_TEXTURE_M` (`0x1d31b8`), 1–205. 206 and up all draw `ADT_TEXCMN` entry 212, adidas, which the match puts first on every ground by itself ([`LMASTER_MOD.md`](LMASTER_MOD.md#stadiums)), so they are refused. Repeats within a row are allowed (every retail row has 12 different ones) |
+
+`roundtrip` edits each of the 119 rows on its own (its look copied from
+the next row, then 12 new boards) and marks with `!!` any byte that
+changes outside the edited ones, or a row whose own values don't give
+the file back. It passes on the disc's file (`stadium_roundtrip` in
+`regress.py`).
+
+The editor's Stadiums tab ([`USAGE.md`](../USAGE.md#the-window)) edits
+through these two. A mod folder's own `BUILD_STADIUM.TBB` still builds
+with `--mod real-grounds` and `sponsor-boards` (LMASTER full and max):
+each switch is applied to the file as `DAT` holds it, and each row's
+look and boards take the switch's bytes only where the target left them
+as they were (`stadium.keep_edits`), so the editor's own edits win row
+by row. Checked on scratch LMASTER full and max builds (2026-10-30) with
+a target where stadium 5 is built like 100 with new boards and 6 like 7:
+those rows kept the target's bytes, 102–118 took the real grounds' looks,
+the other rows the sponsor boards, and 114 stayed as it was. Not yet
+seen in the game.
+
+```bash
+python SRC/stadium.py setlook   DAT/STADIUM/BUILD_STADIUM.TBB out.tbb 5=100
+python SRC/stadium.py setboards DAT/STADIUM/BUILD_STADIUM.TBB out.tbb 5 1 2 3 4 5 6 7 8 9 10 11 12
+python SRC/stadium.py roundtrip DAT/STADIUM
+```
+
 ## `CONV_INFO_BUILD.TBB`
 
 One table of 150 bytes. `0x1ce0b8` (called from `0x1ca3d4`) reads three
@@ -375,6 +409,7 @@ python SRC/stadium.py info  DAT/STADIUM DAT/PARAM    # every table and the cross
 python SRC/stadium.py pri   DAT/STADIUM/HO00A.PRI    # the 44 priorities
 python SRC/stadium.py build DAT/STADIUM 6            # one stadium row, with its crowd set and table-2 bytes
 python SRC/stadium.py crowd DAT/STADIUM/AUD_SET_HO03A_3.TBB   # sections and crowd blocks
+python SRC/stadium.py roundtrip DAT/STADIUM          # the writer, row by row
 python SRC/pac.py list DAT/STADIUM/AW01A_D1.PAC
 python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 1caf18 48 --sles ISO/SLES_541.51   # .PRI reader
 ```

@@ -2444,13 +2444,31 @@ def plan_special_stadium(f, img, adopted=()):
 # the user's request, 2026-10-30; DOC/LMASTER_MOD.md#stadiums). A computer
 # club's ground shows its BUILD_STADIUM row's boards (InitStadium leaves
 # the match's own empty), and the retail rows use 119 of the logos.
-def plan_sponsor_boards(f, img):
+def plan_sponsor_boards(f, img, adopted=()):
     """Jobs for --mod sponsor-boards: the advert bytes of every
     BUILD_STADIUM row (real-grounds writes the rest of some rows)."""
     import stadium
     return file_jobs(f, img, BUILD_STADIUM_FILE, stadium.sponsor_boards, [], None,
-                     "sponsor-boards: every ground's boards from all the sponsors", (),
+                     "sponsor-boards: every ground's boards from all the sponsors", adopted,
                      "has the sponsor boards")
+
+
+def target_build_stadium(edit, file, data, old):
+    """A BUILD_STADIUM.TBB target (the editor's Stadiums tab) with `edit`
+    applied row by row: each row's look and boards the target changed from
+    `old`, the file as DAT (or the image) holds it, stay the target's."""
+    import stadium
+    if norm(file) != norm(BUILD_STADIUM_FILE):
+        return data
+    try:
+        return stadium.keep_edits(old, data, edit(old) or old)
+    except ValueError:
+        return data
+
+
+def target_sponsor_boards(file, data, old):
+    import stadium
+    return target_build_stadium(stadium.sponsor_boards, file, data, old)
 
 
 # real-grounds: each computer club plays at a ground of its real 2005-06
@@ -2464,10 +2482,13 @@ def plan_sponsor_boards(f, img):
 # (SRC/grounds.csv). The 100,000 band is 96-101, so it turns on
 # special-stadium.
 BUILD_STADIUM_FILE = "STADIUM/BUILD_STADIUM.TBB"
-def target_real_grounds(file, data):
-    """A PLRESOURCESIM.PAC or STADIUM_DATA.TBB target (the editor's Clubs
-    or Nations & stadiums tab) with the real grounds in its own bytes."""
+def target_real_grounds(file, data, old):
+    """A PLRESOURCESIM.PAC, STADIUM_DATA.TBB or BUILD_STADIUM.TBB target
+    (the editor's Clubs, Nations & stadiums or Stadiums tab) with the real
+    grounds in its own bytes."""
     import initteam
+    if norm(file) == norm(BUILD_STADIUM_FILE):
+        return target_build_stadium(initteam.real_grounds_build, file, data, old)
     if norm(file) == norm(SIM_FILE):
         return hook_or_keep(initteam.real_grounds_clubs, data)
     if norm(file) == norm(STADIUM_DATA_FILE):
@@ -4617,8 +4638,13 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                 "real-names": (target_real_names, [MES_FILE], []),
                 "special-stadium": (target_special_stadium, [COMMON_FILE, STADIUM_DATA_FILE],
                                     [STATION_FILE] + STADIUM_DATA_PACKS),
-                "real-grounds": (target_real_grounds, [SIM_FILE, STADIUM_DATA_FILE],
-                                 LIST_PACKS + STADIUM_DATA_PACKS)}
+                "real-grounds": (target_real_grounds,
+                                 [SIM_FILE, STADIUM_DATA_FILE, BUILD_STADIUM_FILE],
+                                 LIST_PACKS + STADIUM_DATA_PACKS),
+                "sponsor-boards": (target_sponsor_boards, [BUILD_STADIUM_FILE], [])}
+# Hooks that also take the file as DAT holds it (or the image, without
+# --dat), to keep the target's own edits row by row.
+HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards")
 
 # One switch per feature: parts that need each other are one switch
 # (DOC/LMASTER_MOD.md, the switch levels). Switches that need another switch, that
@@ -4949,6 +4975,14 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
                                  % (name, target))
             pairs.append((target, "--mod " + name, data))
             adopted.setdefault(name, set()).add(norm(target))
+    def original(file):
+        """`file` as DAT holds it, or as the image does without --dat."""
+        if dat:
+            with open(os.path.join(dat, file), "rb") as g:
+                return g.read()
+        with open(image, "rb") as g:
+            return read_file(g, img, file)[1]
+
     # Switches that edit a target's bytes do so before anything is planned,
     # so its copies (--copies) carry the change too; after the switches'
     # own files, so one switch's change lands on another's file (the third
@@ -4961,7 +4995,10 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
                 continue
             file = norm(img.entry(target).path)
             if file in {norm(p) for p in files}:
-                pairs[k] = (target, src, hook(file, data))
+                if name in HOOKS_WITH_OLD:
+                    pairs[k] = (target, src, hook(file, data, original(img.entry(target).path)))
+                else:
+                    pairs[k] = (target, src, hook(file, data))
                 adopted.setdefault(name, set()).update({file} | {norm(p) for p in also})
     index = Index(dat) if dat else None
     if write_copies and index is None:

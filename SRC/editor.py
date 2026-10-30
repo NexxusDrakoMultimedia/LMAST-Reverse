@@ -86,8 +86,15 @@ Tabs:
              rating (INITNATIDATA.TBB, initteam.py setnation), and each
              stadium's roof, level and capacity, with the clubs that use
              it (STADIUM_DATA.TBB, initteam.py setstadium;
-             DOC/INITTEAM_FORMAT.md). The Clubs and New club tabs read the
-             stadiums again after a save.
+             DOC/INITTEAM_FORMAT.md). The Clubs, New club and Stadiums
+             tabs read the stadiums again after a save.
+    Stadiums each of the 119 grounds' look and advert boards
+             (STADIUM/BUILD_STADIUM.TBB, stadium.py setlook and setboards;
+             DOC/STADIUM_DIR.md#editing): built like another stadium (its
+             model, parts and crowd set; the boards stay its own) and its
+             12 boards, values 1-205. Shows the model, the roof, level and
+             capacity (edited in Nations & stadiums), the clubs whose
+             record names it and the rival's ground.
     Overseas bases
              what a club base costs to set up in each of the 13 overseas
              regions (PLRESOURCESIM.PAC entry 1, plrsim.py setbranch;
@@ -203,6 +210,7 @@ import emblem
 import formset
 import regulation
 import sqb
+import stadium
 import tour
 import training
 import teaminit
@@ -5757,6 +5765,293 @@ class NationsTab(Tab):
         return True
 
 
+BUILD = "STADIUM/BUILD_STADIUM.TBB"
+BOARDS = stadium.BUILD_ADVERT.stop - stadium.BUILD_ADVERT.start
+
+
+class StadiumsTab(Tab):
+    """BUILD_STADIUM.TBB: each stadium's look (built like another, its
+    model, parts and crowd set) and its 12 advert boards, through
+    stadium.set_look and set_boards, as `stadium.py setlook` and
+    `setboards` do. The roof, level and capacity are shown from
+    STADIUM_DATA.TBB and edited in the Nations & stadiums tab; the clubs
+    that play there from their records (the Clubs tab's stadium field)."""
+    title = "Stadiums"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.data = None
+        self.looks, self.boards = {}, {}     # id -> src id; id -> [12 values]
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Each ground's look and advert boards (DOC/STADIUM_DIR.md#editing). "
+                            "A club's ground is its record's stadium field, in the Clubs tab.",
+                  foreground="#555").pack(side="left")
+
+        panes = self.panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=(0, 6))
+        left = ttk.Frame(panes)
+        cols = ("id", "name", "model", "seats")
+        self.tree = ttk.Treeview(left, columns=cols, show="headings", selectmode="browse")
+        for c, text, width in zip(cols, ("Id", "Clubs", "Model", "Seats"), (50, 220, 70, 70)):
+            self.tree.heading(c, text=text)
+            self.tree.column(c, width=width, stretch=c == "name")
+        self.tree.tag_configure("edited", foreground="#b03000")
+        sb = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=1)
+
+    def load(self, done=None):
+        mod = self.app.mod
+        try:
+            self.path = mod.source(BUILD)
+            with open(self.path, "rb") as f:
+                self.source = f.read()
+            self.rows = stadium.table_rows(self.source)[0]
+            self.st = initteam.StadiumData(mod.source(STADIUMS))
+            self.read_users()
+        except (ValueError, struct.error, OSError, SystemExit) as e:
+            self.data = None
+            self.app.status("Couldn't load the stadiums: %s" % e)
+            messagebox.showerror("Stadiums", "Couldn't load the stadiums:\n%s" % e)
+            return
+        self.looks, self.boards = {}, {}
+        self.data = self.source
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def read_users(self):
+        """Each stadium's clubs, from the club records, and the rival's
+        ground in each league (TEAM_INIT_DATA table 7)."""
+        mod = self.app.mod
+        db = initteam.TeamDb(mod.source(SIMPAC))
+        teams = initteam.team_names(mod.source(MES), 1)
+        self.users = {}
+        for team, r in sorted(db.records.items()):
+            self.users.setdefault(r["stadium"], []).append(teams.get(team, str(team)))
+        t = teaminit.load(mod.source(TEAMINIT))[3][7]
+        self.rival = {}
+        for lg, league in enumerate(teaminit.LEAGUES):
+            sid = t.field(t.records[teaminit.group(t, (lg,))[0]], "stadium")
+            self.rival.setdefault(sid, []).append(league)
+
+    def changed(self, what):
+        if self.data is None:
+            return
+        if what == "stadiums":
+            self.st = initteam.StadiumData(self.app.mod.source(STADIUMS))
+        elif what == "squads":          # the Clubs tab's save, which may move a club
+            self.read_users()
+        else:
+            return
+        self.refresh_list()
+        if self.current is not None:
+            self.show(self.current)
+
+    def name(self, row):
+        users = self.users.get(row, [])
+        if row in self.rival:
+            users = ["the rival"] + users
+        return ", ".join(users[:3]) + (" +%d" % (len(users) - 3) if len(users) > 3 else "")
+
+    def row(self, i):
+        return stadium.table_rows(self.data)[0][i]
+
+    def model(self, i):
+        m = self.row(i)[0]
+        return stadium.MODELS[m] if m < len(stadium.MODELS) else str(m)
+
+    def refresh_list(self):
+        self.tree.delete(*self.tree.get_children())
+        edited = set(self.looks) | set(self.boards)
+        for i in range(len(self.rows)):
+            self.tree.insert("", "end", iid=str(i), values=(
+                i, self.name(i), self.model(i),
+                self.st.capacity(i) if i < len(self.st.rows) else "-"),
+                tags=("edited",) if i in edited else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(int(sel[0]))
+
+    def show(self, i):
+        self.current = i
+        self.detail.clear()
+        box = self.detail.inner
+        ttk.Label(box, text="stadium %d  %s" % (i, self.name(i)),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        lines = ["Used by: %s" % (", ".join(self.users.get(i, [])) or "no club record")]
+        if i in self.rival:
+            lines.append("The rival's ground in %s (TEAM_INIT_DATA table 7). The LMASTER "
+                         "switches leave it as it is." % ", ".join(self.rival[i]))
+        ttk.Label(box, text="\n".join(lines), foreground="#555", wraplength=520,
+                  justify="left").pack(anchor="w", padx=8)
+
+        frame = ttk.LabelFrame(box, text="Size (STADIUM_DATA.TBB)")
+        frame.pack(fill="x", padx=8, pady=6)
+        if i < len(self.st.rows):
+            roof, level, _ = self.st.rows[i]
+            text = "%s, stadium level %d, %d seats" % ("roof" if roof else "no roof", level,
+                                                       self.st.capacity(i))
+        else:
+            text = "no STADIUM_DATA row"
+        ttk.Label(frame, text=text).pack(side="left", padx=6, pady=4)
+        ttk.Button(frame, text="Edit in Nations & stadiums",
+                   command=lambda: self.open_size(i)).pack(side="left", padx=12, pady=4)
+
+        frame = ttk.LabelFrame(box, text="Look (BUILD_STADIUM table 0)")
+        frame.pack(fill="x", padx=8, pady=6)
+        ttk.Label(frame, text="model %s, crowd set %d" % (
+            self.model(i), self.row(i)[stadium.BUILD_CROWD])).grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=6, pady=2)
+        ttk.Label(frame, text="built like").grid(row=1, column=0, sticky="w", padx=(6, 12), pady=2)
+        choices = list(range(len(self.rows)))
+        value_input(frame, ("choice", choices), self.look_label,
+                    lambda: self.looks.get(i, i),
+                    lambda text, revert: self.commit_look(i, int(text), revert)
+                    ).grid(row=1, column=1, sticky="w", pady=2)
+        ttk.Label(frame, text="The model, its parts and crowd set are copied from that stadium "
+                              "as the file was loaded; the boards stay this stadium's own.",
+                  foreground="#555", wraplength=520, justify="left").grid(
+            row=2, column=0, columnspan=2, sticky="w", padx=6, pady=(0, 4))
+
+        frame = ttk.LabelFrame(box, text="Advert boards (bytes 116-127)")
+        frame.pack(fill="x", padx=8, pady=6)
+        lo, hi = stadium.BOARD_VALUES[0], stadium.BOARD_VALUES[-1]
+        for k in range(BOARDS):
+            r, c = divmod(k, 4)
+            ttk.Label(frame, text="board %d" % (k + 1)).grid(row=r, column=2 * c, sticky="w",
+                                                             padx=(6, 4), pady=2)
+            value_input(frame, ("range", lo, hi), str,
+                        lambda k=k: self.row(i)[stadium.BUILD_ADVERT][k],
+                        lambda text, revert, k=k: self.commit_board(i, k, text, revert)
+                        ).grid(row=r, column=2 * c + 1, sticky="w", padx=(0, 12), pady=2)
+        ttk.Label(frame, text="Value v is sponsor logo v - 1 (%d-%d). The adidas board is "
+                              "added by the match itself on every ground." % (lo, hi),
+                  foreground="#555", wraplength=520, justify="left").grid(
+            row=3, column=0, columnspan=8, sticky="w", padx=6, pady=(0, 4))
+
+    def look_label(self, src):
+        m = self.rows[src][0]
+        return "%d  %s  %s" % (src, stadium.MODELS[m] if m < len(stadium.MODELS) else m,
+                               self.name(src))
+
+    def open_size(self, i):
+        nations = self.app.nations
+        self.app.notebook.select(nations.frame)
+        nations.kind_var.set("Stadiums")
+        nations.kind_changed()
+        if nations.tree.exists(str(i)):
+            nations.tree.selection_set(str(i))
+            nations.tree.see(str(i))
+
+    def rebuild(self):
+        """self.data from the loaded file and the edits, as the save writes it."""
+        self.data = stadium.set_boards(stadium.set_look(self.source, self.looks), self.boards)
+
+    def commit_look(self, i, src, revert):
+        old = self.looks.get(i, i)
+        if src == i:
+            self.looks.pop(i, None)
+        else:
+            self.looks[i] = src
+        return self.after_edit(i, "built like %d -> %d" % (old, src), revert,
+                               lambda: self.looks.__setitem__(i, old) if old != i
+                               else self.looks.pop(i, None))
+
+    def commit_board(self, i, k, text, revert):
+        try:
+            value = int(text)
+        except ValueError:
+            revert()
+            return False
+        boards = list(self.row(i)[stadium.BUILD_ADVERT])
+        old = boards[k]
+        had = self.boards.get(i)
+        boards[k] = value
+        if boards == list(self.rows[i][stadium.BUILD_ADVERT]):
+            self.boards.pop(i, None)
+        else:
+            self.boards[i] = boards
+        return self.after_edit(i, "board %d: %d -> %d" % (k + 1, old, value), revert,
+                               lambda: self.boards.__setitem__(i, had) if had
+                               else self.boards.pop(i, None))
+
+    def after_edit(self, i, what, revert, undo):
+        try:
+            self.rebuild()
+        except ValueError as e:
+            undo()
+            revert()
+            self.app.status(str(e))
+            messagebox.showerror("Stadiums", str(e))
+            return False
+        self.app.status("stadium %d %s" % (i, what))
+        self.refresh_list()
+        if self.tree.exists(str(i)):
+            self.tree.see(str(i))
+        self.frame.after_idle(lambda: self.show(i) if self.current == i else None)
+        self.app.update_title()
+        return True
+
+    def dirty(self):
+        return bool(self.looks or self.boards)
+
+    def save(self):
+        """The looks first, then the boards, which read the saved file back
+        from the mod folder; each is logged as its own command."""
+        if not self.dirty():
+            return True
+        mod = self.app.mod
+        out = mod.target(BUILD)
+        steps = []
+        if self.looks:
+            steps.append(("setlook", lambda data: stadium.set_look(data, self.looks),
+                          ["%d=%d" % p for p in sorted(self.looks.items())],
+                          "%d looks" % len(self.looks)))
+        if self.boards:
+            steps.append(("setboards", lambda data: stadium.set_boards(data, self.boards),
+                          [str(x) for i, v in sorted(self.boards.items()) for x in [i] + v],
+                          "%d stadiums' boards" % len(self.boards)))
+        done = []
+        for verb, edit, args, what in steps:
+            src = mod.source(BUILD)
+            temps = [(out + ".new", out)]
+            try:
+                with open(src, "rb") as f:
+                    data = edit(f.read())
+                os.makedirs(os.path.dirname(out), exist_ok=True)
+                with open(out + ".new", "wb") as f:
+                    f.write(data)
+            except (ValueError, struct.error, OSError) as e:
+                remove_new(temps)
+                messagebox.showerror("Stadiums", "Can't save: %s" % e)
+                if done:
+                    self.load()
+                return False
+            replace_new(temps)
+            cmd = ["python", "SRC/stadium.py", verb, quote(shown_path(src)),
+                   quote(shown_path(out + ".new"))] + args
+            lines = log_lines("Stadiums: %s" % what, [cmd], temps)
+            mod.log(lines)
+            self.app.write_log(lines)
+            done.append(what)
+        self.load("Saved %s" % ", ".join(done))
+        return True
+
+
 EMBLEM_FILES = {"emblem": "EMBLEM/" + emblem.EMBLEM_FILE, "flag": "EMBLEM/" + emblem.FLAG_FILE}
 CREST_SECTIONS = (
     (("crest", 8), "Starting crests (table 8)",
@@ -6515,6 +6810,7 @@ class App:
         self.free = FreeAgentsTab(self)
         self.links = LinksTab(self)
         self.nations = NationsTab(self)
+        self.stadiums = StadiumsTab(self)
         self.bases = BasesTab(self)
         self.regulations = RegulationsTab(self)
         self.clubrank = ClubRankTab(self)
@@ -6527,7 +6823,7 @@ class App:
         self.comments = CommentsTab(self)
         self.crests = CrestsTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.natcal, self.free,
-                     self.links, self.nations, self.bases, self.regulations, self.clubrank, self.training, self.camps, self.tours,
+                     self.links, self.nations, self.stadiums, self.bases, self.regulations, self.clubrank, self.training, self.camps, self.tours,
                      self.facilities, self.clubevents, self.tactics, self.kits, self.crests,
                      self.text, self.comments]
         self.log_tab = LogTab(self)

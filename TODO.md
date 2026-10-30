@@ -38,7 +38,7 @@ What to work on next, most valuable first.
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 3. **The stadium tables and `EDIT_PLAYER.TBB`** (sections 2 and 3):
    the crowd figure groups (they need a look at the models) and request
-   `+0x0e`–`+0x10`, then a stadium writer and tab
+   `+0x0e`–`+0x10`
    ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown)).
 
 ## What a mod can change, and what is left
@@ -49,7 +49,7 @@ aims at:
 | Goal | Where it stands | Left (section) |
 |---|---|---|
 | The starting season | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results have writers and editor tabs, tested in PCSX2; the national-team calendar has a writer and tab | room for bigger second divisions (2), a smaller first division and the national calendar tested (7) |
-| Data | players, staff, clubs, kits, crests and flags, facilities, training, camps, tours, the tactics presets, the PR events and the player links have writers and tabs | the remaining player and staff fields (2), the stadium tables (3) |
+| Data | players, staff, clubs, kits, crests and flags, facilities, training, camps, tours, the tactics presets, the PR events, the player links and the stadiums' looks and boards have writers and tabs | the remaining player and staff fields (2), the other stadium tables (3) |
 | Parameters | every `PARAM/` table's layout is known; `tbb.py replace` swaps any table | the open fields (2) |
 | Text | every message in every language, with a writer and the Text tab | the screen-set variables and a few message categories (2) |
 
@@ -197,8 +197,9 @@ shown to have no effect. Grouped by what a mod would change.
 round-trips every file on the disc. **Done when** each format below has
 a field-level writer with a `roundtrip` check in `regress.py`.
 
-- [ ] The `STADIUM/` tables, once their fields are understood
-      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md)); `EDIT_PLAYER.TBB`, whose
+- [ ] The `STADIUM/` tables besides `BUILD_STADIUM`'s looks and boards
+      (`CONV_INFO_BUILD`, the crowd sets), if a mod needs them
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing)); `EDIT_PLAYER.TBB`, whose
       tables are now read (base abilities by position and nation, the
       personality ranges; [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#edit_playertbb))
 - [ ] A texture writer for `svr.py`, which only reads, for LMAST Realism
@@ -228,7 +229,6 @@ per kind of data, each editing through its writer and taking the allowed
 values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
-- [ ] A stadium tab, once the stadium writer exists (section 3)
 - [ ] Later: the editor and save editor on the Japanese release
 
 ## 6. Distribute: sharing a mod
@@ -350,6 +350,11 @@ disc or the edit to build; the result goes into the doc linked.
 - [ ] The Special stadium late in a career: a 100,000 ground (`--mod
       special-stadium`) that fills when sold out
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#stadiums))
+- [ ] The Stadiums tab: one stadium built like another (for example a
+      small club's ground built like 99, the `ho04a` bowl) and one of
+      its boards changed, on a test disc built from the editor (File >
+      Build disc); play a match there, with and without LMASTER full
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
 
 ## 8. LMASTER Mod and other patches
 

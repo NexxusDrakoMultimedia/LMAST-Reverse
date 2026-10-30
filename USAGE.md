@@ -62,6 +62,7 @@ Each kind of data has a tab along the top:
 | Free agents | the players with no club at the start of a career |
 | Player links | the clubs each player is affiliated with, each scout's exclusive players, and the hidden good and bad combinations of players and managers |
 | Nations & stadiums | each nation's UEFA rank and points and world rating, and each stadium's roof, level and capacity |
+| Stadiums | each of the 119 grounds' look and advert boards. Pick a stadium on the left: the right shows its model, its roof, level and capacity (the **Edit in Nations & stadiums** button goes there to change them), the clubs that play there and whether it is the rival's ground (114). **Built like** copies another stadium's model, stands and crowd (as the file was when loaded); the 12 boards stay the stadium's own. Each **board** is a sponsor logo, 1–205; the adidas board is added by the match on every ground. To move a club to another ground, change its stadium in the Clubs tab. The LMASTER `stadiums` group keeps your edited rows. Not yet checked in the game |
 | Overseas bases | what a club base costs to set up in each of the 13 overseas regions, with the investment and upkeep that follow |
 | Regulations | each competition's match rules, win bonus, prize money, promotion and relegation places, and how it reports a final place |
 | Club ranking | how clubs earn their ranking at the end of each season: the points each competition gives for each final place, and which club rank each position in a league gets |

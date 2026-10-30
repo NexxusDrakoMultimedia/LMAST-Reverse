@@ -171,6 +171,7 @@ def checks():
         ("leaguesize", ["leaguesize.py", "nations", "DAT/PARAM"], ["DAT/PARAM"]),
         ("stadium", ["stadium.py", "info", "DAT/STADIUM", "DAT/PARAM"],
          ["DAT/STADIUM", "DAT/PARAM"]),
+        ("stadium_roundtrip", ["stadium.py", "roundtrip", "DAT/STADIUM"], ["DAT/STADIUM"]),
         # SEQ/*.SQB and the PSC*.PAC scripts; the main script's listing
         # catches renamed commands and changed label handling.
         ("sqb", ["sqb.py", "info", "DAT/SEQ", "DAT/PARAM"], ["DAT/SEQ", "DAT/PARAM"]),

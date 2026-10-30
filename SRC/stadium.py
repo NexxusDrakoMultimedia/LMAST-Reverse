@@ -48,11 +48,21 @@ variant, the collision entries exist in GAME/SHADOWCOLLI and GAME/WALLCOLLI
 (when DAT/GAME is next to DAT/STADIUM), and BUILD_STADIUM has one row per
 PARAM/STADIUM_DATA.TBB stadium.
 
+The writer edits BUILD_STADIUM table 0 in place: `setlook` builds a
+stadium like another (its model, parts and crowd set, keeping its own
+boards), `setboards` sets a stadium's 12 advert textures (1-205: logo
+v - 1 of SPONSOR_TEXTURE_M; 206 and up all draw adidas, which the match
+adds by itself, so they are refused). `roundtrip` edits each row on its
+own and marks with !! any byte that changes outside it.
+
 Usage:
     python stadium.py info  <DAT/STADIUM> [<DAT/PARAM>]   # check the folder
     python stadium.py pri   <file.PRI>                    # the 44 priorities
     python stadium.py build <DAT/STADIUM> <stadium id>    # one BUILD_STADIUM row
     python stadium.py crowd <file.TBB>                    # one AUD_SET table
+    python stadium.py setlook   <in> <out> <id>=<src id> ...  # built like another
+    python stadium.py setboards <in> <out> <id> <v1> ... <v12> [<id> ...]
+    python stadium.py roundtrip <BUILD_STADIUM.TBB or DAT/STADIUM> ...
 """
 import os
 import struct
@@ -203,6 +213,80 @@ def sponsor_boards(data):
         at = base + i * BUILD_ROW
         out[at + BUILD_ADVERT.start:at + BUILD_ADVERT.stop] = bytes(boards)
     return None if bytes(out) == data else bytes(out)
+
+
+# --- the writer --------------------------------------------------------------
+# setlook and setboards edit table 0 in place (the file keeps its size);
+# copy_rows above is the look, BOARD_VALUES the advert bytes' values.
+BOARD_VALUES = SPONSOR_LOGOS        # 206 and up all mean adidas, which the match adds itself
+
+
+def table_rows(data):
+    """The table-0 rows of BUILD_STADIUM.TBB bytes, and where row 0 starts."""
+    _, t = tbb.parse(data)
+    return rows(t[0].data, BUILD_ROW), t[0].offset + t[0].data_offset
+
+
+def look(row):
+    """A row's look: every byte but the 12 advert textures."""
+    return row[:BUILD_ADVERT.start] + row[BUILD_ADVERT.stop:]
+
+
+def set_look(data, pairs):
+    """BUILD_STADIUM.TBB bytes with each stadium `dst` of `pairs` ({dst:
+    src}) built like stadium `src` as the rows were (copy_rows); the bytes
+    unchanged when every one already is."""
+    old, _ = table_rows(data)
+    for d, s in pairs.items():
+        for i in (d, s):
+            if not 0 <= i < len(old):
+                raise ValueError("stadium %d: there are %d (0-%d)" % (i, len(old), len(old) - 1))
+    return copy_rows(data, pairs) or data
+
+
+def set_boards(data, boards):
+    """BUILD_STADIUM.TBB bytes with each stadium of `boards` ({id: 12
+    values}) showing those advert textures: value v is SPONSOR_TEXTURE_M
+    logo v - 1 (0x1d31b8)."""
+    old, base = table_rows(data)
+    out = bytearray(data)
+    for i, values in boards.items():
+        if not 0 <= i < len(old):
+            raise ValueError("stadium %d: there are %d (0-%d)" % (i, len(old), len(old) - 1))
+        values = list(values)
+        if len(values) != BUILD_ADVERT.stop - BUILD_ADVERT.start:
+            raise ValueError("stadium %d: %d boards, expected 12" % (i, len(values)))
+        bad = [v for v in values if v not in BOARD_VALUES]
+        if bad:
+            raise ValueError("stadium %d: board %s not %d-%d (%d and up is adidas, which the "
+                             "match adds by itself)" % (i, bad[0], BOARD_VALUES[0],
+                                                        BOARD_VALUES[-1], BOARD_VALUES[-1] + 1))
+        at = base + i * BUILD_ROW
+        out[at + BUILD_ADVERT.start:at + BUILD_ADVERT.stop] = bytes(values)
+    return bytes(out)
+
+
+def keep_edits(old, mine, switched):
+    """BUILD_STADIUM.TBB bytes for a target file `mine` that an LMASTER
+    switch also edits: `switched` is the switch's edit of `old`, the file
+    the target was made from. Each row's look and its boards are the
+    target's where the target changed them from `old`, else the switch's,
+    so an editor's own edit wins row by row."""
+    o, base = table_rows(old)
+    m, _ = table_rows(mine)
+    s, _ = table_rows(switched)
+    if len(o) != len(m) or len(o) != len(s) or len(old) != len(mine):
+        raise ValueError("BUILD_STADIUM.TBB: the target's tables differ in size")
+    out = bytearray(mine)
+    for i in range(len(o)):
+        row = bytearray(m[i])
+        if look(m[i]) == look(o[i]):
+            row[:BUILD_ADVERT.start] = s[i][:BUILD_ADVERT.start]
+            row[BUILD_ADVERT.stop:] = s[i][BUILD_ADVERT.stop:]
+        if m[i][BUILD_ADVERT] == o[i][BUILD_ADVERT]:
+            row[BUILD_ADVERT] = s[i][BUILD_ADVERT]
+        out[base + i * BUILD_ROW:base + (i + 1) * BUILD_ROW] = row
+    return bytes(out)
 
 
 class Build:
@@ -477,6 +561,94 @@ def cmd_crowd(path):
     print("  table 11: %s" % c.last.hex(" "))
 
 
+def write_out(path, out_path, edit):
+    """Read `path`, write edit(bytes) to `out_path` (never the input)."""
+    if os.path.abspath(out_path) == os.path.abspath(path):
+        raise SystemExit("refusing to overwrite the input; write to a new file")
+    with open(path, "rb") as f:
+        data = f.read()
+    try:
+        out = edit(data)
+    except ValueError as e:
+        raise SystemExit(str(e))
+    with open(out_path, "wb") as f:
+        f.write(out)
+    print("wrote %s" % out_path)
+
+
+def cmd_setlook(path, out_path, args):
+    pairs = {}
+    for a in args:
+        try:
+            d, s = (int(x, 0) for x in a.split("="))
+        except ValueError:
+            raise SystemExit("%s: expected <id>=<src id>" % a)
+        pairs[d] = s
+    with open(path, "rb") as f:
+        old, _ = table_rows(f.read())
+    for d, s in sorted(pairs.items()):
+        if 0 <= s < len(old):
+            print("stadium %d: built like stadium %d (model %s)" % (
+                d, s, MODELS[old[s][0]] if old[s][0] < len(MODELS) else old[s][0]))
+    write_out(path, out_path, lambda data: set_look(data, pairs))
+
+
+def cmd_setboards(path, out_path, args):
+    """args: one or more groups of <id> <v1> ... <v12>."""
+    group = 1 + BUILD_ADVERT.stop - BUILD_ADVERT.start
+    if not args or len(args) % group:
+        raise SystemExit("setboards takes <id> and 12 board values, as often as you like")
+    try:
+        nums = [int(a, 0) for a in args]
+    except ValueError as e:
+        raise SystemExit(str(e))
+    boards = {nums[k]: nums[k + 1:k + group] for k in range(0, len(nums), group)}
+    for i, v in sorted(boards.items()):
+        print("stadium %d: boards %s" % (i, " ".join(map(str, v))))
+    write_out(path, out_path, lambda data: set_boards(data, boards))
+
+
+def cmd_roundtrip(paths):
+    """Edit each row on its own, its look and then its boards, and check
+    that nothing outside the edited bytes changes, and that putting a row's
+    own values back gives the file unchanged."""
+    for path in paths:
+        if os.path.isdir(path):
+            path = find(path, "build_stadium.tbb") or os.path.join(path, "BUILD_STADIUM.TBB")
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+            old, base = table_rows(data)
+        except (OSError, ValueError, struct.error) as e:
+            print("%s  !! %s" % (path, e))
+            continue
+        n, probs = len(old), []
+        for i in range(n):
+            lo, hi = base + i * BUILD_ROW, base + (i + 1) * BUILD_ROW
+            ads = range(lo + BUILD_ADVERT.start, lo + BUILD_ADVERT.stop)
+            if set_look(data, {i: i}) != data or set_boards(data, {i: old[i][BUILD_ADVERT]}) != data:
+                probs.append("row %d: its own values back don't give the same file" % i)
+            src = (i + 1) % n
+            new = set_look(data, {i: src})
+            moved = [k for k in range(len(data)) if new[k] != data[k]]
+            if any(not lo <= k < hi or k in ads for k in moved) or len(new) != len(data):
+                probs.append("row %d: setlook changed bytes outside its look" % i)
+            elif look(table_rows(new)[0][i]) != look(old[src]):
+                probs.append("row %d: setlook didn't copy row %d's look" % (i, src))
+            want = [BOARD_VALUES[(v + i) % len(BOARD_VALUES)] for v in range(12)]
+            new = set_boards(data, {i: want})
+            moved = [k for k in range(len(data)) if new[k] != data[k]]
+            if any(k not in ads for k in moved) or len(new) != len(data):
+                probs.append("row %d: setboards changed bytes outside its boards" % i)
+            elif list(table_rows(new)[0][i][BUILD_ADVERT]) != want:
+                probs.append("row %d: setboards didn't write the boards" % i)
+        for p in probs:
+            print("%s  !! %s" % (path, p))
+        if not probs:
+            print("%s  %d bytes, %d rows: each row's look and boards edited on its own, "
+                  "nothing else changed" % (path, len(data), n))
+
+
 def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
@@ -488,6 +660,12 @@ def main(argv):
         cmd_build(args[0], int(args[1], 0))
     elif cmd == "crowd" and len(args) == 1:
         cmd_crowd(args[0])
+    elif cmd == "setlook" and len(args) >= 3:
+        cmd_setlook(args[0], args[1], args[2:])
+    elif cmd == "setboards" and len(args) >= 3:
+        cmd_setboards(args[0], args[1], args[2:])
+    elif cmd == "roundtrip" and args:
+        cmd_roundtrip(args)
     else:
         print(__doc__)
         return 1
