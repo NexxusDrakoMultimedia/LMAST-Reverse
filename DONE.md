@@ -276,6 +276,11 @@ Each result is recorded in the doc named.
 - [x] The 2005-06 grounds with looks by size, the sponsor boards and the
       rival's own ground on `LMAST-test-stadiums.iso` (2026-10-30): good
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#stadiums))
+- [x] Tested on `LMAST-test-season.iso` (user report, 2026-10-31): the
+      third tier's text in English, Renew Mobile Site offered and booked
+      (`mobile-site`), and a PR event's cost and ticket bonus edited
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-text),
+      [`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md#editing))
 
 ## 8. LMASTER Mod and other patches
 
@@ -334,5 +339,5 @@ Each result is recorded in the doc named.
       renamed "UEFA Rank" instead of the Champions League
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
 - [x] The press tendency counts at every level (`press-tendency`, in
-      `match-fixes`): the per-side cap the match always set to level 1
-      is loaded as 4 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+      `match-fixes`): the two press readers keep the cap 4 instead of
+      turning the match's 2 into level 1 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))

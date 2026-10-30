@@ -280,19 +280,10 @@ disc or the edit to build; the result goes into the doc linked.
 - [ ] The crest editor: whether the three short `EDIT_EMBLEM` layer
       tables lose visible parts
       ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#the-layer-tables-12143))
-- [ ] `--mod mobile-site` on `LMAST-test-mobile.iso` (with
-      `--skip-tutorial` and event 37 offered from the start:
-      `37:month_rule=0 37:first_season=0 37:popularity=0
-      37:priority=101`): Renew Mobile Site is in the PR activities list
-      from September, can be booked, and its month-end mail reports it
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] The National calendar tab: the World Cup squads called up a turn
       earlier (`3:88:callup=0 3:87:callup=1 3:87:finals=1`, a season
       starting in 2009), alone and with `--mod national-cups`
       ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#schedule_listtbb-the-national-team-calendar))
-- [ ] The PR events tab: an event's cost and ticket bonus changed (for
-      example `38:cost=200 38:ticket=50`)
-      ([`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md#editing))
 - [ ] The Club ranking tab (for example `rank:7:31=3`), and a resized
       league's added ranking rows (England at 22), each played to the
       end of the first season and read with `save.py clubs`
@@ -308,12 +299,9 @@ disc or the edit to build; the result goes into the doc linked.
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#steps))
 - [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
       a save edit per kind ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-- [ ] The third tier's text on `LMAST-test-max-germany.iso` (German
-      career): the advisor's intro at the start (18 clubs, 34 matches,
-      game over at the bottom), Game Over conditions in the help (last
-      place, 18th), the 2nd German League's rules screen (a Relegation
-      section) and its season-start news (the bottom club goes down);
-      one other language if possible
+- [ ] The third tier's text in a language other than English (the
+      English is tested): the advisor's intro, the Game Over help, the
+      2nd German League's rules screen and its season-start news
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-text))
 - [ ] The third tier's lower cups on `LMAST-test-max-germany.iso` (its
       transfer windows, season's end, saving and loading are tested,
@@ -355,8 +343,9 @@ disc or the edit to build; the result goes into the doc linked.
       its boards changed, on a test disc built from the editor (File >
       Build disc); play a match there, with and without LMASTER full
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
-- [ ] `--mod press-tendency`: in a match on a disc built with it, match
-      data `+0x9764` and `+0x9768` read `04` (PINE), and a club of
+- [ ] `--mod press-tendency`: in a match on a disc built with it, the
+      overlay's words at `0x9a474` and `0x9a52c` read 0 in memory (PINE;
+      the caps at match data `+0x9764` stay `02`), and a club of
       high-press players closes down harder than without it
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 

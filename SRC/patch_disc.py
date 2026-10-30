@@ -135,8 +135,9 @@ one instruction of SLES_541.51 (0x25e6d8). See DOC/TEAMINIT_FORMAT.md.
 
 press-tendency (whole disc image only) lets every level of a player's
 press tendency count. The press readers cap it by a per-side value that
-the match always set to 2 (cap at level 1), so levels 2-4 acted as 1;
-one instruction of DLL/GAMEPRG.REL (0x7439c) loads 4 instead. See
+a career match leaves at 2 (cap at level 1), so levels 2-4 acted as 1;
+in each of the two readers of DLL/GAMEPRG.REL the instruction that
+turns a 2 into the cap 1 becomes a nop (0x9a474, 0x9a52c). See
 DOC/PBDATA_FORMAT.md#the-tendencies.
 
 national-cups moves the World National Cup (UIDs 114-122) and the Euro
@@ -2266,21 +2267,22 @@ def plan_vpf_styles(f, img):
 
 # The press readers (GAMEPRG.REL 0x9a418, 0x9a4c8) clamp a player's press
 # tendency to 0..cap, the cap from byte 0 of the side's record at match
-# data +0x9764: 1 caps at 0, 2 at 1, more at 4. 0x74380 fills it at each
-# kick-off from match data +0x976d, which the set-up always stores as 2
-# (0x26f0), so levels 2-4 acted as 1. Loading 4 instead lifts the cap.
+# data +0x9764: 1 caps at 0, 2 at 1, more at 4. In a career match the
+# record keeps its constructor's 2 (0x74320; read over PINE), so levels
+# 2-4 acted as 1. Each reader picks the cap 1 for a 2 with one movz,
+# right after setting 4; a nop there leaves 4.
 GAME_FILE = DISC + "DLL/GAMEPRG.REL"
-PRESS_CAP = (0x7439c,
-             bytes.fromhex("6d174390"),          # lbu   $v1, 0x176d($v0)
-             bytes.fromhex("04000324"))          # addiu $v1, $zero, 4
+PRESS_READERS = ((0x9a474, bytes.fromhex("0a80a200")),    # movz $s0, $a1, $v0
+                 (0x9a52c, bytes.fromhex("0a80e200")))    # movz $s0, $a3, $v0
+PRESS_NOP = bytes(4)
 
 
 def plan_press_tendency(f, img):
     """Jobs for --mod press-tendency."""
-    off, old, new = PRESS_CAP
     return word_jobs(f, img, "press-tendency",
-                     [(GAME_FILE, off, old, new,
-                       "%s 0x%x (press cap 2 -> 4)" % (GAME_FILE, off))])
+                     [(GAME_FILE, off, old, PRESS_NOP,
+                       "%s 0x%x (press reader: cap 4 kept)" % (GAME_FILE, off))
+                      for off, old in PRESS_READERS])
 
 
 # --- the season-ticket status factor (DOC/ECONOMY.md#season-tickets) -----------

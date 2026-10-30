@@ -1064,19 +1064,25 @@ slot by the off-ball role, and which player that is isn't traced. Also
 not traced: what the press
 floats measure (they look like distances and a closing speed).
 
-**The press cap is always 2 (confirmed).** The team value is byte 0 of
-a 4-byte record per side at match data `+0x8e84` + `0x8e0` + side × 4
-(`+0x9764`, `+0x9768`). `0x74380` fills it at the start of each match
-(called at `0x73c6c` and `0x73c74`) from match data `+0x976d`, and the
-match set-up always stores 2 there (`GAMEPRG.REL 0x26f0`, a constant).
-No other code writes byte 0. Both press readers then clamp the
-player's level with the EE's `pmaxw` and `pminw` (`0x9a48c`,
-`0x9a53c`) to 0–1. So in every match a press tendency of 2, 3 or 4
-acts as 1: only 0 against anything higher makes a difference, which
-in the second table (`0x26e440`, 5 and 5) is none at all. **Read from
-a mid-match save state** (England v England): both sides' records were
-`02 02 07 00`. Byte 1 is set from a menu during the match (`0x1e4afc`,
-values 4, 3, 2, 1 from `0x29ab00`) and isn't traced further.
+**The press cap stays at 2.** The team value is byte 0 of a 4-byte
+record per side at match data `+0x8e84` + `0x8e0` + side × 4
+(`+0x9764`, `+0x9768`). Its constructor (`0x74320`, called at
+`0x7399c`) sets bytes 0 and 1 to 2 (**confirmed**). `0x74380` would
+fill byte 0 from match data `+0x976d` (always 2, `GAMEPRG.REL 0x26f0`),
+but only `0x73c10` calls it, from `0x161438`, and in a career match it
+doesn't run: with `0x74380` patched to load 4, both records still read
+`02 02 07 00` over PINE in a German league match (2026-10-31). No other
+code writes byte 0. Both press readers clamp the player's level with
+the EE's `pmaxw` and `pminw` (`0x9a48c`, `0x9a53c`) to 0–cap, the cap
+set to 4 and then, in the delay slot, to 1 for a 2 (`movz` at
+`0x9a474` and `0x9a52c`). So in every career match a press tendency of
+2, 3 or 4 acts as 1: only 0 against anything higher makes a
+difference, which in the second table (`0x26e440`, 5 and 5) is none at
+all. **Read from a mid-match save state** (England v England) too: both
+sides' records were `02 02 07 00`. Byte 1 is set from a menu during the
+match (`0x1e4afc`, values 4, 3, 2, 1 from `0x29ab00`) and isn't traced
+further. `--mod press-tendency` turns both `movz` into `nop`
+([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
 
 **Empirical**, over all 27,950 players: every item uses 0–4, mostly 1–3,
 and items 0–9 each have 2,000–3,600 players at 4. Averaged by main
