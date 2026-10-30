@@ -107,6 +107,10 @@ evidence and how it was tested; the git history holds the rest.
       seven tactical values: their names, the starting-eleven score, the
       coach's training plan and the tactics sliders
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-developers-staff-editors))
+- [x] The staff abilities no bar shows: the position, system and age-group
+      coaching in training growth, a scout's money negotiation, positions
+      and regions; manager ability 6 and the scouts' nations have no reader
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#manager-coach-and-scout-bars))
 
 ## 3. Write: a writer for every format a mod changes
 

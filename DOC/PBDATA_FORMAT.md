@@ -1631,6 +1631,26 @@ first.
 (the job's own set, plus the manager set for coaches), and `csv` adds
 them as columns.
 
+**The abilities no bar shows (confirmed, 2026-10-30).** Most of them do
+something; the readers:
+
+| Abilities | Read by | What they do |
+|---|---|---|
+| Manager 23–27 (GK, DF, DM, OM, FW coaching), 31–38 (the 8 systems) | the practice growth code, through table 9 of `TRAINING_LIST.TBB` ([`TRAINING_FORMAT.md`](TRAINING_FORMAT.md#groups-and-staff-tables-2-and-9)): `SIMPRG.REL 0x159b68` (my club's manager, team data `+0x48be` + *n*), `0x15ab58` (the youth team's coach) | each coaches the matching aptitudes: GK coaching the GK aptitude, DF the side and centre backs, DM the wing backs and defensive midfield, OM the side and attacking midfield, FW the wingers and forwards, each system coaching that system's aptitude. From 50 up it adds (value × 0.2 − 1) % to the growth |
+| Manager 7, 8, 9 (young, mid-career, veteran players) | `SIMPRG.REL 0x15a428`, for the first team (called at `0x15864c` and `0x159654`) | by the player's age (`PlPinfo +8`): under 23 ability 7, under 30 ability 8, else 9 (team data `+0x48c5`–`+0x48c7`); returns (value − 50) ÷ 100 as a growth factor, so 99 is +49 % and 38 −12 % |
+| Manager 7, for the youth team | `SIMPRG.REL 0x15abe8` (called at `0x15a5c4`), youth data `+0x3f71` | the same factor for every youth player, from the youth team's coach |
+| Manager 6 (youth players) | none found | – |
+| Scout 2 (money negotiation) | `pwkMoney_GetMoveResearchMoney`, `GetMoveScoutListMoney`, `GetRentalResearchMoney`, `GetRentalScoutListMoney` (`0x2484d8`–`0x248938`), `pwkMoney_GetScoutExpectSalary` (`0x249e80`), `plSinfo_CalcHexagon` (`0x218a30`) | what the scout's research and scout lists cost for transfers and loans, and his expected salary |
+| Scout 8–20 (the 13 positions) | `plSinfo_CalcAptPos` (`0x218bd8`, `PlSinfo +0x39`) | each to a level 0–4: below 55, 65, 75, 85, and above |
+| Scout 32–44 (the 13 regions) | `plSinfo_GoodRegion` (`0x218b48`, `PlSinfo +0x51`) | the scout's best region |
+| Scout 26–31 (England … the Netherlands) | none found | – |
+
+(`plSinfo_GoodAbil`, `0x218b88`, returns the best of all 49 values from
+`PlSinfo +0x2d`, the special searches included.) So the youth team's
+coach is judged on "young players" (7), and nothing reads "youth players"
+(6), which may have been meant there: `0x15abf8` reads `+0x3f71` where
+`+0x3f70` would be ability 6. Nothing reads a scout's six nations either.
+
 ## Entries 2 and 3
 
 Each is 27,950 u16. **Entry 2 is a ranking** of the player ids: players
@@ -1848,9 +1868,11 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
 - Which end of a tactics slider (0–6) means more attacking, and so
   whether `plTeam_SetStyleTeamParam` giving a strength ratio above 1.19
   column 0 (the same as up to 0.79) instead of column 4 is intended.
-- Which game code reads the staff abilities that no bar shows (6–9,
-  23–27, 31–38; scouts 2, 8–20, 26–44). The labels name them, but their
-  effects aren't traced.
+- Whether anything reads manager ability 6 (youth players) or the
+  scouts' nation abilities 26–31; no reader was found
+  ([Manager, coach and scout bars](#manager-coach-and-scout-bars)), and
+  whether the youth coach's growth factor was meant to read ability 6
+  instead of 7.
 - Header `+0x14`, `+0x24` and the last 8 header bytes.
 - What `_getNationalTeamPoint` scores.
 
