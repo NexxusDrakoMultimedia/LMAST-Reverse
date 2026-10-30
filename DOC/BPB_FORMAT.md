@@ -420,7 +420,7 @@ The controller's `+0x15f0` is the ball holder's position, turned to
 the attacking direction (`0xc0bc4`), and `+0x1608` is a per-team value
 the field information keeps at `+0x10400` + side × 4 (`0x3e4a8`), set
 when the players are placed (`0xb7784`, from the last placed player's
-y). Its meaning, the "line" above, isn't confirmed.
+y). It is the team's defensive line ([below](#the-defensive-line)).
 
 **Empirical.** The match works in tenths of a metre: the zone bounds,
 the 328.66 touchline offset (32.9 m) and the default second limit,
@@ -471,7 +471,7 @@ The 29 commands (argument counts at `0x274790`, including the result):
 | `Combi1` | *p*, *a* | *p* runs to area *a* |
 | `Combi27` | *p*, *x*, *y* | *p* runs to area 0, with offsets *x*, *y* |
 | `Combi28` | *p*, *a*, *x*, *y* | *p* runs to area *a*, with offsets |
-| `Combi2` | *t* | makes an area of type *t*: 6 and 7 by `0xc5f30`, 0–5 by `0xc5bc8` with a direction pair from `0x2746f8` ((0,0), (0,1), (1,0), (1,1), (−1,0), (−1,1)) |
+| `Combi2` | *t* | makes an area of type *t*, a zone chosen by channel and depth ([below](#combi2s-areas)) |
 | `Combi3` | *n* | makes preset area *n* through the table at `0x249370`; entries 13–15, 17, 18 and 21 are empty, so those *n* do nothing |
 | `Combi4` | *p*, *k* | *p* passes to area 0 with pass type *k* (mode 0) |
 | `Combi5` | *p*, *a*, *k* | *p* passes to area *a* |
@@ -521,6 +521,54 @@ only for the other side, `0xa5af8`). So:
 
 Which of 0° and 180° is the left as the attacking team sees it isn't
 checked.
+
+### `Combi2`'s areas
+
+**Confirmed.** `Combi2` *t* picks one zone of the
+[zone network](#the-zone-network) and makes it the area. Types 0–5 go
+through `0xc5bc8` and `0xc6bf0` with a pair (*c*, *d*) from `0x2746f8`;
+types 6 and 7 through `0xc5f30` and `0xc6a40`. Positions are first
+turned to the attacking team's frame (`0xa5b40`, by side), and the
+"line" is the opponents' defensive line ([below](#the-defensive-line)).
+
+| *t* | Channel | Depth |
+|---|---|---|
+| 0 | wing *c* = 0 | in front of the opponents' line |
+| 1 | wing *c* = 0 | behind it |
+| 2 | wing *c* = 1 | in front |
+| 3 | wing *c* = 1 | behind |
+| 4 | centre | in front |
+| 5 | centre | behind |
+| 6 | the half with x ≤ 0 | any |
+| 7 | the half with x ≥ 0 | any |
+
+For types 0–5 the channel is the zone's x cut into four columns across
+the pitch ((x + 328.66) × 0.00609, clamped to 0–3) and mapped through
+`0x274898`: column 0 → 0, columns 1 and 2 → −1 (the centre), column 3 →
+1; it must equal *c*. *d* = 0 keeps zones on the attackers' side of the
+line, *d* = 1 zones beyond it. A zone must also pass the tests at
+`0xc6c9c`–`0xc6d9c` (its byte `+8` is 1, and a check through `0xa23b0`
+on the zone's corners), which aren't decoded. The candidates (up to 10)
+are sorted by their y, smallest first (`qsort` with `0xc73b8`), and the
+first is taken. Types 6 and 7 take every zone of their half and the one
+with the smallest y. So each type gives the least advanced gap of its
+part of the pitch.
+
+Which of wings 0 and 1, and which half, is the attackers' left isn't
+known, as for [the direction commands](#the-combination-commands).
+`0x249270` would switch every search to another set of functions
+(`0xc6f28`, `0xc71f0`, ...), but it is 0 in play and no code stores to
+it.
+
+### The defensive line
+
+The per-side value at the field information's `+0x10400` + side × 4
+(`0x3e4a8`; the controller's `+0x1608`, the "line" of the slot tests
+[above](#how-a-team-uses-the-combinations)) is that team's defensive
+line. **Empirical**, from the mid-match save state: side 0's was −40.89
+and its deepest outfield player stood at y −41.2; side 1's was 395.02
+and its deepest outfield player at 395.1 (its keeper at 497.2). So it
+is the y of the last defender, the offside line.
 
 ### The zone network
 
@@ -586,12 +634,11 @@ participants are the ones the record's slots found
 - What fills `PlTeamData +0x498c`/`+0x498f` (the attack patterns of a
   team whose `GetOperator` is set), what `GetOperator` stands for, and
   what `+0x15e0` and `0xc6288` do when a candidate is tried.
-- What the controller's `+0x1608` "line" value is, and type 6's
-  position (`0xc3270`).
+- Slot type 6's position (`0xc3270`).
 - What builds the [zone network](#the-zone-network) and when, which
   players it takes (one team's 11 and one of the other's in the state
-  read), and how `Combi2` and `Combi3` pick a zone: types 0–5 step
-  from a starting zone by the direction pair, 6 and 7 aren't read.
+  read), what a zone's byte `+8` and the `0xa23b0` test in `Combi2`'s
+  search mean, and what `Combi3`'s 22 preset areas are.
 - Which side (left or right)
   `Combi19` and `Combi20` mark, what `Combi12`'s target and
   mode 7's flag are, and the plays at the player's `+0xfc`, `+0x100`

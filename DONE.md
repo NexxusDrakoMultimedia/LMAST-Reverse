@@ -130,6 +130,9 @@ evidence and how it was tested; the git history holds the rest.
 - [x] The combinations' zone network: a mesh over the players' positions
       and the pitch's corners, so an area is a gap between players
       ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#the-zone-network))
+- [x] `Combi2`'s area types: a wing or the centre, in front of or behind
+      the opponents' defensive line, or a half; the "line" value is the
+      defensive line ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#combi2s-areas))
 
 ## 3. Write: a writer for every format a mod changes
 
