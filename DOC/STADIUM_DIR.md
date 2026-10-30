@@ -357,6 +357,13 @@ All thresholds ascend. The names suggest the high- and low-detail crowds
 - Which figure group of a crowd model is which on screen, and what the
   two `AUD_JAM_HI` tables look like when drawn.
 - Who sets request `+0x0e`–`+0x10` in a real match (the viewer doesn't).
+  `+0x10` is set in league matches: every ground shows the adidas board,
+  advert texture 212, which only `+0x10` puts there (user report,
+  2026-10-30, [`LMASTER_MOD.md`](LMASTER_MOD.md#stadiums)). Only the
+  Stadium Viewer calls the builder `0x1cd648`; a real match goes through
+  `STADIUM::CBuildData` (vtable `0x25d270`), and no code in `GAMEPRG.REL`
+  stores bytes `+0x0e`–`+0x10` together, so the request is probably
+  filled as words or by another module (searched 2026-10-30).
 - Slot 6 (`BENCH_HIGH`): every `.PRI` file gives it a priority (60), but
   nothing loads a part into it.
 - Request byte `+0x13` (not read by the stadium code).
