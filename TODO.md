@@ -369,10 +369,11 @@ disc or the edit to build; the result goes into the doc linked.
 
 ### Rebuilding
 
-- [ ] The tactics pitch reads `CSE/`, not `TACTICSPITCH.PAC`: on a
-      test disc with `CSE/CAM_INT.SND` and `CAM_INT_ATTACK.SND`
-      swapped (the pack left as it is), the tactics screen's pitch
-      views should swap
+- [ ] The tactics pitch reads `CSE/`, not `TACTICSPITCH.PAC`: on
+      `LMAST-test-pitch.iso` (built 2026-10-31, test sheet
+      `names/test-sheet-pitch.md`), with `CSE/CAM_INT.SND` and
+      `CAM_INT_ATTACK.SND` swapped and the pack left as it is, the
+      tactics screen's pitch views should swap
       ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
 
 ### Testing aids and sound
