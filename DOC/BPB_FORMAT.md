@@ -69,8 +69,8 @@ each type makes. The types the play book uses:
 | Type | Class | Paths in `PLAYBOOK.BPB` |
 |---|---|---|
 | 13 | `fb::RoleCKKicker` | the corner taker, one in each of records 0–99 |
-| 15 | `fb::RoleSP` | the free-kick taker (records 100–195) |
-| 16–22 | `fb::RoleSP`, except 18 `fb::RoleSPRecvSC1` and 19 `fb::RoleSPRecvSC2` | runners with a special job |
+| 15 | `fb::RoleFKKicker` (type 14) unless the value is 2, then `fb::RoleSP` | the free-kick taker (records 100–195) |
+| 16–22 | `fb::RoleSP`, except 18 `fb::RoleSPRecvSC1` and 19 `fb::RoleSPRecvSC2`; 16 with value 0 is `fb::RoleFKKicker` | runners with a special job |
 | 26 | `fb::RoleSPAttacker` | most paths (1,845): the attackers' runs |
 | 254 (`0xfe`) | – | the ball |
 | 249–253 | none: not role types | only in records 196–255 |
@@ -82,10 +82,61 @@ bytes, 0xdc per side). When the flag is set, `0x12d1d8` stores a
 16-byte position from the set play's own record for that path (0x70
 bytes each, `+0x20`) and `0xf53d8` adds it to every point of the path
 (`0x12d214`), so a flagged path is drawn relative to that position
-instead of the pitch. No reader of the value at `+0xe8` was found.
+instead of the pitch.
 **Empirical**, over records 0–195: the value is 0 in all 1,845
 attackers' paths (type 26) and 0–6 for the takers and runners; the flag
 is set on 73 paths, most of them type 16 (37) and type 18 (11).
+
+**What the value does** (**confirmed**). The value picks a variant of
+the role's job. `0x12c9d8` returns a path's type, value and flag, and
+the set-play code (`0xb6570`, `0xb6be8`, `0xb881c`) passes the value as
+the third argument of the role lookup `0x108c18`. That lookup uses it
+twice:
+
+- To pick the class (jump table `0x279250`): type 14 stays 14; type 15
+  becomes 14 (`RoleFKKicker`) unless the value is 2; type 16 becomes 14
+  when the value is 0; 23–25, 28, 29, 31 and any type outside 13–32
+  become 28; the rest keep their type.
+- To tag the role: for a set-play role (types 13–33, `0x116230`),
+  `0x129890` stores (type << 8) | value, the path's kind without the
+  flag, at the role's `+0xc`, and the role passes it to each play it
+  starts (`0x129950` → `0x1048e8`, the play's `+0x58`).
+
+These read the tag (the value compared, by type):
+
+| Type | Reader | What the value does |
+|---|---|---|
+| 13, corner taker | `fb::PlayCKKick` `0x105700` | the kick kind at the play's `+0x98`, when the target is a team-mate: 1 and 3–6 give kind 36 (a short corner), 0 and 2 kind 37 (a cross) ([the kick kinds](PBDATA_FORMAT.md#the-kick-kinds)) |
+| 13 | `fb::RoleCKKicker` `0x129f98` | after the kick, values 4 and 5 start the player's play slot `0x12`, `fb::PlaySPAttack` (he follows a path into the attack); the others start nothing more. Slot `0x11` is `fb::PlayCKKick` (the player's plays are set up at `0x92618`–`0x9265c`) |
+| 13 | `RoleCKKicker` vtable `+0x40` (`0x12a050`) | answers 0 for values 1 and 3–5, else 1. The base `fb::Role` answers 1 (`0x2372f8`) and `RoleSPAttacker` 0 (`0x12a220`); what the role code (`0x117bfc`, `0x1181c4`) does with the answer isn't traced |
+| 15, free-kick taker | `fb::PlayFKKick` `0x105df8` (jump table `0x278df0`) | when the target is a team-mate: value 1 gives kind 39 (a cross or long ball), the others kind 38 (a short pass); a target that isn't a team-mate gives kind 40 (a shot) whatever the value. The second word at `+0x9c` is 1 (values 0, 5), 5 (value 1) or 2 (values 3, 4) |
+| 15 | `RoleFKKicker` vtable `+0x40` (`0x12b5c0`) | answers 0 for values 3 and 5, else 1 |
+| 18, 19, receivers | `fb::PlaySPRecvSC1`/`SC2` `0x108590` | three handlers, each ending in a short pass (kind 0, `0x1050b0`): type 18 values 0–1 `0x108650`; type 19 values 1–2 `0x108728`; type 19 values 0 and 3 `0x108858`. Other values do nothing |
+| 19 | `RoleSPRecvSC2` vtable `+0xa0` (`0x12be50`) | sets the role's `+0x18` for values 0 and 3; `RoleSPRecvSC1` sets it always (`0x12bd68`) |
+| 20, a runner | `fb::PlaySP_TP1` `0x107228` | once he holds the ball: value 0 a long pass in the air (kind 3), value 1 a through pass (kind 1); 2 and 3 nothing (`0x1054a8` is empty) |
+| 22 | `fb::PlaySP_TP3` `0x107408` | value 0 calls the empty `0x1054a8`: no effect |
+
+The target is the play's `+0x5c`, which `RoleFKKicker` (`0x12b1a0`,
+`0x12b524`) sets through `0x1048d0`; with bit 16 cleared, a value below
+11 is a team-mate.
+
+The tag also keys a timing table. `0x1051b0`, which the set plays call
+before a pass, looks up the tag and the current play id (`0x108f50`) in
+64 entries of 8 bytes at `0x278ff0` (`{u16 tag, s16 play id or −1, s16
+a, s16 b}`): an exact tag scores 4, the same type 1, one more for a
+matching play id, and the best entry wins (none: a = 1.0, b = −1). Then
+`0x1052d8` takes a × 0.01 and b × 0.01 as seconds (59.94 frames each,
+`0x1048f0`): b (or a, when b is negative) picks the point that far along
+the receiver's path as the pass's target, and a goes to the receiver's
+play `+0x80`. The entries hold 0.5–3.0 s.
+
+**Empirical** (`python SRC/bpb.py dump`), over records 0–99: all 74
+corner records whose taker has value 0 are crosses (the ball's first
+stop in the box), and all 26 with values 1 or 3–6 are short corners
+(the first stop at x > 19 m). So the value is what makes a corner short.
+Of the 40 plays the match asks for, the corner takers have 0 (crosses),
+6 (records 40, 42, 46, 47) or 1 (78, 79), and the free-kick takers 0
+or 1; value 1 is only in the "pass first" lists.
 
 For reference, the factory's other types: 0 `RoleGoalKeeper`, 1
 `RoleBallCarrier`, 2 `RoleBallCarrierMarker`, 3 `RoleSupporter`, 6
@@ -95,9 +146,8 @@ For reference, the factory's other types: 0 `RoleGoalKeeper`, 1
 `RoleFKWall`, 31 `RoleFKMove`, 32 `RolePKKicker`, 33 `RolePKKeeper`, 38
 `RoleSAAttacker`, 40 `RoleSCAttacker`, 41 `RoleFakeAttacker`, 42–44
 `RoleFreeRunCommon`, 45 `RolePassAndGo`, 47 `RoleCombination`. `0x108c18`
-also maps some types before use: 14, and 15 and 16 when its third
-argument is 0, become 14; 23–25, 28, 29, 31 and any type outside 13–32
-become 28.
+also maps some types before use, by the path's value (above, under
+"What the value does").
 
 **Point codes.** The play setter (`0x108d00`) scales each point by 10
 (to the match's tenths of a metre) and passes its code to `0xf4c18`,
@@ -124,6 +174,46 @@ at `+0x20`:
 Any other code gives no order at that point, so the player goes on
 with the order he has. `fb::PlayRunOnPath` (`0x103900`, vtable
 `0x2551b8`) copies a point's code with it but never reads it.
+
+**What the order kind becomes** (**confirmed**). The object at `+0x5c`
+is a pending order of `fb::PlayEffector` (vtable `0x256968`; its `+0`
+is the player). Each frame `0x10b7a8` turns the pending order into the
+active one at `+4` (for type 1, `0x110100`) and runs the active one
+(type 1, `0x111568`):
+
+1. `0x110100` maps kinds 0x18, 0x19 and 0x1a to 1, 2 and 3, passes the
+   kind through the movement state at `+0xb4` (`0xa7ab0`) and then
+   through the path-avoidance step `0x10a0f0`, which reads the tuning
+   entries 0x623–0x628. When bit 1 of that step's state word (the
+   effector's `+0x28`) is set, probably for a detour, though that isn't
+   checked, `0x10ad5c` (jump table `0x2797e0`) folds the kind: 1 and 2
+   become 1, 3 and 4 become 3, 6–8 become 7. The result is the active
+   order's kind (`+0x24` of the effector).
+2. `0x111568` (jump table `0x27a060`) sends one player state per kind
+   to `0x94018`, which stores it at the player's `+0x208` (`0x7f9a0`):
+
+| Kind | State | Kind | State | Kind | State |
+|---|---|---|---|---|---|
+| 0 | `0x24` | 4 | `0x29` | 8 | `0x27` |
+| 1 | `0x2a` | 6 | `0x25` | 23 | `0x39` |
+| 2 | `0x2b` | 7 | `0x26` | 24–27 | `0x2f`–`0x32` |
+| 3 | `0x28` | 5, 9–22 | none | | |
+
+3. The player's update (`0x7d170`, jump table `0x26cbc0`) picks the
+   animation for the state, each with its own selector: state `0x2a`
+   (code 1) `0x13bb88`, `0x2b` (code 2) `0x13bf58`, `0x29` (code 20)
+   `0x13b838`, `0x27` (code 0) `0x13c090`. A selector turns the angle
+   between the player's facing (`+0x1c0`) and the target into one of
+   eight directions and reads a motion number from a table at
+   `0x2850c0`–`0x285340` (for kind 1: motions 61–69, or 70–77 and
+   118–125 by a byte of the player's `+0xb0` record).
+
+So the four codes give four ways of moving, each with its own set of
+animations, and the folding in step 1 pairs 1 with 2 and 4 with 3 (and
+8 with 6 and 7). Which gait each one is (walk, jog, run, sprint) needs
+the animations named; the motion numbers index the retail
+`PLAYERMOTION.PAC`, whose entries have no names (the stale `.HED`'s
+names don't match, [`PAC_FORMAT.md`](PAC_FORMAT.md)).
 
 **Empirical** (`python SRC/bpb.py info DAT/GAME`): the players' points
 in `PLAYBOOK.BPB` use codes 0 (118), 1 (3,394), 2 (2,277), 3 (1) and 20
@@ -498,7 +588,7 @@ The 29 commands (argument counts at `0x274790`, including the result):
 | `Combi27` | *p*, *x*, *y* | *p* runs to area 0, with offsets *x*, *y* |
 | `Combi28` | *p*, *a*, *x*, *y* | *p* runs to area *a*, with offsets |
 | `Combi2` | *t* | makes an area of type *t*, a zone chosen by channel and depth ([below](#combi2s-areas)) |
-| `Combi3` | *n* | makes preset area *n* through the table at `0x249370` ([below](#combi3s-preset-areas)); entries 13–15, 17, 18 and 21 are empty, so those *n* do nothing |
+| `Combi3` | *n* | makes preset area *n* through the 42 entries at `0x249370` ([below](#combi3s-preset-areas)); entries 13–15, 17, 18, 21, 26 and 35–38 are empty, so those *n* do nothing |
 | `Combi4` | *p*, *k* | *p* passes to area 0 with pass type *k* (mode 0) |
 | `Combi5` | *p*, *a*, *k* | *p* passes to area *a* |
 | `Combi6` | *p*, *x*, *k* | *p* passes to a point it builds from *x* |
@@ -615,14 +705,31 @@ score first, in the attacking team's frame):
 | 10 | the same at 180°, or at 135° |
 | 11 | the same at 315° |
 | 12 | the same at 225° |
-| 5 | starts from participant 2 (`0xc2848`) and a direction search (`0xc6150`); not decoded |
-| 6 | an area at participant 1's position (`0xa62c0`, `0xc38f8`); not decoded |
-| 16, 19 | participant 2's zone (`0xc62a8`), then `0xc5cf0` with the tables at `0x274728` and `0x274738`; not decoded |
+| 5 | the zone next to area 2 in the first of the eight directions, in the order 90°, 135°, 180°, 225°, 270°, 315°, 0°, 45°, that has one (`0xc4088`, `0xc6150`). The loop measures a distance to participant 2's position (`0xc2848`) to keep the nearest, but from area 2's own centre each time (`0xc7150` is passed area 2, not the neighbour), so the first neighbour found wins |
+| 6 | a new area at the point on the line from area 1's point (its `+0x120`) to participant 0 that has participant 1's x (`0xa62c0`: the fraction (x1 − xa) / (x0 − xa) must be 0–1, else −1 and no area), made by `0xc38f8` |
+| 16 | of participant 2's zone's neighbours at 225°, 270° and 315° (table `0x274728`: 4, 5, 6), the one whose centre is nearest participant 2, within 52.8 m (`0xc5cf0`, `0xc6868`) |
+| 19 | the same from participant 0's zone at 315°, 0° and 45° (`0x274738`: 6, 7, 8), nearest participant 1 |
+| 30 | the same from participant 0's zone at 135° and 45° (`0x274748`: 2, 8), nearest participant 1 |
+| 33 | the same from participant 0's zone in one direction, the value at the script context's `+0x1c` (nothing when it is 0), nearest participant 1 |
+| 39 | centre, in front of the line, smallest x first (mode 1, participant 0; `0xc49e8`) |
+| 40 | centre, in front of the line, largest x first (mode 2; `0xc4a10`) |
+| 41 | participant 1's zone's neighbour at 270° (`0xc4a38`) |
+| 22–25, 27–29, 31, 32, 34 | not decoded (of these, only 23 is in a script, one the game never loads) |
 
 The angles are those of [the direction commands](#the-combination-commands):
-90° forward, 0° and 180° across. In the centre channel behind the line,
+90° forward, 0° and 180° across; the neighbour search `0xc6150` mirrors
+the direction for side 1 as there. In the centre channel behind the line,
 `0xc5bc8` also moves the area's point back by 0.9 along the attacking
-direction (`0xc5c90`, `0x1321b8`).
+direction (`0xc5c90`, `0x1321b8`). An area record (0x140 bytes) is a
+zone's 0x120 bytes followed by a point at `+0x120` (`0xc3f60`). `Combi3`
+(`0xc3e68`) indexes the table without a bound check; the scripts' values
+stop at 41.
+
+**Empirical** (`python SRC/sqb.py dis "DAT/GAME/COMBINATION2.CSB#<n>"`,
+all 540 scripts): `Combi3` appears 92 times, with presets 39 and 40 32
+times each and the others once to five times. Presets 5, 16 and 19 are
+in no script, and 6 in five scripts that the game never loads. The 65
+records the game can load use presets 1, 7, 8, 30, 33, 39, 40 and 41.
 
 ### The defensive line
 
@@ -685,11 +792,16 @@ participants are the ones the record's slots found
 
 - The header's `+0x10`, `+0x14` and `+0x1c`, the flags, and the
   starting-positions block's `+0x02` bytes.
-- What the move order kinds 1, 2, 4 and 8 mean (most likely speeds or
-  ways of running: no names were found), why `COMBINATION.BPB` uses
-  code 3, which orders nothing, and whether anything reads the ball's
-  point codes. What reads a path kind's value (`+0xe8`), and whose
-  position a flagged path is drawn from.
+- Which gait (walk, jog, run, sprint) each of the move order kinds 1,
+  2, 4 and 8 is: they are player states `0x2a`, `0x2b`, `0x29` and
+  `0x27` with their own animations, but the animations have no names.
+  Why `COMBINATION.BPB` uses code 3, which orders nothing, and whether
+  anything reads the ball's point codes. Whose position a flagged path
+  is drawn from.
+- What the kicker roles' yes/no at vtable `+0x40` decides (`0x117bfc`,
+  `0x1181c4`), what the second word the free-kick and receiver passes
+  give the pass builder (`+0x9c`) does, and how the three receiver
+  handlers (`0x108650`, `0x108728`, `0x108858`) differ.
 - Whether the corner records' ten groups meant anything to the
   developers beyond loose themes, and what records 196–255 (kind 3,
   roles 249–253) were for.
@@ -704,7 +816,9 @@ participants are the ones the record's slots found
 - What builds the [zone network](#the-zone-network) and when, which
   players it takes (one team's 11 and one of the other's in the state
   read), what a zone's byte `+8` and the `0xa23b0` test in `Combi2`'s
-  search mean, and `Combi3`'s presets 5, 6, 16 and 19.
+  search mean, `Combi3`'s presets 22–25, 27–29, 31, 32 and 34 (none
+  in a loadable script), and what sets the direction preset 33 reads
+  (the script context's `+0x1c`).
 - Which side (left or right)
   `Combi19` and `Combi20` mark, what `Combi12`'s target and
   mode 7's flag are, and the plays at the player's `+0xfc`, `+0x100`

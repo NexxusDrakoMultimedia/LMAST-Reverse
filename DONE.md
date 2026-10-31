@@ -74,6 +74,12 @@ the evidence and how it was tested; the git history holds the rest.
 - [x] The travelling salesman's items and their match boosts, the only
       code besides the hexagon that reads abilities 59–63
       ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#the-salesmans-items))
+- [x] The play books' path kind values: a taker's value makes a corner
+      short or a cross and a free kick short or long, and picks the
+      runners' and receivers' passes; the point codes' move orders as
+      player states and animations; `Combi3`'s table of 42 presets,
+      with 5, 6, 16, 19, 30, 33 and 39–41 decoded
+      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md))
 
 ## 3. Write: a writer for every format a mod changes
 

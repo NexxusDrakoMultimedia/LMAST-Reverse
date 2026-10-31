@@ -46,10 +46,6 @@ What to work on next, most valuable first.
    `LMAST-test-season4.iso`, built 2026-10-31, with its test sheet
    `names/test-sheet-season.md`
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-3. **The tactics AI files** (section 2, "Parameters: the match"): four
-   of `Combi3`'s presets, the move order kinds the point codes give, and
-   what reads a path kind's value
-   ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown)).
 
 ## The goals, and what each still needs
 
@@ -149,8 +145,9 @@ shown to have no effect. Grouped by the goal each one serves.
 
 ### Parameters: the match
 
-- [ ] The tactics AI files: four of `Combi3`'s presets, the move order
-      kinds the point codes give, and what reads a path kind's value
+- [ ] The tactics AI files: which gait each move order kind is (its
+      animations have no names), the kicker roles' yes/no and the three
+      receiver handlers, and `Combi3`'s presets 22–34
       ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
 - [ ] `GAMEDATA.BIN`: the rest of a ball-contact record, what sets a
       player's record, and whether anything reads `AI_PARAM.BIN`

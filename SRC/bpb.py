@@ -27,6 +27,10 @@ Confirmed from Pwk::PlayBookData::CPlayBookDataBase in SLES_541.51:
           (GetFormationData 0x2e7d88)
   kinds   role type << 8 | flag 0x80 | value (GAMEPRG.REL 0x109598); the
           types are the role factory's (0x114f30), named in ROLE_TYPES
+          after the lookup's remapping (0x108c18). The value picks the
+          role's variant: a corner taker's makes the corner short or a
+          cross (0x105700), a free-kick taker's a short or long ball
+          (0x105df8); `dump` prints these in brackets
 
 The match asks for 16 corner plays (records 0-99) and 24 free-kick plays
 (100-195) only (GAMEPRG.REL 0xb8560, 0xb85b0); COMBINATION.BPB's record
@@ -79,9 +83,35 @@ FORM_MAX = 22                    # GetFormationData stops at 0x16 values
 # A path kind is a role type (high byte), a value (bits 0-6) and a flag
 # (bit 7) (0x109598). The role factory (GAMEPRG.REL 0x114f30, jump table
 # 0x27a4d0) makes these classes for the types the play books use.
-ROLE_TYPES = {13: "RoleCKKicker", 15: "RoleSP", 16: "RoleSP", 17: "RoleSP",
-              18: "RoleSPRecvSC1", 19: "RoleSPRecvSC2", 20: "RoleSP", 21: "RoleSP",
-              22: "RoleSP", 26: "RoleSPAttacker", BALL_KIND: "ball"}
+ROLE_TYPES = {13: "RoleCKKicker", 14: "RoleFKKicker", 15: "RoleSP", 16: "RoleSP",
+              17: "RoleSP", 18: "RoleSPRecvSC1", 19: "RoleSPRecvSC2", 20: "RoleSP",
+              21: "RoleSP", 22: "RoleSP", 26: "RoleSPAttacker", BALL_KIND: "ball"}
+# What a taker's value makes his kick when the target is a team-mate:
+# PlayCKKick 0x105700 (36 short, 37 cross), PlayFKKick 0x105df8 (jump
+# table 0x278df0: 38 short pass, 39 cross or long ball; a shot is 40).
+CK_TAKER, FK_TAKER = 13, 15
+CK_SHORT_VALUES = (1, 3, 4, 5, 6)
+FK_LONG_VALUE = 1
+
+
+def role_type(kind):
+    """The role type the set-play lookup makes for a path kind
+    (GAMEPRG.REL 0x108c18, jump table 0x279250): 15 becomes 14 unless
+    the value is 2, 16 becomes 14 when the value is 0."""
+    t, v = kind >> 8, kind & 0x7f
+    if t == 15 and v != 2 or t == 16 and v == 0:
+        return 14
+    return t
+
+
+def value_note(kind):
+    """What a corner or free-kick taker's value does, or ''."""
+    t, v = kind >> 8, kind & 0x7f
+    if t == CK_TAKER:
+        return "short corner" if v in CK_SHORT_VALUES else "cross"
+    if t == FK_TAKER:
+        return "cross/long ball" if v == FK_LONG_VALUE else "short pass"
+    return ""
 
 CBB_SCALE = 10.0                 # 0xc7f00 and 0xc7b64 multiply by 10.0
 CBB_DEFAULT_LIMIT = 1055.6       # 0xc7bc8: 0x4483f3d7
@@ -326,9 +356,12 @@ def cmd_dump(path, index):
     form_kind, spots = p.formation()
     print("  starts (kind %d): %s" % (form_kind, " ".join("(%.1f,%.1f)" % s for s in spots)))
     for k, (kind, start, pts) in enumerate(p.paths()):
-        role = ROLE_TYPES.get(kind >> 8, "type %d" % (kind >> 8))
-        print("  path %2d  kind %#06x %-14s %2d%s  start %3d  %s" % (
+        t = role_type(kind)
+        role = ROLE_TYPES.get(t, "type %d" % t)
+        note = value_note(kind)
+        print("  path %2d  kind %#06x %-14s %2d%s  start %3d  %s%s" % (
             k, kind, role, kind & 0x7f, "+" if kind & 0x80 else " ", start,
+            "[%s] " % note if note else "",
             " ".join("(%.1f,%.1f c%d)" % pt for pt in pts)))
 
 
