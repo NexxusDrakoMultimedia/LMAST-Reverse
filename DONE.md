@@ -71,8 +71,7 @@ the evidence and how it was tested; the git history holds the rest.
       player's own and decides how long he keeps a play; press sets how
       far from the ball carrier the marker stands and how close counts
       as on him ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
-- [x] The travelling salesman's items and their match boosts, the only
-      code besides the hexagon that reads abilities 59–63
+- [x] The travelling salesman's items and their match boosts
       ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#the-salesmans-items))
 - [x] The play books' path kind values: a taker's value makes a corner
       short or a cross and a free kick short or long, and picks the
@@ -80,6 +79,13 @@ the evidence and how it was tested; the git history holds the rest.
       player states and animations; `Combi3`'s table of 42 presets,
       with 5, 6, 16, 19, 30, 33 and 39–41 decoded
       ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md))
+- [x] The last open player fields: `explodetype` is saved but read by
+      nothing; the attack patterns A–E are only ever used as a set, so
+      the letters change nothing; the carry thresholds follow the team's
+      situation (the phase, or where the line of play is between your
+      goal and the opponents' back line); the press row compares the
+      line of play with a defensive line
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
 
 ## 3. Write: a writer for every format a mod changes
 

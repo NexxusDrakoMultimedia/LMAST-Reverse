@@ -93,7 +93,7 @@ names the fields the editor labels leave out.
 | 4 | 1 | `+0x40` | pressure | pressure resistance. Read by the match engine (`GAMEPRG.REL`), not traced |
 | 4 | 1 | `+0x41` | loyalty | club loyalty; sets a promoted youth player's contract years. **confirmed** |
 | 4 | 1 | `+0x42` | star | star quality; scales popularity changes. **confirmed** |
-| 4 | 4 | `+0x43` | explodetype | source name `explodetype`, 0–15 ×4: probably meant for the growth spurts (`pwkExplo_*`, see [explodetype](#explodetype-and-team-combos)). No label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players), more often set for low-ranked players. No reader found: no load of `PlPinfo +0x1db`–`+0x1de` (its game copy) in the executable or any overlay (scan, 2026-10-30) |
+| 4 | 4 | `+0x43` | explodetype | source name `explodetype`, 0–15 ×4: probably meant for the growth spurts (`pwkExplo_*`, see [explodetype](#explodetype-and-team-combos)). No label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players), more often set for low-ranked players. Kept in the save but read by nothing: only the save's serializers touch `PlPinfo +0x1db`–`+0x1de` (its game copy) in the executable or any overlay |
 | 3 | 1 | `+0x47` | moti_type | motivation type, 0–7. **confirmed** |
 | 3 | 1 | `+0x48` | cond_type | condition type, 0–7. No reader found outside the debug and save code |
 | 5 | 1 | `+0x49` | potential | 0–7; read by `plPinfo_InitEditAbil` (`0x21b2b8`) |
@@ -243,16 +243,18 @@ position grid and the system growth) and with all four VPF players
 ([Ability names](#ability-names)). The 34–41 labels name the grid cells:
 SB/CB, WB/DM, SM/OM and WG/FW are the side and centre of each row. 59–63
 are the five attack patterns the tactics screen calls Left Flank, Right
-Flank, Centre Drive, Counter Attack and Possession (messages 1:620–649);
-which pattern is which letter isn't traced. Nothing in the data or the
-code tells the five apart. No call to the three functions that take an
-ability number (`plPinfo_Abil2PSM`, `pwkGUtl_GetGrowCoe`,
-`pwkGUtl_AddExp`) passes 59–63 as a constant; the match doesn't copy
-them ([The match engine's player
+Flank, Centre Drive, Counter Attack and Possession (messages 1:620–649),
+but nothing in the data or the code tells the five apart, so which
+letter is which pattern makes no difference
+([Ability names](#ability-names)). No call to the
+three functions that take an ability number (`plPinfo_Abil2PSM`,
+`pwkGUtl_GetGrowCoe`, `pwkGUtl_AddExp`) passes 59–63 as a constant;
+the match doesn't copy them ([The match engine's player
 parameters](#the-match-engines-player-parameters));
-and every practice grows all five equally. Their one other reader is a
-loop over all five: the travelling salesman's boost for flag 336
-(`0x21070c`, raising each by 40% for the match), which no event sets
+and every practice grows all five equally. Their two other readers are
+loops over all five: the hexagon window's player rating, and the
+travelling salesman's boost for flag 336 (`0x21070c`, raising each by
+40% for the match), which no event sets in the retail game
 ([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#the-salesmans-items)).
 A scan for loads at `PlPinfo +0x16c`, `+0x172`, `+0x178`, `+0x17e` and
 `+0x184` missed it because it reads them from the team data (`+0x18c`
@@ -1083,12 +1085,61 @@ team slot with `0x73df8` and reads that slot's player (`0x117800`–
 `+0x1b60`) has three scores for its current step (play `+8`, `+0x18`,
 `+0x28`, indexed by `+0x38`). Each is multiplied by the factor and
 compared with a threshold, a set of three picked by a match value
-(`+0x1738`, 0–4) from tuning entries `0x78b`–`0x799` (0.3, 0.4, 0.8 for
-the first set). The play is kept only when all three pass
+(`+0x1738`, 0–4, the team's situation, below) from tuning entries
+`0x78b`–`0x799` (jump table `0x27a690`; any other value uses the first
+set). The play is kept only when all three pass
 (`0x117b8c`–`0x117bd8`). So a player with a higher carry value keeps
 running with a plan once he has one; a low one drops it sooner. In one
 branch the factor is raised to at least 1.0 first (`max.s` at
 `0x117b44`).
+
+| Situation | Thresholds |
+|---|---|
+| 0 | 0.3, 0.4, 0.8 |
+| 1 | 0.3, 0.55, 0.6 |
+| 2 | 0.2, 0.4, 0.3 |
+| 3 | 0.1, 0.25, 0.15 |
+| 4 | 0.1, 0.2, 0.9 |
+
+**The team's situation (confirmed, `GAMEPRG.REL`).** The value at
+`+0x1738` belongs to the team AI object that the role reaches through
+`+0xc` (the one that also holds the current phase at `+0x1708`). Each
+update asks the phase for a situation (its virtual method at vtable
+`+0x50`) and stores it with `0xab100`:
+
+| Phase | Situation |
+|---|---|
+| Kick-off, goal kick, out of play | 0 |
+| Attack (`PhaseAttack`) | 1 |
+| Penalty kick | 4 for the side `0xa9e20` picks, 3 for the other |
+| Corner, free kick, other set plays | 3 or 4 by the set play's step (jump table `0x278840`), otherwise as in play |
+| In play, build-up, goal, throw-in | worked out from the ball (`0xf5608`, below) |
+
+In open play `0xf5608` compares the line of play (match data
+`+0x1065c`, described with the press floats below) with two points
+between the team's own goal line (y −527.81, turned round for the
+side) and the opponents' defensive line (match data `+0x10400`, the
+other side's entry). The first point is a fraction *f* of the way
+there, the second halfway from that point to the opponents' line.
+Behind the first point the situation is 0, before the second 1, and
+from the second on 2. Two checks then override it: 3 when `0xf5728`
+is true, 4 when `0xf5c18` is; what they test isn't traced. So 0 to 2
+are the ball in your own part of the pitch, in the middle, and near
+the opponents' back line.
+
+*f* is the team's `+0x179c`, set at each kick-off (`0xaafd0`,
+`0xaaff0`) from `0xa9e58`: 0.3 + *v* / 15 for a value *v* of 0–6,
+so 0.3 to 0.7. *v* (`0xbc538`) is a tactics value of the current
+formation (word `+0x10` of the record `0x14af00` returns; which of the
+7 sliders that is isn't traced), plus a step for the match situation:
++1 when behind late and −1 when ahead late (`0x2741a0`; the mode 0–4
+from the time and score, as for the
+[match policy](#the-developers-staff-editors)), or +3 and −3 when
+`0x9ce78` is true. It is clamped to 0–6.
+
+A move into or out of situation 3 or 4 is held back: when match data
+`+0x104d4` is set, `0xab100` only switches after the new value has
+come 5 updates running (counter `+0x1740`, pending value `+0x173c`).
 
 **What the press floats measure (confirmed, `GAMEPRG.REL`).** Match
 positions are in tenths of a metre
@@ -1101,10 +1152,9 @@ positions are in tenths of a metre
   by default, `0x278a4c`) that the marker works with, so it is how far
   from the ball carrier he takes up his position. Row 0 is used when
   bit 0 of the play's `+0x80` is set. Otherwise the row follows a
-  distance along the pitch: match data `+0x1065c` (a y position that
-  `0x3e038` raises from the players' positions; what it tracks isn't
-  traced) minus the side's value at `+0x10400`, both turned round for
-  the side. From 30 m (tuning
+  distance along the pitch: the line of play (below) minus a side's
+  defensive line (the side in the player id `0x86298` returns), both
+  turned round for that side. From 30 m (tuning
   `0x5c9`) it is row 1, up to 10 m (`0x5ca`) row 2, and in between a
   blend of the two. Then 1.5 m (tuning `0x5cb`) is taken off when an
   angle worked out from one goal (`0xa61d8`, picked by the side; the goal
@@ -1115,6 +1165,21 @@ positions are in tenths of a metre
   that the disassembler can't decode (`0xfcdbc`–`0xfcf18`); inside it,
   the mark sets a flag (`0xfcf60`). Probably the radius within which
   the marker counts as on the ball carrier.
+
+The two positions both rows use (confirmed):
+
+- **The line of play**, match data `+0x1065c`, is a y position that
+  `0x3e038` keeps up to date. While a player has the ball (match data
+  `+0xc`) it follows his y, while a pass is on its way it follows the
+  receiver's (`+0x14`), and while nobody has it, the ball's
+  (`0x41da8`). It runs up to 5 m ahead of or behind that player by a
+  factor from `0x41ca8`, and never past the goal line (y ±527.81).
+- **The defensive lines**, match data `+0x10400` + side × 4, are set
+  by `0x37540` from the players sorted by y: for each side, the y of
+  its second player counted from its own goal, the goalkeeper usually
+  being the first. That is the side's offside line. `+0x10408` and
+  `+0x1040c` hold each side's front player in the same way.
+  `0x3e4a8` reads the first pair and `0x3e4c8` the second.
 
 So a higher press level means standing closer to the ball carrier (rows
 0 and 1 shrink from 8 or 6 m at level 0 to 5 or 3 m at levels 3–4) and
@@ -1222,7 +1287,7 @@ categories ([Ability names](#ability-names)): 0's main abilities are its
 |---|---|---|
 | 0 | 2, 4–7, 14 (shot skill, passes, cross, header, placekick) | Attacking |
 | 1 | 10–13 (15–18 for goalkeepers) | Defence (defenders score ~90) |
-| 2 | 33, 42–44 (60), 53–58 | Teamwork |
+| 2 | 33, 42–44, 53–58 (59–63 at weight 16) | Teamwork |
 | 3 | 1, 3, 8, 9 (dribble skill, shot technique, trap, ball keeping) | Skills |
 | 4 | 0, 19–25 | Physical |
 | 5 | 26–32 | Attitude |
@@ -1291,7 +1356,28 @@ database fit), or **VPF** (VPF's name, with the values as shown).
 | 56 | attacks through middle | 38/34, 86/86, 56/55 | VPF + data |
 | 57 | line DF | 64/64, 58/57, 64/63 | VPF + data. Beckham settles the pair (line DF 63, pressing 59) |
 | 58 | pressing | 68/68, 58/57, 60/59 | VPF + data |
-| 59–63 | attack patterns A–E | – | developer labels 攻撃パターンA–E理解度; 60 is in the Teamwork hexagon. Every practice in `TRAINING_LIST.TBB` grows the five by the same amount (+1, +4, +8 or +15), and no code reads one of them by number; an unused salesman boost raises all five ([above](#the-developers-player-editor)) |
+| 59–63 | attack patterns A–E | – | developer labels 攻撃パターンA–E理解度. The game only ever handles the five as a set (below), so which letter is which makes no difference |
+
+**The attack patterns (confirmed).** Nothing in the game reads one of
+abilities 59–63 on its own. Every use takes all five:
+
+| Where | What it does with them |
+|---|---|
+| `PLRESOURCECOMMON.PAC` 2.0, the hexagon weights | all five the same: Teamwork (2) weight 16 and Attacking (0) weight 20, for field players and goalkeepers |
+| `GP::PlTeamData2HEX_DATA` (`0x27b458`, at `0x27b70c`) | adds their average to a player's rating in the `GP::HEX_DATA` hexagon window, with the averages of 42–44 and 53–58 |
+| `TRAINING_LIST.TBB` | every practice grows the five by the same amount (+1, +4, +8 or +15) |
+| `--mod salesman-items` (flag 336) | raises all five in the match's copy of your squad ([above](#the-developers-player-editor)) |
+
+The match doesn't copy them into its player parameters
+([The match engine's player parameters](#the-match-engines-player-parameters)).
+A scan of the executable and every overlay for halfword loads at their
+`PlPinfo` offsets (`+0x16c`–`+0x184`), and for offsets or indices built
+from 59, found no other reader (the hits are virtual-call slots at the
+same offsets in other objects, and a per-player stride of `0x16c`).
+So the letters are just names: which one is which doesn't change
+anything in the retail game. The developers may have meant them for the
+club's five pattern slots (`PlTeamData +0x489f`), but no code ties a
+slot to one of them.
 
 VPF's aptitude page names the position cells. Rooney and Beckham agree
 on 39 = OM (86/85, 72/70), 42 = centre (94/93, 88/87), 43 = left (82/82,
@@ -1410,7 +1496,11 @@ the developers' field table names them `explodetype`, 0–15, four of them
 every byte load at their `PlPinfo` offsets (`+0x1db`–`+0x1de`) in
 `SLES_541.51` and the overlays, and at `+0x43`–`+0x46` in the executable,
 found only other structures (the manager record's tactics in the
-developers' editor, a youth candidate record at `0x25fd70`).
+developers' editor, a youth candidate record at `0x25fd70`). A scan for
+the offsets as immediates (`0x1db`–`0x1de`, which also finds indexed
+reads) adds only the save's serializers, which write and read the four
+values with every player (`SAVEPRG.REL 0xeed0`, `0x1043c`). So they are
+kept in the save and read by nothing.
 
 "Explode" is the game's word for a growth spurt: the `pwkExplo_*`
 functions (`0x243348`–`0x2441c0`) check monthly and yearly triggers
@@ -1895,12 +1985,13 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
 
 ## Still unknown
 
-- Whether anything reads `castno` (`+0x30`, always 0) or `explodetype`
-  (`+0x43`–`+0x46`); no reader was found.
-- Tendencies ([The tendencies](#the-tendencies)): what the match value
-  at `+0x1738` that picks the carry thresholds is, what the y position
-  at match data `+0x1065c` and the per-side value at `+0x10400` track
-  (they pick the press row), which distance the second press float is
+- Whether anything reads `castno` (`+0x30`, always 0); no reader was
+  found.
+- Tendencies ([The tendencies](#the-tendencies)): what the two checks
+  that make the team's situation 3 or 4 test (`0xf5728`, `0xf5c18`),
+  which tactics slider sets where situation 1 starts, which side
+  `0xa9e20` picks at a penalty, which side's defensive line the press
+  row uses, which distance the second press float is
   compared with (VU0 code), and what byte 1 of the per-side record at
   match data `+0x9764` (set from a match menu) does. No screen shows
   the tendencies (Nexxus's report), so an edit can only be seen in how
@@ -1917,15 +2008,7 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
   tackles), where kinds 27–29, 31, 34 and 35 (kick-off, penalty, goal
   kick) are first set, flag bits `0x200`–`0x2000` and kind 5,
   the 45 calls with no class, and the sources of parameters 5, 16 and
-  24. Also which attack pattern letter is which, and whether abilities
-  59–63 do anything beyond hexagon 2: no reader picks one of them out,
-  and the salesman boost that raises all five is never set
-  ([Ability names](#ability-names)). The
-  letters may be the club's five pattern slots (`PlTeamData +0x489f`,
-  any of the 30 patterns) rather than fixed kinds: training's
-  combination A–E practices read those slots, and the match takes its
-  pattern combinations from them
-  ([`BPB_FORMAT.md`](BPB_FORMAT.md#how-a-team-uses-the-combinations)).
+  24.
 - What each speech tone and condition type value is, what the ball touch
   does (match parameter 139 has no reader), and which dribble style
   looks like what.

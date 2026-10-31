@@ -29,12 +29,7 @@ end of the same section in [`DONE.md`](DONE.md) as a line or two.
 
 What to work on next, most valuable first.
 
-1. **The player fields still open** (section 2, "Data"): `explodetype`
-   and the attack pattern letters, and the match values that pick the
-   carry thresholds and the press row
-   ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)). The carry
-   helper and the press floats are traced.
-2. **LMASTER max in the game** (sections 7 and 8). Tested so far: every
+1. **LMASTER max in the game** (sections 7 and 8). Tested so far: every
    part of `--mod harder-economy`, `transfer-fees`, `fee-tiers` at the
    low end, `pr-costs`, `merch-costs`, `slow-reputation` after a match,
    and the separate career saves. Through a German season Nexxus found
@@ -108,9 +103,9 @@ shown to have no effect. Grouped by the goal each one serves.
 
 ### Data: players, staff and clubs
 
-- [ ] Player fields still open: `explodetype`, which attack pattern
-      letter is which (no reader picks one out), and the match values
-      that pick the carry thresholds and the press row
+- [ ] The tendencies' last match details: the two checks that put a
+      team in situation 3 or 4, and which tactics slider sets where
+      situation 1 starts
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
 - [ ] Staff: the fields only the developers' field table names, and the
       model pattern ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
