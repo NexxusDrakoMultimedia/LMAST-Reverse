@@ -401,8 +401,7 @@ is built and tested, or set aside.
 - [ ] Candidate: the salesman's items. Flag 336 (the attack-pattern
       boost) is paired with no event, probably meant for the special
       training coach (event 190), and the headphones' and spikes'
-      boosts don't match their text; check first in the game that the
-      items' follow-ups show in English
+      boosts don't match their text
       ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#the-salesmans-items))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes

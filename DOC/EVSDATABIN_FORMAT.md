@@ -219,10 +219,14 @@ headphones' abilities are physical and fit the spikes better, and the
 spikes raise only crosses. The repeat count of 33 is the number of
 mental abilities (26–58), so the two cases may have been mixed up.
 
+The follow-ups (categories 35100–35106) have full English text from
+entry 1 on ("Those "Opaque Sunglasses" you bought the other day are
+fantastic!"); entry 0 is only a label, `HOGEHOGE` in English and 本文
+("body") in Japanese. **Seen in the game:** the follow-up after a
+purchase shows its English lines (Nexxus's report, 2026-10-31).
+
 **Not traced:** what picks the follow-up or the fraud notice after a
-purchase, and when the "worn off" event comes. The follow-ups'
-(categories 35100–35106) English text is `HOGEHOGE` except 35106's;
-whether the English game ever shows them hasn't been checked.
+purchase, and when the "worn off" event comes.
 
 ```bash
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x132318 30 --sles ISO/SLES_541.51   # SuccessSales
