@@ -41,12 +41,6 @@ What to work on next, most valuable first.
    `LMAST-test-season4.iso`, built 2026-10-31, with its test sheet
    `names/test-sheet-season.md`
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-2. **`TACTICSPITCH.PAC` on a rebuilt disc** (section 4). The tactics
-   pitch loads it through `CLoader` from `WP::CTacticsPitch`'s
-   constructor (`SLES 0x2a89cc`), not as a registering resource, so
-   it isn't known whether its entries stand in for their originals.
-   It's the last open rebuild question
-   ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#still-unknown)).
 
 ## The goals, and what each still needs
 
@@ -231,9 +225,6 @@ a field-level writer with a `roundtrip` check in `regress.py`.
 release. **Done when** the items below work; see
 [`REBUILD.md`](DOC/REBUILD.md#still-to-do).
 
-- [ ] `TACTICSPITCH.PAC` is loaded through `CLoader`, not as a
-      registering resource: whether its entries stand in for their
-      originals ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#still-unknown))
 - [ ] Later: `--mod third-tier` on the Japanese release, which it
       refuses now, and a Japanese disc built with the other switches and
       a Japanese save edited with `save.py --iso ISO_JP`, run in the game
@@ -375,6 +366,14 @@ disc or the edit to build; the result goes into the doc linked.
       of your squad has abilities 59–63 raised (the saved players don't
       change); the headphones and spikes the same way
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+
+### Rebuilding
+
+- [ ] The tactics pitch reads `CSE/`, not `TACTICSPITCH.PAC`: on a
+      test disc with `CSE/CAM_INT.SND` and `CAM_INT_ATTACK.SND`
+      swapped (the pack left as it is), the tactics screen's pitch
+      views should swap
+      ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
 
 ### Testing aids and sound
 

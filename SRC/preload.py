@@ -82,8 +82,9 @@ LOADERS = {
     "TACTICSMATCHLARGE": (True, "tactics in a match (SLES list 0x55b3a8, CTacticsManagerImplement)"),
     "GAMEFILE": (True, "match (GAMEPRG list 0x265590, GAME_MODULE 0xbd0)"),
     "GAMELOCALMEM": (False, "match (GAMEPRG list 0x265590, GAME_MODULE 0xbd0)"),
-    # Read through CLoader::loadFileRequest (WP::CTacticsPitch, SLES
-    # 0x2a89cc), not as a registering file resource.
+    # Loaded through CLoader::loadFileRequest (WP::CTacticsPitch, SLES
+    # 0x2a89cc) without the register flag, so nothing reads its entries:
+    # the pitch requests the CSE/ originals (DOC/PRELOAD_DIR.md).
     "TACTICSPITCH": (False, "tactics pitch model (CLoader, SLES 0x2a89cc)"),
 }
 

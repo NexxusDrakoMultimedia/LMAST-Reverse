@@ -116,6 +116,9 @@ the evidence and how it was tested; the git history holds the rest.
 - [x] `patch_disc.py`: files of any size, moved files, a grown disc,
       every copy updated, archives rebuilt
       ([`REBUILD.md`](DOC/REBUILD.md))
+- [x] `TACTICSPITCH.PAC` is loaded but never read: its entries aren't
+      registered, so the tactics pitch reads the `CSE/` originals
+      ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
 - [x] Testing aids: `--skip-tutorial` and `--launcher`
       ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs))
 - [x] The Japanese disc: every switch but `third-tier`, and its saves

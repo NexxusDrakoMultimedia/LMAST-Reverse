@@ -86,7 +86,7 @@ file named, `SLES` = `SLES_541.51`):
 | `TACTICSFILE<n>`, `TACTICSLARGE<n>` | `SLES 0x55b120`, `CTacticsManagerImplement::GetPreLoadData` (`0x2e3420`) outside a match | the tactics screen |
 | `TACTICSMATCHFILE<n>`, `TACTICSMATCHLARGE<n>` | `SLES 0x55b3a8`, the same function when its mode (`+0x44`) is 2 or 3 | the tactics screen in a match |
 | `GAMEFILE<n>`, `GAMELOCALMEM` | `GAMEPRG.REL` list `0x265590`, `GAME_MODULE` (`0xbd0`) | a match |
-| `TACTICSPITCH` | `CLoader::loadFileRequest` from `WP::CTacticsPitch`'s constructor (`SLES 0x2a89cc`) | the tactics pitch. This is the model loader, not a registering file resource; whether its entries are shared hasn't been traced |
+| `TACTICSPITCH` | `CLoader::loadFileRequest` from `WP::CTacticsPitch`'s constructor (`SLES 0x2a89cc`) | the tactics pitch. Loaded but never read: its entries aren't registered, and the pitch reads the originals in `CSE/` ([below](#tacticspitchpac-is-loaded-but-not-used)) |
 
 `<n>` is the language digit, 0–6 (0 Japanese, 1 English, then French,
 German, Italian, Spanish and an unused seventh slot, as in `MES.PAC`).
@@ -103,6 +103,33 @@ example. The event code puts up a new mail with its own message request
 resident, so it reads `MES.PAC`. The Mail screen loads `MAIL<n>.PAC`
 first and reads the pack's copy. Both copies are read, on different
 screens.
+
+### `TACTICSPITCH.PAC` is loaded but not used
+
+The tactics pitch (`WP::CTacticsPitch`) loads `tacticspitch.pac` and
+then never reads it. To edit the pitch, change the originals in `CSE/`;
+the pack's copies can stay as they are. **Confirmed from the code, not
+yet seen in the game:**
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `0x2a8a04` | `WP::CTacticsPitch` constructor | asks its `CLoader` (`+0xb0`) for `tacticspitch.pac` (folder 16) into pack slot 1 |
+| `0x2a8b74`–`0x2a8cb8` | `WP::CTacticsPitch::Execute` | once slot 1 has loaded, asks for `pitch.sno`, `cam_int.snd`, `pitch.sna`, `cam_int_in.snd` and `cam_int_attack.snd` by name from folder 2 (`CSE/`) into slot 0, entries 0–4 |
+| `0x2a8cf4`–`0x2a92e8` | the same class | every later read (`getModelTexture`, `getCameraMotion`, `getChunkSingle`) takes slot 0. Slot 1 is only waited on |
+| `0x118908`, `0x101620` | `CLoader::loadFileRequest`, `CDataHandle::OpenReq` (vtable `+0x24`) | each request becomes a new `CFcEuro_FileResource` through `CDataLoadMgr::OpenReq` (`0x102450`) |
+| `0x1024b8`, `0x10cc10` | `CDataLoadMgr::OpenReq`, `CommonSetup` | the constructor's 8th argument, which sets the "register the entries" bit (`+0x125` bit 8), is 0 here. So the pack's entries never become resources |
+| `0x11a1b0` | `CLoader::l_realize_binarypack` | when a pack arrives, `CLoader` only lists its entries' addresses; no code in `CLoader` (`0x117b18`–`0x11b000`) calls `fcEuroRsrc_EntryResource` |
+
+So the five requests find no registered resource by their names
+(`F02_0000_0000_pitch.sno` and so on; no other `PRELOAD` pack holds
+them) and read `CSE/PITCH.SNO`, `CAM_INT.SND`, `PITCH.SNA`,
+`CAM_INT_IN.SND` and `CAM_INT_ATTACK.SND` from the disc.
+`sc_tac_pch_00.svr`, the pitch's texture, isn't requested by name
+here: it comes with the model (type `0xc`, read with
+`getModelTexture`), and how that load finds it isn't traced. It can't
+be the pack's copy, which is never registered. Probably the pack was
+meant to be registered, as the load lists' packs are, and the flag
+was left at 0.
 
 ### Tested in PCSX2
 
@@ -207,6 +234,4 @@ offsets.
 ## Still unknown
 
 - What record field `+0x18` selects (3, 4 or 5).
-- Whether `TACTICSPITCH.PAC`'s entries (loaded through `CLoader`) are ever
-  used in place of their originals.
 - `DUMMY.DAT` (not a pack).
