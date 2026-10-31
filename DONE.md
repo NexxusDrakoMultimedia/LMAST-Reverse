@@ -67,6 +67,13 @@ the evidence and how it was tested; the git history holds the rest.
 - [x] The press tendency's team cap: always 2 in a career match, so
       levels 2–4 act as 1
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
+- [x] The carry and press tendencies in the roles: carry is the
+      player's own and decides how long he keeps a play; press sets how
+      far from the ball carrier the marker stands and how close counts
+      as on him ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
+- [x] The travelling salesman's items and their match boosts, the only
+      code besides the hexagon that reads abilities 59–63
+      ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#the-salesmans-items))
 
 ## 3. Write: a writer for every format a mod changes
 

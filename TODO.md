@@ -29,11 +29,11 @@ end of the same section in [`DONE.md`](DONE.md) as a line or two.
 
 What to work on next, most valuable first.
 
-1. **The player fields still open** (section 2, "Data"): `explodetype`,
-   abilities 59–63 and the attack pattern letters, whose value the carry
-   tendency's helper reads, and what the press floats measure
-   ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)). The press
-   tendency's cap bug is fixed (`press-tendency`).
+1. **The player fields still open** (section 2, "Data"): `explodetype`
+   and the attack pattern letters, and the match values that pick the
+   carry thresholds and the press row
+   ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown)). The carry
+   helper and the press floats are traced.
 2. **LMASTER max in the game** (sections 7 and 8). Tested so far: every
    part of `--mod harder-economy`, `transfer-fees`, `fee-tiers` at the
    low end, `pr-costs`, `merch-costs`, `slow-reputation` after a match,
@@ -112,9 +112,9 @@ shown to have no effect. Grouped by the goal each one serves.
 
 ### Data: players, staff and clubs
 
-- [ ] Player fields still open: `explodetype`, abilities 59–63 and the
-      attack pattern letters (no reader picks one out), whose value the
-      carry tendency's helper reads, and what the press floats measure
+- [ ] Player fields still open: `explodetype`, which attack pattern
+      letter is which (no reader picks one out), and the match values
+      that pick the carry thresholds and the press row
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
 - [ ] Staff: the fields only the developers' field table names, and the
       model pattern ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
@@ -398,6 +398,12 @@ is built and tested, or set aside.
       test), the strength ratio above 1.19 getting column 0, and the
       training plan's rows out of step with the policy names
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [ ] Candidate: the salesman's items. Flag 336 (the attack-pattern
+      boost) is paired with no event, probably meant for the special
+      training coach (event 190), and the headphones' and spikes'
+      boosts don't match their text; check first in the game that the
+      items' follow-ups show in English
+      ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#the-salesmans-items))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))

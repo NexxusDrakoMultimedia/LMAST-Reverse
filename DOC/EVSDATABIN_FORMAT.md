@@ -174,6 +174,62 @@ Which handler types own these functions isn't traced yet.
   Some events are retargeted at runtime, so the file isn't the
   whole story.
 
+### The salesman's items
+
+From season 5 (season 8 for the last two) a travelling salesman can
+offer your club an item. Each item is a chain of EVENT records: the
+pitch (handler type 33; the price, `effect1_value` × 10,000, is paid by
+`EVS::CEvsJob_ResultSales` `0x1321d8` only if you say Yes, as above),
+a follow-up that says
+the item works (handler type 34, `EVS::CEvsJob_SuccessSales`
+`SIMPRG.REL 0x132318`), a fraud notice ("That salesman … has been
+arrested for fraud", no handler type) and a later "has worn off" event
+(handler type 35, `EVS::CEvsJob_EndSales` `0x1323e0`).
+
+**Confirmed from the code.** `CEvsJob_SuccessSales` looks its event up
+in a table of `{flag, event}` pairs (`SIMPRG.REL 0x1d8c98`) and sets
+that event flag; `CEvsJob_EndSales` clears it through a second table
+(`0x1d8cc8`). When a match sets up its teams, `PlGiTask::SetTeamData`
+(`SLES 0x210970`) copies each team, and for your club (team data `+0`
+= 1) calls `0x210870`, which adds the team combos
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#explodetype-and-team-combos))
+and then `0x2102d0`. That checks flags 331–336 (`0x390788`); the
+highest one set picks a boost (jump table `0x5313c0`), applied to the
+match's copy of the squad only. Each boost adds 40% of an ability's
+current experience (`pwkGUtl_AddExp`, so the growth limit still
+holds) for every squad player:
+
+| Item (pitch, follow-up, end) | Flag | Boost | Code |
+|---|---|---|---|
+| Opaque Sunglasses (166, 167, 169) | 331 | abilities 2, 4, 5, 6, 7, 14, 11, 12, 31 (shooting, passing, crosses, heading, placekicks, interception, ball winning, vision; list `0x3907a0`) | `0x210364` |
+| The Gloves of a Legend (170, 171, 173) | 332 | goalkeepers only (main position 0): abilities 15–18 | `0x210418` |
+| Football Theory Headphones (174, 175, 177) | 333 | abilities 24, 10 and 25 (kick strength, tackle, contact strength), 33 times over | `0x2104e0` |
+| Fatigue-Buster Oxygen Machine (178, 179, –) | – | none: the follow-up's effect kind 8 rests the squad | – |
+| Lead-Spike Boots (181, 182, 184) | 334 | ability 6 (cross) | `0x2105d0` |
+| a teamwork lecturer (185, 186, 188) | 335 | every pair combination in the squad (team data `+0x4354`) | `0x210654` |
+| a special training coach (189, 190, –) | – | none: the follow-up's effect kind 8 rests the squad | – |
+| – | 336 | abilities 59–63, the attack patterns | `0x21070c` |
+
+Flag 336's entry in both tables pairs it with event 0, which doesn't
+exist, so its boost never runs. It looks meant for the special training
+coach, whose follow-up has no flag of its own. Two boosts don't match
+the follow-up's Japanese text: the headphones' says the players are
+growing mentally, and the spikes' says their power is clearly up. The
+headphones' abilities are physical and fit the spikes better, and the
+spikes raise only crosses. The repeat count of 33 is the number of
+mental abilities (26–58), so the two cases may have been mixed up.
+
+**Not traced:** what picks the follow-up or the fraud notice after a
+purchase, and when the "worn off" event comes. The follow-ups'
+(categories 35100–35106) English text is `HOGEHOGE` except 35106's;
+whether the English game ever shows them hasn't been checked.
+
+```bash
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x132318 30 --sles ISO/SLES_541.51   # SuccessSales
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 2102d0 300                      # the boosts
+python SRC/mbb.py dump DAT/MESSAGE/MES.PAC --lang 0 --cat 35100               # a follow-up, Japanese
+```
+
 ### Scene types
 
 The scene type says what happens once the event's dialogue ends. `0x12a578`

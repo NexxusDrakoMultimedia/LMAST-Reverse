@@ -250,10 +250,14 @@ ability number (`plPinfo_Abil2PSM`, `pwkGUtl_GetGrowCoe`,
 `pwkGUtl_AddExp`) passes 59–63 as a constant; the match doesn't copy
 them ([The match engine's player
 parameters](#the-match-engines-player-parameters));
-and every practice grows all five equally. Nor does any player code in
-the executable load their slots (`PlPinfo +0x16c`, `+0x172`, `+0x178`,
-`+0x17e`, `+0x184`; scan, 2026-10-30). Their only reader found is
-the hexagon table, which weights 60 alone. Training's combinations A–E
+and every practice grows all five equally. Their one other reader is a
+loop over all five: the travelling salesman's boost for flag 336
+(`0x21070c`, raising each by 40% for the match), which no event sets
+([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#the-salesmans-items)).
+A scan for loads at `PlPinfo +0x16c`, `+0x172`, `+0x178`, `+0x17e` and
+`+0x184` missed it because it reads them from the team data (`+0x18c`
+= squad slot 0's `+0x16c`). Besides that, only the hexagon table reads
+them, weighting 60 alone. Training's combinations A–E
 (practices 12–16) are a different set: they pick their row from the
 club's five pattern slots, and rows 12–16 train the left side, right
 side, centre, counterattack and possession, the tactics screen's order
@@ -1043,7 +1047,7 @@ which is then added to that kind of play's score, or multiplies it. Level
 |---|---|---|---|---|
 | 0 dribble | `+0x66` | 128 | `IntentionRWTB` (`0xe4320`, `0xe46b0`), `IntentionADribble` (`0xe7390`), `IntentionKeep` (`0xe6050`), `PlayBallKeep` (`0xf95c8`), and `0xe4948`, which the pass, cross and shoot intentions also call | `0x52d`: −0.15, −0.05, 0, +0.05, +0.15 (RWTB); `0x537`: −0.3, −0.1, 0, +0.05, +0.15 (ADribble); `0x532`: × 0.75, 0.9, 1.0, 3.0, 10.0 (`0xe4948`); `0x53c`: 20, 5, 2, 0.5, 0.01 (BallKeep) |
 | 1 shoot | `+0x67` | 129 | `0xec508`, called 10 times from the shoot intentions' code | `0x546`: × 0.6, 0.9, 1.0, 1.1, 1.35 |
-| 2 carry | `+0x68` | 130 | `IntentionRWTB`, `IntentionKeep`, `IntentionADribble`; and `0x117480`, inside a helper (`0x116ee8`) that off-ball roles call (`RoleFreeRunCommon`, `RoleMarkAssist`, `RoleSPDefender`) | `0x55a`: 0, 0, 0, +0.05, +0.15; `0x555`: × 0.2, 0.6, 1.0, 1.5, 3.0 (`0x117480`) |
+| 2 carry | `+0x68` | 130 | `IntentionRWTB`, `IntentionKeep`, `IntentionADribble`; and `0x1176d8` (through `0x117480`), inside a helper (`0x116ee8`) that most roles call, on or off the ball (below) | `0x55a`: 0, 0, 0, +0.05, +0.15; `0x555`: × 0.2, 0.6, 1.0, 1.5, 3.0 (`0x1176d8`) |
 | 3 feed pass | `+0x69` | 131 | `IntentionFeedPass` (`0xde6e0`) | `0x519`: −0.1, −0.05, 0, +0.05, +0.15 |
 | 4 side change | `+0x6a` | 132 | `IntentionSideChangePass` (`0xe08b0`) | `0x51e`: −1.0, −0.5, 0, +0.05, +0.15 |
 | 5 back pass | `+0x6b` | 133 | `IntentionBackPass` (`0xe2688`) | `0x523`: 0, 0, 0, +0.05, +0.1 |
@@ -1063,10 +1067,59 @@ passer's value: each takes the intention's own player id (intention
 `+4` → `+4` → `+0`), turns it into a team slot with `0x73df8` on match
 data `+0x8e84`, and reads that slot's player
 (`GAMEPRG.REL 0xdeed8`, `0xe110c`, `0xe2ec8`, `0xddf40`, `0xebd84`,
-`0xe8554`). For carry in `0x117480` the player is picked from a team
-slot by the off-ball role, and which player that is isn't traced. Also
-not traced: what the press
-floats measure (they look like distances and a closing speed).
+`0xe8554`).
+
+**Carry in the roles (confirmed).** The helper `0x116ee8` is called by
+nearly every role class (`RoleFreeRunCommon`, `RoleBallCarrierMarker`,
+`RoleSupporter`, `RoleMarker`, `RoleMarkAssist`, `RoleSpaceMarker`,
+`RoleSpaceMarkCover`, `RoleGoalKeeper`, `RoleSAAttacker`, `RoleSASupport`
+and more; `python SRC/snr2.py callers ISO/DLL/GAMEPRG.REL 0x116ee8`).
+Through `0x117480` it reaches `0x1176d8`, which reads the carry value
+of the role's own player: it takes the id at role `+4` → `+0` (the
+same chain as the pass intentions, one level shorter), turns it into a
+team slot with `0x73df8` and reads that slot's player (`0x117800`–
+`0x1178a8`). The level picks a multiplier (`0x555`–`0x559`: × 0.2, 0.6,
+1.0, 1.5, 3.0). The player's current play (found by `0xf19d0` from role
+`+0x1b60`) has three scores for its current step (play `+8`, `+0x18`,
+`+0x28`, indexed by `+0x38`). Each is multiplied by the factor and
+compared with a threshold, a set of three picked by a match value
+(`+0x1738`, 0–4) from tuning entries `0x78b`–`0x799` (0.3, 0.4, 0.8 for
+the first set). The play is kept only when all three pass
+(`0x117b8c`–`0x117bd8`). So a player with a higher carry value keeps
+running with a plan once he has one; a low one drops it sooner. In one
+branch the factor is raised to at least 1.0 first (`max.s` at
+`0x117b44`).
+
+**What the press floats measure (confirmed, `GAMEPRG.REL`).** Match
+positions are in tenths of a metre
+([`BPB_FORMAT.md`](BPB_FORMAT.md)), so the table values are distances:
+
+- `0x9a418` (called four times by `PlayBallCarrierMark`, `0xfd498`–
+  `0xfd5a0`) returns row *r* of `0x26e400` at the press level: row 0
+  8, 7, 6, 5, 5 m, row 1 6, 5, 4.5, 3, 3 m, row 2 3 m at every level.
+  The result replaces the second of four distances (15, 10, 8 and 4 m
+  by default, `0x278a4c`) that the marker works with, so it is how far
+  from the ball carrier he takes up his position. Row 0 is used when
+  bit 0 of the play's `+0x80` is set. Otherwise the row follows a
+  distance along the pitch: match data `+0x1065c` (a y position that
+  `0x3e038` raises from the players' positions; what it tracks isn't
+  traced) minus the side's value at `+0x10400`, both turned round for
+  the side. From 30 m (tuning
+  `0x5c9`) it is row 1, up to 10 m (`0x5ca`) row 2, and in between a
+  blend of the two. Then 1.5 m (tuning `0x5cb`) is taken off when an
+  angle worked out from one goal (`0xa61d8`, picked by the side; the goal
+  centre at y ±527.81) is over 90 degrees (`0xfd648`–`0xfd68c`).
+- `0x9a4c8` (once, `0xfcd68`) returns 0.5, 0.5, 1, 1.5 or 2 m from
+  `0x26e440`, or 0 when the side's press byte is 1. The value is
+  squared and compared with a squared distance, worked out in VU0 code
+  that the disassembler can't decode (`0xfcdbc`–`0xfcf18`); inside it,
+  the mark sets a flag (`0xfcf60`). Probably the radius within which
+  the marker counts as on the ball carrier.
+
+So a higher press level means standing closer to the ball carrier (rows
+0 and 1 shrink from 8 or 6 m at level 0 to 5 or 3 m at levels 3–4) and
+a wider closing-in radius. With the press cap at 2 (below), every level
+from 1 up gets level 1's values.
 
 **The press cap stays at 2.** The team value is byte 0 of a 4-byte
 record per side at match data `+0x8e84` + `0x8e0` + side × 4
@@ -1238,7 +1291,7 @@ database fit), or **VPF** (VPF's name, with the values as shown).
 | 56 | attacks through middle | 38/34, 86/86, 56/55 | VPF + data |
 | 57 | line DF | 64/64, 58/57, 64/63 | VPF + data. Beckham settles the pair (line DF 63, pressing 59) |
 | 58 | pressing | 68/68, 58/57, 60/59 | VPF + data |
-| 59–63 | attack patterns A–E | – | developer labels 攻撃パターンA–E理解度; 60 is in the Teamwork hexagon. Every practice in `TRAINING_LIST.TBB` grows the five by the same amount (+1, +4, +8 or +15), and no code reads one of them by number (below) |
+| 59–63 | attack patterns A–E | – | developer labels 攻撃パターンA–E理解度; 60 is in the Teamwork hexagon. Every practice in `TRAINING_LIST.TBB` grows the five by the same amount (+1, +4, +8 or +15), and no code reads one of them by number; an unused salesman boost raises all five ([above](#the-developers-player-editor)) |
 
 VPF's aptitude page names the position cells. Rooney and Beckham agree
 on 39 = OM (86/85, 72/70), 42 = centre (94/93, 88/87), 43 = left (82/82,
@@ -1844,14 +1897,15 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
 
 - Whether anything reads `castno` (`+0x30`, always 0) or `explodetype`
   (`+0x43`–`+0x46`); no reader was found.
-- Tendencies ([The tendencies](#the-tendencies)): whose value the carry
-  helper `0x117480` reads,
-  what the press floats measure, and what byte 1 of the per-side record
-  at match data `+0x9764` (set from a match menu) does. No screen shows
-  them (Nexxus's report), so an
-  edit can only be seen in how a player plays; reading the match's
-  parameter copy over PINE during a match would at least confirm that an
-  edited value reaches it.
+- Tendencies ([The tendencies](#the-tendencies)): what the match value
+  at `+0x1738` that picks the carry thresholds is, what the y position
+  at match data `+0x1065c` and the per-side value at `+0x10400` track
+  (they pick the press row), which distance the second press float is
+  compared with (VU0 code), and what byte 1 of the per-side record at
+  match data `+0x9764` (set from a match menu) does. No screen shows
+  the tendencies (Nexxus's report), so an edit can only be seen in how
+  a player plays; reading the match's parameter copy over PINE during a
+  match would at least confirm that an edited value reaches it.
 - Kit style: whether the dissatisfaction code's use of `+0x58`/`+0x59`
   is intended ([Kit style](#kit-style)). The cap on an edit player and
   the gloves in a cold career match are traced in the code but not yet
@@ -1864,7 +1918,8 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
   kick) are first set, flag bits `0x200`–`0x2000` and kind 5,
   the 45 calls with no class, and the sources of parameters 5, 16 and
   24. Also which attack pattern letter is which, and whether abilities
-  59–63 do anything beyond hexagon 2: no reader picks one of them out
+  59–63 do anything beyond hexagon 2: no reader picks one of them out,
+  and the salesman boost that raises all five is never set
   ([Ability names](#ability-names)). The
   letters may be the club's five pattern slots (`PlTeamData +0x489f`,
   any of the 30 patterns) rather than fixed kinds: training's
