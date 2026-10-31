@@ -41,6 +41,12 @@ What to work on next, most valuable first.
    `LMAST-test-season4.iso`, built 2026-10-31, with its test sheet
    `names/test-sheet-season.md`
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
+2. **`TACTICSPITCH.PAC` on a rebuilt disc** (section 4). The tactics
+   pitch loads it through `CLoader` from `WP::CTacticsPitch`'s
+   constructor (`SLES 0x2a89cc`), not as a registering resource, so
+   it isn't known whether its entries stand in for their originals.
+   It's the last open rebuild question
+   ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#still-unknown)).
 
 ## The goals, and what each still needs
 
