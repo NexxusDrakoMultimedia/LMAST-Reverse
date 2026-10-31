@@ -170,8 +170,8 @@ Each result is recorded in the doc linked.
       tendency, the national cups, VPF play styles and the retail text
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [x] LMASTER full: the third tier, balanced league schedules, the cut
-      injury lines, real names, your own stadium, real grounds, sponsor
-      boards and separate saves
+      injury lines, the salesman's items, real names, your own stadium,
+      real grounds, sponsor boards and separate saves
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [x] LMASTER max: the harder economy and the balance switches
       ([`ECONOMY.md`](DOC/ECONOMY.md),

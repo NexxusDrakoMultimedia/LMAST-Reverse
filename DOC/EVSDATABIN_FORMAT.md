@@ -218,15 +218,24 @@ growing mentally, and the spikes' says their power is clearly up. The
 headphones' abilities are physical and fit the spikes better, and the
 spikes raise only crosses. The repeat count of 33 is the number of
 mental abilities (26–58), so the two cases may have been mixed up.
+`--mod salesman-items` gives the coach flag 336 and fixes the two items
+([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
+
+**The "worn off" events (confirmed).** Each item's end event has check
+type 58 in its `+0x04` (the check switch `SIMPRG.REL 0x142e38`, 117
+types, table `0x23b110`; the column `evsdatabin.py` calls
+`always_key`). Type 58 (`0x141018`) looks the event up in the
+`{end, follow-up}` pairs at `0x1d9288` and passes only on the turn
+8 turns after the follow-up last fired. The sixth pair is empty. A
+purchase queues the pitch's event + 1 (the follow-up) or + 2 (the fraud
+notice) in `CEvsJob_ResultSales` (`0x132278`–`0x1322b4`): the fraud
+when a random byte (`EvsWork+0x30`) is at least the pitch's `+0x90`.
 
 The follow-ups (categories 35100–35106) have full English text from
 entry 1 on ("Those "Opaque Sunglasses" you bought the other day are
 fantastic!"); entry 0 is only a label, `HOGEHOGE` in English and 本文
 ("body") in Japanese. **Seen in the game:** the follow-up after a
 purchase shows its English lines (Nexxus's report, 2026-10-31).
-
-**Not traced:** what picks the follow-up or the fraud notice after a
-purchase, and when the "worn off" event comes.
 
 ```bash
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x132318 30 --sles ISO/SLES_541.51   # SuccessSales

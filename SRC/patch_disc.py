@@ -97,7 +97,7 @@ wider-tickets, dearer-ads,
 sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
 merch-costs, pr-costs, camp-costs, tour-costs), leagues
-(league-balance, third-tier), restorations (injury-lines), names
+(league-balance, third-tier), restorations (injury-lines, salesman-items), names
 (real-names, own-stadium), stadiums (special-stadium, real-grounds, sponsor-boards), saves (mod-saves),
 and test-tools (skip-tutorial, launcher), which is in no edition.
 third-tier turns on mod-saves and needs --copies and --dat; real-names
@@ -276,6 +276,14 @@ category 200's messages 4 and 7 get French, German, Italian and Spanish
 text in MES.PAC and its PRELOAD copies (SIMFILE, TACTICSLARGE and
 TACTICSMATCHLARGE 2-5), the same size as the placeholders they replace.
 See DOC/INJURIES.md.
+salesman-items (whole disc image only) fixes the travelling salesman's
+items: the special training coach's follow-up (EVENT 190, in
+EVENT/EVSDATABIN_EVENT.BIN and PRELOAD/SIMFILE0-6.PAC) sets flag 336, the
+unused boost to abilities 59-63, and event 188 clears it 8 turns later
+(SIMPRG.REL 0x1d8cc0, 0x1d8cf0, 0x1d92a8); the Lead-Spike Boots get the
+strength boost the headphones had, and the headphones abilities 26-32 in
+code written over the crosses boost (SLES 0x5313c8, 0x2105d0). See
+DOC/EVSDATABIN_FORMAT.md#the-salesmans-items.
 
 overseas-bases (whole disc image only) doubles the 13 overseas bases'
 costs in PLRESOURCESIM.PAC entry 1 (and its PRELOAD/SIMLOCALMEM0-6.PAC
@@ -2925,6 +2933,98 @@ def plan_injury_lines(f, img, adopted=()):
     return jobs, notes
 
 
+# --- the travelling salesman's items (DOC/EVSDATABIN_FORMAT.md#the-salesmans-items)
+
+# An item's follow-up event (handler type 34, CEvsJob_SuccessSales
+# SIMPRG.REL 0x132318) sets the flag paired with it at 0x1d8c98; its "worn
+# off" event, 8 turns later (check type 58, pairs at 0x1d9288), clears it
+# (CEvsJob_EndSales, pairs at 0x1d8cc8). At kick-off 0x2102d0 (SLES) gives
+# your squad the boost of the highest flag set, through the jump table at
+# 0x5313c0. Flag 336, abilities 59-63, has no event, and two boosts don't
+# match their text. The fix (Nexxus's choice, 2026-10-31):
+# - the special training coach's follow-up (event 190, which only rests the
+#   squad) runs SuccessSales and sets 336; event 188, the temporary coach's
+#   "has waned", comes 8 turns later and clears it (with the lecturer's 335,
+#   whose end it already is);
+# - the Lead-Spike Boots (334) get the strength boost (abilities 24, 10, 25)
+#   the headphones had;
+# - the Football Theory Headphones (333) get the mental abilities 26-32, in
+#   code written over the crosses boost (0x2105d0), which nothing else uses.
+SALESMAN_TABLES = (                        # SIMPRG.REL offset, old words, new words
+    (0x1d8cc0, (336, 0), (336, 190)),      # SuccessSales: flag 336 <- event 190
+    (0x1d8cf0, (336, 0), (336, 188)),      # EndSales: flag 336 <- event 188
+    (0x1d92a8, (188, 186, 0, 0), (188, 186, 188, 190)),   # check 58: 188 after 190
+)
+SALESMAN_CASES = (0x5313c8, (0x2104e0, 0x2105d0), (0x2105d0, 0x2104e0))   # flags 333, 334
+SALESMAN_MENTAL_AT = 0x2105d0
+SALESMAN_MENTAL_OLD = (
+    0x24020006, 0x2663002a, 0x02221018, 0x26700020, 0x3c013ecc, 0x3421cccd, 0x4481a000,
+    0x0000902d, 0x00439821, 0x00000000, 0x12000003, 0x0000102d, 0x86020000, 0x000217c2,
+    0x5440000c, 0x26520001, 0x96620000, 0x0200202d, 0x44820000, 0x00000000, 0x46800020,
+    0x46140002, 0x46000064, 0x44060800, 0x0c09180a, 0x0220282d, 0x26520001, 0x267302a0,
+    0x2a420019, 0x1440ffec, 0x261002a0, 0x10000059, 0x7bb00090)
+SALESMAN_MENTAL_NEW = (
+    0x3c013ecc, 0x3421cccd,                # lui/ori $at, 0.4
+    0x4481a000,                            # mtc1 $at, $f20
+    0x26700020,                            # addiu $s0, $s3, 0x20: squad slot 0's PlPinfo
+    0x267441c0,                            # addiu $s4, $s3, 0x41c0: past slot 24
+    0x86020000,                            # outer: lh $v0, 0($s0), the player id
+    0x04400010,                            # bltz $v0, next: an empty slot
+    0x2411001a,                            # addiu $s1, $zero, 26
+    0x261200a6,                            # addiu $s2, $s0, 0xa6: ability 26's exp
+    0x96420000,                            # inner: lhu $v0, 0($s2)
+    0x44820000, 0x00000000,                # mtc1 $v0, $f0; nop
+    0x46800020, 0x46140002, 0x46000064,    # cvt.s.w; mul.s by 0.4; cvt.w.s $f1
+    0x44060800,                            # mfc1 $a2, $f1
+    0x0200202d,                            # move $a0, $s0
+    0x0c09180a,                            # jal pwkGUtl_AddExp
+    0x0220282d,                            # move $a1, $s1
+    0x26310001,                            # addiu $s1, $s1, 1
+    0x2a220021,                            # slti $v0, $s1, 33: through ability 32
+    0x1440fff3,                            # bnez $v0, inner
+    0x26520006,                            # addiu $s2, $s2, 6
+    0x261002a0,                            # next: addiu $s0, $s0, 0x2a0
+    0x1614ffec, 0x00000000,                # bne $s0, $s4, outer; nop
+    0x1000005e, 0x7bb00090,                # b 0x2107b4 with the epilogue's first word
+    0, 0, 0, 0, 0)
+EVENT_FILE, EVENT_ENTRY = "EVENT/EVSDATABIN_EVENT.BIN", "EvsDataBin_EVENT.bin"
+EVENT_PACKS = ["PRELOAD/SIMFILE%d.PAC" % n for n in range(7)]
+EVENT_SIZE = 272
+SALESMAN_EVENT = 190                       # +0x08, the handler type: 0 -> 34
+SALESMAN_HANDLER = (0, 34)
+
+
+def plan_salesman_items(f, img):
+    """Jobs for --mod salesman-items: the flag tables, the boosts, and the
+    coach's follow-up in the event table and its SIMFILE copies."""
+    words = [(NEGO_FILE, off, struct.pack("<%dI" % len(old), *old),
+              struct.pack("<%dI" % len(new), *new), "%s 0x%x (salesman flag table)"
+              % (NEGO_FILE, off)) for off, old, new in SALESMAN_TABLES]
+    at, old, new = SALESMAN_CASES
+    words.append((SLES_FILE, at - 0xff000, struct.pack("<2I", *old), struct.pack("<2I", *new),
+                  "%s 0x%x (salesman boosts for flags 333, 334)" % (SLES_FILE, at)))
+    words.append((SLES_FILE, SALESMAN_MENTAL_AT - 0xff000,
+                  struct.pack("<33I", *SALESMAN_MENTAL_OLD),
+                  struct.pack("<33I", *SALESMAN_MENTAL_NEW),
+                  "%s 0x%x (the headphones' mental boost)" % (SLES_FILE, SALESMAN_MENTAL_AT)))
+    jobs, notes = word_jobs(f, img, "salesman-items", words)
+    why = "salesman-items: the coach's follow-up sets its flag"
+    path, data = read_file(f, img, EVENT_FILE)
+    at = SALESMAN_EVENT * EVENT_SIZE + 8
+    held = struct.unpack_from("<I", data, at)[0]
+    if held == SALESMAN_HANDLER[1]:
+        return jobs, notes
+    if held != SALESMAN_HANDLER[0] or struct.unpack_from("<I", data, at - 8)[0] != SALESMAN_EVENT:
+        raise ValueError("salesman-items: %s's event %d has handler type %d, expected %d; "
+                         "not the retail table?" % (EVENT_FILE, SALESMAN_EVENT, held,
+                                                    SALESMAN_HANDLER[0]))
+    new = data[:at] + struct.pack("<I", SALESMAN_HANDLER[1]) + data[at + 4:]
+    jobs += diff_jobs(path, 0, data, new, why)
+    for pack in EVENT_PACKS:
+        jobs += pack_copy_jobs(f, img, pack, EVENT_ENTRY, EVENT_FILE, data, new, why)
+    return jobs, notes
+
+
 # overseas-bases: dearer bases. A base costs table 0 of
 # PLRESOURCESIM.PAC entry 1 to set up, that cost x the level's rate to
 # raise a level (_GetUp1SituLevelCapital 0x232f70) and x a higher rate in
@@ -4613,6 +4713,9 @@ SWITCHES = (
     ("injury-lines", plan_injury_lines,
      [SLES_FILE, MES_FILE] + sum(INJURY_TEXT_PACKS.values(), []),
      "Injuries: the cut \"two months\" and \"nine months\" condition lines come back"),
+    ("salesman-items", plan_salesman_items, [NEGO_FILE, SLES_FILE, EVENT_FILE] + EVENT_PACKS,
+     "Salesman: the special coach teaches the attack patterns, the spikes and headphones "
+     "do what they say"),
     ("overseas-bases", plan_overseas_bases, [SIM_FILE] + LIST_PACKS,
      "Balance: overseas bases, their investment and upkeep cost twice as much"),
     ("transfer-fees", plan_transfer_fees, [SLES_FILE],
@@ -4725,7 +4828,7 @@ GROUPS = (       # (name, title, switches)
      ("injury-odds", "overseas-bases", "transfer-fees", "fee-tiers", "slow-reputation",
       "fanbase", "merch-costs", "pr-costs", "camp-costs", "tour-costs")),
     ("leagues", "Leagues", ("league-balance", "third-tier")),
-    ("restorations", "Restored content", ("injury-lines",)),
+    ("restorations", "Restored content", ("injury-lines", "salesman-items")),
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
     ("saves", "Separate saves", ("mod-saves",)),

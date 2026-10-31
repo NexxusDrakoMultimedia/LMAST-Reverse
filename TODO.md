@@ -367,6 +367,13 @@ disc or the edit to build; the result goes into the doc linked.
 - [ ] `--mod press-tendency` by eye: a club of high-press players closes
       down harder than without it (the patch is checked in memory)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [ ] `--mod salesman-items` in a career from season 8, where the
+      special training coach visits: hire him, check that his "worked
+      wonders" follow-up comes and the "has waned" message 8 turns
+      after it, and over PINE that flag 336 is set and the match's copy
+      of your squad has abilities 59–63 raised (the saved players don't
+      change); the headphones and spikes the same way
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 
 ### Testing aids and sound
 
@@ -395,11 +402,6 @@ is built and tested, or set aside.
       test), the strength ratio above 1.19 getting column 0, and the
       training plan's rows out of step with the policy names
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] Candidate: the salesman's items. Flag 336 (the attack-pattern
-      boost) is paired with no event, probably meant for the special
-      training coach (event 190), and the headphones' and spikes'
-      boosts don't match their text
-      ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#the-salesmans-items))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))

@@ -154,7 +154,7 @@ separated by commas (`--mod lmaster-lite,harder-economy`):
 | Name | What it is |
 |---|---|
 | `lmaster-lite` | the fixes: groups `training-fixes`, `injury-fixes`, `club-fixes`, `match-fixes`, `text-fixes` |
-| `lmaster-full` | lite, plus `leagues` (the third tier, balanced schedules), `restorations` (the cut injury lines), `names` (real names, your own stadium), `stadiums` (real grounds, sponsor boards) and `saves` |
+| `lmaster-full` | lite, plus `leagues` (the third tier, balanced schedules), `restorations` (the cut injury lines, the salesman's items), `names` (real names, your own stadium), `stadiums` (real grounds, sponsor boards) and `saves` |
 | `lmaster-max` | full, plus the difficulty groups `harder-economy` and `balance` |
 | `--mod-saves` | the modded disc's own save folders (group `saves`) |
 
