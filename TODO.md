@@ -376,9 +376,9 @@ disc or the edit to build; the result goes into the doc linked.
       LIGHT TEST ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-developer-launcher))
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01` ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md#still-unknown))
-- [ ] Widescreen match portraits: a live trace over PINE with a match's
-      Tactics → Player details open (Nexxus drives, the session reads
-      memory), to find the squeeze behind the dark strip
+- [ ] Widescreen match portraits: with the current pnach, the portrait
+      in a match's Tactics → Player details is grey edge to edge, and
+      the Club House menus and player cards look as before
       ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#match-portraits))
 
 ## 8. LMASTER Mod and other patches
