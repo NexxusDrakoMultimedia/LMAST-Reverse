@@ -57,7 +57,7 @@ Each kind of data has a tab along the top:
 | People | players, managers and scouts: search by name, id, nationality or club, then change any named field |
 | Clubs | each club's rank, manager, stadium, city and transfer policy, and the computer teams' squads (player, age, shirt, contract) |
 | New club | what a new career starts with, for each league and team style: squad, staff, scouts, youth team, candidate lists and the rival club |
-| Season | the starting divisions with last season's table: swap two clubs' places, or change a first division's size (the schedules and the club ranking's rows follow) |
+| Season | the starting divisions with last season's table: swap two clubs' places, or change a first division's size (the schedules and the club ranking's rows follow). Tick "Play on national-team dates" to let the leagues play on those dates too, which allows smaller and bigger divisions (England 18–26 instead of 20–24; not tested in the game yet) |
 | National calendar | when the national squads are called up and released, and which call-ups are for a finals tournament, in each year of the four-year cycle |
 | Free agents | the players with no club at the start of a career |
 | Player links | the clubs each player is affiliated with, each scout's exclusive players, and the hidden good and bad combinations of players and managers |

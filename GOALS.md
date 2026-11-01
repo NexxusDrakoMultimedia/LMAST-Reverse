@@ -143,7 +143,21 @@ memory-card saves in [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
   `SRC/`. `tkinter` ships with Python and fits that rule for the GUI.
 - **English first.** The project serves the English-speaking LMAST
   community. The tools read the Japanese release too, but work on it
-  comes later.
+  comes later. It is still part of finishing
+  ([below](#when-the-reverse-engineering-is-complete)), and LMASTER
+  1.0.0 needs every switch to work on it (Nexxus's choice, 2026-11-01).
+
+## When the reverse engineering is complete
+
+Nexxus's definition (2026-11-01): the reverse engineering is complete
+when every file, every line of code and every mechanic of the game is
+fully documented, on both releases, and the mod editor and the save
+editor work on the Japanese release as on PAL. The stages above get the
+data editable well before that; this is the end point after them.
+
+Only then might a follow-on project begin: **LMAST-Recompiled**, a full
+decompilation of the game, recompiled, ported to other platforms and
+expanded. It would be a project of its own, built on these docs.
 
 ## Out of scope
 
@@ -157,3 +171,6 @@ memory-card saves in [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
   `patch_disc.py` switch, tested in PCSX2. The one larger piece of new
   code is the third tier's, which had to grow the save to hold the extra
   clubs ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
+- Decompiling, recompiling or porting the game. That is
+  LMAST-Recompiled's, a possible later project
+  ([above](#when-the-reverse-engineering-is-complete)).

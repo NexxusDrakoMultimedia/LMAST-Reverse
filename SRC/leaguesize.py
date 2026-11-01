@@ -43,8 +43,8 @@ club of the nation is in exactly one division.
 
 Usage:
     python leaguesize.py nations <DAT/PARAM>                   # each nation's divisions and their k, m
-    python leaguesize.py plan <DAT/PARAM> <league> <clubs>     # the first division at <clubs>: new slots and checks
-    python leaguesize.py build <DAT/PARAM> <outdir> <league> <clubs> [<league> <clubs> ...] [--over <folder>]
+    python leaguesize.py plan <DAT/PARAM> <league> <clubs> [--national]  # the first division at <clubs>: new slots and checks
+    python leaguesize.py build <DAT/PARAM> <outdir> <league> <clubs> [<league> <clubs> ...] [--over <folder>] [--national]
                                                                # write the changed files
 
 `plan` also gives the sizes the first division can take (allowed()):
@@ -63,6 +63,11 @@ targets. Patch with --copies: the game reads the .HED copies in
 PRELOAD/STATIONFILE.PAC. With --over, each file is read from <folder>
 when it is there and from <DAT/PARAM> otherwise, as editor.py reads its
 mod folder (the editor's Season tab logs its saves this way).
+
+--national lets the rebuilt leagues play on the national teams' dates
+too (schedule.blocked_turns), which the disc's leagues keep clear of.
+That gives every domestic league 6 more turns: England's first division
+can then take 18-26 clubs instead of 20-24. Not tested in game.
 
 <league> is a number 0-5 or a name: England, France, Germany, Italy,
 Spain, Netherlands.
@@ -85,8 +90,9 @@ class Nation:
     is the league UID loaded always, its second the own-nation and
     other-nations pair of the next competition."""
 
-    def __init__(self, system, compes, entries, league):
+    def __init__(self, system, compes, entries, league, national=False):
         self.league = league
+        self.national = national
         nation = league + 1                 # open_nation numbers the leagues from 1
         rows = schedule.year_turns(system)
         mine = [u for u, (r, _) in rows.items() if u < len(compes) and compes[u].type == 0
@@ -110,11 +116,12 @@ class Nation:
         self.size1 = compes[self.d1].entrants
         self.size2 = compes[self.other].entrants
         # Each league's game days must fit inside its season: its own turns
-        # plus the free ones (schedule.league_turns).
+        # plus the free ones (schedule.league_turns), and with `national`
+        # the national teams' dates.
         self.legs, self.room = {}, {}
         for u in (self.d1, self.other, self.own):
             self.legs[u] = len(compes[u].games) // len(compes[u].pairs)
-            self.room[u] = len(rows[u][1]) + len(schedule.free_turns(system, compes, u))
+            self.room[u] = len(rows[u][1]) + len(schedule.free_turns(system, compes, u, national))
 
     def sizes(self, clubs):
         """{UID: entrants} of the three leagues with <clubs> in the first
@@ -221,11 +228,11 @@ def allowed(n):
     return lo, hi
 
 
-def plan(root, league, clubs, data=None):
+def plan(root, league, clubs, data=None, national=False):
     """Everything the change needs, checked; returns (nation, d, {uid:
     [(kind, source, rank, record bytes)]}, records, problems)."""
     system, compes, entries, init = data or load(root)
-    n = Nation(system, compes, entries, league)
+    n = Nation(system, compes, entries, league, national)
     d = clubs - n.size1
     probs = []
     total = n.size1 + n.size2
@@ -339,7 +346,7 @@ def league_number(text):
     raise SystemExit("league must be 0-5 or one of %s" % ", ".join(LEAGUE_NAMES))
 
 
-def build(root, sizes, over=None):
+def build(root, sizes, over=None, national=False):
     """The changed files after giving each league's first division its new
     size ([(league, clubs)]): ({file name: bytes} for the three schedule
     packs and their .HED, PLRRSRC_INITTEAMDATA.TBB, REGULATION.TBB,
@@ -350,9 +357,9 @@ def build(root, sizes, over=None):
     turns = {}
     divisions = []                  # (division, clubs) the club ranking needs rows for
     for league, clubs in sizes:
-        n = Nation(system, compes, entries, league)
+        n = Nation(system, compes, entries, league, national)
         divisions += [(0 if u == n.d1 else 1, size) for u, size in n.sizes(clubs).items()]
-        turns.update(resize(data, league, clubs))
+        turns.update(resize(data, league, clubs, national))
     rank_buf, rank_end, rank_raw = clubrank.load(path(root, clubrank.FILE, over))
     added = []
     for division, size in divisions:
@@ -376,14 +383,14 @@ def build(root, sizes, over=None):
     return out, turns
 
 
-def resize(data, league, clubs):
+def resize(data, league, clubs, national=False):
     """Give one league's first division <clubs> clubs in the loaded data,
     which is changed in place; returns {UID: turns} of its rebuilt
     leagues. The nations share no UIDs or records, so several leagues
     can be resized one after another."""
     import struct
     system, compes, entries, init = data
-    n, d, lists, recs, probs = plan(None, league, clubs, data)
+    n, d, lists, recs, probs = plan(None, league, clubs, data, national)
     if probs:
         raise ValueError("%s: %s" % (LEAGUE_NAMES[league], "; ".join(probs)))
     size2 = n.size1 + n.size2 - clubs
@@ -392,7 +399,8 @@ def resize(data, league, clubs):
     turns = {}
     for u, size in sizes.items():
         legs = len(compes[u].games) // len(compes[u].pairs)
-        turns[u] = schedule.league_turns(system, compes, u, len(schedule.league_days(size, legs)))
+        turns[u] = schedule.league_turns(system, compes, u, len(schedule.league_days(size, legs)),
+                                         national)
     for u, size in sizes.items():
         legs = len(compes[u].games) // len(compes[u].pairs)
         schedule.set_league(compes[u], size, legs)
@@ -431,7 +439,7 @@ def resize(data, league, clubs):
     return turns
 
 
-def verify(folder, sizes, turns):
+def verify(folder, sizes, turns, national=False):
     """Problems in a built folder: read back, each rebuilt UID's games
     against its turn mask, and each changed nation's first season played
     out again."""
@@ -453,7 +461,7 @@ def verify(folder, sizes, turns):
             probs.append("UID %d: %d game days on %d turns" % (u, c.days, len(rows[u][1])))
     for league, clubs in sizes:
         probs += ["%s: %s" % (LEAGUE_NAMES[league], p)
-                  for p in plan(folder, league, clubs, data)[4]]
+                  for p in plan(folder, league, clubs, data, national)[4]]
     # The club ranking, when the build added its rows.
     rank_path = os.path.join(folder, clubrank.FILE)
     if os.path.exists(rank_path):
@@ -470,12 +478,12 @@ def verify(folder, sizes, turns):
     return probs
 
 
-def cmd_build(root, out, sizes, over=None):
+def cmd_build(root, out, sizes, over=None, national=False):
     for src in (root, over):
         if src and os.path.abspath(src) == os.path.abspath(out):
             raise SystemExit("refusing to write into an input folder; give another one")
     try:
-        files, turns = build(root, sizes, over)
+        files, turns = build(root, sizes, over, national)
     except ValueError as e:
         raise SystemExit(str(e))
     os.makedirs(out, exist_ok=True)
@@ -485,7 +493,7 @@ def cmd_build(root, out, sizes, over=None):
         print("wrote %s (%d bytes)" % (os.path.join(out, name), len(data)))
     for u, t in sorted(turns.items()):
         print("UID %d: %d game days, turns %s" % (u, len(t), " ".join(map(str, t))))
-    probs = verify(out, sizes, turns)
+    probs = verify(out, sizes, turns, national)
     print("checked: %s" % ("no problems" if not probs else "!! " + "; ".join(probs)))
     targets = " ".join("PARAM/%s=%s" % (name, os.path.join(out, name).replace("\\", "/"))
                        for name in sorted(files))
@@ -505,8 +513,8 @@ def cmd_nations(root):
                   n.size2, n.m + 1, "  !! " + "; ".join(probs) if probs else ""))
 
 
-def cmd_plan(root, league, clubs):
-    n, d, lists, recs, probs = plan(root, league, clubs)
+def cmd_plan(root, league, clubs, national=False):
+    n, d, lists, recs, probs = plan(root, league, clubs, national=national)
     print("%s: first division %d -> %d clubs, second %d -> %d (%d with your club and the rival)"
           % (LEAGUE_NAMES[league], n.size1, clubs, n.size2, n.size2 - d, n.size2 - d + 2))
     print("the first division can take %d-%d clubs" % allowed(n))
@@ -522,10 +530,13 @@ def cmd_plan(root, league, clubs):
 def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
+    national = "--national" in args and cmd in ("plan", "build")
+    if national:
+        args.remove("--national")
     if cmd == "nations" and len(args) == 1:
         cmd_nations(args[0])
     elif cmd == "plan" and len(args) == 3 and args[2].isdigit():
-        cmd_plan(args[0], league_number(args[1]), int(args[2]))
+        cmd_plan(args[0], league_number(args[1]), int(args[2]), national)
     elif cmd == "build" and len(args) >= 4:
         over = None
         if "--over" in args:
@@ -539,7 +550,7 @@ def main(argv):
         sizes = [(league_number(lg), int(c)) for lg, c in pairs]
         if len({lg for lg, _ in sizes}) != len(sizes):
             raise SystemExit("give each league once")
-        cmd_build(args[0], args[1], sizes, over)
+        cmd_build(args[0], args[1], sizes, over, national)
     else:
         print(__doc__)
         return 1

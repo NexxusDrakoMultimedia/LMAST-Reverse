@@ -41,6 +41,21 @@ What to work on next, most valuable first.
    `LMAST-test-season4.iso`, built 2026-10-31, with its test sheet
    `names/test-sheet-season.md`
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
+2. **A texture writer** for `svr.py` (section 3). Textures can be read
+   but not written, which blocks every graphics mod and LMAST Realism
+   on the disc; a `roundtrip` over every texture can check it
+   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned)).
+3. **Every LMASTER switch on the Japanese release** (section 8), needed
+   before LMASTER 1.0.0: `third-tier` first, then each switch added
+   since 2026-10-27
+   ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc)).
+4. **A writer and tab for `EDIT_PLAYER.TBB`** (sections 3 and 5): its
+   tables are read already, so this closes the "Data" goal's writer
+   gap ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#edit_playertbb)).
+5. **League games on the national-team dates in the game** (section
+   7): England at 18 clubs, a short test that decides whether the new
+   division sizes are safe to offer
+   ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size)).
 
 ## The goals, and what each still needs
 
@@ -50,7 +65,7 @@ the graphics that come after the data.
 
 | Goal | What works today | Still in the way | Sections |
 |---|---|---|---|
-| **The starting season** | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results: writers and editor tabs, tested in PCSX2. The national-team calendar and the club ranking have writers and tabs | room for bigger second divisions and a smaller English or Italian first division; a smaller first division, the national calendar and the club ranking tested in the game | 2, 7 |
+| **The starting season** | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results: writers and editor tabs, tested in PCSX2. The national-team calendar and the club ranking have writers and tabs; leagues on the national-team dates allow every size from 18 English clubs up | a smaller first division, league games on the national-team dates, the national calendar and the club ranking tested in the game | 2, 7 |
 | **Data** | players, staff, clubs, kits, crests and flags, facilities, training, camps, tours, the tactics presets, the PR events, the player links, and the stadiums' looks and boards: writers and tabs | the remaining player and staff fields; the other stadium tables and `EDIT_PLAYER.TBB` | 2, 3 |
 | **Parameters** | every `PARAM/` table's layout is known and `tbb.py replace` swaps any table; the economy's constants in the executable are traced and changed by named switches | the open fields of the parameter files, the match AI's files and the match parameters | 2 |
 | **Text** | every message in every language, with a writer and the Text tab; real names for every league, club and nation | the screen-set variables and a few message categories | 2 |
@@ -79,7 +94,8 @@ file type has a doc and a tool whose `info` passes over all of `DAT/`.
       [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md#still-unknown)), `info.bin` past
       the date, `dm.bin` and the VS data save
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-- [ ] Later (the project serves the English release first): the
+- [ ] Later (the project serves the English release first), but
+      needed before the reverse engineering counts as complete: the
       Japanese release's differences still open
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#still-unknown))
 
@@ -91,10 +107,6 @@ shown to have no effect. Grouped by the goal each one serves.
 
 ### The starting season
 
-- [ ] Division sizes: room for bigger second divisions and a smaller
-      English or Italian first division (start the season earlier, or
-      use cup turns)
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size))
 - [ ] The remaining schedule and club-ranking fields: `PeriodName.tbb`,
       the `make_list` sources, what `CLUB_RANK_SYSTEM`'s nation groups
       and tallies feed
@@ -225,11 +237,12 @@ a field-level writer with a `roundtrip` check in `regress.py`.
 release. **Done when** the items below work; see
 [`REBUILD.md`](DOC/REBUILD.md#still-to-do).
 
-- [ ] Later: `--mod third-tier` on the Japanese release, which it
-      refuses now, and a Japanese disc built with the other switches and
-      a Japanese save edited with `save.py --iso ISO_JP`, run in the game
-      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc),
-      [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-japanese-release))
+- [ ] Every LMASTER switch on the Japanese release, needed before
+      LMASTER 1.0.0 (section 8)
+- [ ] Later, but needed before the reverse engineering counts as
+      complete (Nexxus's choice, 2026-11-01): a Japanese save edited
+      with `save.py --iso ISO_JP`, run in the game
+      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-japanese-release))
 - [ ] Optional: dual-layer images, for a disc that grows past a
       single-layer DVD
 
@@ -241,7 +254,9 @@ values from it, tested through the widgets off-screen. **Done when**
 every writer has a tab.
 
 - [ ] A tab for each writer section 3 adds
-- [ ] Later: the editor and save editor on the Japanese release
+- [ ] Later, but needed before the reverse engineering counts as
+      complete (Nexxus's choice, 2026-11-01): the editor and save editor
+      on the Japanese release
 
 ## 6. Distribute: sharing a mod
 
@@ -264,6 +279,13 @@ disc or the edit to build; the result goes into the doc linked.
 - [ ] A smaller first division (France at 18, from the Season tab) and
       two nations changed in one build; only England at 22 is tested
       ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from))
+- [ ] League games on the national-team dates: England at 18 with
+      "Play on national-team dates" ticked in the Season tab
+      (`leaguesize.py build ... England 18 --national`), a career in the
+      Champions Division (28 clubs) played past Sep w3 midweek, the first
+      such date: the league game is played, your called-up players are
+      missing or not, and the season ends on 54 game days
+      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size))
 - [ ] Squad ages: a career started without the tutorial skip, with Van
       der Sar (Manchester slot 0) at 16 in the mod: 16 means the skip
       adds the year
@@ -383,6 +405,17 @@ disc or the edit to build; the result goes into the doc linked.
 improvements, each as a named `patch_disc.py` switch tested in PCSX2
 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)). **Done when** every candidate
 is built and tested, or set aside.
+
+- [ ] **Needed before LMASTER 1.0.0** (Nexxus's choice, 2026-11-01):
+      every switch works on the Japanese release (SLPM-66316). The
+      release itself is Nexxus's call, when testing, features and
+      reverse engineering feel complete; this is its one firm
+      requirement.
+      `third-tier` refuses the Japanese executable now, so LMASTER full
+      and max can't be built for it; the switches added since
+      2026-10-27 haven't been planned on the Japanese disc; and no
+      Japanese disc built with the switches has been run in the game
+      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 
 - [ ] Candidate: the short `EDIT_EMBLEM` tables 93/101/105
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))

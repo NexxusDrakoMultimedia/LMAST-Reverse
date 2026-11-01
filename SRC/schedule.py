@@ -39,7 +39,7 @@ Usage:
     python schedule.py roundtrip <DAT/PARAM>        # re-encode all three packs and their .HED, !! if not identical
     python schedule.py league <DAT/PARAM> [<n> [single]]  # generated leagues: check every size, or print one
     python schedule.py knockout <DAT/PARAM> [<n> [two] [seeded]]  # generated cups: rebuild the disc's and check every size, or print one
-    python schedule.py turns <DAT/PARAM> [<uid> [<days>]]  # leagues' game days and room; one UID's calendar
+    python schedule.py turns <DAT/PARAM> [<uid> [<days>]] [--national]  # leagues' game days and room; one UID's calendar
     python schedule.py shift <SCHEDULE_SYSTEM.PAC> <out.PAC> <delta> <uid>[-<uid>] ...  # move UIDs' game days
     python schedule.py balance <SCHEDULE_COMPETITION.PAC> <out.PAC> [<uid>[-<uid>] ...]  # rebuild badly balanced leagues
 
@@ -83,7 +83,12 @@ nation's cups or of a European, national-team or runtime competition
 falls (the disc's leagues keep clear of those). With a UID it draws that
 season as a calendar, and with a number of days the turns
 league_turns() would use: added ones fill the widest gaps, weekends
-first, and dropped ones are midweeks first.
+first, and dropped ones are midweeks first. --national also counts the
+national teams' dates (competitions 44-47) as free: no club plays then,
+and the qualifying dates call the squads up and release them on the
+match turn itself (SCHEDULE_LIST.TBB). The disc's leagues never use
+them; whether a league game there misses its called-up players isn't
+known.
 
 Writing: every entry re-encodes from its fields (year rows, competition
 headers, games, pairings, team-entry records), and a pack is rebuilt with
@@ -765,12 +770,22 @@ def year_turns(system):
     return out
 
 
-def blocked_turns(system, compes, uid):
+def national_compe(system, compe):
+    """True for the national teams' competitions (44-47): the only
+    open_nation rows with a start year, whose host changes every 4 years."""
+    row = next((r for r in system.open_nation if r[0] == compe), None)
+    return row is not None and row[1] != -1
+
+
+def blocked_turns(system, compes, uid, national=False):
     """Turns a league UID's clubs may be busy on, as the disc's leagues
     keep clear of them (empirical): games of any competition whose host
     changes (European, national teams, the runtime cups) and of the
     league's own nation's knockouts. VS and first-promotion UIDs, the
-    runtime friendlies and other leagues don't count."""
+    runtime friendlies and other leagues don't count. With `national`,
+    the national teams' dates are left open: no club plays on them, and
+    on a qualifying date the call-up and release fall on the match turn
+    itself (SCHEDULE_LIST.TBB)."""
     rows = year_turns(system)
     nation = compe_nation(system, rows[uid][0].compe)
     out = set()
@@ -780,30 +795,33 @@ def blocked_turns(system, compes, uid):
         n = compe_nation(system, r.compe)
         if n == 0:
             continue            # the runtime friendlies (competition 49)
+        if national and national_compe(system, r.compe):
+            continue
         if n is None or (n == nation and compes[u].type == 1):
             out.update(turns)
     return out
 
 
-def free_turns(system, compes, uid):
+def free_turns(system, compes, uid, national=False):
     """The turns inside a league UID's season (its first to last game day)
     with no game of its own and none it keeps clear of."""
     turns = year_turns(system)[uid][1]
-    busy = blocked_turns(system, compes, uid) | set(turns)
+    busy = blocked_turns(system, compes, uid, national) | set(turns)
     return [t for t in range(turns[0], turns[-1] + 1) if t not in busy]
 
 
-def league_turns(system, compes, uid, days):
+def league_turns(system, compes, uid, days, national=False):
     """A turn list of `days` game days for a league UID, made from its own
     by adding free turns inside its season or dropping turns. Each added
     turn goes into the widest gap between game days (a weekend before a
     midweek), each dropped one closes the narrowest (a midweek first), so
-    the games stay spread over the season."""
+    the games stay spread over the season. `national` also offers the
+    national teams' dates (blocked_turns)."""
     row, turns = year_turns(system)[uid]
     if len(turns) != len(set(turns)) or any(t >= TURNS_PER_YEAR for t in turns):
         raise ValueError("UID %d runs across the year end; not supported" % uid)
     turns = sorted(turns)
-    free = free_turns(system, compes, uid)
+    free = free_turns(system, compes, uid, national)
     if days - len(turns) > len(free):
         raise ValueError("UID %d has room for %d game days (%d now, %d free turns)"
                          % (uid, len(turns) + len(free), len(turns), len(free)))
@@ -1334,9 +1352,10 @@ def calendar(marks):
     return lines
 
 
-def cmd_turns(root, uid=None, days=None):
+def cmd_turns(root, uid=None, days=None, national=False):
     """Each league UID's game days and room for more; or one UID's season
-    as a calendar, with the turns a new number of game days would use."""
+    as a calendar, with the turns a new number of game days would use.
+    `national` leaves the national teams' dates open (blocked_turns)."""
     system = System(read_pack(find(root, SYSTEM_PAC)))
     compes = [Competition(b) for _, b in read_pack(find(root, COMPE_PAC))]
     rows = year_turns(system)
@@ -1351,7 +1370,7 @@ def cmd_turns(root, uid=None, days=None):
                       "differ" % (u, c.entrants, c.days, len(turns)))
                 continue
             try:
-                free = free_turns(system, compes, u)
+                free = free_turns(system, compes, u, national)
             except (ValueError, IndexError) as e:
                 print("UID %3d  !! %s" % (u, e))
                 continue
@@ -1364,21 +1383,26 @@ def cmd_turns(root, uid=None, days=None):
                       turns[0], turns[-1], len(free), most, clubs))
         return
     turns = rows[uid][1]
-    blocked = blocked_turns(system, compes, uid)
+    blocked = blocked_turns(system, compes, uid, national)
     marks = {t: "x" for t in blocked}
+    # The national teams' dates --national opens, free or outside the season.
+    opened = blocked_turns(system, compes, uid) - blocked
+    marks.update({t: "n" for t in opened})
     marks.update({t: "L" for t in turns})
-    for t in free_turns(system, compes, uid):
-        marks[t] = "."
+    for t in free_turns(system, compes, uid, national):
+        if t not in opened:
+            marks[t] = "."
     title = "UID %d: %d game days" % (uid, len(turns))
     if days is not None:
         try:
-            new = league_turns(system, compes, uid, days)
+            new = league_turns(system, compes, uid, days, national)
         except ValueError as e:
             raise SystemExit(str(e))
         marks.update({t: "+" for t in set(new) - set(turns)})
         marks.update({t: "-" for t in set(turns) - set(new)})
         title += " -> %d" % days
-    print(title + "  (L game day, x another competition, . free, + added, - dropped)")
+    print(title + "  (L game day, x another competition, . free, + added, - dropped%s)"
+          % (", n national-team date" if national else ""))
     for line in calendar(marks):
         print(line)
     if days is not None:
@@ -1403,10 +1427,11 @@ def main(argv):
         cmd_shift(args[0], args[1], int(args[2]), parse_uids(args[3:]))
     elif cmd == "balance" and len(args) >= 2:
         cmd_balance(args[0], args[1], parse_uids(args[2:]))
-    elif cmd == "turns" and len(args) == 1:
-        cmd_turns(args[0])
-    elif cmd == "turns" and len(args) in (2, 3):
-        cmd_turns(args[0], int(args[1], 0), int(args[2]) if len(args) == 3 else None)
+    elif cmd == "turns" and len(args) - ("--national" in args) in (1, 2, 3):
+        national = "--national" in args
+        args = [a for a in args if a != "--national"]
+        cmd_turns(args[0], int(args[1], 0) if len(args) > 1 else None,
+                  int(args[2]) if len(args) == 3 else None, national)
     elif cmd == "league" and len(args) == 1:
         cmd_league(args[0])
     elif cmd == "league" and len(args) in (2, 3) and args[1].isdigit() \
