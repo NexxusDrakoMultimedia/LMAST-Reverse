@@ -378,7 +378,8 @@ disc or the edit to build; the result goes into the doc linked.
       `MAP01` ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md#still-unknown))
 - [ ] Widescreen match portraits: with the current pnach, the portrait
       in a match's Tactics → Player details has no dark strip on its
-      left, and the player cards in the Club House still look right
+      left, the player cards in the Club House still look right, and
+      lists and the news ticker still stop at the 4:3 edge
       ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#match-portraits))
 
 ## 8. LMASTER Mod and other patches

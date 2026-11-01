@@ -389,12 +389,25 @@ projection caves use; while a texture is the target it multiplies by 1.
 The longer cave moved to `0x13c0c4`, after the kit-model cave; the old
 words at `0x12fa10` are written as zero.
 
-Tested in PCSX2: the strip is still there with this change (Nexxus's
-report, 2026-11-01, J. Goosen of Sabadell Vallés FC). So the
-direct-mode squeeze isn't the cause, or not the only one. Not yet
-compared with the same window without the patch. Next suspects are the
-[clip](#match-hud-and-cut-ins) wrappers on
-`nnBegin`/`nnEndDrawPrimitive2D` and `Draw0`.
+That change alone didn't remove the strip (Nexxus's report,
+2026-11-01, J. Goosen of Sabadell Vallés FC). Without the patch the
+same portrait's background is grey edge to edge, and the head is the
+same size and place either way, so only the 2D background is cut.
+
+The background is drawn between `EDIT::CSurface::DrawBeginTarget`
+(`0x154148`) and `DrawEndTarget`, which call `TargetSurface::begin`
+and `end`; `begin` sets the texture's screen parameters, so the
+half-width is 64 there. The two scissor squeezes of the
+[clip](#clipping-to-43), in `Util_ScissorBeginDirect` and
+`CallScissorBegin`, had no such check: a clip box covering the texture
+became x·0.75 + 64 and left the texture's left side unpainted, while
+its right side ran past the texture's edge. Both caves now start with a
+jump to a check (`0x13bf58`, `0x13bf80`, in the free words before the
+scissor variable at `0x13bfc0`) that skips the squeeze unless the
+half-width is 256.
+
+Not yet tested in PCSX2 (`TODO.md` section 7). Which of the squeezes
+cut the background was worked out from the code, not seen live.
 
 ## Known behaviour
 
