@@ -36,6 +36,7 @@ git log --format="%(trailers:key=Co-Authored-By,valueonly)" | sort | uniq -c
 | Contributor | Contribution |
 |---|---|
 | **@tw09627** on the LMAST Discord | first decrypted `DATA.CVM` (with the help of ChatGPT), which opened up the game's data for this project. The original write-up is kept in [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) |
+| **Ohayoghurt** on the LMAST Discord | found, with this project's tools, why every Virtua Pro Football player imported into the game can play in goal: the import leaves two position slots at the goalkeeper's id ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record)) |
 
 ## Community
 

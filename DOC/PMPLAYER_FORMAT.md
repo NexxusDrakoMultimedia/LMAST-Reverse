@@ -97,6 +97,25 @@ weights, and abilities 45–52 (the formations), 54 (possession) and 63
 abilities, and `0x3ddc8` picks the best (stored at `PlPbase +0x1c`,
 `PlPinfo +0x4` and `+0x1b4`).
 
+**Positions (a bug in the import).** An imported player always shows
+some goalkeeping aptitude, whatever his abilities. Ohayoghurt found why
+(report on the LMAST Discord, 2026-11-01), and the code confirms it. A
+player lists up to three positions, three words at `PlPinfo +0x1b4`,
+`+0x1b8` and `+0x1bc` (the `PlPbase` copy at `+0x1c`), with 13 for
+none ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#players-98-bytes-779-bits-used)).
+The import stores only the first (`sw` at `0x3ebc4` and `0x3ebd0`,
+after `plPinfo_InitAbil` and `0x3ddc8`). The other two keep the 0 the
+cleared buffers start with (`0x3e1f4`, `0x3e204`), and 0 is the
+goalkeeper's cell, not "none". `plPinfo_CalcAptPos` (`0x218078`–
+`0x2180ac`) gives each listed cell below 13 one more level, up to 4
+([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#positions-and-aptitude)), so
+the goalkeeper cell gets +2: an outfield player whose abilities give
+him no goalkeeping level comes in at level 2. Not yet checked: the
+Japanese conversion (`0x3db60`), and whether the edit-player screen
+lets the player change the extra positions afterwards. A fix is an
+LMASTER Mod candidate
+([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
+
 **Play styles (a bug in the import).** `0x3df10` copies the 22 ratings
 and means to sort them, then keep up to five styles rated 70 or more.
 But its compare function (`0x3df00`) subtracts the two pointers instead
@@ -204,6 +223,9 @@ same edits as `set` and reads every field back.
   name edit loads; see Editing).
 - How VPF numbers a new player's id, so a player could be added to an
   empty slot.
+- Whether the Japanese import (`0x3db60`) leaves the second and third
+  positions at 0 too, and whether the edit-player screen can change
+  them after an import ([The record](#the-record)).
 - `file.inf`'s check: its CRC over the first 0x20 bytes doesn't match
   the u32 after them, so it may use another length. It doesn't cover
   `pmplayer.bin`'s contents: VPF loaded an edited file with `file.inf`

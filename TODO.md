@@ -394,6 +394,11 @@ is built and tested, or set aside.
       test), the strength ratio above 1.19 getting column 0, and the
       training plan's rows out of step with the policy names
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [ ] Candidate: imported VPF players' goalkeeping aptitude. The
+      import leaves the second and third positions at 0 (GK) instead of
+      13 (none), giving every imported outfield player goalkeeping
+      level 2 (Ohayoghurt's find)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
