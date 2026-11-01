@@ -389,10 +389,12 @@ projection caves use; while a texture is the target it multiplies by 1.
 The longer cave moved to `0x13c0c4`, after the kit-model cave; the old
 words at `0x12fa10` are written as zero.
 
-Not yet tested in PCSX2 (`TODO.md` section 7). Which call draws the
-background was found from the code, not seen live; if the strip
-remains, the next suspects are the [clip](#match-hud-and-cut-ins)
-wrappers on `nnBegin`/`nnEndDrawPrimitive2D` and `Draw0`.
+Tested in PCSX2: the strip is still there with this change (Nexxus's
+report, 2026-11-01, J. Goosen of Sabadell Vallés FC). So the
+direct-mode squeeze isn't the cause, or not the only one. Not yet
+compared with the same window without the patch. Next suspects are the
+[clip](#match-hud-and-cut-ins) wrappers on
+`nnBegin`/`nnEndDrawPrimitive2D` and `Draw0`.
 
 ## Known behaviour
 
