@@ -72,9 +72,11 @@ the Japanese disc):
 ## Patching a Japanese disc
 
 `patch_disc.py patch` takes the Japanese image, with every switch but
-`third-tier`, which refuses it ("made for the PAL executable only"), so
-LMASTER full and max can't be built for it; LMASTER lite and the
-groups without `third-tier` can:
+`third-tier` ("made for the PAL executable only") and `real-names`
+("made for the PAL text only"), so LMASTER full and max can't be built
+for it; LMASTER lite and the groups without those two can. Every
+switch must work here before LMASTER 1.0.0 (Nexxus's choice,
+2026-11-01; [`TODO.md`](../TODO.md) section 8).
 
 ```bash
 python SRC/patch_disc.py patch "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso" out.iso --mod lmaster-lite,harder-economy,balance,league-balance,injury-lines --skip-tutorial
@@ -87,12 +89,16 @@ bytes it checked are. Where `gamever.py` can't place a word, it tries
 the word the switch expects, found once in the Japanese function of the
 same name, then the shift of a translated address up to 0x40 bytes
 away. A call (`jal`) in a switch's code takes the Japanese address of
-the function it called in PAL. Each switch then checks the bytes as on
-PAL, so a place the Japanese build changed is refused, not patched.
+the function it called in PAL, and a word that is an address in the
+executable's code (a jump table's case) takes the Japanese address of
+the same code (`gamever.at`, checked for each word). Each switch then
+checks the bytes as on PAL, so a place the Japanese build changed is
+refused, not patched.
 
 What each switch finds there (**empirical**, from planning every switch
-on the Redump image; `fee-tiers` and `slow-reputation`, added later,
-were patched onto it on 2026-10-27):
+on the Redump image, last on 2026-11-01: every switch but `third-tier`
+and `real-names` plans there, each on its own with the switches it
+needs):
 
 | Switch | On the Japanese disc |
 |---|---|
@@ -105,6 +111,10 @@ were patched onto it on 2026-10-27):
 | `tv-fees` | two TV stations' base offers are higher (270,000 and 300,000 against 150,000 and 111,000); the same rule halves everything above £2M |
 | `pr-cycle` | the same code, with `pwkTown_Keiki` at `0x2719d0` |
 | `season-status` | the same ladder, so the Japanese build has the same season-ticket bug |
+| `salesman-items` | the boost jump table (PAL `0x5313c8`, Japanese `0x52d138`) holds the Japanese addresses of the same cases (`0x210d18` and `0x210e08` for PAL's `0x2104e0` and `0x2105d0`), which trade places as on PAL; the headphones' new code calls `pwkGUtl_AddExp` at its Japanese address, and its branch reaches the same epilogue (`0x210fec`) |
+| `vpf-positions` | nothing to do: the release has no Virtua Pro Football import ([below](#confirmed-from-the-game-code)) |
+| `real-names` | refused: its names are PAL text in five languages, and the Japanese `MES.PAC` holds Japanese text in slot 0 and `test` in slots 1–6 |
+| `third-tier` | refused: its code segment, bigger save, clubs, lists and seasons are PAL addresses, and its text is PAL's |
 | the rest | the same bytes, at other addresses |
 
 Every patched spot's surrounding code (8 words either side, immediates

@@ -46,8 +46,8 @@ What to work on next, most valuable first.
    on the disc; a `roundtrip` over every texture can check it
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned)).
 3. **Every LMASTER switch on the Japanese release** (section 8), needed
-   before LMASTER 1.0.0: `third-tier` first, then each switch added
-   since 2026-10-27
+   before LMASTER 1.0.0: every other switch plans there now; left are
+   `third-tier` (a code port) and `real-names` (the names in Japanese)
    ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc)).
 4. **A writer and tab for `EDIT_PLAYER.TBB`** (sections 3 and 5): its
    tables are read already, so this closes the "Data" goal's writer
@@ -410,13 +410,29 @@ is built and tested, or set aside.
       every switch works on the Japanese release (SLPM-66316). The
       release itself is Nexxus's call, when testing, features and
       reverse engineering feel complete; this is its one firm
-      requirement.
-      `third-tier` refuses the Japanese executable now, so LMASTER full
-      and max can't be built for it; the switches added since
-      2026-10-27 haven't been planned on the Japanese disc; and no
-      Japanese disc built with the switches has been run in the game
+      requirement. Every other switch plans on the Japanese disc
+      (2026-11-01). Left: `third-tier` (its code, save, clubs, lists and
+      seasons ported, and its text in Japanese) and `real-names` (the
+      names in Japanese), so LMASTER full and max can't be built for it
+      yet; and no Japanese disc built with the switches has been run in
+      the game
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 
+- [ ] Re-assess each switch's edition (Nexxus's request, 2026-11-01):
+      some bug fixes may sit in full instead of lite. A first read:
+      `salesman-items` (in `restorations`) bundles a plain fix, the
+      spikes' and headphones' boosts swapped against their text, with
+      the coach's unused flag, a restoration; `league-balance` (in
+      `leagues`) fixes runs of up to 9 games at one venue but is called
+      an improvement; and the other way, `national-cups` (in lite's
+      `match-fixes`) moves the cups a turn to make their results
+      viewable, closer to an improvement. The rule (Nexxus's,
+      2026-11-01): a fix that can't break a retail career in progress
+      goes in lite, one that may stays in full. Go through every switch:
+      is it a fix, and could it break a retail save in progress (data
+      the save holds, a schedule or club list it was made with); then
+      propose moves for Nexxus to confirm
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
 - [ ] Candidate: the short `EDIT_EMBLEM` tables 93/101/105
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] Candidate: let the unused combination records load, and fix the

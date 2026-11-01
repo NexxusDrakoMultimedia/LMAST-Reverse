@@ -68,11 +68,13 @@ the integrity descriptor's size table change, and the UDF end anchor moves
 to the new last sector. Files outside DATA.CVM keep their size.
 
 The Japanese release (SLPM_663.16) takes the same switches but
-third-tier, which is made for the PAL executable only (so not
-lmaster-full or lmaster-max). Each gives its bytes as PAL offsets; on a Japanese disc
+third-tier, which is made for the PAL executable only, and real-names,
+made for the PAL text (so not lmaster-full or lmaster-max). Each gives its bytes as PAL offsets; on a Japanese disc
 they are found in its executable and overlays with gamever.py (so the
-PAL files in ISO/ must be there), and checked as on PAL. sponsor-negotiation does nothing there
-(the release negotiates already), drill-names finds the names already in
+PAL files in ISO/ must be there), and checked as on PAL; a jump
+table's case addresses take the Japanese addresses of the same code.
+sponsor-negotiation does nothing there (the release negotiates already),
+nor does vpf-positions (it has no Virtua Pro Football import), drill-names finds the names already in
 place, mod-saves renames BISLPM-66316-G/C, and fanbase scales the
 Japanese merchandise table, which holds half the PAL bases. See
 DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc.
@@ -89,7 +91,7 @@ full. Both always save to their own folders: full's careers in -F, max's
 in -M (mod-saves picks M when any difficulty switch is on), and the VS
 data of both in -V.
 Groups: training-fixes (camp-types, camp-cities, camp-santiago,
-camp-clubs, drill-names), injury-fixes (injury-value, injury-row),
+camp-clubs, drill-names, salesman-items), injury-fixes (injury-value, injury-row),
 club-fixes (sponsor-negotiation, season-status, pr-cycle, mobile-site,
 overseas-pop, cup-last16), match-fixes (rival-manager, press-tendency,
 national-cups, vpf-styles, vpf-positions), text-fixes (retail-text), harder-economy (facility-tiers,
@@ -97,7 +99,7 @@ wider-tickets, dearer-ads,
 sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
 merch-costs, pr-costs, camp-costs, tour-costs), leagues
-(league-balance, third-tier), restorations (injury-lines, salesman-items), names
+(league-balance, third-tier), restorations (injury-lines), names
 (real-names, own-stadium), stadiums (special-stadium, real-grounds, sponsor-boards), saves (mod-saves),
 and test-tools (skip-tutorial, launcher), which is in no edition.
 third-tier turns on mod-saves and needs --copies and --dat; real-names
@@ -815,6 +817,41 @@ class Port:
             n = norm(file)
             self.ranges = [r for r in self.ranges if not (r[0] == n and r[1] <= off < r[2])]
             self.ranges.append((n, off, off + len(old), there, hits[0]))
+
+    def addresses(self, held, old, new):
+        """(old, new) for another build where `held` differs from `old`
+        only in words that are addresses in the executable's code (a jump
+        table's cases): each held word must be the other build's address
+        of old's (gamever.at), and each word of `new` naming one of old's
+        addresses takes the other build's."""
+        if len(held) != len(old) or len(old) % 4 or len(new) % 4:
+            return old, new
+        import gamever
+        import sles_disasm
+        path = self.copy(JP_EXE_FILE)
+
+        def in_code(p, a):
+            lo, size = sles_disasm.Elf(p).sections[".text"]
+            return lo <= a < lo + size and a % 4 == 0
+        hw = struct.unpack("<%dI" % (len(held) // 4), held)
+        ow = struct.unpack("<%dI" % (len(old) // 4), old)
+        moved = {}
+        for h, o in zip(hw, ow):
+            if h == o:
+                continue
+            if not (in_code(gamever.reference_of(path), o) and in_code(path, h)) \
+                    or moved.get(o, h) != h:
+                return old, new
+            try:
+                if gamever.at(path, o) != h:
+                    return old, new
+            except ValueError:
+                return old, new
+            moved[o] = h
+        if not moved:
+            return old, new
+        nw = struct.unpack("<%dI" % (len(new) // 4), new)
+        return held, struct.pack("<%dI" % len(nw), *(moved.get(w, w) for w in nw))
 
     def jobs(self, jobs):
         """The jobs a switch planned in PAL offsets, moved to this build."""
@@ -2319,6 +2356,12 @@ VPF_POSITIONS_AT, VPF_POSITIONS_END = 0x3DE48, 0x3DEF0     # the rewrite, the pi
 
 def plan_vpf_positions(f, img):
     """Jobs for --mod vpf-positions."""
+    if img.port is not None:
+        # Its SAVEPRG.REL keeps the import's conversion (0x3db60), but the
+        # game never offers the import (Nexxus's report, 2026-11-01), and
+        # the picker's bytes don't match PAL's where gamever places them.
+        return [], ["note: vpf-positions: the Japanese release has no Virtua Pro Football "
+                    "import, only its own player editor (DOC/PMPLAYER_FORMAT.md)"]
     old, new = vpf_positions_words()
     words = [(SAVE_FILE, VPF_POSITIONS_AT, struct.pack("<%dI" % len(old), *old),
               struct.pack("<%dI" % len(new), *new),
@@ -2620,6 +2663,9 @@ def word_jobs(f, img, switch, words):
     held = [read_at(f, img, file, off, len(old)) for file, off, old, _, _ in words]
     if img.port is not None:
         words = [(file, off) + port_calls(h, old, new) + (label,)
+                 for h, (file, off, old, new, label) in zip(held, words)]
+        words = [(file, off) + (img.port.addresses(h, old, new) if norm(file) == norm(
+            PAL_EXE_FILE) else (old, new)) + (label,)
                  for h, (file, off, old, new, label) in zip(held, words)]
     if all(h == new for h, (_, _, _, new, _) in zip(held, words)):
         return [], ["note: %s is already applied" % switch]
@@ -4877,7 +4923,8 @@ SWITCH_ALIASES = {name: "third-tier" for name in ("save-expand", "tier-clubs", "
 # of their own, in no edition. editor.py's Build tab draws this tree.
 GROUPS = (       # (name, title, switches)
     ("training-fixes", "Training fixes",
-     ("camp-types", "camp-cities", "camp-santiago", "camp-clubs", "drill-names")),
+     ("camp-types", "camp-cities", "camp-santiago", "camp-clubs", "drill-names",
+      "salesman-items")),
     ("injury-fixes", "Injury fixes", ("injury-value", "injury-row")),
     ("club-fixes", "Club fixes",
      ("sponsor-negotiation", "season-status", "pr-cycle", "mobile-site", "overseas-pop",
@@ -4892,7 +4939,7 @@ GROUPS = (       # (name, title, switches)
      ("injury-odds", "overseas-bases", "transfer-fees", "fee-tiers", "slow-reputation",
       "fanbase", "merch-costs", "pr-costs", "camp-costs", "tour-costs")),
     ("leagues", "Leagues", ("league-balance", "third-tier")),
-    ("restorations", "Restored content", ("injury-lines", "salesman-items")),
+    ("restorations", "Restored content", ("injury-lines",)),
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
     ("saves", "Separate saves", ("mod-saves",)),
