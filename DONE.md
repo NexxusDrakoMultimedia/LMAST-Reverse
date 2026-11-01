@@ -163,6 +163,9 @@ Each result is recorded in the doc linked.
       `ps2mc.py` ([`REBUILD.md`](DOC/REBUILD.md),
       [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md),
       [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
+- [x] `--mod vpf-positions`: an imported forward no longer lights the
+      goalkeeper box
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record))
 - [x] The tactics pitch reads `CSE/`, not `TACTICSPITCH.PAC`
       ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
 - [x] By ear: the music, opening, crowd, chants and effects banks

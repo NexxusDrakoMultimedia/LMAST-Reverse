@@ -366,11 +366,6 @@ disc or the edit to build; the result goes into the doc linked.
       of your squad has abilities 59–63 raised (the saved players don't
       change); the headphones and spikes the same way
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] `--mod vpf-positions` on `LMAST-test-vpfpos.iso` (built
-      2026-11-01, only this switch, retail saves): import an outfield
-      player from VPF and check that the detail screen's goalkeeper box
-      stays dark; on the retail disc the same player lights it
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 
 ### Testing aids and sound
 

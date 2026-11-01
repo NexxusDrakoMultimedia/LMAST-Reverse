@@ -114,8 +114,12 @@ goalkeeper's cell, not "none". `plPinfo_CalcAptPos` (`0x218078`–
 the goalkeeper cell gets +2: an outfield player whose abilities give
 him no goalkeeping level comes in at level 2. Not yet checked: whether
 the edit-player screen lets the player change the extra positions
-afterwards. `--mod vpf-positions` fixes it
-([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
+afterwards. `--mod vpf-positions` fixes it. **Tested in PCSX2**
+(Nexxus's report, 2026-11-01): with that switch alone, G.Binns came in
+with only his forward cell lit on the detail screen's grid and the
+goalkeeper box dark (his style showed None, as the retail import's
+sort leaves it without `vpf-styles`;
+[`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
 
 **Play styles (a bug in the import).** `0x3df10` copies the 22 ratings
 and means to sort them, then keep up to five styles rated 70 or more.
