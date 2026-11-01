@@ -406,8 +406,18 @@ jump to a check (`0x13bf58`, `0x13bf80`, in the free words before the
 scissor variable at `0x13bfc0`) that skips the squeeze unless the
 half-width is 256.
 
-Not yet tested in PCSX2 (`TODO.md` section 7). Which of the squeezes
-cut the background was worked out from the code, not seen live.
+Tested in PCSX2: the strip is still there (J. Goosen and Tevez), and
+lists, the ticker, the HUD and the Club House cards are unchanged
+(Nexxus's report, 2026-11-01). The strip is 24 of the portrait's 183
+pixels, 13%, which is the UI fix's 64-pixel shift on a 512-wide
+screen, with the right side still covered. So the background is drawn
+with 512-wide screen coordinates, the half-width checks above pass,
+and the squeeze that shifts it is one without such a check. The likely
+one is the CSE cave (only checks the CSE screen's offX); the Ninja 2D
+table is another candidate if the patch=1 line rewrites it during the
+render. Finding which needs a live trace over PINE with the window
+open. The half-width checks stay: they are right for drawing into a
+texture and changed nothing else.
 
 ## Known behaviour
 
@@ -426,6 +436,8 @@ cut the background was worked out from the code, not seen live.
 
 ## Still unknown
 
+- Which squeeze shifts the match portraits' background
+  ([Match portraits](#match-portraits)).
 - How the opening cinematic draws its newspaper pages, and so how to
   leave them unsqueezed (above).
 - Which match function places the name tags over the players. The
