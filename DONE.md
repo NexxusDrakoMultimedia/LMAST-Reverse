@@ -196,5 +196,6 @@ Each result is recorded in the doc linked.
       `patch_disc.py` and the Build disc window
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
 - [x] Widescreen: a PCSX2 pnach for 16:9 with the 2D kept at 4:3,
-      the menus' 3D kit models and the match portraits included
+      the menus' 3D kit models, the match portraits and the opening
+      cinematic's newspaper pages included
       ([`WIDESCREEN.md`](DOC/WIDESCREEN.md))

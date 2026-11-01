@@ -428,9 +428,10 @@ table's offX is the squeezed 29696, it takes the same unsqueezed path
 for every primitive. A face build, which writes its own table values,
 is left alone.
 
-Not yet tested in PCSX2 (`TODO.md` section 7). Whether the pictures
-are drawn by `nnDrawPrimitive2D` (and not `nnuPrimitive2DSetVertex` or
-`nnDrawPrimitiveSprite2DPS2`, which read the same table) is not known.
+Tested in PCSX2 from boot: the pages match the game without the patch,
+masthead, photo and adverts at full width; Club House room changes and
+a custom player's face look as before (Nexxus's report, 2026-11-01).
+So the pages' pictures are drawn by `nnDrawPrimitive2D`.
 
 ## Known behaviour
 
@@ -440,13 +441,14 @@ are drawn by `nnDrawPrimitive2D` (and not `nnuPrimitive2DSetVertex` or
 - The match's Tactics screen draws its blue backdrop across the whole
   16:9 screen, past the 4:3 area. Nexxus is happy to keep it
   (Nexxus's choice, 2026-11-01).
+- Nothing is known to be broken: every UI item found so far is fixed or
+  is the intended look.
 
 ## Still unknown
 
 - Which Acrobata code renders the newspaper pages into their textures
-  (`ACROBATA::VRT_NewsPaper` is the likely class), and whether their
-  pictures go through `nnDrawPrimitive2D`
-  ([Newspaper pages](#newspaper-pages)).
+  (`ACROBATA::VRT_NewsPaper` is the likely class). The patch doesn't
+  need it ([Newspaper pages](#newspaper-pages)).
 - Which match function places the name tags over the players. The
   patch doesn't need it (above).
 - Whether the patch works on a modded disc. A disc whose executable is
