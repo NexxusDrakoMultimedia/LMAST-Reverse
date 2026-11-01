@@ -117,7 +117,8 @@ the evidence and how it was tested; the git history holds the rest.
       every copy updated, archives rebuilt
       ([`REBUILD.md`](DOC/REBUILD.md))
 - [x] `TACTICSPITCH.PAC` is loaded but never read: its entries aren't
-      registered, so the tactics pitch reads the `CSE/` originals
+      registered, so the tactics pitch reads the `CSE/` originals,
+      as a camera swap on a test disc showed
       ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
 - [x] Testing aids: `--skip-tutorial` and `--launcher`
       ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs))
@@ -162,6 +163,8 @@ Each result is recorded in the doc linked.
       `ps2mc.py` ([`REBUILD.md`](DOC/REBUILD.md),
       [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md),
       [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
+- [x] The tactics pitch reads `CSE/`, not `TACTICSPITCH.PAC`
+      ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
 - [x] By ear: the music, opening, crowd, chants and effects banks
       ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md))
 - [x] Virtua Pro Football loads an edited `pmplayer.bin`, and the player

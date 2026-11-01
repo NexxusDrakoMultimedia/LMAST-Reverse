@@ -367,15 +367,6 @@ disc or the edit to build; the result goes into the doc linked.
       change); the headphones and spikes the same way
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 
-### Rebuilding
-
-- [ ] The tactics pitch reads `CSE/`, not `TACTICSPITCH.PAC`: on
-      `LMAST-test-pitch.iso` (built 2026-10-31, test sheet
-      `names/test-sheet-pitch.md`), with `CSE/CAM_INT.SND` and
-      `CAM_INT_ATTACK.SND` swapped and the pack left as it is, the
-      tactics screen's pitch views should swap
-      ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
-
 ### Testing aids and sound
 
 - [ ] The tutorial skip in France, Italy, Spain or the Netherlands

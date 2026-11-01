@@ -108,8 +108,8 @@ screens.
 
 The tactics pitch (`WP::CTacticsPitch`) loads `tacticspitch.pac` and
 then never reads it. To edit the pitch, change the originals in `CSE/`;
-the pack's copies can stay as they are. **Confirmed from the code, not
-yet seen in the game:**
+the pack's copies can stay as they are. **Confirmed from the code, and
+tested in PCSX2** (below):
 
 | Address | Symbol | What it shows |
 |---|---|---|
@@ -130,6 +130,18 @@ here: it comes with the model (type `0xc`, read with
 be the pack's copy, which is never registered. Probably the pack was
 meant to be registered, as the load lists' packs are, and the flag
 was left at 0.
+
+The pitch has two views. The club screens around Training show it at an
+angle, and every Tactics screen (Edit Positions, Change team tactics,
+Team Attack Pattern, Pick Captain, Opponent Info) shows it from straight
+above. **Tested in PCSX2** (Nexxus's report, 2026-11-01):
+`LMAST-test-pitch.iso` swaps `CSE/CAM_INT.SND` and
+`CSE/CAM_INT_ATTACK.SND` and leaves `TACTICSPITCH.PAC` as it is. On it,
+the Training screen showed the pitch from above and every Tactics
+screen showed it at an angle, the other way round from the retail disc
+with the same save. So the pitch reads `CSE/`, `CAM_INT.SND` is the
+angled view and `CAM_INT_ATTACK.SND` the Tactics screens' view from
+above.
 
 ### Tested in PCSX2
 
