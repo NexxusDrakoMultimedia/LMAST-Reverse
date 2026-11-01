@@ -49,9 +49,9 @@ What to work on next, most valuable first.
    before LMASTER 1.0.0: every other switch plans there now; left are
    `third-tier` (a code port) and `real-names` (the names in Japanese)
    ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc)).
-4. **A writer and tab for `EDIT_PLAYER.TBB`** (sections 3 and 5): its
-   tables are read already, so this closes the "Data" goal's writer
-   gap ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#edit_playertbb)).
+4. **A tab for `EDIT_PLAYER.TBB`** (section 5): `emblem.py set`
+   writes it now; the tab can sit in or beside the Crests tab
+   ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing)).
 5. **League games on the national-team dates in the game** (section
    7): England at 18 clubs, a short test that decides whether the new
    division sizes are safe to offer
@@ -66,7 +66,7 @@ the graphics that come after the data.
 | Goal | What works today | Still in the way | Sections |
 |---|---|---|---|
 | **The starting season** | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results: writers and editor tabs, tested in PCSX2. The national-team calendar and the club ranking have writers and tabs; leagues on the national-team dates allow every size from 18 English clubs up | a smaller first division, league games on the national-team dates, the national calendar and the club ranking tested in the game | 2, 7 |
-| **Data** | players, staff, clubs, kits, crests and flags, facilities, training, camps, tours, the tactics presets, the PR events, the player links, and the stadiums' looks and boards: writers and tabs | the remaining player and staff fields; the other stadium tables and `EDIT_PLAYER.TBB` | 2, 3 |
+| **Data** | players, staff, clubs, kits, crests and flags, facilities, training, camps, tours, the tactics presets, the PR events, the player links, and the stadiums' looks and boards: writers and tabs | the remaining player and staff fields; the other stadium tables; a tab for `EDIT_PLAYER.TBB` | 2, 3, 5 |
 | **Parameters** | every `PARAM/` table's layout is known and `tbb.py replace` swaps any table; the economy's constants in the executable are traced and changed by named switches | the open fields of the parameter files, the match AI's files and the match parameters | 2 |
 | **Text** | every message in every language, with a writer and the Text tab; real names for every league, club and nation | the screen-set variables and a few message categories | 2 |
 | **Playing a mod** | xdelta patches against the Redump image, CSO, ZSO and CHD inputs, separate saves for a modded disc, the players' guide | faster CHD decoding; the Japanese release | 4, 6 |
@@ -224,10 +224,7 @@ a field-level writer with a `roundtrip` check in `regress.py`.
 
 - [ ] The `STADIUM/` tables besides `BUILD_STADIUM`'s looks and boards
       (`CONV_INFO_BUILD`, the crowd sets), if a mod needs them
-      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing)); `EDIT_PLAYER.TBB`,
-      whose tables are now read (base abilities by position and nation,
-      the personality ranges;
-      [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#edit_playertbb))
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
 - [ ] A texture writer for `svr.py`, which only reads, for LMAST Realism
       on the disc ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 

@@ -115,6 +115,10 @@ the evidence and how it was tested; the git history holds the rest.
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#editing),
       [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing),
       [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md))
+- [x] The player editor's tables: `emblem.py set` edits any cell of
+      `EDIT_PLAYER.TBB` within the values its readers use, and
+      `roundtrip` re-encodes it on both releases
+      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 
 ## 4. Rebuild: edits back on a bootable disc
 

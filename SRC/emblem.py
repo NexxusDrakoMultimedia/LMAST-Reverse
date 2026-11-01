@@ -26,15 +26,17 @@ colour palette, and the player-editor tables. See DOC/EMBLEM_DIR.md.
                       placements {pos_x, pos_y, size_x, size_y}
                       (CFlagData::Initialize 0x1044b0); the pack holds
                       the 49 bases.
-  EDIT_PLAYER.TBB     32 tables, loaded by PLAYEREDIT_MODULE (YRSTPRG.REL),
-                      one accessor per table at 0x1cc70-0x1d418; not
-                      decoded.
+  EDIT_PLAYER.TBB     32 tables of u8 cells, loaded by PLAYEREDIT_MODULE
+                      (YRSTPRG.REL), one accessor per table at
+                      0x1cf98-0x1d418: the ranges the player editor
+                      draws a new player's fields from.
 
 `info` checks the layouts and the counts the tables and packs share.
 `colors` lists the 96 colours with their 32- and 16-colour ids.
 `crests` prints the sample, initial and rival crests field by field.
-`set` edits EDIT_EMBLEM.TBB or EDIT_FLAG.TBB field by field into a new
-file of the same size; `roundtrip` re-encodes every record of both.
+`set` edits EDIT_EMBLEM.TBB, EDIT_FLAG.TBB or EDIT_PLAYER.TBB field by
+field into a new file of the same size; `roundtrip` re-encodes every
+record of all three.
 
 Usage:
     python emblem.py info      <DAT/EMBLEM>
@@ -58,6 +60,11 @@ Usage:
 and in EDIT_FLAG.TBB:
     flag:pattern:<row>:<field>           fields base, rev
     flag:place:<row>:<field>             fields pos_x, pos_y, size_x, size_y
+and in EDIT_PLAYER.TBB:
+    player:<table>:<row>:<column>        one byte; 0-99 in the ability
+        tables (0-8, 10, 11, 15), 0-4 in the tendency tables (16, 22),
+        0-255 elsewhere; {min, max} rows must stay in order and the
+        cumulative rows (14, 28) must not fall
 """
 import os
 import struct
@@ -414,15 +421,17 @@ EDIT_PLAYER_SHAPES = [(14, 33)] * 9 + [
     (100, 151), (1, 2), (3, 16), (8, 10), (13, 16), (13, 19)]
 EDIT_PLAYER_RANGES = (12, 13, 15, 16)      # {min, max} rows: min + rand(max - min + 1)
 EDIT_PLAYER_CUMULATIVE = (14, 28)          # weights summed along the row (0x1cc70)
+# Every cell is a u8 (lbu, 0x1aef8, 0x1cb54). Abilities are capped at 99 by
+# their setter (0x1d700), tendencies clamped to 0-4 (0x1d870); the rest
+# take any byte.
+EDIT_PLAYER_ABILITY_TABLES = tuple(range(9)) + (10, 11, 15)
+EDIT_PLAYER_TENDENCY_TABLES = (16, 22)
+PLAYER_FILE = "EDIT_PLAYER.TBB"
 
 
-def check_edit_player(d):
-    """One line for EDIT_PLAYER.TBB: the shapes the code reads, {min, max}
-    rows in order, cumulative rows that never fall."""
-    try:
-        t = load_tables(d, "EDIT_PLAYER.TBB")
-    except (OSError, ValueError, struct.error) as e:
-        return "EDIT_PLAYER.TBB  !! %s" % e
+def edit_player_problems(t):
+    """The checks `info` makes on EDIT_PLAYER.TBB: the shapes the code
+    reads, {min, max} rows in order, cumulative rows that never fall."""
     probs = []
     if len(t) != len(EDIT_PLAYER_SHAPES):
         probs.append("%d tables, expected %d" % (len(t), len(EDIT_PLAYER_SHAPES)))
@@ -430,6 +439,8 @@ def check_edit_player(d):
         if (table.row_count, table.line_size) != (rows, line):
             probs.append("table %d is %d x %d, expected %d x %d" % (
                 i, table.row_count, table.line_size, rows, line))
+    if probs:
+        return probs
     for i in EDIT_PLAYER_RANGES:
         bad = [n for n, r in enumerate(t[i].rows()) if r[0] > r[1]]
         if bad:
@@ -438,6 +449,39 @@ def check_edit_player(d):
         bad = [n for n, r in enumerate(t[i].rows()) if any(a > b for a, b in zip(r, r[1:]))]
         if bad:
             probs.append("table %d: weights fall in rows %s" % (i, bad))
+    return probs
+
+
+def player_range(table):
+    if table in EDIT_PLAYER_ABILITY_TABLES:
+        return 0, 99
+    if table in EDIT_PLAYER_TENDENCY_TABLES:
+        return 0, 4
+    return 0, 255
+
+
+def set_player(t, table, row, col, value):
+    """Set one byte of EDIT_PLAYER.TBB: table, row, column within the row."""
+    if not 0 <= table < len(EDIT_PLAYER_SHAPES):
+        raise ValueError("tables 0-%d" % (len(EDIT_PLAYER_SHAPES) - 1))
+    rows, line = EDIT_PLAYER_SHAPES[table]
+    if not (0 <= row < rows and 0 <= col < line):
+        raise ValueError("table %d has rows 0-%d, columns 0-%d" % (table, rows - 1, line - 1))
+    _check_value(value, *player_range(table), what="table %d" % table)
+    data = bytearray(t[table].data)
+    o = row * line + col
+    old, data[o] = data[o], value
+    t[table].data = bytes(data)
+    return old
+
+
+def check_edit_player(d):
+    """One line for EDIT_PLAYER.TBB."""
+    try:
+        t = load_tables(d, PLAYER_FILE)
+    except (OSError, ValueError, struct.error) as e:
+        return "EDIT_PLAYER.TBB  !! %s" % e
+    probs = edit_player_problems(t)
     return "EDIT_PLAYER.TBB  %d tables, %d rows%s" % (
         len(t), sum(x.row_count for x in t), "  !! " + "; ".join(probs) if probs else "")
 
@@ -858,7 +902,8 @@ def palette32(d):
 
 
 def load_file(path):
-    """(buf, end, tables, kind), kind "emblem" or "flag" by table count."""
+    """(buf, end, tables, kind), kind "emblem", "flag" or "player" by table
+    count."""
     with open(path, "rb") as f:
         buf = f.read()
     end, t = tbb.parse(buf)
@@ -866,14 +911,19 @@ def load_file(path):
         return buf, end, t, "emblem"
     if len(t) == len(FLAG_RECORDS):
         return buf, end, t, "flag"
-    raise ValueError("%d tables: not EDIT_EMBLEM.TBB (%d) or EDIT_FLAG.TBB (%d)" % (
-        len(t), EMBLEM_TABLES, len(FLAG_RECORDS)))
+    if len(t) == len(EDIT_PLAYER_SHAPES):
+        return buf, end, t, "player"
+    raise ValueError("%d tables: not EDIT_EMBLEM.TBB (%d), EDIT_FLAG.TBB (%d) or "
+                     "EDIT_PLAYER.TBB (%d)" % (len(t), EMBLEM_TABLES, len(FLAG_RECORDS),
+                                               len(EDIT_PLAYER_SHAPES)))
 
 
 def edit_problems(t, kind):
     """The record checks `info` makes, for a file about to be written."""
     if kind == "flag":
         return []
+    if kind == "player":
+        return edit_player_problems(t)
     rows, groups, samples = context(t)
     lines = check_presets(t, rows, groups)
     lines += [check_crests(t, table, rows, groups, samples) for table in CREST_TABLES]
@@ -904,6 +954,11 @@ def apply_edit(t, kind, edit):
             return "%s: %d -> %d" % (target, old, value)
         raise ValueError("EDIT_FLAG.TBB takes flag:pattern:<row>:<field> or "
                          "flag:place:<row>:<field>")
+    if kind == "player":
+        if len(p) == 4 and p[0] == "player":
+            old = set_player(t, int(p[1], 0), int(p[2], 0), int(p[3], 0), value)
+            return "%s: %d -> %d" % (target, old, value)
+        raise ValueError("EDIT_PLAYER.TBB takes player:<table>:<row>:<column>")
     if p[0] == "crest" and len(p) == 4:
         field, _, index = p[3].partition(".")
         old = set_crest(t, int(p[1], 0), int(p[2], 0), field, value, int(index or "0", 0))
@@ -956,6 +1011,10 @@ def rebuild_records(t, kind):
         put(2, b"".join(struct.pack("<bbBB", *struct.unpack_from("<bbBB", t[2].data, k))
                         for k in range(0, t[2].size, 4)))
         return differ
+    if kind == "player":
+        for i, table in enumerate(t):
+            put(i, b"".join(bytes(row) for row in table.rows()))
+        return differ
     for i in (4, 5, 6):
         put(i, b"".join(encode_preset(part, r) for part, r in presets(t, i)))
     for i in CREST_TABLES:
@@ -977,7 +1036,7 @@ def rebuild_records(t, kind):
 def cmd_roundtrip(paths):
     for path in paths:
         if os.path.isdir(path):
-            targets = [os.path.join(path, EMBLEM_FILE), os.path.join(path, FLAG_FILE)]
+            targets = [os.path.join(path, n) for n in (EMBLEM_FILE, FLAG_FILE, PLAYER_FILE)]
         else:
             targets = [path]
         for p in targets:

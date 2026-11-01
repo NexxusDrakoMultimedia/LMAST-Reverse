@@ -123,7 +123,7 @@ the encoders behind `roundtrip`), `leaguesize.py` (`build`, which writes
 the schedule packs through `schedule.py`'s encoders), `pmplayer.py`
 (`set`: Virtua Pro Football's edit players), `emblem.py` (`set`: the
 crest, preset, layer and flag records of `EDIT_EMBLEM.TBB` and
-`EDIT_FLAG.TBB`), `stadium.py` (`setlook`, `setboards`: a stadium's
+`EDIT_FLAG.TBB`, and the cells of `EDIT_PLAYER.TBB`), `stadium.py` (`setlook`, `setboards`: a stadium's
 look and advert boards in `BUILD_STADIUM.TBB`) and `realnames.py`
 (`apply`: the real names of
 `SRC/realnames.csv` in `MES.PAC`, through `mbb.py`'s writer).

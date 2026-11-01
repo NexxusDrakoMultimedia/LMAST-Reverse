@@ -291,7 +291,7 @@ or added, 0–4), `0x1d8c0` a skill (< 16), `0x1d928` a play-style slot
 | 22 | 13 × 11 | `0x1cb18` | added to the 11 tendencies by the player's position (13 positions), clamped to 0–4 |
 | 23 | 13 × 16 | `0x1cb88` (`0x1cda0`) | the 16 skills by position |
 | 24 | 22 × 16 | none | its accessor (`0x1d320`) has no caller |
-| 25 | 32 × 1 | `0x1cc08` | a factor (byte ÷ 100, all 94) that scales abilities 0–32 (`0x1d780`); the row is the task's `+0x64` |
+| 25 | 32 × 1 | `0x1cc08` | a factor (byte ÷ 100, 94–100, 11 rows at 94) that scales abilities 0–32 (`0x1d780`); the row is the task's `+0x64` |
 | 26 | 100 × 151 | `0x1ade0`, `0x1ae38`, `0x1ba58` | 100 player templates: byte 0 a nation and byte 6 a position, checked against the player's (`0x1ade0`, `0x1ae38`); the row is the task's `+0x60`, and `0x1a9c8` stores the result at `+0x58` |
 | 27 | 1 × 2 | `0x1ae98` | the spread of the base abilities: each gets rand(5) − 2 |
 | 28 | 3 × 16 | `0x1cd08` | the three growth types (physical, skill, mental, `+0x4a`–`+0x4c`), 0–15, drawn from cumulative weights like table 14 |
@@ -309,13 +309,15 @@ task's `+0x38`, `+0x60` and `+0x64`, and so which rows of 19–21, 25 and
 26 a player gets, isn't traced. `python SRC/emblem.py info DAT/EMBLEM`
 checks every table's shape, that the {min, max} rows (12, 13, 15, 16)
 are in order and that the cumulative rows (14, 28) never fall, on both
-releases. Nothing here has been checked in the game.
+releases. Every cell is an unsigned byte (`lbu` at `0x1aef8`,
+`0x1cb54`). Nothing here has been checked in the game. `emblem.py set`
+edits the tables ([below](#editing)).
 
 ## Editing
 
-`emblem.py set` edits `EDIT_EMBLEM.TBB` and `EDIT_FLAG.TBB` field by
-field into a new file of the same size, which `patch_disc.py` can put on
-a disc. It changes bytes in place, so the three short layer tables keep
+`emblem.py set` edits `EDIT_EMBLEM.TBB`, `EDIT_FLAG.TBB` and
+`EDIT_PLAYER.TBB` field by field into a new file of the same size, which
+`patch_disc.py` can put on a disc. It changes bytes in place, so the three short layer tables keep
 their odd tails. Each field takes the values the game's readers above
 use:
 
@@ -328,6 +330,7 @@ use:
 | `start:<row>:<field>` | `sample` (table 10), `color1`, `color2` (table 11) | a row of table 7; 32-colour ids |
 | `flag:pattern:<row>:<field>` | `base`, `rev` | 0–48; 0–3 |
 | `flag:place:<row>:<field>` | `pos_x`, `pos_y`, `size_x`, `size_y` | −128–127; 0–255 |
+| `player:<table>:<row>:<column>` | one byte of `EDIT_PLAYER.TBB` | 0–99 in the ability tables (0–8, 10, 11, 15; the setter `0x1d700` caps at 99), 0–4 in the tendency tables (16, 22; clamped by `0x1d870`), 0–255 elsewhere |
 
 `rev` is limited to 0–3, the values the flag patterns use, as long as
 what it does is unchecked. **Nexxus's report** (2026-10-31): flag patterns
@@ -352,21 +355,26 @@ shield (mask `_mask_012_02`) instead of retail's notched top
 (`_mask_031_03`), its accessories and layers as before.
 
 Changing a crest's `base` is refused when its mask is past the new
-base's group; set the mask first. After the edits
-the file is checked as `info` checks it, and written only if that finds
-nothing.
+base's group; set the mask first. In `EDIT_PLAYER.TBB` a {min, max} row
+(tables 12, 13, 15, 16) must keep min at or below max, and a cumulative
+row (14, 28) must not fall; edit both ends of a row in one command. After
+the edits the file is checked as `info` checks it, and written only if
+that finds nothing.
 
 ```bash
 python SRC/emblem.py set DAT/EMBLEM/EDIT_EMBLEM.TBB out.TBB crest:8:0:base=15 crest:8:0:mask=1 start:0:color1=5
 python SRC/emblem.py set DAT/EMBLEM/EDIT_FLAG.TBB out.TBB flag:place:0:pos_x=-20
+python SRC/emblem.py set DAT/EMBLEM/EDIT_PLAYER.TBB out.TBB player:15:0:1=90 player:25:0:0=100
 python SRC/emblem.py roundtrip DAT/EMBLEM
 ```
 
 `roundtrip` decodes every preset, crest, starting-crest, layer and flag
-record, encodes each again from its fields and rebuilds the file: both
-files come out identical, on the PAL and the Japanese disc. Of the
-edits `set` makes, the starting crest's (above) is tested in the game;
-the presets, layer records and flag records aren't yet.
+record and every row of `EDIT_PLAYER.TBB`, encodes each again and
+rebuilds the file: all three files come out identical, on the PAL and
+the Japanese disc. Of the edits `set` makes, the starting crest's
+(above) is tested in the game; the presets, layer records, flag records
+and `EDIT_PLAYER.TBB` aren't yet. The Crests tab doesn't edit
+`EDIT_PLAYER.TBB` yet.
 
 The mod editor's Crests tab ([`USAGE.md`](../USAGE.md#the-window))
 edits the same records through `set`'s functions. It takes the records,
