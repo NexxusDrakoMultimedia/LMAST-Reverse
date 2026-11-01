@@ -129,6 +129,15 @@ version is `0x68` (PAL `0x69`). Saves of one build can't be loaded by the
 other. The layout is PAL's, less the end of block 1 and with a narrower
 wristband and gloves ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)).
 
+**The edit player.** The Japanese release has its own player editor in
+the game and doesn't import players from Virtua Pro Football (or World
+Football Climax); the PAL release has no such editor and imports
+instead (Nexxus's report, 2026-11-01). The Japanese `SAVEPRG.REL`
+still holds the import's conversion code (`0x3db60`,
+[`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#who-reads-it)), so
+`--mod vpf-styles` and `vpf-positions` change nothing a Japanese player
+sees.
+
 ## Differences in the data (empirical)
 
 | What | Japanese | PAL |

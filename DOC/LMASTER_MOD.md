@@ -27,7 +27,7 @@ level:
 | `training-fixes` | camp-types, camp-cities, camp-santiago, camp-clubs, drill-names | yes | yes | yes |
 | `injury-fixes` | injury-value, injury-row | yes | yes | yes |
 | `club-fixes` | sponsor-negotiation, season-status, pr-cycle, mobile-site, overseas-pop, cup-last16 | yes | yes | yes |
-| `match-fixes` | rival-manager, press-tendency, national-cups, vpf-styles | yes | yes | yes |
+| `match-fixes` | rival-manager, press-tendency, national-cups, vpf-styles, vpf-positions | yes | yes | yes |
 | `text-fixes` | retail-text ([below](#retail-text-fixes)) | yes | yes | yes |
 | `leagues` | league-balance, third-tier | – | yes | yes |
 | `restorations` | injury-lines, salesman-items | – | yes | yes |
@@ -121,7 +121,7 @@ Rules for an entry:
 | 32 dialogue categories | cut before both releases (no reference in the Japanese code either) | [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md): derby interviews, a facilities tour, notices | needs triggers in the event system and English text | research |
 | The manager's match policy | bug? (reads the wrong field), in both releases (Japanese `GAMEPRG.REL 0xd8f44`, `0xf34e8`) | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors): nothing reads the match policy (`PlTeamData +0x4889`); the match's tactic shifts by period and score (`GAMEPRG.REL 0xd96e8`) and what looks like its substitution tables (`0xf3cb0`) read the selection policy (`+0x4888`) instead, in groups that fit the match policy's names (act boldly and change tactics a lot together, "rarely change" in the mildest group) | two instructions: the offset `0x4888` → `0x4889` in `lbu $s2, 0x4888($v0)` at `GAMEPRG.REL 0xd970c` (`90524888` → `90524889`) and `lbu $v1, 0x4888($sp)` at `0xf3cb0` (`93a34888` → `93a34889`), through `gamever.py` for the Japanese ones | candidate. Check first in the game that the selection policy changes a computer club's in-match tactics or substitutions (`TODO.md` section 7) |
 | Tactics of a much stronger club | bug? (a missing case), in both releases (Japanese `0x22f46c`) | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors): `plTeam_SetStyleTeamParam` picks a column of slider steps (`0x534438`) from the strength ratio; above 1.19 it gives column 0, the same as up to 0.79, and column 4 (the opposite steps) is never used | one instruction at `0x22ef8c`: `movn $v1, $zero, $v0` (`0002180b`) becomes `addu $v1, $v1, $v0` (`00621821`), so the column is 3 + (ratio > 1.19). `$v0` is overwritten by the next instruction | candidate. Check first which end of a slider (0–6) is attacking: only then is it clear that column 4 was meant for the stronger club |
-| Goalkeeping aptitude of imported VPF players | bug (unset fields left at 0), in PAL (the Japanese release isn't checked) | [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#the-record), found by Ohayoghurt: the import stores only the first of a player's three positions (`SAVEPRG.REL 0x3ebc4`, `0x3ebd0`); the other two stay 0, the goalkeeper's cell, instead of 13 (none), and each gives the goalkeeper cell one more level, so every imported outfield player has goalkeeping level 2 | after the stores, write 13 to the second and third positions in both copies: edit work `+0x24`, `+0x28` and `PlPinfo +0x1b8`, `+0x1bc`. There are no spare instructions at `0x3ebc4`–`0x3ebd0`, so it needs a short routine somewhere free in `SAVEPRG.REL`, called from there. Players imported before the fix keep the extra level in the save | candidate. Check first in the game: import an outfield player on a fixed disc and see that the detail screen's goalkeeper box stays dark |
+| Goalkeeping aptitude of imported VPF players | bug (unset fields left at 0), in PAL (the Japanese release has no import) | [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#the-record), found by Ohayoghurt: the import stores only the first of a player's three positions (`SAVEPRG.REL 0x3ebc4`, `0x3ebd0`); the other two stay 0, the goalkeeper's cell, instead of 13 (none), and each gives the goalkeeper cell one more level, so every imported outfield player has goalkeeping level 2 | `--mod vpf-positions`: the main-position picker the import runs just before (`0x3ddc8`, its only caller `0x3ebb4`) loses its 9-case jump table (`0x547c0`): the same cells are worked out in a few words (3*i*/2 for an even index *i*, 3(*i* − 1)/2 + 1 for an odd one, plus 1 when the player leans right), and the words saved write 13 to positions 2 and 3 of the edit work (`+0x24`, `+0x28`) and the `PlPinfo` (`+0x1b8`, `+0x1bc`), through the caller's `$s1` and `$s5`. 19 words at `0x3de48`; the two relocated words of the table's address (`0x3de58`, `0x3de60`) stay as they are. Players imported before the fix keep the extra level in the save | built 2026-11-01. The old and new picker were run in a small MIPS simulator for all 9 indices and both leanings: the same cell every time, and all four positions set to 13. Not checked in the game: import an outfield player on `LMAST-test-vpfpos.iso` and see that the detail screen's goalkeeper box stays dark |
 | Coach's training plan by policy | broken data (rows out of step with the names), in both releases (Japanese `SIMPRG.REL 0x224d70`) | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors): the plan has 6 rows (`SIMPRG.REL 0x228cc0`) for 8 training policies; man-marking (3) gets the physical row, physical (4) the formation row, and formation, condition and match practice (5–7) the match row | needs two more rows (a man-marking one and a condition one, written new) and the clamp `slti $v0, $t1, 6` at `SIMPRG.REL 0xf0850` raised to 8. No free bytes follow the table (other data does), so the 8 rows need room elsewhere and the table's `lui`/`addiu` at `0xf06a8`/`0xf06b0` pointed there. Six rows can't fit eight names whatever their order | candidate. Only the player's own club uses the plan (computer clubs train without it), so decide first whether new rows are worth it |
 
 ## Improvements
@@ -886,6 +886,18 @@ Ideas Nexxus has agreed on (2026-10-27), not started:
   texture once requantised to its palette, and the few larger ones need
   a choice (scaled down, or left to the pack). The pack's files stay out
   of the repo.
+
+Possible, for LMASTER full and max (Nexxus's idea, 2026-11-01), not
+started:
+
+- **The Japanese in-game player editor.** The Japanese release lets
+  you make an edit player in the game; the PAL release has no editor
+  and imports one from Virtua Pro Football instead
+  ([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#confirmed-from-the-game-code)).
+  Restoring it would need: where the Japanese editor's screens live
+  (its overlay and `SIMPRG.REL`/`SAVEPRG.REL` entry points), whether
+  the PAL code still holds them unreachable or they were cut, and the
+  English text for its screens. Nothing is traced yet.
 
 ## Still unknown
 

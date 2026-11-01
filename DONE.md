@@ -179,7 +179,8 @@ Each result is recorded in the doc linked.
 - [x] LMASTER lite: the fixes for training camps, drill names,
       injuries, the main sponsor negotiation, season tickets, PR events,
       overseas popularity, cup popularity, the rival's manager, the press
-      tendency, the national cups, VPF play styles and the retail text
+      tendency, the national cups, VPF play styles and positions (the
+      latter Ohayoghurt's find) and the retail text
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [x] LMASTER full: the third tier, balanced league schedules, the cut
       injury lines, the salesman's items, real names, your own stadium,

@@ -92,7 +92,7 @@ Groups: training-fixes (camp-types, camp-cities, camp-santiago,
 camp-clubs, drill-names), injury-fixes (injury-value, injury-row),
 club-fixes (sponsor-negotiation, season-status, pr-cycle, mobile-site,
 overseas-pop, cup-last16), match-fixes (rival-manager, press-tendency,
-national-cups, vpf-styles), text-fixes (retail-text), harder-economy (facility-tiers,
+national-cups, vpf-styles, vpf-positions), text-fixes (retail-text), harder-economy (facility-tiers,
 wider-tickets, dearer-ads,
 sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
@@ -239,7 +239,13 @@ only) fixes the Virtua Pro Football import's play-style sort: its compare
 come in; 4 words make it compare the ratings, best first (through the
 tail of the executable's strcmp, 0x31a5b4), and one more (0x3dfe0) rates
 style 0, "none", at 0 in the sorted copy, so it never takes a slot. See
-DOC/PMPLAYER_FORMAT.md.
+DOC/PMPLAYER_FORMAT.md. vpf-positions (whole disc image only) stops every
+imported player from getting goalkeeping level 2: the import stored only
+the first of the three positions, leaving the others 0 (GK) instead of
+13 (none). The main-position picker (DLL/SAVEPRG.REL 0x3ddc8) gets its
+9-case jump table replaced by the same cells worked out in a few words,
+and the words saved write 13 to the second and third positions of the
+edit work and the PlPinfo.
 
 season-status (whole disc image only) restores the season-ticket status
 factor: pwkUnkei_GetExpectSeat scales demand by club status in bands of
@@ -2271,6 +2277,56 @@ def plan_vpf_styles(f, img):
     return word_jobs(f, img, "vpf-styles", words)
 
 
+# --- the VPF import's goalkeeping level (DOC/PMPLAYER_FORMAT.md#the-record) ---
+# The import stores the main position as the first of a player's three
+# (SAVEPRG.REL 0x3ebc4 in the edit work, 0x3ebd0 in the PlPinfo), and the
+# other two keep the cleared buffers' 0, the goalkeeper's cell, instead of
+# 13 (none). plPinfo_CalcAptPos gives each listed cell a level, so every
+# imported player got goalkeeping level 2. The fix goes in the picker its
+# one caller runs just before (0x3ddc8, called from 0x3ebb4 only): its
+# jump table on the best of 9 aptitudes (0x547c0) gives cell 3i/2 for an
+# even index i, and 3(i-1)/2 + 1 for an odd one, plus 1 when the player
+# leans right (0x102 below 0x108). Worked out directly, that takes fewer
+# words, and the rest write 13 through the caller's $s1 (edit work) and
+# $s5 (PlPinfo), which the picker and the qsort it calls keep. The words
+# at 0x3de58 and 0x3de60 are relocated when the overlay loads (the jump
+# table's address), so they stay as they are; they only set $v0, which is
+# written after them. The not-found path at 0x3deec is unchanged.
+def vpf_positions_words():
+    def to_end(index):          # branch offset from word `index` to the epilogue
+        return (VPF_POSITIONS_END - (VPF_POSITIONS_AT + 4 * (index + 1))) // 4
+    new = (addiu(T0, ZERO, 13),
+           sw(T0, 0x24, S1), sw(T0, 0x28, S1),        # edit work: positions 2 and 3
+           sw(T0, 0x1B8, S5),
+           0x3C020005,                                # lui $v0, 5 (relocated, kept)
+           sw(T0, 0x1BC, S5),                         # PlPinfo: positions 2 and 3
+           0x244247C0,                                # addiu $v0, $v0, 0x47c0 (relocated, kept)
+           srl(A0, V1, 1), sll(A1, A0, 1), addu(A1, A1, A0),   # 3 * (i / 2)
+           andi(A2, V1, 1),
+           beqz(A2, to_end(11)), move(V0, A1),        # even: done
+           lhu(A0, 0x108, S0), lhu(V1, 0x102, S0),
+           addiu(V0, A1, 1), sltu(V1, V1, A0),        # odd: the side cell, right if it leans so
+           beqz(ZERO, to_end(17)), addu(V0, V0, V1))
+    old = (0x28620009, 0x10400027, 0x2C620009, 0x10400025, 0x3C020005, 0x00031880,
+           0x244247C0, 0x00621821, 0x8C640000, 0x00800008, 0x00000000, 0x96040108,
+           0x24050002, 0x96030102, 0x10000015, 0x24020001, 0x10000019, 0x24020003,
+           0x96040108)
+    return old, new
+
+
+VPF_POSITIONS_AT, VPF_POSITIONS_END = 0x3DE48, 0x3DEF0     # the rewrite, the picker's epilogue
+
+
+def plan_vpf_positions(f, img):
+    """Jobs for --mod vpf-positions."""
+    old, new = vpf_positions_words()
+    words = [(SAVE_FILE, VPF_POSITIONS_AT, struct.pack("<%dI" % len(old), *old),
+              struct.pack("<%dI" % len(new), *new),
+              "%s 0x%x (main-position picker, positions 2 and 3 none)"
+              % (SAVE_FILE, VPF_POSITIONS_AT))]
+    return word_jobs(f, img, "vpf-positions", words)
+
+
 # --- the press tendency's team cap (DOC/PBDATA_FORMAT.md#the-tendencies) -------
 
 # The press readers (GAMEPRG.REL 0x9a418, 0x9a4c8) clamp a player's press
@@ -3209,7 +3265,7 @@ ONE_SEASON_END = (
 # A small MIPS encoder for the code the switches add, so it reads as
 # instructions. Register numbers as the EE names them.
 ZERO, AT, V0, V1, A0, A1, A2, A3, T0, T1, T2 = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-S0, S1, S2, SP, RA = 16, 17, 18, 29, 31
+S0, S1, S2, S5, SP, RA = 16, 17, 18, 21, 29, 31
 
 
 def _i(op, rs, rt, imm):
@@ -3223,10 +3279,12 @@ def _r(rs, rt, rd, funct):
 def addiu(rt, rs, imm): return _i(0x09, rs, rt, imm)
 def slti(rt, rs, imm): return _i(0x0A, rs, rt, imm)
 def sltiu(rt, rs, imm): return _i(0x0B, rs, rt, imm)
+def andi(rt, rs, imm): return _i(0x0C, rs, rt, imm)
 def ori(rt, rs, imm): return _i(0x0D, rs, rt, imm)
 def lui(rt, imm): return _i(0x0F, 0, rt, imm)
 def lw(rt, off, rs): return _i(0x23, rs, rt, off)
 def lbu(rt, off, rs): return _i(0x24, rs, rt, off)
+def lhu(rt, off, rs): return _i(0x25, rs, rt, off)
 def sb(rt, off, rs): return _i(0x28, rs, rt, off)
 def sw(rt, off, rs): return _i(0x2B, rs, rt, off)
 def ld(rt, off, rs): return _i(0x37, rs, rt, off)
@@ -3236,6 +3294,9 @@ def sq(rt, off, rs): return _i(0x1F, rs, rt, off)
 def beqz(rs, off): return _i(0x04, rs, 0, off)       # off in words from the delay slot
 def bnez(rs, off): return _i(0x05, rs, 0, off)
 def addu(rd, rs, rt): return _r(rs, rt, rd, 0x21)
+def sltu(rd, rs, rt): return _r(rs, rt, rd, 0x2B)
+def sll(rd, rt, sa): return rt << 16 | rd << 11 | sa << 6
+def srl(rd, rt, sa): return rt << 16 | rd << 11 | sa << 6 | 0x02
 def move(rd, rs): return _r(rs, 0, rd, 0x2D)         # daddu rd, rs, $zero
 def mult3(rd, rs, rt): return _r(rs, rt, rd, 0x18)   # the R5900's three-operand mult
 def movn(rd, rs, rt): return _r(rs, rt, rd, 0x0B)
@@ -4680,6 +4741,9 @@ SWITCHES = (
     ("vpf-styles", plan_vpf_styles, [SAVE_FILE],
      "Virtua Pro Football import: an edit player's best play styles come in "
      "(the import's sort never sorted)"),
+    ("vpf-positions", plan_vpf_positions, [SAVE_FILE],
+     "Virtua Pro Football import: an edit player no longer comes in able to "
+     "keep goal (two empty positions were stored as GK)"),
     ("season-status", plan_season_status, [SLES_FILE],
      "Season tickets: bigger clubs sell more of them, as the status bands intend "
      "(every club over 10,000 status was stuck at the second band)"),
@@ -4819,7 +4883,7 @@ GROUPS = (       # (name, title, switches)
      ("sponsor-negotiation", "season-status", "pr-cycle", "mobile-site", "overseas-pop",
       "cup-last16")),
     ("match-fixes", "Match and import fixes",
-     ("rival-manager", "press-tendency", "national-cups", "vpf-styles")),
+     ("rival-manager", "press-tendency", "national-cups", "vpf-styles", "vpf-positions")),
     ("text-fixes", "Text fixes", ("retail-text",)),
     ("harder-economy", "Harder economy",
      ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",

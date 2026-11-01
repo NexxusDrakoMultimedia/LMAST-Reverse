@@ -34,7 +34,9 @@ All in `SAVEPRG.REL`. **Confirmed from the game code:**
 
 The Blowfish tables are the ones this game's saves use (`0x4bd78`,
 `0x4bdc0`). The Japanese `SAVEPRG.REL` has the same key, tables and
-conversion (at `0x3db60`).
+conversion (at `0x3db60`), but the Japanese release doesn't offer the
+import: it has its own player editor in the game instead (Nexxus's
+report, 2026-11-01, [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#confirmed-from-the-game-code)).
 
 ## File layout
 
@@ -110,10 +112,9 @@ goalkeeper's cell, not "none". `plPinfo_CalcAptPos` (`0x218078`–
 `0x2180ac`) gives each listed cell below 13 one more level, up to 4
 ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#positions-and-aptitude)), so
 the goalkeeper cell gets +2: an outfield player whose abilities give
-him no goalkeeping level comes in at level 2. Not yet checked: the
-Japanese conversion (`0x3db60`), and whether the edit-player screen
-lets the player change the extra positions afterwards. A fix is an
-LMASTER Mod candidate
+him no goalkeeping level comes in at level 2. Not yet checked: whether
+the edit-player screen lets the player change the extra positions
+afterwards. `--mod vpf-positions` fixes it
 ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
 
 **Play styles (a bug in the import).** `0x3df10` copies the 22 ratings
@@ -223,9 +224,8 @@ same edits as `set` and reads every field back.
   name edit loads; see Editing).
 - How VPF numbers a new player's id, so a player could be added to an
   empty slot.
-- Whether the Japanese import (`0x3db60`) leaves the second and third
-  positions at 0 too, and whether the edit-player screen can change
-  them after an import ([The record](#the-record)).
+- Whether the edit-player screen can change the second and third
+  positions after an import ([The record](#the-record)).
 - `file.inf`'s check: its CRC over the first 0x20 bytes doesn't match
   the u32 after them, so it may use another length. It doesn't cover
   `pmplayer.bin`'s contents: VPF loaded an edited file with `file.inf`

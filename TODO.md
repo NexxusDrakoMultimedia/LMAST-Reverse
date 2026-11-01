@@ -366,6 +366,11 @@ disc or the edit to build; the result goes into the doc linked.
       of your squad has abilities 59–63 raised (the saved players don't
       change); the headphones and spikes the same way
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [ ] `--mod vpf-positions` on `LMAST-test-vpfpos.iso` (built
+      2026-11-01, only this switch, retail saves): import an outfield
+      player from VPF and check that the detail screen's goalkeeper box
+      stays dark; on the retail disc the same player lights it
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 
 ### Testing aids and sound
 
@@ -394,11 +399,9 @@ is built and tested, or set aside.
       test), the strength ratio above 1.19 getting column 0, and the
       training plan's rows out of step with the policy names
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] Candidate: imported VPF players' goalkeeping aptitude. The
-      import leaves the second and third positions at 0 (GK) instead of
-      13 (none), giving every imported outfield player goalkeeping
-      level 2 (Ohayoghurt's find)
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [ ] Possible, for full and max: the Japanese in-game player editor
+      in the PAL release; first find its code and whether PAL still
+      holds it ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] LMAST Realism on the disc: the texture hash map, a texture writer
       (section 3) and the palettes
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
