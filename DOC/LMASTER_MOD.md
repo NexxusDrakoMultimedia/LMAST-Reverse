@@ -908,8 +908,8 @@ started:
 ## Still unknown
 
 The in-game checks still to make are in each row's status above, and
-[`TODO.md`](../TODO.md) sections 7 and 8 hold them as tasks. The open
-questions behind the candidates:
+[`TESTING.md`](../TESTING.md) and [`TODO.md`](../TODO.md) section 8
+hold them as tasks. The open questions behind the candidates:
 
 - Whether the 475 unused combination records play sensibly, and how to
   tell in a match which combination ran

@@ -95,6 +95,7 @@ In that case:
 | `DOC/*.md` | every fact about a file or system, how it was shown, the in-game tests, and the questions still open (its "Still unknown" section; every format and folder doc has one) |
 | `GOALS.md` | what the project is for, what a mod should be able to change, each stage's status in a few lines, and the coverage table. No task lists |
 | `TODO.md` | "Next up"; a table of the goals (the kinds of change in `GOALS.md`, playing a mod, graphics) with what works, what is still in the way and the sections that hold the tasks; then tasks by the stages of `GOALS.md` (read, understand, write, rebuild, edit, distribute), each section opening with its goal and when it is done, section 2 grouped by the goal each task serves; then the in-game tests and the LMASTER Mod. Each item links the doc that holds its details instead of repeating them |
+| `TESTING.md` | the checks only a person can make in the game, for every contributor: how to take part and report, how a result is recorded, then the open checks, each naming what to build and the doc it goes into. A finished check moves to `DONE.md` section 7 |
 | `DONE.md` | finished work, under the same section numbers as `TODO.md`: a line or two per piece of work with a link to the doc, related items merged. No dates or test details: those are in the doc |
 | `README.md` | setup, every tool with what it does, how the tools depend on each other, and the doc index |
 | `INSTALL.md` | the players' guide, kept short: checking the disc, applying a patch, saves, and building a patch with the editions and groups in one line each. Release-specific notes (what changed between LMASTER versions, upgrading a career) belong in the LMASTER-Mod repo, and each switch's details in `DOC/LMASTER_MOD.md`. Update it when an edition or group is added or changes |
@@ -140,7 +141,7 @@ the user's desktop.
 
 Some things can only be checked by a person: that an edit shows in the game
 (PCSX2), what a screen shows, or how audio sounds. Ask the user to check
-(the pending checks are `TODO.md` section 7, each naming the disc or edit
+(the pending checks are in `TESTING.md`, each naming the disc or edit
 to build), then record the result in the doc ("Tested in PCSX2: ...",
 "identified by ear", and who saw it, below) and move the item to
 `DONE.md`. The user doesn't write code, so don't hand code tasks to

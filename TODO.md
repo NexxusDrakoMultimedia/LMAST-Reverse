@@ -16,9 +16,9 @@ How it's laid out:
 - **Sections 1 to 6** follow the stages in
   [`GOALS.md`](GOALS.md#the-path-there): read every file, understand
   its fields, write it, rebuild a disc, edit it in the GUI, and share
-  the result. Stage 0, decrypting `DATA.CVM`, is done. **Section 7** is
-  the checks only a person can make in the game, and **section 8** the
-  LMASTER Mod.
+  the result. Stage 0, decrypting `DATA.CVM`, is done. **Section 7**
+  points to [`TESTING.md`](TESTING.md), the checks only a person can
+  make in the game, and **section 8** is the LMASTER Mod.
 
 Each task links the doc that holds its details: the facts, the evidence
 and the "Still unknown" list it comes from. When a question is
@@ -29,8 +29,8 @@ end of the same section in [`DONE.md`](DONE.md) as a line or two.
 
 What to work on next, most valuable first.
 
-1. **LMASTER max in the game** (sections 7 and 8). Tested so far: every
-   part of `--mod harder-economy`, `transfer-fees`, `fee-tiers` at the
+1. **LMASTER max in the game** ([`TESTING.md`](TESTING.md), section
+   8). Tested so far: every part of `--mod harder-economy`, `transfer-fees`, `fee-tiers` at the
    low end, `pr-costs`, `merch-costs`, `slow-reputation` after a match,
    and the separate career saves. Through a German season Nexxus found
    the game much harder economically, with the fanbase growing much more
@@ -49,9 +49,9 @@ What to work on next, most valuable first.
    before LMASTER 1.0.0: every other switch plans there now; left are
    `third-tier` (a code port) and `real-names` (the names in Japanese)
    ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc)).
-4. **League games on the national-team dates in the game** (section
-   7): England at 18 clubs, a short test that decides whether the new
-   division sizes are safe to offer
+4. **League games on the national-team dates in the game**
+   ([`TESTING.md`](TESTING.md)): England at 18 clubs, a short test that
+   decides whether the new division sizes are safe to offer
    ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size)).
 
 ## The goals, and what each still needs
@@ -264,134 +264,9 @@ covered. See [`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod).
 
 ## 7. Tests in PCSX2
 
-**Goal:** every edit and switch is seen working in the game. Only a
-person can check these (see [`AGENTS.md`](AGENTS.md)). Each names the
-disc or the edit to build; the result goes into the doc linked.
-
-### The starting season and data
-
-- [ ] A smaller first division (France at 18, from the Season tab) and
-      two nations changed in one build; only England at 22 is tested
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from))
-- [ ] League games on the national-team dates: England at 18 with
-      "Play on national-team dates" ticked in the Season tab
-      (`leaguesize.py build ... England 18 --national`), a career in the
-      Champions Division (28 clubs) played past Sep w3 midweek, the first
-      such date: the league game is played, your called-up players are
-      missing or not, and the season ends on 54 game days
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size))
-- [ ] Squad ages: a career started without the tutorial skip, with Van
-      der Sar (Manchester slot 0) at 16 in the mod: 16 means the skip
-      adds the year
-      ([`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md#oteammembertbb))
-- [ ] A main-position change with `pbdata.py --sles` on its own (rank
-      edits are tested) ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md))
-- [ ] Kits: an edit to only one licensed-kit descriptor copy, to tell
-      which one a match reads; whether screens outside a match show
-      your club's stored keeper kit
-      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#still-unknown),
-      [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
-- [ ] Kit style: outfield gloves on a player with `gloves` 1–4 in a
-      career match between November and March (not in VS), and the cap
-      on an edit player made with the GK Style page's Hat, in the
-      editor's preview and in a match
-      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#kit-style))
-- [ ] The match policy: give a computer club's manager selection policy
-      0 and then 7 (match policy unchanged), play a match against it
-      while behind or ahead late, and see whether its tactics and
-      substitutions change; that tells whether the match reads the
-      selection byte by mistake
-      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-developers-staff-editors))
-- [ ] `pmplayer.py check` on a career saved after importing the edited
-      V. Drake with `--mod vpf-styles` (`LMAST-vpftest.ps2`)
-      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#tested))
-
-### The editor's tabs
-
-- [ ] A `CLUBRESULT.TBB` edit: a cup given a third-place match shows
-      "3rd"/"4th" on the end of tournament screen
-      ([`CLUBRESULT_FORMAT.md`](DOC/CLUBRESULT_FORMAT.md#editing))
-- [ ] A save from the Regulations tab (the same edit from
-      `regulation.py set` is tested)
-      ([`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md#editing))
-- [ ] The crest editor: whether the three short `EDIT_EMBLEM` layer
-      tables lose visible parts
-      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#the-layer-tables-12143))
-- [ ] The National calendar tab: the World Cup squads called up a turn
-      earlier (`3:88:callup=0 3:87:callup=1 3:87:finals=1`, a season
-      starting in 2009), alone and with `--mod national-cups`
-      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#schedule_listtbb-the-national-team-calendar))
-- [ ] The Club ranking tab (for example `rank:7:31=3`), and a resized
-      league's added ranking rows (England at 22), each played to the
-      end of the first season and read with `save.py clubs`
-      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables))
-- [ ] The Nations & stadiums and Player links tabs: one edit from each
-      ([`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md#stadium_datatbb-stadiums),
-      [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#writing-the-streams))
-- [ ] The Tours, Tactics and Comments tabs: one edit from each (a tour
-      opponent, a preset's formation, a manager comment cell)
-      ([`PARAM_DIR.md`](DOC/PARAM_DIR.md),
-      [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-detail-screen-comments))
-- [ ] The Stadiums tab: one stadium built like another (for example a
-      small club's ground built like 99, the `ho04a` bowl) and one of
-      its boards changed, on a test disc built from the editor (File >
-      Build disc); play a match there, with and without LMASTER full
-      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
-- [ ] Save editor step 4: one save edited on each page (the Club page is
-      tested), the step 5 player fields and the Edit player page
-      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#steps))
-- [ ] The manager's Special Mention texts for dissatisfaction kinds 0–3,
-      a save edit per kind
-      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-
-### The LMASTER Mod
-
-- [ ] The rest of the `--mod balance` switches, `injury-lines` and
-      `pr-cycle`, on a `--mod lmaster-max` disc: each row marked "not
-      checked in the game" in
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements) (the injury
-      lines and odds, overseas bases, a fee above £120M, `fanbase`'s
-      crowds, TV offers and big-fanbase merchandise, the camp and tour
-      costs; `fee-tiers`' low end, `pr-costs`, lower merchandise income
-      and `slow-reputation` after a win are seen)
-- [ ] The third tier's lower cups on `LMAST-test-max-germany.iso` (its
-      transfer windows, season's end, saving and loading are tested,
-      [`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md#--mod-third-tier-the-lists-phase-2b)):
-      the German Club Cup's seeded bracket (one first-round tie on Dec
-      w1 midweek, the other 7 clubs from the second round) played to
-      its final, another nation's lower cup the same way, and the round
-      names on the end of tournament screen
-      ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
-- [ ] The third tier's text in a language other than English (the
-      English is tested): the advisor's intro, the Game Over help, the
-      2nd German League's rules screen and its season-start news
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-text))
-- [ ] A `--mod-saves` disc writes its VS data to `BESLES-54151-V000`,
-      and an LMASTER full disc its careers to `-F000`
-      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
-- [ ] The Special stadium late in a career: a 100,000 ground (`--mod
-      special-stadium`) that fills when sold out
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#stadiums))
-- [ ] `--mod press-tendency` by eye: a club of high-press players closes
-      down harder than without it (the patch is checked in memory)
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] `--mod salesman-items` in a career from season 8, where the
-      special training coach visits: hire him, check that his "worked
-      wonders" follow-up comes and the "has waned" message 8 turns
-      after it, and over PINE that flag 336 is set and the match's copy
-      of your squad has abilities 59–63 raised (the saved players don't
-      change); the headphones and spikes the same way
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-
-### Testing aids and sound
-
-- [ ] The tutorial skip in France, Italy, Spain or the Netherlands
-      (`--skip-nation`; England and Germany are played)
-      ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs))
-- [ ] The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG
-      LIGHT TEST ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-developer-launcher))
-- [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
-      `MAP01` ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md#still-unknown))
+The checks only a person can make in the game are in
+[`TESTING.md`](TESTING.md), written for every contributor: what to
+build, what to look for and how to report it.
 
 ## 8. LMASTER Mod and other patches
 
@@ -433,8 +308,8 @@ is built and tested, or set aside.
       pattern repeat check; decide first whether the extra records play
       sensibly ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] Candidates from the manager's fields: the match reading the
-      selection policy instead of the match policy (after the section 7
-      test), the strength ratio above 1.19 getting column 0, and the
+      selection policy instead of the match policy (after its test in
+      [`TESTING.md`](TESTING.md)), the strength ratio above 1.19 getting column 0, and the
       training plan's rows out of step with the policy names
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] Possible, for full and max: the Japanese in-game player editor

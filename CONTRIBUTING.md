@@ -20,7 +20,7 @@ You don't need to write code to help.
 
 | Kind | How |
 |---|---|
-| Test something in the game | pick a check from section 7 of [`TODO.md`](TODO.md); each names the disc or edit to build. Report what you changed, what you saw on screen and the date. A screenshot or a PCSX2 save state helps |
+| Test something in the game | pick a check from [`TESTING.md`](TESTING.md), which also explains how to build the disc and report; each names the disc or edit to build. Report what you changed, what you saw on screen and the date. A screenshot or a PCSX2 save state helps |
 | Report a bug | open an [issue](https://github.com/NexxusDrakoMultimedia/LMAST-Reverse/issues) (below) |
 | Share what you know about the game | gameplay knowledge, screen names, what a menu does, translations of Japanese text. Open an issue or post on the [LMAST/SFCC English Fan Discord](https://discord.gg/7DNrGye9TZ) |
 | Improve the docs | fix an error, or answer a question from a doc's `## Still unknown` section |

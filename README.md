@@ -29,6 +29,7 @@ Where to start:
 | make a mod, or edit a career | [`USAGE.md`](USAGE.md): the mod editor and the save editor, tab by tab |
 | know what a file or system does | the [documentation index](#documentation-index) below |
 | help | [`CONTRIBUTING.md`](CONTRIBUTING.md), and "Next up" in [`TODO.md`](TODO.md) |
+| test something in the game | [`TESTING.md`](TESTING.md): the checks only a person playing can make, and how to report them |
 
 **Sister project:**
 [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)

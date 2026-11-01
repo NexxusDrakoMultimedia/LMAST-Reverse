@@ -304,7 +304,7 @@ checked in the game.
 
 - What the game does with table 2's negative values.
 - Whether a new game or the tutorial skip adds the year to the squads'
-  ages (a PCSX2 test in [`TODO.md`](../TODO.md#7-tests-in-pcsx2)).
+  ages (a PCSX2 test in [`TESTING.md`](../TESTING.md)).
 - Club-record bytes `0x0b`, `0x0c`, `0x0d` and `0x0f`.
 - What reads `MAPTEAM_LIST.TBB`, and what its flag is for.
 
