@@ -74,6 +74,7 @@ Each kind of data has a tab along the top:
 | Tactics | the tactics screen's eight Set Formation presets |
 | Kits | every club's home, away and keeper kits, shown as colour swatches, and the licensed clubs' numbers, name, collar and captain mark |
 | Crests | the crests a new club can pick, the rival's crest and the crest editor's samples and presets, part by part with colour swatches, and the flag patterns and where the crest sits on a flag. Pick what to show from the drop-down at the top. A colour can be one of the club's own three ("club colour 1" to "3"), which follow whatever colours the player gives the club. A new club's starting crest is checked in the game (it follows the club's main colour, so an edit to row *n* shows on a club of colour *n*); the other crest tables aren't yet |
+| Player editor | the tables the game's player editor makes a new player from: base abilities by position and nation, the personality, ability, tendency and growth ranges, and the overrides for the editor's choices. Pick a table at the top and a row on the left; each byte of the row has its own box. Abilities take 0–99, tendencies 0–4, the rest 0–255, and an edit that would put a minimum above its maximum, or make a cumulative row fall, is refused. Nothing here is checked in the game yet |
 | Text | any message in the game, in all its language slots |
 | Comments | the comment lines on the player, manager, coach and scout detail screens |
 | Log | the commands your saves stood for (below) |

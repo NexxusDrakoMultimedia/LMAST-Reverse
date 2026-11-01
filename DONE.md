@@ -140,7 +140,9 @@ the evidence and how it was tested; the git history holds the rest.
 
 - [x] `editor.py`: a tab for every writer of game data, each save equal
       to its logged command, and File > Build disc
-      ([`USAGE.md`](USAGE.md#the-mod-editor))
+      ([`USAGE.md`](USAGE.md#the-mod-editor)); the Player editor tab
+      for `EDIT_PLAYER.TBB`
+      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 - [x] `saveedit.py`: every page `save.py set` can write, Save to new
       slot, card files
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))

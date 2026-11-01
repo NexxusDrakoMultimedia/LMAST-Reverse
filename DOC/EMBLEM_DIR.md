@@ -373,8 +373,18 @@ record and every row of `EDIT_PLAYER.TBB`, encodes each again and
 rebuilds the file: all three files come out identical, on the PAL and
 the Japanese disc. Of the edits `set` makes, the starting crest's
 (above) is tested in the game; the presets, layer records, flag records
-and `EDIT_PLAYER.TBB` aren't yet. The Crests tab doesn't edit
-`EDIT_PLAYER.TBB` yet.
+and `EDIT_PLAYER.TBB` aren't yet.
+
+The mod editor's Player editor tab
+([`USAGE.md`](../USAGE.md#the-window)) edits `EDIT_PLAYER.TBB` one row
+at a time through `set`'s functions, with the rows, labels and allowed
+values from `emblem.player_records`, `player_fields` and
+`player_value`. It refuses an edit at once when the {min, max} or
+cumulative check fails. Tested through its widgets off-screen: four
+edits in tables 0, 15, 19 and 25 saved, and three refused (an ability of
+100, a min above its max, a falling growth row); the logged command
+rebuilt the saved file byte for byte, and a second session read the
+edits back.
 
 The mod editor's Crests tab ([`USAGE.md`](../USAGE.md#the-window))
 edits the same records through `set`'s functions. It takes the records,

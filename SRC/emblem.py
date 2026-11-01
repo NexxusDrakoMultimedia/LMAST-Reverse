@@ -475,6 +475,57 @@ def set_player(t, table, row, col, value):
     return old
 
 
+# What each table holds, for the editor (DOC/EMBLEM_DIR.md#edit_playertbb).
+EDIT_PLAYER_TITLES = ["base abilities 0-32, position cell %d, by nation" % c for c in range(9)] + [
+    "the 13 positions in each of 4 groups", "position aptitudes by position cell",
+    "side aptitudes", "dissatisfaction weights {min, max}", "personality fields {min, max}",
+    "policy weights by nation (cumulative)", "abilities 45-63 {min, max}",
+    "tendencies {min, max}", "skills", "play styles", "overrides for the editor's choices",
+    "overrides for another set of choices (1 of 2)",
+    "overrides for another set of choices (2 of 2)", "tendencies added by position",
+    "skills by position", "unused (its accessor has no caller)", "ability factor (byte / 100)",
+    "player templates", "base ability spread", "growth types (cumulative)",
+    "position aptitude blend", "hexagon graph data by position (1 of 2)",
+    "hexagon graph data by position (2 of 2)"]
+NATION_ROWS = ["England", "France", "Germany", "Italy", "Spain", "the Netherlands",
+               "the rest of the first region"] + ["other regions, row %d" % r for r in range(7, 14)]
+POSITION_ROWS = ["GK", "LSB", "RSB", "CB", "LWB", "RWB", "DM", "LSM", "RSM", "OM", "LWG",
+                 "RWG", "FW"]
+PERSONALITY_ROWS = ["tone", "professionalism", "pressure", "loyalty", "star", "explodetype",
+                    "moti_type", "cond_type", "potential", "unused", "unused", "unused",
+                    "travel", "injury_res", "recovery", "foul_avoid", "weak_foot", "policy",
+                    "adapt", "ball_touch", "dribble_style"]
+EDIT_PLAYER_ROW_LABELS = dict([(i, NATION_ROWS) for i in range(9)] + [
+    (13, PERSONALITY_ROWS), (15, ["ability %d" % a for a in range(45, 64)])] +
+    [(i, POSITION_ROWS) for i in (22, 23, 30, 31)])
+
+
+def player_records(table):
+    """The rows of one EDIT_PLAYER.TBB table, as `set` target prefixes."""
+    return ["player:%d:%d" % (table, r) for r in range(EDIT_PLAYER_SHAPES[table][0])]
+
+
+def player_row_label(table, row):
+    labels = EDIT_PLAYER_ROW_LABELS.get(table)
+    return "row %d%s" % (row, ": " + labels[row] if labels else "")
+
+
+def player_fields(record):
+    """[(target, label, spec)] for one row: its bytes, with the values
+    `set` allows."""
+    _, table, row = record.split(":")
+    table = int(table)
+    line = EDIT_PLAYER_SHAPES[table][1]
+    names = ("min", "max") if table in EDIT_PLAYER_RANGES else ()
+    return [("%s:%d" % (record, c), names[c] if names else "column %d" % c,
+             ("range",) + player_range(table)) for c in range(line)]
+
+
+def player_value(t, target):
+    _, table, row, col = (int(x) if x.isdigit() else x for x in target.split(":"))
+    return t[table].data[row * EDIT_PLAYER_SHAPES[table][1] + col]
+
+
 def check_edit_player(d):
     """One line for EDIT_PLAYER.TBB."""
     try:

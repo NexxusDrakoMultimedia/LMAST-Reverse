@@ -165,7 +165,12 @@ Tabs:
              own), the starting crests' samples and first colours, the
              base, pattern and accessory presets, the layer accessories
              and the flag patterns and crest placements.
-    Text     message text in MES.PAC, one message in all 7 language slots,
+    Player editor  the tables the player editor makes a new player
+             from (EDIT_PLAYER.TBB, emblem.py set;
+             DOC/EMBLEM_DIR.md#edit_playertbb), one row at a time: base
+             abilities by position and nation, personality and growth
+             ranges, the editor choices' overrides.
+    Text    message text in MES.PAC, one message in all 7 language slots,
              found by category, text or id (mbb.py; DOC/MBB_FORMAT.md). A
              file that outgrows its slot makes MES.PAC grow and moves the
              later files; Build disc then also updates the executable's
@@ -6348,6 +6353,181 @@ class CrestsTab(Tab):
         return True
 
 
+PLAYER_EDIT_FILE = "EMBLEM/" + emblem.PLAYER_FILE
+
+
+class PlayerEditTab(Tab):
+    """The player editor's tables (EDIT_PLAYER.TBB) through emblem.apply_edit
+    and emblem.encode_file, as `emblem.py set` does: one row of one table at
+    a time. The rows, fields and allowed values come from
+    emblem.player_records, player_fields and player_value."""
+    title = "Player editor"
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.data = None
+        self.edits = []                 # set arguments, in edit order
+        self.table = 0
+        self.current = None
+
+        bar = ttk.Frame(self.frame)
+        bar.pack(fill="x", padx=6, pady=6)
+        ttk.Label(bar, text="Table").pack(side="left")
+        self.labels = ["%d: %s" % (i, title) for i, title in enumerate(emblem.EDIT_PLAYER_TITLES)]
+        self.table_var = tk.StringVar(value=self.labels[0])
+        self.table_box = ttk.Combobox(bar, textvariable=self.table_var, state="readonly",
+                                      values=self.labels, width=60, height=32)
+        self.table_box.pack(side="left", padx=6)
+        self.table_box.bind("<<ComboboxSelected>>", lambda e: self.pick_table())
+        ttk.Label(self.frame, foreground="#555", wraplength=1100, justify="left", text=(
+            "The tables the player editor makes a new player from (DOC/EMBLEM_DIR.md). "
+            "Abilities take 0-99, tendencies 0-4, other cells 0-255. A {min, max} row keeps "
+            "min at or below max, and a cumulative row never falls.")).pack(fill="x", padx=8)
+
+        panes = ttk.PanedWindow(self.frame, orient="horizontal")
+        panes.pack(fill="both", expand=True, padx=6, pady=6)
+        left = ttk.Frame(panes)
+        self.tree = ttk.Treeview(left, columns=("what",), show="headings", selectmode="browse")
+        self.tree.heading("what", text="Row")
+        self.tree.column("what", width=LIST_MIN)
+        self.tree.tag_configure("edited", foreground="#b03000")
+        scroll = ttk.Scrollbar(left, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scroll.set)
+        self.tree.pack(side="left", fill="both", expand=True)
+        scroll.pack(side="left", fill="y")
+        self.tree.bind("<<TreeviewSelect>>", lambda e: self.select())
+        panes.add(left, weight=1)
+        self.detail = Scrolled(panes)
+        panes.add(self.detail.outer, weight=3)
+
+    def load(self, done=None):
+        try:
+            self.path = self.app.mod.source(PLAYER_EDIT_FILE)
+            buf, end, t, kind = emblem.load_file(self.path)
+            if kind != "player":
+                raise ValueError("%s isn't %s" % (self.path, emblem.PLAYER_FILE))
+            self.data = (buf, end, t)
+        except (ValueError, struct.error, OSError) as e:
+            self.data = None
+            self.app.status("Couldn't load %s: %s" % (emblem.PLAYER_FILE, e))
+            messagebox.showerror("Player editor", "Couldn't load %s:\n%s" % (
+                emblem.PLAYER_FILE, e))
+            return
+        self.edits = []
+        self.pick_table(keep=True)
+        if done:
+            self.app.status(done)
+        self.app.update_title()
+
+    def t(self):
+        return self.data[2]
+
+    def pick_table(self, keep=False):
+        table = self.labels.index(self.table_var.get())
+        if table != self.table:
+            keep = False
+        self.table = table
+        if not self.data:
+            return
+        self.refresh_list()
+        if keep and self.current in emblem.player_records(table):
+            self.tree.selection_set(self.current)
+            self.tree.see(self.current)
+        else:
+            self.current = None
+            self.detail.clear()
+
+    def summary(self, record):
+        _, table, row = record.split(":")
+        values = [emblem.player_value(self.t(), target)
+                  for target, _, _ in emblem.player_fields(record)]
+        shown = " ".join(map(str, values[:12])) + (" ..." if len(values) > 12 else "")
+        return "%s  [%s]" % (emblem.player_row_label(int(table), int(row)), shown)
+
+    def refresh_list(self):
+        self.tree.delete(*self.tree.get_children())
+        edited = {e.split("=")[0].rsplit(":", 1)[0] for e in self.edits}
+        for record in emblem.player_records(self.table):
+            self.tree.insert("", "end", iid=record, values=(self.summary(record),),
+                             tags=("edited",) if record in edited else ())
+
+    def select(self):
+        sel = self.tree.selection()
+        if sel:
+            self.show(sel[0])
+
+    def show(self, record):
+        self.current = record
+        self.detail.clear()
+        box = self.detail.inner
+        _, table, row = record.split(":")
+        ttk.Label(box, text="Table %s, %s" % (table, emblem.player_row_label(int(table), int(row))),
+                  font=self.app.title_font).pack(anchor="w", padx=8, pady=(8, 2))
+        frame = ttk.Frame(box)
+        frame.pack(fill="x", padx=8, pady=6)
+        # Up to 151 bytes a row: eight to a line.
+        for n, (target, label, spec) in enumerate(emblem.player_fields(record)):
+            r, c = divmod(n, 8)
+            ttk.Label(frame, text=label).grid(row=r, column=2 * c, sticky="e", padx=(8, 2), pady=1)
+            get = lambda target=target: emblem.player_value(self.t(), target)
+            apply = lambda text, revert, target=target: self.commit(target, text, revert)
+            value_input(frame, spec, str, get, apply).grid(row=r, column=2 * c + 1, sticky="w",
+                                                           pady=1)
+
+    def commit(self, target, text, revert):
+        edit = "%s=%s" % (target, text)
+        old = emblem.player_value(self.t(), target)
+        try:
+            line = emblem.apply_edit(self.t(), "player", edit)
+            problems = emblem.edit_player_problems(self.t())
+            if problems:
+                # Refuse it now rather than at save: `set` would refuse the file.
+                emblem.set_player(self.t(), *map(int, target.split(":")[1:]), old)
+                raise ValueError("; ".join(problems))
+        except ValueError as e:
+            revert()
+            message = "%s: %s" % (edit, e)
+            self.app.status(message)
+            messagebox.showerror("Player editor", message)
+            return False
+        self.edits.append(edit)
+        self.app.status(line)
+        record = target.rsplit(":", 1)[0]
+        if self.tree.exists(record):
+            self.tree.item(record, values=(self.summary(record),), tags=("edited",))
+        self.app.update_title()
+        return True
+
+    def dirty(self):
+        return bool(self.edits)
+
+    def save(self):
+        if not self.dirty():
+            return True
+        mod = self.app.mod
+        out = mod.target(PLAYER_EDIT_FILE)
+        temps = [(out + ".new", out)]
+        try:
+            buf, end, t = self.data
+            data = emblem.encode_file(buf, end, t, "player")
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            with open(out + ".new", "wb") as f:
+                f.write(data)
+        except (ValueError, OSError) as e:
+            remove_new(temps)
+            messagebox.showerror("Player editor", "Can't save: %s" % e)
+            return False
+        cmd = ["python", "SRC/emblem.py", "set", quote(shown_path(self.path)),
+               quote(shown_path(out + ".new"))] + [quote(e) for e in self.edits]
+        replace_new(temps)
+        n = len(self.edits)
+        lines = log_lines("Player editor: %d edits" % n, [cmd], temps)
+        mod.log(lines)
+        self.app.write_log(lines)
+        self.load("Saved %s: %d edits" % (shown_path(out), n))
+        return True
+
+
 class LogTab(Tab):
     """The commands each save corresponds to, as written to editor.log."""
     title = "Log"
@@ -6853,10 +7033,11 @@ class App:
         self.tactics = TacticsTab(self)
         self.comments = CommentsTab(self)
         self.crests = CrestsTab(self)
+        self.playeredit = PlayerEditTab(self)
         self.tabs = [self.people, self.clubs, self.newclub, self.season, self.natcal, self.free,
                      self.links, self.nations, self.stadiums, self.bases, self.regulations, self.clubrank, self.training, self.camps, self.tours,
                      self.facilities, self.clubevents, self.tactics, self.kits, self.crests,
-                     self.text, self.comments]
+                     self.playeredit, self.text, self.comments]
         self.log_tab = LogTab(self)
         for tab in self.tabs + [self.log_tab]:
             self.notebook.add(tab.frame, text=tab.title)
