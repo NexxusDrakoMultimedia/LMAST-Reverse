@@ -195,5 +195,6 @@ Each result is recorded in the doc linked.
 - [x] The switch levels: editions, groups and switches, in
       `patch_disc.py` and the Build disc window
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
-- [x] Widescreen: a PCSX2 pnach for 16:9 with the 2D kept at 4:3
+- [x] Widescreen: a PCSX2 pnach for 16:9 with the 2D kept at 4:3,
+      the menus' 3D kit models included
       ([`WIDESCREEN.md`](DOC/WIDESCREEN.md))

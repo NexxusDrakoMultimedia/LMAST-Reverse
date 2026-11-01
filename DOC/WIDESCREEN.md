@@ -100,7 +100,7 @@ the same way (PAL is 512 pixels wide; GS units are 1/16 pixel, centre 2048):
 | Path | Draws | Placement | Patch |
 |---|---|---|---|
 | Ninja 2D table `0x365b98` {offX, scaleX, offY, scaleY}, filled once by `nnInitSystemPS2` (`0x18f308`–`0x18f370`); read by `nnDrawPrimitive2D` (`0x1779d8`), `nnuPrimitive2DSetVertex` (`0x167580`) and `nnDrawPrimitiveSprite2DPS2` (`0x179cc0`) | text | `offX + x·scaleX`, 28672 and 16 | 29696 and 12 (two data words) |
-| `CSpriteDirect::SetPrimData` (`0x126568`) | panels, scoreboard, clock, radar | `((x − 256) + 2048) × 16`, 256 in `$f23` | `sub.s` at `0x12666c` becomes `jal 0x12fa10`, which also multiplies by 0.75 |
+| `CSpriteDirect::SetPrimData` (`0x126568`) | panels, scoreboard, clock, radar | `((x − 256) + 2048) × 16`, 256 in `$f23` | `sub.s` at `0x12666c` becomes `jal 0x13c0c4`, which also multiplies by 0.75 while the PX screen half-width is 256 ([match portraits](#match-portraits)) |
 | CSE: `cseCastFacePutTriStripParamPS2` (`0x1f2040`) copies each cast node's 3×3 matrix (rows at `$t1`, `x' = x·m00 + y·m10 + tx`) into the VU1 packet in the loop at `0x1f20b4` | menu panels | the node matrix | `0x1f20e0` jumps to `0x12fa30`, which scales the copied x column by 0.75 and adds 64 to tx, then returns; CSE's own matrices are unchanged. It only does so while the CSE screen's offX (context `0x38f458` `+0x68`) is −0.5, the menus' value, so `CEditFaceRender::Render` (`0x151858`), which sets its own screen to build custom players' faces, is left alone |
 
 Which functions run in a match was found by hooking each candidate with
@@ -360,13 +360,48 @@ other callers of `Viewport_SetOffset` (`SIMPRG.REL 0xc4ff0`,
 are left alone; no overlay calls `Viewport_SetRect` except the two
 callbacks above, and nothing in the executable does.
 
-Not yet tested in PCSX2 (`TODO.md` section 7).
+Tested in PCSX2: the four kits of the Sponsor contract's kit choice
+each stand in the middle of their panel, and so does the model in Edit
+club's Result panel; starting a new game is unaffected (Nexxus's
+report, 2026-11-01).
+
+### Match portraits
+
+In a match, the Tactics screen's Player details window showed the
+player's portrait with a dark strip down its left side (Nexxus's
+report, 2026-11-01).
+
+The portrait is made by `WP::CDetailFace::RenderFace` (`0x28db30`). It
+renders the head into a 128x128 `EDIT::CTexture` surface (created at
+`0x28ce98`), with Ninja's screen pointed at the texture
+(`EDIT::apply_PXScreenParam_To_NnConfigureSystemPS2`, see
+[Face builds](#face-builds)). Before the head it draws a 2D background
+in sort2d's direct mode (`DirectSwitch_Sort2d` 1 and 0 around a call at
+`0x28df8c`), and direct-mode 2D goes through
+`CSpriteDirect::SetPrimData`. The UI fix squeezed that path every
+time, so the background came out at x·0.75 + 64 of the 512-wide screen
+inside a texture that isn't one, leaving its left edge unpainted.
+
+The `CSpriteDirect` cave now squeezes only while the PX screen
+half-width (`0x369c30`, read by `PXGetScreenParam` `0x1b29b0`) equals
+the 256 that `SetPrimData` keeps in `$f23`, the same test the
+projection caves use; while a texture is the target it multiplies by 1.
+The longer cave moved to `0x13c0c4`, after the kit-model cave; the old
+words at `0x12fa10` are written as zero.
+
+Not yet tested in PCSX2 (`TODO.md` section 7). Which call draws the
+background was found from the code, not seen live; if the strip
+remains, the next suspects are the [clip](#match-hud-and-cut-ins)
+wrappers on `nnBegin`/`nnEndDrawPrimitive2D` and `Draw0`.
 
 ## Known behaviour
 
 - The FMVs stay stretched to 16:9 (see the top of this page).
 - The stadium ad boards floating above the pitch in replays are the
   game's normal behaviour, not the patch (Nexxus's report).
+- The match's Tactics screen draws its blue backdrop across the whole
+  16:9 screen, past the 4:3 area. Nexxus is happy to keep it
+  (Nexxus's choice, 2026-11-01).
 - The newspaper pages in the season's opening cinematic are drawn
   squeezed to the middle of the page, with black strips at each side
   (Nexxus's report, 2026-11-01). Not traced. Each page is likely
