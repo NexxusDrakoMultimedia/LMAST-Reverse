@@ -368,59 +368,39 @@ report, 2026-11-01).
 ### Match portraits
 
 In a match, the Tactics screen's Player details window showed the
-player's portrait with a dark strip down its left side (Nexxus's
-report, 2026-11-01).
+player's portrait with its background black on the left half; without
+the patch it is grey edge to edge, and the head is the same either way
+(Nexxus's report and comparison, 2026-11-01).
 
 The portrait is made by `WP::CDetailFace::RenderFace` (`0x28db30`). It
-renders the head into a 128x128 `EDIT::CTexture` surface (created at
-`0x28ce98`), with Ninja's screen pointed at the texture
-(`EDIT::apply_PXScreenParam_To_NnConfigureSystemPS2`, see
-[Face builds](#face-builds)). Before the head it draws a 2D background
-in sort2d's direct mode (`DirectSwitch_Sort2d` 1 and 0 around a call at
-`0x28df8c`), and direct-mode 2D goes through
-`CSpriteDirect::SetPrimData`. The UI fix squeezed that path every
-time, so the background came out at x·0.75 + 64 of the 512-wide screen
-inside a texture that isn't one, leaving its left edge unpainted.
+renders into a 128x128 `EDIT::CTexture` surface (created at
+`0x28ce98`), between `EDIT::CSurface::DrawBeginTarget` (`0x154148`)
+and `DrawEndTarget`, which call `TargetSurface::begin` and `end`; so
+the PX screen half-width (`0x369c30`) is the texture's, not 256. Before
+the head it draws a 2D background (sort2d's direct mode, around
+`0x28df8c`). That 2D goes through the
+[match HUD clip](#match-hud-and-cut-ins) wrappers, and the GS
+context's scissor is still the screen's full width, so they clipped it
+to x 64–447: the left half of a 128-pixel texture. The head is 3D, so
+it was never clipped.
 
-The `CSpriteDirect` cave now squeezes only while the PX screen
-half-width (`0x369c30`, read by `PXGetScreenParam` `0x1b29b0`) equals
-the 256 that `SetPrimData` keeps in `$f23`, the same test the
-projection caves use; while a texture is the target it multiplies by 1.
-The longer cave moved to `0x13c0c4`, after the kit-model cave; the old
-words at `0x12fa10` are written as zero.
+The clip helper (`0x13cdf8`) now starts with a jump to a check at
+`0x13c0ec` that returns without clipping unless the half-width is 256.
 
-That change alone didn't remove the strip (Nexxus's report,
-2026-11-01, J. Goosen of Sabadell Vallés FC). Without the patch the
-same portrait's background is grey edge to edge, and the head is the
-same size and place either way, so only the 2D background is cut.
+Found live over PINE, with Nexxus changing player in the window after
+each write: switching off the `CSpriteDirect`, scissor, CSE and
+kit-model squeezes together left the portrait unchanged; switching off
+the three clip wrappers made it grey edge to edge. Tested in PCSX2:
+with the check, the portraits are grey edge to edge, and the match HUD
+and the substitution cut-in stay inside 4:3 (Nexxus's report,
+2026-11-01, written over PINE; the pnach has the same words).
 
-The background is drawn between `EDIT::CSurface::DrawBeginTarget`
-(`0x154148`) and `DrawEndTarget`, which call `TargetSurface::begin`
-and `end`; `begin` sets the texture's screen parameters, so the
-half-width is 64 there. The two scissor squeezes of the
-[clip](#clipping-to-43), in `Util_ScissorBeginDirect` and
-`CallScissorBegin`, had no such check: a clip box covering the texture
-became x·0.75 + 64 and left the texture's left side unpainted, while
-its right side ran past the texture's edge. Both caves now start with a
-jump to a check (`0x13bf58`, `0x13bf80`, in the free words before the
-scissor variable at `0x13bfc0`) that skips the squeeze unless the
-half-width is 256.
-
-Tested in PCSX2: the strip was still there (J. Goosen and Tevez), and
-lists, the ticker, the HUD and the Club House cards were unchanged
-(Nexxus's report, 2026-11-01). Nexxus then saw that the grey covers
-only the right half of the portrait; the black reaches the middle
-behind the head. A background starting halfway across a 128-pixel
-texture is exactly x·0.75 + 64, and the one squeeze of that kind still
-without a half-width check was the CSE cave, which only checks the CSE
-screen's offX; this render keeps the menus' value. The CSE cave now
-also checks the half-width (`0x12fa10`, in the words the old
-`CSpriteDirect` cave left free): its `lui $at, 0x3f40` at `0x12fa48`
-becomes a jump there, which goes to the cave's tail (`0x12fa80`) when
-the half-width isn't 256. The other half-width checks stay: they are
-right for drawing into a texture and changed nothing else.
-
-Not yet tested in PCSX2 (`TODO.md` section 7).
+Before that, the same half-width check was added to the
+`CSpriteDirect` cave (moved to `0x13c0c4`), the two scissor squeezes
+(checks at `0x13bf58`, `0x13bf80`) and the CSE cave (check at
+`0x12fa10`). None of them was the cause, but they keep the screen's
+squeeze out of textures, and lists, the ticker, the HUD and the Club
+House cards were unchanged with them (Nexxus's report, 2026-11-01).
 
 ## Known behaviour
 
@@ -439,8 +419,6 @@ Not yet tested in PCSX2 (`TODO.md` section 7).
 
 ## Still unknown
 
-- Which squeeze shifts the match portraits' background
-  ([Match portraits](#match-portraits)).
 - How the opening cinematic draws its newspaper pages, and so how to
   leave them unsqueezed (above).
 - Which match function places the name tags over the players. The
