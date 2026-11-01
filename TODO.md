@@ -376,6 +376,10 @@ disc or the edit to build; the result goes into the doc linked.
       LIGHT TEST ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-developer-launcher))
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01` ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md#still-unknown))
+- [ ] Widescreen kit models: with the current pnach, the Sponsor
+      contract's kit choice and Edit club's Select Team Colour sit each
+      player model in the middle of its panel
+      ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#kit-models))
 
 ## 8. LMASTER Mod and other patches
 

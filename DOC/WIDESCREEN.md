@@ -62,7 +62,7 @@ fix stay `patch=1`, because the game writes that table itself after boot.
 
 Each run of consecutive words is one `bytes` line (PCSX2 writes the hex
 in memory order, so each instruction word appears byte-reversed), and
-single words stay `word` lines: 20 lines in all. Unused words between
+single words stay `word` lines: 21 lines in all. Unused words between
 caves in the same debug function are written as zero. Checked over PINE
 in PCSX2 2.8.2: after boot, all 167 words of the earlier one-word-per-line
 patch read back unchanged, and the gaps read zero.
@@ -326,16 +326,58 @@ the table line covers those.
 Tested in PCSX2: scrolling the player cards no longer flashes stretched
 text (Nexxus's report, 2026-10-09).
 
+### Kit models
+
+The 3D players shown in a menu panel, such as the four kits on the
+Sponsor contract's "Choose new kit." step and the Result panel of Edit
+club's Select Team Colour, sat too far from the middle of the screen:
+each model was 4/3 as far from the centre as its panel, so the outer
+ones were cut off by their panel's edge (Nexxus's report, 2026-11-01,
+which found it on every screen with a player model in a kit).
+
+These models are drawn inside the 2D pass. The panel's callbacks
+(`SIMPRG.REL 0x8dc58` and `0xcaa10`, the second just after a
+`set_player_uniform_style_info` call) run `etc::Viewport_Begin` and
+`etc::Viewport_SetRect` (`0x1201a0`) before the model and
+`etc::Util_ScissorEnd` and `etc::Viewport_End` after it.
+`Viewport_SetRect` does two things with the panel's rect:
+
+| Step | What it does | Before the fix |
+|---|---|---|
+| `Viewport_SetOffset` (`0x120138`) with the rect's centre | moves the PX screen centre (`PXPutScreenParam`, fields `+0x10`/`+0x14`) to that pixel, so the model is drawn there | unsqueezed: the centre stayed at its 512-wide position |
+| `Util_ScissorBeginDirect` (`0x14c860`) with the rect | clips to the panel | squeezed by the [clip](#clipping-to-43) |
+
+So the clip box was in the right place and the model wasn't. The model's
+own size was already right (the projection is scaled like any other).
+
+The UI fix sends `Viewport_SetRect`'s `jal Viewport_SetOffset`
+(`0x1201d4`) through a cave at `0x13c094`, after the face-build cave in
+`display_crosswise_buffer`. While the PX screen half-width (`0x369c30`)
+is 256, it maps the centre's x (`$f12`) to x·0.75 + 64, the same
+mapping as the clip, then jumps on to `Viewport_SetOffset`. The two
+other callers of `Viewport_SetOffset` (`SIMPRG.REL 0xc4ff0`,
+`GAMEPRG.REL 0xf1d4`) put their own screen parameters first, so they
+are left alone; no overlay calls `Viewport_SetRect` except the two
+callbacks above, and nothing in the executable does.
+
+Not yet tested in PCSX2 (`TODO.md` section 7).
+
 ## Known behaviour
 
 - The FMVs stay stretched to 16:9 (see the top of this page).
 - The stadium ad boards floating above the pitch in replays are the
   game's normal behaviour, not the patch (Nexxus's report).
-- Nothing is known to be broken: every UI item found so far is fixed or
-  is the intended look.
+- The newspaper pages in the season's opening cinematic are drawn
+  squeezed to the middle of the page, with black strips at each side
+  (Nexxus's report, 2026-11-01). Not traced. Each page is likely
+  composed in 2D into a texture, and the UI fix squeezes that 2D
+  as if it were the screen. The black box with scrolling text at the
+  bottom left is part of the scene.
 
 ## Still unknown
 
+- How the opening cinematic draws its newspaper pages, and so how to
+  leave them unsqueezed (above).
 - Which match function places the name tags over the players. The
   patch doesn't need it (above).
 - Whether the patch works on a modded disc. A disc whose executable is
@@ -355,4 +397,6 @@ python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xfe5c0 140 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 dis nnDrawPrimitive2D
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xfc380 12 --sles ISO/SLES_541.51
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x154d50 40
+python SRC/sles_disasm.py ISO/SLES_541.51 dis Viewport_
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xcaa10 26 --sles ISO/SLES_541.51
 ```
