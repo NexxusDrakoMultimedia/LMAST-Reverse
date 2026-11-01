@@ -73,9 +73,18 @@ list.
       (rank edits are tested) ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md))
 - [ ] Kits: an edit to only one licensed-kit descriptor copy, to tell
       which one a match reads; whether screens outside a match show
-      your club's stored keeper kit
+      your club's stored keeper kit; and whether anything reads a
+      licensed club's own `UNIFORM_LIST.TBB` row (edit only that row)
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#still-unknown),
       [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
+- [ ] A club from outside the leagues (team 245 on, the rest of Europe
+      and beyond) swapped into a league with `initteam.py swap`: whether
+      it plays its league games
+      ([`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md#swapping-clubs))
+- [ ] Transfer List bands: free agents set just inside and just outside
+      the rank band of a club above the lowest rank, seen on its
+      Transfer List (only a new club's band is tested)
+      ([`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md#which-free-agents-the-transfer-list-shows))
 - [ ] Kit style: outfield gloves on a player with `gloves` 1–4 in a
       career match between November and March (not in VS), and the cap
       on an edit player made with the GK Style page's Hat, in the
@@ -102,6 +111,12 @@ list.
 - [ ] *Short.* The crest editor: whether the three short `EDIT_EMBLEM`
       layer tables lose visible parts
       ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#the-layer-tables-12143))
+- [ ] *Short.* The Crests tab's other tables (only the starting crest
+      is tested): one edit each to a preset's position, a layer record
+      and a flag crest placement, seen in the club editor's crest and
+      flag screens, and a crest part's `rev` set to 1 to see what it
+      does (mirrored is the likely reading)
+      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
 - [ ] *Short.* The Player editor tab: an edit to `EDIT_PLAYER.TBB`
       shows on a player made in the game's player editor, for example
       table 15's {min, max} for one ability raised to {90, 90}, so every
@@ -154,6 +169,10 @@ list.
       its final, another nation's lower cup the same way, and the round
       names on the end of tournament screen
       ([`UID_LIMITS.md`](DOC/UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3))
+- [ ] Relegation on a `--mod third-tier` disc decided by this season's
+      rank alone: at a season's end, the warning before it and the drop
+      both follow the final table, not last season's
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
 - [ ] The third tier's text in a language other than English (the
       English is tested): the advisor's intro, the Game Over help, the
       2nd German League's rules screen and its season-start news
@@ -175,6 +194,22 @@ list.
       of your squad has abilities 59–63 raised (the saved players don't
       change); the headphones and spikes the same way
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+
+## Patches, text and what things look like
+
+- [ ] *Short.* The widescreen patch on a modded disc: copy the pnach
+      under the modded executable's own CRC
+      ([`INSTALL.md`](INSTALL.md#pcsx2-patches)) and check the picture
+      is widened ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#still-unknown))
+- [ ] By eye: what the four dribble styles look like. Give players
+      `dribble_style` 0, 1, 2 and 3 (People tab, "Personality and
+      condition") and
+      describe how each dribbles in a match
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
+- [ ] By eye: whether a raw line break in a message (`{lf}` in
+      `mbb.py`'s output, 4,129 in the European languages) breaks the
+      line on screen
+      ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#other-control-bytes))
 
 ## Testing aids and sound
 
