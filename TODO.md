@@ -376,6 +376,11 @@ disc or the edit to build; the result goes into the doc linked.
       LIGHT TEST ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-developer-launcher))
 - [ ] By ear: the commentary (`BC_ENG`), the tannoy (`JYONAI_A`) and
       `MAP01` ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md#still-unknown))
+- [ ] Widescreen newspaper pages: with the current pnach, the opening
+      cinematic's pages match the game without the patch (masthead,
+      photo and adverts full width), and the Club House room changes
+      and a custom player's face still look right
+      ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#newspaper-pages))
 
 ## 8. LMASTER Mod and other patches
 

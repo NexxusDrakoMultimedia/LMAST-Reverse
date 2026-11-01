@@ -402,6 +402,36 @@ Before that, the same half-width check was added to the
 squeeze out of textures, and lists, the ticker, the HUD and the Club
 House cards were unchanged with them (Nexxus's report, 2026-11-01).
 
+### Newspaper pages
+
+The new career's opening cinematic shows newspaper pages about your
+club. With the patch they had black bars at both sides, cutting off the
+masthead's "T" (Nexxus's report, 2026-11-01). The black box with
+scrolling text at the bottom left is part of the scene.
+
+Each page is rendered into a texture (most likely by
+`ACROBATA::VRT_NewsPaper`, `SIMPRG.REL` vtable `0x209b68`; not traced
+further). The bars were the 4:3 clip, x 64–447 of a 512-wide page: the
+[match portraits](#match-portraits) check removed them, so the
+half-width isn't 256 while a page is drawn. Tested in PCSX2: no bars,
+the masthead whole (Nexxus's report, 2026-11-01).
+
+Compared with the page without the patch (Nexxus's screenshots), the
+text columns were in place but the masthead, the team photo and the
+adverts were drawn at about 75% width. The squeeze that has no
+half-width check is the Ninja 2D table, which the pnach's `patch=1`
+line keeps at the squeezed values (29696, 12). The room-change cave in
+`nnDrawPrimitive2D` already draws with the unsqueezed values (28672,
+16) for one quad. Its hook now goes first to a check at `0x13cdb8`, in
+the free words after that cave: while the half-width isn't 256 and the
+table's offX is the squeezed 29696, it takes the same unsqueezed path
+for every primitive. A face build, which writes its own table values,
+is left alone.
+
+Not yet tested in PCSX2 (`TODO.md` section 7). Whether the pictures
+are drawn by `nnDrawPrimitive2D` (and not `nnuPrimitive2DSetVertex` or
+`nnDrawPrimitiveSprite2DPS2`, which read the same table) is not known.
+
 ## Known behaviour
 
 - The FMVs stay stretched to 16:9 (see the top of this page).
@@ -410,17 +440,13 @@ House cards were unchanged with them (Nexxus's report, 2026-11-01).
 - The match's Tactics screen draws its blue backdrop across the whole
   16:9 screen, past the 4:3 area. Nexxus is happy to keep it
   (Nexxus's choice, 2026-11-01).
-- The newspaper pages in the season's opening cinematic are drawn
-  squeezed to the middle of the page, with black strips at each side
-  (Nexxus's report, 2026-11-01). Not traced. Each page is likely
-  composed in 2D into a texture, and the UI fix squeezes that 2D
-  as if it were the screen. The black box with scrolling text at the
-  bottom left is part of the scene.
 
 ## Still unknown
 
-- How the opening cinematic draws its newspaper pages, and so how to
-  leave them unsqueezed (above).
+- Which Acrobata code renders the newspaper pages into their textures
+  (`ACROBATA::VRT_NewsPaper` is the likely class), and whether their
+  pictures go through `nnDrawPrimitive2D`
+  ([Newspaper pages](#newspaper-pages)).
 - Which match function places the name tags over the players. The
   patch doesn't need it (above).
 - Whether the patch works on a modded disc. A disc whose executable is
