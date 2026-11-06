@@ -115,6 +115,11 @@ the evidence and how it was tested; the git history holds the rest.
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#editing),
       [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing),
       [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md))
+- [x] Textures: `svr.py` rebuilds every texture file on the disc
+      exactly (loose, `.MRG`/`.PAC`, CSP, ACROBATA, `PackData` packs) and
+      `replace` writes a picture into a texture, with its mip chain and
+      a palette built or matched
+      ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
 - [x] The player editor's tables: `emblem.py set` edits any cell of
       `EDIT_PLAYER.TBB` within the values its readers use, and
       `roundtrip` re-encodes it on both releases

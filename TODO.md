@@ -41,10 +41,14 @@ What to work on next, most valuable first.
    `LMAST-test-season4.iso`, built 2026-10-31, with its test sheet
    `names/test-sheet-season.md`
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-2. **A texture writer** for `svr.py` (section 3). Textures can be read
-   but not written, which blocks every graphics mod and LMAST Realism
-   on the disc; a `roundtrip` over every texture can check it
-   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned)).
+2. **The rest of the texture writer** (sections 3 and 8). `svr.py`
+   rebuilds every texture on the disc exactly and `replace` writes a
+   picture into one; a texture in a plain `.PAC` or `.MRG` goes back
+   with `pac.py`. Left: writers for the CSP packs, the ACROBATA pack
+   and the KC@P `PackData` packs, which hold the kits, cut-ins, faces
+   and menu pictures, and the hash map from LMAST Realism's PNGs to disc
+   textures ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing),
+   [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned)).
 3. **Every LMASTER switch on the Japanese release** (section 8), needed
    before LMASTER 1.0.0: every other switch plans there now; left are
    `third-tier` (a code port) and `real-names` (the names in Japanese)
@@ -67,7 +71,7 @@ the graphics that come after the data.
 | **Parameters** | every `PARAM/` table's layout is known and `tbb.py replace` swaps any table; the economy's constants in the executable are traced and changed by named switches | the open fields of the parameter files, the match AI's files and the match parameters | 2 |
 | **Text** | every message in every language, with a writer and the Text tab; real names for every league, club and nation | the screen-set variables and a few message categories | 2 |
 | **Playing a mod** | xdelta patches against the Redump image, CSO, ZSO and CHD inputs, separate saves for a modded disc, the players' guide | faster CHD decoding; the Japanese release | 4, 6 |
-| **Graphics and sound** (after the data) | textures to PNG, models to OBJ and glTF, sound to WAV and MIDI; kits, crests and stadium looks edited as data | a texture writer, which LMAST Realism on the disc needs | 3, 8 |
+| **Graphics and sound** (after the data) | textures to PNG, models to OBJ and glTF, sound to WAV and MIDI; kits, crests and stadium looks edited as data | writers for the CSP, ACROBATA and `PackData` packs and the texture hash map, which LMAST Realism on the disc needs | 3, 8 |
 
 ## 1. Read: every file parsed and checked
 
@@ -222,8 +226,11 @@ a field-level writer with a `roundtrip` check in `regress.py`.
 - [ ] The `STADIUM/` tables besides `BUILD_STADIUM`'s looks and boards
       (`CONV_INFO_BUILD`, the crowd sets), if a mod needs them
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
-- [ ] A texture writer for `svr.py`, which only reads, for LMAST Realism
-      on the disc ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
+- [ ] Writers for the packs that hold textures and have none: the CSP
+      packs (780 textures, and 471 in the `PRELOAD` packs), the ACROBATA
+      pack (2,137) and the KC@P `PackData` packs (kits, cut-ins, faces),
+      for LMAST Realism on the disc
+      ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
 
 ## 4. Rebuild: edits back on a bootable disc
 
@@ -315,6 +322,7 @@ is built and tested, or set aside.
 - [ ] Possible, for full and max: the Japanese in-game player editor
       in the PAL release; first find its code and whether PAL still
       holds it ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
-- [ ] LMAST Realism on the disc: the texture hash map, a texture writer
-      (section 3) and the palettes
+- [ ] LMAST Realism on the disc: the texture hash map and the pack
+      writers (section 3); the picture-to-texture step is `svr.py
+      replace`
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))

@@ -156,6 +156,91 @@ bundle palettes for the `HUMAN_*` characters). Decode with
 `python SRC/svr.py png <file> <out> --clut <file.SVP>`; without one, the
 indices are rendered as greyscale.
 
+## Writing
+
+`SRC/svr.py` writes the three formats. The write goes through the same
+steps as the read, backwards: a picture becomes palette indices (or
+CT16/CT32 colours), the levels are halved for the mip chain, a level that
+fills a GS page is swizzled (`swizzle`, the inverse of `unswizzle`), each
+level is padded to 16 bytes, and the chunk gets its length field.
+
+```bash
+python SRC/svr.py roundtrip DAT
+python SRC/svr.py replace DAT/GAME/BG_RAIN.SVR out.SVR picture.png
+```
+
+`replace` takes a loose `.SVR` or `.SVM`, with `--texture <name|index>`
+for an SVM, `--clut file.SVP` for an external palette and `--palette
+keep` to match the texture's old palette instead of building a new one.
+A texture inside a pack is extracted, replaced and put back with
+`pac.py` (below).
+
+**Rebuilding is exact (empirical).** `roundtrip` takes every texture
+file apart into palette, linear levels, each level's padding and the
+chunk's tail, puts it together again, and compares the bytes. Over
+`DAT/` that is 18,285 texture files (11,133 distinct; the language copies
+repeat) with 9,846 textures and 1,826 palettes: loose files, `.MRG`s,
+`.PAC`s with their PRSH entries, CSP packs including those inside the
+`PRELOAD` packs, the ACROBATA pack, and the KC@P `PackData` packs
+(kits, cut-ins, edit faces, event faces). All come back identical. With
+`--all`, which adds the 1.1 GB face pack (`FC_EURO_FACEPACK_00`), the
+`PLAYER` folder is 46,959 files and 25,431 distinct textures, also
+identical. Each texture's own picture is then put back through the
+picture path (`body_from_pixels`) and must decode to the same picture:
+0 changes. The swizzle was also checked against the reader: the forward
+swizzle undoes `unswizzle` on all 6,055 swizzled levels, and the
+rewritten `unswizzle` matches the original on 373 levels of the loose
+files (4, 8 and 16 bpp, 19 shapes).
+
+What a rebuild has to keep, found by running the check over the disc:
+
+| Fact | Count | Handled by |
+|---|---|---|
+| An SVR's `GBIX` chunk is 16 bytes (`8`, the id, `0`), and the file ends where the `PVRT` chunk ends | 7,439 of 7,439 | `Texture.head`, `trailer` |
+| In an SVM every chunk starts where the last ended; all padding is inside the length field | 3,303 of 3,303 | `Texture.lead`, `Archive.tail` |
+| The `PVMH` header padding is not a function of the count (`align16(12 + 38n)` in 2,286 archives, 16 bytes more in 158) | 2,444 archives | `Archive.head`, kept as read |
+| An SVM entry's global index is stored per entry (0 in 2,959 of 3,303, a few repeated) | 3,303 | `Texture.entry`, kept as read |
+| 87 non-mip textures in SVMs have 16 zero bytes after level 0, inside the length field | 87 | `tail` |
+| Level padding is not always zero: the last level of `GAME/EF012.SVM` (4x4, 4 bpp, 8 bytes in a 16-byte slot) has 8 non-zero bytes after it | 1 | `pads` |
+| Mip chains are cut short (2 to 6 levels, never down to 1 pixel); the count is only recoverable from the chunk length | 265 of 265 | `level_sizes` |
+| A mip chain mixes swizzled upper levels and linear lower ones; each level is decided by its own size | 118 textures | `is_swizzled` per level |
+| Two `.SVP`s have `99` in the word at `+0x0A` and 128 have 32 entries | 130 | `Palette.fields` |
+| No CT32 alpha is above `0x80`, so the decode/encode of alpha is exact here | 8,123 | `encode_colors` |
+
+**The picture path (`replace`).** The picture must be the texture's own
+size; the format, the length of the mip chain and the padding stay, so
+the file keeps its length and no pack has to move. Mip levels are made by
+averaging 2x2 blocks. For a direct-colour texture the picture is
+converted to CT16 (5 bits a channel and a 1-bit alpha) or CT32 (alpha
+0 to `0x80`). A 4 or 8 bpp texture with its own palette gets a new
+palette built from the picture: every colour of the picture when there
+are no more than the palette holds (a transparent pixel keeps its RGB,
+because the GS blends it into its neighbours when it filters), else an
+octree quantisation (needs pillow) with one transparent entry kept apart,
+so transparency is not blended away. `--palette keep`, and every texture
+whose palette is a `.SVP`, match each pixel to the closest colour of the
+existing palette instead (`colour_distance`: the colour difference counts
+only where both colours are visible, an alpha difference counts as much as
+the largest colour difference). **Tested through the command line** over
+one real texture of each combination of pixel format, data format and
+swizzling on the disc (17 combinations, 52 runs; mirrored and red/blue
+swapped pictures): the file length, header fields and other textures stay
+the same, a picture that fits its palette comes back exactly, and one
+that doesn't gets the nearest palette colour at every pixel. Gradients
+over three palette sizes kept their transparent corner. Not yet seen in
+the game.
+
+**Containers.** A texture file inside a pack is replaced by putting the
+new bytes in the pack, which the pack tools do:
+
+| Holder | Textures | Can the pack be put back? |
+|---|---|---|
+| `.MRG`, `.PAC` (BINPAC): `0SYSTEM`, `EMBLEM`, `NEWS`, `STADIUM`, `PLAYER`, `BG`, `TEST3D`, `CSE/INST_SVR` | most of the disc's | yes, `pac.py replace` (rebuilt packs are identical); a changed-size entry moves the later ones, and the `.HED` copies and the `PRELOAD` copies need the same change ([`PAC_FORMAT.md`](PAC_FORMAT.md)). PRSH entries are recompressed by `pac.py`'s writer, which is not byte-identical to Sega's packer |
+| `*.CSP` packs, and the `.csp` entries of the `PRELOAD` packs | 780 + 471 | no writer: the table of offsets and sizes would be rewritten, and 483 of 489 files match a 16-byte-aligned layout |
+| `ACROBATA/ACROBATAPACKFILE.PAC` | 2,137 | same-size bodies could be patched in place; a new size needs the part's wrapper chunks, its POF0 list and the executable's copy of the index (`SLES_541.51` `0x3a3b08`) |
+| KC@P `PackData` packs: `PLPACK_HOME`/`AWAY` (kits), `CUTINPACK`, `EDITFACEPACK`, the face packs | 1,392 + 444 + 7 + 41,863 | no `PackData` writer: block sizes and later offsets would be rewritten |
+| `ISO/DLL/GAMEPRG.REL` at `0x265fc0` | 1 (16x16, 4 bpp) | only a same-size patch in place |
+
 ## Still unknown
 
 - Which `.SVP` palette the code pairs with each external-palette
@@ -163,3 +248,7 @@ indices are rendered as greyscale.
   ([`ZBF_FORMAT.md`](ZBF_FORMAT.md#still-unknown)).
 - Pixel format `0x0A` (24-bit) is handled by the code but unused, so
   its layout is untested.
+- Whether the game shows a rewritten texture as the reader does (a
+  replaced texture on a built disc has not been looked at in PCSX2).
+- The writers for the CSP packs, the ACROBATA pack and the `PackData`
+  packs (the table above), and a changed-size texture in any of them.

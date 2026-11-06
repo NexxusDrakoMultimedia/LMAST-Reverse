@@ -197,6 +197,17 @@ list.
 
 ## Patches, text and what things look like
 
+- [ ] *Short.* A rewritten texture: extract one crest from
+      `0SYSTEM/EMBLEM_TEXTURE.PAC` with `pac.py extract`, change its
+      picture (`svr.py png`, edit, then `svr.py replace`, once for a
+      texture with its own palette and once with `--palette keep`), put
+      it back with `pac.py replace` (and the `.HED` copy if the pack has
+      one), build a disc and look at that club's crest on the team
+      screens. It should show the new picture with no wrong colours or
+      scrambled blocks, which tells whether the swizzle and palette
+      writing match what the game reads
+      ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
+
 - [ ] *Short.* The widescreen patch on a modded disc: copy the pnach
       under the modded executable's own CRC
       ([`INSTALL.md`](INSTALL.md#pcsx2-patches)) and check the picture

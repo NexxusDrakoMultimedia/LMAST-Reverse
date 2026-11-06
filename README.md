@@ -217,7 +217,7 @@ python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30 ab
 
 | Tool | Formats | Doc |
 |---|---|---|
-| [`svr.py`](SRC/svr.py) | Ninja textures `.SVR`/`.SVM`/`.SVP`, including GS unswizzling | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) |
+| [`svr.py`](SRC/svr.py) | Ninja textures `.SVR`/`.SVM`/`.SVP`, including GS unswizzling. Writer: `roundtrip` rebuilds every texture file on the disc (in packs too) and compares the bytes, `replace` puts a PNG into a texture | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) |
 | [`csp.py`](SRC/csp.py) | `.CSP`/`.CSE` 2D screen layouts (sprites, node tree, animation) | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) |
 | [`zbf.py`](SRC/zbf.py) | `.zbf` depth buffers for pre-rendered rooms | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) |
 | [`ninja.py`](SRC/ninja.py) | Ninja models and motions `.SNJ`/`.SNO`/`.SNM`/`.SNP`/`.SNA`, loose and inside archives; OBJ export, animated glTF export | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) |
@@ -398,7 +398,7 @@ what the logged command gives. The mod folder keeps each file under its
 
 Tools reuse each other by importing the sibling script. The ones not
 listed (`afs.py`, `bpb.py`, `chd.py`, `cvs.py`, `gamedata.py`,
-`pac.py`, `ps2mc.py`, `rofs_decrypt.py`, `svr.py`, `tbb.py`) stand alone, and
+`pac.py`, `ps2mc.py`, `rofs_decrypt.py`, `tbb.py`) stand alone, and
 `regress.py` runs the others as commands.
 
 | Tool | Builds on |
@@ -406,6 +406,7 @@ listed (`afs.py`, `bpb.py`, `chd.py`, `cvs.py`, `gamedata.py`,
 | `sles_disasm.py`, `snr2.py` | each other: the executable's symbols name an overlay's imports |
 | `gamever.py` | `sles_disasm.py`, `snr2.py`; and every tool that reads the executable or an overlay uses it to find PAL addresses in another build |
 | `extract_disc.py` | `rofs_decrypt.py` |
+| `svr.py` | `pac.py`; for `roundtrip`'s walk of the packs also `csp.py`, `acrobata.py` and `packdata.py` (imported when needed, they import `svr.py` in turn) |
 | `csp.py` | `svr.py` for the textures inside CSP packs |
 | `zbf.py` | `pac.py`, to read depth buffers straight from `BG_*.MRG` |
 | `humanid.py` | `pac.py` for the `PRELOAD` copies; `sles_disasm.py` and `gamever.py` for the object table |

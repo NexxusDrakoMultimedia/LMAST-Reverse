@@ -885,9 +885,11 @@ Ideas Nexxus has agreed on (2026-10-27), not started:
   PCSX2's texture replacement. It needs: (1) which disc texture each of
   its PNGs replaces, from the hash PCSX2 names it by (computed the same
   way from each texture `svr.py` decodes, or matched against a dump of
-  the originals); (2) a texture writer, since `svr.py` only reads
-  ([`SVR_FORMAT.md`](SVR_FORMAT.md)): palette, swizzle and the containers
-  the textures sit in; (3) a palette for each: Realism keeps the native
+  the originals); (2) a texture writer: `svr.py` now writes the palette,
+  swizzle and mip chain ([`SVR_FORMAT.md`](SVR_FORMAT.md#writing)), and
+  a texture in a plain `.PAC` goes back with `pac.py`, but the CSP,
+  ACROBATA and `PackData` packs have no writer yet; (3) a palette for
+  each, which `svr.py replace` builds or matches: Realism keeps the native
   sizes for the most part (Nexxus's report), so most replacements fit their
   texture once requantised to its palette, and the few larger ones need
   a choice (scaled down, or left to the pack). The pack's files stay out
