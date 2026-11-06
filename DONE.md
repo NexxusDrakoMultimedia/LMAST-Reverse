@@ -171,6 +171,8 @@ the evidence and how it was tested; the git history holds the rest.
 
 Each result is recorded in the doc linked.
 
+- [x] Widescreen: the newspaper pages' headline and text at full width
+      ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#newspaper-pages))
 - [x] Edits through the writers: the player database, squads and clubs,
       free agents, regulations, kits, training, facilities, messages,
       a starting crest, a PR event

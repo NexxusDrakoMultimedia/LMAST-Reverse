@@ -463,8 +463,14 @@ untouched), a draw to a texture with the squeezed table (the body sees
 28672 and 16, and the squeezed values are back afterwards), a texture
 with the table already unsqueezed, and a texture with a face build's own
 values (both left alone). In each, `$sp`, `$ra`, `$a0` and `$a1` come
-back as they went in. **Not yet tested in PCSX2**
-([`TESTING.md`](../TESTING.md)).
+back as they went in.
+
+Tested in PCSX2 from boot, in a new career's opening cinematic: the
+headline ("Dunstable Utd: Red ink to force sale!?") and the other text
+span each page as the masthead does, with no empty strip at the right;
+the masthead, photo and adverts are unchanged, and so is the black box
+with the scrolling text (Nexxus's report and screenshot, 2026-11-07).
+So the page text is drawn by `nnuPrimitive2DSetVertex`.
 
 ## Known behaviour
 
@@ -482,10 +488,9 @@ back as they went in. **Not yet tested in PCSX2**
 - Which Acrobata code renders the newspaper pages into their textures
   (`ACROBATA::VRT_NewsPaper` is the likely class). The patch doesn't
   need it ([Newspaper pages](#newspaper-pages)).
-- Whether the `nnuPrimitive2DSetVertex` cave brings the page text to
-  full width in the game; and whether any other text drawn into a
-  texture (`nnDrawPrimitiveSprite2DPS2`, called only by
-  `cseProjectDrawBg`) needs the same.
+- Whether any other 2D drawn into a texture needs the same unsqueeze:
+  `nnDrawPrimitiveSprite2DPS2`, called only by `cseProjectDrawBg`, isn't
+  covered, and nothing known draws through it into a texture.
 - Which match function places the name tags over the players. The
   patch doesn't need it (above).
 - Whether the patch works on a modded disc. A disc whose executable is
