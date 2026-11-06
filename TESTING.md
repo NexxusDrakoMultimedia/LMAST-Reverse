@@ -197,6 +197,16 @@ list.
 
 ## Patches, text and what things look like
 
+- [ ] *Short.* Widescreen, newspaper headline text: with the widescreen
+      pnach (`PNACH/SLES-54151_3CB245D5.pnach`, Widescreen 16:9 ticked),
+      start a new career and watch the opening cinematic. On each
+      newspaper page the headline and the other text should span the
+      paper like the masthead does, with no empty strip on the right
+      (the page without the patch is the guide); the masthead, photo and
+      adverts stay at full width, and the black box with the scrolling
+      text and the menus afterwards look as before
+      ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#newspaper-pages))
+
 - [ ] *Short.* A rewritten texture: extract one crest from
       `0SYSTEM/EMBLEM_TEXTURE.PAC` with `pac.py extract`, change its
       picture (`svr.py png`, edit, then `svr.py replace`, once for a

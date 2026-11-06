@@ -294,3 +294,26 @@ patch=0,EE,001267b0,word,0804f3ac
 //   jal 0x13ce30; nop ; lui $at, 0x14; lw $ra, -0x30fc($at); jr $ra; nop
 // Data at 0x13cef8: the saved variable, the flag, the saved $ra.
 patch=0,EE,0013cca8,bytes,2150600028000b240b0c093cde9c29350000488d05000911ffff6b25fcff601504004a250800600000000000e0ffbd270000bfff0800a4ff1000a3ff1400013cc8bf28dcd0bf28fcc832050cc0bf28fc1000a3df09f860000800a4df1400013c38cd28dcd0bf28fcc832050cc0bf28fc0000bfdf0800e0032000bd2700000000000000000000000000000000000000000000ff010000bf01040008241a00c8140044093c3c00a88c170009154000a88c150009154800a88c803f093c1200091500000000f0ffbd270000bfff3600013ce046083c985b28ac8041083c9c5b28ac77de050ca0ffbd273600013ce846083c985b28ac4041083c9c5b28ac0000bfdf0800e0031000bd2777de0508a0ffbd273700083c309c088d8043093cdeff09113600083c985b088de846093cdaff0915000000005bf304080000000000000000000000000000000000000000000000003bf004083700013cff01093c080009151400013cc0bf28dcf8ce28fc0100092400cf29acc8bf28dcc8320508c0bf28fc0800e003000000001400013c00cf298c050020110000000000cf20acf8ce28dcc8320508c0bf28fc0800e00300000000e0ffbd270000bfff0800a4ff7ef3040c1000a5ff0800a4df1000a5df0000bfdf2000bd27a0ffbd27a8dd05082d18a000f0ffbd270000bffff0ffbd2798df050c5700023c8cf3040c000000000000bfdf0800e0031000bd272d8080007ef3040c000000000000a8df1400013c04cf28ac1300083cdcce08350000a8ffee9904082d2000028cf3040c000000001400013c04cf3f8c0800e003000000000000000000000000000000000000000000000000
+// Text in textures: the opening cinematic's newspaper pages are rendered
+// into textures, and with the picture fix above their headline text was
+// still drawn at 75% width: the game's text (sbFont) goes through Ninja's
+// nnuPrimitive2DSetVertex (0x167580), which reads the same table
+// directly and so never reaches the nnDrawPrimitive2D check. Its first
+// instruction (lui $v0, 0x57) jumps to a cave (0x13cbe8) in
+// graphics::OperatePostEffect::execute (0xc0 bytes, a debug function
+// nothing calls: no jal to it, and no overlay imports it). While the PX
+// screen half-width (0x369c30) isn't 256 and the table holds the squeezed
+// offX it writes the unsqueezed values (28672, 16), runs the function,
+// and writes the squeezed ones (29696, 12) back; otherwise it runs the
+// function untouched. The function is a leaf that never uses the stack,
+// so the cave keeps $ra there, and it works in $at, $t8 and $t9, which
+// are free at entry. The word after the hook (addiu $t3, $v0, -0xbb0)
+// runs in the jump's delay slot and again in the cave, harmlessly.
+//   0x13cbe8: lui $t8, 0x37; lw $t8, -0x63d0($t8); lui $t9, 0x4380; beq $t8, $t9, 0x13cc54; lui $t8, 0x36
+//   lw $t8, 0x5b98($t8); lui $t9, 0x46e8; bne $t8, $t9, 0x13cc54; nop ; addiu $sp, $sp, -0x10; sd $ra, ($sp)
+//   lui $at, 0x36; lui $t8, 0x46e0; sw $t8, 0x5b98($at); lui $t8, 0x4180; sw $t8, 0x5b9c($at)
+//   lui $v0, 0x57; jal 0x167584; nop ; lui $at, 0x36; lui $t8, 0x46e8; sw $t8, 0x5b98($at)
+//   lui $t8, 0x4140; sw $t8, 0x5b9c($at); ld $ra, ($sp); jr $ra; addiu $sp, $sp, 0x10
+//   0x13cc54: lui $v0, 0x57; j 0x167584; nop
+patch=0,EE,00167580,word,0804f2fa
+patch=0,EE,0013cbe8,bytes,3700183c309c188f8043193c170019133600183c985b188fe846193c1300191700000000f0ffbd270000bfff3600013ce046183c985b38ac8041183c9c5b38ac5700023c619d050c000000003600013ce846183c985b38ac4041183c9c5b38ac0000bfdf0800e0031000bd275700023c619d050800000000

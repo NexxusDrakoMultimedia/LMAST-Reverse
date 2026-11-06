@@ -62,7 +62,7 @@ fix stay `patch=1`, because the game writes that table itself after boot.
 
 Each run of consecutive words is one `bytes` line (PCSX2 writes the hex
 in memory order, so each instruction word appears byte-reversed), and
-single words stay `word` lines: 21 lines in all. Unused words between
+single words stay `word` lines: 23 lines in all. Unused words between
 caves in the same debug function are written as zero. Checked over PINE
 in PCSX2 2.8.2: after boot, all 167 words of the earlier one-word-per-line
 patch read back unchanged, and the gaps read zero.
@@ -433,6 +433,39 @@ masthead, photo and adverts at full width; Club House room changes and
 a custom player's face look as before (Nexxus's report, 2026-11-01).
 So the pages' pictures are drawn by `nnDrawPrimitive2D`.
 
+**The headline text.** With the pictures right, the headline and the
+other text on a page were still at 75% width, leaving the right quarter
+of the paper empty (Nexxus's report and screenshot, 2026-11-07). The
+game's text (the `sbFont` routines) doesn't go through
+`nnDrawPrimitive2D`: it calls `nnuPrimitive2DSetVertex` (`0x167580`)
+directly, which reads the same Ninja 2D table. A scan of the executable
+for `jal 0x167580` finds seven callers: `etc::DrawRect`, `DrawLine` and
+`DrawLineRect` (`0x146958`, `0x146a4c`, `0x146b7c`),
+`cseCastFaceNonTexDrawCore` (`0x1f0fe0`, `0x1f10ec`) and two sites in the
+`sbFont` code (`0x31114c`, `0x3115c4`), none of which reaches the
+texture check above.
+
+The function is a leaf: it uses no stack (`0x167580` to `0x16799c`) and
+takes its arguments in `$a0` and `$a1`. Its first instruction now jumps to
+a cave at `0x13cbe8`, in `graphics::OperatePostEffect::execute` (`0xc0`
+bytes; nothing jumps to it and no overlay imports it, like the other
+debug functions the patch uses). Under the same condition as the
+`nnDrawPrimitive2D` check (the half-width isn't 256 and the table's offX
+is the squeezed 29696) it writes the unsqueezed values (28672, 16), runs
+the function, and writes the squeezed ones back; otherwise it runs the
+function untouched. It keeps `$ra` on the stack and works in `$at`,
+`$t8` and `$t9`, which are free at entry; the word after the hook runs
+in the jump's delay slot and again in the cave, harmlessly.
+
+Run in a small MIPS interpreter over the pnach's own words, with the
+function body stubbed, on four cases: a draw to the screen (table
+untouched), a draw to a texture with the squeezed table (the body sees
+28672 and 16, and the squeezed values are back afterwards), a texture
+with the table already unsqueezed, and a texture with a face build's own
+values (both left alone). In each, `$sp`, `$ra`, `$a0` and `$a1` come
+back as they went in. **Not yet tested in PCSX2**
+([`TESTING.md`](../TESTING.md)).
+
 ## Known behaviour
 
 - The FMVs stay stretched to 16:9 (see the top of this page).
@@ -449,6 +482,10 @@ So the pages' pictures are drawn by `nnDrawPrimitive2D`.
 - Which Acrobata code renders the newspaper pages into their textures
   (`ACROBATA::VRT_NewsPaper` is the likely class). The patch doesn't
   need it ([Newspaper pages](#newspaper-pages)).
+- Whether the `nnuPrimitive2DSetVertex` cave brings the page text to
+  full width in the game; and whether any other text drawn into a
+  texture (`nnDrawPrimitiveSprite2DPS2`, called only by
+  `cseProjectDrawBg`) needs the same.
 - Which match function places the name tags over the players. The
   patch doesn't need it (above).
 - Whether the patch works on a modded disc. A disc whose executable is
