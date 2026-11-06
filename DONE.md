@@ -120,6 +120,11 @@ the evidence and how it was tested; the git history holds the rest.
       `replace` writes a picture into a texture, with its mip chain and
       a palette built or matched
       ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
+- [x] The texture hash map: `texmap.py` computes PCSX2's replacement
+      name (XXH3 of the GS memory blocks, palette hash, state) for every
+      texture on the disc and maps a pack onto them; LMAST Realism's PNGs
+      reach disc textures for 1,613 of 1,614
+      ([`TEXMAP.md`](DOC/TEXMAP.md))
 - [x] The player editor's tables: `emblem.py set` edits any cell of
       `EDIT_PLAYER.TBB` within the values its readers use, and
       `roundtrip` re-encodes it on both releases

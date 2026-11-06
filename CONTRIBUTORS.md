@@ -54,7 +54,8 @@ its own license.
 | [Python](https://www.python.org/) | every tool in `SRC/`, standard library only, with `tkinter` for the editors |
 | [Pillow](https://python-pillow.org/) | the PNG commands (`svr`, `csp`, `zbf`) and the textures in `ninja.py`'s exports (optional) |
 | [Capstone](https://www.capstone-engine.org/) | disassembly in `sles_disasm.py` and `snr2.py` (optional) |
-| [PCSX2](https://pcsx2.net/) | running the game for the in-game tests, its memory card images and save states |
+| [PCSX2](https://pcsx2.net/) | running the game for the in-game tests, its memory card images and save states; its texture-replacement naming and hashing, read from its source, which `texmap.py` reproduces ([`TEXMAP.md`](DOC/TEXMAP.md)) |
+| [xxHash](https://xxhash.com/) by Yann Collet | the XXH3 64-bit hash PCSX2 names textures by; `texmap.py` writes the algorithm out in Python (BSD-2-Clause) and checks it against the library |
 | [cvm_tool](https://github.com/JayFoxRox/cvm_tool) by JayFoxRox | the first `DATA.CVM` decryption; `rofs_decrypt.py` reimplements its ROFS algorithm in Python ([`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md)) |
 
 ## Sister project

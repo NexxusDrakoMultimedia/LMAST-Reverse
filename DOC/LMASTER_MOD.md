@@ -883,9 +883,11 @@ Ideas Nexxus has agreed on (2026-10-27), not started:
   [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism),
   Nexxus's own PCSX2 texture pack, onto the disc, so it works without
   PCSX2's texture replacement. It needs: (1) which disc texture each of
-  its PNGs replaces, from the hash PCSX2 names it by (computed the same
-  way from each texture `svr.py` decodes, or matched against a dump of
-  the originals); (2) a texture writer: `svr.py` now writes the palette,
+  its PNGs replaces, from the hash PCSX2 names it by: `texmap.py` computes
+  it from the disc and finds a texture for 1,613 of the 1,614 PNGs, 1,601
+  of them in plain `.PAC` packs ([`TEXMAP.md`](TEXMAP.md)); the kit parts
+  are 140 textures with up to 38 palettes each, which is not a one-for-one
+  replacement; (2) a texture writer: `svr.py` now writes the palette,
   swizzle and mip chain ([`SVR_FORMAT.md`](SVR_FORMAT.md#writing)), and
   a texture in a plain `.PAC` goes back with `pac.py`, but the CSP,
   ACROBATA and `PackData` packs have no writer yet; (3) a palette for

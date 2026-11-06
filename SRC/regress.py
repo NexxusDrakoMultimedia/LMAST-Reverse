@@ -190,6 +190,8 @@ def checks():
         ("sqb_roundtrip", ["sqb.py", "roundtrip", "DAT/SEQ", "DAT/PARAM"], ["DAT/SEQ", "DAT/PARAM"]),
         ("svr", ["svr.py", "info", "DAT"], ["DAT"]),
         ("svr_roundtrip", ["svr.py", "roundtrip", "DAT"], ["DAT"]),
+        # The PCSX2 name of every texture; the digest changes if any hash does.
+        ("texmap_index", ["texmap.py", "index", "DAT"], ["DAT"]),
         ("csp", ["csp.py", "info", "DAT"], ["DAT"]),
         ("zbf", ["zbf.py", "info", "DAT"], ["DAT"]),
         ("ninja", ["ninja.py", "info", "DAT"], ["DAT"]),

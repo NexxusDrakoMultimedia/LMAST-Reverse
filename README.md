@@ -218,6 +218,7 @@ python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30 ab
 | Tool | Formats | Doc |
 |---|---|---|
 | [`svr.py`](SRC/svr.py) | Ninja textures `.SVR`/`.SVM`/`.SVP`, including GS unswizzling. Writer: `roundtrip` rebuilds every texture file on the disc (in packs too) and compares the bytes, `replace` puts a PNG into a texture | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) |
+| [`texmap.py`](SRC/texmap.py) | the PCSX2 texture-replacement name (XXH3 hash of the data, palette hash, state) of every texture on the disc; `match` maps a texture pack such as LMAST Realism onto the disc textures it replaces | [`TEXMAP.md`](DOC/TEXMAP.md) |
 | [`csp.py`](SRC/csp.py) | `.CSP`/`.CSE` 2D screen layouts (sprites, node tree, animation) | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) |
 | [`zbf.py`](SRC/zbf.py) | `.zbf` depth buffers for pre-rendered rooms | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) |
 | [`ninja.py`](SRC/ninja.py) | Ninja models and motions `.SNJ`/`.SNO`/`.SNM`/`.SNP`/`.SNA`, loose and inside archives; OBJ export, animated glTF export | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) |
@@ -407,6 +408,7 @@ listed (`afs.py`, `bpb.py`, `chd.py`, `cvs.py`, `gamedata.py`,
 | `gamever.py` | `sles_disasm.py`, `snr2.py`; and every tool that reads the executable or an overlay uses it to find PAL addresses in another build |
 | `extract_disc.py` | `rofs_decrypt.py` |
 | `svr.py` | `pac.py`; for `roundtrip`'s walk of the packs also `csp.py`, `acrobata.py` and `packdata.py` (imported when needed, they import `svr.py` in turn) |
+| `texmap.py` | `svr.py`, which opens every pack the textures sit in |
 | `csp.py` | `svr.py` for the textures inside CSP packs |
 | `zbf.py` | `pac.py`, to read depth buffers straight from `BG_*.MRG` |
 | `humanid.py` | `pac.py` for the `PRELOAD` copies; `sles_disasm.py` and `gamever.py` for the object table |
@@ -553,6 +555,7 @@ saves.
 | Doc | Covers |
 |---|---|
 | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) | textures and GS swizzling |
+| [`TEXMAP.md`](DOC/TEXMAP.md) | PCSX2's texture-replacement names, and mapping a texture pack onto the disc |
 | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) | `DAT/CSE` 2D layouts |
 | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) | pre-rendered Z buffers |
 | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) | Ninja (NN) models, skeletons, motions, VU/PX Plus vertex streams |
