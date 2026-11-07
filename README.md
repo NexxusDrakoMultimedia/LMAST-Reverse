@@ -218,7 +218,7 @@ python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30 ab
 | Tool | Formats | Doc |
 |---|---|---|
 | [`svr.py`](SRC/svr.py) | Ninja textures `.SVR`/`.SVM`/`.SVP`, including GS unswizzling. Writer: `roundtrip` rebuilds every texture file on the disc (in packs too) and compares the bytes, `replace` puts a PNG into a texture | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) |
-| [`texmap.py`](SRC/texmap.py) | the PCSX2 texture-replacement name (XXH3 hash of the data, palette hash, state) of every texture on the disc; `match` maps a texture pack such as LMAST Realism onto the disc textures it replaces | [`TEXMAP.md`](DOC/TEXMAP.md) |
+| [`texmap.py`](SRC/texmap.py) | the PCSX2 texture-replacement name (XXH3 hash of the data, palette hash, state) of every texture on the disc; `match` maps a texture pack such as LMAST Realism onto the disc textures it replaces, `apply` writes the matching pictures (and a transparent border on the licensed crests) into copies of the pack files | [`TEXMAP.md`](DOC/TEXMAP.md) |
 | [`csp.py`](SRC/csp.py) | `.CSP`/`.CSE` 2D screen layouts (sprites, node tree, animation) | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) |
 | [`zbf.py`](SRC/zbf.py) | `.zbf` depth buffers for pre-rendered rooms | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) |
 | [`ninja.py`](SRC/ninja.py) | Ninja models and motions `.SNJ`/`.SNO`/`.SNM`/`.SNP`/`.SNA`, loose and inside archives; OBJ export, animated glTF export | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) |

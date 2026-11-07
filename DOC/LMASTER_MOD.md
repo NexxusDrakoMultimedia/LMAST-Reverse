@@ -878,24 +878,29 @@ python SRC/stadium.py info DAT/STADIUM DAT/PARAM    # CONV_INFO_BUILD's ids by l
 
 Ideas Nexxus has agreed on (2026-10-27), not started:
 
-- **LMAST Realism on the disc.** Bring the logos, kits, texture fixes
-  and real competition names of
+- **LMAST Realism on the disc.** Bring the logos, texture fixes and
+  match pictures of
   [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism),
   Nexxus's own PCSX2 texture pack, onto the disc, so it works without
-  PCSX2's texture replacement. It needs: (1) which disc texture each of
-  its PNGs replaces, from the hash PCSX2 names it by: `texmap.py` computes
-  it from the disc and finds a texture for 1,613 of the 1,614 PNGs, 1,601
-  of them in plain `.PAC` packs ([`TEXMAP.md`](TEXMAP.md)); the kit parts
-  are 140 textures with up to 38 palettes each, which is not a one-for-one
-  replacement; (2) a texture writer: `svr.py` now writes the palette,
-  swizzle and mip chain ([`SVR_FORMAT.md`](SVR_FORMAT.md#writing)), and
-  a texture in a plain `.PAC` goes back with `pac.py`, but the CSP,
-  ACROBATA and `PackData` packs have no writer yet; (3) a palette for
-  each, which `svr.py replace` builds or matches: Realism keeps the native
-  sizes for the most part (Nexxus's report), so most replacements fit their
-  texture once requantised to its palette, and the few larger ones need
-  a choice (scaled down, or left to the pack). The pack's files stay out
-  of the repo.
+  PCSX2's texture replacement. **Decided (Nexxus, 2026-11-07):** one
+  switch (`realism`, in a new `graphics` group), in LMASTER full and max
+  and not lite (it is an improvement, not a fix); the **kits stay
+  Realism-only**, a PCSX2 texture pack, because a kit part has up to 38
+  palettes and the disc keeps one; and the switch also gives the
+  licensed Italian, Spanish and Dutch clubs' own crests a transparent
+  border of 4 pixels, which Realism's logos have. What exists:
+  `texmap.py` finds the disc texture of 1,613 of the 1,614 PNGs from the
+  hash PCSX2 names them by ([`TEXMAP.md`](TEXMAP.md)), `svr.py` writes
+  the palette, swizzle and mip chain
+  ([`SVR_FORMAT.md`](SVR_FORMAT.md#writing)), and `texmap.py apply`
+  writes the 781 textures whose picture and palette match exactly, and
+  the licensed crests' border, into copies of their `.PAC` packs
+  ([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)). Not
+  done: the `--mod realism` switch itself (the pack's files stay out of
+  the repo, so it takes the pack's folder), a check in the game
+  ([`TESTING.md`](../TESTING.md)), and writers for the CSP and
+  ACROBATA packs, which hold 58 more pictures (league logos, the
+  intro).
 
 Possible, for LMASTER full and max (Nexxus's idea, 2026-11-01), not
 started:

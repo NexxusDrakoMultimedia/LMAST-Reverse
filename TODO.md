@@ -44,11 +44,12 @@ What to work on next, most valuable first.
 2. **LMAST Realism on the disc** (sections 3 and 8). `svr.py` writes
    textures and `texmap.py` maps the pack onto the disc: 1,613 of its
    1,614 PNGs have a disc texture, 1,601 of them in plain `.PAC` packs
-   that `pac.py replace` can write. Left: a command that does the whole
-   job for the crests and match pictures (map, `svr.py replace`, repack,
-   `PRELOAD` and `.HED` copies), what to do about the kits (140 textures
-   with up to 38 palettes each), and writers for the CSP and ACROBATA
-   packs (12 files)
+   that `pac.py replace` can write. `texmap.py apply` writes the crests
+   and match pictures into copies of their packs. Left: the
+   `--mod realism` switch in `patch_disc.py` (one switch, LMASTER full
+   and max; Nexxus's choice, 2026-11-07), a check in the game, and
+   writers for the CSP and ACROBATA packs (58 pictures). The kits stay
+   Realism-only (a PCSX2 texture pack)
    ([`TEXMAP.md`](DOC/TEXMAP.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned)).
 3. **Every LMASTER switch on the Japanese release** (section 8), needed
    before LMASTER 1.0.0: every other switch plans there now; left are
@@ -323,10 +324,12 @@ is built and tested, or set aside.
 - [ ] Possible, for full and max: the Japanese in-game player editor
       in the PAL release; first find its code and whether PAL still
       holds it ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
-- [ ] LMAST Realism on the disc: the map (`texmap.py match`) and the
-      picture-to-texture step (`svr.py replace`) work; left are the
-      command that applies the crests and match pictures through
-      `pac.py`, the kits (140 textures, up to 38 palettes each), and the
-      CSP and ACROBATA pack writers (section 3)
+- [ ] LMAST Realism on the disc: the map (`texmap.py match`), the
+      picture-to-texture step (`svr.py replace`) and the command that
+      applies the crests and match pictures (`texmap.py apply`) work;
+      left are the `--mod realism` switch (one switch in the LMASTER
+      full and max editions, with the licensed crests' border), seeing
+      it in the game, and the CSP and ACROBATA pack writers (section 3).
+      The kits stay Realism-only
       ([`TEXMAP.md`](DOC/TEXMAP.md),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))

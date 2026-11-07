@@ -125,6 +125,13 @@ the evidence and how it was tested; the git history holds the rest.
       texture on the disc and maps a pack onto them; LMAST Realism's PNGs
       reach disc textures for 1,613 of 1,614
       ([`TEXMAP.md`](DOC/TEXMAP.md))
+- [x] LMAST Realism's crests and match pictures on the disc:
+      `texmap.py apply` writes the 781 textures whose picture and palette
+      match exactly into copies of their packs (with `pac.py`'s writer),
+      and `--licensed-border` gives the licensed Italian, Spanish and
+      Dutch clubs' own crests a transparent edge like Realism's; a
+      `patch_disc.py --copies` build carries them to the `PRELOAD`
+      copies ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply))
 - [x] The player editor's tables: `emblem.py set` edits any cell of
       `EDIT_PLAYER.TBB` within the values its readers use, and
       `roundtrip` re-encodes it on both releases

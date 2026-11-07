@@ -41,13 +41,24 @@ Usage:
     python texmap.py selfcheck
     python texmap.py index <DAT> ... [--all] [--csv out.csv]
     python texmap.py match <pack folder> <DAT> ... [--all] [--csv out.csv]
+    python texmap.py apply <pack folder> <DAT> <out folder> [--licensed-border N]
+                           [--sles <executable>] [--dry-run]
     python texmap.py name  <name.png>
 
 `index` hashes every texture under the folders (loose files and the
 packs `svr.py roundtrip` opens; --all adds the 1.1 GB face pack) and
 prints counts. `match` reads a pack folder (a PCSX2 `replacements`
 folder: every .png/.bmp under it) and says which disc textures each file
-replaces. `name` decodes one file name.
+replaces. `apply` writes the pictures that match a disc texture and its
+palette exactly into copies of the files that hold them, under <out folder>
+(laid out like DAT, for patch_disc.py --copies); the kit pictures, whose
+palette the game changes, are left out. --licensed-border N also scales the
+original crests of the licensed Italian, Spanish and Dutch clubs (teams 123
+to 244) that the pack doesn't replace down by 2N pixels, leaving N more
+transparent pixels on every side (--sles names the executable that holds the
+licence table; the default is the one in ISO/ next to DAT). A picture whose
+alpha never passes 0x80 is taken as the GS's 0 to 0x80. `name` decodes one
+file name.
 """
 import csv
 import functools
@@ -358,7 +369,8 @@ def disc_index(paths, everything=False):
         if key not in seen:
             rows = []
             try:
-                for tex in svr.textures_of(blob, label):
+                for slot, tex in enumerate(svr.textures_of(blob, label)):
+                    tex.slot = slot     # its place in an SVM, for `apply`
                     h, how = texture_hash(tex)
                     rows.append((tex, h, how, palette_hash(tex)))
             except (ValueError, struct.error, KeyError, IndexError) as e:
@@ -496,6 +508,213 @@ def cmd_name(arg):
         ", region %dx%d" % parsed["region"] if parsed["region"] else ""))
 
 
+# --- putting a pack on the disc ----------------------------------------------------
+
+# svr.texture_files labels: <file>, or <file>#<entry>:<name>[|prs] for a BINPAC
+# entry (deeper nesting and the pack kinds without a writer don't match)
+LABEL = re.compile(r"^(?P<path>[^#|]+)(?:#(?P<idx>\d+):(?P<name>[^#|]*)(?P<prs>\|prs)?)?$")
+
+
+def pack_picture(path, size):
+    """(pixels, ps2 range) of a pack picture at the disc texture's size, as
+    svr.py wants them. A pack made for PCSX2 holds the alpha the GS sees,
+    0 to 0x80 (0x80 = opaque), so a picture whose alpha never passes 0x80 is
+    scaled to 0 to 255 first, the exact inverse of encode_colors' rounding;
+    any other picture is taken as 0 to 255."""
+    from PIL import Image
+    img = Image.open(path).convert("RGBA")
+    ps2 = img.getchannel("A").getextrema()[1] <= 0x80    # before resizing: Lanczos overshoots
+    if img.size != size:
+        img = img.resize(size, getattr(Image, "Resampling", Image).LANCZOS)
+    px = list(img.getdata())
+    if ps2:
+        px = [(r, g, b, (min(a, 0x80) * 255 + 127) // 128) for r, g, b, a in px]
+    return px, ps2
+
+
+def cmd_apply(args):
+    """Write the pack's pictures that match a disc texture exactly (texture
+    and palette) into copies of the files that hold them, under an output
+    folder laid out like DAT (a mod folder for patch_disc.py)."""
+    import collections
+    import pac
+    dry = "--dry-run" in args
+    for flag in ("--licensed-border", "--sles"):
+        if flag in args and args.index(flag) + 1 >= len(args):
+            raise SystemExit("%s needs a value" % flag)
+    border = int(args[args.index("--licensed-border") + 1]) if "--licensed-border" in args else 0
+    sles = args[args.index("--sles") + 1] if "--sles" in args else None
+    plain = [a for i, a in enumerate(args) if not a.startswith("--") and
+             (i == 0 or args[i - 1] not in ("--licensed-border", "--sles"))]
+    if len(plain) != 3:
+        print(__doc__)
+        return 1
+    folder, dat, out_dir = plain
+    found, _, problems = disc_index([dat])
+    by_texture = {}
+    for (h, ph), items in found.items():
+        by_texture.setdefault(h, []).append((ph, items))
+    tally = collections.Counter()
+    wanted = {}   # (label, slot) -> {picture digest: path}
+    for path in pack_files(folder):
+        name = parse_name(os.path.splitext(os.path.basename(path))[0])
+        if name is None:
+            tally["not a PCSX2 name"] += 1
+            continue
+        if name["mip"] or name["region"]:
+            tally["mip or region file"] += 1
+            continue
+        hits = by_texture.get(name["tex"])
+        if not hits:
+            tally["no disc texture"] += 1
+            continue
+        exact = [it for ph, items in hits if ph == name["clut"] for it in items]
+        if not exact:
+            tally["palette differs (kits): not applied"] += 1
+            continue
+        good = [(label, tex) for label, tex in exact
+                if (tex.width, tex.height, BPP_PSM[tex.bpp]) == (name["w"], name["h"], name["psm"])]
+        if not good:
+            tally["PSM or size differ: not applied"] += 1
+            continue
+        with open(path, "rb") as f:
+            digest = hashlib.sha1(f.read()).digest()
+        for label, tex in good:
+            wanted.setdefault((label, tex.slot), {}).setdefault(digest, path)
+    def writable(label, pics):
+        return len(pics) == 1 and LABEL.match(label) and holder_kind(label) in (
+            "BINPAC pack (pac.py replace)", "loose file")
+
+    # one picture per disc texture; a copy in PRELOAD follows its original
+    # (patch_disc.py --copies), unless no other holder of the picture is written
+    outside = {d for (label, _), pics in wanted.items()
+               if not is_preload(label) and writable(label, pics) for d in pics}
+    jobs = {}     # file -> {(entry index, name, prs): {slot: picture path}}
+    for (label, slot), pics in sorted(wanted.items()):
+        if len(pics) > 1:
+            tally["several pictures for one disc texture: not applied"] += 1
+            continue
+        (digest, pic), = pics.items()
+        if is_preload(label) and digest in outside:
+            tally["PRELOAD copy (patch_disc.py --copies)"] += 1
+            continue
+        m = LABEL.match(label)
+        kind = holder_kind(label)
+        if not m or kind not in ("BINPAC pack (pac.py replace)", "loose file"):
+            tally["no writer (%s)" % kind] += 1
+            continue
+        key = (int(m.group("idx")) if m.group("idx") else None, m.group("name"), bool(m.group("prs")))
+        jobs.setdefault(m.group("path"), {}).setdefault(key, {})[slot] = pic
+        tally["textures to write"] += 1
+    if border:      # the licensed clubs' own crests that the pack leaves alone
+        import gamever
+        sles = sles or gamever.exe_path(os.path.join(os.path.dirname(os.path.abspath(dat)), "ISO"))
+        for path, idx in licensed_crests(dat, sles):
+            with open(path, "rb") as f:
+                head = pac.binpac_blobs(f.read())[0]
+            slots = jobs.setdefault(path, {}).setdefault((idx, head.entries[idx][2], False), {})
+            if 0 in slots:
+                tally["licensed crest: the pack has a picture"] += 1
+            else:
+                slots[0] = ("inset", border)
+                tally["licensed crest: %dpx transparent border" % border] += 1
+    written = []
+    worst = []
+    ps2_pics = 0
+    for path, entries in sorted(jobs.items()):
+        with open(path, "rb") as f:
+            data = f.read()
+        blobs, head = None, None
+        if any(k[0] is not None for k in entries):
+            head, blobs = pac.binpac_blobs(data)
+        new_file = data
+        for (idx, name, prs), slots in sorted(entries.items(), key=lambda kv: kv[0][0] or 0):
+            raw = data if idx is None else blobs[idx]
+            if idx is not None and head.entries[idx][2] != name:
+                raise SystemExit("%s entry %d is %r, not %r" % (path, idx, head.entries[idx][2], name))
+            if prs:
+                raw = pac.prsh_expand(raw)
+            texs = svr.textures_of(raw, name)
+            bodies, expect = [None] * len(texs), {}
+            for slot, pic in slots.items():
+                tex = texs[slot]
+                if isinstance(pic, tuple):
+                    px, ps2 = inset_pixels(tex, pic[1]), False
+                else:
+                    px, ps2 = pack_picture(pic, (tex.width, tex.height))
+                ps2_pics += ps2
+                bodies[slot] = svr.body_from_pixels(
+                    tex, px, new_palette=bool(tex.palette_entries) and not isinstance(pic, tuple))
+                expect[slot] = px
+            new = svr.encode_svm(texs, bodies) if raw[:4] == b"PVMH" else svr.encode_svr(texs[0], bodies[0])
+            if len(new) != len(raw):
+                raise SystemExit("%s: rebuilt entry is %d bytes, not %d" % (path, len(new), len(raw)))
+            for slot, px in expect.items():       # how close the stored picture is to the pack's
+                tex = svr.textures_of(new, name)[slot]
+                got = tex.pixels()
+                far = sum(1 for a, b in zip(px, got)
+                          if max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2])) > 16 and a[3] > 16)
+                worst.append((far / len(px), path, idx, slot))
+            if idx is None:
+                new_file = new
+            else:
+                blobs[idx] = pac.prsh_wrap(new) if prs else new
+        if blobs is not None:
+            new_file = pac.build_binpac(data[:head.header_size], blobs)
+        rel = os.path.relpath(path, dat)
+        written.append((rel, len(data), len(new_file)))
+        if not dry:
+            target = os.path.join(out_dir, rel)
+            os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+            with open(target + ".new", "wb") as f:
+                f.write(new_file)
+            os.replace(target + ".new", target)
+    print("%s -> %s%s" % (folder, out_dir, "  (dry run: nothing written)" if dry else ""))
+    for k, v in sorted(tally.items(), key=lambda kv: (-kv[1], kv[0])):
+        print("  %5d  %s" % (v, k))
+    print("  %5d  files written, %d textures; %d pictures had the PS2 alpha range" % (
+        len(written), sum(len(s) for e in jobs.values() for s in e.values()), ps2_pics))
+    grown = [w for w in written if w[1] != w[2]]
+    if grown:
+        print("  %5d  files changed size (PRSH entries recompressed): patch_disc.py moves them" % len(grown))
+    worst.sort(reverse=True)
+    print("  stored pictures with over 5%% of their pixels more than 16 off the pack's: %d of %d" % (
+        sum(1 for w in worst if w[0] > 0.05), len(worst)))
+    for frac, path, idx, slot in worst[:5]:
+        print("    %4.1f%%  %s entry %s texture %d" % (100 * frac, path, idx, slot))
+    for line in problems:
+        print(line)
+    return 0
+
+
+def inset_pixels(tex, border):
+    """The texture with its picture scaled down to leave `border` pixels of
+    transparent edge all round (the margin LMAST Realism crests have)."""
+    from PIL import Image
+    w, h = tex.width, tex.height
+    px = tex.pixels()
+    img = Image.new("RGBA", (w, h))
+    img.putdata(px)
+    clear = next((p for p in px if p[3] == 0), (0, 0, 0, 0))
+    out = Image.new("RGBA", (w, h), clear)
+    out.paste(img.resize((w - 2 * border, h - 2 * border), getattr(Image, "Resampling", Image).LANCZOS),
+              (border, border))
+    return list(out.getdata())
+
+
+def licensed_crests(dat, sles):
+    """(file, entry) of the crest of each licensed club (teams 123 to 244:
+    entry = team id - 3, 0SYSTEM_DIR.md) in both crest packs."""
+    import uniform
+    teams, _ = uniform.licence_table(sles)
+    return [(os.path.join(dat, "0SYSTEM", f).replace("\\", "/"), team - 3)
+            for f in ("EMBLEM_TEXTURE.PAC", "FLAG_TEXTURE.PAC") for team in sorted(teams)]
+
+
+def is_preload(label):
+    return "/PRELOAD/" in label.replace("\\", "/").upper()
+
+
 def main(argv):
     cmd, args = (argv[1], argv[2:]) if len(argv) > 1 else ("", [])
     if cmd == "selfcheck":
@@ -504,6 +723,8 @@ def main(argv):
         cmd_index(args)
     elif cmd == "match" and len(args) >= 2:
         cmd_match(args)
+    elif cmd == "apply" and len(args) >= 3:
+        return cmd_apply(args)
     elif cmd == "name" and len(args) == 1:
         cmd_name(args[0])
     else:

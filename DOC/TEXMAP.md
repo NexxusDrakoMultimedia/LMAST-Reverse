@@ -101,7 +101,9 @@ kit parts, and they are only 140 disc textures with 1 to 38 PNGs each
 draws a kit part with many palettes, and Realism has a PNG for each.
 A disc texture can hold only one of them, so putting the kits on the disc
 is not a texture replacement but a change to how the kits are made
-([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)), and is left open.
+([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)). **Nexxus's choice, 2026-11-07:
+the kits stay Realism-only**, a PCSX2 texture pack, and are not put on
+the disc.
 
 ```bash
 python SRC/texmap.py match <LMAST-Realism>/textures/SLES-54151/replacements DAT --csv map.csv
@@ -111,8 +113,65 @@ The CSV has one row per file: its hashes, whether the palette matched,
 how many disc textures it replaces, what holds them, and the first three
 labels (`DAT/0SYSTEM/EMBLEM_TEXTURE.PAC#12:...`).
 
+## Putting the pack on the disc (`apply`)
+
+```bash
+python SRC/texmap.py apply <LMAST-Realism>/textures/SLES-54151/replacements DAT mod \
+    --licensed-border 4 [--sles ISO/SLES_541.51] [--dry-run]
+```
+
+`apply` writes copies of the files that hold the pictures, laid out like
+`DAT`, into `mod/` (it never changes `DAT`). Each picture goes in only
+where PCSX2 would use it, **texture hash and palette hash both equal**
+(**empirical**: 431 of the pack's files, 781 disc textures with the copies
+in `EMBLEM_TEXTURE` and `FLAG_TEXTURE`). The steps:
+
+1. The picture is scaled to the disc texture's size if it differs (three
+   of the pack's are 4 or 8 times larger; Lanczos).
+2. The pack keeps the alpha the GS sees, 0 to `0x80`, and 1,570 of its
+   1,614 PNG never pass `0x80` (the other 44 reach 255). A picture whose
+   alpha stays within `0x80` is scaled to 0 to 255 first, with the
+   rounding `svr.py` undoes, so `0x80` is stored as `0x80` and a half
+   transparent pixel stays half transparent. Any other picture is taken
+   as 0 to 255.
+3. `svr.py`'s writer puts it into the texture with a new palette built
+   from the picture (`body_from_pixels`), halving the mip levels, and the
+   file keeps its length.
+4. The entry goes back into its pack (`pac.py`'s `build_binpac`, PRSH
+   entries recompressed); the pack's header and the rest are untouched.
+
+Left out, and counted in the output: the 1,182 kit pictures (palette
+differs; **Nexxus's choice, 2026-11-07: the kits stay Realism-only, a
+PCSX2 texture pack**), 58 in the CSP and ACROBATA packs (no writer), two
+disc textures that two different pictures claim, and the files without a
+disc texture. A texture also held in a `PRELOAD` pack is written only in
+its original: `patch_disc.py --copies` carries it to the copy.
+
+A crest is 4 bit with a 16-colour palette, so the pack's full-colour
+pictures are reduced to 16 colours; 563 of the 781 differ by more than 16
+in some channel on over 5% of their pixels, and by eye the crests keep
+their shape and main colours.
+
+`--licensed-border 4` also takes the **original crests of the licensed
+clubs** (the 116 clubs of Italy, Spain and the Netherlands, team ids 123
+to 244, [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#licensed-kits)) that the
+pack does not replace, in `EMBLEM_TEXTURE.PAC` and `FLAG_TEXTURE.PAC`
+(entry = team id - 3), and scales each down by twice the border, so that
+it has that many more transparent pixels on every side, as Realism's
+logos have (Nexxus's request, 2026-11-07; the mini-crest sheets already
+had it). The picture is matched to the crest's own palette, so the
+colours stay the game's. 227 of the 232 crests (116 clubs, two packs) get
+it; 5 have a Realism picture. The licensed crests had 2 transparent
+pixels at the top and bottom (1 or 0 in 8 of them) and about 2 to 30 at
+the sides, and most of Realism's crests have 4 on every side. Nexxus
+asked for 2 pixels, saw the result looked much the same as the original,
+and chose **4** (2026-11-07), so a crest keeps about 6 at the top and
+bottom.
+
 ## Still unknown
 
+- Whether the pictures look right in the game: **not tested** (a disc
+  built with `patch_disc.py patch ... --copies`, [`TESTING.md`](../TESTING.md)).
 - Whether the 16 bit hash (alpha from TEXA) is right: the one 16 bit file
   in the pack has no disc texture to test it on.
 - About 400 of the pack's names have bit 14 of the state set (`5dd4`,

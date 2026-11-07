@@ -197,16 +197,21 @@ list.
 
 ## Patches, text and what things look like
 
-- [ ] *Short.* A rewritten texture: extract one crest from
-      `0SYSTEM/EMBLEM_TEXTURE.PAC` with `pac.py extract`, change its
-      picture (`svr.py png`, edit, then `svr.py replace`, once for a
-      texture with its own palette and once with `--palette keep`), put
-      it back with `pac.py replace` (and the `.HED` copy if the pack has
-      one), build a disc and look at that club's crest on the team
-      screens. It should show the new picture with no wrong colours or
-      scrambled blocks, which tells whether the swizzle and palette
-      writing match what the game reads
-      ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
+- [ ] *Short.* LMAST Realism's pictures on a disc: build it with
+      `python SRC/texmap.py apply <LMAST-Realism>/textures/SLES-54151/replacements DAT mod --licensed-border 4`
+      and `python SRC/patch_disc.py patch <retail iso> out.iso <each file of mod/>=mod/<file> --copies --dat DAT`
+      (the targets are `0SYSTEM/EMBLEM_TEXTURE.PAC`, `FLAG_TEXTURE.PAC`,
+      `MATCH_TEXTURE.PAC`, `MINIEMBLEM_TEXTURE.PAC`,
+      `MINIMATCH_TEXTURE.PAC`, `SPONSOR_TEXTURE_M.PAC` and
+      `STADIUM/ADT_TEXCMN.PAC`), play it with texture replacement off,
+      and look at the club crests on the team and match screens, the
+      league and cup badges and the adboards. They should show the
+      Realism pictures with no wrong colours or scrambled blocks, which
+      tells whether the swizzle and palette writing match what the game
+      reads; the licensed Italian, Spanish and Dutch clubs' own crests
+      should sit a little smaller, with a clear edge
+      ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply),
+      [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
 
 - [ ] *Short.* The widescreen patch on a modded disc: copy the pnach
       under the modded executable's own CRC
