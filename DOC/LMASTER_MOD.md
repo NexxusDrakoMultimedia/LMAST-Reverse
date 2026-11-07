@@ -916,8 +916,11 @@ carries them to the `PRELOAD` copies. The work is `texmap.py apply`
   on the disc.
 
 Built, and the files checked: a disc built with the switch equals one
-built from `texmap.py apply`'s files with `--copies`. **Not seen in the
-game yet** ([`TESTING.md`](../TESTING.md)). Not done: the CSP and
+built from `texmap.py apply`'s files with `--copies`. **Tested in PCSX2**
+(Nexxus's report, 2026-11-07, `LMAST-test-realism.iso`): the disc shows the
+pack's pictures and works; the mini logos first came out half transparent
+and were fixed ([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)).
+Not done: the CSP and
 ACROBATA packs hold 58 more of the pack's pictures (the league logos,
 the intro), and they have no writer.
 

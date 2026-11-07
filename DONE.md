@@ -212,6 +212,9 @@ Each result is recorded in the doc linked.
       including the third tier over a German season, the real names, the
       2005-06 grounds and a season on LMASTER max
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [x] LMAST Realism's pictures on a disc built with `--mod realism`
+      work in PCSX2, mini logos included
+      ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply))
 
 ## 8. LMASTER Mod and other patches
 

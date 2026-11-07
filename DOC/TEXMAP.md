@@ -173,10 +173,10 @@ the sides, and most of Realism's crests have 4 on every side. Nexxus
 asked for 2 pixels, tried 4 on request and went back to **2** (2026-11-07),
 so a crest keeps about 4 at the top and bottom.
 
+**Tested in PCSX2** (Nexxus's report, 2026-11-07, `LMAST-test-realism.iso`): a disc built with `--mod realism` shows the pack's pictures. Its first build showed the mini logos in the club ranking half transparent (Nexxus's screenshot): the resized mini-crest sheets reached alpha 148 and were read as 0 to 255, fixed in `pack_picture`; the rebuilt disc works.
+
 ## Still unknown
 
-- Whether the pictures look right in the game: **not tested** (a disc
-  built with `patch_disc.py patch ... --copies`, [`TESTING.md`](../TESTING.md)).
 - Whether the 16 bit hash (alpha from TEXA) is right: the one 16 bit file
   in the pack has no disc texture to test it on.
 - About 400 of the pack's names have bit 14 of the state set (`5dd4`,

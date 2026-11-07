@@ -197,19 +197,6 @@ list.
 
 ## Patches, text and what things look like
 
-- [ ] *Short.* LMAST Realism's pictures on a disc: build it with
-      `python SRC/patch_disc.py patch <retail iso> out.iso --mod realism --realism <LMAST-Realism>/textures/SLES-54151/replacements --copies --dat DAT`
-      (or tick Graphics in the editor's Build disc window and set the
-      pack folder), play it with texture replacement off,
-      and look at the club crests on the team and match screens, the
-      league and cup badges and the adboards. They should show the
-      Realism pictures with no wrong colours or scrambled blocks, which
-      tells whether the swizzle and palette writing match what the game
-      reads; the licensed Italian, Spanish and Dutch clubs' own crests
-      should sit a little smaller, with a clear edge
-      ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply),
-      [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
-
 - [ ] *Short.* The widescreen patch on a modded disc: copy the pnach
       under the modded executable's own CRC
       ([`INSTALL.md`](INSTALL.md#pcsx2-patches)) and check the picture
