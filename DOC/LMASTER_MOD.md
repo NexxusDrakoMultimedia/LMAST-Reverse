@@ -907,8 +907,8 @@ carries them to the `PRELOAD` copies. The work is `texmap.py apply`
 - the pack's pictures whose texture and palette match a disc texture
   exactly (781 textures) go into their packs with `svr.py`'s writer;
 - the **original crests of the licensed Italian, Spanish and Dutch
-  clubs** that the pack doesn't replace get a transparent border of 4
-  pixels (the picture is scaled down by 8), as Realism's logos have
+  clubs** that the pack doesn't replace get a transparent border of 2
+  pixels (the picture is scaled down by 4), as Realism's logos have
   (Nexxus's request and choice, 2026-11-07; the mini-crest sheets
   already had it);
 - the **kits stay Realism-only** (Nexxus, 2026-11-07): a kit part has up

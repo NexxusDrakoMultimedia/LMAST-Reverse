@@ -518,12 +518,16 @@ LABEL = re.compile(r"^(?P<path>[^#|]+)(?:#(?P<idx>\d+):(?P<name>[^#|]*)(?P<prs>\
 def pack_picture(path, size):
     """(pixels, ps2 range) of a pack picture at the disc texture's size, as
     svr.py wants them. A pack made for PCSX2 holds the alpha the GS sees,
-    0 to 0x80 (0x80 = opaque), so a picture whose alpha never passes 0x80 is
-    scaled to 0 to 255 first, the exact inverse of encode_colors' rounding;
-    any other picture is taken as 0 to 255."""
+    0 to 0x80 (0x80 = opaque). A picture whose most common visible alpha is
+    at most 0x80 is taken so and scaled to 0 to 255 first, the exact inverse
+    of encode_colors' rounding, with any alpha above 0x80 (the resizing
+    that made the mini-crest sheets overshoots to 148) held at 0x80; any
+    other picture is taken as 0 to 255."""
+    import collections
     from PIL import Image
     img = Image.open(path).convert("RGBA")
-    ps2 = img.getchannel("A").getextrema()[1] <= 0x80    # before resizing: Lanczos overshoots
+    visible = collections.Counter(a for a in img.getchannel("A").getdata() if a)
+    ps2 = bool(visible) and visible.most_common(1)[0][0] <= 0x80   # before resizing
     if img.size != size:
         img = img.resize(size, getattr(Image, "Resampling", Image).LANCZOS)
     px = list(img.getdata())
@@ -609,10 +613,18 @@ def apply_pack(folder, dat, border, sles, emit, title):
     outside = {d for (label, _), pics in wanted.items()
                if not is_preload(label) and writable(label, pics) for d in pics}
     jobs = {}     # file -> {(entry index, name, prs): {slot: picture path}}
+    overrides = load_overrides()
     for (label, slot), pics in sorted(wanted.items()):
-        if len(pics) > 1:
-            tally["several pictures for one disc texture: not applied"] += 1
-            continue
+        if len(pics) > 1:           # two names with one hash: realism_overrides.csv decides
+            m = LABEL.match(label)
+            pick = overrides.get((m.group("name") or "").lower()) if m else None
+            chosen = [d for d, pth in pics.items()
+                      if os.path.relpath(pth, folder).replace("\\", "/").lower() == pick]
+            if len(chosen) != 1:
+                tally["several pictures for one disc texture: not applied"] += 1
+                continue
+            pics = {chosen[0]: pics[chosen[0]]}
+            tally["several pictures: chosen by realism_overrides.csv"] += 1
         (digest, pic), = pics.items()
         if is_preload(label) and digest in outside:
             tally["PRELOAD copy (patch_disc.py --copies)"] += 1
@@ -699,6 +711,19 @@ def apply_pack(folder, dat, border, sles, emit, title):
     for line in problems:
         print(line)
     return 0
+
+
+def load_overrides():
+    """{entry name: picture path in the pack} from SRC/realism_overrides.csv:
+    which picture a disc texture takes when two pictures of the pack carry
+    its hash (a name clash in the pack)."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "realism_overrides.csv")
+    out = {}
+    if os.path.exists(path):
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                out[row["entry"].lower()] = row["picture"].replace("\\", "/").lower()
+    return out
 
 
 def inset_pixels(tex, border):

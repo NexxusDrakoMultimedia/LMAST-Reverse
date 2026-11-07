@@ -117,7 +117,7 @@ labels (`DAT/0SYSTEM/EMBLEM_TEXTURE.PAC#12:...`).
 
 ```bash
 python SRC/texmap.py apply <LMAST-Realism>/textures/SLES-54151/replacements DAT mod \
-    --licensed-border 4 [--sles ISO/SLES_541.51] [--dry-run]
+    --licensed-border 2 [--sles ISO/SLES_541.51] [--dry-run]
 ```
 
 `apply` writes copies of the files that hold the pictures, laid out like
@@ -129,11 +129,15 @@ in `EMBLEM_TEXTURE` and `FLAG_TEXTURE`). The steps:
 1. The picture is scaled to the disc texture's size if it differs (three
    of the pack's are 4 or 8 times larger; Lanczos).
 2. The pack keeps the alpha the GS sees, 0 to `0x80`, and 1,570 of its
-   1,614 PNG never pass `0x80` (the other 44 reach 255). A picture whose
-   alpha stays within `0x80` is scaled to 0 to 255 first, with the
+   1,614 PNG never pass `0x80`. A picture whose most common visible alpha
+   is at most `0x80` is taken so, and scaled to 0 to 255 first, with the
    rounding `svr.py` undoes, so `0x80` is stored as `0x80` and a half
-   transparent pixel stays half transparent. Any other picture is taken
-   as 0 to 255.
+   transparent pixel stays half transparent; alpha above `0x80` (the
+   seven mini-crest sheets reach 148 where they were resized) is held at
+   `0x80`. Any other picture, 44 of them with opaque pixels at 255, is
+   taken as 0 to 255. (A first version looked only at the highest alpha,
+   so the resized sheets were stored half transparent: Nexxus's report,
+   2026-11-07, the mini logos in the club ranking.)
 3. `svr.py`'s writer puts it into the texture with a new palette built
    from the picture (`body_from_pixels`), halving the mip levels, and the
    file keeps its length.
@@ -142,9 +146,12 @@ in `EMBLEM_TEXTURE` and `FLAG_TEXTURE`). The steps:
 
 Left out, and counted in the output: the 1,182 kit pictures (palette
 differs; **Nexxus's choice, 2026-11-07: the kits stay Realism-only, a
-PCSX2 texture pack**), 58 in the CSP and ACROBATA packs (no writer), two
-disc textures that two different pictures claim, and the files without a
-disc texture. A texture also held in a `PRELOAD` pack is written only in
+PCSX2 texture pack**), 58 in the CSP and ACROBATA packs (no writer), and
+the files without a disc texture. One disc texture has two pictures in the
+pack: Clermont Foot's crest (`emb_C072`), whose hash is also on a Rapid Wien
+picture under `UEFA/Western Europe 1` that no disc texture of Rapid's has.
+`SRC/realism_overrides.csv` (entry, picture) says which one a texture takes;
+without a row such a texture is left alone, and counted. A texture also held in a `PRELOAD` pack is written only in
 its original: `patch_disc.py --copies` carries it to the copy.
 
 A crest is 4 bit with a 16-colour palette, so the pack's full-colour
@@ -152,7 +159,7 @@ pictures are reduced to 16 colours; 563 of the 781 differ by more than 16
 in some channel on over 5% of their pixels, and by eye the crests keep
 their shape and main colours.
 
-`--licensed-border 4` also takes the **original crests of the licensed
+`--licensed-border 2` also takes the **original crests of the licensed
 clubs** (the 116 clubs of Italy, Spain and the Netherlands, team ids 123
 to 244, [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#licensed-kits)) that the
 pack does not replace, in `EMBLEM_TEXTURE.PAC` and `FLAG_TEXTURE.PAC`
@@ -164,9 +171,8 @@ colours stay the game's. 227 of the 232 crests (116 clubs, two packs) get
 it; 5 have a Realism picture. The licensed crests had 2 transparent
 pixels at the top and bottom (1 or 0 in 8 of them) and about 2 to 30 at
 the sides, and most of Realism's crests have 4 on every side. Nexxus
-asked for 2 pixels, saw the result looked much the same as the original,
-and chose **4** (2026-11-07), so a crest keeps about 6 at the top and
-bottom.
+asked for 2 pixels, tried 4 on request and went back to **2** (2026-11-07),
+so a crest keeps about 4 at the top and bottom.
 
 ## Still unknown
 

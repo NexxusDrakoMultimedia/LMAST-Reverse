@@ -4528,7 +4528,7 @@ OWN_STADIUM_FUNC = 0x11eaf8
 # choice, 2026-11-07; texmap.py apply, DOC/TEXMAP.md). The pack's files are
 # not in the repo, so --realism <the pack's replacements folder> names
 # them; an edition that holds the switch skips it without the folder.
-REALISM_BORDER = 4
+REALISM_BORDER = 2
 realism_pack = None                                 # set by main from --realism
 # Where the pack is looked for when --realism isn't given: a clone beside
 # this repository (Nexxus's suggestion, 2026-11-07).
@@ -4932,7 +4932,7 @@ SWITCHES = (
      "they vary"),
     ("realism", plan_realism, REALISM_FILES,
      "Graphics: LMAST Realism's crests and match pictures in the texture packs, and a "
-     "4 px transparent edge on the licensed crests; needs --realism <pack folder>, "
+     "2 px transparent edge on the licensed crests; needs --realism <pack folder>, "
      "--copies and --dat"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
