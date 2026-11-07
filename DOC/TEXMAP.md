@@ -8,7 +8,7 @@ Replacement). It finds the right file by name: each texture the game
 draws is hashed, and the PNG called `<hash>-<palette hash>-<state>.png` is
 used instead. [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism),
 Nexxus's texture pack, is a folder of such files. To put a pack's pictures
-on the disc itself ([`LMASTER_MOD.md`](LMASTER_MOD.md#planned)), each PNG
+on the disc itself ([`LMASTER_MOD.md`](LMASTER_MOD.md#lmast-realism-on-the-disc)), each PNG
 must first be matched to the disc texture it replaces. `SRC/texmap.py`
 computes the same names from the textures on the disc, so that match needs
 no running emulator.

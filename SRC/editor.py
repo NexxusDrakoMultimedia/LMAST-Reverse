@@ -6592,6 +6592,11 @@ class BuildDialog:
         self.output = tk.StringVar(value=settings.get("output") or name + ".iso")
         self.make_patch = tk.IntVar(value=settings.get("make_patch", 1))
         self.patch = tk.StringVar(value=settings.get("patch") or name + ".xdelta")
+        # LMAST Realism's folder: the last one chosen, else a clone beside this
+        # repository (patch_disc.REALISM_SUGGESTED), which the box lets you change.
+        suggested = patch_disc.realism_folder(patch_disc.REALISM_SUGGESTED)
+        self.realism = tk.StringVar(value=settings.get("realism_pack")
+                                    or (shown_path(suggested) if suggested else ""))
         # patch_disc.py's switches by name, saved as e.g. "skip_tutorial".
         self.switches = {name: tk.IntVar(value=settings.get(name.replace("-", "_"), 0))
                          for name in patch_disc.SWITCH_NAMES}
@@ -6619,6 +6624,13 @@ class BuildDialog:
                                 command=lambda v=var, k=kind: self.browse(v, k))
             button.grid(row=row, column=2, padx=(8, 0), pady=3)
             self.entries[kind] = (flag, entry, button)
+        # The folder of LMAST Realism's pictures, for --mod realism (the pack
+        # is not part of this project, so the switch needs to be told where).
+        ttk.Label(form, text="LMAST Realism pack folder").grid(row=3, column=0, sticky="w",
+                                                              padx=(0, 8), pady=3)
+        ttk.Entry(form, textvariable=self.realism).grid(row=3, column=1, sticky="ew", pady=3)
+        ttk.Button(form, text="Browse...", command=lambda: self.browse(self.realism, "folder")
+                   ).grid(row=3, column=2, padx=(8, 0), pady=3)
         # patch_disc.py's switch levels: an edition button ticks exactly its
         # groups (the test tools stay as they are), each group's box ticks
         # its switches, and the switches show under a group when it is
@@ -6709,7 +6721,7 @@ class BuildDialog:
         with open(self.settings_path(), "w", encoding="utf-8") as f:
             json.dump({"original": self.original.get(), "make_image": self.make_image.get(),
                        "output": self.output.get(), "make_patch": self.make_patch.get(),
-                       "patch": self.patch.get(),
+                       "patch": self.patch.get(), "realism_pack": self.realism.get(),
                        **{name.replace("-", "_"): var.get()
                           for name, var in self.switches.items()}},
                       f,
@@ -6788,6 +6800,8 @@ class BuildDialog:
         if kind == "open":
             path = filedialog.askopenfilename(parent=self.win, initialdir=start,
                                               filetypes=[("Disc images", "*.iso"), ("All", "*")])
+        elif kind == "folder":
+            path = filedialog.askdirectory(parent=self.win, initialdir=start)
         elif kind == "save":
             path = filedialog.asksaveasfilename(parent=self.win, initialdir=start,
                                                 defaultextension=".iso",
@@ -6828,6 +6842,8 @@ class BuildDialog:
         mods = patch_disc.mod_names(self.chosen())      # the highest levels that fit
         if mods:
             cmd += ["--mod", ",".join(mods)]
+        if "realism" in self.chosen() and self.realism.get():
+            cmd += ["--realism", shown_path(self.realism.get())]
         out = [cmd]
         if self.make_patch.get():
             out.append(["vcdiff.py", "make", original, output, self.patch.get()])
@@ -6863,6 +6879,12 @@ class BuildDialog:
             if self.make_patch.get():
                 msg += " A patch made against it only applies to this exact file."
             if not messagebox.askyesno("Build disc", msg + "\n\nBuild anyway?", parent=self.win):
+                return False
+        if "realism" in self.chosen() and not patch_disc.realism_folder(self.realism.get()):
+            if not messagebox.askyesno(
+                    "Build disc", "Realism is ticked, but the LMAST Realism pack folder is not "
+                    "set or has no replacements folder in it, so its pictures are left out."
+                    "\n\nBuild anyway?", parent=self.win):
                 return False
         existing = [p for p in (output, self.patch.get() if self.make_patch.get() else "")
                     if p and os.path.exists(p)]

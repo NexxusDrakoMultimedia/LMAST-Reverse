@@ -536,8 +536,6 @@ def cmd_apply(args):
     """Write the pack's pictures that match a disc texture exactly (texture
     and palette) into copies of the files that hold them, under an output
     folder laid out like DAT (a mod folder for patch_disc.py)."""
-    import collections
-    import pac
     dry = "--dry-run" in args
     for flag in ("--licensed-border", "--sles"):
         if flag in args and args.index(flag) + 1 >= len(args):
@@ -550,6 +548,27 @@ def cmd_apply(args):
         print(__doc__)
         return 1
     folder, dat, out_dir = plain
+
+    def emit(rel, data):
+        if dry:
+            return
+        target = os.path.join(out_dir, rel)
+        os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+        with open(target + ".new", "wb") as f:
+            f.write(data)
+        os.replace(target + ".new", target)
+    apply_pack(folder, dat, border, sles, emit,
+               "%s -> %s%s" % (folder, out_dir, "  (dry run: nothing written)" if dry else ""))
+    return 0
+
+
+def apply_pack(folder, dat, border, sles, emit, title):
+    """The work of `apply`: emit(path relative to DAT, new file bytes) for each
+    file that changes, and print the tally. `border` > 0 also insets the
+    licensed clubs' crests the pack leaves alone (`sles`: the executable with
+    the licence table; by default ISO/ beside DAT)."""
+    import collections
+    import pac
     found, _, problems = disc_index([dat])
     by_texture = {}
     for (h, ph), items in found.items():
@@ -663,13 +682,8 @@ def cmd_apply(args):
             new_file = pac.build_binpac(data[:head.header_size], blobs)
         rel = os.path.relpath(path, dat)
         written.append((rel, len(data), len(new_file)))
-        if not dry:
-            target = os.path.join(out_dir, rel)
-            os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
-            with open(target + ".new", "wb") as f:
-                f.write(new_file)
-            os.replace(target + ".new", target)
-    print("%s -> %s%s" % (folder, out_dir, "  (dry run: nothing written)" if dry else ""))
+        emit(rel, new_file)
+    print(title)
     for k, v in sorted(tally.items(), key=lambda kv: (-kv[1], kv[0])):
         print("  %5d  %s" % (v, k))
     print("  %5d  files written, %d textures; %d pictures had the PS2 alpha range" % (

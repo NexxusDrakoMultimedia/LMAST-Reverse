@@ -28,9 +28,9 @@ lists what is finished.
   dialogue, news and mail.
 
 Graphics, models and sound are useful to extract, but editing them comes
-after the data above. The one exception planned is bringing Nexxus's
+after the data above. The one exception is bringing Nexxus's
 LMAST Realism texture pack onto the disc
-([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned)).
+([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
 
 ## The path there
 

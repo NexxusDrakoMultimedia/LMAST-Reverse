@@ -33,6 +33,7 @@ level:
 | `restorations` | injury-lines | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
+| `graphics` | realism ([below](#lmast-realism-on-the-disc)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -874,33 +875,55 @@ python SRC/initteam.py stadiums DAT/PARAM           # the 119 match stadiums
 python SRC/stadium.py info DAT/STADIUM DAT/PARAM    # CONV_INFO_BUILD's ids by level
 ```
 
+## LMAST Realism on the disc
+
+`--mod realism` (group `graphics`, LMASTER full and max; Nexxus's choice,
+2026-11-07) puts the logos and match pictures of
+[LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism),
+Nexxus's own PCSX2 texture pack, onto the disc, so they show without
+PCSX2's texture replacement. It is one switch, in full and max and not
+lite, because it is an improvement and no fix.
+
+```bash
+python SRC/patch_disc.py patch <retail iso> out.iso --mod realism     --realism <LMAST-Realism>/textures/SLES-54151/replacements --copies --dat DAT
+```
+
+The pack's files are not in this repository. Without `--realism` the
+switch looks for a clone beside it, `../LMAST-Realism` (Nexxus's
+suggestion, 2026-11-07), and `--realism` picks another folder: the
+pack's repository, its `textures` folder or the `replacements` folder
+itself. The editor's Build disc window has a box for it, filled in with
+the clone when it is there and changeable. A group or edition that holds
+the switch, such as `lmaster-full`, leaves it out when there is no pack
+and says so; naming `--mod realism` without one is an error. The pack is
+read as it stands each time, so a new commit of it only needs a new
+build. PAL only. It writes seven
+whole packs (`0SYSTEM/EMBLEM_TEXTURE.PAC`, `FLAG_TEXTURE.PAC`,
+`MATCH_TEXTURE.PAC`, `MINIEMBLEM_TEXTURE.PAC`, `MINIMATCH_TEXTURE.PAC`,
+`SPONSOR_TEXTURE_M.PAC` and `STADIUM/ADT_TEXCMN.PAC`), and `--copies`
+carries them to the `PRELOAD` copies. The work is `texmap.py apply`
+([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)):
+
+- the pack's pictures whose texture and palette match a disc texture
+  exactly (781 textures) go into their packs with `svr.py`'s writer;
+- the **original crests of the licensed Italian, Spanish and Dutch
+  clubs** that the pack doesn't replace get a transparent border of 4
+  pixels (the picture is scaled down by 8), as Realism's logos have
+  (Nexxus's request and choice, 2026-11-07; the mini-crest sheets
+  already had it);
+- the **kits stay Realism-only** (Nexxus, 2026-11-07): a kit part has up
+  to 38 palettes in the pack and the disc keeps one, so they are not put
+  on the disc.
+
+Built, and the files checked: a disc built with the switch equals one
+built from `texmap.py apply`'s files with `--copies`. **Not seen in the
+game yet** ([`TESTING.md`](../TESTING.md)). Not done: the CSP and
+ACROBATA packs hold 58 more of the pack's pictures (the league logos,
+the intro), and they have no writer.
+
 ## Planned
 
 Ideas Nexxus has agreed on (2026-10-27), not started:
-
-- **LMAST Realism on the disc.** Bring the logos, texture fixes and
-  match pictures of
-  [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism),
-  Nexxus's own PCSX2 texture pack, onto the disc, so it works without
-  PCSX2's texture replacement. **Decided (Nexxus, 2026-11-07):** one
-  switch (`realism`, in a new `graphics` group), in LMASTER full and max
-  and not lite (it is an improvement, not a fix); the **kits stay
-  Realism-only**, a PCSX2 texture pack, because a kit part has up to 38
-  palettes and the disc keeps one; and the switch also gives the
-  licensed Italian, Spanish and Dutch clubs' own crests a transparent
-  border of 4 pixels, which Realism's logos have. What exists:
-  `texmap.py` finds the disc texture of 1,613 of the 1,614 PNGs from the
-  hash PCSX2 names them by ([`TEXMAP.md`](TEXMAP.md)), `svr.py` writes
-  the palette, swizzle and mip chain
-  ([`SVR_FORMAT.md`](SVR_FORMAT.md#writing)), and `texmap.py apply`
-  writes the 781 textures whose picture and palette match exactly, and
-  the licensed crests' border, into copies of their `.PAC` packs
-  ([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)). Not
-  done: the `--mod realism` switch itself (the pack's files stay out of
-  the repo, so it takes the pack's folder), a check in the game
-  ([`TESTING.md`](../TESTING.md)), and writers for the CSP and
-  ACROBATA packs, which hold 58 more pictures (league logos, the
-  intro).
 
 Possible, for LMASTER full and max (Nexxus's idea, 2026-11-01), not
 started:

@@ -198,12 +198,9 @@ list.
 ## Patches, text and what things look like
 
 - [ ] *Short.* LMAST Realism's pictures on a disc: build it with
-      `python SRC/texmap.py apply <LMAST-Realism>/textures/SLES-54151/replacements DAT mod --licensed-border 4`
-      and `python SRC/patch_disc.py patch <retail iso> out.iso <each file of mod/>=mod/<file> --copies --dat DAT`
-      (the targets are `0SYSTEM/EMBLEM_TEXTURE.PAC`, `FLAG_TEXTURE.PAC`,
-      `MATCH_TEXTURE.PAC`, `MINIEMBLEM_TEXTURE.PAC`,
-      `MINIMATCH_TEXTURE.PAC`, `SPONSOR_TEXTURE_M.PAC` and
-      `STADIUM/ADT_TEXCMN.PAC`), play it with texture replacement off,
+      `python SRC/patch_disc.py patch <retail iso> out.iso --mod realism --realism <LMAST-Realism>/textures/SLES-54151/replacements --copies --dat DAT`
+      (or tick Graphics in the editor's Build disc window and set the
+      pack folder), play it with texture replacement off,
       and look at the club crests on the team and match screens, the
       league and cup badges and the adboards. They should show the
       Realism pictures with no wrong colours or scrambled blocks, which

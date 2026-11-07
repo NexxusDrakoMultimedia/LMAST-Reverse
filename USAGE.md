@@ -140,7 +140,11 @@ can play or share.
    and max always have it, and the window shows the letters the saves
    get (careers in `-F`, or `-M` with any difficulty switch; VS data in
    `-V`). The test tools (the tutorial skip, the debug menu)
-   are in no edition.
+   are in no edition. The **Graphics** group (`realism`) puts LMAST
+   Realism's crests and match pictures on the disc; **LMAST Realism pack
+   folder** holds the pack's folder (a clone at `../LMAST-Realism` is
+   filled in for you; change it with Browse), or the group is left out
+   (the window asks before it builds without it).
 4. Check the list of edited files, then press **Build**.
 
 The output of each step shows in the window. If you have unsaved edits,

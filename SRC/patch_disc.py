@@ -36,7 +36,7 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--realism <pack folder>]
     python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--mod <switch>,...]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
@@ -101,9 +101,10 @@ overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
 merch-costs, pr-costs, camp-costs, tour-costs), leagues
 (league-balance, third-tier), restorations (injury-lines), names
 (real-names, own-stadium), stadiums (special-stadium, real-grounds, sponsor-boards), saves (mod-saves),
-and test-tools (skip-tutorial, launcher), which is in no edition.
+graphics (realism), and test-tools (skip-tutorial, launcher), which is in
+no edition.
 third-tier turns on mod-saves and needs --copies and --dat; real-names
-needs them too. Each switch
+and realism need them too. Each switch
 also works as a flag of its own (--skip-tutorial, ...). With switches
 and no targets, `patch <image> <out_image>` is enough.
 
@@ -4522,6 +4523,68 @@ OWN_NAME_RETURN = 0x11ec74                                  # jr $ra -> j VarBuf
 OWN_STADIUM_FUNC = 0x11eaf8
 
 
+# realism: LMAST Realism's crests and match pictures on the disc, and a
+# transparent edge on the licensed crests (LMASTER full and max, Nexxus's
+# choice, 2026-11-07; texmap.py apply, DOC/TEXMAP.md). The pack's files are
+# not in the repo, so --realism <the pack's replacements folder> names
+# them; an edition that holds the switch skips it without the folder.
+REALISM_BORDER = 4
+realism_pack = None                                 # set by main from --realism
+# Where the pack is looked for when --realism isn't given: a clone beside
+# this repository (Nexxus's suggestion, 2026-11-07).
+REALISM_SUGGESTED = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 "..", "LMAST-Realism")
+
+
+def realism_folder(path):
+    """The pack's `replacements` folder for `path`: the folder itself, or
+    the pack's repository or its textures folder; None if there is none."""
+    if not path:
+        return None
+    if os.path.basename(os.path.normpath(path)).lower() == "replacements":
+        return path if os.path.isdir(path) else None
+    for sub in ("textures/SLES-54151/replacements", "SLES-54151/replacements", "replacements"):
+        folder = os.path.join(path, sub)
+        if os.path.isdir(folder):
+            return folder
+    return None
+REALISM_FILES = ["0SYSTEM/EMBLEM_TEXTURE.PAC", "0SYSTEM/FLAG_TEXTURE.PAC",
+                 "0SYSTEM/MATCH_TEXTURE.PAC", "0SYSTEM/MINIEMBLEM_TEXTURE.PAC",
+                 "0SYSTEM/MINIMATCH_TEXTURE.PAC", "0SYSTEM/SPONSOR_TEXTURE_M.PAC",
+                 "STADIUM/ADT_TEXCMN.PAC"]
+
+
+def file_realism(f, img, dat):
+    """[(target, data)] for --mod realism: the texture packs with the pack's
+    pictures in them (texmap.apply_pack)."""
+    import tempfile
+    import texmap
+    if img.port is not None:
+        raise ValueError("realism is made for the PAL release (the pack is named by PAL hashes)")
+    if not realism_pack or not os.path.isdir(realism_pack):
+        raise ValueError("--mod realism needs --realism <the pack's folder> (or a clone of "
+                         "LMAST-Realism beside this repository)")
+    if not dat:
+        raise ValueError("--mod realism needs --dat: it matches the pack against DAT")
+    out = []
+    with tempfile.TemporaryDirectory() as tmp:
+        exe = os.path.join(tmp, "SLES_541.51")
+        with open(exe, "wb") as g:
+            g.write(read_file(f, img, SLES_FILE)[1])
+        texmap.apply_pack(realism_pack, dat, REALISM_BORDER, exe,
+                          lambda rel, data: out.append((rel.replace("\\", "/"), data)),
+                          "realism: %s on %s" % (realism_pack, dat))
+    return out
+
+
+def plan_realism(f, img, adopted=()):
+    """--mod realism writes no bytes of its own: its packs are whole files
+    (file_realism)."""
+    if img.port is not None:
+        raise ValueError("realism is made for the PAL release only")
+    return [], ["note: realism: put the pack's pictures in the texture packs"]
+
+
 def plan_own_stadium(f, img):
     """Jobs for --mod own-stadium."""
     func = OWN_STADIUM_FUNC
@@ -4867,6 +4930,10 @@ SWITCHES = (
     ("sponsor-boards", plan_sponsor_boards, [BUILD_STADIUM_FILE],
      "Stadiums: every ground's advert boards drawn afresh from all 205 sponsors, so "
      "they vary"),
+    ("realism", plan_realism, REALISM_FILES,
+     "Graphics: LMAST Realism's crests and match pictures in the texture packs, and a "
+     "4 px transparent edge on the licensed crests; needs --realism <pack folder>, "
+     "--copies and --dat"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -4912,8 +4979,9 @@ HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards")
 # whose files have PRELOAD copies the game loads instead (--copies), that
 # turn on others (a bigger save needs saves of its own), and old names.
 SWITCH_NEEDS = {}
-SWITCH_FILES = {"third-tier": file_third_tier, "real-names": file_real_names}
-SWITCH_COPIES = ("third-tier", "real-names")
+SWITCH_FILES = {"third-tier": file_third_tier, "real-names": file_real_names,
+                "realism": file_realism}
+SWITCH_COPIES = ("third-tier", "real-names", "realism")
 SWITCH_IMPLIES = {"third-tier": ("mod-saves",), "real-grounds": ("special-stadium",)}
 SWITCH_ALIASES = {name: "third-tier" for name in ("save-expand", "tier-clubs", "tier-lists",
                                                   "tier-uids", "one-season-end")}
@@ -4942,6 +5010,7 @@ GROUPS = (       # (name, title, switches)
     ("restorations", "Restored content", ("injury-lines",)),
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
+    ("graphics", "Graphics", ("realism",)),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )
@@ -4950,7 +5019,7 @@ GROUPS = (       # (name, title, switches)
 # (Nexxus's split, 2026-10-27). Full and max save careers under their
 # own letters (SAVE_LETTERS), so neither mixes with the retail game's.
 LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes", "text-fixes")
-FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "saves")
+FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "graphics", "saves")
 DIFFICULTY_GROUPS = ("harder-economy", "balance")
 EDITIONS = (     # (name, title, groups)
     ("lmaster-lite", "LMASTER lite (fixes only)", LITE_GROUPS),
@@ -5470,6 +5539,14 @@ def main(argv):
     write_copies = "--copies" in args
     if write_copies:
         args.remove("--copies")
+    global realism_pack
+    realism_pack = _opt(args, "--realism", None)       # before the flags below take the name
+    if realism_pack:
+        found = realism_folder(realism_pack)
+        if found is None:
+            raise SystemExit("--realism %s: no replacements folder there (give the pack's "
+                             "folder, its textures folder or the replacements folder)" % realism_pack)
+        realism_pack = found
     # Each switch's own flag (--skip-tutorial, ...) still works, as --mod <name>.
     values = []
     for name in SWITCH_NAMES:
@@ -5478,7 +5555,19 @@ def main(argv):
             values.append(name)
     while "--mod" in args:
         values.append(_opt(args, "--mod"))
+    if realism_pack:
+        values.append("realism")
+    named = any(n == "realism" for v in values for n in v.lower().split(","))
     mods = parse_mods(values)
+    if "realism" in mods and not realism_pack:
+        realism_pack = realism_folder(REALISM_SUGGESTED)
+        if realism_pack:
+            print("note: realism: using %s (--realism picks another)" %
+                  os.path.normpath(REALISM_SUGGESTED))
+        elif not named:
+            mods.discard("realism")   # an edition or group without the pack: no textures
+            print("note: realism skipped (give --realism <the pack's folder>, or clone "
+                  "LMAST-Realism beside this repository)")
     dat =_opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
     nation = _opt(args, "--skip-nation", None)
     if nation is not None:

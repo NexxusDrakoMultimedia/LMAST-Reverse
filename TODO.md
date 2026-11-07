@@ -45,12 +45,11 @@ What to work on next, most valuable first.
    textures and `texmap.py` maps the pack onto the disc: 1,613 of its
    1,614 PNGs have a disc texture, 1,601 of them in plain `.PAC` packs
    that `pac.py replace` can write. `texmap.py apply` writes the crests
-   and match pictures into copies of their packs. Left: the
-   `--mod realism` switch in `patch_disc.py` (one switch, LMASTER full
-   and max; Nexxus's choice, 2026-11-07), a check in the game, and
-   writers for the CSP and ACROBATA packs (58 pictures). The kits stay
-   Realism-only (a PCSX2 texture pack)
-   ([`TEXMAP.md`](DOC/TEXMAP.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned)).
+   and match pictures into copies of their packs, and `--mod realism`
+   (LMASTER full and max) builds them into a disc. Left: a check in the
+   game, and writers for the CSP and ACROBATA packs (58 pictures). The
+   kits stay Realism-only (a PCSX2 texture pack)
+   ([`TEXMAP.md`](DOC/TEXMAP.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
 3. **Every LMASTER switch on the Japanese release** (section 8), needed
    before LMASTER 1.0.0: every other switch plans there now; left are
    `third-tier` (a code port) and `real-names` (the names in Japanese)
@@ -73,7 +72,7 @@ the graphics that come after the data.
 | **Parameters** | every `PARAM/` table's layout is known and `tbb.py replace` swaps any table; the economy's constants in the executable are traced and changed by named switches | the open fields of the parameter files, the match AI's files and the match parameters | 2 |
 | **Text** | every message in every language, with a writer and the Text tab; real names for every league, club and nation | the screen-set variables and a few message categories | 2 |
 | **Playing a mod** | xdelta patches against the Redump image, CSO, ZSO and CHD inputs, separate saves for a modded disc, the players' guide | faster CHD decoding; the Japanese release | 4, 6 |
-| **Graphics and sound** (after the data) | textures to PNG, models to OBJ and glTF, sound to WAV and MIDI; kits, crests and stadium looks edited as data | the command that applies a texture pack through `pac.py`, the kit palettes and writers for the CSP, ACROBATA and `PackData` packs, which LMAST Realism on the disc needs | 3, 8 |
+| **Graphics and sound** (after the data) | textures to PNG, models to OBJ and glTF, sound to WAV and MIDI; kits, crests and stadium looks edited as data | seeing LMAST Realism on the disc in the game; writers for the CSP, ACROBATA and `PackData` packs, which its league logos and intro need (the kits stay Realism-only) | 3, 8 |
 
 ## 1. Read: every file parsed and checked
 
@@ -325,11 +324,10 @@ is built and tested, or set aside.
       in the PAL release; first find its code and whether PAL still
       holds it ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] LMAST Realism on the disc: the map (`texmap.py match`), the
-      picture-to-texture step (`svr.py replace`) and the command that
-      applies the crests and match pictures (`texmap.py apply`) work;
-      left are the `--mod realism` switch (one switch in the LMASTER
-      full and max editions, with the licensed crests' border), seeing
-      it in the game, and the CSP and ACROBATA pack writers (section 3).
-      The kits stay Realism-only
+      picture-to-texture step (`svr.py replace`), the command that
+      applies the crests and match pictures (`texmap.py apply`) and the
+      `--mod realism` switch (LMASTER full and max, with the licensed
+      crests' border) work; left are seeing it in the game and the CSP
+      and ACROBATA pack writers (section 3). The kits stay Realism-only
       ([`TEXMAP.md`](DOC/TEXMAP.md),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc))
