@@ -613,18 +613,10 @@ def apply_pack(folder, dat, border, sles, emit, title):
     outside = {d for (label, _), pics in wanted.items()
                if not is_preload(label) and writable(label, pics) for d in pics}
     jobs = {}     # file -> {(entry index, name, prs): {slot: picture path}}
-    overrides = load_overrides()
     for (label, slot), pics in sorted(wanted.items()):
-        if len(pics) > 1:           # two names with one hash: realism_overrides.csv decides
-            m = LABEL.match(label)
-            pick = overrides.get((m.group("name") or "").lower()) if m else None
-            chosen = [d for d, pth in pics.items()
-                      if os.path.relpath(pth, folder).replace("\\", "/").lower() == pick]
-            if len(chosen) != 1:
-                tally["several pictures for one disc texture: not applied"] += 1
-                continue
-            pics = {chosen[0]: pics[chosen[0]]}
-            tally["several pictures: chosen by realism_overrides.csv"] += 1
+        if len(pics) > 1:
+            tally["several pictures for one disc texture: not applied"] += 1
+            continue
         (digest, pic), = pics.items()
         if is_preload(label) and digest in outside:
             tally["PRELOAD copy (patch_disc.py --copies)"] += 1
@@ -711,19 +703,6 @@ def apply_pack(folder, dat, border, sles, emit, title):
     for line in problems:
         print(line)
     return 0
-
-
-def load_overrides():
-    """{entry name: picture path in the pack} from SRC/realism_overrides.csv:
-    which picture a disc texture takes when two pictures of the pack carry
-    its hash (a name clash in the pack)."""
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "realism_overrides.csv")
-    out = {}
-    if os.path.exists(path):
-        with open(path, newline="", encoding="utf-8") as f:
-            for row in csv.DictReader(f):
-                out[row["entry"].lower()] = row["picture"].replace("\\", "/").lower()
-    return out
 
 
 def inset_pixels(tex, border):

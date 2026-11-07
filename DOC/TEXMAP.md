@@ -146,12 +146,11 @@ in `EMBLEM_TEXTURE` and `FLAG_TEXTURE`). The steps:
 
 Left out, and counted in the output: the 1,182 kit pictures (palette
 differs; **Nexxus's choice, 2026-11-07: the kits stay Realism-only, a
-PCSX2 texture pack**), 58 in the CSP and ACROBATA packs (no writer), and
-the files without a disc texture. One disc texture has two pictures in the
-pack: Clermont Foot's crest (`emb_C072`), whose hash is also on a Rapid Wien
-picture under `UEFA/Western Europe 1` that no disc texture of Rapid's has.
-`SRC/realism_overrides.csv` (entry, picture) says which one a texture takes;
-without a row such a texture is left alone, and counted. A texture also held in a `PRELOAD` pack is written only in
+PCSX2 texture pack**), 58 in the CSP and ACROBATA packs (no writer), 
+disc textures that two different pictures of the pack claim (none at
+the moment: Clermont Foot's crest had one, a mislabelled Rapid Wien
+logo that Nexxus removed from the pack, 2026-11-07), and the files
+without a disc texture. A texture also held in a `PRELOAD` pack is written only in
 its original: `patch_disc.py --copies` carries it to the copy.
 
 A crest is 4 bit with a 16-colour palette, so the pack's full-colour
