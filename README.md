@@ -8,11 +8,6 @@ Reverse-engineering notes and tools for the PAL PS2 release of
 them, the [LMASTER Mod](DOC/LMASTER_MOD.md): fixes for what the release
 cut or broke, real names, a hidden third tier and a harder economy.
 
-AI Usage Disclosure: This project follows the [0rwx Framework](https://0rwx.com/) at Level EXECUTE (x). 
-Automated AI agents and pipelines actively run tasks, execute scripts, 
-or manage workflows within the environment under the supervision of Nexxus Drako. 
-See the [Disclaimer](#disclaimer) for more information.
-
 The repo has two halves:
 
 - [`DOC/`](DOC): one spec per file format, recording what each field means
@@ -53,8 +48,11 @@ what's finished.
 
 ## Disclaimer
 
-100% of the reverse engineering has been done using Claude Opus 5.5. I'm
-neither anti-AI nor pro-AI, and I am pro user choice. If you hate genAI with
+AI Usage Disclosure: This project follows the [0rwx Framework](https://0rwx.com/) at Level EXECUTE (x). 
+Automated AI agents and pipelines actively run tasks, execute scripts, 
+or manage workflows within the environment under the supervision of Nexxus Drako. 
+
+She is neither anti-AI nor pro-AI, and she is pro user choice. If you hate genAI with
 the passion of a thousand suns, this project is not for you. If you're a
 far-right techbro chud, this project is ALSO not for you.
 
