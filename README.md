@@ -8,11 +8,10 @@ Reverse-engineering notes and tools for the PAL PS2 release of
 them, the [LMASTER Mod](DOC/LMASTER_MOD.md): fixes for what the release
 cut or broke, real names, a hidden third tier and a harder economy.
 
-<a href="https://0rwx.com/"><img src="https://0rwx.com/static/AI-X.png" width="96" align="right" alt="AI:X, the EXECUTE level of the 0RWX scale: AI made"></a>
-
-**AI:X.** This project is declared **AI:X**, the top level (EXECUTE, "AI
-made") of the [0RWX scale](https://0rwx.com/) of AI usage; see the
-[Disclaimer](#disclaimer).
+AI Usage Disclosure: This project follows the [0rwx Framework](https://0rwx.com/) at Level EXECUTE (x). 
+Automated AI agents and pipelines actively run tasks, execute scripts, 
+or manage workflows within the environment under the supervision of Nexxus Drako. 
+See the [Disclaimer](#disclaimer) for more information.
 
 The repo has two halves:
 
@@ -58,18 +57,6 @@ what's finished.
 neither anti-AI nor pro-AI, and I am pro user choice. If you hate genAI with
 the passion of a thousand suns, this project is not for you. If you're a
 far-right techbro chud, this project is ALSO not for you.
-
-**AI:X on the [0RWX scale](https://0rwx.com/).** The notes, the tools and
-the mod are AI made: Claude wrote the code and the docs, and Nexxus
-curates, tests in the game and decides what goes in (the README's
-"Tested in PCSX2" results are Nexxus's). The 0RWX scale is about how well
-the work can be scrutinised, and here the maintainer relies on Claude
-for the code, so the checks are what keep it honest: every claim in `DOC/` is
-labelled confirmed from the game code or empirical, every tool has an
-`info` that checks it against the whole disc, `python SRC/regress.py run`
-compares every tool's output with a saved baseline, and the writers
-re-encode every file byte for byte. The commits carry a `Co-Authored-By`
-line, and [`CONTRIBUTORS.md`](CONTRIBUTORS.md) says who did what.
 
 ## Requirements
 
