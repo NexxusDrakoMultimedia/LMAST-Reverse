@@ -130,7 +130,9 @@ The details are in [`AGENTS.md`](AGENTS.md). The main points:
 Most of this project was written with Claude, and contributions made
 with any AI assistant are welcome. You are responsible for what you
 submit: check its claims against the data or the game code, label them
-as above, and credit the assistant with a `Co-Authored-By` line.
+as above, and credit the assistant with a `Co-Authored-By` line. The
+project as a whole is declared AI:X on the [0RWX scale](https://0rwx.com/)
+([README](README.md#disclaimer)); say in your pull request how you used AI.
 [`AGENTS.md`](AGENTS.md) is the file to give your assistant.
 
 ## Being credited
