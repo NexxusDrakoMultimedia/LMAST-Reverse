@@ -79,8 +79,13 @@ to both (`0x26ec1c`–`0x26ec24`); `pwkTeam_SetLogoUnif` (`0x26e3b0`)
 sets either for your club later. The licensed kit loader
 (`CUniformLoader::_load_licence`, `0x2c25cc`–`0x2c25e8`) resets a main
 sponsor of 200 or more and a supplier of 7 or more to 0, so a club can
-show 200 sponsors and 7 suppliers. What 0 shows on a computer club's
-shirt isn't checked.
+show 200 sponsors and 7 suppliers. Nothing shows on a computer club's
+kit, where both are 0 (Nexxus's report, 2026-11-10). What draws the
+logos for your club is not found: `CUniformBuilder::Init` (`0x2c48b0`)
+copies the whole `PlUnif` into the builder at `+0xb4`, and the only
+reads of its `+4` and `+5` that were found are the loader's clamps
+above. Which textures a sponsor or supplier number picks, and which
+numbers have a logo, are not known.
 
 ### The kit (`PlUnifOne`)
 

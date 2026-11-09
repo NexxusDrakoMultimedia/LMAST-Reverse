@@ -362,10 +362,13 @@ problems; the match bugs come after them.
       it and what `realnames.py` and `--mod real-names` already cover
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] Idea: random sponsors and kit manufacturers for the clubs you
-      don't manage, drawn again every season. Find where the other
-      clubs' sponsors are set and whether the season rollover can run
-      the draw
-      ([`SPONSOR_NEGOTIATION.md`](DOC/SPONSOR_NEGOTIATION.md#still-unknown))
+      don't manage, drawn again every season. Computer clubs' kits show
+      none: `pwkTeam_GetUnif` sets their sponsor and supplier to 0, and
+      only your club gets real ones. A patch there could set them from
+      the team number and the season. Left: find what draws a sponsor
+      or supplier logo on a kit and which numbers (0-199, 0-6) have
+      one, then the patch and the season source
+      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#uniform_listtbb))
 - [ ] Bug: a team on auto game plan doesn't substitute a slightly
       injured player nearly as often as expected, and judges stamina
       and lost ability poorly. Read the manager's substitution check
