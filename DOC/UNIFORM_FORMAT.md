@@ -70,6 +70,18 @@ outfield kit at `+0x15`. `pwkTeam_GetUnif` (`0x26ebd8`) fills a team's
 `+0x2a`. For the player's own club it writes the main sponsor to `+4` and
 the kit supplier to `+5` (`0x26ea2c`).
 
+**The sponsor and supplier bytes (`PlUnif +4`, `+5`).** **Confirmed.**
+`pwkTeam_GetUnif` (`0x26e9d8`) fills them for your club only: the main
+sponsor from `pwkSponsor_GetMainSponsor` (`0x257350`) and the supplier
+from `pwkSponsor_GetSupplier` (`0x257390`, `0x26ea2c`–`0x26ea40`). For
+every other club, found through `UniformList_GetDataTeam`, it writes 0
+to both (`0x26ec1c`–`0x26ec24`); `pwkTeam_SetLogoUnif` (`0x26e3b0`)
+sets either for your club later. The licensed kit loader
+(`CUniformLoader::_load_licence`, `0x2c25cc`–`0x2c25e8`) resets a main
+sponsor of 200 or more and a supplier of 7 or more to 0, so a club can
+show 200 sponsors and 7 suppliers. What 0 shows on a computer club's
+shirt isn't checked.
+
 ### The kit (`PlUnifOne`)
 
 | Field | Bits | Contents |
