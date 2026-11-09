@@ -342,11 +342,13 @@ problems; the match bugs come after them.
       stadium's advert slots, and whether the model or the look record
       loses it
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown))
-- [ ] Bug: a youth player's potential screen can contradict itself (a
-      great player with a lot of potential, then almost none). Find the
-      two comments' sources and the values each reads; the fix is a
-      candidate switch
-      ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#still-unknown))
+- [ ] Bug: a player's detail comments can contradict themselves ("has
+      world class potential", then "unlikely to improve"). Cause found
+      in the texts: message 144 says potential but means ability, and
+      nine growth messages are mistranslated. Left: reword them in
+      `--mod retail-text`, then test in PCSX2
+      ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-detail-screen-comments),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#retail-text-fixes))
 - [ ] Idea: every player shown with a first name and a surname
       (`S.Aguero` as Sergio Aguero, `Cahwan` as Oliver Kahn, `L.Ginster`
       with Ginster's first name). Check how far the name fields allow
