@@ -182,6 +182,14 @@ Side fields 3 and 4 are **confirmed** from the same viewer code. Side field
 1 has exactly the same value counts as side field 3 (878 × 0, 202 × 1), so
 it may be related, but that isn't checked.
 
+**Sponsor and supplier logos (empirical, unproven).** In PCSX2 states
+(Nexxus, 2026-11-10) your club's match kit record and the rival's, whose
+kits show a sponsor and a supplier logo, have side fields 1, 3 and 5 of
+the home side at 1 (your club's side fields `0 1 0 1 1 1`, the rival's
+`0 1 0 1 0 1`), and a computer club's (Betis, from `kits.csv`) had `0 0 0 0
+1 0` with a valid sponsor and supplier and no logos. `--mod
+random-sponsors` therefore sets fields 1, 3 and 5 of both sides to 1.
+
 ### Colours
 
 `EDIT_UNIFORM_CLUT` holds 96 palettes, `org_uni_A1.svp` to

@@ -474,8 +474,12 @@ sponsor's record. Over the 540 clubs and 20 seasons every sponsor
 1–199 and supplier 206–212 comes up, and no club keeps both for the
 next season. In the state the opponent's `PlUnif` held the switch's
 numbers (sponsor 65, supplier 3 in the first draft), copied into the
-match, so they reach the match, but nothing showed on the kit; whether
-the match draws a logo for a computer club's numbers is not known.
+match, but nothing showed on the kit. Your club's match record and the
+rival's, which show logos, have side fields 1, 3 and 5 of the home kit
+set to 1, and a computer club's has them at 0 (states of 2026-11-10), so
+the code also writes 1 to those fields of both sides
+([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#side-fields)). Built 2026-11-10,
+not yet seen working; field 3 may also put a number on the chest.
 
 **The licensed clubs.** The 116 Italian, Spanish and Dutch clubs have
 real kit textures with their sponsor in them, so a sponsor could not be

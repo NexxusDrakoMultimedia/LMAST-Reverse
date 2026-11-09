@@ -2628,6 +2628,7 @@ SPONSOR_CAVE, SPONSOR_HOOK, KEIKA = 0xF8000 + 0x300, 0x26EC1C, 0x244430   # CAVE
 # seven suppliers, Binnonn to Doclla), seen in a PCSX2 state (2026-11-10). The
 # first draft wrote supplier 1-6, a sponsor's record, and nothing showed.
 SPONSOR_KINDS, SUPPLIER_KINDS, SUPPLIER_FIRST = 199, 7, 206
+SIDE_LOGO_BYTES = (7, 9, 11, 0x2b, 0x2d, 0x2f)   # PlUnif +6 (home) and +0x2a (away), side fields 1, 3, 5
 
 
 def sponsor_hash(team, season):
@@ -2648,7 +2649,11 @@ def sponsor_cave():
             addiu(T2, T2, 1), sb(T2, 4, S2),              # PlUnif +4: the sponsor
             lui(T0, 0xC2B2), ori(T0, T0, 0xAE35), mult3(T2, T1, T0),
             srl(T2, T2, 16), addiu(T0, ZERO, SUPPLIER_KINDS), divu(T2, T0), mfhi(T2),
-            addiu(T2, T2, SUPPLIER_FIRST), sb(T2, 5, S2)]  # +5: the supplier
+            addiu(T2, T2, SUPPLIER_FIRST), sb(T2, 5, S2),  # +5: the supplier
+            # Side fields 1, 3 and 5 of both sides are 1 in your club's record and the
+            # rival's, which show logos, and 0 in a computer club's (PCSX2 states,
+            # 2026-11-10), so they are what lets a kit show them.
+            addiu(T0, ZERO, 1)] + [sb(T0, off, S2) for off in SIDE_LOGO_BYTES]
     body += [ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20), jr(RA), NOP]
     return body
 
