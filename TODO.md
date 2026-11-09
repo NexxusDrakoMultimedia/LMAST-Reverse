@@ -342,11 +342,14 @@ problems; the match bugs come after them.
       stadium's advert slots, and whether the model or the look record
       loses it
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown))
-- [ ] Bug: a youth player's potential screen can contradict itself (a
-      great player with a lot of potential, then almost none). Find the
-      two comments' sources and the values each reads; the fix is a
-      candidate switch
-      ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#still-unknown))
+- [ ] Bug: a youth candidate's comments can contradict themselves (a
+      great player with a lot of potential, then almost none). Found in
+      the texts: the second line rates star quality (スター性) but is
+      translated "potential", and message 8659 is untranslated
+      ("charisma") or wrong (German). Left: find which values the two
+      lines read, reword 8657–8663 and 8659 in `--mod retail-text`, test
+      in PCSX2
+      ([`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md#youth-lists-confirmed))
 - [ ] Idea: every player shown with a first name and a surname
       (`S.Aguero` as Sergio Aguero, `Cahwan` as Oliver Kahn, `L.Ginster`
       with Ginster's first name). Check how far the name fields allow

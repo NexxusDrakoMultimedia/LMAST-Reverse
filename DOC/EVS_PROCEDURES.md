@@ -178,6 +178,33 @@ int*)` (`0x262c40`) tests the player's own nationality (`getPbase` field
 | `+0x08` | `+0x0c` | position, if non-zero (`0x2623e8`, the same 12 positions) |
 | `+0x12` | `+0x10` | scout special condition, 36 = any (as for players) |
 
+**Youth candidates' comments (partly confirmed).** The youth academy
+screens describe a candidate in two lines, built by one function in
+`SIMPRG.REL` (`0xf6090`, called from `0xf44d8` and `0xf4844`):
+
+- The summary line is category 700 message 8500 + a level 0–7. The level
+  comes from the average of six values (floats at the candidate's
+  `+0x8b8`, times 100: under 46 is level 0; otherwise (average − 45) / 7,
+  at most 6, then through a byte table at `SIMPRG.REL 0x1d2a70`, 7 rows of 16, picked by
+  a value at the youth team's data `+0x3f1c`). **Confirmed** (`0xf6118`–`0xf6168`).
+- The second line, when its kind argument is 10 or more, is message
+  8657 + (kind − 10), up to 8663. **Confirmed** (`0xf617c`–`0xf6190`). The
+  lower kinds pick a talent comment (8600–8656) instead.
+
+**Empirical (the texts).** The Japanese summary lines (8500–8507) say
+how good the player is and how much he will grow ("a bad player, but he
+seems to grow a little"). Messages 8657–8663 rate the player's スター性,
+star quality ("barely has star quality" up to "uncommon star quality"),
+not his growth. All five European texts translate it as "potential"
+("He seems to have almost no potential"), so a candidate whose summary
+says "a superb player with great potential" (8506) can be followed by
+"He seems to have almost no potential" (8657) from a different value.
+Message 8659 was never translated: English, French and Italian say "He
+seems to have some charisma" and Spanish "algo de charisma", and
+German repeats "fast kein Potenzial" (almost no potential), which is
+8657's meaning. Nexxus's report, 2026-11-10; the texts are checked, the
+two lines' values and the screen's name in the game are not.
+
 **Coach lists (confirmed).** `pwkTeam_UpdateCoachCandidates(PlClistTerm*,
 int*)` (`0x261d10`) walks 3,000 staff records (`getMbase`, ids from
 `0x6d2e`) and tests the coach's nationality (field `+0x14`):
