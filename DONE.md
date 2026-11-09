@@ -218,6 +218,12 @@ Each result is recorded in the doc linked.
 
 ## 8. LMASTER Mod and other patches
 
+- [x] `--mod random-sponsors` (group `graphics`, LMASTER full and max):
+      every club's kit shows a main sponsor and a kit supplier, drawn
+      again each season, and the Italian, Spanish and Dutch clubs get
+      generated kits (`SRC/kits.csv`) instead of the licensed ones; seen
+      working on Real Betis in PCSX2
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
 - [x] LMASTER lite: the fixes for training camps, drill names,
       injuries, the main sponsor negotiation, season tickets, PR events,
       overseas popularity, cup popularity, the rival's manager, the press

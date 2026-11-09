@@ -361,15 +361,20 @@ problems; the match bugs come after them.
       with Ginster's first name). Check how far the name fields allow
       it and what `realnames.py` and `--mod real-names` already cover
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [ ] Idea: random sponsors and kit manufacturers for the clubs you
-      don't manage, drawn again every season. Computer clubs' kits show
-      none: `pwkTeam_GetUnif` sets their sponsor and supplier to 0, and
-      only your club gets real ones. `--mod random-sponsors` (full and
-      max) now sets them from the team number and the season. Left:
-      test in PCSX2 ([`TESTING.md`](TESTING.md)), what draws a logo
-      and which numbers have one (assumed all), and the Japanese
-      release
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
+- [ ] Random sponsors and kit suppliers for the clubs you don't manage,
+      drawn again every season (the poll went 4-0 for it, Nexxus,
+      2026-11-10), with the licensed leagues unlicensed. Done:
+      `--mod random-sponsors` (full and max) sets them from the team
+      number and the season, unlicenses the 114 clubs with generated
+      kits from `SRC/kits.csv`, and lets every club's kit draw its
+      logos (the gate was at `0x2c54d8`); seen on Real Betis in PCSX2.
+      Left: the other clubs and all seven suppliers' colours in PCSX2
+      ([`TESTING.md`](TESTING.md)), the kits corrected club by club
+      (written from memory with 12 shirt patterns), the other shirt
+      designs checked in the viewer, the keeper kits (still the rows'
+      own) and the Japanese release
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors),
+      [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-or-generated-the-flag))
 - [ ] Idea (Nexxus, 2026-11-10; reopens the 2026-11-07 choice that the
       kits stay Realism-only): LMAST Realism's kits on the disc as
       licensed kits, by widening the licence from the 116 Italian,
@@ -384,29 +389,6 @@ problems; the match bugs come after them.
       descriptor bytes for each club
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-kits),
       [`TEXMAP.md`](DOC/TEXMAP.md))
-- [ ] Decision for Nexxus's poll of players (2026-11-10): real 2006
-      kits forever, or random sponsors and suppliers every year. If the
-      latter, Nexxus wants the licensed leagues unlicensed, so the
-      Italian, Spanish and Dutch clubs (teams 123-244) get generated
-      kits that `random-sponsors` can add logos to. What that takes,
-      none of it started: real 2005-06 designs and colours for the 116
-      clubs in `UNIFORM_LIST.TBB` (their rows now hold placeholders: a
-      plain design 0 in default colours, checked for teams 123 and
-      124), flag 1 in each row instead of 2 (that alone makes the
-      loader take the generated path, found 2026-11-10), and
-      `random-sponsors` no longer skipping them. The poll went 4-0 for
-      random sponsors (Nexxus, 2026-11-10), so `--mod random-sponsors`
-      does all of it: `SRC/kits.csv` holds a kit for each of the
-      114 clubs, written from memory with 12 shirt patterns, and the
-      licensed packs stay unused. **Blocked:** on four test builds a
-      computer club's kit shows no sponsor or supplier logo although
-      its match record holds them (your club's and the rival's do show
-      theirs), so the switch is out of the editions. Left: find what
-      lets a kit draw its logos (the supplier range, the side fields
-      and the builder's team test did not), then correct the kits club
-      by club, check the other shirt designs in the viewer, the keeper
-      kits (still the rows' own) and the Japanese release
-      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-or-generated-the-flag))
 - [ ] Idea (Nexxus, 2026-11-10): computer clubs' kits changing from
       season to season, as the sponsors do. The unlicensed clubs' kits
       come from `UNIFORM_LIST.TBB`'s designs and colours; a patch could

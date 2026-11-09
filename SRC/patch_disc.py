@@ -5127,9 +5127,9 @@ SWITCHES = (
      "Club: the moving advert board bought at an earlier ground shows at the last ground "
      "too (its boards are the plain ones, as at the level before, not the LCD set)"),
     ("random-sponsors", plan_random_sponsors, [SLES_FILE, UNIFORM_FILE] + UNIFORM_PACKS,
-     "Unfinished: a sponsor and a kit supplier for every club's kit, drawn again every "
-     "season, and generated kits for the Italian, Spanish and Dutch clubs; computer clubs' "
-     "kits don't draw the logos yet, so it is in no edition"),
+     "Graphics: every club's kit shows a main sponsor and a kit supplier, drawn again every "
+     "season, and the Italian, Spanish and Dutch clubs lose their licensed kits for generated "
+     "ones (LMASTER full and max)"),
     ("realism", plan_realism, REALISM_FILES,
      "Graphics: LMAST Realism's crests and match pictures in the texture packs, and a "
      "2 px transparent edge on the licensed crests; needs --realism <pack folder>, "
@@ -5213,11 +5213,9 @@ GROUPS = (       # (name, title, switches)
     ("restorations", "Restored content", ("injury-lines",)),
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
-    ("graphics", "Graphics", ("realism",)),
+    ("graphics", "Graphics", ("realism", "random-sponsors")),
     ("saves", "Separate saves", ("mod-saves",)),
-    # random-sponsors is here, in no edition, until a computer club's kit draws its
-    # logos (DOC/LMASTER_MOD.md#random-sponsors): it also unlicenses 114 clubs.
-    ("test-tools", "Test tools", ("skip-tutorial", "launcher", "random-sponsors")),
+    ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )
 # LMASTER lite is the fixes. LMASTER full adds the leagues, the restored
 # content and its own saves; LMASTER max adds the difficulty groups to it
