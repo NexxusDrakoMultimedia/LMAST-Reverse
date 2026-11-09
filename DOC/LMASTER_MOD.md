@@ -459,8 +459,25 @@ numbers reach the match but a computer club's kit shows no logo, while
 your club's and the rival's do. It is out of LMASTER full and max until
 it does, because it also unlicenses 114 clubs. What it tried: the
 supplier range (206–212), the side fields (field 3 is the front number,
-which appeared on the chest) and the builder's team test (`0x2c4ab8`),
-none of which drew a logo. What gates the logos is not found. In the retail game only your club has them: the other
+which appeared on the chest) and the builder's team test (`0x2c4ab8`,
+which only changes the keeper kits), none of which drew a logo.
+
+**The gate found (2026-11-10, a workflow of investigators over the
+code and four states; **confirmed** in the code, not yet seen to
+work).** `CUniformLoader::_load_edit` (`0x2c2848`) creates three
+texture resources for every generated kit, whatever the club (the loop
+at `0x2c2ef0`–`0x2c2f58`, types {0, 5, 7} from the table at `0x55a248`:
+type 5 is `SPONSOR_TEXTURE.PAC`, type 7 `SPONSOR_TEXTURE_S.PAC`, named
+`CmnTex_005_NNN` and `CmnTex_007_NNN` with the record number less 1).
+Betis's were loaded in the states (`CmnTex_005_064`, `CmnTex_007_208`).
+Then `CUniformBuilder::_setup_texture_list` (`0x2c5340`) throws them
+away: at `0x2c54bc`–`0x2c54d8` only teams 1 and 2 and the VS teams
+(`0x21f`–`0x22e`) go on to the real sponsor and supplier lists
+(`0x2c54e0`), and every other club gets the default list for both
+slots (`0x2c5504`), copied into texture list slots 4 and 6. The switch
+turns the `beqz` at `0x2c54d8` into a nop. Left: seeing it draw, and
+whether the supplier logos (4-bit textures with an external palette,
+entries 205–211) come out in the right colours. In the retail game only your club has them: the other
 clubs' kit requests carry sponsor 0 and supplier 0, which show nothing
 (Nexxus's report, 2026-11-10; [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)).
 

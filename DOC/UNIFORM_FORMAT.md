@@ -253,6 +253,22 @@ Setting a licensed club's flag to 1 and writing its kit into the row
 (`uniform.py set`) is all it takes to make it a generated kit, so
 `random-sponsors` can then give it a sponsor.
 
+### The sponsor and supplier logos on a generated kit
+
+**Confirmed** from the code and PCSX2 states (2026-11-10; the last
+step not yet seen to draw). `_load_edit` stores the team id and `PlUnif`
+`+4` and `+5` in the loader (`+0x1778`, `+0x177c`, `+0x1780`) and makes
+three texture resources, types 0, 5 and 7, for every club
+(`0x2c2ef0`–`0x2c2f58`; the types are the word table at `0x55a248`).
+Type 5 is `SPONSOR_TEXTURE.PAC` and type 7 `SPONSOR_TEXTURE_S.PAC`
+(`CmnTex_005_NNN`, `CmnTex_007_NNN`, entry = record number − 1; a
+supplier number of `0xd5` or more becomes `0xce`). `_setup_texture_list`
+(`0x2c5340`) then keeps the real lists only for team 1, team 2 and the
+VS teams: `0x2c54bc`–`0x2c54d8` send any other club to the default list
+(`0x2c5504`) for both slots. So a computer club holds its logos but
+doesn't draw them. See
+[`LMASTER_MOD.md`](LMASTER_MOD.md#random-sponsors).
+
 ### The descriptor
 
 Bytes come in pairs, outfield then goalkeeper. The names are what the
