@@ -464,12 +464,18 @@ code in the LMASTER code segment (`0xf8300`, 32 words; the segment is
 the third tier's too, and the switch brings its program header) and the
 second into a nop. The code gets the season from `pwkGen_Keika`
 (`0x244430`, the season's first year less 2006, so it changes when the
-season starts) and writes sponsor 1 + *h*₁ mod 199 and supplier 1 +
-*h*₂ mod 6 for the club's team id, from two multiplicative hashes
-(`sponsor_hash` in `patch_disc.py` is the same arithmetic). Over the
-540 clubs and 20 seasons every sponsor 1–199 and supplier 1–6 comes up
-(37–49 times each for the sponsors), and no club keeps both for the
-next season.
+season starts) and writes sponsor 1 + *h*₁ mod 199 and supplier 206 +
+*h*₂ mod 7 for the club's team id, from two multiplicative hashes
+(`sponsor_hash` in `patch_disc.py` is the same arithmetic). The numbers
+are records of MES category 10000: a PCSX2 state (2026-11-10) held your
+club's as 74 (a main sponsor) and 207 (Opnatis, one of the seven
+suppliers, records 206–212), and the first draft's supplier 1–6 was a
+sponsor's record. Over the 540 clubs and 20 seasons every sponsor
+1–199 and supplier 206–212 comes up, and no club keeps both for the
+next season. In the state the opponent's `PlUnif` held the switch's
+numbers (sponsor 65, supplier 3 in the first draft), copied into the
+match, so they reach the match, but nothing showed on the kit; whether
+the match draws a logo for a computer club's numbers is not known.
 
 **The licensed clubs.** The 116 Italian, Spanish and Dutch clubs have
 real kit textures with their sponsor in them, so a sponsor could not be

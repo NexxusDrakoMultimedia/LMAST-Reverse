@@ -2616,21 +2616,25 @@ def target_moving_boards(file, data, old):
 # your club a sponsor (PlUnif +4) and a supplier (+5); every other club it
 # sets to 0, which shows nothing. Its two `sb $zero` at 0x26ec1c and 0x26ec24
 # become a call to code in the LMASTER code segment, which writes
-# sponsor 1 + h1 mod 199 and supplier 1 + h2 mod 6 for the club (team id,
+# sponsor 1 + h1 mod 199 and supplier 206 + h2 mod 7 for the club (team id,
 # $s1) and the season (pwkGen_Keika, 0x244430: the first year of the season
 # less 2006, so it changes at the season's start). A licensed club's kit
 # carries its sponsor in the texture, so the switch also unlicenses the 114
 # clubs of SRC/kits.csv: their UNIFORM_LIST.TBB rows get flag 1 and a
 # generated kit (uniform.apply_kits).
 SPONSOR_CAVE, SPONSOR_HOOK, KEIKA = 0xF8000 + 0x300, 0x26EC1C, 0x244430   # CAVE + 0x300
-SPONSOR_KINDS, SUPPLIER_KINDS = 199, 6          # the loader's limits are 200 and 7
+# PlUnif +4 and +5 hold sponsor record numbers (MES category 10000): your club's
+# were 74 (a main sponsor, 1-199) and 207 (a supplier: records 206-212 are the
+# seven suppliers, Binnonn to Doclla), seen in a PCSX2 state (2026-11-10). The
+# first draft wrote supplier 1-6, a sponsor's record, and nothing showed.
+SPONSOR_KINDS, SUPPLIER_KINDS, SUPPLIER_FIRST = 199, 7, 206
 
 
 def sponsor_hash(team, season):
     """(sponsor, supplier) the code in sponsor_cave() writes."""
     x = (team * 0x9E3779B1 + season * 0x85EBCA6B) & 0xFFFFFFFF
     z = (x * 0xC2B2AE35) & 0xFFFFFFFF
-    return 1 + (x >> 11) % SPONSOR_KINDS, 1 + (z >> 16) % SUPPLIER_KINDS
+    return 1 + (x >> 11) % SPONSOR_KINDS, SUPPLIER_FIRST + (z >> 16) % SUPPLIER_KINDS
 
 
 def sponsor_cave():
@@ -2644,7 +2648,7 @@ def sponsor_cave():
             addiu(T2, T2, 1), sb(T2, 4, S2),              # PlUnif +4: the sponsor
             lui(T0, 0xC2B2), ori(T0, T0, 0xAE35), mult3(T2, T1, T0),
             srl(T2, T2, 16), addiu(T0, ZERO, SUPPLIER_KINDS), divu(T2, T0), mfhi(T2),
-            addiu(T2, T2, 1), sb(T2, 5, S2)]              # +5: the supplier
+            addiu(T2, T2, SUPPLIER_FIRST), sb(T2, 5, S2)]  # +5: the supplier
     body += [ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20), jr(RA), NOP]
     return body
 
