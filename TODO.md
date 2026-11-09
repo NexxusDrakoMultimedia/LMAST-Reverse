@@ -364,11 +364,20 @@ problems; the match bugs come after them.
 - [ ] Idea: random sponsors and kit manufacturers for the clubs you
       don't manage, drawn again every season. Computer clubs' kits show
       none: `pwkTeam_GetUnif` sets their sponsor and supplier to 0, and
-      only your club gets real ones. A patch there could set them from
-      the team number and the season. Left: find what draws a sponsor
-      or supplier logo on a kit and which numbers (0-199, 0-6) have
-      one, then the patch and the season source
-      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#uniform_listtbb))
+      only your club gets real ones. `--mod random-sponsors` (full and
+      max) now sets them from the team number and the season. Left:
+      test in PCSX2 ([`TESTING.md`](TESTING.md)), what draws a logo
+      and which numbers have one (assumed all), and the Japanese
+      release
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
+- [ ] Idea (Nexxus, 2026-11-10): computer clubs' kits changing from
+      season to season, as the sponsors do. The unlicensed clubs' kits
+      come from `UNIFORM_LIST.TBB`'s designs and colours; a patch could
+      vary the shirt, shorts or socks design by season. Left: see which
+      of the 209 shirt, 61 shorts and 18 socks designs suit another
+      design's colours, and keep each club's own colours so it stays
+      recognisable
+      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md))
 - [ ] Bug: a team on auto game plan doesn't substitute a slightly
       injured player nearly as often as expected, and judges stamina
       and lost ability poorly. Read the manager's substitution check

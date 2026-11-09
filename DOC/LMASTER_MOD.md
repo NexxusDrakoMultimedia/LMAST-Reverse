@@ -33,7 +33,7 @@ level:
 | `restorations` | injury-lines | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
-| `graphics` | realism ([below](#lmast-realism-on-the-disc)) | – | yes | yes |
+| `graphics` | realism ([below](#lmast-realism-on-the-disc)), random-sponsors ([below](#random-sponsors)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -448,6 +448,31 @@ Al-Sadd. The Japanese release is left alone.
 
 Other retail typos seen while making the name table, not fixed:
 "Repulic of Ireland" (category 3) and "Motherwwell" (category 100003).
+
+## Random sponsors
+
+`--mod random-sponsors` (group `graphics`, in LMASTER full and max;
+built 2026-11-10, not yet tested in PCSX2; Nexxus's request) gives the
+computer clubs' kits a main sponsor and a kit supplier, drawn again
+every season. In the retail game only your club has them: the other
+clubs' kit requests carry sponsor 0 and supplier 0, which show nothing
+(Nexxus's report, 2026-11-10; [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)).
+
+`pwkTeam_GetUnif` (`0x26e9d8`) writes 0 to `PlUnif +4` and `+5` at
+`0x26ec1c` and `0x26ec24`. The switch turns the first into a call to
+code in the LMASTER code segment (`0xf8300`, 36 words; the segment is
+the third tier's too, and the switch brings its program header) and the
+second into a nop. The code gets the season from `pwkGen_Keika`
+(`0x244430`, the season's first year less 2006, so it changes when the
+season starts) and writes sponsor 1 + *h*₁ mod 199 and supplier 1 +
+*h*₂ mod 6 for the club's team id, from two multiplicative hashes
+(`sponsor_hash` in `patch_disc.py` is the same arithmetic). Over the
+540 clubs and 20 seasons every sponsor 1–199 and supplier 1–6 comes up
+(37–49 times each for the sponsors), and no club keeps both for the
+next season. Licensed clubs (team ids 123–244) keep 0: their kits carry
+real sponsors in the texture. Not done: the Japanese release (the code
+is PAL's), and which sponsor and supplier numbers have a logo on a kit
+is assumed from Nexxus's report that they all do.
 
 ## Real names
 
