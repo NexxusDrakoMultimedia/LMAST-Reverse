@@ -229,10 +229,12 @@ list.
       state's memory
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md))
 - [ ] Computer clubs' sponsors, suppliers and the unlicensed kits
-      (`--mod random-sponsors`, the disc is `LMAST-test-sponsors3.iso`,
+      (`--mod random-sponsors`, the disc is `LMAST-test-sponsors4.iso`,
       built 2026-11-10; PCSX2 treats it as a new game, with its own
       settings and states). Real Betis shows the chest sponsor and the
-      supplier logo (Nexxus's screenshot, 2026-11-10). Still to check:
+      supplier logo, and England's national team shows its kit maker
+      and no main sponsor (Nexxus's screenshots, 2026-11-10). Still to
+      check:
       the other clubs of other leagues (each logo real, none blank,
       broken or oversized, two clubs differing, all seven suppliers'
       colours right); the Italian, Spanish and Dutch clubs (Milan,

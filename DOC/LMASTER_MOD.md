@@ -455,7 +455,7 @@ Other retail typos seen while making the name table, not fixed:
 built 2026-11-10; Nexxus's request) gives the computer clubs' kits a
 main sponsor and a kit supplier, drawn again every season, and it also
 unlicenses 114 clubs. **Tested in PCSX2** (Nexxus's screenshot,
-2026-11-10, `LMAST-test-sponsors3.iso`): Real Betis, an unlicensed
+2026-11-10, `LMAST-test-sponsors3.iso`, then `sponsors4` with the national teams): Real Betis, an unlicensed
 computer club, shows the chest sponsor (Decentberg) and the supplier
 logo, as your club and the rival do. Four earlier builds drew nothing:
 the supplier range (206–212), the side fields (field 3 is the front
