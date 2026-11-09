@@ -331,3 +331,51 @@ is built and tested, or set aside.
       ACROBATA pack writers (section 3). The kits stay Realism-only
       ([`TEXMAP.md`](DOC/TEXMAP.md),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc))
+
+Bugs and ideas reported in play (Nexxus's reports, 2026-11-10). None is
+investigated yet: each needs the cause found in the game code, then a
+switch or a decision to set it aside. The first four are menu and data
+problems; the match bugs come after them.
+
+- [ ] Bug: the rotating (non-digital) advert boards don't show in your
+      own stadium. Find out whether the board type is read from the
+      stadium's advert slots, and whether the model or the look record
+      loses it
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown))
+- [ ] Bug: a youth player's potential screen can contradict itself (a
+      great player with a lot of potential, then almost none). Find the
+      two comments' sources and the values each reads; the fix is a
+      candidate switch
+      ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#still-unknown))
+- [ ] Idea: every player shown with a first name and a surname
+      (`S.Aguero` as Sergio Aguero, `Cahwan` as Oliver Kahn, `L.Ginster`
+      with Ginster's first name). Check how far the name fields allow
+      it and what `realnames.py` and `--mod real-names` already cover
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [ ] Idea: random sponsors and kit manufacturers for the clubs you
+      don't manage, drawn again every season. Find where the other
+      clubs' sponsors are set and whether the season rollover can run
+      the draw
+      ([`SPONSOR_NEGOTIATION.md`](DOC/SPONSOR_NEGOTIATION.md#still-unknown))
+- [ ] Bug: a team on auto game plan doesn't substitute a slightly
+      injured player nearly as often as expected, and judges stamina
+      and lost ability poorly. Read the manager's substitution check
+      for which inputs it weighs and the thresholds
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#still-unknown))
+- [ ] Bug: on a switch of play from wing to wing, the player chosen to
+      receive the ball is sometimes from the wrong side of the pitch.
+      Find the receiver pick (the call-up of the selected player on a
+      long pass) and what it measures from
+      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
+- [ ] Bug: a player with the ball in the attacking third sometimes
+      turns and sprints back, passing only in his own third. Find the
+      move order that sends the ball carrier back
+      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
+- [ ] Bug: the ball sticks at a player's feet or in no man's land and
+      the player stands still for a while, in quick play sometimes for
+      a whole half. Find what holds the ball carrier's decision
+      ([`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md#still-unknown))
+- [ ] Bug: a throw-in sometimes goes straight to the player in front and
+      to the side, who dribbles it out of play at once. Find the throw
+      target pick and the receiver's first move
+      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md#still-unknown))
