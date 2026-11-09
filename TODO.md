@@ -370,6 +370,20 @@ problems; the match bugs come after them.
       and which numbers have one (assumed all), and the Japanese
       release
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
+- [ ] Idea (Nexxus, 2026-11-10; reopens the 2026-11-07 choice that the
+      kits stay Realism-only): LMAST Realism's kits on the disc as
+      licensed kits, by widening the licence from the 116 Italian,
+      Spanish and Dutch clubs to the clubs of the six leagues. What it
+      takes, none of it started: a finished shirt, shorts and socks
+      picture per club, home and away, with the keeper kit (Realism has
+      the parts with a picture per palette, not a picture per club, so
+      each would be built from a club's design and colours); a writer
+      for the `PLPACK_HOME`/`AWAY` packs (section 3); the licence table
+      (`0x3a08d8`, 116 rows) and the descriptor table (`0x3a0c80`,
+      18 bytes a kit) grown and moved into the code segment; and the
+      descriptor bytes for each club
+      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-kits),
+      [`TEXMAP.md`](DOC/TEXMAP.md))
 - [ ] Idea (Nexxus, 2026-11-10): computer clubs' kits changing from
       season to season, as the sponsors do. The unlicensed clubs' kits
       come from `UNIFORM_LIST.TBB`'s designs and colours; a patch could
