@@ -93,7 +93,7 @@ data of both in -V.
 Groups: training-fixes (camp-types, camp-cities, camp-santiago,
 camp-clubs, drill-names, salesman-items), injury-fixes (injury-value, injury-row),
 club-fixes (sponsor-negotiation, season-status, pr-cycle, mobile-site,
-overseas-pop, cup-last16), match-fixes (rival-manager, press-tendency,
+overseas-pop, cup-last16, moving-boards), match-fixes (rival-manager, press-tendency,
 national-cups, vpf-styles, vpf-positions), text-fixes (retail-text), harder-economy (facility-tiers,
 wider-tickets, dearer-ads,
 sponsor-fees, tv-fees, season-demand), balance (injury-odds,
@@ -2590,6 +2590,25 @@ def plan_sponsor_boards(f, img, adopted=()):
                      "has the sponsor boards")
 
 
+# moving-boards: the last ground's board switches made like the level before
+# it, so the moving board bought earlier still shows (LMASTER lite;
+# DOC/LMASTER_MOD.md#stadiums). Computer clubs' level-4 grounds show the
+# plain boards too, not the LCD set.
+def plan_moving_boards(f, img, adopted=()):
+    """Jobs for --mod moving-boards: bytes 42-69 of BUILD_STADIUM rows
+    96-101 (real-grounds writes other rows, sponsor-boards the advert
+    bytes)."""
+    import stadium
+    return file_jobs(f, img, BUILD_STADIUM_FILE, stadium.moving_boards, [], None,
+                     "moving-boards: the last ground shows the moving board", adopted,
+                     "has the last ground's boards like the level before")
+
+
+def target_moving_boards(file, data, old):
+    import stadium
+    return target_build_stadium(stadium.moving_boards, file, data, old)
+
+
 def target_build_stadium(edit, file, data, old):
     """A BUILD_STADIUM.TBB target (the editor's Stadiums tab) with `edit`
     applied row by row: each row's look and boards the target changed from
@@ -5006,6 +5025,9 @@ SWITCHES = (
     ("sponsor-boards", plan_sponsor_boards, [BUILD_STADIUM_FILE],
      "Stadiums: every ground's advert boards drawn afresh from all 205 sponsors, so "
      "they vary"),
+    ("moving-boards", plan_moving_boards, [BUILD_STADIUM_FILE],
+     "Club: the moving advert board bought at an earlier ground shows at the last ground "
+     "too (its boards are the plain ones, as at the level before, not the LCD set)"),
     ("realism", plan_realism, REALISM_FILES,
      "Graphics: LMAST Realism's crests and match pictures in the texture packs, and a "
      "2 px transparent edge on the licensed crests; needs --realism <pack folder>, "
@@ -5045,10 +5067,11 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                 "real-grounds": (target_real_grounds,
                                  [SIM_FILE, STADIUM_DATA_FILE, BUILD_STADIUM_FILE],
                                  LIST_PACKS + STADIUM_DATA_PACKS),
-                "sponsor-boards": (target_sponsor_boards, [BUILD_STADIUM_FILE], [])}
+                "sponsor-boards": (target_sponsor_boards, [BUILD_STADIUM_FILE], []),
+                "moving-boards": (target_moving_boards, [BUILD_STADIUM_FILE], [])}
 # Hooks that also take the file as DAT holds it (or the image, without
 # --dat), to keep the target's own edits row by row.
-HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards")
+HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards")
 
 # One switch per feature: parts that need each other are one switch
 # (DOC/LMASTER_MOD.md, the switch levels). Switches that need another switch, that
@@ -5073,7 +5096,7 @@ GROUPS = (       # (name, title, switches)
     ("injury-fixes", "Injury fixes", ("injury-value", "injury-row")),
     ("club-fixes", "Club fixes",
      ("sponsor-negotiation", "season-status", "pr-cycle", "mobile-site", "overseas-pop",
-      "cup-last16")),
+      "cup-last16", "moving-boards")),
     ("match-fixes", "Match and import fixes",
      ("rival-manager", "press-tendency", "national-cups", "vpf-styles", "vpf-positions")),
     ("text-fixes", "Text fixes", ("retail-text",)),

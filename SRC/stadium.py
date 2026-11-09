@@ -254,6 +254,41 @@ def sponsor_boards(data):
     return None if bytes(out) == data else bytes(out)
 
 
+# moving-boards: the last ground's advert switches (bytes 42-69) made like the
+# level before it. Style 1 (the moving board, advert slot 4) only turns boards
+# 43 and 52 electric when both are on in the row (0x1cd9c8, 0x1cd850), and
+# the seven ho04a rows have them off, with the LCD set 46-50 and 55-59 on
+# instead, so a moving board bought earlier shows nothing at the last ground
+# (DOC/STADIUM_DIR.md#the-request-in-a-match). The level-3 grounds (ho03a)
+# have the plain boards 42-45 and 51-54 on, so style 1 and style 2 (LCD) each
+# change something there; the ids 96-101 are CONV_INFO_BUILD's level 4.
+LEVEL3_MODEL, LEVEL4_MODEL = 5, 6
+LEVEL4_STADIUMS = range(96, 102)
+BOARD_SWITCHES = slice(42, 70)
+
+
+def moving_boards(data):
+    """BUILD_STADIUM.TBB bytes with the level-4 grounds' board switches
+    (bytes 42-69) as the level-3 grounds have them; None when they
+    already are. Refused when the level-3 rows differ from each other."""
+    _, t = tbb.parse(data)
+    old = rows(t[0].data, BUILD_ROW)
+    base = t[0].offset + t[0].data_offset
+    level3 = {bytes(r[BOARD_SWITCHES]) for r in old if r[0] == LEVEL3_MODEL}
+    if len(level3) != 1:
+        raise ValueError("the level-3 grounds have %d different board layouts, expected 1"
+                         % len(level3))
+    pattern = level3.pop()
+    out = bytearray(data)
+    for i in LEVEL4_STADIUMS:
+        if old[i][0] != LEVEL4_MODEL:
+            raise ValueError("stadium %d is model %d, expected the last ground's %d"
+                             % (i, old[i][0], LEVEL4_MODEL))
+        at = base + i * BUILD_ROW
+        out[at + BOARD_SWITCHES.start:at + BOARD_SWITCHES.stop] = pattern
+    return None if bytes(out) == data else bytes(out)
+
+
 # --- the writer --------------------------------------------------------------
 # setlook and setboards edit table 0 in place (the file keeps its size);
 # copy_rows above is the look, BOARD_VALUES the advert bytes' values.

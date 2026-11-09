@@ -215,6 +215,15 @@ list.
       this also shows which copy the game reads); try another language
       if you can
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#retail-text-fixes))
+- [ ] The moving advert board at the last ground (`--mod moving-boards`,
+      the disc is `LMAST-test-boards.iso`, built 2026-11-10): in a
+      career with the moving board bought and a level-4 stadium, check
+      that the rotating electric boards show at home games, then buy the
+      LCD board and check that it replaces them; also look at a computer
+      club's level-4 ground (the plain boards, not LCD). The board
+      shop may also stop you buying the moving board at level 4; say
+      what it does
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] By eye: whether a raw line break in a message (`{lf}` in
       `mbb.py`'s output, 4,129 in the European languages) breaks the
       line on screen

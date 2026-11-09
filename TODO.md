@@ -343,8 +343,9 @@ problems; the match bugs come after them.
       board needs boards 43 and 52 on in the ground's row, and it wins
       over the LCD style when both are built. Mostly a level-4 ground
       (Nexxus, 2026-11-10), whose rows have boards 43 and 52 off and the
-      LCD set on. Left: the fix, which must keep or change those
-      grounds' look for computer clubs too
+      LCD set on. `--mod moving-boards` (lite) now makes those rows like
+      level 3's, so computer clubs' level-4 grounds show the plain
+      boards too. Left: test in PCSX2 ([`TESTING.md`](TESTING.md))
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#the-request-in-a-match))
 - [ ] Bug: a youth candidate's comments can contradict themselves (a
       great player with a lot of potential, then almost none). Found in
