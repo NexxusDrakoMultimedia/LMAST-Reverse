@@ -148,7 +148,13 @@ LCD boards (2026-11-10), mostly at a level-4 ground. That fits the
 code: the seven `ho04a` rows have boards 43 and 52 off and the LCD set
 (46–50, 55–59) on, so style 1 has nothing to act on. Levels 1–3 and
 `ho03a` have the 42–45 and 51–54 boards on and the LCD set off, so there
-style 1 and style 2 each change something. Not yet seen in the game.
+style 1 and style 2 each change something. Nexxus adds that the LCD
+board can't be built until about the second-last stadium and that it
+shows when built; the moving board shows in the earlier grounds and
+stops at the last. `ADT_HO04A_*` holds full models for the two boards
+style 1 changes (entries 1 and 24, 2,746 and 1,912 bytes in `D1`), so
+the assets are there; it is only the row's switches. Not yet seen in
+the game.
 
 The value names (DAY/NIGHT, FINE…SNOW, SPRING…WINTER, ENGLAND…HOLLAND,
 JAN…DEC) are the viewer's lists at `GAMEPRG.REL 0x24d4c8`–`0x24d554`. Its
