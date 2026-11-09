@@ -337,11 +337,14 @@ investigated yet: each needs the cause found in the game code, then a
 switch or a decision to set it aside. The first four are menu and data
 problems; the match bugs come after them.
 
-- [ ] Bug: the rotating (non-digital) advert boards don't show in your
-      own stadium. Find out whether the board type is read from the
-      stadium's advert slots, and whether the model or the look record
-      loses it
-      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown))
+- [ ] Bug: the rotating electric advert boards (the moving board, advert
+      slot 4) don't show in your own stadium, only the LCD ones, though
+      they show at computer clubs' grounds. Known so far: the moving
+      board needs boards 43 and 52 on in the ground's row, and it wins
+      over the LCD style when both are built. Left: which ground level
+      it happens at, what a computer club's ground does differently,
+      and the fix
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#the-request-in-a-match))
 - [ ] Bug: a youth candidate's comments can contradict themselves (a
       great player with a lot of potential, then almost none). Found in
       the texts: the second line rates star quality or charisma

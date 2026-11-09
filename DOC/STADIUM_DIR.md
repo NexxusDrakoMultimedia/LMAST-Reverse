@@ -123,6 +123,30 @@ electric and LCD boards (`+0x0e`) and the extra boards 95–97 (`+0x0f`)
 appear only at your own ground, once you build those adverts, and the
 adidas board only at computer clubs' grounds outside Spain.
 
+**The moving board of slot 4 (partly confirmed).** Message 563:1109
+("The moving advertising board is now complete") belongs to advert slot
+4 and 1110 ("The LCD advertising board") to slot 5. At your own ground:
+
+- Style 1 (slot 4) is tested before style 2 (slot 5) (`0x213380`:
+  `+0x37`, then `+0x39`). With both built the style stays 1, so the LCD
+  boards never show. **Confirmed.**
+- Style 1 (`0x1cd9c8`) makes boards 43 and 52 electric only when both
+  are on in the stadium's row, the test `0x1cd850` (`0x1cd9d8`–`0x1cd9f0`).
+  If either is off it does nothing. **Confirmed.** In `BUILD_STADIUM`
+  106 of 119 rows have both on; the other 13 are all 7 `ho04a` rows
+  (level 4, every league's biggest ground, which already has the LCD set
+  46–50 and 55–59 on instead), and 6 others (one each of `ho00b`,
+  `ho01a`, `ho02a`, `aw01a`, `aw03a`, `aw04b`). **Empirical.**
+- Only an `aw04b` row carries the electric flag in its own data
+  (bytes 43 and 52 hold 8). **Empirical.** A computer club's home game
+  never gets style 1, so what its ground shows is its row's own boards,
+  not this switch.
+
+Nexxus saw the rotating electric boards missing at the player's ground
+(they show at the computer clubs' grounds) and appearing only after the
+LCD boards (2026-11-10). The code above doesn't explain it yet: it
+would at a level-4 ground, and Nexxus's ground level isn't known.
+
 The value names (DAY/NIGHT, FINE…SNOW, SPRING…WINTER, ENGLAND…HOLLAND,
 JAN…DEC) are the viewer's lists at `GAMEPRG.REL 0x24d4c8`–`0x24d554`. Its
 CREATE panel has STADIUM_LEVEL, NATION_ID and STAND_LEVEL instead of
