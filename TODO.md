@@ -392,11 +392,15 @@ problems; the match bugs come after them.
       none of it started: real 2005-06 designs and colours for the 116
       clubs in `UNIFORM_LIST.TBB` (their rows now hold placeholders: a
       plain design 0 in default colours, checked for teams 123 and
-      124), the loader taking the generated path for them (where it
-      chooses between the licensed and generated path isn't found
-      yet), and `random-sponsors` no longer skipping them. The licensed
-      kit packs would stay unused
-      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-kits))
+      124), flag 1 in each row instead of 2 (that alone makes the
+      loader take the generated path, found 2026-11-10), and
+      `random-sponsors` no longer skipping them. The licensed kit packs
+      would stay unused. The poll went 4-0 for random sponsors
+      (Nexxus, 2026-11-10), so this is under way: the flag is known;
+      left are the shirt design catalogue (209 designs, which grey
+      level is which of the three shirt colours), the kits, and the
+      switch
+      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-or-generated-the-flag))
 - [ ] Idea (Nexxus, 2026-11-10): computer clubs' kits changing from
       season to season, as the sponsors do. The unlicensed clubs' kits
       come from `UNIFORM_LIST.TBB`'s designs and colours; a patch could

@@ -49,7 +49,7 @@ team id 0, so the lookup never finds them.
 | Halfwords | Bits | Contents |
 |---|---|---|
 | 0 | 0–15 | team id (`s16`) |
-| 1 | 16–18 | a 3-bit flag, returned by `UniformList_GetDataTeam`; meaning unknown (values 1–3) |
+| 1 | 16–18 | a 3-bit flag, returned by `UniformList_GetDataTeam` and stored in `PlUnif +0`: 2 or 4 makes the kit a licensed one, anything else a generated one ([below](#licensed-or-generated-the-flag)) |
 | 2–7 | 19–33 | home side fields (below) |
 | 8 | 34 | 1 bit, unpacked but never copied out |
 | 9–23 | 35–144 | home **outfield** kit, 15 fields |
@@ -186,6 +186,29 @@ an 18-byte descriptor at `0x3a0c80 + (side × 116 + licence) × 0x12` in the
 executable. Each pack entry's block 0 (32 bytes) starts with the same 18
 bytes. **Empirical:** all 232 pairs (116 clubs × home/away) are equal, and
 bytes 18–31 of every block 0 are zero.
+
+### Licensed or generated: the flag
+
+**Confirmed.** `CUniformBuilder::Init` (`0x2c48b0`) copies `PlUnif` and
+jumps on its first word, the row's flag, through the table at
+`0x55a1c0` (`0x2c4ad8`–`0x2c4af8`): flag 2 and 4 set the builder's
+mode (`+0x110`) to 0 (`0x2c4b0c`), everything else to 1 (`0x2c4b00`).
+`CUniformLoader::Load` (`0x2c3080`) then calls `_load_licence`
+(`0x2c2510`) for mode 0 and `_load_edit` (`0x2c2848`) for 1 and 2
+(`0x2c33a8`–`0x2c3420`; 3 is the referee). So a club's kit is a licensed
+one only because its row's flag is 2. **Empirical:** 114 of the 116
+clubs in the licence table have flag 2 and no other row has it; the
+two others, teams 140 (Siena) and 148 (Bologna), have flag 1 and
+authored rows (Siena a black and white design, Bologna blue and red), so
+they use generated kits although the table lists them. The other 424
+clubs have flag 1 (341) or 3 (83); what 3 changes isn't known.
+
+The 114 licensed rows are placeholders for everything else: 228 of
+their 244 outfield kits are shirt, shorts and socks design 0, and 58
+different home shirt colour sets cover the 122 clubs of teams 123–244.
+Setting a licensed club's flag to 1 and writing its kit into the row
+(`uniform.py set`) is all it takes to make it a generated kit, so
+`random-sponsors` can then give it a sponsor.
 
 ### The descriptor
 
@@ -366,7 +389,8 @@ scheme.
 
 ## Still unknown
 
-- The 3-bit flag, side fields 0, 1, 2 and 5, and the two unused bits.
+- What flag 3 changes (flags 1, 2, 4 are known), side fields 0, 1, 2 and
+  5, and the two unused bits.
 - Descriptor bytes 14 and 15, and what the pack's copy of the descriptor
   is used for: which copy a match reads (an edit to one copy only would
   tell), and whether a front number can show at all (a front number
