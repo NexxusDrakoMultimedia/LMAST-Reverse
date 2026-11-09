@@ -430,12 +430,17 @@ rules, is separate ([The text](#the-text)).
 | Game Over conditions, the Netherlands (487:1205), point 2 | English "23th in Spanish League Division 2", French "division espagnole", German "23." and "Spanischen Liga 2", Spanish "2ª Liga Alemana"; only Italian is right | the Dutch second division, 21st place, in those four languages |
 | Spanish intro to the division (487:1100) | "Hay 216 equipos" | 26 |
 | Team 435's name (categories 3, 4 and 100003, ids 2435 and 3435) | "AL-Hyde" | "Al-Hyde" (Nexxus's report), in all five languages |
+| The youth academy's second comment on a candidate (700:8657-8663) | "He seems to have almost no potential" and so on: the Japanese rates star quality, so it can contradict the summary line ("a superb player with great potential"); 8659 says charisma in English and Spanish, is untranslated in French and Italian, and repeats 8657 in German | the same seven lines rate charisma ("almost no charisma" up to "superb charisma") in all five languages ([`EVS_PROCEDURES.md`](EVS_PROCEDURES.md#youth-lists-confirmed); Nexxus's report, 2026-11-10) |
 
 The point-2 fixes follow the Italian texts, which name each nation's
 own league and place. Category 487 has no `PRELOAD` copy, so its files
 grow inside their slots in `MES.PAC`; the name keeps its size, so the
 switch patches its copies in `PRELOAD/STATIONMES1`-`5.PAC` byte for
-byte, and lite needs no `--copies`. A `MES.PAC` target gets the fixes in
+byte, and lite needs no `--copies`. The charisma lines keep their file's
+size (the spare bytes are spaces after message 8663), and the switch
+patches their copies in `PRELOAD/TACTICSLARGE1`-`5.PAC` and
+`TACTICSMATCHLARGE1`-`5.PAC` too, since which copy the youth screen
+reads isn't known. Built 2026-11-10, not yet tested in PCSX2. A `MES.PAC` target gets the fixes in
 its own bytes. With `third-tier`, the tier's text rewrites point 2 again
 and finds the Spanish fix in place; with `real-names`, team 435 becomes
 Al-Sadd. The Japanese release is left alone.

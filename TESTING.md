@@ -206,6 +206,15 @@ list.
       condition") and
       describe how each dribbles in a match
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
+- [ ] The youth academy's second comment on a candidate, rewritten as
+      charisma by `--mod retail-text` (the disc is `LMAST-test-charisma.iso`,
+      built 2026-11-10): open a youth candidate's page and check that
+      the line under the summary reads "almost no charisma" up to
+      "superb charisma", with no cut-off or stray spaces, and say which
+      screen it was (the switch patches both preloaded copies, so
+      this also shows which copy the game reads); try another language
+      if you can
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#retail-text-fixes))
 - [ ] By eye: whether a raw line break in a message (`{lf}` in
       `mbb.py`'s output, 4,129 in the European languages) breaks the
       line on screen

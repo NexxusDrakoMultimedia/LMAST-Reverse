@@ -4400,6 +4400,61 @@ RETAIL_POINT2 = {
                "{lf}   en la 2ª Liga Holandesa 2 años consec. \n",
 }
 RETAIL_NAMES = ((435, "AL-Hyde", "Al-Hyde"),)      # (team, retail, fixed)
+# The youth academy's second comment on a candidate (700:8657-8663) rates his
+# star quality (the Japanese スター性), not his potential; the European texts say
+# "potential", so it can contradict the summary line (700:8500-8507). Only
+# 8659 kept the meaning (English, Spanish; French and Italian left it in
+# English, German repeats 8657). Each language: the retail texts, then the
+# fixed ones, for messages 8657-8663. The fixed ones together are no longer
+# than the retail ones: the file keeps its size, the slack goes after the
+# last message as spaces, so the PRELOAD copies take the same bytes.
+CHARISMA_IDS = range(8657, 8664)
+CHARISMA = {
+    1: (("He seems to have almost no potential.", "He seems to have little potential.",
+         "He seems to have some charisma.", "He seems to have average potential.",
+         "He seems to have good potential.", "He seems to have great potential.",
+         "He seems to have superb potential."),
+        ("He seems to have almost no charisma.", "He seems to have little charisma.",
+         "He seems to have some charisma.", "He seems to have average charisma.",
+         "He seems to have good charisma.", "He seems to have great charisma.",
+         "He seems to have superb charisma.")),
+    2: (("Il semble n'avoir aucun potentiel.", "Il semble avoir peu de potentiel.",
+         "He seems to have some charisma.", "Il semble avoir un potentiel moyen.",
+         "Il semble avoir un bon potentiel.", "Il semble avoir un très bon potentiel.",
+         "Il semble avoir un excellent potentiel."),
+        ("Il semble n'avoir aucun charisme.", "Il semble avoir peu de charisme.",
+         "Il semble avoir un certain charisme.", "Il semble avoir un charisme moyen.",
+         "Il semble avoir un bon charisme.", "Il semble avoir un très bon charisme.",
+         "Il semble avoir un excellent charisme.")),
+    3: (("Er scheint über fast kein Potenzial zu verfügen.", "Er scheint über wenig Potenzial zu verfügen.",
+         "Er scheint über fast kein Potenzial zu verfügen.",
+         "Er scheint über durchschnittliches Potenzial zu verfügen.",
+         "Er scheint über gutes Potenzial zu verfügen.", "Er scheint über großartiges Potenzial zu verfügen.",
+         "Er scheint über hervorragendes Potenzial zu verfügen."),
+        ("Er scheint über fast kein Charisma zu verfügen.", "Er scheint über wenig Charisma zu verfügen.",
+         "Er scheint über etwas Charisma zu verfügen.",
+         "Er scheint über durchschnittliches Charisma zu verfügen.",
+         "Er scheint über gutes Charisma zu verfügen.", "Er scheint über großartiges Charisma zu verfügen.",
+         "Er scheint über hervorragendes Charisma zu verfügen.")),
+    4: (("Sembra non avere alcun potenziale.", "Sembra avere poco potenziale.",
+         "He seems to have some charisma.", "Sembra avere un discreto potenziale.",
+         "Sembra avere un buon potenziale.", "Sembra avere un ottimo potenziale.",
+         "Sembra avere un eccellente potenziale."),
+        ("Sembra non avere alcun carisma.", "Sembra avere poco carisma.",
+         "Sembra avere un certo carisma.", "Sembra avere un discreto carisma.",
+         "Sembra avere un buon carisma.", "Sembra avere un ottimo carisma.",
+         "Sembra avere un eccellente carisma.")),
+    5: (("Aparentemente no tiene casi potencial.", "Aparentemente tiene poco potencial.",
+         "Aparentemente tiene algo de charisma.", "Aparentemente tiene un potencial normal.",
+         "Aparentemente tiene buen potencial.", "Aparentemente tiene gran potencial.",
+         "Aparentemente tiene un potencial soberbio."),
+        ("Aparentemente casi no tiene carisma.", "Aparentemente tiene poco carisma.",
+         "Aparentemente tiene algo de carisma.", "Aparentemente tiene un carisma normal.",
+         "Aparentemente tiene buen carisma.", "Aparentemente tiene gran carisma.",
+         "Aparentemente tiene un carisma soberbio.")),
+}
+CHARISMA_COPIES = {lang: ["PRELOAD/TACTICSLARGE%d.PAC" % lang, "PRELOAD/TACTICSMATCHLARGE%d.PAC" % lang]
+                   for lang in TT_LANGS}
 NAME_LISTS = ((3, 2000), (4, 3000), (100003, 2000))
 STATIONMES = ["PRELOAD/STATIONMES%d.PAC" % n for n in TT_LANGS]
 
@@ -4438,6 +4493,19 @@ def fix_retail_text(data):
             pack.set(cat, lang, rid, 0, tier_text_edit(text, lang, edit))
         except ValueError as e:
             errors.append("%d:%d language %d: %s" % (cat, rid, lang, e))
+    for lang, (old, new) in CHARISMA.items():
+        texts = [pack.text(700, lang, rid) for rid in CHARISMA_IDS]
+        if [t.rstrip() for t in texts] == list(new):
+            continue                                    # fixed before
+        if [t.rstrip() for t in texts] != list(old):
+            errors.append("700 language %d: messages 8657-8663 are not the retail text" % lang)
+            continue
+        slack = sum(len(t) for t in texts) - sum(len(t) for t in new)
+        if slack < 0:
+            errors.append("700 language %d: the fixed text is %d longer" % (lang, -slack))
+            continue
+        for rid, text in zip(CHARISMA_IDS, new):
+            pack.set(700, lang, rid, 0, text + (" " * slack if rid == CHARISMA_IDS[-1] else ""))
     out, _, _, build_errors = pack.build()
     if errors or build_errors:
         raise ValueError("retail-text: " + "; ".join(errors + build_errors))
@@ -4472,6 +4540,13 @@ def plan_retail_text(f, img, adopted=()):
             name = "%d_%d.mbb" % (cat, lang)
             (o, size), (n, nsize) = old_entries[name], new_entries[name]
             if data[o:o + size] != new[n:n + nsize]:
+                jobs += pack_copy_jobs(f, img, pack, name, "%s#%s" % (MES_FILE, name),
+                                       data[o:o + size], new[n:n + nsize], why)
+    for lang in CHARISMA:
+        name = "700_%d.mbb" % lang
+        (o, size), (n, nsize) = old_entries[name], new_entries[name]
+        if data[o:o + size] != new[n:n + nsize]:
+            for pack in CHARISMA_COPIES[lang]:
                 jobs += pack_copy_jobs(f, img, pack, name, "%s#%s" % (MES_FILE, name),
                                        data[o:o + size], new[n:n + nsize], why)
     return jobs, []
@@ -4912,9 +4987,10 @@ SWITCHES = (
      "Balance: training camps cost twice as much"),
     ("tour-costs", plan_tour_costs, [NEGO_FILE],
      "Balance: tours cost three times as much"),
-    ("retail-text", plan_retail_text, [MES_FILE] + STATIONMES,
+    ("retail-text", plan_retail_text, [MES_FILE] + STATIONMES + sum(CHARISMA_COPIES.values(), []),
      "Text: the Game Over conditions for Spain and the Netherlands name their own leagues, "
-     "the Spanish intro's 216 clubs are 26, and AL-Hyde is Al-Hyde"),
+     "the Spanish intro's 216 clubs are 26, AL-Hyde is Al-Hyde, and a youth candidate's "
+     "second comment rates charisma, not potential"),
     ("real-names", plan_real_names, [MES_FILE],
      "LMASTER full: every league, competition, club, stadium and national team under its "
      "real name of the era, in five languages; needs --copies"),
@@ -4960,7 +5036,8 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                 "overseas-bases": (target_overseas_bases, [SIM_FILE], LIST_PACKS),
                 # The retail fixes before the tier's text, which finds them in
                 # place; the real names last, over the tier's sentences too.
-                "retail-text": (target_retail_text, [MES_FILE], STATIONMES),
+                "retail-text": (target_retail_text, [MES_FILE],
+                                STATIONMES + sum(CHARISMA_COPIES.values(), [])),
                 "third-tier": (target_tier_text, [MES_FILE], []),
                 "real-names": (target_real_names, [MES_FILE], []),
                 "special-stadium": (target_special_stadium, [COMMON_FILE, STADIUM_DATA_FILE],
