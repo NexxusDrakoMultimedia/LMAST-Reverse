@@ -384,6 +384,19 @@ problems; the match bugs come after them.
       descriptor bytes for each club
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-kits),
       [`TEXMAP.md`](DOC/TEXMAP.md))
+- [ ] Decision for Nexxus's poll of players (2026-11-10): real 2006
+      kits forever, or random sponsors and suppliers every year. If the
+      latter, Nexxus wants the licensed leagues unlicensed, so the
+      Italian, Spanish and Dutch clubs (teams 123-244) get generated
+      kits that `random-sponsors` can add logos to. What that takes,
+      none of it started: real 2005-06 designs and colours for the 116
+      clubs in `UNIFORM_LIST.TBB` (their rows now hold placeholders: a
+      plain design 0 in default colours, checked for teams 123 and
+      124), the loader taking the generated path for them (where it
+      chooses between the licensed and generated path isn't found
+      yet), and `random-sponsors` no longer skipping them. The licensed
+      kit packs would stay unused
+      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-kits))
 - [ ] Idea (Nexxus, 2026-11-10): computer clubs' kits changing from
       season to season, as the sponsors do. The unlicensed clubs' kits
       come from `UNIFORM_LIST.TBB`'s designs and colours; a patch could
