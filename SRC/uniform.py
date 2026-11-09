@@ -32,6 +32,11 @@ See DOC/UNIFORM_FORMAT.md.
            at 0x3a0c80 + (side * 116 + n) * 0x12, the same bytes as PLPACK
            block 0 (DESCRIPTOR below, byte pairs outfield/keeper, as the
            viewer prints them at TESTPRG.REL 0x157f0-0x15bf0).
+  flag     the row's 3-bit flag decides licensed or generated: 2 (or 4) makes
+           CUniformBuilder::Init take the licensed pack, anything else the
+           generated kit (0x2c4ad8-0x2c4b0c). apply_kits() and kits.csv set
+           flag 1 and a generated kit for the 114 licensed clubs, for
+           patch_disc.py --mod random-sponsors.
   colours  96 palettes org_uni_A1 .. org_uni_L8 (12 letters x 8 shades);
            colour n is letter 'A' + n // 8, digit n % 8 + 1.
   clash    COLOR_TBL[a][b] (UniformList_CheckColor 0x2d3420).
@@ -728,6 +733,114 @@ def cmd_set(src, dst, args):
         out[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE] = pack(row, fields)
     with open(dst, "wb") as f:
         f.write(out)
+
+
+# --- unlicensing the licensed clubs (--mod random-sponsors) ---------------------
+# A club's kit is a licensed one only because its row's flag is 2
+# (DOC/UNIFORM_FORMAT.md#licensed-or-generated-the-flag). kits.csv gives each
+# licensed club a generated kit instead: the row's flag becomes 1 and its home
+# and away outfield kits come from the table. The keeper kits stay as the row has
+# them. Shirt design numbers are the atlas designs whose front panel has the
+# pattern (empirical, `DOC/UNIFORM_FORMAT.md#shirt-designs`): the texture's index
+# below 100 is shirt colour 1, 100-179 colour 2, 180 and up colour 3.
+KITS_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kits.csv")
+KIT_PATTERNS = {"plain": 15, "stripes": 10, "wide": 25, "fine": 91, "hoops": 7, "half": 33,
+                "band": 153, "panel": 97, "cross": 169, "sash": 118, "check": 90,
+                "quarters": 4}
+# Colour names as palette numbers: the palette entries nearest the usual shades
+# (A8 white, L8 black, A4 red, A5 maroon, I4 blue, I6 navy, H3 sky blue, C4 yellow,
+# E4 green, F6 dark green, B4 orange, J4 purple, F8 grey).
+KIT_COLOURS = {"white": 7, "black": 95, "red": 3, "darkred": 4, "blue": 67, "navy": 69,
+               "skyblue": 58, "yellow": 19, "green": 35, "darkgreen": 45, "orange": 11,
+               "purple": 75, "grey": 47, "gold": 11}
+LIGHT_COLOURS = ("white", "yellow", "skyblue", "orange", "gold", "grey")
+KIT_SHORTS_DESIGN, KIT_SOCKS_DESIGN = 0, 0      # plain enough (DOC/UNIFORM_FORMAT.md)
+UNLICENSED_FLAG = 1
+
+
+def read_kits(path=KITS_CSV):
+    """[{team, name, home: (pattern, c1, c2, c3, shorts, socks), away: ...}] from
+    kits.csv; ValueError for a name or pattern the tables don't know."""
+    import csv
+    kits = []
+    with open(path, encoding="utf-8", newline="") as f:
+        lines = [ln for ln in f if ln.strip() and not ln.lstrip().startswith("#")]
+    for r in csv.reader(lines):
+        if len(r) != 14:
+            raise ValueError("kits.csv: %d columns in %r" % (len(r), r[:2]))
+        kit = {"team": int(r[0]), "name": r[1]}
+        for side, cols in (("home", r[2:8]), ("away", r[8:14])):
+            pattern, c1, c2, c3, shorts, socks = cols
+            c3 = c3 or c2
+            if pattern not in KIT_PATTERNS:
+                raise ValueError("kits.csv: team %s: no pattern %r" % (r[0], pattern))
+            for c in (c1, c2, c3, shorts, socks):
+                if c not in KIT_COLOURS:
+                    raise ValueError("kits.csv: team %s: no colour %r" % (r[0], c))
+            kit[side] = (pattern, c1, c2, c3, shorts, socks)
+        kits.append(kit)
+    return kits
+
+
+def _number_colour(name):
+    """Shirt or shorts number colour that shows on a colour: black on a light
+    one, white on a dark one."""
+    return KIT_COLOURS["black" if name in LIGHT_COLOURS else "white"]
+
+
+def apply_kits(blob, kits=None):
+    """UNIFORM_LIST.TBB bytes with every club of `kits` unlicensed: flag 1, and
+    its home and away outfield kits as the table has them (the keeper kits,
+    collars, captain marks and the other side fields stay); None when the file
+    already has them. The file keeps its size."""
+    kits = read_kits() if kits is None else kits
+    off = struct.unpack_from("<I", blob, 0x10)[0]
+    _, doff, size, line = struct.unpack_from("<4sIII", blob, off)
+    if line != ROW_SIZE:
+        raise ValueError("UNIFORM_LIST.TBB: line size %d" % line)
+    base, n = off + doff, size // line
+    out = bytearray(blob)
+    for kit in kits:
+        i = kit["team"] - FIRST_TEAM
+        if not 0 <= i < n:
+            raise ValueError("kits.csv: no row for team %d" % kit["team"])
+        row = bytes(blob[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE])
+        fields = unpack(row)
+        if fields[0] != kit["team"]:
+            raise ValueError("row %d holds team %d, not %d" % (i, fields[0], kit["team"]))
+        set_row_field(fields, "flag", UNLICENSED_FLAG)
+        for side in ("home", "away"):
+            pattern, c1, c2, c3, shorts, socks = kit[side]
+            for name, value in (
+                    ("outfield.0", KIT_PATTERNS[pattern]), ("outfield.1", KIT_COLOURS[c1]),
+                    ("outfield.2", KIT_COLOURS[c2]), ("outfield.3", KIT_COLOURS[c3]),
+                    ("outfield.5", KIT_SHORTS_DESIGN), ("outfield.6", KIT_COLOURS[shorts]),
+                    ("outfield.7", KIT_COLOURS[shorts]), ("outfield.8", KIT_COLOURS[shorts]),
+                    ("outfield.9", KIT_SOCKS_DESIGN), ("outfield.10", KIT_COLOURS[socks]),
+                    ("outfield.11", KIT_COLOURS[socks]),
+                    ("outfield.12", _number_colour(c1)), ("outfield.13", _number_colour(shorts)),
+                    ("side.3", 0), ("side.4", 1)):
+                set_row_field(fields, "%s.%s" % (side, name), value)
+        out[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE] = pack(row, fields)
+    return None if bytes(out) == bytes(blob) else bytes(out)
+
+
+def keep_kit_edits(old, mine, kits=None):
+    """UNIFORM_LIST.TBB bytes for a target file `mine` (the editor's Kits tab)
+    that --mod random-sponsors also edits: `old` is the file the target was made
+    from. A row the target changed from `old` stays the target's; every other row
+    is the switch's."""
+    new = apply_kits(old, kits) or old
+    off = struct.unpack_from("<I", old, 0x10)[0]
+    _, doff, size, line = struct.unpack_from("<4sIII", old, off)
+    if len(old) != len(mine) or len(old) != len(new):
+        raise ValueError("UNIFORM_LIST.TBB: the target's table differs in size")
+    base, out = off + doff, bytearray(mine)
+    for i in range(size // line):
+        a, b = base + i * line, base + (i + 1) * line
+        if mine[a:b] == old[a:b]:
+            out[a:b] = new[a:b]
+    return bytes(out)
 
 
 def cmd_gk(dat, designs):

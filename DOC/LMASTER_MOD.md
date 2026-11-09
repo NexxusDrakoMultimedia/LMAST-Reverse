@@ -460,7 +460,7 @@ clubs' kit requests carry sponsor 0 and supplier 0, which show nothing
 
 `pwkTeam_GetUnif` (`0x26e9d8`) writes 0 to `PlUnif +4` and `+5` at
 `0x26ec1c` and `0x26ec24`. The switch turns the first into a call to
-code in the LMASTER code segment (`0xf8300`, 36 words; the segment is
+code in the LMASTER code segment (`0xf8300`, 32 words; the segment is
 the third tier's too, and the switch brings its program header) and the
 second into a nop. The code gets the season from `pwkGen_Keika`
 (`0x244430`, the season's first year less 2006, so it changes when the
@@ -469,10 +469,24 @@ season starts) and writes sponsor 1 + *h*₁ mod 199 and supplier 1 +
 (`sponsor_hash` in `patch_disc.py` is the same arithmetic). Over the
 540 clubs and 20 seasons every sponsor 1–199 and supplier 1–6 comes up
 (37–49 times each for the sponsors), and no club keeps both for the
-next season. Licensed clubs (team ids 123–244) keep 0: their kits carry
-real sponsors in the texture. Not done: the Japanese release (the code
-is PAL's), and which sponsor and supplier numbers have a logo on a kit
-is assumed from Nexxus's report that they all do.
+next season.
+
+**The licensed clubs.** The 116 Italian, Spanish and Dutch clubs have
+real kit textures with their sponsor in them, so a sponsor could not be
+added to those kits. A poll of Nexxus's players (4-0 for random sponsors
+over real 2006 kits, 2026-11-10) decided it, so the switch also
+unlicenses them: it sets flag 1 in 114 of their `UNIFORM_LIST.TBB` rows
+(Siena and Bologna already have it) and writes each club's home and away
+outfield kit from [`SRC/kits.csv`](../SRC/kits.csv), a pattern, three shirt
+colours, shorts and socks. The keeper kits, collars and captain marks
+stay as the rows have them. The table is written from memory of the
+2005-06 kits with the 12 patterns of `uniform.py`'s `KIT_PATTERNS`, so
+the stripes, halves and bands are approximate; corrections go in the
+CSV. The file's copies in `PRELOAD/SIMFILE0`-`6.PAC` change too, and a
+`UNIFORM_LIST.TBB` target (the editor's Kits tab) keeps its own edited
+rows. Not done: the Japanese release (the code is PAL's), the keeper
+kits, and which sponsor and supplier numbers have a logo on a kit is
+assumed from Nexxus's report that they all do.
 
 ## Real names
 

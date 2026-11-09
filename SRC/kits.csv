@@ -1,0 +1,124 @@
+# Kits for the 114 licensed clubs (teams 123-244 but 125, 135, 140, 146, 148, 153, 156, 160),
+# for --mod random-sponsors, which unlicenses them: each club gets a generated kit from this
+# table, so it can show a sponsor and a supplier. Written from memory of the 2005-06 kits
+# and not checked against pictures, so corrections are welcome (DOC/UNIFORM_FORMAT.md).
+#
+# team,name,home_pattern,home_c1,home_c2,home_c3,home_shorts,home_socks,away_pattern,away_c1,away_c2,away_c3,away_shorts,away_socks
+# Patterns (uniform.py KIT_PATTERNS): plain, stripes, wide, fine, hoops, half, band, panel,
+# cross, sash, check, quarters. c1 is the shirt, c2 the pattern, c3 the trim (blank = c2).
+# Colours (KIT_COLOURS): white black red darkred blue navy skyblue yellow green darkgreen
+# orange purple grey gold.
+123,AC Milan,stripes,red,black,,black,black,plain,white,red,,white,white
+124,Ascoli,stripes,white,black,,black,black,plain,black,white,,black,black
+126,Chievo Verona,plain,yellow,blue,,blue,yellow,plain,blue,yellow,,blue,blue
+127,Empoli,plain,blue,white,,blue,blue,plain,white,blue,,white,white
+128,Fiorentina,plain,purple,white,,purple,purple,plain,white,purple,,white,white
+129,Internazionale,stripes,blue,black,,black,black,plain,white,blue,black,white,white
+130,Juventus,stripes,white,black,,white,white,plain,black,white,,black,black
+131,Lazio,plain,skyblue,white,,white,skyblue,plain,white,skyblue,,white,white
+132,Lecce,stripes,yellow,red,,red,red,plain,white,red,yellow,white,white
+133,Livorno,plain,darkred,white,,darkred,darkred,plain,white,darkred,,white,white
+134,Messina,stripes,yellow,red,,red,yellow,plain,white,red,,white,white
+136,Parma,cross,white,yellow,blue,white,white,plain,blue,white,yellow,blue,blue
+137,Reggina,plain,darkred,white,,darkred,darkred,plain,white,darkred,,white,white
+138,Roma,plain,darkred,yellow,,white,darkred,plain,white,darkred,orange,white,white
+139,Sampdoria,band,blue,white,red,white,blue,plain,white,blue,red,white,white
+141,Treviso,stripes,white,blue,,blue,white,plain,blue,white,,blue,blue
+142,Udinese,stripes,white,black,,black,white,plain,black,white,,black,black
+143,AlbinoLeffe,stripes,skyblue,white,,skyblue,skyblue,plain,white,skyblue,,white,white
+144,Arezzo,plain,darkred,white,,darkred,darkred,plain,white,darkred,,white,white
+145,Atalanta,stripes,blue,black,,black,black,plain,white,blue,black,white,white
+147,Bari,plain,white,red,,white,white,plain,red,white,,red,red
+149,Brescia,plain,blue,white,,blue,blue,plain,white,blue,,white,white
+150,Catania,stripes,red,skyblue,,blue,red,plain,white,red,skyblue,white,white
+151,Catanzaro,stripes,yellow,red,,red,yellow,plain,white,red,yellow,white,white
+152,Cesena,plain,white,black,,black,white,plain,black,white,,black,black
+154,Crotone,stripes,red,blue,,blue,red,plain,white,red,blue,white,white
+155,Hellas Verona,plain,yellow,blue,,blue,yellow,plain,blue,yellow,,blue,blue
+157,Modena,plain,yellow,blue,,blue,yellow,plain,blue,yellow,,blue,blue
+158,Pescara,stripes,white,skyblue,,skyblue,white,plain,skyblue,white,,skyblue,skyblue
+159,Piacenza,stripes,red,white,,white,red,plain,white,red,,white,white
+161,Ternana,stripes,red,green,,red,red,plain,white,red,green,white,white
+162,Torino,plain,darkred,white,,darkred,darkred,plain,white,darkred,,white,white
+163,Triestina,plain,darkred,white,,white,darkred,plain,white,darkred,,white,white
+164,Vicenza,plain,red,white,,white,red,plain,white,red,,white,white
+165,Athletic Club,stripes,red,white,,black,black,plain,navy,white,,navy,navy
+166,Atletico Madrid,stripes,red,white,,navy,red,plain,navy,red,,navy,navy
+167,FC Barcelona,stripes,blue,darkred,,navy,navy,plain,yellow,darkred,,yellow,yellow
+168,Cadiz,plain,yellow,blue,,blue,yellow,plain,blue,yellow,,blue,blue
+169,Deportivo,stripes,white,blue,,white,white,plain,white,blue,,white,white
+170,Alaves,stripes,white,blue,,blue,blue,plain,yellow,blue,,blue,blue
+171,Getafe,plain,blue,white,,blue,blue,plain,white,blue,,white,white
+172,Malaga,stripes,white,skyblue,,navy,white,plain,blue,white,,blue,blue
+173,Osasuna,plain,red,navy,,navy,red,plain,navy,red,,navy,navy
+174,Celta,plain,skyblue,white,,white,skyblue,plain,white,skyblue,,white,white
+175,Racing Santander,plain,green,white,,white,green,plain,white,green,,white,white
+176,Espanyol,stripes,white,blue,,blue,blue,plain,red,blue,,red,red
+177,Mallorca,plain,red,black,,black,red,plain,white,red,,white,white
+178,Betis,stripes,white,green,,white,green,plain,green,white,,green,green
+179,Real Madrid,plain,white,navy,,white,white,plain,navy,white,,navy,navy
+180,Real Sociedad,stripes,white,blue,,blue,white,plain,red,blue,,red,red
+181,Zaragoza,plain,white,blue,,blue,white,plain,skyblue,white,,skyblue,skyblue
+182,Sevilla,plain,white,red,,white,white,plain,red,white,,red,red
+183,Valencia,plain,white,black,,black,black,plain,black,orange,,black,black
+184,Villarreal,plain,yellow,blue,,blue,yellow,plain,blue,yellow,,blue,blue
+185,Albacete,plain,white,black,,white,white,plain,red,white,,red,red
+186,Almeria,stripes,red,white,,white,red,plain,white,red,,white,white
+187,Ciudad Murcia,plain,red,white,,red,red,plain,white,red,,white,white
+188,Castellon,stripes,white,black,,black,black,plain,black,white,,black,black
+189,Eibar,stripes,blue,darkred,,blue,darkred,plain,white,blue,,white,white
+190,El Ejido,plain,orange,blue,,blue,orange,plain,blue,orange,,blue,blue
+191,Elche,plain,white,green,,white,white,plain,green,white,,green,green
+192,Hercules,stripes,blue,white,,blue,blue,plain,white,blue,,white,white
+193,Levante,stripes,blue,darkred,,blue,blue,plain,white,blue,,white,white
+194,Lorca Deportiva,plain,white,blue,,white,white,plain,blue,white,,blue,blue
+195,Malaga B,stripes,white,skyblue,,navy,white,plain,blue,white,,blue,blue
+196,Numancia,plain,red,white,,red,red,plain,white,red,,white,white
+197,Racing Ferrol,stripes,green,white,,green,green,plain,white,green,,white,white
+198,Real Madrid Castilla,plain,white,navy,,white,white,plain,black,white,,black,black
+199,Real Murcia,plain,red,blue,,blue,red,plain,white,red,,white,white
+200,Real Valladolid,plain,white,purple,,purple,purple,plain,purple,white,,purple,purple
+201,Recreativo,stripes,white,blue,,white,white,plain,blue,white,,blue,blue
+202,Sporting Gijon,stripes,red,white,,blue,red,plain,blue,white,,blue,blue
+203,Gimnastic,plain,darkred,white,,white,darkred,plain,white,darkred,,white,white
+204,Tenerife,plain,white,blue,,blue,white,plain,blue,white,,blue,blue
+205,Lleida,plain,blue,white,,blue,blue,plain,white,blue,,white,white
+206,Xerez,stripes,white,blue,,blue,white,plain,blue,white,,blue,blue
+207,ADO Den Haag,plain,yellow,green,,green,yellow,plain,green,yellow,,green,green
+208,Ajax,panel,white,red,,white,white,plain,red,white,,red,red
+209,AZ Alkmaar,plain,red,white,,red,red,plain,white,red,,white,white
+210,FC Groningen,plain,green,white,,white,green,plain,white,green,,white,white
+211,FC Twente,plain,red,white,,white,red,plain,white,red,,white,white
+212,Feyenoord,half,red,white,,black,black,plain,black,white,,black,black
+213,Heracles,stripes,white,black,,black,black,plain,red,white,,red,red
+214,NAC Breda,plain,yellow,black,,black,yellow,plain,black,yellow,,black,black
+215,NEC Nijmegen,plain,red,green,black,black,red,plain,white,red,,white,white
+216,PSV Eindhoven,stripes,red,white,,black,black,plain,blue,red,,blue,blue
+217,RBC Roosendaal,plain,white,red,,white,white,plain,red,white,,red,red
+218,RKC Waalwijk,plain,yellow,blue,,blue,yellow,plain,blue,yellow,,blue,blue
+219,Roda JC,stripes,yellow,black,,black,black,plain,black,yellow,,black,black
+220,SC Heerenveen,stripes,blue,white,,white,blue,plain,white,blue,,white,white
+221,Sparta Rotterdam,plain,red,white,,black,red,plain,white,red,,white,white
+222,FC Utrecht,plain,red,white,,white,red,plain,white,red,,white,white
+223,Vitesse,stripes,yellow,black,,black,yellow,plain,black,yellow,,black,black
+224,Willem II,stripes,red,blue,,white,red,plain,white,red,,white,white
+225,AGOVV,plain,red,white,,red,red,plain,white,red,,white,white
+226,Cambuur,plain,yellow,blue,,blue,yellow,plain,blue,yellow,,blue,blue
+227,De Graafschap,plain,blue,white,,blue,blue,plain,white,blue,,white,white
+228,Dordrecht,plain,green,white,,white,green,plain,white,green,,white,white
+229,Eindhoven,plain,blue,white,,blue,blue,plain,white,blue,,white,white
+230,Emmen,plain,red,white,,red,red,plain,white,red,,white,white
+231,Excelsior,stripes,red,black,,black,red,plain,black,red,,black,black
+232,FC Den Bosch,plain,blue,white,,blue,blue,plain,white,blue,,white,white
+233,Omniworld,plain,red,white,,white,red,plain,white,red,,white,white
+234,Fortuna Sittard,plain,yellow,green,,green,yellow,plain,green,yellow,,green,green
+235,Go Ahead Eagles,stripes,red,yellow,,red,red,plain,yellow,red,,yellow,yellow
+236,Haarlem,plain,blue,white,,blue,blue,plain,white,blue,,white,white
+237,Helmond,plain,white,red,,white,white,plain,red,white,,red,red
+238,MVV Maastricht,stripes,red,yellow,,red,red,plain,yellow,red,,yellow,yellow
+239,Telstar,plain,white,black,,black,white,plain,black,white,,black,black
+240,TOP Oss,plain,red,white,,red,red,plain,white,red,,white,white
+241,Veendam,plain,red,white,,red,red,plain,white,red,,white,white
+242,Venlo,plain,yellow,black,,black,yellow,plain,black,yellow,,black,black
+243,Volendam,plain,orange,black,,black,orange,plain,black,orange,,black,black
+244,Zwolle,plain,blue,white,,blue,blue,plain,white,blue,,white,white

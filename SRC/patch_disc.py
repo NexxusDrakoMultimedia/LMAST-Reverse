@@ -2611,14 +2611,17 @@ def target_moving_boards(file, data, old):
 
 # random-sponsors: the computer clubs' kits get a main sponsor and a kit
 # supplier, drawn again every season (LMASTER full and max, Nexxus's request,
-# 2026-11-10; DOC/UNIFORM_FORMAT.md). pwkTeam_GetUnif (0x26e9d8) gives only
+# 2026-11-10, after a poll of players that went 4-0 for it; DOC/UNIFORM_FORMAT.md).
+# pwkTeam_GetUnif (0x26e9d8) gives only
 # your club a sponsor (PlUnif +4) and a supplier (+5); every other club it
 # sets to 0, which shows nothing. Its two `sb $zero` at 0x26ec1c and 0x26ec24
 # become a call to code in the LMASTER code segment, which writes
 # sponsor 1 + h1 mod 199 and supplier 1 + h2 mod 6 for the club (team id,
 # $s1) and the season (pwkGen_Keika, 0x244430: the first year of the season
-# less 2006, so it changes at the season's start). Licensed clubs
-# (123-244) keep 0: their kits carry real sponsors in the texture.
+# less 2006, so it changes at the season's start). A licensed club's kit
+# carries its sponsor in the texture, so the switch also unlicenses the 114
+# clubs of SRC/kits.csv: their UNIFORM_LIST.TBB rows get flag 1 and a
+# generated kit (uniform.apply_kits).
 SPONSOR_CAVE, SPONSOR_HOOK, KEIKA = 0xF8000 + 0x300, 0x26EC1C, 0x244430   # CAVE + 0x300
 SPONSOR_KINDS, SUPPLIER_KINDS = 199, 6          # the loader's limits are 200 and 7
 
@@ -2633,8 +2636,6 @@ def sponsor_hash(team, season):
 def sponsor_cave():
     """The code at SPONSOR_CAVE, as words."""
     body = [addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(V1, 8, SP),
-            addiu(T0, S1, -123), sltiu(T0, T0, 122),      # a licensed club: leave 0
-            None, NOP,                                    # bnez, to the restore below
             jal(KEIKA), NOP,
             lui(T0, 0x9E37), ori(T0, T0, 0x79B1), mult3(T1, S1, T0),
             lui(T0, 0x85EB), ori(T0, T0, 0xCA6B), mult3(T2, V0, T0),
@@ -2645,25 +2646,46 @@ def sponsor_cave():
             srl(T2, T2, 16), addiu(T0, ZERO, SUPPLIER_KINDS), divu(T2, T0), mfhi(T2),
             addiu(T2, T2, 1), sb(T2, 5, S2)]              # +5: the supplier
     body += [ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20), jr(RA), NOP]
-    body[5] = bnez(T0, len(body) - 5 - 5 - 1)             # to the first of the five restore words
     return body
+
+
+UNIFORM_FILE, UNIFORM_ENTRY = "PLAYER/UNIFORM_LIST.TBB", "uniform_list.tbb"
+UNIFORM_PACKS = ["PRELOAD/SIMFILE%d.PAC" % n for n in range(7)]
 
 
 def plan_random_sponsors(f, img, adopted=()):
     """Jobs for --mod random-sponsors: the code segment (shared with the
-    third tier), the sponsors' code in it, and the two words of
-    pwkTeam_GetUnif that call it."""
+    third tier), the sponsors' code in it, the two words of pwkTeam_GetUnif
+    that call it, and UNIFORM_LIST.TBB with the licensed clubs' generated
+    kits (and its SIMFILE copies)."""
+    import uniform
     if img.port is not None:
         return [], ["note: random-sponsors: the code is PAL's; the Japanese release is left alone"]
     new = words(*sponsor_cave())
     off = CAVE_FILE + SPONSOR_CAVE - CAVE
     held = read_at(f, img, SLES_FILE, off, len(new))
-    return word_jobs(f, img, "random-sponsors", code_segment_words(f, img) + [
+    jobs, notes = word_jobs(f, img, "random-sponsors", code_segment_words(f, img) + [
         (SLES_FILE, off, held if held != new else bytes(len(new)), new,
          "%s 0x%x (the sponsors' code at 0x%x)" % (SLES_FILE, off, SPONSOR_CAVE)),
         sles_word(SPONSOR_HOOK, sb(ZERO, 5, S2), jal(SPONSOR_CAVE),
                   "pwkTeam_GetUnif: call the sponsors' code, not supplier 0"),
         sles_word(SPONSOR_HOOK + 8, sb(ZERO, 4, S2), NOP, "pwkTeam_GetUnif: not sponsor 0")])
+    j, n = file_jobs(f, img, UNIFORM_FILE, uniform.apply_kits, UNIFORM_PACKS, UNIFORM_ENTRY,
+                     "random-sponsors: the licensed clubs' kits generated", adopted,
+                     "has the generated kits")
+    return jobs + j, notes + n
+
+
+def target_random_sponsors(file, data, old):
+    """A UNIFORM_LIST.TBB target (the editor's Kits tab) with the generated
+    kits in the rows it left as `old` has them."""
+    import uniform
+    if norm(file) != norm(UNIFORM_FILE):
+        return data
+    try:
+        return uniform.keep_kit_edits(old, data)
+    except ValueError:
+        return data
 
 
 def target_build_stadium(edit, file, data, old):
@@ -5087,9 +5109,10 @@ SWITCHES = (
     ("moving-boards", plan_moving_boards, [BUILD_STADIUM_FILE],
      "Club: the moving advert board bought at an earlier ground shows at the last ground "
      "too (its boards are the plain ones, as at the level before, not the LCD set)"),
-    ("random-sponsors", plan_random_sponsors, [SLES_FILE],
-     "Graphics: computer clubs' kits show a main sponsor and a kit supplier, drawn again "
-     "every season (LMASTER full and max)"),
+    ("random-sponsors", plan_random_sponsors, [SLES_FILE, UNIFORM_FILE] + UNIFORM_PACKS,
+     "Graphics: every club's kit shows a main sponsor and a kit supplier, drawn again "
+     "every season; the Italian, Spanish and Dutch clubs lose their licensed kits for "
+     "generated ones (LMASTER full and max)"),
     ("realism", plan_realism, REALISM_FILES,
      "Graphics: LMAST Realism's crests and match pictures in the texture packs, and a "
      "2 px transparent edge on the licensed crests; needs --realism <pack folder>, "
@@ -5130,10 +5153,11 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                                  [SIM_FILE, STADIUM_DATA_FILE, BUILD_STADIUM_FILE],
                                  LIST_PACKS + STADIUM_DATA_PACKS),
                 "sponsor-boards": (target_sponsor_boards, [BUILD_STADIUM_FILE], []),
-                "moving-boards": (target_moving_boards, [BUILD_STADIUM_FILE], [])}
+                "moving-boards": (target_moving_boards, [BUILD_STADIUM_FILE], []),
+                "random-sponsors": (target_random_sponsors, [UNIFORM_FILE], UNIFORM_PACKS)}
 # Hooks that also take the file as DAT holds it (or the image, without
 # --dat), to keep the target's own edits row by row.
-HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards")
+HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards", "random-sponsors")
 
 # One switch per feature: parts that need each other are one switch
 # (DOC/LMASTER_MOD.md, the switch levels). Switches that need another switch, that

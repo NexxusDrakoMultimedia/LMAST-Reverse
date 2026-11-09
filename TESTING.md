@@ -228,15 +228,18 @@ list.
       slot; I read the ball carrier's and the team's AI state from the
       state's memory
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md))
-- [ ] Computer clubs' sponsors and suppliers (`--mod random-sponsors`,
-      the disc is `LMAST-test-sponsors.iso`, built 2026-11-10; PCSX2
-      treats it as a new game, with its own settings and states): start a
-      career, watch a match against an unlicensed club, and check that
-      its kit shows a sponsor and a maker logo, that two different clubs
-      differ, and that the logo is a real one in every case (no blank,
-      broken or oversized logo, nothing doubled on an Italian, Spanish
-      or Dutch club's kit). After a season, check that they changed. Note
-      any club whose logo looks wrong, so I can find its number
+- [ ] Computer clubs' sponsors, suppliers and the unlicensed kits
+      (`--mod random-sponsors`, the disc is `LMAST-test-sponsors.iso`,
+      built 2026-11-10 and again with the kits; PCSX2 treats it as a new
+      game, with its own settings and states): start a career, watch
+      matches against clubs of other leagues, and check that each kit
+      shows a sponsor and a maker logo, that two different clubs differ,
+      and that the logo is a real one in every case (no blank, broken or
+      oversized logo). Then look at Italian, Spanish and Dutch clubs
+      (Milan, Barcelona, Ajax and some smaller ones): the kit is now a
+      generated one in the club's colours, from `SRC/kits.csv`, so say
+      which clubs look wrong (wrong colours, wrong pattern) and what they
+      should be. After a season, check that the sponsors changed
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
 - [ ] The moving advert board at the last ground (`--mod moving-boards`,
       the disc is `LMAST-test-boards.iso`, built 2026-11-10): in a

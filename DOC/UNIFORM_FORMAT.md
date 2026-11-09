@@ -132,6 +132,41 @@ limits, and every colour is below 96, except team 427's away outfield
 number colours (fields 12 and 13), which are 97 (the game resets them to 0).
 `uniform.py info` reports that one kit with `!!`. Collars use 0–7.
 
+### Shirt designs and the three shirt colours
+
+**Tested in PCSX2** (Nexxus's screenshots of the Uniform Viewer,
+2026-11-10, on `LMAST-test-kits.iso`, shirt colours A4 red, E4 green,
+I4 blue): in designs 0, 2 and 3 colour 1 fills the body, colour 2 is
+the pattern (design 3's checks, design 2's sleeve) and colour 3 the
+trim (the blue edges, and design 0's centre bar split green and blue).
+**Empirical:** `EDIT_UNIFORM_ORG_SHT` textures are 256 × 256 with 8-bit
+indices read through the default grey palette, and the indices fall in
+three bands that match: up to 68 and shading below 100 is colour 1, 119
+to 140 (about 100–179) colour 2, and 180 and up (to 206) colour 3. The
+lower half of a texture holds the two torso panels, the right one the
+front (design 0's bar is on it). Mapping each band to a flat colour gives
+a front-panel picture of every design.
+
+Some designs, by what the front panel shows (empirical, from those
+pictures; only 0, 2 and 3 are checked in the viewer):
+
+| Design | Front panel |
+|---|---|
+| 12, 13, 15, 76–80 | plain, the shirt in colour 1 (15 has no trim lines) |
+| 10 | vertical stripes, 7 across; 25 three wide bars; 26 two; 44 six; 60 six broad; 91 many narrow; 50 and 66 pinstripes |
+| 7 | wide hoops; 73 three broad hoops; 72, 75, 155, 182 hoop variants; 70 thin hoops |
+| 33 | right half in colour 2; 47 a half with a yoke; 4 and 135 quarters |
+| 1 | a diagonal half; 118 a broad diagonal band; 19, 29, 116 sashes |
+| 153, 154, 179, 197 | a band across the chest; 114 a band near the top |
+| 97, 125, 152, 195 | a broad centre panel; 0, 11 a narrow centre bar |
+| 3, 24, 90, 138, 139 | checks |
+| 45, 85, 115, 170 | V shapes; 134 and 169 a cross |
+
+`kits.csv` uses 12 of these (`KIT_PATTERNS` in `uniform.py`). The 18
+sock designs are nearly all plain in colour 1 (design 0 has only a few
+marks), and most of the 61 shorts designs are plain with a mark at the
+side; the table uses design 0 of both.
+
 ### Side fields
 
 | Side field | Bits | Contents |
