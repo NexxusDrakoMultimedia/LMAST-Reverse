@@ -344,11 +344,11 @@ problems; the match bugs come after them.
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#still-unknown))
 - [ ] Bug: a youth candidate's comments can contradict themselves (a
       great player with a lot of potential, then almost none). Found in
-      the texts: the second line rates star quality (スター性) but is
-      translated "potential", and message 8659 is untranslated
-      ("charisma") or wrong (German). Left: find which values the two
-      lines read, reword 8657–8663 and 8659 in `--mod retail-text`, test
-      in PCSX2
+      the texts: the second line rates star quality or charisma
+      (スター性) but 8657, 8658 and 8660–8663 say "potential"; only
+      8659 says charisma, and German 8659 is wrong. Left: reword them
+      as charisma in `--mod retail-text` (all five languages), test in
+      PCSX2, and find which values the two lines read
       ([`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md#youth-lists-confirmed))
 - [ ] Idea: every player shown with a first name and a surname
       (`S.Aguero` as Sergio Aguero, `Cahwan` as Oliver Kahn, `L.Ginster`

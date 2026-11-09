@@ -199,11 +199,14 @@ not his growth. All five European texts translate it as "potential"
 ("He seems to have almost no potential"), so a candidate whose summary
 says "a superb player with great potential" (8506) can be followed by
 "He seems to have almost no potential" (8657) from a different value.
-Message 8659 was never translated: English, French and Italian say "He
-seems to have some charisma" and Spanish "algo de charisma", and
-German repeats "fast kein Potenzial" (almost no potential), which is
-8657's meaning. Nexxus's report, 2026-11-10; the texts are checked, the
-two lines' values and the screen's name in the game are not.
+Star quality is charisma, so the intent is a charisma rating, and
+message 8659 is the one line that kept it: English, French and Italian
+say "He seems to have some charisma" (the last two untranslated) and
+Spanish "algo de charisma". German 8659 repeats "fast kein Potenzial"
+(almost no potential), which is 8657's meaning, so it is wrong
+whichever reading is right. Nexxus's report, 2026-11-10 (the intent
+as charisma is Nexxus's reading); the texts are checked, the two
+lines' values and the screen's name in the game are not.
 
 **Coach lists (confirmed).** `pwkTeam_UpdateCoachCandidates(PlClistTerm*,
 int*)` (`0x261d10`) walks 3,000 staff records (`getMbase`, ids from
