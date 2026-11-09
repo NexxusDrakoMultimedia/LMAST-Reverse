@@ -33,7 +33,7 @@ level:
 | `restorations` | injury-lines | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
-| `graphics` | realism ([below](#lmast-realism-on-the-disc)), random-sponsors ([below](#random-sponsors)) | – | yes | yes |
+| `graphics` | realism ([below](#lmast-realism-on-the-disc)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -451,10 +451,16 @@ Other retail typos seen while making the name table, not fixed:
 
 ## Random sponsors
 
-`--mod random-sponsors` (group `graphics`, in LMASTER full and max;
-built 2026-11-10, not yet tested in PCSX2; Nexxus's request) gives the
-computer clubs' kits a main sponsor and a kit supplier, drawn again
-every season. In the retail game only your club has them: the other
+`--mod random-sponsors` (group `test-tools`, in no edition; built
+2026-11-10; Nexxus's request) is meant to give the computer clubs' kits
+a main sponsor and a kit supplier, drawn again every season. **It does
+not work yet:** tested in PCSX2 on four builds (Nexxus, 2026-11-10), the
+numbers reach the match but a computer club's kit shows no logo, while
+your club's and the rival's do. It is out of LMASTER full and max until
+it does, because it also unlicenses 114 clubs. What it tried: the
+supplier range (206–212), the side fields (field 3 is the front number,
+which appeared on the chest) and the builder's team test (`0x2c4ab8`),
+none of which drew a logo. What gates the logos is not found. In the retail game only your club has them: the other
 clubs' kit requests carry sponsor 0 and supplier 0, which show nothing
 (Nexxus's report, 2026-11-10; [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)).
 

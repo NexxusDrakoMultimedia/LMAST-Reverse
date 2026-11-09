@@ -396,10 +396,14 @@ problems; the match bugs come after them.
       loader take the generated path, found 2026-11-10), and
       `random-sponsors` no longer skipping them. The poll went 4-0 for
       random sponsors (Nexxus, 2026-11-10), so `--mod random-sponsors`
-      now does all of it: `SRC/kits.csv` holds a kit for each of the
+      does all of it: `SRC/kits.csv` holds a kit for each of the
       114 clubs, written from memory with 12 shirt patterns, and the
-      licensed packs stay unused. Left: test in PCSX2
-      ([`TESTING.md`](TESTING.md)), correct the kits and colours club
+      licensed packs stay unused. **Blocked:** on four test builds a
+      computer club's kit shows no sponsor or supplier logo although
+      its match record holds them (your club's and the rival's do show
+      theirs), so the switch is out of the editions. Left: find what
+      lets a kit draw its logos (the supplier range, the side fields
+      and the builder's team test did not), then correct the kits club
       by club, check the other shirt designs in the viewer, the keeper
       kits (still the rows' own) and the Japanese release
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-or-generated-the-flag))
