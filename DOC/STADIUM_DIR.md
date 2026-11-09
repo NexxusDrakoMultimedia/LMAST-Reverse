@@ -144,8 +144,11 @@ adidas board only at computer clubs' grounds outside Spain.
 
 Nexxus saw the rotating electric boards missing at the player's ground
 (they show at the computer clubs' grounds) and appearing only after the
-LCD boards (2026-11-10). The code above doesn't explain it yet: it
-would at a level-4 ground, and Nexxus's ground level isn't known.
+LCD boards (2026-11-10), mostly at a level-4 ground. That fits the
+code: the seven `ho04a` rows have boards 43 and 52 off and the LCD set
+(46–50, 55–59) on, so style 1 has nothing to act on. Levels 1–3 and
+`ho03a` have the 42–45 and 51–54 boards on and the LCD set off, so there
+style 1 and style 2 each change something. Not yet seen in the game.
 
 The value names (DAY/NIGHT, FINE…SNOW, SPRING…WINTER, ENGLAND…HOLLAND,
 JAN…DEC) are the viewer's lists at `GAMEPRG.REL 0x24d4c8`–`0x24d554`. Its

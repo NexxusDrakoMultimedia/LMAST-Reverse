@@ -341,9 +341,10 @@ problems; the match bugs come after them.
       slot 4) don't show in your own stadium, only the LCD ones, though
       they show at computer clubs' grounds. Known so far: the moving
       board needs boards 43 and 52 on in the ground's row, and it wins
-      over the LCD style when both are built. Left: which ground level
-      it happens at, what a computer club's ground does differently,
-      and the fix
+      over the LCD style when both are built. Mostly a level-4 ground
+      (Nexxus, 2026-11-10), whose rows have boards 43 and 52 off and the
+      LCD set on. Left: the fix, which must keep or change those
+      grounds' look for computer clubs too
       ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#the-request-in-a-match))
 - [ ] Bug: a youth candidate's comments can contradict themselves (a
       great player with a lot of potential, then almost none). Found in
