@@ -2628,7 +2628,14 @@ SPONSOR_CAVE, SPONSOR_HOOK, KEIKA = 0xF8000 + 0x300, 0x26EC1C, 0x244430   # CAVE
 # seven suppliers, Binnonn to Doclla), seen in a PCSX2 state (2026-11-10). The
 # first draft wrote supplier 1-6, a sponsor's record, and nothing showed.
 SPONSOR_KINDS, SUPPLIER_KINDS, SUPPLIER_FIRST = 199, 7, 206
-SIDE_LOGO_BYTES = (7, 9, 11, 0x2b, 0x2d, 0x2f)   # PlUnif +6 (home) and +0x2a (away), side fields 1, 3, 5
+# Which kits get the full treatment: CUniformBuilder::Init (0x2c48b0) sets its flag $s5
+# (passed on to the loader) for team 1 (yours), team 2 (the rival) and the VS teams
+# 0x21f-0x22e only (`addiu $v0, $v1, -1; sltiu $v0, $v0, 2` at 0x2c4ab4-0x2c4ab8). Your club
+# and the rival show logos and a computer club (Betis, PCSX2 states of 2026-11-10) shows
+# none although its record holds a sponsor and a supplier, so the switch widens the test to
+# every club (1 to 0x7ffe).
+SPONSOR_TEAMS_WORD = 0x2C4AB8
+SPONSOR_TEAMS = 0x7FFF
 
 
 def sponsor_hash(team, season):
@@ -2649,11 +2656,7 @@ def sponsor_cave():
             addiu(T2, T2, 1), sb(T2, 4, S2),              # PlUnif +4: the sponsor
             lui(T0, 0xC2B2), ori(T0, T0, 0xAE35), mult3(T2, T1, T0),
             srl(T2, T2, 16), addiu(T0, ZERO, SUPPLIER_KINDS), divu(T2, T0), mfhi(T2),
-            addiu(T2, T2, SUPPLIER_FIRST), sb(T2, 5, S2),  # +5: the supplier
-            # Side fields 1, 3 and 5 of both sides are 1 in your club's record and the
-            # rival's, which show logos, and 0 in a computer club's (PCSX2 states,
-            # 2026-11-10), so they are what lets a kit show them.
-            addiu(T0, ZERO, 1)] + [sb(T0, off, S2) for off in SIDE_LOGO_BYTES]
+            addiu(T2, T2, SUPPLIER_FIRST), sb(T2, 5, S2)]  # +5: the supplier
     body += [ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20), jr(RA), NOP]
     return body
 
@@ -2678,7 +2681,9 @@ def plan_random_sponsors(f, img, adopted=()):
          "%s 0x%x (the sponsors' code at 0x%x)" % (SLES_FILE, off, SPONSOR_CAVE)),
         sles_word(SPONSOR_HOOK, sb(ZERO, 5, S2), jal(SPONSOR_CAVE),
                   "pwkTeam_GetUnif: call the sponsors' code, not supplier 0"),
-        sles_word(SPONSOR_HOOK + 8, sb(ZERO, 4, S2), NOP, "pwkTeam_GetUnif: not sponsor 0")])
+        sles_word(SPONSOR_HOOK + 8, sb(ZERO, 4, S2), NOP, "pwkTeam_GetUnif: not sponsor 0"),
+        sles_word(SPONSOR_TEAMS_WORD, sltiu(V0, V0, 2), sltiu(V0, V0, SPONSOR_TEAMS),
+                  "CUniformBuilder::Init: the logo flag for every club, not teams 1 and 2")])
     j, n = file_jobs(f, img, UNIFORM_FILE, uniform.apply_kits, UNIFORM_PACKS, UNIFORM_ENTRY,
                      "random-sponsors: the licensed clubs' kits generated", adopted,
                      "has the generated kits")
