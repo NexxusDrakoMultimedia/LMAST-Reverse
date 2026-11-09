@@ -440,13 +440,6 @@ its own bytes. With `third-tier`, the tier's text rewrites point 2 again
 and finds the Spanish fix in place; with `real-names`, team 435 becomes
 Al-Sadd. The Japanese release is left alone.
 
-Candidate for `retail-text`: the player detail screen's ability line,
-category 200 message 144, says "potential" in the five European
-languages but means ability now, so it contradicts the growth line
-beneath it; and nine growth messages say "improving steadily" where the
-Japanese says no growth is expected
-([`SQB_FORMAT.md`](SQB_FORMAT.md#the-detail-screen-comments)). Not built.
-
 Other retail typos seen while making the name table, not fixed:
 "Repulic of Ireland" (category 3) and "Motherwwell" (category 100003).
 

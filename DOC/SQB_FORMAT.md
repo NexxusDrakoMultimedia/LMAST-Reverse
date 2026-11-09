@@ -387,24 +387,6 @@ DAT/MESSAGE/MES.PAC --cat 201`).
   `sgrowtype` + (age − 16) / 3: category 200 messages 200–358, such as
   "Improving greatly." or "Reaching the end of his career."
 
-**A line that contradicts the other (empirical).** The two lines are
-independent: line 1 reads only the current ability, line 2 only the
-age and `sgrowtype`. Level 4's message, 144, is 世界でも十分通用する力
-を持っている選手 in Japanese, "a player strong enough to compete in the
-world", about ability now. All five European texts translate it as
-potential ("Has world class potential", "A le potentiel d'un joueur de
-classe mondiale", "Hat Potential zum Weltklassespieler", "Ha un
-potenziale di livello mondiale", "Tiene potencial de clase mundial"). A
-young player of level 4 whose growth row says "Struggling to improve at
-the moment" (messages 260, 280, 290, 300, 310) or "Unlikely to improve
-much" (247) therefore reads as great potential and no potential at
-once. Nexxus reads line 1 as a general ability score (average, below
-average, great player), so "potential" is the wrong word there.
-Messages 258, 268, 278, 288, 298, 318, 338, 348 and 358 are a second mistranslation: the Japanese says
-"no growth to expect, but makes up for it with veteran play", and the
-European texts say "improving steadily". Nexxus's report, 2026-11-10;
-the cause is from the texts and has not been seen in the game.
-
 In one case the first line is message 120 or 121 instead ("Transfer to
 … finalized.", "Loan to … finalized.", `0x285e30`–`0x285e4c`); what
 selects that branch isn't traced. And when one of `CDetailManager`'s
