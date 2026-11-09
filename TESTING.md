@@ -215,6 +215,19 @@ list.
       this also shows which copy the game reads); try another language
       if you can
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#retail-text-fixes))
+- [ ] Match bugs, caught as save states (the retail disc will do; the
+      bugs are in the retail game). When one happens, pause and save a
+      state to its own slot straight away, then note the slot, the match
+      and what was happening ([`TODO.md`](TODO.md), section 8, "Bugs and
+      ideas reported in play"). The most useful is the stuck ball, since
+      it lasts: a player standing still with the ball at his feet or the
+      ball dead in open play, ideally still stuck when you save. A
+      state taken just after a wrong-side receiver pick, a backwards
+      sprint with the ball in the attacking third, or a throw-in to the
+      player in front that dribbles it out also works. Tell me the
+      slot; I read the ball carrier's and the team's AI state from the
+      state's memory
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md))
 - [ ] The moving advert board at the last ground (`--mod moving-boards`,
       the disc is `LMAST-test-boards.iso`, built 2026-11-10): in a
       career with the moving board bought and a level-4 stadium, check
