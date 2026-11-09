@@ -2634,10 +2634,17 @@ SPONSOR_KINDS, SUPPLIER_KINDS, SUPPLIER_FIRST = 199, 7, 206
 # 0x2c54bc-0x2c54d8 sends only team 1 (yours), team 2 (the rival) and the VS teams
 # 0x21f-0x22e on to the real lists; every other club gets the default list for both
 # slots (0x2c5504). Betis's logos were loaded and discarded there (PCSX2 states of
-# 2026-11-10, found by a workflow of investigators; not yet seen to draw). The `beqz` at
-# 0x2c54d8 becomes a nop, so every club takes the real lists. The earlier try, widening
-# CUniformBuilder::Init's flag $s5 at 0x2c4ab8, only changed the keeper kits and is gone.
+# 2026-11-10, found by a workflow of investigators; seen to draw on Real Betis). The `beqz`
+# at 0x2c54d8 becomes a `j` to a few words in the code segment that send every club but
+# the national teams (460-542) to the real lists (0x2c54e0). A national team gets the real
+# supplier list and the default sponsor list, so it shows its kit maker and no main sponsor
+# (Nexxus, 2026-11-10: national teams should carry no sponsor, but suppliers are fine).
+# The earlier try, widening CUniformBuilder::Init's flag $s5 at 0x2c4ab8, only changed
+# the keeper kits and is gone.
 SPONSOR_GATE_WORD = 0x2C54D8
+GATE_CAVE = 0xF8000 + 0x380                     # CAVE + 0x380, after the sponsors' code
+GATE_REAL, GATE_AFTER = 0x2C54E0, 0x2C550C      # the real lists; past the code that picks them
+NATIONAL_FIRST, NATIONAL_COUNT = 460, 83
 
 
 def sponsor_hash(team, season):
@@ -2663,6 +2670,18 @@ def sponsor_cave():
     return body
 
 
+def gate_cave():
+    """The words at GATE_CAVE: $v1 is the team id (loaded at 0x2c54bc), $v0 stays as
+    the delay slot of the hooked word left it."""
+    t4, t7 = 12, 15
+    return [addiu(AT, V1, -NATIONAL_FIRST), sltiu(AT, AT, NATIONAL_COUNT),
+            bnez(AT, 3), NOP,                       # a national team: to the words below
+            j(GATE_REAL), NOP,
+            lw(t4, 0x50, SP), lw(t4, 4, t4),        # the sponsor: the default list
+            lw(t7, 0x38, SP), lw(t7, 4, t7),        # the supplier: its own list
+            j(GATE_AFTER), NOP]
+
+
 UNIFORM_FILE, UNIFORM_ENTRY = "PLAYER/UNIFORM_LIST.TBB", "uniform_list.tbb"
 UNIFORM_PACKS = ["PRELOAD/SIMFILE%d.PAC" % n for n in range(7)]
 
@@ -2678,19 +2697,27 @@ def plan_random_sponsors(f, img, adopted=()):
     new = words(*sponsor_cave())
     off = CAVE_FILE + SPONSOR_CAVE - CAVE
     held = read_at(f, img, SLES_FILE, off, len(new))
+    gate_new = words(*gate_cave())
+    gate_held = read_at(f, img, SLES_FILE, CAVE_FILE + GATE_CAVE - CAVE, len(gate_new))
+    if gate_held == gate_new:
+        gate_held = bytes(len(gate_new))
     jobs, notes = word_jobs(f, img, "random-sponsors", code_segment_words(f, img) + [
         (SLES_FILE, off, held if held != new else bytes(len(new)), new,
          "%s 0x%x (the sponsors' code at 0x%x)" % (SLES_FILE, off, SPONSOR_CAVE)),
         sles_word(SPONSOR_HOOK, sb(ZERO, 5, S2), jal(SPONSOR_CAVE),
                   "pwkTeam_GetUnif: call the sponsors' code, not supplier 0"),
         sles_word(SPONSOR_HOOK + 8, sb(ZERO, 4, S2), NOP, "pwkTeam_GetUnif: not sponsor 0"),
-        sles_word(SPONSOR_GATE_WORD, beqz(V0, 10), NOP,
+        (SLES_FILE, CAVE_FILE + GATE_CAVE - CAVE, gate_held, gate_new,
+         "%s 0x%x (the logo gate's code at 0x%x)" % (SLES_FILE, CAVE_FILE + GATE_CAVE - CAVE,
+                                                    GATE_CAVE)),
+        sles_word(SPONSOR_GATE_WORD, beqz(V0, 10), j(GATE_CAVE),
                   "CUniformBuilder::_setup_texture_list: the sponsor and supplier logo lists "
-                  "for every club, not teams 1, 2 and the VS teams")])
-    j, n = file_jobs(f, img, UNIFORM_FILE, uniform.apply_kits, UNIFORM_PACKS, UNIFORM_ENTRY,
-                     "random-sponsors: the licensed clubs' kits generated", adopted,
-                     "has the generated kits")
-    return jobs + j, notes + n
+                  "for every club but the national teams, not only teams 1, 2 and the VS teams")])
+    kit_jobs, kit_notes = file_jobs(f, img, UNIFORM_FILE, uniform.apply_kits, UNIFORM_PACKS,
+                                    UNIFORM_ENTRY,
+                                    "random-sponsors: the licensed clubs' kits generated",
+                                    adopted, "has the generated kits")
+    return jobs + kit_jobs, notes + kit_notes
 
 
 def target_random_sponsors(file, data, old):

@@ -475,9 +475,16 @@ away: at `0x2c54bc`–`0x2c54d8` only teams 1 and 2 and the VS teams
 (`0x21f`–`0x22e`) go on to the real sponsor and supplier lists
 (`0x2c54e0`), and every other club gets the default list for both
 slots (`0x2c5504`), copied into texture list slots 4 and 6. The switch
-turns the `beqz` at `0x2c54d8` into a nop. Seen working on Betis. Left:
-whether every supplier's logo (4-bit textures with an external palette,
-entries 205–211) comes out in the right colours, and the other clubs. In the retail game only your club has them: the other
+turns the `beqz` at `0x2c54d8` into a `j` to 12 words in the code
+segment (`0xf8380`): every club takes the real lists, except the
+national teams (460–542), which take the real supplier list and the
+default sponsor list, so they show their kit maker and no main sponsor
+(Nexxus, 2026-11-10: they should carry no sponsor, but suppliers are
+fine). Seen working on Betis, and in England, Australia and New Zealand
+(Nexxus's report): the first build also gave the national teams a
+sponsor, which is why. The supplier logo takes the colour of the shirt
+numbers (black on a white shirt, Nexxus's screenshot). Left: all seven
+suppliers' logos in the right colours, and the other clubs. In the retail game only your club has them: the other
 clubs' kit requests carry sponsor 0 and supplier 0, which show nothing
 (Nexxus's report, 2026-11-10; [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)).
 
