@@ -452,64 +452,57 @@ Other retail typos seen while making the name table, not fixed:
 ## Random sponsors
 
 `--mod random-sponsors` (group `graphics`, in LMASTER full and max;
-built 2026-11-10; Nexxus's request) gives the computer clubs' kits a
-main sponsor and a kit supplier, drawn again every season, and it also
-unlicenses 114 clubs. **Tested in PCSX2** (Nexxus's screenshot,
-2026-11-10, `LMAST-test-sponsors3.iso`, then `sponsors4` with the national teams): Real Betis, an unlicensed
-computer club, shows the chest sponsor (Decentberg) and the supplier
-logo, as your club and the rival do. Four earlier builds drew nothing:
-the supplier range (206–212), the side fields (field 3 is the front
-number, which appeared on the chest) and the builder's team test
-(`0x2c4ab8`, which only changes the keeper kits) were not the gate.
+built 2026-11-10; Nexxus's request) gives every club's kit a main
+sponsor and a kit supplier, drawn again every season, and it also
+unlicenses the Italian, Spanish and Dutch clubs. In the retail game only
+your club (and the rival) show them: a computer club's kit request
+carries sponsor 0 and supplier 0 (Nexxus's report, 2026-11-10;
+[`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)). **Tested in PCSX2** (Nexxus's
+screenshots, 2026-11-10, `LMAST-test-sponsors3.iso` and `sponsors4`):
+Real Betis, an unlicensed computer club, shows the chest sponsor
+(Decentberg) and the supplier logo, as your club and the rival do; the
+clubs of England, Australia and New Zealand work too, and England's
+national team shows its kit maker and no main sponsor. The supplier logo
+takes the colour of the shirt numbers, which is the game's own rule.
 
-**The gate (found 2026-11-10 by a workflow of investigators over the
-code and four states, **confirmed** in the code, and now seen to
-work).** `CUniformLoader::_load_edit` (`0x2c2848`) creates three
-texture resources for every generated kit, whatever the club (the loop
-at `0x2c2ef0`–`0x2c2f58`, types {0, 5, 7} from the table at `0x55a248`:
-type 5 is `SPONSOR_TEXTURE.PAC`, type 7 `SPONSOR_TEXTURE_S.PAC`, named
-`CmnTex_005_NNN` and `CmnTex_007_NNN` with the record number less 1).
-Betis's were loaded in the states (`CmnTex_005_064`, `CmnTex_007_208`).
-Then `CUniformBuilder::_setup_texture_list` (`0x2c5340`) throws them
-away: at `0x2c54bc`–`0x2c54d8` only teams 1 and 2 and the VS teams
+**The numbers.** `pwkTeam_GetUnif` (`0x26e9d8`) writes 0 to `PlUnif +4`
+and `+5` at `0x26ec1c` and `0x26ec24`. The switch turns the first into a
+call to code in the LMASTER code segment (`0xf8300`, 32 words; the
+segment is the third tier's too, and the switch brings its program
+header) and the second into a nop. The code gets the season from
+`pwkGen_Keika` (`0x244430`, the season's first year less 2006, so it
+changes when the season starts) and writes sponsor 1 + *h*₁ mod 199 and
+supplier 206 + *h*₂ mod 7 for the club's team id, from two
+multiplicative hashes (`sponsor_hash` in `patch_disc.py` is the same
+arithmetic). The numbers are records of MES category 10000: a PCSX2
+state held your club's as 74 (a main sponsor) and 207 (Opnatis, one of
+the seven suppliers, records 206–212). Over the 540 clubs and 20 seasons
+every sponsor 1–199 and supplier 206–212 comes up, and no club keeps
+both for the next season. In the states the opponent's `PlUnif` held
+these numbers, copied into the match.
+
+**The gate that hid them.** Writing the numbers was not enough, and four
+builds drew nothing: the supplier range, the side fields (field 3 is the
+front number, which appeared on the chest) and the builder's team test
+(`0x2c4ab8`, which only changes the keeper kits) were not it. A workflow
+of investigators over the code and four states found it (**confirmed** in
+the code, and seen to work). `CUniformLoader::_load_edit` (`0x2c2848`)
+creates three texture resources for every generated kit, whatever the
+club (the loop at `0x2c2ef0`–`0x2c2f58`, types {0, 5, 7} from the table
+at `0x55a248`: type 5 is `SPONSOR_TEXTURE.PAC`, type 7
+`SPONSOR_TEXTURE_S.PAC`, named `CmnTex_005_NNN` and `CmnTex_007_NNN`
+with the record number less 1). Betis's were loaded in the states
+(`CmnTex_005_064`, `CmnTex_007_208`). Then
+`CUniformBuilder::_setup_texture_list` (`0x2c5340`) throws them away: at
+`0x2c54bc`–`0x2c54d8` only teams 1 and 2 and the VS teams
 (`0x21f`–`0x22e`) go on to the real sponsor and supplier lists
-(`0x2c54e0`), and every other club gets the default list for both
-slots (`0x2c5504`), copied into texture list slots 4 and 6. The switch
-turns the `beqz` at `0x2c54d8` into a `j` to 12 words in the code
-segment (`0xf8380`): every club takes the real lists, except the
-national teams (460–542), which take the real supplier list and the
-default sponsor list, so they show their kit maker and no main sponsor
-(Nexxus, 2026-11-10: they should carry no sponsor, but suppliers are
-fine). Seen working on Betis, and in England, Australia and New Zealand
-(Nexxus's report): the first build also gave the national teams a
-sponsor, which is why. The supplier logo takes the colour of the shirt
-numbers (black on a white shirt, Nexxus's screenshot). Left: all seven
-suppliers' logos in the right colours, and the other clubs. In the retail game only your club has them: the other
-clubs' kit requests carry sponsor 0 and supplier 0, which show nothing
-(Nexxus's report, 2026-11-10; [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)).
-
-`pwkTeam_GetUnif` (`0x26e9d8`) writes 0 to `PlUnif +4` and `+5` at
-`0x26ec1c` and `0x26ec24`. The switch turns the first into a call to
-code in the LMASTER code segment (`0xf8300`, 32 words; the segment is
-the third tier's too, and the switch brings its program header) and the
-second into a nop. The code gets the season from `pwkGen_Keika`
-(`0x244430`, the season's first year less 2006, so it changes when the
-season starts) and writes sponsor 1 + *h*₁ mod 199 and supplier 206 +
-*h*₂ mod 7 for the club's team id, from two multiplicative hashes
-(`sponsor_hash` in `patch_disc.py` is the same arithmetic). The numbers
-are records of MES category 10000: a PCSX2 state (2026-11-10) held your
-club's as 74 (a main sponsor) and 207 (Opnatis, one of the seven
-suppliers, records 206–212), and the first draft's supplier 1–6 was a
-sponsor's record. Over the 540 clubs and 20 seasons every sponsor
-1–199 and supplier 206–212 comes up, and no club keeps both for the
-next season. In the state the opponent's `PlUnif` held the switch's
-numbers (sponsor 65, supplier 3 in the first draft), copied into the
-match, but nothing showed on the kit. Your club's match record and the
-rival's, which show logos, have side fields 1, 3 and 5 of the home kit
-set to 1, and a computer club's has them at 0 (states of 2026-11-10), so
-the code also writes 1 to those fields of both sides
-([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#side-fields)). Built 2026-11-10,
-not yet seen working; field 3 may also put a number on the chest.
+(`0x2c54e0`), and every other club gets the default list for both slots
+(`0x2c5504`), copied into texture list slots 4 and 6. The switch turns
+the `beqz` at `0x2c54d8` into a `j` to 12 words in the code segment
+(`0xf8380`): every club takes the real lists, except the national teams
+(460–542), which take the real supplier list and the default sponsor
+list, so they show their kit maker and no main sponsor (Nexxus: they
+should carry no sponsor, but suppliers are fine).
 
 **The licensed clubs.** The 116 Italian, Spanish and Dutch clubs have
 real kit textures with their sponsor in them, so a sponsor could not be
@@ -517,16 +510,16 @@ added to those kits. A poll of Nexxus's players (4-0 for random sponsors
 over real 2006 kits, 2026-11-10) decided it, so the switch also
 unlicenses them: it sets flag 1 in 114 of their `UNIFORM_LIST.TBB` rows
 (Siena and Bologna already have it) and writes each club's home and away
-outfield kit from [`SRC/kits.csv`](../SRC/kits.csv), a pattern, three shirt
-colours, shorts and socks. The keeper kits, collars and captain marks
-stay as the rows have them. The table is written from memory of the
+outfield kit from [`SRC/kits.csv`](../SRC/kits.csv), a pattern, three
+shirt colours, shorts and socks. The keeper kits, collars and captain
+marks stay as the rows have them. The table is written from memory of the
 2005-06 kits with the 12 patterns of `uniform.py`'s `KIT_PATTERNS`, so
 the stripes, halves and bands are approximate; corrections go in the
 CSV. The file's copies in `PRELOAD/SIMFILE0`-`6.PAC` change too, and a
 `UNIFORM_LIST.TBB` target (the editor's Kits tab) keeps its own edited
 rows. Not done: the Japanese release (the code is PAL's), the keeper
-kits, and which sponsor and supplier numbers have a logo on a kit is
-assumed from Nexxus's report that they all do.
+kits, a look at every supplier and every league, and the 114 kits seen
+in a match.
 
 ## Real names
 

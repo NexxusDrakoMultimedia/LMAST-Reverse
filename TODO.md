@@ -368,7 +368,7 @@ problems; the match bugs come after them.
       number and the season, unlicenses the 114 clubs with generated
       kits from `SRC/kits.csv`, and lets every club's kit draw its
       logos (the gate was at `0x2c54d8`); seen on Real Betis in PCSX2.
-      Left: the other clubs and all seven suppliers' colours in PCSX2
+      Left: the other clubs and leagues in PCSX2
       ([`TESTING.md`](TESTING.md)), the kits corrected club by club
       (written from memory with 12 shirt patterns), the other shirt
       designs checked in the viewer, the keeper kits (still the rows'
