@@ -298,9 +298,12 @@ is built and tested, or set aside.
 - [ ] The real names in Japanese on the Japanese disc (Nexxus's wish,
       2026-11-12): `--mod real-names` there writes the English names in
       ASCII for now. The 1,069 names (clubs, stadiums, nations,
-      competitions and stages) would need katakana forms, in a new
+      competitions and stages) would need half-width katakana forms like
+      the original game's (Nexxus's choice, 2026-11-12), in a new
       column of `SRC/realnames.csv` that `realnames.py` writes into slot
-      0 in place of the ASCII name where it has one. A draft can be made
+      0 in place of the ASCII name where it has one (`mbb.py` already
+      encodes the half-width kana and the voiced-kana bytes,
+      [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#japanese-voiced-kana)). A draft can be made
       here, but someone who reads Japanese should check it (the game's
       own katakana names for the unlicensed clubs are in the Japanese
       `MES.PAC` to follow, such as ﾊﾞｰﾐﾝｶﾞﾑ for Birmingham)
