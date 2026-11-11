@@ -576,6 +576,22 @@ Italian and Spanish names and a team's three-letter form.
 | 11 | 1000 + stage | the stage or group's name |
 | 100011 | the same | the same name where it repeats 11, or the English one where it holds English (in four languages run together, "European LeagueGroup A") |
 
+**The Japanese release (2026-11-12).** The switch builds for the
+Japanese disc too ([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#patching-a-japanese-disc)).
+Its `MES.PAC` has the same 1069 ids in the same order, with the names in
+half-width katakana in slot 0 (PAL's slot 0 holds the same katakana,
+unused). `realnames.py` writes each row's English name, in ASCII (cp932
+has no accented Latin letters, so "Željezničar" becomes "Zeljeznicar"
+and "Brøndby" "Brondby"), into slot 0 of categories 3, 4, 5, 6, 7, 9, 10
+and 11. The Japanese text has no categories 100003, 100009 or 100011,
+and numbers its nations' copy (7) from 6000 (PAL 5000). All 457 stadiums
+change (the three placeholders, "NOT", "USE" and "RIV", stay), so no
+katakana is left in the lists. The mentions of a competition in other
+messages stay in katakana. The game already
+shows Latin text in these lists ("NOT STADIUM", "BIR"), but whether the
+Japanese font fits an 18-letter club name in the player's club field
+isn't seen yet.
+
 **Stadiums (2026-10-30).** 382 of the 457 clubs have a stadium row,
 the grounds they played at in 2005-06 (Nexxus's choice, 2026-10-30,
 after a first list of 2006-07): Highbury for Arsenal, not the Emirates

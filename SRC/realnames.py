@@ -25,7 +25,10 @@ the news; names of 6 or more characters, outside {tags}), in English.
 realnames_phrases.csv holds the other languages' mentions, edited by
 hand: per row a message (category, id, language), a phrase of its game
 text and what replaces it (empty to keep it). Club names in other
-messages are left: many are city names too. See
+messages are left: many are city names too. The Japanese release's text
+(slot 0, names in katakana) gets the English names in ASCII (`ascii_name`),
+in the same lists, with no mentions changed: its category 7 numbers the
+nations from 6000, and it has no categories 100003, 100009 or 100011. See
 DOC/LMASTER_MOD.md#real-names for how the names were chosen.
 
 Usage:
@@ -52,6 +55,8 @@ import mbb
 FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "realnames.csv")
 PHRASES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "realnames_phrases.csv")
 LANGS = (1, 2, 3, 4, 5)                 # en, fr, de, it, es
+JP = 0                                  # the Japanese release's only text slot
+JP_NATION_SHIFT = 1000                  # its category 7 is 6000 + PlNati, PAL's 5000 +
 LANG_CODES = tuple(mbb.LANGS[l] for l in LANGS)
 TEAM_CAT, TEAM_BASE = 3, 2000
 TEAM_COPY, TEAM_COPY_BASE = 4, 3000
@@ -108,6 +113,41 @@ def fold(name):
                        if not unicodedata.combining(ch))
         out.append(base)
     return "".join(out)
+
+
+def ascii_name(name):
+    """`name` in plain ASCII, for the Japanese text (cp932 has no accented
+    Latin letters): "Željezničar" -> "Zeljeznicar", "Brøndby" -> "Brondby"."""
+    import unicodedata
+    name = fold(name).translate(str.maketrans({"ø": "o", "Ø": "O", "æ": "ae", "Æ": "AE",
+                                               "œ": "oe", "Œ": "OE", "ß": "ss", "ð": "d",
+                                               "Ð": "D", "þ": "th", "Þ": "Th"}))
+    return "".join(c for c in unicodedata.normalize("NFKD", name) if not unicodedata.combining(c))
+
+
+def is_japanese(pack):
+    """True for the Japanese release's text. Both builds hold the names in
+    slot 0 in katakana, but only the Japanese category 7 (the nations'
+    copy) is numbered from 6000; PAL's starts at 5000 (checked on both
+    discs: 147 messages each)."""
+    try:
+        pack.text(NATION_COPY, 1, JP_NATION_SHIFT + 5001)
+    except ValueError:
+        return False
+    return True
+
+
+def japanese_rows(rows):
+    """`rows` for the Japanese text: each name is the English real name in
+    ASCII, in slot 0 (`JP`). The Japanese release has the same ids as PAL
+    (checked for every row), but names in katakana, which the real names
+    replace with Latin letters, as the game shows "NOT STADIUM" and
+    "BIR" in Latin already. The three-letter forms lose their accents too."""
+    out = []
+    for cat, rid, names, short in rows:
+        if 1 in names:
+            out.append((cat, rid, {JP: ascii_name(names[1])}, ascii_name(short)))
+    return out
 
 
 def short_form(name):
@@ -191,29 +231,32 @@ def edits(pack, rows, mention_langs=MENTION_LANGS, phrases=None):
     in other messages in `mention_langs`."""
     texts = phrased(pack, load_phrases() if phrases is None else phrases)
     out = []
-    mention = {l: {} for l in LANGS}        # lang -> {game name, lower case: real name}
+    mention = {l: {} for l in LANGS + (JP,)}  # lang -> {game name, lower case: real name}
     comps = {rid: names for cat, rid, names, _ in rows if cat == COMP_CAT}
     stadiums = {(rid, l) for cat, rid, names, _ in rows if cat == STADIUM_CAT for l in names}
     for cat, rid, names, short in rows:
         if cat == TEAM_CAT:
             team = rid - TEAM_BASE
             for l, name in names.items():
-                out += [(TEAM_CAT, l, rid, name), (TEAM_COPY, l, TEAM_COPY_BASE + team, name),
-                        (TEAM_LONG, l, rid, name)]
+                out += [(TEAM_CAT, l, rid, name), (TEAM_COPY, l, TEAM_COPY_BASE + team, name)]
+                long_list = (TEAM_LONG, l) in pack.files        # the Japanese text has none
+                if long_list:
+                    out.append((TEAM_LONG, l, rid, name))
                 # A stadium with no name of its own is "<club> Stadium" with
                 # the club's real name (every one is the club's game name,
                 # or its long form, and the language's word).
                 sid = STADIUM_BASE + team
                 if team < CLUB_END and (sid, l) not in stadiums:
                     stadium = pack.text(STADIUM_CAT, l, sid)
-                    for game in (pack.text(TEAM_CAT, l, rid), pack.text(TEAM_LONG, l, rid)):
+                    for game in (pack.text(TEAM_CAT, l, rid),) + (
+                            (pack.text(TEAM_LONG, l, rid),) if long_list else ()):
                         game = game.strip()
                         if stadium.startswith(game + " "):
                             out.append((STADIUM_CAT, l, sid,
                                         name + " " + stadium[len(game):].lstrip()))
                             break
             if short:
-                out += [(SHORT_CAT, l, SHORT_BASE + team, short) for l in LANGS]
+                out += [(SHORT_CAT, l, SHORT_BASE + team, short) for l in (JP,) if JP in names]                     or [(SHORT_CAT, l, SHORT_BASE + team, short) for l in LANGS]
         elif cat == STADIUM_CAT:
             out += [(cat, l, rid, name) for l, name in names.items()]
         elif cat == COMP_CAT:
@@ -227,7 +270,9 @@ def edits(pack, rows, mention_langs=MENTION_LANGS, phrases=None):
             if 1 in names:
                 out += [(COMP_CAPS, l, rid, names[1].upper()) for l in LANGS]
         elif cat == NATION_CAT:
-            out += [(c, l, rid, name) for l, name in names.items() for c in (NATION_CAT, NATION_COPY)]
+            # The Japanese text numbers the copy 6000 + PlNati (PAL: 5000 +).
+            out += [(c, l, rid + (JP_NATION_SHIFT if c == NATION_COPY and l == JP else 0), name)
+                    for l, name in names.items() for c in (NATION_CAT, NATION_COPY)]
         elif cat == STAGE_CAT:
             english = pack.text(cat, 1, rid)
             for l, name in names.items():
@@ -235,6 +280,8 @@ def edits(pack, rows, mention_langs=MENTION_LANGS, phrases=None):
                 out.append((cat, l, rid, name))
                 # 100011 repeats 11, or the English name (once run together:
                 # "European LeagueGroup A").
+                if (STAGE_VARIANT, l) not in pack.files:
+                    continue
                 variant = pack.text(STAGE_VARIANT, l, rid)
                 if variant == game:
                     out.append((STAGE_VARIANT, l, rid, name))
@@ -278,10 +325,16 @@ def mentions(pack, mention, langs, texts={}):
 def apply(data, rows=None):
     """MES.PAC bytes with the real names; (bytes, report lines). An entry
     that outgrows its slot moves the later ones (patch_disc.py handles a
-    MES.PAC that grows)."""
+    MES.PAC that grows). The Japanese release's text (slot 0) gets the
+    English names in ASCII and none of the mentions."""
     pack = open_pack(data)
     changed = 0
-    for cat, l, rid, text in edits(pack, load() if rows is None else rows):
+    rows = load() if rows is None else rows
+    if is_japanese(pack):
+        todo = edits(pack, japanese_rows(rows), mention_langs=(), phrases={})
+    else:
+        todo = edits(pack, rows)
+    for cat, l, rid, text in todo:
         rid, copy = rid if isinstance(rid, tuple) else (rid, 0)
         changed += pack.set(cat, l, rid, copy, text)
     out, report, _, errors = pack.build()
@@ -294,6 +347,8 @@ def cmd_info(mes_path):
     with open(mes_path, "rb") as f:
         pack = open_pack(f.read())
     rows = load()
+    if is_japanese(pack):
+        return cmd_info_japanese(pack, rows)
     problems = []
     counts = {}
     long = []
@@ -361,6 +416,35 @@ def cmd_info(mes_path):
     phrased(pack, phrases, missing)
     if missing:
         print("  !! no phrase of theirs in %s" % ", ".join(missing))
+
+
+def cmd_info_japanese(pack, rows):
+    """`info` for the Japanese release's text: every row's id must be in
+    slot 0 (and in its copy lists), and every name and short form must
+    encode in cp932 once in ASCII."""
+    jp = japanese_rows(rows)
+    problems = []
+    for cat, rid, names, short in jp:
+        for text in [names[JP]] + ([short] if short else []):
+            try:
+                mbb.encode(text, JP)
+            except ValueError as e:
+                problems.append("%d:%d %s: %s" % (cat, rid, mbb.LANGS[JP], e))
+        try:
+            pack.text(cat, JP, rid)
+        except ValueError as e:
+            problems.append(str(e))
+    edited = edits(pack, jp, mention_langs=(), phrases={})
+    counts = {}
+    for cat, _, _, _ in edited:
+        counts[cat] = counts.get(cat, 0) + 1
+    print("%s (Japanese text): %d of %d names, in ASCII, in slot 0; %d list messages (%s)%s" % (
+        FILE.replace("\\", "/").split("/")[-1], len(jp), len(rows), len(edited),
+        ", ".join("%d in category %d" % (n, c) for c, n in sorted(counts.items())),
+        "  !! " + "; ".join(problems) if problems else ""))
+    missing = [r[1] for r in rows if 1 not in r[2]]
+    if missing:
+        print("  rows with no English name, left as the game has them: %d" % len(missing))
 
 
 def cmd_import(table, out_path):

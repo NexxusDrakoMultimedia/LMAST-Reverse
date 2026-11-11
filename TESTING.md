@@ -177,6 +177,14 @@ list.
       English is tested): the advisor's intro, the Game Over help, the
       2nd German League's rules screen and its season-start news
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-text))
+- [ ] *Short.* A Japanese disc with `--mod real-names`: build it with
+      `python SRC/patch_disc.py patch "<the Japanese image>" out.iso
+      --mod real-names --copies --dat DAT_JP`, start a career, and look
+      at the club names in the league table, the schedule and the
+      player's own club field (the longest, 18 letters), a stadium name
+      and the competitions' names: Latin letters should show and fit,
+      with no garbling or cut-off text
+      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 - [ ] *Short.* A `--mod-saves` disc writes its VS data to
       `BESLES-54151-V000`, and an LMASTER full disc its careers to
       `-F000`

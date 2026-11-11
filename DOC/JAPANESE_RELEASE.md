@@ -72,10 +72,9 @@ the Japanese disc):
 ## Patching a Japanese disc
 
 `patch_disc.py patch` takes the Japanese image, with every switch but
-`third-tier` ("made for the PAL executable only") and `real-names`
-("made for the PAL text only"), so LMASTER full and max can't be built
-for it; LMASTER lite and the groups without those two can. Every
-switch must work here before LMASTER 1.0.0 (Nexxus's choice,
+`third-tier` ("made for the PAL executable only"), so LMASTER full and
+max can't be built for it; LMASTER lite and the groups without it can.
+Every switch must work here before LMASTER 1.0.0 (Nexxus's choice,
 2026-11-01; [`TODO.md`](../TODO.md) section 8).
 
 ```bash
@@ -96,9 +95,8 @@ checks the bytes as on PAL, so a place the Japanese build changed is
 refused, not patched.
 
 What each switch finds there (**empirical**, from planning every switch
-on the Redump image, last on 2026-11-01: every switch but `third-tier`
-and `real-names` plans there, each on its own with the switches it
-needs):
+on the Redump image, last on 2026-11-12: every switch but `third-tier`
+plans there, each on its own with the switches it needs):
 
 | Switch | On the Japanese disc |
 |---|---|
@@ -113,7 +111,7 @@ needs):
 | `season-status` | the same ladder, so the Japanese build has the same season-ticket bug |
 | `salesman-items` | the boost jump table (PAL `0x5313c8`, Japanese `0x52d138`) holds the Japanese addresses of the same cases (`0x210d18` and `0x210e08` for PAL's `0x2104e0` and `0x2105d0`), which trade places as on PAL; the headphones' new code calls `pwkGUtl_AddExp` at its Japanese address, and its branch reaches the same epilogue (`0x210fec`) |
 | `vpf-positions` | nothing to do: the release has no Virtua Pro Football import ([below](#confirmed-from-the-game-code)) |
-| `real-names` | refused: its names are PAL text in five languages, and the Japanese `MES.PAC` holds Japanese text in slot 0 and `test` in slots 1–6 |
+| `real-names` | the English names in ASCII in the Japanese text (slot 0, where the game has katakana), in every list `realnames.py` writes in PAL but the three the Japanese `MES.PAC` lacks (100003, 100009 and 100011); the nations' copy, category 7, is numbered from 6000 there (PAL 5000). The mentions of a competition in other messages are left in katakana. The three-letter forms lose their accents. `MES.PAC` and `STATIONMES0.PAC` grow by 5 and 4 sectors and move to the end of the disc; the built disc's `MES.PAC` is byte for byte what `realnames.py apply` writes (**empirical**, 2026-11-12). Not run in the game |
 | `third-tier` | refused: its code segment, bigger save, clubs, lists and seasons are PAL addresses, and its text is PAL's |
 | the rest | the same bytes, at other addresses |
 
@@ -123,6 +121,10 @@ words, and the four below 14 are in `pwkUnkei_GetExpectSeat`, whose
 registers differ, and the merchandise table. A PAL disc patched with the
 same switches is byte for byte as before. No Japanese disc built with
 the switches has been run in the game yet.
+
+The disc's UDF file system names the archive `Data.cvm` (PAL: `DATA.CVM`),
+so a patch that has to move files (a bigger `MES.PAC`) finds its UDF entry
+by the name in any case.
 
 ## Confirmed from the game code
 
@@ -167,6 +169,9 @@ except the commentary, which `afs.py` reads as documented.
 
 ## Still unknown
 
+- Whether the Japanese game draws the real names (Latin letters, up to
+  18 for a club) well in its club name field and lists: no Japanese disc
+  built with `--mod real-names` has been run (`TESTING.md`).
 - Why entry 0 of `PLRESOURCESIM.PAC` stops partway through its tables in
   the Japanese build, and whether its code reads fewer records.
 - Whether the player-database limits come from the Japanese code (new

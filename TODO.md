@@ -51,8 +51,9 @@ What to work on next, most valuable first.
    stay Realism-only (a PCSX2 texture pack)
    ([`TEXMAP.md`](DOC/TEXMAP.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
 3. **Every LMASTER switch on the Japanese release** (section 8), needed
-   before LMASTER 1.0.0: every other switch plans there now; left are
-   `third-tier` (a code port) and `real-names` (the names in Japanese)
+   before LMASTER 1.0.0: every other switch builds there now, `real-names`
+   (its English names in ASCII) included; left is `third-tier` (a code
+   port, and its text in Japanese)
    ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc)).
 4. **League games on the national-team dates in the game**
    ([`TESTING.md`](TESTING.md)): England at 18 clubs, a short test that
@@ -289,10 +290,9 @@ is built and tested, or set aside.
       reverse engineering feel complete; this is its one firm
       requirement. Every other switch plans on the Japanese disc
       (2026-11-01). Left: `third-tier` (its code, save, clubs, lists and
-      seasons ported, and its text in Japanese) and `real-names` (the
-      names in Japanese), so LMASTER full and max can't be built for it
-      yet; and no Japanese disc built with the switches has been run in
-      the game
+      seasons ported, and its text in Japanese), so LMASTER full and max
+      can't be built for it yet; and no Japanese disc built with the
+      switches has been run in the game (`real-names` builds, 2026-11-12)
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 
 - [ ] Re-assess each switch's edition (Nexxus's request, 2026-11-01):

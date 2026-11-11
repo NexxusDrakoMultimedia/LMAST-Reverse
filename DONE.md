@@ -152,9 +152,10 @@ the evidence and how it was tested; the git history holds the rest.
       ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
 - [x] Testing aids: `--skip-tutorial` and `--launcher`
       ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs))
-- [x] The Japanese disc: every switch but `third-tier` and `real-names`
-      (jump tables take the Japanese case addresses, so `salesman-items`
-      ports; `vpf-positions` has nothing to do there), and its saves
+- [x] The Japanese disc: every switch but `third-tier` (jump tables take
+      the Japanese case addresses, so `salesman-items` ports;
+      `vpf-positions` has nothing to do there; `real-names` writes the
+      English names in ASCII into the Japanese text), and its saves
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 
 ## 5. Edit: the GUI

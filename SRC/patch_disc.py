@@ -68,8 +68,8 @@ the integrity descriptor's size table change, and the UDF end anchor moves
 to the new last sector. Files outside DATA.CVM keep their size.
 
 The Japanese release (SLPM_663.16) takes the same switches but
-third-tier, which is made for the PAL executable only, and real-names,
-made for the PAL text (so not lmaster-full or lmaster-max). Each gives its bytes as PAL offsets; on a Japanese disc
+third-tier, which is made for the PAL executable only (so not lmaster-full or
+lmaster-max). Each gives its bytes as PAL offsets; on a Japanese disc
 they are found in its executable and overlays with gamever.py (so the
 PAL files in ISO/ must be there), and checked as on PAL; a jump
 table's case addresses take the Japanese addresses of the same code.
@@ -201,8 +201,10 @@ and national team its real name of the era, in the five European
 languages: realnames.py writes SRC/realnames.csv's names into MES.PAC's
 name lists and the English messages that mention a competition. The
 lists grow, so it brings MES.PAC whole and needs --copies (and --dat) for
-the STATIONMES copies; it runs after the third tier's text. PAL only.
-The names include each club's stadium (category 10). See
+the STATIONMES copies; it runs after the third tier's text. On the
+Japanese release the names are the English ones in ASCII, written into the
+Japanese text (slot 0; the competitions' mentions in other messages are
+left). The names include each club's stadium (category 10). See
 DOC/LMASTER_MOD.md#real-names.
 
 special-stadium (LMASTER full and max) makes the Special stadium, the
@@ -1197,7 +1199,9 @@ def _udf_cvm_entry(f, img):
             l_fi = meta[pos + 19]
             l_iu = struct.unpack_from("<H", meta, pos + 36)[0]
             ident = meta[pos + 38 + l_iu:pos + 38 + l_iu + l_fi]
-            if ident[1:] in (CVM_NAME.encode("utf-16-be"), CVM_NAME.encode("latin1")):
+            # The Japanese release names it "Data.cvm" (PAL: "DATA.CVM").
+            name = ident[1:].decode("utf-16-be" if ident[:1] == b"\x10" else "latin1", "replace")
+            if name.upper() == CVM_NAME:
                 hits.append(struct.unpack_from("<I", meta, pos + 24)[0])
     if len(hits) != 1:
         raise ValueError("%s: found %d UDF entries for %s" % (img.path, len(hits), CVM_NAME))
@@ -4719,7 +4723,8 @@ def plan_real_names(f, img, adopted=()):
     """--mod real-names writes no bytes of its own: its MES.PAC is a whole
     file (file_real_names), which target_real_names edits."""
     if img.port is not None:
-        raise ValueError("real-names is made for the PAL text only")
+        return [], ["note: real-names: put the English names, in ASCII, in %s's Japanese text "
+                    "(slot 0)" % MES_FILE]
     return [], ["note: real-names: put the names in %s" % MES_FILE]
 
 

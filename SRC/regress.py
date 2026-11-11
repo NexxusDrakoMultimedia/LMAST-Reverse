@@ -310,9 +310,7 @@ def _jp(arg):
 
 # The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15), and its
 # GAMEPRG.REL has the parameter getter at another address.
-# realnames: the real names are for PAL's text, whose names the Japanese
-# release doesn't share.
-JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "realnames"}
+JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param"}
 
 
 def jp_checks(pal):
