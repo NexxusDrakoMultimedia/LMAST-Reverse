@@ -295,6 +295,16 @@ is built and tested, or set aside.
       switches has been run in the game (`real-names` builds, 2026-11-12)
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 
+- [ ] The real names in Japanese on the Japanese disc (Nexxus's wish,
+      2026-11-12): `--mod real-names` there writes the English names in
+      ASCII for now. The 1,069 names (clubs, stadiums, nations,
+      competitions and stages) would need katakana forms, in a new
+      column of `SRC/realnames.csv` that `realnames.py` writes into slot
+      0 in place of the ASCII name where it has one. A draft can be made
+      here, but someone who reads Japanese should check it (the game's
+      own katakana names for the unlicensed clubs are in the Japanese
+      `MES.PAC` to follow, such as ﾊﾞｰﾐﾝｶﾞﾑ for Birmingham)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
 - [ ] Re-assess each switch's edition (Nexxus's request, 2026-11-01):
       some bug fixes may sit in full instead of lite. A first read:
       `salesman-items` (in `restorations`) bundles a plain fix, the
