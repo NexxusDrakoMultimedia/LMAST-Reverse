@@ -3514,6 +3514,44 @@ def words(*ws):
 # overlay with plain j/jal. The file keeps its size.
 CAVE, CAVE_FILE, CAVE_SIZE = 0xF8000, 0x46A350, 0x400
 PHDR2 = 0x54
+PAL_SEGMENT_END = 0x46A2DC      # the first segment's file end; the cave's file offset follows it by 0x74
+PWORK_GETTER = 0x21D6E0         # plPwork_GetPwork: lui $v1, hi; jr $ra; lw $v0, lo($v1)
+
+
+class CaveBuild:
+    """The constants of the code segment's code that differ between the
+    builds: PAL's, or the Japanese ones found from the PAL address of each
+    (gamever, and the same functions' own bytes). `exe` is the executable's
+    file name for the bytes written at a raw file offset (the ELF header,
+    the cave), which aren't addresses to translate."""
+
+    def __init__(self, f, img):
+        if img.port is None:
+            self.exe, self.cave_file = SLES_FILE, CAVE_FILE
+            self.bit_read, self.bit_write = _BIT_READ, _BIT_WRITE
+        else:
+            self.exe = JP_EXE_FILE
+            # The first segment's file offset and size (program header 0, at 0x34).
+            offset, = struct.unpack("<I", read_raw(f, img, self.exe, 0x34 + 4, 4))
+            size, = struct.unpack("<I", read_raw(f, img, self.exe, 0x34 + 16, 4))
+            self.cave_file = offset + size + CAVE_FILE - PAL_SEGMENT_END
+            import gamever
+            path = img.port.copy(JP_EXE_FILE)
+            self.bit_read, self.bit_write = (gamever.at(path, a) for a in (_BIT_READ, _BIT_WRITE))
+        # The jump back from each block 5 serializer's dispatcher, and the
+        # pwork getter's address parts, as this build's code holds them.
+        # (the wrapper finds the serializer's third word from the return
+        # address, so both offsets are this build's)
+        def here(off):
+            return img.port.map(SAVE_FILE, off, 4)[1] if img.port is not None else off
+        self.back = {kind: here(back) for kind, _, _, back in BLOCK5_HOOKS}
+        self.start = {kind: here(start) for kind, start, _, _ in BLOCK5_HOOKS}
+        getter = struct.unpack("<3I", read_at(f, img, SLES_FILE, PWORK_GETTER - EXE_BASE, 12))
+        if getter[0] >> 16 != 0x3C03 or getter[2] >> 16 != 0x8C62:     # lui $v1 / lw $v0, lo($v1)
+            raise ValueError("%s 0x%x isn't plPwork_GetPwork's lui/jr/lw" % (SLES_FILE, PWORK_GETTER))
+        self.pwork = (getter[0] & 0xFFFF, getter[2] & 0xFFFF)
+
+
 _BIT_READ, _BIT_WRITE = 0x20C200, 0x20C1C0       # _plBits_BitRead(bits, n, signed), BitWrite(bits, v, n, signed)
 
 # third-tier, the bigger save (machinery any feature may use). The blocks' sizes
@@ -3569,9 +3607,10 @@ BLOCK5_HOOKS = (("read", 0x29838, (0x27BDFF10, 0x7FB70070), 0x2B9FC),
                 ("write", 0x1BAD8, (0x27BDFF00, 0x7FB70080), 0x2BA34))
 
 
-def _block5_wrapper(at, hook):
+def _block5_wrapper(at, hook, build):
     """The wrapper for one block 5 serializer, placed at CAVE address `at`."""
-    kind, start, (first, second), back = hook
+    kind, _, (first, second), _ = hook
+    start, back = build.start[kind], build.back[kind]
     after = at + 4 * 12
     delta = start + 8 - back                         # the serializer's third word, from $ra
     head = [second,                                  # the displaced sq; the addiu ran in the delay slot
@@ -3581,10 +3620,10 @@ def _block5_wrapper(at, hook):
             lui(RA, after >> 16), ori(RA, RA, after & 0xFFFF),
             jr(T1), NOP]
     if kind == "read":
-        body = [move(A0, S1), addiu(A1, ZERO, 8), jal(_BIT_READ), move(A2, ZERO),
+        body = [move(A0, S1), addiu(A1, ZERO, 8), jal(build.bit_read), move(A2, ZERO),
                 sb(V0, 0, S0)]
     else:
-        body = [move(A0, S1), lbu(A1, 0, S0), addiu(A2, ZERO, 8), jal(_BIT_WRITE),
+        body = [move(A0, S1), lbu(A1, 0, S0), addiu(A2, ZERO, 8), jal(build.bit_write),
                 move(A3, ZERO)]
     loop = len(body)
     tail = ([addiu(SP, SP, -0x30), sq(S0, 0, SP), sq(S1, 0x10, SP), sq(S2, 0x20, SP),
@@ -3598,33 +3637,35 @@ def _block5_wrapper(at, hook):
     return words(*(head + tail))
 
 
-def save_expand_cave():
+def save_expand_cave(build):
     """The code segment's bytes: the two block 5 wrappers, then the
     wrappers' variables at CAVE + 0x200, zero."""
     out, at = b"", {}
     for hook in BLOCK5_HOOKS:
         at[hook[0]] = CAVE + len(out)
-        out += _block5_wrapper(CAVE + len(out), hook)
+        out += _block5_wrapper(CAVE + len(out), hook, build)
     if len(out) > _VARS - CAVE:
         raise ValueError("the wrappers outgrow their space")
     return out.ljust(CAVE_SIZE, b"\0"), at
 
 
-def phdr2():
-    """The second program header: PT_LOAD, file CAVE_FILE at CAVE, RWX."""
-    return struct.pack("<8I", 1, CAVE_FILE, CAVE, CAVE, CAVE_SIZE, CAVE_SIZE, 7, 0x10)
+def phdr2(build):
+    """The second program header: PT_LOAD, the build's cave file offset at
+    CAVE, RWX."""
+    return struct.pack("<8I", 1, build.cave_file, CAVE, CAVE, CAVE_SIZE, CAVE_SIZE, 7, 0x10)
 
 
 def code_segment_words(f, img):
     """Words that load the LMASTER code segment: e_phnum 2 and the second
     program header. Any switch that puts code there includes them (the
     segment's bytes are each switch's own)."""
-    e_phnum = read_at(f, img, SLES_FILE, 0x2C, 2)
+    build = CaveBuild(f, img)
+    e_phnum = read_raw(f, img, build.exe, 0x2C, 2)
     if e_phnum not in (b"\x01\x00", b"\x02\x00"):
-        raise ValueError("%s has %d program headers" % (SLES_FILE, e_phnum[0]))
-    return [(SLES_FILE, 0x2C, b"\x01\x00", b"\x02\x00", "%s e_phnum 2" % SLES_FILE),
-            (SLES_FILE, PHDR2, bytes(32), phdr2(),
-             "%s program header 1: the LMASTER code segment at 0x%x" % (SLES_FILE, CAVE))]
+        raise ValueError("%s has %d program headers" % (build.exe, e_phnum[0]))
+    return [(build.exe, 0x2C, b"\x01\x00", b"\x02\x00", "%s e_phnum 2" % build.exe),
+            (build.exe, PHDR2, bytes(32), phdr2(build),
+             "%s program header 1: the LMASTER code segment at 0x%x" % (build.exe, CAVE))]
 
 
 def save_grow_words(f, img):
@@ -3634,12 +3675,13 @@ def save_grow_words(f, img):
     bytes, which save and load BLOCK5_ADD bytes from BLOCK5_OLD. A
     feature that needs more room raises these; the third tier uses them
     for clubs 442-459 and competitions 49-55."""
-    cave, at = save_expand_cave()
+    build = CaveBuild(f, img)
+    cave, at = save_expand_cave(build)
     cave = cave[:SAVE_CAVE_SIZE]                # the rest is the third tier's own code
-    held_cave = read_at(f, img, SLES_FILE, CAVE_FILE, SAVE_CAVE_SIZE)
-    words_ = [(SLES_FILE, CAVE_FILE, held_cave if held_cave != cave else bytes(SAVE_CAVE_SIZE), cave,
+    held_cave = read_raw(f, img, build.exe, build.cave_file, SAVE_CAVE_SIZE)
+    words_ = [(build.exe, build.cave_file, held_cave if held_cave != cave else bytes(SAVE_CAVE_SIZE), cave,
                "%s 0x%x (the code segment's bytes, unloaded .DVP data before)"
-               % (SLES_FILE, CAVE_FILE))]
+               % (build.exe, build.cave_file))]
     for block, old, new in SAVE_EXPAND_SIZES:
         words_.append(sles_word(PWORK_SIZE_TABLE + 4 * block, old, new,
                                 "block %d size %d" % (block, new - 8)))
@@ -3654,10 +3696,14 @@ def save_grow_words(f, img):
     return words_
 
 
-def past_record_words():
+def past_record_words(f, img):
     """pwkRec_GetCompePastRecord rewritten to send competitions 49-55 to
-    block 5's added end."""
-    return [(SLES_FILE, PAST_RECORD - EXE_BASE, PAST_RECORD_OLD, PAST_RECORD_NEW,
+    block 5's added end. The rewrite inlines plPwork_GetPwork, so it holds
+    that function's global's address parts, as the build's own code has
+    them."""
+    hi, lo = CaveBuild(f, img).pwork
+    new = PAST_RECORD_NEW[:4 * 13] + words(lui(V1, hi), lw(A0, lo, V1)) + PAST_RECORD_NEW[4 * 15:]
+    return [(SLES_FILE, PAST_RECORD - EXE_BASE, PAST_RECORD_OLD, new,
              "%s 0x%x (pwkRec_GetCompePastRecord: competitions 49-55 at block 5's end)"
              % (SLES_FILE, PAST_RECORD))]
 
@@ -4833,7 +4879,7 @@ def plan_third_tier(f, img, adopted=()):
     if img.port is not None:
         raise ValueError("third-tier is made for the PAL executable only")
     return word_jobs(f, img, "third-tier",
-                     code_segment_words(f, img) + save_grow_words(f, img) + past_record_words()
+                     code_segment_words(f, img) + save_grow_words(f, img) + past_record_words(f, img)
                      + tier_clubs_words(f, img) + tier_lists_words(f, img)
                      + tier_uids_words(f, img) + list(ONE_SEASON_END))
 

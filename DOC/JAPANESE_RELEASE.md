@@ -126,6 +126,44 @@ The disc's UDF file system names the archive `Data.cvm` (PAL: `DATA.CVM`),
 so a patch that has to move files (a bigger `MES.PAC`) finds its UDF entry
 by the name in any case.
 
+## Porting `third-tier` (plan)
+
+`--mod third-tier` (the hidden third tier, [`CLUB_LIMITS.md`](CLUB_LIMITS.md),
+[`UID_LIMITS.md`](UID_LIMITS.md)) is the one switch the Japanese disc
+refuses. It is 93 patched places in five files, six data files and
+some text. To size the work, each part of `plan_third_tier` was run
+through the Japanese image's `word_jobs` on 2026-11-12 (**empirical**):
+
+| Part | On PAL | On the Japanese disc |
+|---|---|---|
+| Code segment: a second program header and a cave in the executable for new code | 2 places, 34 bytes (`SLES_541.51` `0x2c`, `0x54`; the cave's file offset `0x46a350`) | **ported, plans** (2026-11-12): the cave's file offset is `0x465fd0` (the first segment ends at `0x465f5c`, PAL `0x46a2dc`; the cave sits 0x74 after it in both) and `e_phnum` and the second header are at the same header offsets; the 0x400 bytes there are zero |
+| Bigger save: block 2 (+18 records) and block 5 (+7), the serializers' loops and two wrappers | 7 places, 672 bytes (3 in the executable, 4 in `SAVEPRG.REL`) | **ported, plans** (2026-11-12): the size table is at `0x52f838` (PAL `0x533ac8`) and only block 1 differs (76,256 against 76,272), so blocks 2 and 5 grow to the same sizes. The six `SAVEPRG.REL` sites map with identical bytes (`0x29460`, `0x1b7b4`, `0x29750`, `0x1ba48`, and the dispatchers' return points `0x2b914`, `0x2b94c`); the wrappers' jump from the return address to the serializer differs for the write one (`-0xfefc`, PAL `-0xff54`), and `_plBits_BitRead` and `BitWrite` are at `0x20caa0` and `0x20ca60` |
+| Past records for competitions 49–55 | 1 place, 92 bytes (`pwkRec_GetCompePastRecord`) | **ported, plans** (2026-11-12): the function is PAL's but for two `jal` targets; the rewrite inlines `plPwork_GetPwork`, whose global is `lui 0x39 / lw -0x36b8` there (PAL `0x9a8`). Block 5's own layout is the same |
+| Clubs 442–459 as full clubs | 41 places (31 executable, 7 `SIMPRG.REL`, 3 `YRSTPRG.REL`) | fails at the first (`0x2230e0`) |
+| The lists sized for 441 clubs | 30 places, 2,060 bytes (7 executable, 23 `SIMPRG.REL`) | fails at the first (`SIMPRG.REL 0xa1244`) |
+| The tiers' seasons (competitions 50–55) | 6 places, 388 bytes in the executable | fails |
+| Game over after one season | 6 words in `SIMPRG.REL` | plans |
+| Data | `OTEAMMEMBER.TBB` (the 18 squads) and six schedule and rules files | five of the seven files are byte for byte PAL's (the schedules, `INITTEAMDATA`, `CLUBRESULT`); `OTEAMMEMBER.TBB` and `REGULATION.TBB` differ at the same size |
+| Text | the rules messages in five languages | slot 0 (Japanese) has none of it |
+
+`patch_disc.py`'s `CaveBuild` holds what differs between the builds for
+the code segment, the save wrappers and the past records (PAL's jobs are
+byte for byte as before). Where a place can't be mapped by `gamever.py`, find it by reading the
+Japanese function of the same name in both builds, as the other
+switches did. The work, in the order that builds on itself:
+
+1. The Japanese save layout: the block-size table, the block 2 and 5
+   sizes and offsets, and the serializers in `SAVEPRG.REL`.
+2. The code segment: where the Japanese ELF's program header and a free
+   cave go, and that nothing else loads there.
+3. The 41 clubs, 30 lists and 6 season places, a group at a time, each
+   read in both builds.
+4. The two data files that differ, and the 18 squads for the Japanese
+   club data.
+5. The text: what slot 0 says for the rules the tier changes.
+6. A Japanese disc built with `--mod third-tier,mod-saves`, then
+   tested in the game ([`TESTING.md`](../TESTING.md)).
+
 ## Confirmed from the game code
 
 | Address (SLPM_663.16) | Symbol | Compared with PAL |
