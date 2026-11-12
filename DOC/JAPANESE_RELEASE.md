@@ -141,7 +141,8 @@ expects), PAL's 93 jobs are byte for byte what they were, and a disc
 built with `--mod third-tier --copies --dat DAT_JP` writes 198 times
 (`mod-saves` comes with it: `BISLPM-66316-F` and `-V`). **Tested in
 PCSX2** (Nexxus's report, 2026-11-12): the disc boots, a new career
-starts, and the game reaches the tutorial's playoffs. The save
+starts, and the game reaches the tutorial's playoffs, whose teams are
+the same as on the PAL disc. The save
 writing and loading, and a season through the third tier, are not
 checked yet.
 
