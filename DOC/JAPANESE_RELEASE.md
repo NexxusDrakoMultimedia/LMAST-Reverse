@@ -141,9 +141,12 @@ expects), PAL's 93 jobs are byte for byte what they were, and a disc
 built with `--mod third-tier --copies --dat DAT_JP` writes 198 times
 (`mod-saves` comes with it: `BISLPM-66316-F` and `-V`). **Tested in
 PCSX2** (Nexxus's report, 2026-11-12): the disc boots, a new career
-starts, and the game reaches the tutorial's playoffs. The save
-writing and loading, and a season through the third tier, are not
-checked yet.
+starts, and the game reaches the tutorial's playoffs. In a German
+career the tier's movement at season 0 sends Siegen and Offenbach
+down to the Third German League, where 5 clubs play, the same two
+clubs as on the PAL disc ([`UID_LIMITS.md`](UID_LIMITS.md)). The save
+writing and loading, and a season's end through the third tier, are
+not checked yet.
 
 | Part | On PAL | On the Japanese disc |
 |---|---|---|
