@@ -146,9 +146,8 @@ the same as on the PAL disc. In a German career the 2nd division
 starts with 18 clubs, as on the PAL disc (the retail 20 less two sent
 down to the hidden tier): the first game day's results (August 2006,
 week 1, with a screenshot) are 9 matches, and Siegen is not among
-them, nor is Offenbach. The save
-writing and loading, and a season through the third tier, are not
-checked yet.
+them, nor is Offenbach. Saving and loading the career works. A
+season through the third tier is not checked yet.
 
 | Part | On PAL | On the Japanese disc |
 |---|---|---|
