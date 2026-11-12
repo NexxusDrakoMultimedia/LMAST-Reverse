@@ -189,5 +189,14 @@ described here.
 - Who the `V001`–`V032` crests are.
 - Whether anything uses `SPONSOR_TEXTURE_M.PAC` (type 6).
 - The `FONT_KANJI_*.SVP` palettes (unreferenced).
+- How the European font's glyphs are laid out and measured, which a
+  replacement face (for example Roboto Condensed) needs. `FONT_20_A.SVR`
+  is a 256² grid of about 20 glyphs across and 9 rows (ASCII, the
+  Latin-1 accents, `€`, `č š ž ć`, fractions and the button icons
+  `O Δ □ X`). Not yet read: the character-to-cell map
+  (`sbFontConvrtAsciiString`, `0x3131b8`), whether advances are per glyph
+  (`sbFontGetDisplayWidth`, `0x312e50`) or per font type
+  (`pxGetFontWidth`, `0x146f68`, which reads a 4-entry table of 12-byte
+  records), and how `sbFontSetZoom` scales the cells on screen.
 - What `CDetailTeamFlag` draws, and so whether `FLAG_TEXTURE`'s crests are
   ever shown (Siena's real crest never is).

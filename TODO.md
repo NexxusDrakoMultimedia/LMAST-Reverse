@@ -211,6 +211,15 @@ shown to have no effect. Grouped by the goal each one serves.
       fields and descriptor bytes 14–15
       ([`PLAYER_DIR.md`](DOC/PLAYER_DIR.md#still-unknown),
       [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#still-unknown))
+- [ ] Fonts: document how `FONT_20_A.SVR` and the small `FONT_8_*.SVR`
+      fonts are laid out and measured (the character-to-cell map, glyph
+      advances, on-screen scaling), so a modern face such as Roboto
+      Condensed (Nexxus's idea, 2026-11-13) can be rendered into the same
+      grid and written with `svr.py replace` as an LMASTER switch. Check
+      club names still fit the lists; the Japanese build uses
+      `FONT_KANJI` and `FONT_ASCII` instead, and the licence of the
+      chosen face needs confirming
+      ([`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md#still-unknown))
 - [ ] Newspapers: which paper a page uses, the special editions, where
       the ads and cartoons go
       ([`NEWS_DIR.md`](DOC/NEWS_DIR.md#still-unknown))
