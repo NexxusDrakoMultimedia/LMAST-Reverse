@@ -26,8 +26,8 @@ The tools take the Japanese folders wherever they take a path:
 present, `python SRC/regress.py run` also runs every check over them as
 `jp_<name>`.
 
-`patch_disc.py` patches a Japanese disc too, with every switch but the
-third tier ([below](#patching-a-japanese-disc)), and `save.py --iso
+`patch_disc.py` patches a Japanese disc too, with every switch but
+LMASTER Realism's ([below](#patching-a-japanese-disc)), and `save.py --iso
 ISO_JP` reads
 and writes Japanese saves
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)). Still
@@ -72,8 +72,10 @@ the Japanese disc):
 ## Patching a Japanese disc
 
 `patch_disc.py patch` takes the Japanese image, with every switch but
-`third-tier` ("made for the PAL executable only"), so LMASTER full and
-max can't be built for it; LMASTER lite and the groups without it can.
+`realism` ("made for the PAL release": the pack is named by PAL hashes),
+so LMASTER full and max can't be built for it; LMASTER lite and the
+groups without it can. `third-tier` is ported except for its rules text
+([below](#the-third-tier-on-the-japanese-disc)).
 Every switch must work here before LMASTER 1.0.0 (Nexxus's choice,
 2026-11-01; [`TODO.md`](../TODO.md) section 8).
 
@@ -95,7 +97,7 @@ checks the bytes as on PAL, so a place the Japanese build changed is
 refused, not patched.
 
 What each switch finds there (**empirical**, from planning every switch
-on the Redump image, last on 2026-11-12: every switch but `third-tier`
+on the Redump image, last on 2026-11-12: every switch but `realism`
 plans there, each on its own with the switches it needs):
 
 | Switch | On the Japanese disc |
@@ -112,7 +114,9 @@ plans there, each on its own with the switches it needs):
 | `salesman-items` | the boost jump table (PAL `0x5313c8`, Japanese `0x52d138`) holds the Japanese addresses of the same cases (`0x210d18` and `0x210e08` for PAL's `0x2104e0` and `0x2105d0`), which trade places as on PAL; the headphones' new code calls `pwkGUtl_AddExp` at its Japanese address, and its branch reaches the same epilogue (`0x210fec`) |
 | `vpf-positions` | nothing to do: the release has no Virtua Pro Football import ([below](#confirmed-from-the-game-code)) |
 | `real-names` | the English names in ASCII in the Japanese text (slot 0, where the game has katakana), in every list `realnames.py` writes in PAL but the three the Japanese `MES.PAC` lacks (100003, 100009 and 100011); the nations' copy, category 7, is numbered from 6000 there (PAL 5000). The mentions of a competition in other messages are left in katakana. The three-letter forms lose their accents. `MES.PAC` and `STATIONMES0.PAC` grow by 5 and 4 sectors and move to the end of the disc; the built disc's `MES.PAC` is byte for byte what `realnames.py apply` writes (**empirical**, 2026-11-12). Not run in the game |
-| `third-tier` | refused: its code segment, bigger save, clubs, lists and seasons are PAL addresses, and its text is PAL's |
+| `third-tier` | all 93 places plan; the rules text isn't changed ([below](#the-third-tier-on-the-japanese-disc)) |
+| `realism` | refused: its pack is named by PAL hashes |
+| `random-sponsors` | nothing done: its code is PAL's, and `patch_disc.py` notes it and leaves the release alone |
 | the rest | the same bytes, at other addresses |
 
 Every patched spot's surrounding code (8 words either side, immediates
@@ -126,43 +130,40 @@ The disc's UDF file system names the archive `Data.cvm` (PAL: `DATA.CVM`),
 so a patch that has to move files (a bigger `MES.PAC`) finds its UDF entry
 by the name in any case.
 
-## Porting `third-tier` (plan)
+## The third tier on the Japanese disc
 
 `--mod third-tier` (the hidden third tier, [`CLUB_LIMITS.md`](CLUB_LIMITS.md),
-[`UID_LIMITS.md`](UID_LIMITS.md)) is the one switch the Japanese disc
-refuses. It is 93 patched places in five files, six data files and
-some text. To size the work, each part of `plan_third_tier` was run
-through the Japanese image's `word_jobs` on 2026-11-12 (**empirical**):
+[`UID_LIMITS.md`](UID_LIMITS.md)) is 93 patched places in five files,
+six data files and some text. It builds for the Japanese disc since
+2026-11-12, except for the rules text (below). **Empirical**: all 93
+places plan there (each checks that the bytes it finds are the ones it
+expects), PAL's 93 jobs are byte for byte what they were, and a disc
+built with `--mod third-tier --copies --dat DAT_JP` writes 198 times
+(`mod-saves` comes with it: `BISLPM-66316-F` and `-V`). It has not been
+run in the game.
 
 | Part | On PAL | On the Japanese disc |
 |---|---|---|
-| Code segment: a second program header and a cave in the executable for new code | 2 places, 34 bytes (`SLES_541.51` `0x2c`, `0x54`; the cave's file offset `0x46a350`) | **ported, plans** (2026-11-12): the cave's file offset is `0x465fd0` (the first segment ends at `0x465f5c`, PAL `0x46a2dc`; the cave sits 0x74 after it in both) and `e_phnum` and the second header are at the same header offsets; the 0x400 bytes there are zero |
-| Bigger save: block 2 (+18 records) and block 5 (+7), the serializers' loops and two wrappers | 7 places, 672 bytes (3 in the executable, 4 in `SAVEPRG.REL`) | **ported, plans** (2026-11-12): the size table is at `0x52f838` (PAL `0x533ac8`) and only block 1 differs (76,256 against 76,272), so blocks 2 and 5 grow to the same sizes. The six `SAVEPRG.REL` sites map with identical bytes (`0x29460`, `0x1b7b4`, `0x29750`, `0x1ba48`, and the dispatchers' return points `0x2b914`, `0x2b94c`); the wrappers' jump from the return address to the serializer differs for the write one (`-0xfefc`, PAL `-0xff54`), and `_plBits_BitRead` and `BitWrite` are at `0x20caa0` and `0x20ca60` |
-| Past records for competitions 49–55 | 1 place, 92 bytes (`pwkRec_GetCompePastRecord`) | **ported, plans** (2026-11-12): the function is PAL's but for two `jal` targets; the rewrite inlines `plPwork_GetPwork`, whose global is `lui 0x39 / lw -0x36b8` there (PAL `0x9a8`). Block 5's own layout is the same |
-| Clubs 442–459 as full clubs | 41 places (31 executable, 7 `SIMPRG.REL`, 3 `YRSTPRG.REL`) | 37 of the 41 map to a word with the same opcode and the old immediate (checked 2026-11-12); four don't: `CMakeDataBase::MakeDB` (PAL `0x2230e0`), two of the four player-candidate loops (`0x2609d0`, `0x260b58`) and the first year-start place (`YRSTPRG.REL 0x17014`). Find those four by reading the Japanese function of the same name; `patch_disc.py`'s `tier_clubs_words` isn't switched to the Japanese map yet |
-| The lists sized for 441 clubs | 30 places, 2,060 bytes (7 executable, 23 `SIMPRG.REL`) | fails at the first (`SIMPRG.REL 0xa1244`) |
-| The tiers' seasons (competitions 50–55) | 6 places, 388 bytes in the executable | fails |
-| Game over after one season | 6 words in `SIMPRG.REL` | plans |
-| Data | `OTEAMMEMBER.TBB` (the 18 squads) and six schedule and rules files | five of the seven files are byte for byte PAL's (the schedules, `INITTEAMDATA`, `CLUBRESULT`); `OTEAMMEMBER.TBB` and `REGULATION.TBB` differ at the same size |
-| Text | the rules messages in five languages | slot 0 (Japanese) has none of it |
+| Code segment: a second program header and a cave in the executable for new code | 2 places, 34 bytes (`SLES_541.51` `0x2c`, `0x54`; the cave's file offset `0x46a350`) | the cave's file offset is `0x465fd0` (the first segment ends at `0x465f5c`, PAL `0x46a2dc`; the cave sits 0x74 after it in both); `e_phnum` and the second header are at the same header offsets; the 0x400 bytes there are zero |
+| Bigger save: block 2 (+18 records) and block 5 (+7), the serializers' loops and two wrappers | 7 places, 672 bytes (3 in the executable, 4 in `SAVEPRG.REL`) | the size table is at `0x52f838` (PAL `0x533ac8`) and only block 1 differs (76,256 against 76,272), so blocks 2 and 5 grow to the same sizes. The six `SAVEPRG.REL` sites map with identical bytes (`0x29460`, `0x1b7b4`, `0x29750`, `0x1ba48`, and the dispatchers' return points `0x2b914`, `0x2b94c`); the wrappers' jump from the return address to the serializer differs for the write one (`-0xfefc`, PAL `-0xff54`), and `_plBits_BitRead` and `BitWrite` are at `0x20caa0` and `0x20ca60` |
+| Past records for competitions 49–55 | 1 place, 92 bytes (`pwkRec_GetCompePastRecord`) | the function is PAL's but for two `jal` targets; the rewrite inlines `plPwork_GetPwork`, whose global is `lui 0x39 / lw -0x36b8` there (PAL `0x9a8`). Block 5's own layout is the same |
+| Clubs 442–459 as full clubs | 41 places (31 executable, 7 `SIMPRG.REL`, 3 `YRSTPRG.REL`) | every one is the word PAL has (same opcode, registers and old immediate) at the same place in the same function; 37 map by `gamever.py`, and the four it can't place (`CMakeDataBase::MakeDB`, PAL `0x2230e0`, two of the four player-candidate loops, `0x2609d0` and `0x260b58`, and `YRSTPRG.REL 0x17014`) are the same word's next occurrence in the Japanese function of the same name, which holds as many of them as PAL's (`Port.expect`) |
+| The lists sized for 441 clubs | 30 places, 2,060 bytes (7 executable, 23 `SIMPRG.REL`) | the five relayed functions differ from PAL's in `jal` targets and data addresses only, so every stack offset, frame size and shift of the relay holds; the other places are immediates as for the clubs |
+| The tiers' seasons (competitions 50–55) | 6 places, 388 bytes in the executable | the cave's code and `ScheCallback_ProcPromotion`'s rewrite use this build's addresses (`CaveBuild.addr`: `pwkRec_ShiftCompeConventionRecord` `0x253f08`, `pwkLg_GetMyNati` `0x246818`, the competition table `0x5166b4`, and the three jump points in `calcCompetetionFinish`) |
+| Game over after one season | 6 words in `SIMPRG.REL` | the same words |
+| Data | `OTEAMMEMBER.TBB` (the 18 squads) and five schedule and rules files | the schedule files, `INITTEAMDATA` and `CLUBRESULT` are byte for byte PAL's, and the builders write the same bytes from them; `REGULATION.TBB` differs from PAL's by one byte (`0xec0`); `OTEAMMEMBER.TBB` has other squads, but the 18 new ones come from the tutorial's players (ids from 25,591), whose age and shirt are the same in both player databases |
+| Text | the rules messages in five languages | **not done**: the Japanese text keeps its rules messages (the Game Over help, the second division's rules, the news), which state the retail rules. `patch_disc.py` leaves slot 0 alone and notes it |
 
 `patch_disc.py`'s `CaveBuild` holds what differs between the builds for
-the code segment, the save wrappers and the past records (PAL's jobs are
-byte for byte as before). Where a place can't be mapped by `gamever.py`, find it by reading the
-Japanese function of the same name in both builds, as the other
-switches did. The work, in the order that builds on itself:
+the code segment, the save wrappers, the past records and the tiers'
+seasons (the cave's file offset, the bit routines, the serializers'
+offsets, the pwork global, and `addr`, which translates an executable
+address with `gamever.py`).
 
-1. The Japanese save layout: the block-size table, the block 2 and 5
-   sizes and offsets, and the serializers in `SAVEPRG.REL`.
-2. The code segment: where the Japanese ELF's program header and a free
-   cave go, and that nothing else loads there.
-3. The 41 clubs, 30 lists and 6 season places, a group at a time, each
-   read in both builds.
-4. The two data files that differ, and the 18 squads for the Japanese
-   club data.
-5. The text: what slot 0 says for the rules the tier changes.
-6. A Japanese disc built with `--mod third-tier,mod-saves`, then
-   tested in the game ([`TESTING.md`](../TESTING.md)).
+The rules text is the part that needs a decision: written in Japanese
+(someone who reads the game's Japanese should check it) or left in
+English. The messages are the ones `tier_text_edits` changes in the five
+European languages (category 487, 30001, 30003, 832 and 35680).
 
 ## Confirmed from the game code
 

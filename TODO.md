@@ -51,10 +51,12 @@ What to work on next, most valuable first.
    stay Realism-only (a PCSX2 texture pack)
    ([`TEXMAP.md`](DOC/TEXMAP.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
 3. **Every LMASTER switch on the Japanese release** (section 8), needed
-   before LMASTER 1.0.0: every other switch builds there now, `real-names`
-   (its English names in ASCII) included; left is `third-tier` (a code
-   port, and its text in Japanese)
-   ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc)).
+   before LMASTER 1.0.0: every switch but `realism` builds there now,
+   `real-names` (English names in ASCII) and `third-tier` (its code,
+   save, data and 93 places ported) included; left are the third tier's
+   rules text in Japanese, `realism` (the pack is named by PAL hashes),
+   and running a Japanese disc in the game
+   ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc)).
 4. **League games on the national-team dates in the game**
    ([`TESTING.md`](TESTING.md)): England at 18 clubs, a short test that
    decides whether the new division sizes are safe to offer
@@ -288,12 +290,12 @@ is built and tested, or set aside.
       every switch works on the Japanese release (SLPM-66316). The
       release itself is Nexxus's call, when testing, features and
       reverse engineering feel complete; this is its one firm
-      requirement. Every other switch plans on the Japanese disc
-      (2026-11-01). Left: `third-tier` (its code, save, clubs, lists and
-      seasons ported, and its text in Japanese), so LMASTER full and max
-      can't be built for it yet; and no Japanese disc built with the
-      switches has been run in the game (`real-names` builds, 2026-11-12)
-      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+      requirement. Every switch but `realism` builds on the Japanese
+      disc (`real-names` and `third-tier` 2026-11-12). Left: the third
+      tier's rules text in Japanese (the messages keep the retail
+      rules), `realism` (so LMASTER full and max can't be built for it),
+      and no Japanese disc built with the switches has been run in the
+      game ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc))
 
 - [ ] The real names in Japanese on the Japanese disc (Nexxus's wish,
       2026-11-12): `--mod real-names` there writes the English names in

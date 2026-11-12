@@ -68,8 +68,9 @@ the integrity descriptor's size table change, and the UDF end anchor moves
 to the new last sector. Files outside DATA.CVM keep their size.
 
 The Japanese release (SLPM_663.16) takes the same switches but
-third-tier, which is made for the PAL executable only (so not lmaster-full or
-lmaster-max). Each gives its bytes as PAL offsets; on a Japanese disc
+realism, which is made for the PAL release (so not lmaster-full or
+lmaster-max); third-tier is ported there except its rules text, which stays
+as the Japanese game has it. Each gives its bytes as PAL offsets; on a Japanese disc
 they are found in its executable and overlays with gamever.py (so the
 PAL files in ISO/ must be there), and checked as on PAL; a jump
 table's case addresses take the Japanese addresses of the same code.
@@ -816,10 +817,33 @@ class Port:
             if k % 4 == 0:
                 hits.append(k)
             k = other.data.find(old, k + 1, b)
+        if len(hits) > 1:
+            # The same bytes in several places: the one in the same place in
+            # the order, when PAL's function holds as many.
+            pa = ref.v2f(names[i])
+            pb = ref.v2f(names[i + 1]) if i + 1 < len(names) and ref.v2f(names[i + 1]) is not None \
+                else len(ref.data)
+            mine, k = [], ref.data.find(old, pa, pb)
+            while k >= 0:
+                if k % 4 == 0:
+                    mine.append(k)
+                k = ref.data.find(old, k + 1, pb)
+            where = ref.v2f(addr)
+            if len(mine) == len(hits) and where in mine:
+                hits = [hits[mine.index(where)]]
         if len(hits) == 1:
             n = norm(file)
             self.ranges = [r for r in self.ranges if not (r[0] == n and r[1] <= off < r[2])]
             self.ranges.append((n, off, off + len(old), there, hits[0]))
+
+    def pal_bytes(self, file, off, size):
+        """The `size` bytes PAL holds at `file` `off`, from the reference
+        files gamever compares against."""
+        import gamever
+        exe = norm(file) == norm(PAL_EXE_FILE)
+        ref = gamever.image(gamever.reference_of(self.copy(JP_EXE_FILE if exe else file)))
+        at = ref.v2f(off + (EXE_BASE if exe else 0))
+        return ref.data[at:at + size]
 
     def addresses(self, held, old, new):
         """(old, new) for another build where `held` differs from `old`
@@ -3550,6 +3574,15 @@ class CaveBuild:
         if getter[0] >> 16 != 0x3C03 or getter[2] >> 16 != 0x8C62:     # lui $v1 / lw $v0, lo($v1)
             raise ValueError("%s 0x%x isn't plPwork_GetPwork's lui/jr/lw" % (SLES_FILE, PWORK_GETTER))
         self.pwork = (getter[0] & 0xFFFF, getter[2] & 0xFFFF)
+        self._jp_exe = img.port.copy(JP_EXE_FILE) if img.port is not None else None
+
+    def addr(self, pal):
+        """This build's address for the executable's PAL address `pal`: a
+        function, a code place or a table (gamever); PAL's own on PAL."""
+        if self._jp_exe is None:
+            return pal
+        import gamever
+        return gamever.at(self._jp_exe, pal)
 
 
 _BIT_READ, _BIT_WRITE = 0x20C200, 0x20C1C0       # _plBits_BitRead(bits, n, signed), BitWrite(bits, v, n, signed)
@@ -3831,6 +3864,8 @@ OTEAM_FILE = "PARAM/OTEAMMEMBER.TBB"
 def _imm_word(f, img, file, off, old, new, what):
     """A word whose 16-bit immediate goes from `old` to `new`, from the
     word the retail file holds there."""
+    if img.port is not None:
+        img.port.expect(f, file, off, img.port.pal_bytes(file, off, 4))
     w = struct.unpack("<I", read_at(f, img, file, off, 4))[0]
     if w & 0xFFFF not in (old, new):
         raise ValueError("third-tier: %s 0x%x holds %#x, not an immediate %#x"
@@ -4071,22 +4106,23 @@ def _asm(base, items):
     return out
 
 
-def tier_cave():
-    """The tiers' code at TIER_CAVE: (words, {name: address})."""
+def tier_cave(build):
+    """The tiers' code at TIER_CAVE: (words, {name: address}). The
+    executable's addresses it jumps to are `build`'s."""
     shift_at = TIER_CAVE
     shift = [slti(V0, A0, 0x31), ("beqz", V0, "ret"), NOP,
-             j(TIER_SHIFT[1]), NOP,                 # competitions 0-48: shift their honours
+             j(build.addr(TIER_SHIFT[1])), NOP,     # competitions 0-48: shift their honours
              ("label", "ret"), jr(RA), NOP]
     finish_at = shift_at + 4 * len(_asm(shift_at, shift))
     start, back, cleanup = TIER_FINISH
     finish = [slti(V0, 20, 0x31), ("beqz", V0, "skip"), NOP,       # $s4: the competition
-              jal(0x253AF8), move(A1, 20),          # the displaced call, its $a0 0 set before
-              j(back), NOP,
-              ("label", "skip"), j(cleanup), NOP]
+              jal(build.addr(0x253AF8)), move(A1, 20),   # the displaced call, its $a0 0 set before
+              j(build.addr(back)), NOP,
+              ("label", "skip"), j(build.addr(cleanup)), NOP]
     return _asm(shift_at, shift) + _asm(finish_at, finish), {"shift": shift_at, "finish": finish_at}
 
 
-def promotion_words():
+def promotion_words(build):
     """ScheCallback_ProcPromotion rewritten, padded with nops. Your
     nation's second division's record d is seeded with S clubs (its last
     a tier club) and its tier's t with 3 (the first d's seeded last
@@ -4096,16 +4132,19 @@ def promotion_words():
     was seeded with but the two at S - 1 and S, which play in the 5-club
     tier (t's ranks 2-5, and d's S). Done once: not if your club or the
     rival is in d already."""
+    table = build.addr(0x51AD74)                    # the competition table's second column
+    past = build.addr(PAST_RECORD)
     w = _asm(PROMOTION, [
         addiu(SP, SP, -0x30), sd(RA, 0, SP), sq(S0, 0x10, SP), sq(S1, 0x20, SP),
-        jal(0x2463B0), NOP,                         # pwkLg_GetMyNati: 1-6
+        jal(build.addr(0x2463B0)), NOP,             # pwkLg_GetMyNati: 1-6
         addiu(V0, V0, -1), sltiu(V1, V0, 6), ("beqz", V1, "ret"), NOP,
         (V0 << 16 | V1 << 11 | 3 << 6),             # sll $v1, $v0, 3
-        lui(A0, 0x52), addu(A0, A0, V1), lw(S0, -0x528C & 0xFFFF, A0),   # 0x51ad74 + 8k: d
+        lui(A0, (table + 0x8000) >> 16), addu(A0, A0, V1),
+        lw(S0, table & 0xFFFF, A0),                 # 0x51ad74 + 8k: d
         addiu(S1, V0, 50),                          # t
-        jal(PAST_RECORD), move(A0, S1),
+        jal(past), move(A0, S1),
         ("beqz", V0, "ret"), move(S1, V0),
-        jal(PAST_RECORD), move(A0, S0),
+        jal(past), move(A0, S0),
         ("beqz", V0, "ret"), addiu(A0, V0, 8),      # d's teams
         move(T0, ZERO),
         ("label", "find"), lw(V1, 0, A0),
@@ -4129,7 +4168,8 @@ def promotion_words():
 def tier_uids_words(f, img):
     """third-tier's words for the tiers' seasons (the files come from
     file_tier_uids)."""
-    cave, at = tier_cave()
+    build = CaveBuild(f, img)
+    cave, at = tier_cave(build)
     words_ = [sles_word(a, old, new, what) for a, old, new, what in (TIER_SEED_LOOP, TIER_FINISH_BOUND)]
     site, target = TIER_SHIFT
     words_.append(sles_word(site, jal(target), jal(at["shift"]),
@@ -4140,15 +4180,15 @@ def tier_uids_words(f, img):
                    "%s 0x%x (calcCompetetionFinish: no honours from competition 49)"
                    % (SLES_FILE, start)))
     old = read_at(f, img, SLES_FILE, PROMOTION - EXE_BASE, 4 * PROMOTION_WORDS)
-    new = words(*promotion_words())
+    new = words(*promotion_words(build))
     words_.append((SLES_FILE, PROMOTION - EXE_BASE, old if old != new else bytes(len(new)), new,
                    "%s 0x%x (ScheCallback_ProcPromotion: two clubs of your second "
                    "division down to its tier)" % (SLES_FILE, PROMOTION)))
-    off = CAVE_FILE + TIER_CAVE - CAVE
-    held = read_at(f, img, SLES_FILE, off, 4 * len(cave))
+    off = build.cave_file + TIER_CAVE - CAVE
+    held = read_raw(f, img, build.exe, off, 4 * len(cave))
     new = words(*cave)
-    words_.append((SLES_FILE, off, held if held != new else bytes(len(new)), new,
-                   "%s 0x%x (the third tier's code at 0x%x)" % (SLES_FILE, off, TIER_CAVE)))
+    words_.append((build.exe, off, held if held != new else bytes(len(new)), new,
+                   "%s 0x%x (the third tier's code at 0x%x)" % (build.exe, off, TIER_CAVE)))
     return words_
 
 
@@ -4550,6 +4590,9 @@ def target_tier_text(file, data):
         with open(path, "wb") as g:
             g.write(data)
         pack = mbb.MesPack(path)
+    import realnames
+    if realnames.is_japanese(pack):
+        return data         # the rules text is written for the five European languages
     # An image patched before already has the text (its edits build on one
     # another, so they can't be found a second time): the English intro's
     # added last line tells.
@@ -4876,12 +4919,15 @@ def plan_third_tier(f, img, adopted=()):
     one-season game over, as one switch (the files come from
     file_third_tier, and its text goes into MES.PAC through
     target_tier_text)."""
+    jobs, notes = word_jobs(f, img, "third-tier",
+                            code_segment_words(f, img) + save_grow_words(f, img)
+                            + past_record_words(f, img) + tier_clubs_words(f, img)
+                            + tier_lists_words(f, img) + tier_uids_words(f, img)
+                            + list(ONE_SEASON_END))
     if img.port is not None:
-        raise ValueError("third-tier is made for the PAL executable only")
-    return word_jobs(f, img, "third-tier",
-                     code_segment_words(f, img) + save_grow_words(f, img) + past_record_words(f, img)
-                     + tier_clubs_words(f, img) + tier_lists_words(f, img)
-                     + tier_uids_words(f, img) + list(ONE_SEASON_END))
+        notes = notes + ["note: third-tier: the Japanese text's rules messages are not changed "
+                         "(DOC/JAPANESE_RELEASE.md#porting-third-tier-plan)"]
+    return jobs, notes
 
 
 def file_third_tier(f, img, dat):
@@ -5769,7 +5815,8 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
             target_path, crc,
             "" if crc == crc_before else " (was %08X)" % crc_before,
             "the retail CRC" if crc == RETAIL_CRC else
-            "PCSX2 keeps this disc's settings and savestates as SLES-54151_%08X" % crc))
+            "PCSX2 keeps this disc's settings and savestates as %s_%08X" % (
+                "SLPM-66316" if img.port is not None else "SLES-54151", crc)))
 
 
 def cmd_verify(image, args):
