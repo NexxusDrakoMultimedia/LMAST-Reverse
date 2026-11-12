@@ -185,8 +185,11 @@ list.
       SRC/patch_disc.py patch "<the Japanese image>" out.iso --mod
       third-tier --copies --dat DAT_JP`, start a new career (its saves
       go to `BISLPM-66316-F`), and check that it boots, that the save
-      writes and loads, and that a nation's third division shows and
-      plays a season as on the PAL disc
+      writes and loads, that the 2nd division of a nation starts at
+      its real size (in Germany, 18 clubs, with Siegen and Offenbach
+      gone at season 0 as on PAL; the third tier itself is hidden),
+      and that a season's end moves one club each way as on the PAL
+      disc
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc))
 - [ ] *Short.* A Japanese disc with `--mod real-names`: build it with
       `python SRC/patch_disc.py patch "<the Japanese image>" out.iso
