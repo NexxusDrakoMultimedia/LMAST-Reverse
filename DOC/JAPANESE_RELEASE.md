@@ -142,7 +142,9 @@ built with `--mod third-tier --copies --dat DAT_JP` writes 198 times
 (`mod-saves` comes with it: `BISLPM-66316-F` and `-V`). **Tested in
 PCSX2** (Nexxus's report, 2026-11-12): the disc boots, a new career
 starts, and the game reaches the tutorial's playoffs, whose teams are
-the same as on the PAL disc. The save
+the same as on the PAL disc. In a German career the 2nd division
+starts with 18 clubs, as on the PAL disc (the retail 20 less two sent
+down to the hidden tier). The save
 writing and loading, and a season through the third tier, are not
 checked yet.
 
