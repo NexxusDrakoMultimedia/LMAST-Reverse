@@ -90,6 +90,13 @@ the evidence and how it was tested; the git history holds the rest.
       turns inside its season, never the national-team dates (an option
       to play on them was built and removed, Nexxus's choice)
       ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size))
+- [x] The fonts: the European text is drawn from three pictures through
+      glyph records (rectangle, advance) and character lists in the
+      executable, so widths and text fit don't come from the pictures;
+      the Japanese language's 2-byte fonts (`FONT_ASCII`, the two planes
+      of `FONT_KANJI`) and the unused `FONT_KANJI_*.SVP`; `font.py`
+      checks it all over both builds
+      ([`FONT_FORMAT.md`](DOC/FONT_FORMAT.md))
 
 ## 3. Write: a writer for every format a mod changes
 

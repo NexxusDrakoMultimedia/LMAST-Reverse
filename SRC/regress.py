@@ -226,6 +226,12 @@ def checks():
         # decide which copy the game reads.
         ("preload", ["preload.py", "info", "DAT"], ["DAT"]),
         ("system", ["system.py", "info", "DAT/0SYSTEM"], ["DAT/0SYSTEM"]),
+        # The glyph tables in the executable against the font pictures, and
+        # every text byte of the six European languages against font 0.
+        ("font", ["font.py", "info", "ISO/SLES_541.51", "DAT/0SYSTEM"],
+         ["ISO/SLES_541.51", "DAT/0SYSTEM"]),
+        ("font_coverage", ["font.py", "coverage", "ISO/SLES_541.51", "DAT/MESSAGE/MES.PAC"],
+         ["ISO/SLES_541.51", "DAT/MESSAGE/MES.PAC"]),
         ("emblem", ["emblem.py", "info", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         ("emblem_roundtrip", ["emblem.py", "roundtrip", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         # The real names against the disc's name lists (PAL text only).
@@ -310,8 +316,9 @@ def _jp(arg):
 
 
 # The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15), and its
-# GAMEPRG.REL has the parameter getter at another address.
-JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param"}
+# GAMEPRG.REL has the parameter getter at another address. Its MES.PAC
+# slots 1-6 are placeholders, which the European fonts don't draw.
+JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "font_coverage"}
 
 
 def jp_checks(pal):

@@ -223,6 +223,7 @@ python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30 ab
 | [`svr.py`](SRC/svr.py) | Ninja textures `.SVR`/`.SVM`/`.SVP`, including GS unswizzling. Writer: `roundtrip` rebuilds every texture file on the disc (in packs too) and compares the bytes, `replace` puts a PNG into a texture | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) |
 | [`texmap.py`](SRC/texmap.py) | the PCSX2 texture-replacement name (XXH3 hash of the data, palette hash, state) of every texture on the disc; `match` maps a texture pack such as LMAST Realism onto the disc textures it replaces, `apply` writes the matching pictures (and a transparent border on the licensed crests) into copies of the pack files | [`TEXMAP.md`](DOC/TEXMAP.md) |
 | [`csp.py`](SRC/csp.py) | `.CSP`/`.CSE` 2D screen layouts (sprites, node tree, animation); `replace` writes a same-size texture back into a pack, `roundtrip` rebuilds every pack | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) |
+| [`font.py`](SRC/font.py) | the fonts: the glyph rectangles, widths and character lists in the executable (European fonts) and the Japanese 2-byte code tables, checked against the `FONT_*.SVR` pictures; `dump` writes the glyph table as CSV, `png` draws the rectangles over a picture, `coverage` checks every message byte against font 0 | [`FONT_FORMAT.md`](DOC/FONT_FORMAT.md) |
 | [`zbf.py`](SRC/zbf.py) | `.zbf` depth buffers for pre-rendered rooms | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) |
 | [`ninja.py`](SRC/ninja.py) | Ninja models and motions `.SNJ`/`.SNO`/`.SNM`/`.SNP`/`.SNA`, loose and inside archives; OBJ export, animated glTF export | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) |
 
@@ -413,6 +414,7 @@ listed (`afs.py`, `bpb.py`, `chd.py`, `cvs.py`, `gamedata.py`,
 | `svr.py` | `pac.py`; for `roundtrip`'s walk of the packs also `csp.py`, `acrobata.py` and `packdata.py` (imported when needed, they import `svr.py` in turn) |
 | `texmap.py` | `svr.py`, which opens every pack the textures sit in; `csp.py` and `pac.py` to write them back |
 | `csp.py` | `svr.py` for the textures inside CSP packs |
+| `font.py` | `svr.py` for the pictures, `sles_disasm.py` and `gamever.py` for the executable (either build); `coverage` also `mbb.py` for `MES.PAC` |
 | `zbf.py` | `pac.py`, to read depth buffers straight from `BG_*.MRG` |
 | `humanid.py` | `pac.py` for the `PRELOAD` copies; `sles_disasm.py` and `gamever.py` for the object table |
 | `eventdata_turn.py` | `tbb.py` |
@@ -560,6 +562,7 @@ saves.
 | [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md) | textures and GS swizzling |
 | [`TEXMAP.md`](DOC/TEXMAP.md) | PCSX2's texture-replacement names, and mapping a texture pack onto the disc |
 | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) | `DAT/CSE` 2D layouts |
+| [`FONT_FORMAT.md`](DOC/FONT_FORMAT.md) | the fonts: glyph records and character lists in the executable, the three European atlases, text layout and fit, the Japanese 2-byte fonts, and what a replacement face must keep |
 | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) | pre-rendered Z buffers |
 | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) | Ninja (NN) models, skeletons, motions, VU/PX Plus vertex streams |
 | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) | club kits: `UNIFORM_LIST` bit layout, kit designs and colours, the 96 colours, the `COLOR_TBL` clash table, `UNIFORM_GK` keeper kits |

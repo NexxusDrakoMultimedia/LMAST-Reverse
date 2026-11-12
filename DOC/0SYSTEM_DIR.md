@@ -25,10 +25,10 @@ layouts described here.
 | `SPONSOR_TEXTURE.PAC` | BINPAC, 232 SVR | type 5 | sponsor logos `sup_000`–`sup_231`. **confirmed** |
 | `SPONSOR_TEXTURE_M.PAC` | BINPAC, 232 SVR | type 6 | the same sponsors, `txcmn_adt_000`–`231`. **confirmed** |
 | `SPONSOR_TEXTURE_S.PAC` | BINPAC, 232 SVR | type 7 | the same sponsors, `BG_IP_ADT_000`–`231`. **confirmed** |
-| `FONT_KANJI.SVR`, `FONT_ASCII.SVR` | SVR 1024², 256² | `CFontTexture_fc_euro::LoadTexture`, language 0 only | Japanese fonts. **confirmed** |
-| `FONT_20_A.SVR` | SVR 256² | the same, languages 1–6 | the European font. **confirmed** |
+| `FONT_KANJI.SVR`, `FONT_ASCII.SVR` | SVR 1024², 256² | `CFontTexture_fc_euro::LoadTexture`, language 0 only | Japanese fonts. **confirmed**. See [`FONT_FORMAT.md`](FONT_FORMAT.md) |
+| `FONT_20_A.SVR` | SVR 256² | the same, languages 1–6 | the European font; its glyph rectangles and widths are in the executable. **confirmed** |
 | `FONT_8_A.SVR`, `FONT_8_B.SVR` | SVR 128² | the same, every language | small fonts. **confirmed** |
-| `FONT_KANJI_A.SVP`, `FONT_KANJI_B.SVP` | SVP, 16 colours | nothing | not named anywhere in the code |
+| `FONT_KANJI_A.SVP`, `FONT_KANJI_B.SVP` | SVP, 16 colours | nothing | copies of the two palettes of `FONT_KANJI` (one inside the SVR, one in the executable). **confirmed** |
 | `STATIC.ICO`, `STATIC_VS.ICO` | PS2 icon | `MC::CFcEuroIF::setFileInfo`, `SAVEPRG.REL` | the save and VS-data icons. **confirmed** |
 | `SAVE_VERSION.DAT` | text, 58 bytes | the root module's load list | a developer note (below) |
 | `MSGCOMMON.TBB` | TBB, 3 tables | nothing | a 2004 name table (below) |
@@ -188,15 +188,8 @@ described here.
 - Which UI element uses each of the 77 colours.
 - Who the `V001`–`V032` crests are.
 - Whether anything uses `SPONSOR_TEXTURE_M.PAC` (type 6).
-- The `FONT_KANJI_*.SVP` palettes (unreferenced).
-- How the European font's glyphs are laid out and measured, which a
-  replacement face (for example Roboto Condensed) needs. `FONT_20_A.SVR`
-  is a 256² grid of about 20 glyphs across and 9 rows (ASCII, the
-  Latin-1 accents, `€`, `č š ž ć`, fractions and the button icons
-  `O Δ □ X`). Not yet read: the character-to-cell map
-  (`sbFontConvrtAsciiString`, `0x3131b8`), whether advances are per glyph
-  (`sbFontGetDisplayWidth`, `0x312e50`) or per font type
-  (`pxGetFontWidth`, `0x146f68`, which reads a 4-entry table of 12-byte
-  records), and how `sbFontSetZoom` scales the cells on screen.
+- The fonts' open questions (how the picture is sampled, VRAM headroom,
+  which screens use the small fonts) are in
+  [`FONT_FORMAT.md`](FONT_FORMAT.md#still-unknown).
 - What `CDetailTeamFlag` draws, and so whether `FLAG_TEXTURE`'s crests are
   ever shown (Siena's real crest never is).
