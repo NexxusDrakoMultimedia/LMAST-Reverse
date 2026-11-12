@@ -179,10 +179,8 @@ list.
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-text))
 - [ ] A Japanese disc with `--mod third-tier` (the code, save and data
       are ported, not the rules text; it boots, starts a career and
-      reaches the tutorial's playoffs, and in Germany Siegen and
-      Offenbach go down to the 3rd tier at season 0 as on PAL, Nexxus's
-      report 2026-11-12; save and load and a season's end are open):
-      build it with `python
+      reaches the tutorial's playoffs, Nexxus's report 2026-11-12, the
+      rest is open): build it with `python
       SRC/patch_disc.py patch "<the Japanese image>" out.iso --mod
       third-tier --copies --dat DAT_JP`, start a new career (its saves
       go to `BISLPM-66316-F`), and check that it boots, that the save
