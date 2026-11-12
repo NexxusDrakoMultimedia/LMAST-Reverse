@@ -42,7 +42,7 @@ Usage:
     python texmap.py index <DAT> ... [--all] [--csv out.csv]
     python texmap.py match <pack folder> <DAT> ... [--all] [--csv out.csv]
     python texmap.py apply <pack folder> <DAT> <out folder> [--licensed-border N]
-                           [--sles <executable>] [--dry-run]
+                           [--sles <executable>] [--dry-run] [--all-folders]
     python texmap.py name  <name.png>
 
 `index` hashes every texture under the folders (loose files and the
@@ -57,8 +57,11 @@ original crests of the licensed Italian, Spanish and Dutch clubs (teams 123
 to 244) that the pack doesn't replace down by 2N pixels, leaving N more
 transparent pixels on every side (--sles names the executable that holds the
 licence table; the default is the one in ISO/ next to DAT). A picture whose
-alpha never passes 0x80 is taken as the GS's 0 to 0x80. `name` decodes one
-file name.
+alpha never passes 0x80 is taken as the GS's 0 to 0x80. A texture in a CSP
+pack goes back with csp.py's replace. `apply` leaves the pack's `Intro`
+and `Rival` folders out (Nexxus's scope, 2026-11-12: LMASTER will have
+its own intros, and Rival is an upscale made from mipmaps); --all-folders
+puts them in. `name` decodes one file name.
 """
 import csv
 import functools
@@ -486,6 +489,9 @@ def holder_kind(label):
     goes back with pac.py replace (SVR_FORMAT.md)."""
     path = label.split("#")[0].upper()
     if ".CSP" in label.upper():
+        # a texture entry of a CSP pack on its own; one inside a BINPAC has no writer
+        if CSP_LABEL.match(label):
+            return "CSP pack (csp.py replace)"
         return "CSP pack (no writer)"
     if "ACROBATAPACKFILE" in path:
         return "ACROBATA pack (no writer)"
@@ -513,6 +519,9 @@ def cmd_name(arg):
 # svr.texture_files labels: <file>, or <file>#<entry>:<name>[|prs] for a BINPAC
 # entry (deeper nesting and the pack kinds without a writer don't match)
 LABEL = re.compile(r"^(?P<path>[^#|]+)(?:#(?P<idx>\d+):(?P<name>[^#|]*)(?P<prs>\|prs)?)?$")
+# a texture entry of a CSP pack: <file>.CSP#<entry>, the entry's place in the pack
+CSP_LABEL = re.compile(r"^(?P<path>[^#|]+\.csp)#(?P<idx>\d+)$", re.I)
+WRITERS = ("BINPAC pack (pac.py replace)", "loose file", "CSP pack (csp.py replace)")
 
 
 def pack_picture(path, size):
@@ -562,11 +571,17 @@ def cmd_apply(args):
             f.write(data)
         os.replace(target + ".new", target)
     apply_pack(folder, dat, border, sles, emit,
-               "%s -> %s%s" % (folder, out_dir, "  (dry run: nothing written)" if dry else ""))
+               "%s -> %s%s" % (folder, out_dir, "  (dry run: nothing written)" if dry else ""),
+               () if "--all-folders" in args else LEFT_OUT)
     return 0
 
 
-def apply_pack(folder, dat, border, sles, emit, title):
+# Pack folders `apply` leaves alone unless --all-folders (Nexxus's scope, 2026-11-12):
+# Intro waits for LMASTER's own intros, Rival is an AI upscale made from mipmaps
+LEFT_OUT = ("Intro", "Rival")
+
+
+def apply_pack(folder, dat, border, sles, emit, title, left_out=LEFT_OUT):
     """The work of `apply`: emit(path relative to DAT, new file bytes) for each
     file that changes, and print the tally. `border` > 0 also insets the
     licensed clubs' crests the pack leaves alone (`sles`: the executable with
@@ -583,6 +598,10 @@ def apply_pack(folder, dat, border, sles, emit, title):
         name = parse_name(os.path.splitext(os.path.basename(path))[0])
         if name is None:
             tally["not a PCSX2 name"] += 1
+            continue
+        top = os.path.relpath(path, folder).replace("\\", "/").split("/")[0]
+        if top in left_out:
+            tally["pack folder %s left out" % top] += 1
             continue
         if name["mip"] or name["region"]:
             tally["mip or region file"] += 1
@@ -605,8 +624,8 @@ def apply_pack(folder, dat, border, sles, emit, title):
         for label, tex in good:
             wanted.setdefault((label, tex.slot), {}).setdefault(digest, path)
     def writable(label, pics):
-        return len(pics) == 1 and LABEL.match(label) and holder_kind(label) in (
-            "BINPAC pack (pac.py replace)", "loose file")
+        return len(pics) == 1 and (LABEL.match(label) or CSP_LABEL.match(label)) \
+            and holder_kind(label) in WRITERS
 
     # one picture per disc texture; a copy in PRELOAD follows its original
     # (patch_disc.py --copies), unless no other holder of the picture is written
@@ -621,12 +640,13 @@ def apply_pack(folder, dat, border, sles, emit, title):
         if is_preload(label) and digest in outside:
             tally["PRELOAD copy (patch_disc.py --copies)"] += 1
             continue
-        m = LABEL.match(label)
+        m = CSP_LABEL.match(label) or LABEL.match(label)
         kind = holder_kind(label)
-        if not m or kind not in ("BINPAC pack (pac.py replace)", "loose file"):
+        if not m or kind not in WRITERS:
             tally["no writer (%s)" % kind] += 1
             continue
-        key = (int(m.group("idx")) if m.group("idx") else None, m.group("name"), bool(m.group("prs")))
+        key = (int(m.group("idx")) if m.group("idx") else None,
+               m.groupdict().get("name"), bool(m.groupdict().get("prs")))
         jobs.setdefault(m.group("path"), {}).setdefault(key, {})[slot] = pic
         tally["textures to write"] += 1
     if border:      # the licensed clubs' own crests that the pack leaves alone
@@ -648,12 +668,22 @@ def apply_pack(folder, dat, border, sles, emit, title):
         with open(path, "rb") as f:
             data = f.read()
         blobs, head = None, None
-        if any(k[0] is not None for k in entries):
+        is_csp = path.upper().endswith(".CSP")
+        if is_csp:
+            import csp
+            csp_ents = csp.parse_csp(data)
+        elif any(k[0] is not None for k in entries):
             head, blobs = pac.binpac_blobs(data)
         new_file = data
         for (idx, name, prs), slots in sorted(entries.items(), key=lambda kv: kv[0][0] or 0):
-            raw = data if idx is None else blobs[idx]
-            if idx is not None and head.entries[idx][2] != name:
+            if is_csp:      # a texture entry of a CSP pack: its bytes, spliced back at the same size
+                off, size, kind_ = csp_ents[idx]
+                if kind_ != csp.TYPE_SVR:
+                    raise SystemExit("%s entry %d is not a texture" % (path, idx))
+                raw, name = data[off:off + size], os.path.basename(path) + "#%d" % idx
+            else:
+                raw = data if idx is None else blobs[idx]
+            if idx is not None and not is_csp and head.entries[idx][2] != name:
                 raise SystemExit("%s entry %d is %r, not %r" % (path, idx, head.entries[idx][2], name))
             if prs:
                 raw = pac.prsh_expand(raw)
@@ -678,7 +708,9 @@ def apply_pack(folder, dat, border, sles, emit, title):
                 far = sum(1 for a, b in zip(px, got)
                           if max(abs(a[0] - b[0]), abs(a[1] - b[1]), abs(a[2] - b[2])) > 16 and a[3] > 16)
                 worst.append((far / len(px), path, idx, slot))
-            if idx is None:
+            if is_csp:
+                new_file = csp.replace_entry(new_file, idx, new)
+            elif idx is None:
                 new_file = new
             else:
                 blobs[idx] = pac.prsh_wrap(new) if prs else new

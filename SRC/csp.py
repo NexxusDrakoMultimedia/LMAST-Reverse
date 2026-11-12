@@ -21,6 +21,12 @@ Usage:
     python csp.py tree    <file.CSP | file.CSE>
     python csp.py extract <file.CSP | dir> ... <out_dir>
     python csp.py png     <file.CSP | dir> ... <out_dir> [--crops]
+    python csp.py roundtrip <file.CSP | dir> ...   # rebuild each pack from its entries, !! if not identical
+    python csp.py replace <in.CSP> <entry> <texture.svr> <out.CSP>  # one texture entry, same size
+
+A rewritten texture keeps its size, so `replace` splices it into its entry
+and no other entry moves. The pack's entries sit on 16-byte boundaries
+(64 in two packs) with zero gaps, which `roundtrip` checks (build_csp).
 
 Requires: pip install pillow  (only for `png`)
 """
@@ -55,6 +61,59 @@ def parse_csp(buf):
             raise ValueError("bad CSP entry %d: %#x %#x %d %d" % (i, off, size, typ, zero))
         out.append((off, size, typ))
     return out
+
+
+def pack_align(buf):
+    """The boundary a pack's entries sit on: 16 in 487 of the 489 packs, 64
+    in CORE_PARTS and TEAM_SELECT_BG (empirical). 64 when some entry is on
+    a 64-byte boundary a 16-byte layout would not have put it on."""
+    ents = parse_csp(buf)
+    for align in (16, 64):
+        pos = -(-(4 + 16 * len(ents)) // align) * align
+        for off, size, _ in ents:
+            if off != pos:
+                break
+            pos = off + -(-size // align) * align
+        else:
+            return align
+    return 16
+
+
+def split_csp(buf):
+    """([(bytes, type)], tail): a pack's entries and any bytes after the
+    last one."""
+    ents = parse_csp(buf)
+    end = max((off + size for off, size, _ in ents), default=0)
+    return [(buf[off:off + size], typ) for off, size, typ in ents], buf[end:]
+
+
+def build_csp(entries, tail=b"", align=16):
+    """A pack from [(bytes, type)]: the header, then each entry on the next
+    `align`-byte boundary, the gaps zero. `tail` is whatever followed the
+    last entry (split_csp), which takes the place of its own padding."""
+    head = 4 + 16 * len(entries)
+    pos = -(-head // align) * align
+    table, body, pad = [], bytearray(b"\0" * (pos - head)), 0
+    for blob, typ in entries:
+        table.append(struct.pack("<4I", pos, len(blob), typ, 0))
+        pad = -len(blob) % align
+        body += blob + b"\0" * pad
+        pos += len(blob) + pad
+    out = struct.pack("<I", len(entries)) + b"".join(table) + bytes(body)
+    return out[:len(out) - pad] + tail
+
+
+def replace_entry(buf, index, new):
+    """The pack with entry `index` replaced by `new`, which must have the
+    entry's size (a rewritten texture does). The bytes are spliced into the
+    original, so no other entry moves, whatever the pack's layout."""
+    ents = parse_csp(buf)
+    if not 0 <= index < len(ents):
+        raise ValueError("entry %d of %d" % (index, len(ents)))
+    off, size, _ = ents[index]
+    if len(new) != size:
+        raise ValueError("entry %d is %d bytes, not %d" % (index, len(new), size))
+    return buf[:off] + new + buf[off + size:]
 
 
 # --- CSE ----------------------------------------------------------------------
@@ -260,6 +319,42 @@ def cmd_info(paths):
             nodes, banks, " ".join("%s[%d]" % (p.name, p.n_crops) for p in cse.pics)))
 
 
+def cmd_roundtrip(paths):
+    """Rebuild every CSP from its entries (build_csp) and compare."""
+    same = bad = 0
+    for path in _iter_files(paths, (".CSP",)):
+        with open(path, "rb") as f:
+            buf = f.read()
+        if not buf:
+            continue
+        try:
+            ents, tail = split_csp(buf)
+            ok = build_csp(ents, tail, pack_align(buf)) == buf
+        except (ValueError, struct.error) as e:
+            print("%-28s !! %s" % (os.path.basename(path), e))
+            bad += 1
+            continue
+        if ok:
+            same += 1
+        else:
+            bad += 1
+            print("%-28s !! rebuilt pack differs" % os.path.basename(path))
+    print("%d packs rebuilt byte for byte, %d not" % (same, bad))
+
+
+def cmd_replace(src, index, new_svr, out):
+    """Write <src> with texture entry <index> replaced by the SVR file."""
+    with open(src, "rb") as f:
+        buf = f.read()
+    with open(new_svr, "rb") as f:
+        new = f.read()
+    ents, _ = split_csp(buf)
+    if not 0 <= index < len(ents) or ents[index][1] != TYPE_SVR:
+        raise SystemExit("entry %d of %s is not a texture" % (index, src))
+    with open(out, "wb") as f:
+        f.write(replace_entry(buf, index, new))
+
+
 def cmd_tree(path):
     cse, texs = load(path)
     print("%s  %dx%d  bg=%08x  header u18..u1e=%d %d %d %#x" % (
@@ -373,6 +468,10 @@ def main(argv):
         cmd_tree(args[0])
     elif cmd == "extract" and len(args) >= 2:
         cmd_extract(args[:-1], args[-1])
+    elif cmd == "roundtrip":
+        cmd_roundtrip(args)
+    elif cmd == "replace" and len(args) == 4:
+        cmd_replace(args[0], int(args[1]), args[2], args[3])
     elif cmd == "png" and len(args) >= 2:
         crops = "--crops" in args
         args = [a for a in args if a != "--crops"]

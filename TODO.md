@@ -47,13 +47,13 @@ What to work on next, most valuable first.
    that `pac.py replace` can write. `texmap.py apply` writes the crests
    and match pictures into copies of their packs, and `--mod realism`
    (LMASTER full and max) builds them into a disc, which works in PCSX2.
-   Left (Nexxus's scope, 2026-11-12): the pack's `Fixes`, `Adboards` and
-   `Leagues` folders on the disc. Of their 73 files 65 are in plain packs
-   and already go on the disc; the other 7 (3 in `Fixes`, 4 in `Leagues`)
-   sit in `CSE/*.CSP` packs and need a CSP writer. `Intro` waits for
+   Nexxus's scope (2026-11-12): the pack's `Fixes`, `Adboards` and
+   `Leagues` folders go on the disc, all 73 files now (65 in plain packs,
+   7 in `CSE/*.CSP` packs through `csp.py replace`); `Intro` waits for
    LMASTER's own intros, and `Rival` stays out (an upscale made from
-   mipmaps, largely incompatible). The kits stay Realism-only (a PCSX2
-   texture pack)
+   mipmaps, largely incompatible). Left: seeing the `Fixes`, `Adboards`
+   and `Leagues` pictures in the game ([`TESTING.md`](TESTING.md)). The
+   kits stay Realism-only (a PCSX2 texture pack)
    ([`TEXMAP.md`](DOC/TEXMAP.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
 3. **Every LMASTER switch on the Japanese release** (section 8), needed
    before LMASTER 1.0.0: every switch but `realism` builds there now,

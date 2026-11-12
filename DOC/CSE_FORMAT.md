@@ -84,6 +84,11 @@ count × { u32 offset, u32 size, u32 type, u32 zero }
 The runtime class is `FC_EURO_CSE_RESOURCE::CFcEuro_CseResource`
 (`ConvertPackFile`, `CommonSetup`).
 
+- Entries start on 16-byte boundaries with zero gaps, and 64-byte ones in
+  two packs (`CORE_PARTS`, `TEAM_SELECT_BG`) (**empirical**:
+  `python SRC/csp.py roundtrip DAT/CSE` rebuilds all 489 PAL packs, and
+  all 438 Japanese ones, byte for byte). `csp.py replace` puts a
+  same-size texture into an entry without moving the others.
 - The CSE's picture count always equals the number of SVRs, and SVR *i*
   is the texture for picture *i*. `csp.py extract` names each SVR after its
   picture.

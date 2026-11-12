@@ -131,6 +131,11 @@ the evidence and how it was tested; the git history holds the rest.
       Dutch clubs' own crests a transparent edge like Realism's; a
       `patch_disc.py --copies` build carries them to the `PRELOAD`
       copies ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply))
+- [x] A CSP pack writer: `csp.py replace` and `roundtrip` (all 489 packs
+      rebuild byte for byte), so Realism's `Fixes` and `Leagues` pictures
+      in CSP packs go on the disc too; `texmap.py apply` leaves the
+      `Intro` and `Rival` folders out (Nexxus's scope)
+      ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply))
 - [x] `--mod realism` (group `graphics`, LMASTER full and max): the
       switch takes the pack's folder with `--realism`, and the editor's
       Build disc window has a box for it

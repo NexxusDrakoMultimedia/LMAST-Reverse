@@ -1014,9 +1014,12 @@ built from `texmap.py apply`'s files with `--copies`. **Tested in PCSX2**
 (Nexxus's report, 2026-11-07, `LMAST-test-realism.iso`): the disc shows the
 pack's pictures and works; the mini logos first came out half transparent
 and were fixed ([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)).
-Not done: the CSP and
-ACROBATA packs hold 58 more of the pack's pictures (the league logos,
-the intro), and they have no writer.
+Since 2026-11-13 the
+pictures in CSP packs go in too (`csp.py replace`: 7 pictures, 16 packs, the
+`Fixes` and `Leagues` folders; not seen in the game yet). Nexxus's scope
+(2026-11-12): the pack's `Fixes`, `Adboards` and `Leagues` folders are
+put on the disc, `Intro` waits for LMASTER's own intros, and `Rival` stays
+out (an upscale made from mipmaps, largely incompatible).
 
 ## Planned
 

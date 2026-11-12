@@ -193,6 +193,7 @@ def checks():
         # The PCSX2 name of every texture; the digest changes if any hash does.
         ("texmap_index", ["texmap.py", "index", "DAT"], ["DAT"]),
         ("csp", ["csp.py", "info", "DAT"], ["DAT"]),
+        ("csp_roundtrip", ["csp.py", "roundtrip", "DAT/CSE"], ["DAT/CSE"]),
         ("zbf", ["zbf.py", "info", "DAT"], ["DAT"]),
         ("ninja", ["ninja.py", "info", "DAT"], ["DAT"]),
         # BG/HUMANID.BIN and its PRELOAD copies; the dump names each

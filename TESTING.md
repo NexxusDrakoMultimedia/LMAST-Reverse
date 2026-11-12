@@ -214,6 +214,14 @@ list.
 
 ## Patches, text and what things look like
 
+- [ ] LMAST Realism's `Fixes`, `Adboards` and `Leagues` pictures on a disc
+      built with `--mod realism` (`python SRC/patch_disc.py patch "<the
+      PAL image>" out.iso --mod realism --copies --dat DAT --realism
+      <the pack>`; the CSP pictures are new): the club facilities
+      screens (`WP_FACILITIES_01` to `_03`), an advertising board, and the
+      league logos (the six-nation league screens, `SC_SIXNATIONS_01` to
+      `_04`) show the pack's pictures, with nothing garbled or missing
+      ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply))
 - [ ] *Short.* The widescreen patch on a modded disc: copy the pnach
       under the modded executable's own CRC
       ([`INSTALL.md`](INSTALL.md#pcsx2-patches)) and check the picture

@@ -82,7 +82,7 @@ python SRC/texmap.py match <LMAST-Realism>/textures/SLES-54151/replacements DAT
 | `0SYSTEM/EMBLEM_TEXTURE.PAC` (crests; `FLAG_TEXTURE.PAC` holds the same pictures) | 346 | yes, `pac.py replace` |
 | `PLAYER/EDIT_UNIFORM_ORG_SOX/SHT/PNT.PAC`, `EDIT_UNIFORM_GK_SHT/PNT.PAC` (kit parts) | 1,182 | yes, but see the palettes below |
 | `0SYSTEM/MATCH_TEXTURE`, `MINIMATCH_TEXTURE`, `MINIEMBLEM_TEXTURE`, `SPONSOR_TEXTURE_M` | 73 | yes |
-| `CSE/*.CSP` (league logos and menu screens) | 8 | no |
+| `CSE/*.CSP` (league logos and menu screens) | 8 | yes, `csp.py`'s `replace` (7 of the 8: the `Intro` one is left out) |
 | `ACROBATA/ACROBATAPACKFILE.PAC` (intro scenes) | 4 | no |
 
 (`match` prints the count of files by holder; the table shows the
@@ -146,12 +146,26 @@ in `EMBLEM_TEXTURE` and `FLAG_TEXTURE`). The steps:
 
 Left out, and counted in the output: the 1,182 kit pictures (palette
 differs; **Nexxus's choice, 2026-11-07: the kits stay Realism-only, a
-PCSX2 texture pack**), 58 in the CSP and ACROBATA packs (no writer), 
-disc textures that two different pictures of the pack claim (none at
+PCSX2 texture pack**), the pack's `Intro` and `Rival` folders (**Nexxus's
+scope, 2026-11-12**: LMASTER will have intros of its own, and `Rival` is an
+AI upscale made from mipmaps, largely incompatible; `--all-folders` puts
+them in), disc textures that two different pictures of the pack claim (none at
 the moment: Clermont Foot's crest had one, a mislabelled Rapid Wien
 logo that Nexxus removed from the pack, 2026-11-07), and the files
 without a disc texture. A texture also held in a `PRELOAD` pack is written only in
 its original: `patch_disc.py --copies` carries it to the copy.
+
+**CSP packs** (Nexxus's scope, 2026-11-12: the pack's `Fixes`, `Adboards`
+and `Leagues` folders, 73 files, 65 of them in plain packs and 7 in CSP
+packs). A texture in a CSP pack is labelled `<file>.CSP#<entry>` (the
+entry's place in the pack, the layout being entry 0) and goes back with
+`csp.py replace`: the same-size texture is spliced into the original
+bytes, so no other entry moves (**empirical**: the 7 pictures write 16
+packs, the `WP_FACILITIES_01` to `_03` pack of the `Fixes` folder and the
+`SC_SIXNATIONS_01` to `_04` language copies of `Leagues`, each the size of
+the original, with the CSE and every other entry unchanged, and the
+texture reading back). The rest of the two folders was already written
+through the BINPAC packs.
 
 A crest is 4 bit with a 16-colour palette, so the pack's full-colour
 pictures are reduced to 16 colours; 563 of the 781 differ by more than 16
