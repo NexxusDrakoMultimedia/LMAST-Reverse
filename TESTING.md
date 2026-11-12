@@ -180,8 +180,8 @@ list.
 - [ ] A Japanese disc with `--mod third-tier` (the code, save and data
       are ported, not the rules text; it boots, starts a career and
       reaches the tutorial's playoffs with the same teams as on PAL,
-      and the German 2nd division starts with 18 clubs, Nexxus's
-      report 2026-11-12, the
+      and the German 2nd division starts with 18 clubs, without
+      Siegen or Offenbach (a screenshot), Nexxus's report 2026-11-12, the
       rest is open): build it with `python
       SRC/patch_disc.py patch "<the Japanese image>" out.iso --mod
       third-tier --copies --dat DAT_JP`, start a new career (its saves

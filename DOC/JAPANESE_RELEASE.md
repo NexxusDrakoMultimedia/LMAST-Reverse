@@ -144,7 +144,9 @@ PCSX2** (Nexxus's report, 2026-11-12): the disc boots, a new career
 starts, and the game reaches the tutorial's playoffs, whose teams are
 the same as on the PAL disc. In a German career the 2nd division
 starts with 18 clubs, as on the PAL disc (the retail 20 less two sent
-down to the hidden tier). The save
+down to the hidden tier): the first game day's results (August 2006,
+week 1, with a screenshot) are 9 matches, and Siegen is not among
+them, nor is Offenbach. The save
 writing and loading, and a season through the third tier, are not
 checked yet.
 
