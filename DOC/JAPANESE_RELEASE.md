@@ -139,8 +139,11 @@ six data files and some text. It builds for the Japanese disc since
 places plan there (each checks that the bytes it finds are the ones it
 expects), PAL's 93 jobs are byte for byte what they were, and a disc
 built with `--mod third-tier --copies --dat DAT_JP` writes 198 times
-(`mod-saves` comes with it: `BISLPM-66316-F` and `-V`). It has not been
-run in the game.
+(`mod-saves` comes with it: `BISLPM-66316-F` and `-V`). **Tested in
+PCSX2** (Nexxus's report, 2026-11-12): the disc boots, a new career
+starts, and the game reaches the tutorial's playoffs. The save
+writing and loading, and a season through the third tier, are not
+checked yet.
 
 | Part | On PAL | On the Japanese disc |
 |---|---|---|
