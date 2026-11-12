@@ -47,8 +47,13 @@ What to work on next, most valuable first.
    that `pac.py replace` can write. `texmap.py apply` writes the crests
    and match pictures into copies of their packs, and `--mod realism`
    (LMASTER full and max) builds them into a disc, which works in PCSX2.
-   Left: writers for the CSP and ACROBATA packs (58 pictures). The kits
-   stay Realism-only (a PCSX2 texture pack)
+   Left (Nexxus's scope, 2026-11-12): the pack's `Fixes`, `Adboards` and
+   `Leagues` folders on the disc. Of their 73 files 65 are in plain packs
+   and already go on the disc; the other 7 (3 in `Fixes`, 4 in `Leagues`)
+   sit in `CSE/*.CSP` packs and need a CSP writer. `Intro` waits for
+   LMASTER's own intros, and `Rival` stays out (an upscale made from
+   mipmaps, largely incompatible). The kits stay Realism-only (a PCSX2
+   texture pack)
    ([`TEXMAP.md`](DOC/TEXMAP.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
 3. **Every LMASTER switch on the Japanese release** (section 8), needed
    before LMASTER 1.0.0: every switch but `realism` builds there now,
@@ -57,10 +62,10 @@ What to work on next, most valuable first.
    rules text in Japanese, `realism` (the pack is named by PAL hashes),
    and running a Japanese disc in the game
    ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc)).
-4. **League games on the national-team dates in the game**
-   ([`TESTING.md`](TESTING.md)): England at 18 clubs, a short test that
-   decides whether the new division sizes are safe to offer
-   ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size)).
+4. **A smaller first division in the game** ([`TESTING.md`](TESTING.md)):
+   France at 18 from the Season tab, and two nations changed in one
+   build; only England at 22 is tested
+   ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from)).
 
 ## The goals, and what each still needs
 
@@ -70,7 +75,7 @@ the graphics that come after the data.
 
 | Goal | What works today | Still in the way | Sections |
 |---|---|---|---|
-| **The starting season** | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results: writers and editor tabs, tested in PCSX2. The national-team calendar and the club ranking have writers and tabs; leagues on the national-team dates allow every size from 18 English clubs up | a smaller first division, league games on the national-team dates, the national calendar and the club ranking tested in the game | 2, 7 |
+| **The starting season** | leagues, squads, clubs, the new club, free agents, schedules and division sizes, regulations and results: writers and editor tabs, tested in PCSX2. The national-team calendar and the club ranking have writers and tabs; division sizes follow the calendar, and the leagues never play on the national-team dates | a smaller first division, the national calendar and the club ranking tested in the game | 2, 7 |
 | **Data** | players, staff, clubs, kits, crests and flags, facilities, training, camps, tours, the tactics presets, the PR events, the player links, and the stadiums' looks and boards: writers and tabs | the remaining player and staff fields; the other stadium tables | 2, 3 |
 | **Parameters** | every `PARAM/` table's layout is known and `tbb.py replace` swaps any table; the economy's constants in the executable are traced and changed by named switches | the open fields of the parameter files, the match AI's files and the match parameters | 2 |
 | **Text** | every message in every language, with a writer and the Text tab; real names for every league, club and nation | the screen-set variables and a few message categories | 2 |

@@ -571,27 +571,25 @@ ones `league_turns` can add. A bigger first division needs more game
 days and a smaller one gives them to the second, so the range has no
 gaps:
 
-| Nation | First division now | Can take | One club fewer | One club more | Can take on national dates (`--national`) |
-|---|---|---|---|---|---|
-| England | 20 | 20–24 | UID 1 needs 54 game days, has 51 | UID 0 needs 50, has 48 | 18–26 |
-| France | 20 | 16–24 | UID 11 needs 54, has 51 | UID 10 needs 50, has 49 | 14–26 |
-| Germany | 18 | 12–26 | UID 20 needs 54, has 50 | 27 clubs is over 26 | 10–26 |
-| Italy | 20 | 20–24 | UID 29 needs 50, has 49 | UID 28 needs 50, has 46 | 16–26 |
-| Spain | 20 | 18–24 | UID 39 needs 54, has 52 | UID 38 needs 50, has 47 | 16–26 |
-| Netherlands | 18 | 16–22 | UID 49 needs 46, has 44 (UID 48 too) | UID 47 needs 46, has 42 | 14–24 |
+| Nation | First division now | Can take | One club fewer | One club more |
+|---|---|---|---|---|
+| England | 20 | 20–24 | UID 1 needs 54 game days, has 51 | UID 0 needs 50, has 48 |
+| France | 20 | 16–24 | UID 11 needs 54, has 51 | UID 10 needs 50, has 49 |
+| Germany | 18 | 12–26 | UID 20 needs 54, has 50 | 27 clubs is over 26 |
+| Italy | 20 | 20–24 | UID 29 needs 50, has 49 | UID 28 needs 50, has 46 |
+| Spain | 20 | 18–24 | UID 39 needs 54, has 52 | UID 38 needs 50, has 47 |
+| Netherlands | 18 | 16–22 | UID 49 needs 46, has 44 (UID 48 too) | UID 47 needs 46, has 42 |
 
 The lower end is always the second division's own-nation version
 (yours and the rival's clubs make it 2 bigger), except in the
 Netherlands, where both versions run out of days at 15. Empirical:
 `plan` accepts exactly these sizes for every nation (tried 1–29), and
 `build` writes and checks every nation at both ends and all six at
-their largest in one go; with `--national`, all six at their smallest
-in one build and all six at their largest in another. On the national
-dates the second division's own-nation version can reach 28 clubs,
-which last season's record holds (32 places) and `build` checks; a
-league of 28 isn't tested in game. The free turns are counted on the
-disc's calendar; a mod that already moved a league's game days gets a
-range from its own files.
+their largest in one go. The free turns are counted on the disc's
+calendar; a mod that already moved a league's game days gets a range
+from its own files. The national teams' dates are never used (Nexxus's
+choice, 2026-11-12): the squads are called up and released on them, and
+the disc's leagues never play then.
 
 **Tested in PCSX2** (Nexxus's report): England's first division at 22
 clubs (`leaguesize.py build`, patched with `--copies` and
@@ -649,42 +647,35 @@ turns DAT/PARAM`). A second division's own-nation version holds your
 club and the rival as well, 2 more than the other-nations version, so
 it limits how far that division can grow:
 
-| League | First division: clubs now, most, most on national dates | Second division (other-nations / own-nation): now, most, most on national dates |
+| League | First division: clubs now, most | Second division (other-nations / own-nation): now, most |
 |---|---|---|
-| England (UIDs 0, 2, 1) | 20, 24, 28 | 24 / 26; can't grow; up to 26 |
-| France (10, 12, 11) | 20, 24, 28 | 20 / 22; up to 24; up to 26 |
-| Germany (19, 21, 20) | 18, 26, 28 | 18 / 20; up to 24; up to 26 |
-| Italy (28, 30, 29) | 20, 24, 26 | 22 / 24; can't grow; up to 26 |
-| Spain (38, 40, 39) | 20, 24, 26 | 22 / 24; up to 24; up to 26 |
-| Netherlands (47, 49, 48) | 18, 22, 24 | 20 / 22; up to 22; up to 24 |
+| England (UIDs 0, 2, 1) | 20, 24 | 24 / 26; can't grow |
+| France (10, 12, 11) | 20, 24 | 20 / 22; up to 24 |
+| Germany (19, 21, 20) | 18, 26 | 18 / 20; up to 24 |
+| Italy (28, 30, 29) | 20, 24 | 22 / 24; can't grow |
+| Spain (38, 40, 39) | 20, 24 | 22 / 24; up to 24 |
+| Netherlands (47, 49, 48) | 18, 22 | 20 / 22; up to 22 |
 
 The second division's figures are its other-nations version's, held to
 26 by table 0 ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)); its
 own-nation version, with your club and the rival, is 2 more.
 
-**Playing on the national-team dates.** Most of a second division's
-blocked midweeks are European nights, which a second-division club
-almost never plays, but six are blocked only by the national teams:
-Sep w3, Oct w2, Nov w2, Nov w3, Feb w3 and Mar w3, the qualifying
-dates of competitions 44 and 46, which every division's season spans. No club plays on them, and on each the squads are called up and
-released on the match turn itself (flags 1+4+8 in
+**The national-team dates stay closed.** Six of a second division's
+blocked midweeks are blocked only by the national teams: Sep w3, Oct w2,
+Nov w2, Nov w3, Feb w3 and Mar w3, the qualifying dates of competitions
+44 and 46, which every division's season spans. No club plays on them,
+and on each the squads are called up and released on the match turn
+itself (flags 1+4+8 in
 [`SCHEDULE_LIST.TBB`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)).
-`league_turns(..., national=True)` (and `--national` on `schedule.py
-turns` and `leaguesize.py plan` and `build`) counts those dates as
-free, which gives every domestic league 6 more turns: the third column
-above, and the last column of the [sizes
-table](#where-the-clubs-come-from). The real English second division
-plays through the international breaks too. The disc's leagues never
-do, so what the game does with a league game on such a date (whether
-the called-up players miss it) isn't known; not tested in game.
-Starting the season earlier or ending it later gains nothing safe:
-July weeks 1–3 hold the European qualifiers and the runtime cups, and
-late May the playoffs and the European finals.
+The tools never put a league game there: the calls are kept apart on
+purpose (Nexxus's choice, 2026-11-12; an option to open them was built
+and removed before it was ever played in the game). Starting the
+season earlier or ending it later gains nothing safe: July weeks 1–3
+hold the European qualifiers and the runtime cups, and late May the
+playoffs and the European finals.
 
 `python SRC/schedule.py turns DAT/PARAM 0 42` draws the season with the
-turns a 42-day schedule would add, and `python SRC/schedule.py turns
-DAT/PARAM 1 54 --national` the English second division at 28 clubs,
-with the national dates it can use marked `n`.
+turns a 42-day schedule would add.
 
 ## Building a knockout
 
@@ -784,11 +775,6 @@ nation's lower cup by its tier's clubs
   and how other nations' and sizes' promotion and relegation play out in
   game (only England at 22 is tested). What the game does with UID 117's
   extra game days.
-- What a league game on a national-team date does in the game
-  (`--national`, [Game days for a league of another
-  size](#game-days-for-a-league-of-another-size)): whether the clubs
-  play without their called-up players, and whether your own club's
-  turn shows both.
 
 ## Checking the claims
 
@@ -802,7 +788,6 @@ python SRC/schedule.py knockout DAT/PARAM     # the disc's knockouts rebuilt by 
 python SRC/schedule.py knockout DAT/PARAM 10  # one generated 10-club bracket, day by day
 python SRC/schedule.py turns  DAT/PARAM       # each domestic league's game days and room for more
 python SRC/schedule.py turns  DAT/PARAM 0 42  # the English first division's season with 42 game days
-python SRC/schedule.py turns  DAT/PARAM --national  # the room with the national-team dates open
-python SRC/leaguesize.py plan DAT/PARAM England 18 --national  # a smaller English first division
+python SRC/leaguesize.py plan DAT/PARAM England 22  # a bigger English first division: slots and checks
 python SRC/sles_disasm.py ISO/SLES_541.51 dis Sche_Block_decode_main2 makeTeamEntryIDList
 ```

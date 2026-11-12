@@ -86,10 +86,9 @@ the evidence and how it was tested; the git history holds the rest.
       goal and the opponents' back line); the press row compares the
       line of play with a defensive line
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
-- [x] Room for other division sizes: leagues may also play on the six
-      national-team qualifying dates (`--national`, the Season tab's
-      "Play on national-team dates"), 6 more game days each, so England's
-      first division takes 18–26 clubs and Italy's 16–26
+- [x] Room for other division sizes: a league's game days are the free
+      turns inside its season, never the national-team dates (an option
+      to play on them was built and removed, Nexxus's choice)
       ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size))
 
 ## 3. Write: a writer for every format a mod changes

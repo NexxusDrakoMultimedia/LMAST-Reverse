@@ -4529,9 +4529,7 @@ class SeasonTab(Tab):
     A pending size change is shown from leaguesize.plan; the save runs
     leaguesize.build after the swaps are written, as the log's commands
     do. A swap only exchanges two ids, so it gives the same result before
-    or after a size change. "Play on national-team dates" is leaguesize's
-    --national: the leagues may use those dates too, which widens the
-    sizes allowed."""
+    or after a size change."""
     title = "Season"
 
     def __init__(self, app):
@@ -4550,11 +4548,6 @@ class SeasonTab(Tab):
         box.bind("<<ComboboxSelected>>", lambda e: self.show())
         self.size_cell = ttk.Frame(bar)
         self.size_cell.pack(side="left", padx=(0, 8))
-        self.national_var = tk.BooleanVar(value=False)
-        self.national_box = ttk.Checkbutton(bar, text="Play on national-team dates",
-                                            variable=self.national_var,
-                                            command=self.set_national)
-        self.national_box.pack(side="left", padx=(0, 20))
         ttk.Label(bar, text="Swap").pack(side="left")
         self.a_var, self.b_var = tk.StringVar(), tk.StringVar()
         self.a_box = ttk.Combobox(bar, textvariable=self.a_var, state="readonly", width=30,
@@ -4575,9 +4568,7 @@ class SeasonTab(Tab):
                                    "its lowest clubs above the relegation places down. Both "
                                    "divisions get new schedules and game days, which must fit "
                                    "their seasons (DOC/SCHEDULE_FORMAT.md). Tested in PCSX2: "
-                                   "England at 22 clubs through two seasons. Playing on the "
-                                   "national-team dates gives every league 6 more game days "
-                                   "(not tested in the game).",
+                                   "England at 22 clubs through two seasons.",
                   foreground="#555", wraplength=1100, justify="left").pack(anchor="w", padx=8)
         self.body = ttk.Frame(self.frame)
         self.body.pack(fill="both", expand=True, padx=6, pady=6)
@@ -4604,7 +4595,7 @@ class SeasonTab(Tab):
             # folder when it is there, as `leaguesize.py build --over` reads them.
             self.data = leaguesize.load(self.param_dir(), self.param_over())
             self.init = self.data[3]
-            self.nations = self.make_nations(self.national_var.get())
+            self.nations = self.make_nations()
             self.teams = initteam.team_names(mod.source(MES), 1)
         except (ValueError, struct.error, OSError, StopIteration) as e:
             self.app.status("Couldn't load the starting divisions: %s" % e)
@@ -4617,24 +4608,9 @@ class SeasonTab(Tab):
             self.app.status(done)
         self.app.update_title()
 
-    def make_nations(self, national):
-        return [leaguesize.Nation(*self.data[:3], lg, national)
+    def make_nations(self):
+        return [leaguesize.Nation(*self.data[:3], lg)
                 for lg in range(len(teaminit.LEAGUES))]
-
-    def set_national(self):
-        """Recount each league's room with or without the national-team
-        dates; refused while a pending size needs the room it would lose."""
-        national = self.national_var.get()
-        for league, clubs in sorted(self.sizes.items()):
-            probs = leaguesize.plan(None, league, clubs, self.data, national)[4]
-            if probs:
-                self.national_var.set(not national)
-                return self.refuse("%s at %d clubs needs the national-team dates: %s" % (
-                    teaminit.LEAGUES[league], clubs, "; ".join(probs)), lambda: None)
-        self.nations = self.make_nations(national)
-        self.app.status("League game days %s the national-team dates" % (
-            "may use" if national else "keep clear of"))
-        self.show()
 
     def param_dir(self):
         return os.path.join(self.app.mod.dat, "PARAM")
@@ -4646,8 +4622,7 @@ class SeasonTab(Tab):
         """[(clubs in last season's order, past record or None)] for the
         league's two divisions, with a size change not saved yet."""
         if league in self.sizes:
-            n, _, _, recs, _ = leaguesize.plan(None, league, self.sizes[league], self.data,
-                                               self.national_var.get())
+            n, _, _, recs, _ = leaguesize.plan(None, league, self.sizes[league], self.data)
             return [(recs[0], n.c1), (recs[1], n.c2)]
         out = []
         for div in range(initteam.DIVISIONS):
@@ -4725,7 +4700,7 @@ class SeasonTab(Tab):
             clubs = int(text)
         except ValueError:
             return self.refuse("Not a number: %r" % text, revert)
-        probs = leaguesize.plan(None, league, clubs, self.data, self.national_var.get())[4]
+        probs = leaguesize.plan(None, league, clubs, self.data)[4]
         if probs:
             return self.refuse("%s can't have %d clubs in its first division: %s" % (
                 teaminit.LEAGUES[league], clubs, "; ".join(probs)), revert)
@@ -4831,18 +4806,17 @@ class SeasonTab(Tab):
         leaguesize.verify, then each file replaces its copy in <mod>/PARAM."""
         mod = self.app.mod
         sizes = sorted(self.sizes.items())
-        national = self.national_var.get()
         folder = os.path.join(mod.root, LEAGUESIZE_NEW)
         temps = []
         try:
-            files, turns = leaguesize.build(self.param_dir(), sizes, self.param_over(), national)
+            files, turns = leaguesize.build(self.param_dir(), sizes, self.param_over())
             os.makedirs(folder, exist_ok=True)
             os.makedirs(self.param_over(), exist_ok=True)
             for name, data in sorted(files.items()):
                 temps.append((os.path.join(folder, name), os.path.join(self.param_over(), name)))
                 with open(temps[-1][0], "wb") as f:
                     f.write(data)
-            probs = leaguesize.verify(folder, sizes, turns, national)
+            probs = leaguesize.verify(folder, sizes, turns)
             if probs:
                 raise ValueError("; ".join(probs))
         except (ValueError, struct.error, OSError) as e:
@@ -4858,9 +4832,7 @@ class SeasonTab(Tab):
         for lg, clubs in sizes:
             cmd += [teaminit.LEAGUES[lg], str(clubs)]
         cmd += ["--over", quote(shown_path(self.param_over()))]
-        if national:
-            cmd.append("--national")
-        lines = log_lines("Season: %s" % ", ".join("%s first division %d clubs" % (
+        lines = log_lines("Season:%s" % ", ".join("%s first division %d clubs" % (
             teaminit.LEAGUES[lg], c) for lg, c in sizes), [cmd], temps,
             moved="each file in %s" % shown_path(folder))
         mod.log(lines)

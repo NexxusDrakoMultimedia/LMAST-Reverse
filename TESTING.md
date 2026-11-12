@@ -55,13 +55,6 @@ list.
 
 ## The starting season and data
 
-- [ ] *Short.* League games on the national-team dates: England at 18
-      with "Play on national-team dates" ticked in the Season tab
-      (`leaguesize.py build ... England 18 --national`), a career in the
-      Champions Division (28 clubs) played past Sep w3 midweek, the first
-      such date: the league game is played, your called-up players are
-      missing or not, and the season ends on 54 game days
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size))
 - [ ] A smaller first division (France at 18, from the Season tab) and
       two nations changed in one build; only England at 22 is tested
       ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from))
