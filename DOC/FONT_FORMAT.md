@@ -4,20 +4,26 @@
 # Fonts: glyph tables, atlases and how text is laid out
 
 All text in the game is drawn from bitmap pictures, which this doc calls
-atlases. The European build draws every language from three of them
-(`FONT_20_A`, `FONT_8_A`, `FONT_8_B` in `DAT/0SYSTEM`). A picture holds
-only pixels. Where each glyph sits in the picture, how wide it is, how
-tall the font is and which byte draws which glyph are all data in the
-executable. So a new face can be fitted in two ways: draw it into the same
-rectangles, or move the rectangles by patching the executable.
+atlases. The text of language slots 1 to 6 (English, French, German,
+Italian, Spanish and the unused slot 6, see
+[`MBB_FORMAT.md`](MBB_FORMAT.md#languages)) is drawn from three of them
+(`FONT_20_A`, `FONT_8_A`, `FONT_8_B` in `DAT/0SYSTEM`). A picture holds only pixels. Where each glyph sits in the
+picture, how wide it is, how tall the font is and which byte draws which
+glyph are all data in the executable. So a new face can be fitted in two
+ways: draw it into the same rectangles, or move the rectangles by
+patching the executable.
 
 The Japanese language (language 0) uses other machinery: fixed-size cells
 and Shift-JIS lookup tables (`FONT_ASCII`, `FONT_KANJI`). The PAL
 executable carries that code and its tables too, but only language 0
-reaches it. Folder overview: [`0SYSTEM_DIR.md`](0SYSTEM_DIR.md). Tools:
-`font.py` reads and checks the fonts; `fontmod.py` draws a new face into
-font 0 (the switch `modern-font`,
-[`LMASTER_MOD.md`](LMASTER_MOD.md#modern-font)).
+reaches it. Folder overview: [`0SYSTEM_DIR.md`](0SYSTEM_DIR.md).
+
+Tools: `python SRC/font.py info ISO/SLES_541.51 DAT/0SYSTEM` reads and
+checks the fonts. `fontmod.py` draws a new face into font 0; it is the
+switch `modern-font` ([`LMASTER_MOD.md`](LMASTER_MOD.md#modern-font)), and
+its character table (`CHARS`) holds the bytes that draw a letter or sign
+other than cp850's (the table below, except the pad buttons, the euro
+sign with a small s and the blank cells).
 
 ## The files
 
@@ -159,34 +165,44 @@ lacks only the four icons and `0xb3` (the euro sign). **empirical**
 
 ## Font 0 (`FONT_20_A`)
 
-The glyphs are laid out freely, not on a grid, and are in no byte order
-(the first row reads `! " # $ % & ' * + - / \ : ; < = > ? @ ` ¦ ^`). The
-list in the executable says which byte each rectangle is. Records 0–40
-follow ASCII from `!`; the accents sit in cp850 order (byte `0x80` is
-Ç, `0x81` ü, `0x82` é ...).
+The glyphs are laid out freely, not on a grid, and the rectangles are in
+no byte order: the first row of the picture, left to right, holds
+`0x21 0x22 0x23 0x24 0x25 0x26 0x27 0x2a 0x2b 0x2d 0xf0 0x2f 0x5c 0x3a
+0x3b 0x3c 0x3d 0x3e 0x3f 0x40 0x60 0x7c 0x5e`, which draw the shapes
+`! " # $ % & ' * + -`, a short bar (`0xf0`), `/ \ : ; < = > ? @`, a
+backtick, a broken bar `¦` (`0x7c`) and `^`. The list in the executable
+says which byte each rectangle is. Records 0–93 are the printable ASCII
+bytes `0x21`–`0x7e` in order, records 94–189 are the bytes from `0x80` up
+in cp850 order (byte `0x80` is Ç, `0x81` ü, `0x82` é ...) with gaps for
+the bytes the font lacks, and the last 24 records (190–213) hold bytes
+that draw a shape other than cp850's or nothing (below). **empirical**
+(`python SRC/font.py dump`).
 
 | Fact (all **empirical**, over the 214 records) | Value |
 |---|---|
 | Rectangles | 201 are 26 tall (starting at y = 0, 25, 50, 75, 101, 127, 153, 179, 205, 231: rows overlap by one line, which has no ink), 13 are 7x6 blank placeholders in the free corner (x 227–255, y 153–177) |
 | Widths | 6 to 19 pixels, whole numbers; 46 glyphs are 12 wide, 28 are 11 wide |
-| Empty rectangles | 17: the 13 placeholders and four blank 14x26 ones (bytes `0xb0`, `0xb1`, `0xb4`, `0xb9`) |
+| Empty rectangles | 17: the 13 placeholders (bytes `0x9e`, `0x9f`, `0xc4`, `0xc5`, `0xc8`, `0xc9`, `0xd5`, `0xef`, `0xf1`, `0xf4`, `0xf5`, `0xf6`, `0xf9`) and four blank 14x26 ones (bytes `0xb0`, `0xb1`, `0xb4`, `0xb9`) |
 | Past the picture | 15 rectangles of the last row end at v1 = 257/256, one line below the picture (that line has no ink) |
 | Ink | 18,940 inked pixels, all inside a rectangle; 3 pairs of records share a rectangle |
 | Vertical metrics, inside the 26-row rectangle | caps and ascenders rows 3–21 (19 tall), x-height top at row 8, baseline below row 21, descenders down to row 24, accented capitals from row 1, round letters overshoot by one row |
 | Weight | vertical stems 2 px, horizontal bars about 2.25 px, 1 px side bearing on each side in most glyphs |
 
-Bytes that differ from cp850 or aren't text:
+Bytes that draw a shape other than cp850's, or that aren't text:
 
 | Byte | Draws |
 |---|---|
 | `0x10`, `0x11`, `0x12`, `0x13` | the pad buttons: circle, cross, triangle, square (`mbb.py`'s `EU_BUTTONS`) |
-| `0xb3` | the euro sign, used 11 times in each language's messages |
+| `0xb3` | the euro sign, used 11 times in each language's messages (cp850: a box-drawing bar) |
 | `0xba` | a euro sign with a small s |
-| `0xab`, `0xac`, `0xf3` | ½, ¼, ¾ |
+| `0xb2` | a small middle dot `·` (cp850: a shade block) |
+| `0xbf` | a yen sign `¥` (cp850: a box-drawing corner) |
 | `0xcd`, `0xcc`, `0xbb`, `0xbc`, `0xca`, `0xcb`, `0xce`, `0xd9` | ć, Ć, Š, š, Ž, ž, Č, č (cp850's box-drawing bytes) |
 | `0xfb`, `0xfc`, `0xfd` | superscript 1, 2, 3 (cp850 has 1, 3, 2) |
-| `0xa7` | a small superscript 0 (º) |
+| `0xb0`, `0xb1`, `0xb4`, `0xb9` | blank cells (cp850: shade blocks and box-drawing characters) |
 
+`0xa7` (º) and `0xab`, `0xac`, `0xf3` (½, ¼, ¾) are cp850's own
+characters; `º` is drawn as a small ring in the top rows of its cell.
 What each of these bytes draws is read from the picture and the list,
 not seen in the running game. The messages in `MES.PAC` use none of
 `0xba` and the Central European letters.
@@ -292,7 +308,10 @@ For the European fonts (PAL; the Japanese build's fonts 0 and 1 have their
 own tables). Checked against the code and the data, and tried in the game
 for font 0: `fontmod.py` follows every row below, and the disc it builds
 shows the new face with the menus and the pre-match screen fitting
-(Nexxus's report, 2026-11-13).
+(**Tested in PCSX2**, Nexxus's report, 2026-11-13). The longest list
+names, the news and match screens and the pad icons have not been looked
+at yet ([`LMASTER_MOD.md`](LMASTER_MOD.md#modern-font),
+[`TESTING.md`](../TESTING.md)).
 
 | Item | Why | Consequence |
 |---|---|---|
@@ -310,24 +329,6 @@ The patchable data (records, lists, counts, descriptors) is in `.rodata`
 and `.data` of the executable, which `patch_disc.py` already writes
 (`SLES_541.51`). A patch needs each build's own addresses: the Japanese
 build's font 0 and 1 tables differ from PAL's.
-
-## Checking the claims
-
-```bash
-python SRC/font.py info ISO/SLES_541.51 DAT/0SYSTEM
-python SRC/font.py info ISO_JP/SLPM_663.16 DAT_JP/0SYSTEM
-python SRC/font.py coverage ISO/SLES_541.51 DAT/MESSAGE/MES.PAC
-python SRC/font.py dump ISO/SLES_541.51 0 glyphs0.csv
-python SRC/font.py png ISO/SLES_541.51 DAT/0SYSTEM 0 rects0.png
-```
-
-`info` checks every record against its picture and prints `!!` for a
-rectangle with an off-grid edge, a short rectangle with ink in it, ink
-that isn't white, a list code of `0x100` or more, or a 2-byte table or
-plane that doesn't fit its picture. The Japanese build's `FONT_8_A` has
-96 inked pixels (about ten shapes, among them punctuation) and its
-`FONT_20_A` 2 that no record reaches: left-over art, not an error.
-`png` draws the rectangles over the picture (green with ink, red without).
 
 ## Still unknown
 
@@ -366,3 +367,22 @@ plane that doesn't fit its picture. The Japanese build's `FONT_8_A` has
   overlay reads T1, T2 or the extra glyphs.
 - How the Japanese `FONT_20_A` and `FONT_8_A` tables differ from PAL's in
   detail (the widths of about a quarter of the glyphs differ by a pixel).
+
+## Checking the claims
+
+```bash
+python SRC/font.py info ISO/SLES_541.51 DAT/0SYSTEM
+python SRC/font.py info ISO_JP/SLPM_663.16 DAT_JP/0SYSTEM
+python SRC/font.py coverage ISO/SLES_541.51 DAT/MESSAGE/MES.PAC
+python SRC/font.py dump ISO/SLES_541.51 0 glyphs0.csv      # write the CSV and PNG outside the repo
+python SRC/font.py png ISO/SLES_541.51 DAT/0SYSTEM 0 rects0.png
+python SRC/fontmod.py info ISO/SLES_541.51 DAT/0SYSTEM "RobotoCondensed[wght].ttf"   # the new face, read back through font.py's checks
+```
+
+`info` checks every record against its picture and prints `!!` for a
+rectangle with an off-grid edge, a short rectangle with ink in it, ink
+that isn't white, a list code of `0x100` or more, or a 2-byte table or
+plane that doesn't fit its picture. The Japanese build's `FONT_8_A` has
+96 inked pixels (about ten shapes, among them punctuation) and its
+`FONT_20_A` 2 that no record reaches: left-over art, not an error.
+`png` draws the rectangles over the picture (green with ink, red without).

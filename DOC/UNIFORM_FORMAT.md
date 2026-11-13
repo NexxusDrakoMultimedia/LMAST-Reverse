@@ -65,10 +65,12 @@ team id 0, so the lookup never finds them.
 fields and calls `UniformList_GetDataPlayer` (`0x2d3078`) twice. That copies
 one 15-field kit into a `Param::PlUnifOne` of 15 bytes, one byte per field.
 A `PlUnifGame` is the 6 side bytes, then the goalkeeper kit at `+6`, then the
-outfield kit at `+0x15`. `pwkTeam_GetUnif` (`0x26ebd8`) fills a team's
+outfield kit at `+0x15`. `pwkTeam_GetUnif` (`0x26e9d8`) fills a team's
 `PlUnif` (0x50 bytes): the home `PlUnifGame` at `+6` and the away one at
-`+0x2a`. For the player's own club it writes the main sponsor to `+4` and
-the kit supplier to `+5` (`0x26ea2c`).
+`+0x2a` (the home side's lookup starts at `0x26ebd8`, its call is at
+`0x26ebe8`; the away call is at `0x26ec08`). For the player's
+own club it writes the main sponsor to `+4` and the kit supplier to `+5`
+(`0x26ea2c`).
 
 **The sponsor and supplier bytes (`PlUnif +4`, `+5`).** **Confirmed.**
 `pwkTeam_GetUnif` (`0x26e9d8`) fills them for your club only: the main
@@ -80,12 +82,11 @@ sets either for your club later. The licensed kit loader
 (`CUniformLoader::_load_licence`, `0x2c25cc`–`0x2c25e8`) resets a main
 sponsor of 200 or more and a supplier of 7 or more to 0, so a club can
 show 200 sponsors and 7 suppliers. Nothing shows on a computer club's
-kit, where both are 0 (Nexxus's report, 2026-11-10). What draws the
-logos for your club is not found: `CUniformBuilder::Init` (`0x2c48b0`)
-copies the whole `PlUnif` into the builder at `+0xb4`, and the only
-reads of its `+4` and `+5` that were found are the loader's clamps
-above. Which textures a sponsor or supplier number picks, and which
-numbers have a logo, are not known.
+kit, where both are 0 (Nexxus's report, 2026-11-10).
+`CUniformBuilder::Init` (`0x2c48b0`) copies the whole `PlUnif` into the
+builder at `+0xb4`, and the loader turns the two numbers into texture
+requests ([below](#the-sponsor-and-supplier-logos-on-a-generated-kit)).
+Which sponsor and supplier numbers have a logo texture isn't known.
 
 ### The kit (`PlUnifOne`)
 
@@ -182,13 +183,15 @@ Side fields 3 and 4 are **confirmed** from the same viewer code. Side field
 1 has exactly the same value counts as side field 3 (878 × 0, 202 × 1), so
 it may be related, but that isn't checked.
 
-**Sponsor and supplier logos (empirical, unproven).** In PCSX2 states
-(Nexxus, 2026-11-10) your club's match kit record and the rival's, whose
-kits show a sponsor and a supplier logo, have side fields 1, 3 and 5 of
-the home side at 1 (your club's side fields `0 1 0 1 1 1`, the rival's
+**Sponsor and supplier logos (empirical).** In PCSX2 states (Nexxus,
+2026-11-10) your club's match kit record and the rival's, whose kits show
+a sponsor and a supplier logo, have side fields 1, 3 and 5 of the home
+side at 1 (your club's side fields `0 1 0 1 1 1`, the rival's
 `0 1 0 1 0 1`), and a computer club's (Betis, from `kits.csv`) had `0 0 0 0
-1 0` with a valid sponsor and supplier and no logos. `--mod
-random-sponsors` therefore sets fields 1, 3 and 5 of both sides to 1.
+1 0` with a valid sponsor and supplier and no logos. The difference is
+not what hides a computer club's logos: the texture-list test is
+([below](#the-sponsor-and-supplier-logos-on-a-generated-kit)), and
+`--mod random-sponsors` doesn't set these fields.
 
 ### Colours
 
@@ -255,19 +258,22 @@ Setting a licensed club's flag to 1 and writing its kit into the row
 
 ### The sponsor and supplier logos on a generated kit
 
-**Confirmed** from the code and PCSX2 states (2026-11-10; the last
-step not yet seen to draw). `_load_edit` stores the team id and `PlUnif`
-`+4` and `+5` in the loader (`+0x1778`, `+0x177c`, `+0x1780`) and makes
-three texture resources, types 0, 5 and 7, for every club
-(`0x2c2ef0`–`0x2c2f58`; the types are the word table at `0x55a248`).
-Type 5 is `SPONSOR_TEXTURE.PAC` and type 7 `SPONSOR_TEXTURE_S.PAC`
-(`CmnTex_005_NNN`, `CmnTex_007_NNN`, entry = record number − 1; a
-supplier number of `0xd5` or more becomes `0xce`). `_setup_texture_list`
-(`0x2c5340`) then keeps the real lists only for team 1, team 2 and the
-VS teams: `0x2c54bc`–`0x2c54d8` send any other club to the default list
-(`0x2c5504`) for both slots. So a computer club holds its logos but
-doesn't draw them. See
-[`LMASTER_MOD.md`](LMASTER_MOD.md#random-sponsors).
+**Confirmed** from the code and PCSX2 states (2026-11-10).
+`_load_edit` stores the team id and `PlUnif` `+4` and `+5` in the loader
+(`+0x1778`, `+0x177c`, `+0x1780`) and makes three texture resources,
+types 0, 5 and 7, for every club (`0x2c2ef0`–`0x2c2f58`; the types are
+the word table at `0x55a248`). Type 5 is `SPONSOR_TEXTURE.PAC` and type 7
+`SPONSOR_TEXTURE_S.PAC` (`CmnTex_005_NNN`, `CmnTex_007_NNN`, entry =
+record number − 1; a supplier number of `0xd5` or more becomes `0xce`).
+`_setup_texture_list` (`0x2c5340`) then keeps the real lists only for
+team 1, team 2 and the VS teams (team ids `0x21f`–`0x22e`). The code
+that takes the real sponsor and supplier lists is at `0x2c54e0`, and
+`0x2c54bc`–`0x2c54d8` send any other club to the default list
+(`0x2c5504`), which is copied into texture list slots 4 and 6. So a
+computer club holds its logos but doesn't draw them. With that test
+bypassed by `--mod random-sponsors`, a computer club draws both logos (**tested in
+PCSX2**, Nexxus's screenshots, 2026-11-10; the test is in
+[`LMASTER_MOD.md`](LMASTER_MOD.md#random-sponsors)).
 
 ### The descriptor
 
@@ -407,6 +413,38 @@ row 0 points at keeper design 35.
 `setgk` refuses a value that would make the game drop the row or the
 scheme.
 
+## Editing
+
+```bash
+python SRC/uniform.py set DAT/PLAYER/UNIFORM_LIST.TBB out/UNIFORM_LIST.TBB 3 home.outfield.1=A4 7 away.outfield.0=12
+python SRC/uniform.py setexe ISO/SLES_541.51 out/SLES_541.51 home 0 outfield.backnumber=A8
+python SRC/uniform.py setlicence DAT/PLAYER/PLPACK_HOME.HED out/PLPACK_HOME.PAC 0 outfield.backnumber=A8
+python SRC/uniform.py setgk DAT/PLAYER/UNIFORM_GK.TBB out/UNIFORM_GK.TBB keeper.35.0.1=A8
+```
+
+`set` takes several teams, each followed by its fields. The editor's
+Kits tab (`SRC/editor.py`) edits the same fields through the same code
+(`set_row_field`, `apply_gk_edit`), offering only values the game keeps
+(`uniform.edit_range`) and showing each colour as a swatch.
+
+For a licensed club the tab also edits the descriptor's named fields
+(`set_descriptor`). It reads the executable's copy, which the game draws
+from, and writes each edit to both copies, logged as one `setexe` and
+one `setlicence` per side and licence, so the two stay equal as on the
+disc. The values it offers (`uniform.descriptor_spec`): the 96 colours
+or off, collars 0–11, shorts number off/right/left, and for name type
+(1, 2) and captain mark (0–4) the values the disc uses; the unknown
+bytes 14–15 are read-only. `setlicence --data <in.PAC>` reads the
+pack's data from an already edited copy instead of the one next to the
+header, which stays in `DAT/` (the pack keeps its size).
+
+`setexe`'s output is patched onto a disc image with
+`python SRC/patch_disc.py patch <in.iso> <out.iso>
+disc:SLES_541.51=out/SLES_541.51`. Edits to `UNIFORM_LIST.TBB` and
+`UNIFORM_GK.TBB` go onto a disc with `patch_disc.py --copies`, because
+`PRELOAD/SIMFILE0`–`6.PAC` hold copies of both
+([Tested in PCSX2](#tested-in-pcsx2)).
+
 ## Tested in PCSX2
 
 - **Unlicensed kit colour.** With `uniform.py set ... 3
@@ -459,38 +497,14 @@ scheme.
   outside a match show it rather than the `UNIFORM_GK` kit (the code says
   they should; not checked).
 
-## Tool
+## Checking the claims
 
 ```bash
 python SRC/uniform.py info      DAT/PLAYER ISO/SLES_541.51   # check everything
 python SRC/uniform.py show      DAT/PLAYER 3                 # Birmingham's kits
 python SRC/uniform.py licensed  DAT/PLAYER ISO/SLES_541.51   # the 116 licensed kits
 python SRC/uniform.py clash     DAT/PLAYER A8                # colours that clash with white
-python SRC/uniform.py roundtrip DAT/PLAYER/UNIFORM_LIST.TBB  # re-pack all 661 rows
-python SRC/uniform.py set DAT/PLAYER/UNIFORM_LIST.TBB out/UNIFORM_LIST.TBB 3 home.outfield.1=A4 7 away.outfield.0=12
-python SRC/uniform.py setexe ISO/SLES_541.51 out/SLES_541.51 home 0 outfield.backnumber=A8
-python SRC/uniform.py setlicence DAT/PLAYER/PLPACK_HOME.HED out/PLPACK_HOME.PAC 0 outfield.backnumber=A8
 python SRC/uniform.py gk        DAT/PLAYER 35                # keeper design 35 and its schemes
-python SRC/uniform.py setgk DAT/PLAYER/UNIFORM_GK.TBB out/UNIFORM_GK.TBB keeper.35.0.1=A8
+python SRC/uniform.py roundtrip DAT/PLAYER/UNIFORM_LIST.TBB  # re-pack all 661 rows
 python SRC/tbb.py roundtrip     DAT/PLAYER/UNIFORM_GK.TBB    # the container re-writes
 ```
-
-`set` takes several teams, each followed by its fields. The editor's
-Kits tab (`SRC/editor.py`) edits the same fields through the same code
-(`set_row_field`, `apply_gk_edit`), offering only values the game keeps
-(`uniform.edit_range`) and showing each colour as a swatch.
-
-For a licensed club the tab also edits the descriptor's named fields
-(`set_descriptor`). It reads the executable's copy, which the game draws
-from, and writes each edit to both copies, logged as one `setexe` and
-one `setlicence` per side and licence, so the two stay equal as on the
-disc. The values it offers (`uniform.descriptor_spec`): the 96 colours
-or off, collars 0–11, shorts number off/right/left, and for name type
-(1, 2) and captain mark (0–4) the values the disc uses; the unknown
-bytes 14–15 are read-only. `setlicence --data <in.PAC>` reads the
-pack's data from an already edited copy instead of the one next to the
-header, which stays in `DAT/` (the pack keeps its size).
-
-`setexe`'s output is patched onto a disc image with
-`python SRC/patch_disc.py patch <in.iso> <out.iso>
-disc:SLES_541.51=out/SLES_541.51`.

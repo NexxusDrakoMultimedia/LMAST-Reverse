@@ -282,7 +282,7 @@ def colour_swatches(dat):
 class Team:
     def __init__(self, fields):
         self.id = fields[0]
-        self.flag = fields[1]                       # 3 bits, meaning unknown
+        self.flag = fields[1]                       # 3 bits: 2 or 4 licensed, else generated
         self.sides = {}
         for name, side, fp, gk in SIDES:
             self.sides[name] = (fields[side:side + 6], fields[fp:fp + KIT_LEN],
@@ -741,7 +741,7 @@ def cmd_set(src, dst, args):
 # licensed club a generated kit instead: the row's flag becomes 1 and its home
 # and away outfield kits come from the table. The keeper kits stay as the row has
 # them. Shirt design numbers are the atlas designs whose front panel has the
-# pattern (empirical, `DOC/UNIFORM_FORMAT.md#shirt-designs`): the texture's index
+# pattern (empirical, `DOC/UNIFORM_FORMAT.md#shirt-designs-and-the-three-shirt-colours`): the texture's index
 # below 100 is shirt colour 1, 100-179 colour 2, 180 and up colour 3.
 KITS_CSV = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kits.csv")
 KIT_PATTERNS = {"plain": 15, "stripes": 10, "wide": 25, "fine": 91, "hoops": 7, "half": 33,

@@ -47,12 +47,14 @@ Usage:
     python teaminit.py roundtrip <TEAM_INIT_DATA.TBB>
     python teaminit.py limits    <ISO folder>
 
+`info` checks that every league and style a reader can ask for starts a
+whole group, and that ids, byte fields and stadiums are in range.
 `show` names players and staff from PBDATA_EU.PAC next to the file (or
 --pbdata). `set` writes a same-size table for patch_disc.py; records are
 numbered from 0 within a table, as `show` prints them. `limits` decodes
 the money limits from the executable (either build): salaries are
 rounded up to a step and kept within a minimum and maximum per currency,
-the table at 0x5eb068 that the initializer at 0x24a140 fills.
+in the table at 0x5eb068 that the initializer at 0x24a140 fills.
 """
 import os
 import struct
@@ -316,10 +318,11 @@ def read_limits(exe):
 # What an editor (SRC/editor.py) offers, narrower than set_field allows:
 # the values on the disc and those tested in PCSX2. Ages: the players' byte
 # is PlOpinfo +2, as in OTEAMMEMBER (initteam.SQUAD_EDIT_RANGES: 15-40);
-# staff ages are the database's staff ages (managers 35-55, scouts 35-58,
-# the same byte, TEAMINIT_FORMAT.md). Contracts: 1-6 covers this file's
-# (2-4 players, 1-3 staff) and OTEAMMEMBER's 2-6.
-# Salaries: the game's range in pounds (SALARY_LIMITS below), the PAL
+# staff ages are the database's staff ages (35-55 for managers and 35-58
+# for scouts on the disc, the same byte, TEAMINIT_FORMAT.md; the managers'
+# range below stops at 58, as the scouts' does). Contracts: 1-6 covers this
+# file's (2-4 players, 1-3 staff) and OTEAMMEMBER's 2-6.
+# Salaries: the game's range in pounds (SALARY_LIMITS above), the PAL
 # English default currency; euros allow down to 40,000.
 EDIT_RANGES = {
     ("players", "age"): (15, 40),

@@ -15,7 +15,8 @@ DOC/PLRESOURCESIM_FORMAT.md.
                            64 x {zone, 12 monthly weather rows} and 64 x
                            {row, 4 chances} (plCity_GetListProbability)
   1  overseas branches     TBB: 13 x {region, cost}, 8 f32 level rates (0x232d88)
-  2  (unread)              TBB: 400 bytes, 128 u16; no call asks for entry 2
+  2  (unread)              TBB: a 400-byte table and 128 u16; no call asks
+                           for entry 2
   3  club records          457 x 24 bytes (plOteam_GetDb), see initteam.py
   4  nations               145 x {s16 national-team manager, u16 club[8]}
   5  player affiliations   s16 stream: -player, then clubs (> 0), players
@@ -52,14 +53,15 @@ sets overseas branches' establishing costs (entry 1 table 0, regions
 0-12); the investment to raise a level and the upkeep are that cost times
 the level rates, so they follow it. `setgroup` edits a stream: a
 player's clubs (5), a scout's exclusive or semi-exclusive players (11,
-12), or a combination (13, 14; groups numbered as `show` numbers them,
-the next number adding one, ids being database ids of players and
-managers). An empty value removes the group, and a bare entry number
+12), or a combination (13, 14; groups are numbered as `show` numbers
+them, the next number adds one, and the ids are database ids of players
+and managers). An empty value removes the group, and a bare entry number
 between pairs switches to that stream. Each entry keeps its size, so a
 stream may only grow into its zero padding (entry 5 has none).
 `roundtrip` re-encodes the unchanged free-agent list, branch costs and
 streams through those encoders and checks that the rebuilt pack equals
-the original byte for byte.
+the original byte for byte. The Japanese release's pack ends at entry 14
+(it has no free-agent list); `info` and `roundtrip` handle that.
 """
 import os
 import struct

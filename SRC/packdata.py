@@ -66,6 +66,10 @@ def data_base(n):
 
 
 class PackData:
+    """One expanded entry: count, base (where the blocks start), offsets
+    and blocks, a list of (type, size, offset of the block's data). Raises
+    ValueError when the table or a block runs past the end of buf."""
+
     def __init__(self, buf):
         if len(buf) < 4:
             raise ValueError("too short for a block count")

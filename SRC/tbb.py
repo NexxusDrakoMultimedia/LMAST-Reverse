@@ -5,7 +5,7 @@
 A .TBB file is a small container of one or more TBL1 tables of raw,
 fixed-width binary rows. The layout was confirmed against the game's own
 accessors in SLES_541.51 (TbbData::GetTableDataPtr,
-TblData::CTblData::GetDataTable1LineSize, ...) - see DOC/TBB_FORMAT.md.
+TblData::CTblData::GetDataTable1LineSize, ...); see DOC/TBB_FORMAT.md.
 
 The container carries no column types; each table is just
 `size` bytes cut into `line_size`-byte rows. Row schemas live in the
@@ -19,9 +19,9 @@ as raw hex.
 
 build() writes a container back out: the header, the offset array padded
 to 16 bytes, then each table header and its data padded to 16 bytes, as
-the documented layout says. Every file on the disc rebuilds byte for byte
-(`roundtrip`). The two ROUTEBOX_*.BCR files carry a 0x350-byte `RBD0`
-trailer after the last table, which is kept as-is.
+DOC/TBB_FORMAT.md describes. All 70 .TBB, .BCR and .BCB files on the disc
+rebuild byte for byte (`roundtrip`). The two ROUTEBOX_*.BCR files carry a
+0x350-byte `RBD0` trailer after the last table, which is kept as-is.
 
 Usage:
     python tbb.py info      <file.TBB|.BCR|.BCB | dir> ...

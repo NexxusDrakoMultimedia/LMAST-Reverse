@@ -1,20 +1,23 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Main sponsor negotiation
+# Main sponsor negotiation: a feature PAL cut
 
-In the Japanese release the season's Sponsor screen lets you negotiate with
-a main sponsor candidate: you name a fee, and the sponsor accepts or
-refuses. PAL only offers to sign each candidate at its listed fee. The
-negotiation is still in the PAL game. Its text is translated and its code is
-compiled in. One check switches it off: a function that returns 0. This doc
-traces the feature and describes `patch_disc.py --sponsor-negotiation`,
-which turns it back on.
+In the Japanese release the season's Sponsor screen lets you negotiate
+with a main sponsor candidate: you name a fee, and the sponsor accepts
+or refuses. PAL only offers to sign each candidate at its listed fee.
+The negotiation is still in the PAL game. Its text is translated and its
+code is compiled in. One check switches it off: a function that returns
+0. This doc traces the feature and describes `patch_disc.py --mod
+sponsor-negotiation` (also the flag `--sponsor-negotiation`), which
+turns it back on. The switch is in the `club-fixes` group, so every
+edition of the LMASTER Mod has it
+([`LMASTER_MOD.md`](LMASTER_MOD.md#the-switch-levels)). On a Japanese
+disc it does nothing, because that release negotiates already
+([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)).
 
-The Japanese check's body hasn't been compared yet (the Japanese release
-can be read with the tools, [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)).
-The rebuilt check is based on what the PAL code around it still expects
-(see [The restored check](#the-restored-check)).
+The Japanese release's check has been compared with the rebuilt one: it
+is the same loop (see [The restored check](#the-restored-check)).
 
 ## The text
 
@@ -34,20 +37,17 @@ language:
 | 124 | "Unfortunately negotiations have broken down. {sponsor} cannot do a deal for the season now." | `0xc6a04` |
 
 Only 110 mentions negotiating. The sub-sponsor (111) and supplier (112)
-lines only ask you to sign. That matches the code: the check is called only
-in the main sponsor part of the screen.
-
-```bash
-python SRC/mbb.py dump DAT/MESSAGE/MES.PAC --cat 950 --lang 1
-```
+lines only ask you to sign. That matches the code: the check is called
+only in the main sponsor part of the screen.
 
 ## Confirmed from the game code
 
 All addresses are `SIMPRG.REL`. The Sponsor module (55) is
 `SPONSOR_MODULE::pSetupSponsorModule` (`0x39ea0`). It builds the screen
-object, `0x13a0` bytes from `FcEuroCalloc` (`0x3a004`), with constructor
-`0xc4900`. The screen is a state machine on `this+0x240`. It shows its text
-through `0xc9288(this, id)` after `SetCategory(950)` (`0xc9220`).
+object, `0x13a0` bytes from `FcEuroCalloc` (called at `0x3a004`), with
+constructor `0xc4900`. The screen is a state machine on `this+0x240`. It
+shows its text through `0xc9288(this, id)` after `SetCategory(950)`
+(`0xc9220`).
 
 | Address | Symbol / role | What it shows |
 |---|---|---|
@@ -59,7 +59,7 @@ through `0xc9288(this, id)` after `SetCategory(950)` (`0xc9220`).
 | `0xc5c58` | note a negotiation | writes the sponsor id into the first free word of a 20-word list at `this+0x12f0`. In PAL nothing else reads this list |
 | `0xc62d8` | screen setup | clears the 20 words of the list |
 | `0xc8ee0` | judge the bid | `0x16aa98(id, fee × 100, bid)`. The result goes to `+0x2f4`. On success `0x16a9e0(id, bid / 100, term)`, on failure `0x16a980(id)` |
-| `0x16aa98` | acceptance test | reads the sponsor's database record (`plSponsor_GetDb`, `0x160dc0`) and the town's economy (`pwkTown_Keiki`). It picks a factor from the byte table at `0x1dad80` and the float table at `0x1dada8`, and accepts if bid ≤ fee × factor. No random numbers |
+| `0x16aa98` | acceptance test | reads the sponsor's database record (`plSponsor_GetDb`, `0x160dc0`; [`ECONOMY.md`](ECONOMY.md#sponsors)) and the town's economy (`pwkTown_Keiki`). It picks a factor from the byte table at `0x1dad80` and the float table at `0x1dada8`, and accepts if bid ≤ fee × factor. No random numbers |
 | `0x16a9e0` | accept | writes the new fee (`+0xc`) and term (`+5`) into the sponsor's candidate entry (list at `0x1da918`) |
 | `0x16a980` | refuse | clears the sponsor's candidate entry, so it leaves the list for the season |
 | `0xc69c4`-`0xc6a3c` | state 0x11 | message 122 and sound 0xd on success, 124 and sound 0xc on failure |
@@ -71,18 +71,25 @@ body is gone.
 
 ## The restored check
 
-The Japanese check is likely the reader of the `+0x12f0` list, since
-`0xc5c58` fills it and no PAL code reads it. The patch makes `0xc5ca0`
-return 1 unless the sponsor id is already in that list. You can negotiate
-once with each main sponsor candidate per Sponsor screen. After a success,
-picking the sponsor again goes to the contract question at the agreed fee.
-After a failure the sponsor is gone from the list.
+**Confirmed** from the Japanese overlay (`ISO_JP/DLL/SIMPRG.REL`): its
+check, at `0xc4b70`, is called from the same place in the main sponsor
+list (`0xc551c`, passing the screen and the id at `+0x1054`). It walks
+the 20-word list at `this+0x12f0` and returns 0 when the sponsor id is
+already in it, otherwise 1. The same list is what `0xc5c58` fills in
+PAL. So the Japanese check itself has no other condition: it only
+stops a second negotiation with the same sponsor.
+
+The patch makes PAL's `0xc5ca0` do the same. You can negotiate once with
+each main sponsor candidate per Sponsor screen. After a success, picking
+the sponsor again goes to the contract question at the agreed fee. After
+a failure the sponsor is gone from the list.
 
 `0xc5ca0` has room for only two instructions. It becomes a branch to
-`0xd3748`, an unreferenced `CStaffContractWindow` method: 24 words, with no
-call, branch, pointer or relocation pointing to it. The loop goes there.
-The overlay is relocated when it loads, so the new code uses only branches,
-and neither spot holds a relocation site that the loader would patch over.
+`0xd3748`, an unreferenced `CStaffContractWindow` method: 24 words, with
+no call, branch, pointer or relocation pointing to it. The loop goes
+there. The overlay is relocated when it loads, so the new code uses only
+branches, and neither spot holds a relocation site that the loader would
+patch over.
 
 | Address | New code |
 |---|---|
@@ -94,29 +101,12 @@ and neither spot holds a relocation site that the loader would patch over.
 | `0xd3760` | `jr $ra` / `addiu $v0, $zero, 1` |
 | `0xd3768` | `jr $ra` / `move $v0, $zero` |
 
-That's 12 words in all. The rest of the old method at `0xd3770` is left as
-it was.
+That's 12 words in all. The rest of the old method at `0xd3770` is left
+as it was.
 
 ```bash
-python SRC/patch_disc.py patch disc.iso nego.iso --sponsor-negotiation
-python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xc6630 4 --sles ISO/SLES_541.51
-python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xc8ee0 58 --sles ISO/SLES_541.51
+python SRC/patch_disc.py patch disc.iso nego.iso --mod sponsor-negotiation
 ```
-
-## Still unknown
-
-- Whether the Japanese check had other conditions, for example the limit
-  that message 61 ("remaining negotiations") counts down. No PAL code was
-  found that shows 61 or 63, or keeps such a counter. They may be layout
-  text in the screen's CSE file. The Japanese `SIMPRG.REL`'s Sponsor
-  screen is the place to look.
-- Which acceptance factor applies to which economy and sponsor type: the
-  layouts of the tables at `0x1dad80` (bytes, 5 × 7) and `0x1dada8`
-  (floats).
-- Message 123 (success with a changed term) has no caller.
-- The "Remaining 1" line on the sponsor panel (seen in the test below) is
-  probably message 60, remaining contract slots (1 for the main sponsor),
-  not 61. It hasn't been traced in the code.
 
 ## Tested in PCSX2
 
@@ -130,11 +120,35 @@ contract question. A bid of £1,500,000 (11% over the fee) was accepted,
 and the screen went on to ask whether to sign Africmap Airways as main
 sponsor (state 0x17; Nexxus's report). The signed contract pays the
 negotiated fee, not the listed one (Nexxus's report). After a reload, a
-higher bid was
-refused: a "Broken Down" banner and "Unfortunately negotiations have
-broken down. Africmap Airways cannot do a deal for the season now."
-(message 124). The refused sponsors left the list. With only Yogurens
-Milk (£1,000,000) left, picking it gave message 160 ("You currently have
-only one sponsor. Proceed with contract...") and no negotiation, as the
-`+0x898 < 2` test at `0xc6648` says. A negotiation can't cost the club
-its last main sponsor candidate.
+higher bid was refused: a "Broken Down" banner and "Unfortunately
+negotiations have broken down. Africmap Airways cannot do a deal for the
+season now." (message 124). The refused sponsors left the list. With
+only Yogurens Milk (£1,000,000) left, picking it gave message 160 ("You
+currently have only one sponsor. Proceed with contract...") and no
+negotiation, as the `+0x898 < 2` test at `0xc6648` says. A negotiation
+can't cost the club its last main sponsor candidate.
+
+## Still unknown
+
+- Whether the Japanese release limits negotiations some other way. Its
+  check keeps no count, so a limit like the "remaining negotiations" of
+  message 61 would sit elsewhere. No PAL code was found that shows 61 or
+  63, or keeps such a counter. They may be layout text in the screen's
+  CSE file. The Japanese `SIMPRG.REL`'s Sponsor screen is the place to
+  look.
+- Which acceptance factor applies to which economy and sponsor type: the
+  layouts of the tables at `0x1dad80` (bytes, 5 × 7) and `0x1dada8`
+  (floats).
+- Message 123 (success with a changed term) has no caller.
+- The "Remaining 1" line on the sponsor panel (seen in the test above) is
+  probably message 60, remaining contract slots (1 for the main sponsor),
+  not 61. It hasn't been traced in the code.
+
+## Checking the claims
+
+```bash
+python SRC/mbb.py dump DAT/MESSAGE/MES.PAC --cat 950 --lang 1
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xc6630 4 --sles ISO/SLES_541.51
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0xc8ee0 58 --sles ISO/SLES_541.51
+python SRC/snr2.py dis ISO_JP/DLL/SIMPRG.REL 0xc4b70 12 --sles ISO_JP/SLPM_663.16
+```

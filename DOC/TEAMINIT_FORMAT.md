@@ -6,11 +6,12 @@
 At the start of a career you pick a league and a team style. That choice
 selects, from this file, the new club's squad, youth team, manager,
 coaches and scouts, the first coach and scout candidates, and the rival
-club. It is
-a TBB1 file ([`TBB_FORMAT.md`](TBB_FORMAT.md)) of 9 tables, all made of
-u32 fields.
+club. It is a TBB1 file ([`TBB_FORMAT.md`](TBB_FORMAT.md)) of 9 tables,
+all made of u32 fields. The Japanese release's file is byte for byte the
+PAL one.
 
-`python SRC/teaminit.py info DAT/PARAM` checks the file.
+`SRC/teaminit.py` reads and writes it, and the editor's New club tab
+edits it. `python SRC/teaminit.py info DAT/PARAM` checks the file.
 `python SRC/teaminit.py show DAT/PARAM/TEAM_INIT_DATA.TBB` lists every
 table, with players and staff named from `PBDATA_EU.PAC`. `set` edits a
 record ([below](#editing)).
@@ -160,9 +161,9 @@ at `0x5eb068 + kind × 0x30 + currency × 0xc`, in units of 100
 `0x24a140` (called from `pwk_money.cpp`'s global constructor
 `0x24a2f0`) fills it from constants in its code, and the constructor
 (`0x246b08`) rounds min and max up to the step. Kind 1 is the transfer
-fees, capped at 7,200,000 (£120M), which `patch_disc.py --mod
-transfer-fees` raises ([`ECONOMY.md`](ECONOMY.md#transfer-fees)). The
-currency is the
+fees, capped at 7,200,000 in the table's units (720,000,000 in the
+stored unit, £120M), which `patch_disc.py --mod transfer-fees` raises
+([`ECONOMY.md`](ECONOMY.md#transfer-fees)). The currency is the
 money option (`pwkOpt_GetMoney`, `0x24a4c8`); it starts as 2 for
 language 0 and as 1 otherwise (`0x24a360`). Its values index the money
 rates in [`SAVE_FORMAT.md`](SAVE_FORMAT.md): 0 the stored unit, 1 the
@@ -316,6 +317,10 @@ matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
 
 - Whether the candidate lists' "List criteria" counts down from the
   entry's last byte.
+- What adds a year to a player's or staff member's shown age on a
+  `--skip-tutorial` career (the age shown is the table's plus one per
+  season played, **empirical**, from the tests above). The code that
+  does it hasn't been traced.
 - Which contract condition the money of price kind 3 is (`PlPinfo
   +0x220`, `+0x224`).
 
@@ -325,6 +330,8 @@ matches the code above (`0x25dc50`, and the style map at `0x5531e0`).
 python SRC/teaminit.py info DAT/PARAM
 python SRC/teaminit.py show DAT/PARAM/TEAM_INIT_DATA.TBB 1 6 7 8
 python SRC/teaminit.py limits ISO                              # the salary limits
+python SRC/teaminit.py limits ISO_JP                           # the same on the Japanese executable
+python SRC/teaminit.py roundtrip DAT/PARAM/TEAM_INIT_DATA.TBB  # every table re-encodes
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 24a140 110      # their initializer
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkTeam_Init2
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 25dc50 38      # squad lookup

@@ -6,9 +6,14 @@ A .zbf is the Z buffer of a pre-rendered background: 512x448 little-endian
 u32 depth values, row-major, top-left first, not swizzled. It lines up
 pixel-for-pixel with the matching CSE/BG_xx_nn_00.CSP background texture
 (512x512, drawn squashed to the 512x448 screen). Only the low 24 bits
-count; larger = nearer. They live inside BG/BG_*.MRG - see DOC/ZBF_FORMAT.md.
-The game sends one straight into the Z buffer with nnuLoadImagePS2
-(0x1668f0, called from SIMPRG.REL 0xfc3a8) as a 512x448 PSMZ32 image.
+count; larger = nearer. They live inside BG/BG_*.MRG (see
+DOC/ZBF_FORMAT.md). The game sends one straight into the Z buffer with
+nnuLoadImagePS2 (0x1668f0, called from SIMPRG.REL 0xfc3a8) as a 512x448
+PSMZ32 image.
+
+`info` prints each file's lowest and highest depth and marks a file that
+has bits set above the low 24 (BG_MN_00_00.zbf is filled with 0x01000000,
+which reads as 0). `png` writes a greyscale picture, white = near.
 
 Usage:
     python zbf.py info <file.zbf | file.MRG | dir> ...

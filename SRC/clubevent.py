@@ -20,10 +20,11 @@ older copy that no code reads. See DOC/CLUBEVENT_FORMAT.md.
 
 The offer record (plClubEvent_GetList, 0x20e5c0-0x20e878):
 
-    +0x00 u32  the event's month rule, kept in the code by event: 22 in
-               January or August, 30 in July or August, 31 in December,
-               32 from November to January, 35-37 from January to
-               August. 0: none, and +0x18 applies instead
+    +0x00 u32  nonzero: the event's month rule, kept in the code by event
+               number: event 22 in January or August, 30 in July or
+               August, 31 in December, 32 from November to January,
+               35-37 from January to August. 0: none, and +0x18 applies
+               instead
     +0x04 u16  the first season it is offered: 2006 + n (0 from the start)
     +0x06 u16  the home popularity it needs (block 1 +0x11248)
     +0x08 u8   2 or more: office equipment 3 at level n - 1 or higher
@@ -62,10 +63,10 @@ Usage:
     python clubevent.py set       <in exe> <out exe> <event>:<field>=<value> ...
     python clubevent.py roundtrip <ISO dir | executable>
 
-`show` names the events from MES.PAC when given, and gives each one's
-chance as the retail code works it out (without `--mod pr-cycle`).
-`set` writes a same-size executable for patch_disc.py (target
-disc:SLES_541.51). The fields, by event 0-45:
+`show` names the events from MES.PAC when it is given, and prints each
+event's chance as the retail code works it out (without
+`--mod pr-cycle`). `set` writes a same-size executable for patch_disc.py
+(target disc:SLES_541.51). The fields, for events 0-45:
 
     month_rule    0-1       offer +0x00
     first_season  0-50      offer +0x04, from the season 2006 + n
@@ -120,7 +121,7 @@ NEVER_AT = 0x3e0
 SW_ZERO_SP = 0xafa00000     # sw $zero, imm($sp)
 NAME_CATEGORY, DESCRIPTION_BASE = 572, 5000
 
-# (name, table, offset, struct format, low, high). Byte 1-4 and 6-7 of the
+# (name, table, offset, struct format, low, high). Bytes 1-4 and 6-7 of the
 # chance record are added as bytes, so they are kept signed here.
 OFFER, CHANCE, RESULT = "offer", "chance", "result"
 FIELDS = (

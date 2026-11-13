@@ -17,11 +17,13 @@ which reads as the ISO's bytes. Standard library only.
           Codecs: zlib (raw deflate), lzma (raw LZMA1, lc 3, lp 0, pb 2, the
           dictionary LZMA SDK level 8 picks for the hunk size), huff (MAME's
           8-bit Huffman), flac (raw FLAC frames of 16-bit stereo), zstd
-          (Python 3.14's compression.zstd, if present), and the CD versions
-          cdzl, cdlz, cdfl, cdzs: an ECC bitmap and the base length, then the
-          frames' 2,352 sector bytes and their 96 subcode bytes (zlib, or zstd
-          for cdzs). Marked frames get their sync and ECC rebuilt, so every
-          hunk's CRC-16 is checked
+          (Python 3.14's compression.zstd, if present), and the CD versions.
+          cdzl, cdlz and cdzs hold an ECC bitmap and the base length, then
+          the frames' 2,352 sector bytes (zlib, lzma or zstd) and their 96
+          subcode bytes (zlib, or zstd for cdzs); the frames the bitmap marks
+          get their sync and ECC rebuilt. cdfl holds FLAC sectors (big-endian
+          samples) and zlib subcode, with no bitmap. Every hunk's CRC-16 is
+          checked after decoding
   image   a DVD CHD (createdvd) or a raw one holds the ISO as is. A CD CHD
           (createcd) holds 2,448-byte frames; the ISO is each frame's 2,048
           data bytes, at the offset its one data track's type gives
@@ -172,10 +174,11 @@ class Huffman:
 
 
 def huff_decode(src, size):
-    """The huff codec (huffman_8bit_decoder). Decoded through a 2^16-entry
-    table of symbol | length << 8, as MAME's build_lookup_table does (an
-    unused code reads as symbol 0 of length 0), peeking 16 bits from
-    24-bit words made once per hunk."""
+    """The huff codec (huffman_8bit_decoder). MAME decodes through a table
+    of every 16-bit peek (build_lookup_table; an unused code reads as symbol
+    0 of length 0). This one builds an equivalent table for the tree's longest
+    code only (2^top entries), and peeks it from 24-bit words made once
+    per hunk."""
     bits = Bits(src)
     h = Huffman.from_huffman(bits, 256, 16)
     # The table only needs the tree's longest code; peeking fewer bits than
@@ -218,6 +221,8 @@ def lzma_dict_size(hunkbytes):
 
 
 def lzma_decode(src, size, hunkbytes):
+    """Raw LZMA1 with the properties chdman writes; `hunkbytes` sets the
+    dictionary size (a cdlz hunk passes its sector bytes)."""
     import lzma
     f = [{"id": lzma.FILTER_LZMA1, "dict_size": lzma_dict_size(hunkbytes),
           "lc": 3, "lp": 0, "pb": 2}]
@@ -229,6 +234,7 @@ def zlib_decode(src, size):
 
 
 def zstd_decode(src, size):
+    # compression.zstd is new in Python 3.14, so older Pythons refuse zstd CHDs.
     try:
         from compression import zstd
     except ImportError:
@@ -325,7 +331,7 @@ def flac_frames(src, samples):
         bits.read(1)                    # blocking strategy
         bs_code, sr_code = bits.read(4), bits.read(4)
         chans, ss_code = bits.read(4), bits.read(3)
-        bits.read(1)
+        bits.read(1)                    # reserved bit
         b = bits.read(8)                # UTF-8 coded frame/sample number
         extra = 0
         while b & (0x80 >> extra) and extra < 7:
@@ -378,6 +384,7 @@ def flac_frames(src, samples):
 
 
 def flac_pcm(left, right, little):
+    """Interleave two channels as 16-bit PCM, little- or big-endian."""
     fmt = "<h" if little else ">h"
     out = bytearray()
     pack = struct.Struct(fmt).pack
@@ -457,6 +464,8 @@ def cdfl_decode(src, size):
 
 
 def cd_join(sectors, subs, frames, ecc_map):
+    """Rebuild 2,448-byte frames from sector and subcode bytes; the frames
+    marked in `ecc_map` (one bit each) get their sync and ECC rebuilt."""
     if len(sectors) != frames * SECTOR_DATA or len(subs) != frames * SUBCODE:
         raise ValueError("CD hunk decoded short")
     out = bytearray()
@@ -537,6 +546,11 @@ class Image:
             raise ValueError("%s: a CD track with a stored pregap isn't read" % self.path)
 
     def read_map(self):
+        """The hunk map as (type, offset, length, CRC-16) per hunk: type is a
+        codec index 0-3, COMP_NONE (stored) or COMP_SELF (a copy of the hunk
+        at `offset`, a hunk number), or None for an all-zero hunk of an
+        uncompressed CHD. A compressed map is decoded as MAME's
+        decompress_v5_map does."""
         if not self.compressed:
             self.f.seek(V5_HEADER)
             raw = self.f.read(4 * self.hunks)
@@ -602,6 +616,7 @@ class Image:
         return self.codecs[i].decode("ascii", "replace")
 
     def read_hunk(self, n, depth=0):
+        """Hunk `n`, decoded and CRC-checked; the last one read is cached."""
         if self.cached[0] == n:
             return self.cached[1]
         k, off, length, crc = self.map[n]
@@ -704,6 +719,7 @@ def is_chd(path):
 
 
 class Progress:
+    """Prints a label, then a mark at each 10% of `done` / `total`."""
     def __init__(self, label):
         self.shown = 0
         print(label, end="", flush=True)

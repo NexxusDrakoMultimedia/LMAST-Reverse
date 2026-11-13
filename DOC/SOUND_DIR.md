@@ -18,7 +18,7 @@ are ADX streams in the disc's `AUDIO` folder, outside `DATA.CVM`
 
 `python SRC/sounddat.py music ISO/SLES_541.51 DAT/SOUND` prints the two
 tables below and checks them against the banks. `python SRC/sounddat.py
-songs DAT/SOUND` lists the songs, `midi` and `wav` render them.
+songs DAT/SOUND` lists the songs, and `midi` and `wav` render them.
 
 | File | Bank index | Contents |
 |---|---|---|
@@ -33,6 +33,13 @@ songs DAT/SOUND` lists the songs, `midi` and `wav` render them.
 None of these files is in a `PRELOAD` pack, and none is a copy of another
 file on the disc (**empirical**).
 
+`DAT/GAME` holds a second `EFFECTS.DAT` and `TRAINING.DAT`: same size,
+same sample layout, but not copies. They differ from these two in 2,087
+and 6,613 bytes (`cmp`), and their DTPK kind byte (offset `0x09`) is `H`
+where all three of `EFFECTS.DAT`, `TRAINING.DAT` and `PACK0.DAT` here
+are `K`. Whether the game loads the `GAME/` pair or the `SOUND/` pair is
+unknown ([`GAME_DIR.md`](GAME_DIR.md#directory-overview)).
+
 ## Confirmed from the game code
 
 | Address | Symbol | What it shows |
@@ -44,8 +51,10 @@ file on the disc (**empirical**).
 | `SLES 0x103bd4`–`0x103c18` | `FC_EURO_BGM_CALLBACK::CFcEuro_ChangeBgm::Execute` | indexes the music table by the music id at `+0x1c` (1000 = none); for a DTPK song it creates `CFcEuro_ChangeSoundData` with the record's bank index |
 | `SLES 0x35d8c8` | (string) | `CDV:/Audio/event_se.afs` |
 
-The strings `EFFECTS`, `TRAINING`, `PACK0` and `event_se.dat` appear
-nowhere in the executable or the overlays.
+The names `EFFECTS`, `TRAINING`, `PACK0` and `event_se.dat` appear
+nowhere in the executable or the overlays as sound file names. A
+case-insensitive search finds only unrelated class, symbol and file
+names (`CEffectSmoke`, `TRAINING_TEST`, `Training_list.tbb`).
 
 ## The bank table (`SLES 0x35cb54`)
 
@@ -121,3 +130,14 @@ August 2005 to January 2006. `map11`–`map23` were all committed together on
 - Whether anything plays `MAP06`, `map02` songs 3–5, or the four banks the
   code doesn't name.
 - What each `SYS_SE` effect is.
+
+## Checking the claims
+
+```bash
+python SRC/sounddat.py music ISO/SLES_541.51 DAT/SOUND
+python SRC/sounddat.py songs DAT/SOUND DAT/GAME/SOUNDDAT.PAC
+python SRC/sounddat.py dtpk DAT/SOUND/SYS_SE.DAT
+```
+
+`python SRC/regress.py` runs these as `sounddat_music`, `sounddat_songs`
+and `sounddat_dtpk_*` (one per bank file).

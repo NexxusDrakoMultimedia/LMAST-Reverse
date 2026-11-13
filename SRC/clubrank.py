@@ -58,9 +58,9 @@ Usage:
     python clubrank.py addrows   <in.TBB> <out.TBB> <division>:<size> ...
     python clubrank.py roundtrip <CLUB_RANK_SYSTEM.TBB>
 
-`show` names the competitions from MES.PAC (category 100009) when given.
-`set` edits the three tables a mod changes, and writes a same-size file
-for patch_disc.py:
+`show` names the competitions from MES.PAC (category 100009) when it is
+given. `set` edits the three tables a mod changes, and writes a same-size
+file for patch_disc.py:
 
     points:<row>:<place>=<0-255>   table 1: row 0-32, final place 1-32
     world:<rank>=<0-1023>          table 2: club rank 0-31
@@ -73,7 +73,7 @@ a row for each of nation slots 1-6) or 1 (a second division), and a
 size of 2-127. It adds the rows the game would miss and prints them; a
 size that already has its rows adds none.
 
-for example `points:9:1=80` (the Premier Division's champions get 80),
+Examples: `points:9:1=80` (the Premier Division's champions get 80),
 `world:31=950`, `rank:7:31=2` (the top two clubs of a slot-1 first
 division of 20 get rank 31).
 """
@@ -84,7 +84,8 @@ import sys
 import tbb
 
 FILE = "CLUB_RANK_SYSTEM.TBB"
-# (rows, bytes a row) of tables 0-4, as the readers above step through them.
+# (rows, bytes a row) of tables 0-4, as the readers named in the module
+# docstring step through them.
 SHAPES = ((52, 2), (33, 38), (32, 2), (65, 34), (18, 8))
 POINTS, WORLD, RANKS = 1, 2, 3
 PLACES = 32                     # table 1's u8 points[32]

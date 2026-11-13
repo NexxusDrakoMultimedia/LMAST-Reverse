@@ -10,13 +10,14 @@ folder `BESLES-54153FASYS00` (the Japanese VPF's is
 into a career as the edit player, id `0x7cce`
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)).
 This doc covers the file and what the import makes of each field.
-`SRC/pmplayer.py` reads and writes it.
+`SRC/pmplayer.py` reads and writes it, and `python SRC/pmplayer.py
+selftest` checks the file layer without a memory card.
 
 VPF's own program, which writes this file, is the subject of the sister
 project [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse).
 The questions below that only VPF's code can answer (how it numbers a
 new player, the bytes this game's import doesn't read, `file.inf`) are
-for that project; this doc stays the reference for the file itself.
+for that project. This doc stays the reference for the file itself.
 
 ## Who reads it
 
@@ -44,10 +45,10 @@ report, 2026-11-01, [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#confirmed-from-t
 
 | Offset | Size | Field |
 |---|---|---|
-| `0x0000` | 23 × s16 | player ids; −1 is an empty slot. VPF numbers its players from 20,001 (`0x4e21`) |
-| `0x002e` | `0x2e` | not read by the import (*empirical*: `0c 00 ff ff`, then zeros, on the PAL card; zeros on the Japanese one) |
+| `0x0000` | 23 × s16 | player ids; −1 is an empty slot (**empirical**: the two players on the PAL card have ids 20,001 (`0x4e21`) and 20,002) |
+| `0x002e` | `0x2e` | not read by the import (**empirical**: `0c 00 ff ff`, then zeros, on the PAL card; zeros on the Japanese one) |
 | `0x005c` | 23 × `0x134` | the records |
-| `0x1bf8` | `0x40` | not read by the import (*empirical*: a few non-zero bytes on the PAL card) |
+| `0x1c08` | `0x30` | not read by the import (**empirical**: 4 non-zero bytes on the PAL card, none on the Japanese one) |
 | `0x1c38` | u32 | CRC-16 of `0x0000`–`0x1c37` |
 | `0x1c3c` | – | zeros up to `0x2000` |
 
@@ -65,13 +66,13 @@ not listed are VPF's alone; the import doesn't read them.
 |---|---|---|---|
 | `+0x00` | u8 | nation | looks it up in 145 `{u32 nation, u32 VPF nation}` pairs at `0x4ce80` (`0x3dd78`) and stores the first match's nation, else 0 |
 | `+0x01` | char[] | short name | copied to `PlPbase` name, at most 19 bytes (`strncpy` 0x13) |
-| `+0x52` | char[] | surname | not read (*empirical*: the surname, "Binns") |
+| `+0x52` | char[] | surname | not read (**empirical**: the surname, "Binns") |
 | `+0x68` | f32 | height | truncated to an integer, `PlPbase` height |
 | `+0x6c` | f32 | weight | truncated, `PlPbase` weight |
 | `+0x70` | u8 | foot | `PlPbase` leg |
 | `+0x73` | u8 | position group | `PlPbase` shirt: 1, 4, 7 or 9 for 0–3 (bytes at `0x547e8`), 1 otherwise |
 | `+0x78` | u16 | – | `PlPbase` castno, raised to at least 22,542 (`0x580e`) |
-| `+0x7a`–`+0x80`, `+0x82`–`+0x88`, `+0x8a`, `+0x8e`–`+0x95`, `+0x97`–`+0x99`, `+0x9d`, `+0xa3`–`+0xa6`, `+0xa8`–`+0xb8` | u8 | abilities | copied to 54 `PlPbase` abilities (`pmplayer.ABILITY_COPY`). `+0xa9` also gives attack patterns A and B, `+0xaa` patterns C and D |
+| `+0x7a`–`+0x80`, `+0x82`–`+0x88`, `+0x8a`, `+0x8e`–`+0x95`, `+0x97`–`+0x99`, `+0x9d`, `+0xa3`–`+0xa6`, `+0xa8`–`+0xac`, `+0xae`–`+0xb8` | u8 | abilities | 47 bytes copied to 51 `PlPbase` abilities (`pmplayer.ABILITY_COPY`). `+0xa9` also gives attack patterns A and B, `+0xaa` patterns C and D |
 | `+0xb4`, `+0xb5` | u8 | SM, FW | also WG (ability 40) = `int(SM × 0.3f + FW × 0.7f)` |
 | `+0x9a` | u8 | injury | `PlPbase` injury_res = 7 − value |
 | `+0x9b` | u8 | weak foot | `PlPbase` weak_foot = value × 2 + 1 |
@@ -86,7 +87,10 @@ not listed are VPF's alone; the import doesn't read them.
 | `+0xf8`–`+0x129` | `0x32` | – | copied as is to the edit work `+0xb8`–`+0xe9`, outside the `PlPbase` |
 | `+0x12d`–`+0x133` | u8 × 7 | kit style | copied to `PlPbase` sleeves, wristband, gloves, gk_cap, gk_gloves, gk_pants, boots |
 
-VPF stores abilities as 1–99 and the import copies them unchanged.
+VPF stores abilities as 1–99 and the import copies them unchanged. With
+nerve, concentration and WG (rows above), the conversion sets 54 of a
+player's 64 abilities from the record; the other 10 are random (next
+paragraph).
 
 **What the import sets itself.** Age 17; rank 12, or 13 when club 1
 ranks 23 or lower (`pwkOteam_GetRank`); intelligence 0. Random:
@@ -112,13 +116,13 @@ goalkeeper's cell, not "none". `plPinfo_CalcAptPos` (`0x218078`–
 `0x2180ac`) gives each listed cell below 13 one more level, up to 4
 ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#positions-and-aptitude)), so
 the goalkeeper cell gets +2: an outfield player whose abilities give
-him no goalkeeping level comes in at level 2. Not yet checked: whether
-the edit-player screen lets the player change the extra positions
-afterwards. `--mod vpf-positions` fixes it. **Tested in PCSX2**
-(Nexxus's report, 2026-11-01): with that switch alone, G.Binns came in
-with only his forward cell lit on the detail screen's grid and the
-goalkeeper box dark (his style showed None, as the retail import's
-sort leaves it without `vpf-styles`;
+him no goalkeeping level comes in at level 2. Whether the edit-player
+screen lets the player change the extra positions afterwards is open
+([Still unknown](#still-unknown)). `--mod vpf-positions` fixes it.
+**Tested in PCSX2** (Nexxus's report, 2026-11-01): with that switch
+alone, G.Binns came in with only his forward cell lit on the detail
+screen's grid and the goalkeeper box dark (his style showed None, as the
+retail import's sort leaves it without `vpf-styles`;
 [`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
 
 **Play styles (a bug in the import).** `0x3df10` copies the 22 ratings
@@ -174,14 +178,14 @@ Nexxus's card holds G.Binns, imported from slot 1 of the card's
 `pmplayer.bin`. Every field the conversion computes from the record
 matches the career's edit work: name, nation (38 → 1), age, height,
 weight, foot, shirt, castno, the derived personality values, the kit
-style, skills, tendencies, all 54 copied abilities, WG, nerve and
-concentration, the empty style slots, and the 0x32 bytes at `+0xb8`
-(28 checks, none differ).
+style, skills, tendencies, all 54 abilities the conversion takes from
+the record (51 copied, nerve, concentration and WG), the empty style
+slots, and the 0x32 bytes at `+0xb8` (28 checks, none differ).
 
 Both cards' files (PAL with 2 players, Japanese with none) round-trip
-byte for byte. An edited file imports in game ([above](#the-record));
-`pmplayer.py check` on a career saved after that import is still to run
-([`TESTING.md`](../TESTING.md)).
+byte for byte. An edited file imports in game ([above](#the-record)).
+Running `pmplayer.py check` on a career saved after that import is a
+pending check ([`TESTING.md`](../TESTING.md)).
 
 ## Editing
 
@@ -191,6 +195,10 @@ python SRC/pmplayer.py show <card>/BESLES-54153FASYS00/pmplayer.bin 1
 python SRC/pmplayer.py set <card>/BESLES-54153FASYS00/pmplayer.bin out.bin 1 name=P.Drake height=191 shot_skill=99 style_1=85
 python SRC/pmplayer.py check <card>/BESLES-54153FASYS00/pmplayer.bin <card>/BESLES-54151-G000
 ```
+
+`<card>` is a PCSX2 folder memory card. Every command reads the cipher
+tables from `ISO/DLL/SAVEPRG.REL`; `--iso <folder>` names another disc
+folder, such as `ISO_JP`.
 
 `set` edits fields of a used slot by the names `show` prints, within
 the ranges the import handles (abilities 1–99, 0–7 ratings, kit styles
@@ -212,7 +220,7 @@ save editor's Edit player page change the career's copy
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-edit-player-from-virtua-pro-football)).
 
 `pmplayer.py roundtrip` re-encodes every field of every record and
-rebuilds the encrypted file. `pmplayer.py selftest` (in `regress.py`)
+rebuilds the encrypted file. `pmplayer.py selftest` (run by `regress.py`)
 builds an empty file and checks its CRC, then makes a player through the
 same edits as `set` and reads every field back.
 
@@ -221,13 +229,13 @@ same edits as `set` and reads every field back.
 - The record bytes the import doesn't read (`+0x15`–`+0x51` apart from
   the names, `+0x81`, `+0x89`, `+0x8b`–`+0x8d`, `+0x96`, `+0x9f`,
   `+0xa7`, `+0xad`, `+0xec`–`+0xf7`, `+0x12a`–`+0x12c`), the header
-  bytes `0x2e`–`0x5b` and the tail `0x1bf8`–`0x1c37`: VPF's own data.
+  bytes `0x2e`–`0x5b` and the tail `0x1c08`–`0x1c37`: VPF's own data.
 - What the `+0x78` value and the 0x32 bytes copied to the edit work
   `+0xb8` do in this game (face or body data from VPF's editor?).
 - Whether VPF checks its own ranges on fields other than the name (a
   name edit loads; see Editing).
 - How VPF numbers a new player's id, so a player could be added to an
-  empty slot.
+  empty slot (the two players on the PAL card have 20,001 and 20,002).
 - Whether the edit-player screen can change the second and third
   positions after an import ([The record](#the-record)).
 - `file.inf`'s check: its CRC over the first 0x20 bytes doesn't match
@@ -239,6 +247,7 @@ same edits as `set` and reads every field back.
 
 ```bash
 python SRC/pmplayer.py selftest
+python SRC/pmplayer.py info <card>
 python SRC/pmplayer.py roundtrip <card>
 python SRC/snr2.py dis ISO/DLL/SAVEPRG.REL 3e198 700 --sles ISO/SLES_541.51   # the conversion
 python SRC/snr2.py dis ISO/DLL/SAVEPRG.REL 3a3b8 40 --sles ISO/SLES_541.51    # the slot loop

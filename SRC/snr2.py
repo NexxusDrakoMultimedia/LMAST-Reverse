@@ -53,6 +53,10 @@ def _sext16(v):
 
 
 class Snr2:
+    """One parsed .REL overlay. Attributes: h (header fields by name),
+    syms [(name, value, hash, kind)], ext [(site, type, symbol index, addend)],
+    local [(site, type)] and module (the path string the file names)."""
+
     HEADER = ("magic", "ext_rel_off", "ext_rel_count", "sym_off", "sym_count",
               "name_off", "ctors", "dtors", "loc_rel_off", "h24", "align",
               "loc_rel_end", "h30", "loc_rel_ptr", "h38", "h3c")
@@ -82,7 +86,8 @@ class Snr2:
         # pos = next u32. Either way the low 2 bits are the type. The list
         # ends with the escape 00 00000000.
         self.local = []
-        # snDllLoaded walks the list from +0x34 (equal to +0x20 in every file).
+        # The loader (SLES_541.51 0x15ae98, called by snDllLoaded) walks the
+        # list from +0x34 (equal to +0x20 in every file).
         i, end, pos = self.h["loc_rel_ptr"], self.h["loc_rel_end"], 0
         while i < end:
             b = d[i]

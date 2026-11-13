@@ -32,14 +32,16 @@ Usage:
 
 `info` checks every page's ECC and every chain (bounds, loops, clusters
 used twice, chains too short for their entry) and marks problems with !!.
-`get` writes a folder's files into <out>/<folder>/, or one file to <out>.
+`get` writes a folder's files into <out>/<folder>/, or one file to <out>
+(into <out> as <file> when <out> is an existing directory).
 `put` replaces a file (any size: clusters are added or freed) or creates
 it in an existing folder, and writes a new image; --touch sets the
 modified time of the file and its folder to now (a new file always gets
 it). `mkdir` adds an empty save folder, and `copy` copies a save folder
 to a new name on the same card, keeping every file's mode and times (a
 file named like the folder, a game's main file, is renamed with it).
-None of them changes the input image.
+None of these three changes the input image; each writes <out.ps2>, and
+refuses to write over the card it read.
 `roundtrip` writes every file back with its own data and checks that the
 image comes out identical. `selftest` builds a blank card in memory and
 creates, grows, shrinks and reads files and folders on it.
@@ -70,9 +72,9 @@ MODE_NEW_DIR = 0x8427
 MODE_ROOT_PARENT = 0xa426       # the root's "..", hidden
 NAME_MAX = 31
 
-# PCSX2 leaves page 1 (the second page of the superblock's cluster) with 8
-# bytes of its own and the ECC of an empty page; it is never checked or
-# written.
+# PCSX2 leaves page 1 (the second page of the superblock's cluster) holding
+# 8 bytes of its own and the ECC of an empty page (DOC/PS2MC_FORMAT.md,
+# "Pages"); it is never checked or written.
 PCSX2_PAGE = 1
 JST = 9 * 3600
 
@@ -113,6 +115,7 @@ def tod_now():
 
 
 def tod_text(raw):
+    """A directory entry time (see tod_now) as YYYY-MM-DD hh:mm:ss."""
     _, s, mi, h, d, mo, y = struct.unpack("<BBBBBBH", raw)
     return "%04d-%02d-%02d %02d:%02d:%02d" % (y, mo, d, h, mi, s)
 
@@ -152,8 +155,12 @@ def new_entry(mode, length, cluster, parent, name, now):
 
 
 class Card:
+    """A memory card image held in memory. Edits change `raw` and the FAT;
+    `flush` writes the changed FAT clusters back and returns the image."""
     def __init__(self, data):
         self.raw = bytearray(data)
+        # With spare areas the image is whole 16-page erase blocks of 528-byte
+        # pages; without, any run of 512-byte pages.
         if len(data) % (PAGE + SPARE) == 0 and (len(data) // (PAGE + SPARE)) % 16 == 0:
             self.ecc = True
         elif len(data) % PAGE == 0:
@@ -411,6 +418,7 @@ class Card:
         self.write_entry(Entry(raw, self.root, index))
 
     def mkdir(self, name):
+        """Add an empty save folder `name` to the root."""
         if not name or "/" in name or len(name) > NAME_MAX:
             raise ValueError("bad folder name %r" % name)
         for e in self.root_entries()[2:]:

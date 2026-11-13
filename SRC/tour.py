@@ -2,11 +2,11 @@
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """Tour opponents: PARAM/TOUR_LIST.TBB, for Let's Make a Soccer Team! (PS2).
 
-One table of {u16 region, u16 club} pairs (TBB line size 2). The camp and
-tour screens' module loads it (SIMPRG.REL load list 0x1cdd30, entry 27;
-handle at +0x904), and 0x4cab0(out, region) clears 40 u16 slots and copies
-in the club of every pair whose region matches, in table order. Its
-caller (0xa44d8) takes the region from the screen's list. See
+One table of 106 {u16 region, u16 club} pairs (TBB line size 2). The camp
+and tour screens' module loads it (SIMPRG.REL load list 0x1cdd30, entry
+27; handle at +0x904), and 0x4cab0(out, region) clears 40 u16 slots and
+copies in the club of every pair whose region matches, in table order.
+Its caller (0xa44d8) takes the region from the screen's list. See
 DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region.
 
 Usage:
@@ -15,7 +15,7 @@ Usage:
     python tour.py set       <in.TBB> <out.TBB> <pair>=<region>:<club> ...
     python tour.py roundtrip <TOUR_LIST.TBB>
 
-`show` names the clubs from MES.PAC (category 3) when given. `set`
+`show` names the clubs from MES.PAC (category 3) when it is given. `set`
 replaces whole pairs, by their number in the table (0-105), and writes a
 same-size file for patch_disc.py.
 """
@@ -31,8 +31,8 @@ CLUBS = 0x22e                   # team ids 1-0x22d (SCHEDULE_FORMAT.md, PLTEAMID
 REGIONS = 13
 # The game's English names for the 13 overseas regions: message category 1,
 # record 310 + region (getRegionDetail 0x202310; see plrsim.py). The game
-# uses one region numbering throughout (Nexxus's report), and each region's
-# tour clubs fit its name.
+# numbers its regions the same way everywhere (Nexxus's report), and each
+# region's tour clubs fit its name.
 REGION_NAMES = ("Western Europe", "Central Europe", "Eastern Europe", "Northern Europe",
                 "South America A", "South America B", "North Africa", "West Africa",
                 "East and South Africa", "North Central America, Caribbean", "East Asia",

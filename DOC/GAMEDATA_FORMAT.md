@@ -1,14 +1,20 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# `GAME/GAMEDATA.BIN` and `GAME/AI_PARAM.BIN`
+# Match engine tables: `GAME/GAMEDATA.BIN` and `GAME/AI_PARAM.BIN`
 
-Two files of the match engine. `GAMEDATA.BIN` is a table of fixed-size
-records that `GAMEPRG.REL` reads; `AI_PARAM.BIN` has no reader that can be
-found. Neither has symbols to name its fields, so this is a partial decode.
+Two files of the match engine. `GAMEDATA.BIN` describes the ways a player
+can touch the ball: a table of fixed-size records that `GAMEPRG.REL`
+reads, and which a kick request points into. `AI_PARAM.BIN` has no reader
+that can be found. Neither has symbols to name its fields, so this is a
+partial decode. Both files are byte-identical on the Japanese release.
 
-`python SRC/gamedata.py info DAT/GAME` checks `GAMEDATA.BIN`.
-`python SRC/gamedata.py dump DAT/GAME/GAMEDATA.BIN 2000 2010` prints records.
+`SRC/gamedata.py` reads `GAMEDATA.BIN` (there is no writer).
+`python SRC/gamedata.py info DAT/GAME` checks it, and
+`python SRC/gamedata.py dump DAT/GAME/GAMEDATA.BIN 2000 2010` prints
+records. The kick kinds that choose a record are in
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-kick-kinds). The folder overview
+is [`GAME_DIR.md`](GAME_DIR.md).
 
 ## `GAMEDATA.BIN`
 
@@ -46,7 +52,9 @@ left/right twins. From record 42 on, `+0x4` holds small values shared by
 many records (1 in 1,803 of them, 4 and 5 in about 300 each) and values up
 to 10,208, so its meaning changes or isn't a record link there. The float
 at `+0x14` is mostly a multiple of 2.2 (4.4 in 1,117 records, 6.6 in 925,
-15.4, 2.2, 11.0). Many records are full of `0xff` and `0x00` filler.
+15.4, 2.2, 11.0). Its meaning is not decoded; `gamedata.py` calls it
+`SPEED` as a placeholder name only. Many records are full of `0xff` and
+`0x00` filler.
 
 A record describes a way of touching the ball. Over all 4,131 records
 (**empirical**), the body part at `+0xc` bits 16–18 and the surface at
@@ -87,10 +95,11 @@ whose values sit between kind words: at the best alignment only 41 of the
   which callers use `0x13ab80`–`0x13ad00`'s comparisons for what.
 - Whether anything loads `AI_PARAM.BIN` by another route.
 
-## Checking
+## Checking the claims
 
 ```bash
 python SRC/gamedata.py info DAT/GAME
 python SRC/gamedata.py dump DAT/GAME/GAMEDATA.BIN 0 50
 python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 13ab80 100 --sles ISO/SLES_541.51
+python SRC/snr2.py callers ISO/DLL/GAMEPRG.REL 0x13abb8      # the 78 lookups
 ```

@@ -12,8 +12,8 @@ trophies, and `HUMANID.BIN`, which picks a person for a role. The room
 pictures themselves are in `CSE/BG_xx_nn_00.CSP`
 ([`CSE_FORMAT.md`](CSE_FORMAT.md)).
 
-Every file parses with the existing tools, and none reports a problem
-beyond the one below:
+Every file parses with the existing tools. The only `!!` in the whole
+folder is the one `zbf.py` gives `BG_MN_00_00.zbf`, below the commands:
 
 ```bash
 python SRC/pac.py info DAT/BG        # the 304 .MRG archives and 11 .HED headers
@@ -85,6 +85,10 @@ pictures were looked at, and the classes weren't traced to a code.
 | `TV` | 5 | 5 | TV studio | `VRBG_TVStudio` |
 
 `SP` has one extra picture, `BG_SP_33.CSP`, next to `BG_SP_33_00.CSP`.
+The table counts it, so it lists 152 `BG_` pictures; the 151 named
+`BG_xx_nn_00` are the ones [`CSE_FORMAT.md`](CSE_FORMAT.md) and
+[`ZBF_FORMAT.md`](ZBF_FORMAT.md) count (139 of them have a depth
+buffer).
 `TR` has pictures but no archive here. The trophies stand on its shelves
 ([below](#trophies)), and `SIMPRG.REL` names lights `BG_TR_00_LIGHT`–`02`
 and `BG_PP_00_LIGHT`–`07` for the two 3D rooms.
@@ -136,7 +140,7 @@ traced.
 
 `python SRC/ninja.py gltf out/human.gltf DAT/BG/HUMAN_1000.MRG` exports
 one ([`NINJA_FORMAT.md`](NINJA_FORMAT.md#tools)). The numbers come in
-groups: 1000–1400 (5), 2000–2805 (27), 3000–3016 (17), 3600–3705 (12),
+groups: 1000–1400 (5), 2000–2802 (27), 3000–3016 (17), 3600–3705 (12),
 4000–4602 (12), 5000–5602 (11), 6000–6101 (5), 9000–9600 (13) and 9999.
 `HUMAN_1000`'s parts (`l_pra_bdy1`, `l_sox`, `l_spk`) are a player in
 training kit.
@@ -244,7 +248,7 @@ python SRC/humanid.py objects ISO                   # the object table
 
 ## Copies and files nothing names
 
-Nine files have copies in `PRELOAD` packs, all byte-identical
+Ten files have copies in `PRELOAD` packs, all byte-identical
 ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)): `HumanID.bin`,
 `HUMAN_HEAD_MODEL.hed` and `HUMAN_HEAD_TEXTURE.hed` in `SIMFILE0`–`6`;
 `HUMAN_1200_PALETTE.hed`/`.mrg`, `HUMAN_HAND_SPECIAL.hed`,

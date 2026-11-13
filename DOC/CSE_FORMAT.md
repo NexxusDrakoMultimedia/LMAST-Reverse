@@ -4,14 +4,17 @@
 # `DAT/CSE`: 2D screens (`*.CSP`, `*.CSE`)
 
 `DAT/CSE` (688 files, 80 MB, plus `CVS/`) holds the game's 2D graphics:
-every menu screen,
-window, icon set and pre-rendered room background. Nearly all of it is
-`.CSP` packs. Each one holds a **CSE** layout (sprites, a node hierarchy and
-keyframe animation) and the SVR textures the layout uses.
+every menu screen, window, icon set and pre-rendered room background.
+Nearly all of it is `.CSP` packs. Each one holds a **CSE** layout
+(sprites, a node hierarchy and keyframe animation) and the SVR textures
+the layout uses.
 
-`python SRC/csp.py info DAT/CSE` parses all 493 CSP/CSE files, `tree`
-dumps one layout, `extract` splits packs into `.cse` + `.svr`, and `png
-... --crops` decodes the textures and cuts out each sprite.
+`SRC/csp.py` reads and writes them. `python SRC/csp.py info DAT/CSE`
+parses all 493 CSP/CSE files (the empty `GP_PRACTICEICON.CSP` is the one
+`!!`). `tree` dumps one layout, `extract` splits packs into `.cse` +
+`.svr`, `png ... --crops` decodes the textures and cuts out each sprite,
+`roundtrip` rebuilds every pack, and `replace` puts a same-size texture
+into an entry.
 
 ## What's in the directory
 
@@ -24,7 +27,7 @@ dumps one layout, `extract` splits packs into `.cse` + `.svr`, and `png
 | `PITCH.SNA/.SNO` | 2 | Ninja object + node names (`NSNN`, `NSTL`) for the tactics-screen pitch |
 | `PITCH.STA/.STO` | 2 | text source of the two above, from the SoftImage 3D 3.9.2 PS2 exporter |
 | `INST_SVR.HED/.PAC` | 2 | BINPAC of `nst_tex_*.svr` (see [`PAC_FORMAT.md`](PAC_FORMAT.md)) |
-| `ADIDAS_BALL.PRS` | 1 | PRS-compressed texture |
+| `ADIDAS_BALL.PRS` | 1 | a texture in a PRSH wrapper ([`PAC_FORMAT.md`](PAC_FORMAT.md#prsh-compressed-entry)) |
 | `TACTICSTEXTURE.SVM` | 1 | PVMH texture set (tactics arrows) |
 | `CVS/` | 3 files | left over from development, see below |
 
@@ -32,7 +35,7 @@ dumps one layout, `extract` splits packs into `.cse` + `.svr`, and `png
 
 | Prefix | Used for |
 |---|---|
-| `BG_xx_nn_00` | pre-rendered room backgrounds. Each pairs with a `.zbf` depth buffer (see [`ZBF_FORMAT.md`](ZBF_FORMAT.md)). The name pattern `BG_%s_%02d_00.csp` is in `DLL/SIMPRG.REL` |
+| `BG_xx_nn_00` | pre-rendered room backgrounds (151). Most pair with a `.zbf` depth buffer (139 do; see [`ZBF_FORMAT.md`](ZBF_FORMAT.md) and [`BG_DIR.md`](BG_DIR.md)). The name pattern `BG_%s_%02d_00.csp` is in `DLL/SIMPRG.REL` |
 | `WP_*` | full-screen menus: schedule, edit, mail, facilities, … |
 | `SC_*` | one-off scenes: title, negotiation, trophies, tournaments, … |
 | `GP_*` | shared parts: windows, cursors, icons, help pages |
@@ -42,9 +45,10 @@ The meanings are guessed from the file contents.
 
 ### Numbered copies
 
-`SLES_541.51` has a table of about 300 lower-case `.csp` names. For 21 of
-them the disc has no file of that exact name. Instead it has seven copies
-with a digit 0–6 added to the name:
+`SLES_541.51` holds a block of 333 `.csp` names, most of them lower case.
+For 19 of them the disc has no file of that name (compared without case).
+Instead it has seven copies with a digit 0–6 added to the name
+(**empirical**: all 19 have all seven). Three examples:
 
 | Code asks for | Disc has |
 |---|---|
@@ -58,7 +62,8 @@ puts the language digit before the dot (**confirmed**,
 [`PRELOAD_DIR.md`](PRELOAD_DIR.md#confirmed-from-the-game-code)), and the
 digits are the `MES.PAC` language slots (0 Japanese, 1 English, ...).
 `WP_KEYBOAD.CSP` is on the disc but not in the table.
-The code only loads `wp_keyboad_JP` and `wp_keyboad_PAL`.
+The code only loads `wp_keyboad_JP` and `wp_keyboad_PAL`. The table also
+names `bg_office_01.csp`, which has no file on the disc in any form.
 
 ### The `CVS/` folder
 
@@ -71,7 +76,7 @@ July 2004 to July 2006.
 
 All values are little-endian.
 
-```
+```text
 u32 count
 count × { u32 offset, u32 size, u32 type, u32 zero }
 ```
@@ -111,7 +116,7 @@ which `cseProjectIsAbsolue` checks. The `*Absolute` / `*GetSize` /
 `*Collect` functions at `0x1ee858`–`0x1f0688` are where the struct layouts
 below come from. A null (0) offset means "none" everywhere.
 
-```
+```text
 Project (0x00)
 ├── PicList            textures + UV crops
 ├── Folder tree        (Folders → Scenes)
@@ -129,9 +134,9 @@ Project (0x00)
 | 0x04 | ptr | root Folder |
 | 0x08 | u32 | number of folders |
 | 0x0C | ptr | folder table: `u32[n]` offsets, depth-first order. It is the last thing in the file, so `ptr + 4n` = CSE size |
-| 0x10 | u32 | background colour `0xRRGGBBAA`. `cseProjectDrawBg` ORs in alpha `0xFF` and fills the screen with it. `0x4444CC00` (editor blue) or `0x80808000` |
-| 0x14 | u16 | screen width (640 or 512) |
-| 0x16 | u16 | screen height (448) |
+| 0x10 | u32 | background colour `0xRRGGBBAA`. `cseProjectDrawBg` ORs in alpha `0xFF` and fills the screen with it. Seen (**empirical**, 492 files): `0x4444CC00` (editor blue) in 193, `0xC0C0C000` in 167, `0` in 66, `0x80808000` in 53, and ten other values in 13 files |
+| 0x14 | u16 | screen width: 512 (485 files) or 640 (7) |
+| 0x16 | u16 | screen height: 448, except 480 in `SC_REPORT_TMP.CSP` |
 | 0x18 | u16 | 0 in every file |
 | 0x1A | u16 | varies (15, 100, 120, …). Possibly a default frame count; unconfirmed |
 | 0x1C | u16 | 60 in every file (frame rate?) |
@@ -140,7 +145,7 @@ Project (0x00)
 
 ### PicList
 
-```
+```text
 u32 count, ptr entries
 entry (12 bytes): ptr name, s16 n_crops, s16 id, ptr crops
 crop  (16 bytes): f32 u0, v0, u1, v1        // 0..1 texture space
@@ -177,7 +182,7 @@ There are no scene names in the file.
 
 ### FamilyList / Family
 
-```
+```text
 FamilyList: u32 count, ptr families
 Family (12 bytes): u32 n_faces, ptr faces, ptr root Node
 ```
@@ -225,7 +230,7 @@ One node in the whole disc points past its family's face list:
 
 ### AnimBank → Motion → Track → Key
 
-```
+```text
 AnimBank (0x10+): u32 0, u32 frames, u32 n_motions, ptr motions
                   motions = u32[n_motions], one per node in family order, 0 = not animated
 Motion   (12):    u32 mask, u32 n_tracks, ptr tracks
@@ -243,10 +248,14 @@ Key:              u8 size, u8 interp, u16 frame, value…   (size = whole key in
   | 2 | rotation | 0 |
   | 3, 4 | scale x, y | 0 |
   | 5 | pattern (flip-book frame) | 2 (s32) |
-  | 6 | face colour | 1 (`0xRRGGBBAA`); 25 tracks use `0x201` |
+  | 6 | face colour | 1 (`0xRRGGBBAA`); 32 tracks use `0x201` |
   | 7–10 | corner colours 0–3 | 1 |
   | 11, 14 | not decoded | 2 |
 
+- **kind**: the low byte is the value type (0 float, 1 colour, 2
+  integer). On 44 tracks the high byte is 2 as well: the 32 colour tracks
+  above (`0x201`) and 12 position, rotation or scale tracks (`0x200`).
+  `csp.py` reads only the low byte.
 - **interp** 0 = step, 1 = linear (8-byte keys), 2 = curve: 16-byte keys
   with two extra f32s, presumably in/out tangents. On the disc, 17289 keys
   are linear, 936 step and 716 curve.
@@ -255,11 +264,39 @@ A typical bank from `SLIDE_MAIN.CSE`: bank 1 slides node 0 in from x = -274
 to 320 over frames 0–15. Bank 2 slides it back out and fades the colour
 from `ffffffff` to `ffffff00`.
 
+## Editing
+
+```bash
+python SRC/csp.py extract DAT/CSE/WP_FACILITIES_01.CSP out/
+python SRC/csp.py replace DAT/CSE/WP_FACILITIES_01.CSP 1 new.svr out/WP_FACILITIES_01.CSP
+```
+
+`replace` takes the entry's number in the pack (the CSE is entry 0, so
+the first texture is entry 1) and an SVR of exactly that entry's size,
+which `svr.py replace` keeps ([`SVR_FORMAT.md`](SVR_FORMAT.md#writing)).
+It splices the bytes in, so no other entry moves. `texmap.py apply` uses
+it to put LMAST Realism's league logos and facility screens on the disc
+([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)). A texture
+of another size and the CSE layout itself have no writer, and a rewritten
+CSP texture has not been looked at in PCSX2 yet
+([`TESTING.md`](../TESTING.md)).
+
 ## Still unknown
 
 - Scene `+0x0C…`, Node `+0x1C/+0x24/+0x28/+0x2C`, Face `+0x04/+0x1E`
   are only described from the data.
-- The animation track kinds of mask bits 11 and 14.
+- The animation track kinds of mask bits 11 and 14, and what the `0x200`
+  bit in a track's kind means.
 - Project `+0x1A`, and how it relates to `AnimBank.frames`.
 - Which BG palette (`.svp`) is picked for the 41 backgrounds without
   their own (see [`ZBF_FORMAT.md`](ZBF_FORMAT.md)).
+
+## Checking the claims
+
+```bash
+python SRC/csp.py info DAT/CSE
+python SRC/csp.py tree DAT/CSE/SLIDE_MAIN.CSE
+python SRC/csp.py roundtrip DAT/CSE            # 489 packs rebuilt byte for byte
+python SRC/csp.py png DAT/CSE out/ --crops     # needs pillow
+python SRC/sles_disasm.py ISO/SLES_541.51 dis cseProjectAbsolute
+```

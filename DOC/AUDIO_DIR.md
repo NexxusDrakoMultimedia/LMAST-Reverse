@@ -9,10 +9,13 @@ CRI **AFS** archives holding CRI **ADX** audio, plus the opening movie
 library (`ADXF_LoadPartition`, `ADXF_LoadPartitionFromAfsNw`,
 `ADXT_StartAfsLp` and more are among the named symbols in `SLES_541.51`).
 The short sound effects are elsewhere, in `DAT/SOUND/*.DAT` (`ps2_DTPK`
-banks, `SRC/sounddat.py`).
+banks, [`SOUND_DIR.md`](SOUND_DIR.md)).
 
-`python SRC/afs.py` lists the archives, checks every entry and decodes to
-WAV.
+`SRC/afs.py` reads the archives: it lists them, checks every entry and
+decodes to WAV. `python SRC/afs.py info ISO/AUDIO` checks the whole folder.
+It only reads: there is no AFS or ADX writer.
+The Japanese release has 8 archives, and `BC_JPN.AFS` is its only
+commentary ([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)).
 
 ## The archives
 
@@ -25,7 +28,7 @@ WAV.
 | `KANSEI.AFS` | 4 | stereo 24 kHz | looping crowd noise (歓声, cheering): `EF_B_AWAY`, `EF_B_HOME`, `SND_CHR_BASE_B_20`, `TRAINING_AMBI` |
 | `OUENKA.AFS` | 622 | stereo 24 kHz | crowd chants (応援歌): `ap_*` (232) and `sp_*` (390), by region or team (`eng` 92, `ita` 92, `spa` 86, `fra` 78, `ger` 62, `ned` 62, `bra`, `arg`, `usa`, `afr`, `asi`, `arb`, `oeu`, `all`) and a per-player set (`plyr`, 74) |
 | `JYONAI_A.AFS` | 50 | stereo 24 kHz | stadium announcements (場内, in the ground): `tannoy00`–`tannoy49` |
-| `BC_ENG/FRA/GER/ITA/SPA.AFS` | 12,899 each | mono 24 kHz | match commentary, 3–4 hours per language, built from short pieces: 0.9 s on average in English, the longest 8.6 s, and the first entries (`WC*`, `WCPL_*`) a quarter of a second. Each clip's data fills exactly its header's sample count. Many short ones are town names (`*_TWN_*`). Entry *i* is named by entry *i* of `DAT/GAME/FNAME<lang>` (see [`GAME_DIR.md`](GAME_DIR.md)) |
+| `BC_ENG/FRA/GER/ITA/SPA.AFS` | 12,899 each | mono 24 kHz | match commentary, 3.2 to 4.1 hours per language, built from short pieces: 0.9 s on average in English, the longest 8.6 s, and the first entries (`WC*`, `WCPL_*`) a quarter of a second. Each clip's data fills exactly its header's sample count. Many short ones are town names (`*_TWN_*`). Entry *i* is named by entry *i* of `DAT/GAME/FNAME<lang>` (see [`GAME_DIR.md`](GAME_DIR.md)) |
 | `BC_ENG2/FRA2/GER2/ITA2/SPA2.AFS` | 6 each | mono 24 kHz | six more lines per language (`eng_ba_pfb_2000`–`2005`) |
 | `BC_JPN2T.AFS` | 6 | mono 24 kHz | the same six lines in Japanese |
 
@@ -64,11 +67,14 @@ in 25. The Japanese `BC_JPN.AFS` has 65,501 entries and the count word
 count in a signed 16-bit value. Read as 65,501, its table is
 consistent: every entry is on a `0x800` boundary, in order, and the last
 ends exactly at the end of the file. The name-table word after it is
-{file size, 0}, so the archive has no names. All 65,501 entries are mono
-24 kHz ADX, 84,271 s (23.4 hours) of commentary.
+{file size, 0}, so the archive has no names of its own. Its names are in
+`GAME/BCFNAME.DAT`/`.TOC` (65,501 names, byte-identical in `DAT_JP/GAME`):
+[`GAME_DIR.md`](GAME_DIR.md#fnamedattoc-clip-names). All 65,501 entries
+are mono 24 kHz ADX, 84,271 s (23.4 hours) of commentary.
 
-`ADXF_GetNumFilesFromAfs` (`0x1bd908`) reads the count as all four bytes,
-so it would return −35 for this archive. How the game opens it
+`ADXF_GetNumFilesFromAfs` (`0x1bd8d0`) calls a header reader at
+`0x1bd908` that returns bytes 4 to 7 as one 32-bit word, so it would give
+−35 for this archive. How the game opens it
 (`ADXF_LoadPartitionFromAfsNw` and the partition reader at `0x1bd628`,
 which keeps per-file sizes, not the count) isn't traced.
 
@@ -87,7 +93,7 @@ Big-endian header:
 | `0x08` | u32 | sample rate |
 | `0x0c` | u32 | samples per channel |
 | `0x10` | u16 | high-pass cutoff (500 Hz in every file) |
-| `0x12` | u8 | version, 4 |
+| `0x12` | u8 | version, 4 (all 65,225 PAL and 66,195 Japanese entries) |
 | `0x13` | u8 | flags, 0 (not encrypted) |
 | `0x24` | u32 | loop flag (only if the header reaches past `0x38`) |
 | `0x28`, `0x30` | u32 | loop start and end sample |
@@ -96,6 +102,8 @@ Big-endian header:
 The commentary's headers end at `0x22` (audio at `0x28`), so they have no
 loop fields; reading `0x24` there would hit `(c)CRI`. Music, ambience and
 chants loop. Some chant headers pad the audio start past `0x800`.
+`afs.py` also has a loop branch for version 3 (loop fields at `0x18`); no
+entry uses it, so it has never run on game data.
 
 Frames are 18 bytes per channel, channels interleaved frame by frame: a
 u16 scale, then 32 signed 4-bit samples, high nibble first. Each sample is
@@ -104,7 +112,7 @@ bits, with `c1`, `c2` computed from the cutoff and sample rate: the
 standard ADX predictor, as vgmstream implements it. `afs.py wav` writes
 16-bit PCM and adds a `smpl` chunk with the loop points.
 
-## Checking
+## Checking the claims
 
 ```bash
 python SRC/afs.py info ISO/AUDIO

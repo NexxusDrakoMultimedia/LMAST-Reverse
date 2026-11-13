@@ -20,6 +20,7 @@ and keeps a pointer to each table (CTblData::GetDataHeadPoint); SLES
   6      +0x60   16 x 71      stadium equipment: growth bonus, % (0x159d3c)
   7      +0x64   36 x 71      club-house equipment (0x159cd8)
   8      +0x68   18 x 71      youth-house equipment, for the youth team
+                              (0x159ce4)
   9      +0x70   64           the staff ability that coaches each ability
                               (0x159b68, 0x15ab58)
   10     +0x50   87 x 65      training camps by camp type (0x15a040,
@@ -39,16 +40,18 @@ Usage:
 
 <table> is a number 0-12 or a name (team, practice, group, decline_physical,
 decline_skill, decline_mental, stadium, clubhouse, youthhouse, staff, camp,
-match, youth). A row is the practice number for team and practice (0-138),
-the age for the decline tables' columns (16-40), else a number from 0. A
-column is an ability number or name, `fatigue` (64), or 65-70 for the
-equipment tables. `set` writes a same-size file for patch_disc.py, which
-also patches the copies (entry 10 of PRELOAD/SIMFILE0-6.PAC, --copies).
+match, youth). A row is the practice number for team (0-28) and practice
+(29-138), and otherwise a number from 0 (the growth type for the decline
+tables). A column is an ability number or name, `fatigue` (64), 65-70
+for the equipment tables, or for the decline tables an age (16-40, or
+`age<n>`). `set` writes a same-size file for patch_disc.py, which also
+patches the copies (entry 10 of PRELOAD/SIMFILE0-6.PAC, --copies).
 
 Practice n's name is message 971 + n of MES.PAC category 801
-(pwkGUtl_PlPracNo2MsgID, SLES 0x245bd8). The rows of 74-86 follow the
-Japanese names (74 a dummy); PAL's European names are one message early,
-and fix_drill_names moves them (patch_disc.py --mod drill-names).
+(pwkGUtl_PlPracNo2MsgID, SLES 0x245bd8). The table rows of practices
+74-86 follow the Japanese names (74 is a dummy). PAL's European names
+for them are one message early, and fix_drill_names moves them
+(patch_disc.py --mod drill-names).
 """
 import os
 import struct
@@ -343,8 +346,9 @@ def encode_file(buf, end, raw, tr):
 # (pwkGUtl_PlPracNo2MsgID, SLES 0x245bd8: n + 0x3cb). PAL's European
 # names for 74-86 are one message early: 1045 (practice 74, a dummy no
 # coach teaches) holds pinpoint shooting's name, 1056 king of dribbling's,
-# and 1057 (86, king of dribbling) an added jackknife. NAME_FIX holds that
-# last name in each language slot, which marks a retail file.
+# and 1057 (practice 86, king of dribbling) an added jackknife name.
+# NAME_FIX holds that last name in each language slot, which marks a
+# retail file.
 NAME_CATEGORY, NAME_BASE = 801, 971
 NAME_FIRST, NAME_LAST = 74, 86
 NAME_FIX = {1: '"Jackknife" training.', 2: "Protéger le ballon",

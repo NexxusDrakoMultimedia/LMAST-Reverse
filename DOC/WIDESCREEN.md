@@ -1,28 +1,56 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Widescreen
+# Widescreen: the 16:9 PCSX2 patch
 
 A PCSX2 patch that draws the 3D in 16:9 without stretching it (Hor+: more
 of the pitch at the sides, players keep their shape), and draws the 2D
 (the match HUD, the menus and the season-mode backgrounds) at 4:3
 proportions in the middle of the screen; see [The UI fix](#the-ui-fix).
+It changes the game's code in memory only, so it works on the retail disc
+and needs no tool from this project.
 
 The patch is
 [`PNACH/SLES-54151_3CB245D5.pnach`](../PNACH/SLES-54151_3CB245D5.pnach),
 for the PAL executable (PCSX2 CRC `3CB245D5`). Copy it into PCSX2's
 `patches/` folder, tick "Widescreen 16:9" under Game Properties →
 Patches, and boot. It's one section, which also sets PCSX2's aspect
-ratio to 16:9. [`PNACH/pcsx2/`](../PNACH/pcsx2/) holds the same patch
-without the comments, for submitting to PCSX2's patch collection.
+ratio to 16:9. [`PNACH/pcsx2/`](../PNACH/pcsx2/) holds the same 23 patch
+lines without the comments (only the title and author lines differ), for
+submitting to PCSX2's patch collection. A disc with a changed executable
+has another CRC ([`INSTALL.md`](../INSTALL.md#pcsx2-patches)).
+
 The FMVs (the intro and the event movies) stay stretched to 16:9.
 PCSX2's FMV Aspect Ratio Override didn't switch them back to 4:3 in a
-test (Nexxus's report); Nexxus is happy to leave them.
+test (Nexxus's report), and Nexxus's choice is to leave them.
 
 Tested in PCSX2: in an exhibition match the pitch widens at the sides
 and players keep their proportions, in play and in close-ups; shadows
 stay under the players; the Club House staff and the player-card
 portraits keep their shape (Nexxus's report, 2026-10-04).
+
+## What is fixed, and how each part was checked
+
+Every row was **tested in PCSX2** by Nexxus. The addresses and symbols
+below come from the executable and the overlays; the hook places are
+traced live over PINE where a section says so. Nothing in the patch is
+only planned.
+What is still untraced is in [Still unknown](#still-unknown).
+
+| Part | What it fixes | Tested (Nexxus's report) | Section |
+|---|---|---|---|
+| 3D in 16:9 | widens the projection; pitch, players, shadows, Club House staff and player-card portraits keep their shape | 2026-10-04 | [How it works](#how-it-works) |
+| Text, panels, menus at 4:3 | the match HUD, scoreboard, radar, clock and the menus sit at 4:3 proportions in the middle | 2026-10-04; as one section from boot 2026-10-09 | [The UI fix](#the-ui-fix) |
+| Clip to 4:3 | hidden squad list, slide-ins and the news ticker stay out of the side margins | 2026-10-04 | [Clipping to 4:3](#clipping-to-43) |
+| Match HUD and cut-ins | the substitution cut-in stays inside 4:3 | 2026-10-09 | [Match HUD and cut-ins](#match-hud-and-cut-ins) |
+| Season-mode backdrops | the map behind Edit club and the Pre-match background stop at the 4:3 edge | 2026-10-09 | [Season-mode backdrops](#season-mode-backdrops) |
+| Room changes | the old room keeps its width while the next one loads | 2026-10-09 | [Room changes](#room-changes) |
+| Room depth | staff walk behind the desk and lamp without stray shapes | 2026-10-09 | [Room depth](#room-depth) |
+| Face builds | no flash of stretched text when scrolling player cards | 2026-10-09 | [Face builds](#face-builds) |
+| Kit models | the 3D kits in menu panels sit in the middle of their panel | 2026-11-01 | [Kit models](#kit-models) |
+| Match portraits | the Tactics screen's portrait background is grey edge to edge | 2026-11-01 | [Match portraits](#match-portraits) |
+| Newspaper pages | pictures and headline text of the opening cinematic's pages at full width | 2026-11-01 (pictures), 2026-11-07 (text) | [Newspaper pages](#newspaper-pages) |
+| Name tags over players | stay over their players with no patch of their own | tested, no date recorded | [The UI fix](#the-ui-fix) |
 
 ## How it works
 
@@ -83,16 +111,18 @@ shadow's projection, which is why the patch works one step later.
 
 ## The UI fix
 
-The second half of the patch draws the match HUD at 4:3 proportions in
-the middle of the 16:9 screen. (It was a separate section, "Widescreen
-16:9 UI fix", until it was tested everywhere; the two are now one.
-Tested in PCSX2 as one section from boot, Nexxus's report, 2026-10-09.)
-Tested in
-PCSX2: in an exhibition match the scoreboard, clock, radar and their text
-line up at 4:3 proportions; in season mode the Club House and Pre-match
-menus and the pre-match intro panel line up too, and faces look normal
-(Nexxus's report, 2026-10-04). On the Pre-match screen the striped
-background still runs past the 4:3 area.
+The second half of the patch draws the match HUD and the menus at 4:3
+proportions in the middle of the 16:9 screen. It is one pnach section
+with the 3D widening, and it was tested as one from boot (Nexxus's
+report, 2026-10-09). (It was a separate section, "Widescreen 16:9 UI
+fix", until the two were tested together.)
+
+Tested in PCSX2: in an exhibition match the scoreboard, clock, radar and
+their text line up at 4:3 proportions; in season mode the Club House and
+Pre-match menus and the pre-match intro panel line up too, and faces look
+normal (Nexxus's report, 2026-10-04). At that test the Pre-match screen's
+striped background still ran past the 4:3 area;
+[Season-mode backdrops](#season-mode-backdrops) fixes that.
 
 The HUD and menus draw through three paths, and all have to be squeezed
 the same way (PAL is 512 pixels wide; GS units are 1/16 pixel, centre 2048):
@@ -103,9 +133,8 @@ the same way (PAL is 512 pixels wide; GS units are 1/16 pixel, centre 2048):
 | `CSpriteDirect::SetPrimData` (`0x126568`) | panels, scoreboard, clock, radar | `((x − 256) + 2048) × 16`, 256 in `$f23` | `sub.s` at `0x12666c` becomes `jal 0x13c0c4`, which also multiplies by 0.75 while the PX screen half-width is 256 ([match portraits](#match-portraits)) |
 | CSE: `cseCastFacePutTriStripParamPS2` (`0x1f2040`) copies each cast node's 3×3 matrix (rows at `$t1`, `x' = x·m00 + y·m10 + tx`) into the VU1 packet in the loop at `0x1f20b4` | menu panels | the node matrix | `0x1f20e0` jumps to `0x12fa30`, which scales the copied x column by 0.75 and adds 64 to tx, then returns; CSE's own matrices are unchanged. It only does so while the CSE screen's offX (context `0x38f458` `+0x68`) is −0.5, the menus' value, so `CEditFaceRender::Render` (`0x151858`), which sets its own screen to build custom players' faces, is left alone |
 
-Which functions run in a match was found by hooking each candidate with
-a stub that stored its return address (live, over PINE):
-`CSpriteDirect::SetPrimData`,
+**Traced live over PINE:** each candidate function was hooked with a stub
+that stored its return address. In a match, `CSpriteDirect::SetPrimData`,
 `nnuPrimitive2DSetVertex` and `nnDrawPrimitive2D` ran; `CSprite::Draw`,
 `nnDrawPrimitiveSprite2DPS2` and every CSE draw routine
 (`cseCastFaceDrawCorePS2`, `cseCastFaceNonTexDrawCore`, `0x1f1378`,
@@ -474,12 +503,12 @@ So the page text is drawn by `nnuPrimitive2DSetVertex`.
 
 ## Known behaviour
 
-- The FMVs stay stretched to 16:9 (see the top of this page).
+- The FMVs stay stretched to 16:9 (Nexxus's choice; see the top of this
+  page).
 - The stadium ad boards floating above the pitch in replays are the
   game's normal behaviour, not the patch (Nexxus's report).
 - The match's Tactics screen draws its blue backdrop across the whole
-  16:9 screen, past the 4:3 area. Nexxus is happy to keep it
-  (Nexxus's choice, 2026-11-01).
+  16:9 screen, past the 4:3 area. Nexxus's choice, 2026-11-01: keep it.
 - Nothing is known to be broken: every UI item found so far is fixed or
   is the intended look.
 

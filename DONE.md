@@ -3,267 +3,215 @@
 
 # Done
 
-What's finished, under the same section numbers as
-[`TODO.md`](TODO.md). Each line links the doc that holds the details,
-the evidence and how it was tested; the git history holds the rest.
+What is finished, under the same headings as [`TODO.md`](TODO.md), which
+lists what is left, plus "Tests in PCSX2" for results seen in the game.
+Each entry is a short paragraph or a few lines linking the doc that
+holds the details: the evidence, the counts and how it was tested.
 
-## 1. Read: every file parsed and checked
+## The starting season
 
-- [x] `DATA.CVM` decrypted and the disc extracted, checked against
-      Redump ([`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md))
-- [x] Archives and tables: BINPAC, `.HED`, KC@P, PRSH, `etc::PackData`,
-      `TBB1`/`TBL1` ([`PAC_FORMAT.md`](DOC/PAC_FORMAT.md),
-      [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md))
-- [x] Game code: about 12,600 symbols, the overlays and their loader,
-      the developers' field table, C++ classes
-      ([`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md))
-- [x] Every `DAT/` folder has a doc and a tool
-      ([coverage table](GOALS.md#coverage-of-datacvm)): text, events,
-      `PARAM/`, graphics, models, sound, the match's play books and
-      combinations, the sequencer scripts, crests and the player
-      editor's tables
-- [x] Memory-card saves, decoded by running the game's own serializers
-      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md))
-- [x] The Japanese release extracted, with every PAL address the tools
-      use found by `gamever.py`
-      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md))
-- [x] `regress.py`: every tool's `info` and `roundtrip` against a
-      baseline ([`README.md`](README.md#how-the-tools-fit-together))
+You can change how a new game begins, and the game plays on from there.
 
-## 2. Understand: field meanings an edit needs
-
-- [x] Every player and staff field named, with the match's readers of
-      each, staff careers and policies, kit style and the tendencies
-      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md))
-- [x] The starting season: where a division's clubs come from, leagues
-      of another size, regulations, results, free agents
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md),
-      [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md),
-      [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md))
-- [x] The club game: the economy, injuries, training and camps, the
-      money limits ([`ECONOMY.md`](DOC/ECONOMY.md),
-      [`INJURIES.md`](DOC/INJURIES.md),
-      [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md),
-      [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md#salary-limits))
-- [x] Text, events and flow: message variables, the event tables and
-      procedures, the root scripts, what each PwkScript computes
-      ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md),
-      [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md),
-      [`GAME_FLOW.md`](DOC/GAME_FLOW.md),
-      [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md))
-- [x] Kits, stadiums and crowds, and which copy of a file the game reads
-      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md),
-      [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md),
-      [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md))
-- [x] The match AI: which play is which, the combinations, the zone
-      network, `Combi2`'s and most of `Combi3`'s areas
-      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md))
-- [x] Saves field by field, and Virtua Pro Football's edit players
-      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md),
-      [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
+- [x] Squads, clubs, the new club, free agents, regulations and results,
+      each with a writer (`initteam.py`, `teaminit.py`, `plrsim.py`,
+      `regulation.py`, `clubresult.py`) and an editor tab
+      ([`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md),
+      [`REGULATION_FORMAT.md`](DOC/REGULATION_FORMAT.md))
+- [x] Where a division's clubs come from, and schedules for leagues of
+      2–32 clubs and cups of 2–128 (`schedule.py`, `leaguesize.py build`);
+      a league plays on the free turns, never the national-team dates
+      (Nexxus's choice)
+      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md))
+- [x] The national-team calendar and the club ranking: `natcal.py`,
+      `clubrank.py` ([`README.md`](README.md#archives-and-tables))
 - [x] The club and schedule limits the third tier needed
       ([`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md),
       [`UID_LIMITS.md`](DOC/UID_LIMITS.md))
-- [x] The press tendency's team cap: always 2 in a career match, so
-      levels 2–4 act as 1
-      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
-- [x] The carry and press tendencies in the roles: carry is the
-      player's own and decides how long he keeps a play; press sets how
-      far from the ball carrier the marker stands and how close counts
-      as on him ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
-- [x] The travelling salesman's items and their match boosts
-      ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#the-salesmans-items))
-- [x] The play books' path kind values: a taker's value makes a corner
-      short or a cross and a free kick short or long, and picks the
-      runners' and receivers' passes; the point codes' move orders as
-      player states and animations; `Combi3`'s table of 42 presets,
-      with 5, 6, 16, 19, 30, 33 and 39–41 decoded
-      ([`BPB_FORMAT.md`](DOC/BPB_FORMAT.md))
-- [x] The last open player fields: `explodetype` is saved but read by
-      nothing; the attack patterns A–E are only ever used as a set, so
-      the letters change nothing; the carry thresholds follow the team's
-      situation (the phase, or where the line of play is between your
-      goal and the opponents' back line); the press row compares the
-      line of play with a defensive line
-      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies))
-- [x] Room for other division sizes: a league's game days are the free
-      turns inside its season, never the national-team dates (an option
-      to play on them was built and removed, Nexxus's choice)
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#game-days-for-a-league-of-another-size))
-- [x] The fonts: the European text is drawn from three pictures through
-      glyph records (rectangle, advance) and character lists in the
-      executable, so widths and text fit don't come from the pictures;
-      the Japanese language's 2-byte fonts (`FONT_ASCII`, the two planes
-      of `FONT_KANJI`) and the unused `FONT_KANJI_*.SVP`; `font.py`
-      checks it all over both builds
-      ([`FONT_FORMAT.md`](DOC/FONT_FORMAT.md))
 
-## 3. Write: a writer for every format a mod changes
+## Data
 
-- [x] Containers and text: `pac.py`, `tbb.py`, `mbb.py`, `sqb.py`
-      ([`PAC_FORMAT.md`](DOC/PAC_FORMAT.md),
-      [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md),
-      [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#writing),
-      [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#tool))
-- [x] The starting season and the tables: `pbdata.py`, `initteam.py`,
-      `teaminit.py`, `plrsim.py`, `plrcommon.py`, `regulation.py`,
-      `clubresult.py`, `training.py`, `camp.py`, `formset.py`, `tour.py`,
-      `clubrank.py`, `natcal.py`, `clubevent.py`
-      ([`README.md`](README.md#archives-and-tables))
-- [x] Schedules: `schedule.py` and `leaguesize.py build`, leagues of
-      2–32 clubs and cups of 2–128
-      ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md))
-- [x] Kits, crests and stadiums: `uniform.py`, `emblem.py`, `stadium.py`
+You can edit players, staff, clubs, kits, crests and stadium looks.
+
+- [x] Nearly every player and staff field named (the open ones are in
+      `TODO.md`), with the match's readers of
+      each, staff careers and policies, and kit style; `pbdata.py` and
+      `plrcommon.py` (facilities) write them
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md))
+- [x] Kits, crests, stadiums and the player editor's tables:
+      `uniform.py`, `emblem.py`, `stadium.py`, with a tab each
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md),
       [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing),
       [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#editing))
-- [x] Saves and cards: `save.py set`, `pmplayer.py set`, `ps2mc.py`
-      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#editing),
-      [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing),
-      [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md))
-- [x] Textures: `svr.py` rebuilds every texture file on the disc
-      exactly (loose, `.MRG`/`.PAC`, CSP, ACROBATA, `PackData` packs) and
-      `replace` writes a picture into a texture, with its mip chain and
-      a palette built or matched
-      ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
-- [x] The texture hash map: `texmap.py` computes PCSX2's replacement
-      name (XXH3 of the GS memory blocks, palette hash, state) for every
-      texture on the disc and maps a pack onto them; LMAST Realism's PNGs
-      reach disc textures for 1,613 of 1,614
-      ([`TEXMAP.md`](DOC/TEXMAP.md))
-- [x] LMAST Realism's crests and match pictures on the disc:
-      `texmap.py apply` writes the 781 textures whose picture and palette
-      match exactly into copies of their packs (with `pac.py`'s writer),
-      and `--licensed-border` gives the licensed Italian, Spanish and
-      Dutch clubs' own crests a transparent edge like Realism's; a
-      `patch_disc.py --copies` build carries them to the `PRELOAD`
-      copies ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply))
-- [x] A CSP pack writer: `csp.py replace` and `roundtrip` (all 489 packs
-      rebuild byte for byte), so Realism's `Fixes` and `Leagues` pictures
-      in CSP packs go on the disc too; `texmap.py apply` leaves the
-      `Intro` and `Rival` folders out (Nexxus's scope)
-      ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply))
-- [x] `--mod realism` (group `graphics`, LMASTER full and max): the
-      switch takes the pack's folder with `--realism`, and the editor's
-      Build disc window has a box for it
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc))
-- [x] The player editor's tables: `emblem.py set` edits any cell of
-      `EDIT_PLAYER.TBB` within the values its readers use, and
-      `roundtrip` re-encodes it on both releases
-      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
+- [x] Which copy of a file the game reads; `TACTICSPITCH.PAC` is loaded
+      but never read, so the tactics pitch uses the `CSE/` originals
+      ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md))
 
-## 4. Rebuild: edits back on a bootable disc
+## Parameters
 
-- [x] `patch_disc.py`: files of any size, moved files, a grown disc,
-      every copy updated, archives rebuilt
-      ([`REBUILD.md`](DOC/REBUILD.md))
-- [x] `TACTICSPITCH.PAC` is loaded but never read: its entries aren't
-      registered, so the tactics pitch reads the `CSE/` originals,
-      as a camera swap on a test disc showed
-      ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
-- [x] Testing aids: `--skip-tutorial` and `--launcher`
-      ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs))
-- [x] The Japanese disc: every switch but `realism` (`third-tier`'s code,
-      save and data are ported, its rules text isn't; jump tables take
-      the Japanese case addresses, so `salesman-items` ports;
-      `vpf-positions` has nothing to do there; `real-names` writes the
-      English names in ASCII into the Japanese text), and its saves
-      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+Any `PARAM/` table can be swapped, and the economy, training, injuries
+and match tendencies are understood well enough to change.
 
-## 5. Edit: the GUI
+- [x] Containers and scripts: `pac.py`, `tbb.py` and `sqb.py` write
+      BINPACs, KC@P packs, PRS, tables and sequencer commands
+      ([`PAC_FORMAT.md`](DOC/PAC_FORMAT.md),
+      [`TBB_FORMAT.md`](DOC/TBB_FORMAT.md),
+      [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#editing))
+- [x] The club game: the economy, injuries, training, camps and the money
+      limits; `training.py`, `camp.py`, `formset.py`, `tour.py` and
+      `clubevent.py` write the tables
+      ([`ECONOMY.md`](DOC/ECONOMY.md),
+      [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md))
+- [x] The match: the tendencies (the press team cap, carry and press, the
+      thresholds), and the AI's plays, combinations, zone network and
+      path kinds
+      ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md#the-tendencies),
+      [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md))
+- [x] The travelling salesman's items and their match boosts
+      ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#the-salesmans-items))
 
-- [x] `editor.py`: a tab for every writer of game data, each save equal
-      to its logged command, and File > Build disc
-      ([`USAGE.md`](USAGE.md#the-mod-editor)); the Player editor tab
-      for `EDIT_PLAYER.TBB`
-      ([`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing))
-- [x] `saveedit.py`: every page `save.py set` can write, Save to new
-      slot, card files
-      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
+## Text
 
-## 6. Distribute: sharing a mod
+You can change any message in any language.
 
-- [x] `vcdiff.py`: xdelta patches in plain Python, xdelta3's own
-      included ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod))
-- [x] `cso.py` and `chd.py`: compressed images read directly
-      ([`REBUILD.md`](DOC/REBUILD.md#compressed-images))
-- [x] Separate saves for a modded disc
+- [x] Every message in every language: `mbb.py` and the Text tab
+      ([`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#writing))
+- [x] Message variables, the event tables and procedures, the root scripts
+      and which one starts which screen, and what each PwkScript computes
+      ([`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md),
+      [`GAME_FLOW.md`](DOC/GAME_FLOW.md),
+      [`SEQ_DIR.md`](DOC/SEQ_DIR.md))
+
+## Graphics and sound
+
+Textures go to PNG, models to OBJ and glTF, sound to WAV and MIDI, and
+LMAST Realism's pictures go on a disc.
+
+- [x] The fonts: how the European and Japanese text is drawn, checked on
+      both builds by `font.py`
+      ([`FONT_FORMAT.md`](DOC/FONT_FORMAT.md))
+- [x] Textures: `svr.py` rebuilds every texture file and writes a picture
+      into a texture (seen in the game), and `texmap.py` maps LMAST Realism's pack onto the
+      disc's textures
+      ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing),
+      [`TEXMAP.md`](DOC/TEXMAP.md))
+- [x] LMAST Realism on the disc: `texmap.py apply` writes the crests and
+      match pictures, `csp.py` writes the CSP packs' `Fixes` and `Leagues`
+      pictures, and `--mod realism` (group `graphics`, full and max)
+      builds it, with the licensed Italian, Spanish and Dutch crests given
+      Realism's transparent edge (`--licensed-border`) and a box in
+      Build disc
+      ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc))
+- [x] Widescreen: a PCSX2 pnach for 16:9 with the 2D kept at 4:3, 3D kit
+      models, match portraits and the opening newspaper pages included
+      ([`WIDESCREEN.md`](DOC/WIDESCREEN.md))
+
+## Playing a mod
+
+You can turn edits into a bootable disc or an xdelta patch, and keep a
+modded disc's saves apart.
+
+- [x] `patch_disc.py`: files of any size, moved files, a grown disc, every
+      copy updated, archives rebuilt, with `--skip-tutorial` and
+      `--launcher` for testing
+      ([`REBUILD.md`](DOC/REBUILD.md),
+      [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs))
+- [x] `vcdiff.py` makes xdelta patches (xdelta3's own included), and
+      `cso.py` and `chd.py` read compressed images
+      ([`REBUILD.md`](DOC/REBUILD.md#sharing-a-mod))
+- [x] Saves decoded by running the game's own serializers, and written by
+      `save.py set`, `pmplayer.py set` and `ps2mc.py`; Virtua Pro
+      Football's edit players too
+      ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md),
+      [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md))
+- [x] Separate saves for a modded disc, on the Japanese disc too
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
+- [x] `editor.py` (a tab for every writer, and File > Build disc) and
+      `saveedit.py` (every page `save.py set` can write)
+      ([`USAGE.md`](USAGE.md),
+      [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
 - [x] The players' guide, [`INSTALL.md`](INSTALL.md)
 
-## 7. Tests in PCSX2
+## The LMASTER Mod
 
-Each result is recorded in the doc linked.
+You can build the mod in three editions from named switches
+([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
-- [x] Widescreen: the newspaper pages' headline and text at full width
-      ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#newspaper-pages))
+- [x] The switch levels: editions, groups and switches, in
+      `patch_disc.py` and the Build disc window
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
+- [x] LMASTER lite: the fixes for training camps, drill names, injuries,
+      the main sponsor negotiation, season tickets, PR events, popularity,
+      the rival's manager, the press tendency, the national cups, VPF play
+      styles and positions (the latter Ohayoghurt's find) and the retail
+      text
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status),
+      [`SPONSOR_NEGOTIATION.md`](DOC/SPONSOR_NEGOTIATION.md))
+- [x] LMASTER full: the third tier, balanced schedules, the cut injury
+      lines, the salesman's items, real names, your own stadium, real
+      grounds, sponsor boards and separate saves
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] LMASTER max: the harder economy and the balance switches
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
+- [x] `--mod modern-font` (Roboto Condensed for the main text, PAL only),
+      `--mod title-banner` (the mod's name on the title screen) and
+      `--mod random-sponsors` (a sponsor and supplier on every kit)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font))
+- [x] The Japanese disc: every switch but `realism`, `third-tier`'s code,
+      save and data ported (its rules text is not)
+      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+
+## The end point
+
+Every folder of `DAT/` has a doc and a tool, and the game code is mapped.
+
+- [x] `DATA.CVM` decrypted and the disc extracted, and the archives and
+      tables parsed (BINPAC, KC@P, PRSH, `PackData`, `TBB1`/`TBL1`)
+      ([`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md),
+      [`PAC_FORMAT.md`](DOC/PAC_FORMAT.md))
+- [x] Game code: about 12,600 symbols, the overlays and their loader, the
+      developers' field table, C++ classes
+      ([`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md))
+- [x] Every `DAT/` folder has a doc and a tool, the Japanese release is
+      extracted and read through `gamever.py`, and `regress.py` checks it
+      all ([coverage table](GOALS.md#coverage-of-datacvm),
+      [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md),
+      [`README.md`](README.md#how-the-tools-fit-together))
+
+## Tests in PCSX2
+
+Confirmed in the game; each result is recorded in the doc linked.
+
 - [x] Edits through the writers: the player database, squads and clubs,
-      free agents, regulations, kits, training, facilities, messages,
-      a starting crest, a PR event
+      free agents, regulations, kits, training, facilities, messages, a
+      starting crest, a PR event
       ([`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md),
-      [`INITTEAM_FORMAT.md`](DOC/INITTEAM_FORMAT.md),
-      [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#tested-in-pcsx2),
-      [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#tested-in-pcsx2),
-      [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md#editing),
-      [`CLUBEVENT_FORMAT.md`](DOC/CLUBEVENT_FORMAT.md#editing))
+      [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#tested-in-pcsx2))
 - [x] England's first division at 22 clubs over two seasons
       ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from))
 - [x] The disc rebuilds, saves edited and copied, cards written by
-      `ps2mc.py` ([`REBUILD.md`](DOC/REBUILD.md),
-      [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md),
-      [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md#writing))
-- [x] `--mod vpf-positions`: an imported forward no longer lights the
-      goalkeeper box
-      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record))
+      `ps2mc.py`
+      ([`REBUILD.md`](DOC/REBUILD.md))
 - [x] The tactics pitch reads `CSE/`, not `TACTICSPITCH.PAC`
       ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md#tacticspitchpac-is-loaded-but-not-used))
 - [x] By ear: the music, opening, crowd, chants and effects banks
       ([`AUDIO_DIR.md`](DOC/AUDIO_DIR.md))
-- [x] Virtua Pro Football loads an edited `pmplayer.bin`, and the player
-      imports ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
+- [x] Virtua Pro Football loads an edited `pmplayer.bin`; `--mod
+      vpf-positions` no longer lights the goalkeeper box for an imported
+      forward
+      ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#editing))
 - [x] The LMASTER switches marked tested, each on its test disc,
       including the third tier over a German season, the real names, the
       2005-06 grounds and a season on LMASTER max
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [x] LMAST Realism's pictures on a disc built with `--mod realism`
-      work in PCSX2, mini logos included
+- [x] A Japanese disc built with `--mod third-tier` boots, starts a
+      career, saves and loads
+      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc))
+- [x] LMAST Realism's pictures on a `--mod realism` disc, mini logos
+      included, and `svr.py`'s textures in the crest, badge and sponsor
+      packs
       ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply))
-
-## 8. LMASTER Mod and other patches
-
-- [x] `--mod modern-font` (group `graphics`, LMASTER full and max, PAL
-      only): the game's main text drawn in Roboto Condensed, with the
-      glyph records rewritten to the new widths so text fits as before
-      (`fontmod.py`); seen working in PCSX2
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font))
-- [x] `--mod title-banner` (group `title-screen`, every edition): a navy
-      and gold banner on the title screen names the LMASTER Mod, its
-      version and its edition, replacing Realism's label
-      (`titlebanner.py`); seen working in PCSX2
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner))
-- [x] `--mod random-sponsors` (group `graphics`, LMASTER full and max):
-      every club's kit shows a main sponsor and a kit supplier, drawn
-      again each season, and the Italian, Spanish and Dutch clubs get
-      generated kits (`SRC/kits.csv`) instead of the licensed ones; seen
-      working on Real Betis in PCSX2
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
-- [x] LMASTER lite: the fixes for training camps, drill names,
-      injuries, the main sponsor negotiation, season tickets, PR events,
-      overseas popularity, cup popularity, the rival's manager, the press
-      tendency, the national cups, VPF play styles and positions (the
-      latter Ohayoghurt's find) and the retail text
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
-- [x] LMASTER full: the third tier, balanced league schedules, the cut
-      injury lines, the salesman's items, real names, your own stadium,
-      real grounds, sponsor boards and separate saves
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [x] LMASTER max: the harder economy and the balance switches
-      ([`ECONOMY.md`](DOC/ECONOMY.md),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements))
-- [x] The switch levels: editions, groups and switches, in
-      `patch_disc.py` and the Build disc window
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
-- [x] Widescreen: a PCSX2 pnach for 16:9 with the 2D kept at 4:3,
-      the menus' 3D kit models, the match portraits and the opening
-      cinematic's newspaper pages included
-      ([`WIDESCREEN.md`](DOC/WIDESCREEN.md))
+- [x] Widescreen newspaper pages; `modern-font`, `title-banner` and
+      `random-sponsors` on the screens and clubs checked so far
+      ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#newspaper-pages),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))

@@ -3,11 +3,22 @@
 
 # The LMASTER Mod
 
-A mod that restores content the PAL release cut or left broken, and
-offers a few improvements. Each restoration and improvement is a
-separate `patch_disc.py` switch first, so it can be built and tested in
-PCSX2 on its own. The mod comes in three editions, LMASTER lite, full
-and max, made of the groups below.
+The LMASTER Mod puts back content the PAL release cut, fixes what it
+left broken, and offers a few improvements and harder-economy options.
+Every change is a separate switch of `SRC/patch_disc.py`, so it can be
+built into a disc image and tested in PCSX2 on its own. The switches are
+grouped, and the groups make up three editions: LMASTER lite, full and
+max.
+
+This doc is the home of every switch, group and edition: what it does in
+the game, what it changes (files or code), the option that selects it,
+and how it was tested. The tables are `SWITCHES`, `GROUPS`, `LITE_GROUPS`,
+`FULL_GROUPS` and `EDITIONS` in `patch_disc.py`;
+`python SRC/patch_disc.py switches` prints them, and `regress.py` keeps
+that output as the check `patch_disc_switches`. The Japanese release is
+covered in [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md). Release notes
+and upgrade notes for players are kept in the LMASTER-Mod repository, not
+here.
 
 ## The switch levels
 
@@ -47,11 +58,11 @@ folder. Lite keeps the retail save folders, so a career must carry on
 under it as on the retail disc.
 
 LMASTER full is the fixes, the third tier, the balanced league
-schedules, the restored injury lines, the real names, the real grounds
-and the modded disc's own saves; LMASTER max adds the two
+schedules, the restored injury lines, the real names, the real grounds,
+the graphics and the modded disc's own saves; LMASTER max adds the two
 difficulty groups, `harder-economy` and `balance` (Nexxus's split,
-2026-10-27). Until then `lmaster-full` held what `lmaster-max` holds
-now, so the test reports before that date that name a full disc mean
+2026-10-27). Before that date `lmaster-full` held what `lmaster-max`
+holds now, so a test report from before it that names a full disc means
 today's max.
 
 Full and max always include `mod-saves`, so their careers and VS data go
@@ -66,19 +77,15 @@ career and VS folders. The tutorial skip and the developers' launcher
 are test tools, in no edition.
 
 `patch_disc.py switches` prints the tree. The editor's Build disc window
-(File > Build disc) draws it: a button for each edition ticks its groups
-(leaving the test tools as they are), each group has a box that ticks
-all its switches, and the switches show under a group when it is opened.
-The box of a partly ticked group shows as partly ticked, the window
-names the edition and the save letters the choice gets, and the build
-command names the highest levels that fit (`patch_disc.mod_names`:
-`--mod lmaster-max,skip-tutorial`, or `lmaster-full,balance` and single
-switches when a group is partly ticked). A disc built with the level
-names is byte for byte the one the switch lists built (checked on
-`LMAST-test-full-germany.iso`, 2026-10-27), and a max disc differs from
-the earlier full build in the VS letter alone (one byte, checked on
-`LMAST-test-max-germany.iso`). A test disc of each edition (full and max
-need `--copies` and `--dat` for the third tier):
+draws it too, and the build command it shows names the highest levels
+that fit (`patch_disc.mod_names`: `--mod lmaster-max,skip-tutorial`, or
+`lmaster-full,balance` and single switches when a group is partly
+ticked); [`USAGE.md`](../USAGE.md) describes the window's controls. A
+disc built with the level names is byte for byte the one the switch lists
+built (checked on `LMAST-test-full-germany.iso`, 2026-10-27), and a max
+disc differs from the earlier full build in the VS letter alone (one
+byte, checked on `LMAST-test-max-germany.iso`). A test disc of each
+edition (full and max need `--copies` and `--dat` for the third tier):
 
 ```bash
 python SRC/patch_disc.py patch "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso" lmaster-lite.iso --mod lmaster-lite
@@ -94,11 +101,16 @@ Rules for an entry:
 - Test it in PCSX2 before it counts as restored.
 - A restoration that needs new text (a translation into the other EU
   languages, say) says so.
-- Compare with the Japanese release, the earlier build (see
-  [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)). Content it has and PAL
-  lacks was cut for PAL; content missing from both was cut before release.
+- Compare with the Japanese release, the earlier build
+  ([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)). Content it has and PAL
+  lacks was cut for PAL; content missing from both was cut before
+  release.
 
 ## Status
+
+One row for each fix or restoration, and for the candidates still open:
+the evidence, the switch and what it changes, and where it stands.
+Improvements and the difficulty groups are in [Improvements](#improvements).
 
 | Content | Kind | Evidence | Fix | Status |
 |---|---|---|---|---|
@@ -107,19 +119,19 @@ Rules for an entry:
 | Kind-6 injuries starting at 1600 | broken data (dropped digit?), in both releases | [`INJURIES.md`](INJURIES.md#the-value-table-0x532cf8): `0x532d70` holds 1600 where 16001 fits | `--mod injury-value`: the u16 at `0x532d70` → 16001 | built; how `calcKegav` uses the table is confirmed, but the effect isn't checked in the game (kind-6 injuries are rare and random) |
 | Injury rows past fatigue 1000 | bug (out-of-bounds read) | [`INJURIES.md`](INJURIES.md#the-kind-tables): row 11 for ages 35+ | `--mod injury-row`: the row clamped to 10 in `judgeKegaKind`'s own words (`0x21a08c`, 6 words) | built; checked in a MIPS simulator over 18,018 cases (only the six out-of-bounds ones change), not in the game (rare) |
 | "Two months" and "nine months" injury lines | cut before both releases (the Japanese code is the same) | [`INJURIES.md`](INJURIES.md#the-condition-line): `plPinfo_KegaRecoverDaysChno` never returns chno 3 or 6; French, German, Italian and Spanish hold "See Let's Make revised text 0425" | `--mod injury-lines`: the heavy ladder (`0x216e14`, 15 words) gets thresholds 4,000 (two months) and 12,500 (nine months), and messages 4 and 7 of category 200 get text in the four languages, in the placeholders' bytes ([`INJURIES.md`](INJURIES.md#the-two-cut-lines-back-injury-lines)). It adds new text and shows lines the released game never did, so it is in `--mod restorations` (LMASTER full and max), not lite | built (thresholds chosen 2026-10-24); not checked in the game |
-| The travelling salesman's items | unused boost and mismatched boosts, in PAL (the Japanese release isn't checked) | [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#the-salesmans-items): flag 336's boost to the attack patterns (abilities 59–63) is paired with no event, so it never runs, and the special training coach's follow-up (event 190) only rests the squad; the Football Theory Headphones' text promises mental growth but they raise kick strength, tackle and contact strength, and the Lead-Spike Boots' promises power but they raise only crosses | `--mod salesman-items` (Nexxus's choice, 2026-10-31): event 190 gets handler type 34, so it sets flag 336 (`SIMPRG.REL 0x1d8cc0`), and event 188 ("the temporary coach's training has waned") clears it 8 turns later (`0x1d8cf0`, and the free pair of check type 58 at `0x1d92a8`), as it does the lecturer's 335; the boost jump table's entries for flags 333 and 334 (`SLES 0x5313c8`) trade places, so the spikes get the strength boost, and the headphones' case becomes new code over the crosses boost (`0x2105d0`, 33 words): 40% of the experience of abilities 26–32 for every squad player. The event table is edited in `EVENT/EVSDATABIN_EVENT.BIN` and its copies in `PRELOAD/SIMFILE0`–`6.PAC`. It fixes boosts that don't match their items and a coach whose training does nothing, and no retail career in progress breaks on it, so it is in `--mod training-fixes`, LMASTER lite (Nexxus's choice, 2026-11-01; it was in `restorations` before) | built 2026-10-31. The new code was run in a small MIPS simulator on a made-up squad (154 `pwkGUtl_AddExp` calls, each 40% of the right experience), and a whole LMASTER full build carries the change in all eight copies of the event table. Not checked in the game: the coach comes from season 8 |
+| The travelling salesman's items | unused boost and mismatched boosts, in PAL (the Japanese event table holds the same salesman records, 166–190 byte for byte PAL's, and the switch plans there: [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#patching-a-japanese-disc)) | [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#the-salesmans-items): flag 336's boost to the attack patterns (abilities 59–63) is paired with no event, so it never runs, and the special training coach's follow-up (event 190) only rests the squad; the Football Theory Headphones' text promises mental growth but they raise kick strength, tackle and contact strength, and the Lead-Spike Boots' promises power but they raise only crosses | `--mod salesman-items` (Nexxus's choice, 2026-10-31): event 190 gets handler type 34, so it sets flag 336 (`SIMPRG.REL 0x1d8cc0`), and event 188 ("the temporary coach's training has waned") clears it 8 turns later (`0x1d8cf0`, and the free pair of check type 58 at `0x1d92a8`), as it does the lecturer's 335; the boost jump table's entries for flags 333 and 334 (`SLES 0x5313c8`) trade places, so the spikes get the strength boost, and the headphones' case becomes new code over the crosses boost (`0x2105d0`, 33 words): 40% of the experience of abilities 26–32 for every squad player. The event table is edited in `EVENT/EVSDATABIN_EVENT.BIN` and its copies in `PRELOAD/SIMFILE0`–`6.PAC`. It fixes boosts that don't match their items and a coach whose training does nothing, and no retail career in progress breaks on it, so it is in `--mod training-fixes`, LMASTER lite (Nexxus's choice, 2026-11-01; it was in `restorations` before) | built 2026-10-31. The new code was run in a small MIPS simulator on a made-up squad (154 `pwkGUtl_AddExp` calls, each 40% of the right experience), and a whole LMASTER full build carries the change in all eight copies of the event table. Not checked in the game: the coach comes from season 8 |
 | Training camps train as the next camp type | bug (off by one), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#two-bugs): `CAMP_LIST` numbers the types 1–87, the training table and the theme check read them as 0–86; Parma, a goalkeeper camp, trains no keeping | `--mod camp-types`: every type lowered by one in `CAMP_LIST.TBB` | tested in PCSX2: one keeper camp raised all three keepers' saving, aerial ability and GK aptitude most (559–617 experience), then catching and rushing out (444–488), and left pace and acceleration alone, the fixed row's pattern ([`CAMP_FORMAT.md`](CAMP_FORMAT.md)) |
 | Seven English camps in the wrong town | PAL left the camp tables on the Japanese city numbers when it renumbered the English cities | [`CAMP_FORMAT.md`](CAMP_FORMAT.md#seven-english-camps-in-the-wrong-town-pal): Liverpool's camp is in Scunthorpe, Manchester's in West London, and five more | `--mod camp-cities`: the seven city ids in `CAMP_LIST.TBB` and `CAMP_EXPLANE.TBB` | tested in PCSX2 (Nexxus's report): with low popularity the England list shows Southampton, Blackburn and Sheffield, not Basingstoke, Newport and Oakham. The other four need more popularity (Liverpool a sponsor) and weren't seen; the switch moves them the same way |
 | Santiago's camp description | bug (wrong city id), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md): `CAMP_EXPLANE` keys message 6146 to city 764, the camp is 774; the lookup (`SIMPRG.REL 0xa4a80`) finds nothing | `--mod camp-santiago`: the description's city 764 → 774 in `CAMP_EXPLANE.TBB` | tested in PCSX2 (Nexxus's report): Santiago's camp shows "The Chilean capital is a hub of South American finance …" |
 | Canberra's last two camp clubs | bug (loop bound), in both releases | [`CAMP_FORMAT.md`](CAMP_FORMAT.md): `SIMPRG.REL 0x4c8f8` reads 735 of `CAMP_LIST` table 1's 737 pairs, so Fukuoka and Kanagawa never appear | `--mod camp-clubs`: the bound `0x2de` → `0x2e0` at `SIMPRG.REL 0x4c9d4` (one instruction; whole disc image) | tested in PCSX2 (Nexxus's report): Canberra's camp lists South Melbourne, Aichi, Fukuoka and Kanagawa |
 | Drills 75–86 under the next drill's name | broken text (PAL: names one message early, an added "Jackknife") | [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md#drills-7486-pals-names-are-one-early): practice *n*'s name is message 971 + *n* of category 801; the Japanese names (both discs) and the training rows have a dummy at 74 that no coach teaches, PAL's names in all five languages start one early, so the drill named "Pass training." trains shooting | `--mod drill-names`: messages 1045–1056 → 1046–1057 in `801_1`–`6.mbb` of `MES.PAC` and their copies in `PRELOAD/SIMFILE1`–`6.PAC` (entry 28); the jackknife name goes to the dummy's 1045, so the files keep their sizes. No new text; a `MES.PAC` target gets the fix in its own bytes | tested in PCSX2 (Nexxus's report): coach R.Bloemzaad's drill 76 (short and long pass, cross) reads "Dribble training" on the retail disc and "Pass training." on `LMAST-test-drills.iso` |
 | Play styles of an imported Virtua Pro Football player | bug (a compare function that subtracts pointers) | [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#the-record): the import's qsort compare (`SAVEPRG.REL 0x3df00`) never reads the ratings, so slot t keeps style t when rated 70+, and 18 of the 22 VPF styles never come in; G.Binns, rated 86 in a style that doesn't count, came in with none | `--mod vpf-styles`: the compare's 4 words load both ratings and return b − a through the tail of the executable's `strcmp`, and one more rates style 0 ("none") at 0 in the sorted copy so it never takes a slot ([`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#the-record)) | restored, tested in PCSX2: an edited V. Drake came in with four styles in slots 1–4 where the retail import gives one |
-| The moving advert board (advert slot 4) doesn't show at the last ground | bug (data), in PAL | [`STADIUM_DIR.md`](STADIUM_DIR.md#the-request-in-a-match): the style needs boards 43 and 52 on in the ground's row, and the seven level-4 rows (ids 96–101) have them off and the LCD set on | `--mod moving-boards` (lite): bytes 42–69 of those rows made like the level-3 grounds' (plain boards on, LCD set off), so the moving board and the LCD board each change something at every level. Computer clubs' level-4 grounds show the plain boards too. 96 bytes in `BUILD_STADIUM.TBB`, no copies | built 2026-11-10 as `LMAST-test-boards.iso`, not yet tested in PCSX2 (Nexxus's report, 2026-11-10) |
+| The moving advert board (advert slot 4) doesn't show at the last ground | bug (data), in PAL | [`STADIUM_DIR.md`](STADIUM_DIR.md#the-request-in-a-match): the style needs boards 43 and 52 on in the ground's row, and the level-4 rows (ids 96–101, the ones `CONV_INFO_BUILD` reaches; the seventh `ho04a` row, 117, isn't in that table and is left as it is) have them off and the LCD set on | `--mod moving-boards` (lite): bytes 42–69 of those rows made like the level-3 grounds' (plain boards on, LCD set off), so the moving board and the LCD board each change something at every level. Computer clubs' level-4 grounds show the plain boards too. 96 bytes in `BUILD_STADIUM.TBB`, no copies | built 2026-11-10 as `LMAST-test-boards.iso`, not yet tested in PCSX2 (Nexxus's report, 2026-11-10) |
 | Retail text: wrong leagues in two Game Over conditions, the Spanish intro's club count, "AL-Hyde" | broken text, in PAL | [Retail text fixes](#retail-text-fixes) | `--mod retail-text` (lite): the messages' own text in `MES.PAC`, and the name's `STATIONMES` copies | tested in PCSX2 with the real names on `LMAST-test-names.iso` (Nexxus's report, 2026-10-30) |
-| Made-up league, competition and club names | licensing (the retail game names unlicensed clubs after their cities or grounds) | [Real names](#real-names) | `--mod real-names` (full and max): `SRC/realnames.csv`'s names, the stadiums' too, in `MES.PAC`'s name lists and the English mentions, with `--copies`; `--mod own-stadium` names your stadium after you | tested in PCSX2 (Nexxus's report, 2026-10-30, `LMAST-test-names.iso`): the names, the stadium names and the new grounds work. The 75 non-English mentions are hand edits (`SRC/realnames_phrases.csv`), checked by `realnames.py info` but not seen in the game. `own-stadium`, the official names and the nations' names tested too (2026-10-31, [below](#real-names)) |
+| Made-up league, competition and club names | licensing (the retail game names unlicensed clubs after their cities or grounds) | [Real names](#real-names) | `--mod real-names` (full and max): `SRC/realnames.csv`'s names, the stadiums' too, in `MES.PAC`'s name lists and the English mentions, with `--copies`; `--mod own-stadium` names your stadium after you | tested in PCSX2 (Nexxus's report, 2026-10-30, `LMAST-test-names.iso`): the names, the stadium names and the new grounds work. The 78 non-English messages with hand edits (`SRC/realnames_phrases.csv`) are checked by `realnames.py info` but not seen in the game. `own-stadium`, the official names and the nations' names tested too (2026-10-31, [below](#real-names)) |
 | Crest presets 4–11 in three tables | broken data (a missing byte) | [`EMBLEM_DIR.md`](EMBLEM_DIR.md): tables 93, 101, 105 of `EDIT_EMBLEM.TBB` | add the missing `04 00` key | candidate. Check first whether the crest editor shows the gap |
 | The rival's manager by style | bug (wrong register), in both releases (Japanese `0x25e8e8`) | [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#the-rival-club-tables-6-7-and-8): the loop at `0x25e6d0` finds the record for the rival's style, but its load reads record 0, so the rival always gets H.Raphanel (898), never I.Ricardo (1,970), L.Alfano (1,247) or L.Nobili (1,246) | one instruction at `0x25e6d8`: `lw $s3, 8($a0)` (`8c930008`) becomes `lw $s3, 4($v1)` (`8c730004`). The rival's style is already the opposite of yours (`0x5531e0`), so its manager then matches it. `--mod rival-manager` | fixed, tested in PCSX2 (Nexxus's report): in a new Teamwork career in England, the rival SC Dunstable's Information screen showed a different policy area (the big blue area on the right, which follows the manager) from the unpatched game. The game never shows the rival manager's name. The other three styles weren't tried |
-| The press tendency counts only as 0 or 1 | bug (a constant), in both releases | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-tendencies): both press readers clamp a player's level to a per-side cap, which a career match leaves at its constructor's 2 (`GAMEPRG.REL 0x74320`), and each reader turns 2 into the cap 1 with a `movz` in the delay slot after setting 4, so levels 2–4 act as 1 | `movz $s0, $a1, $v0` (`0x9a474`, `00a2800a`) and `movz $s0, $a3, $v0` (`0x9a52c`, `00e2800a`) become `nop`, which keeps the cap 4 for all five levels. `--mod press-tendency` (lite) | built. A first version patched the cap's setter `0x74380`, which a career match never runs: over PINE in a German league match its patched word was in memory and both caps still read 2 (2026-10-31). **Checked over PINE** in a German league match on `LMAST-test-season2.iso` (2026-10-31): both readers' words read 0 (`nop`) in memory, with the caps at `02` as expected. Whether high-press sides play differently is a judgement left to Nexxus (section 7) |
+| The press tendency counts only as 0 or 1 | bug (a constant), in both releases | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-tendencies): both press readers clamp a player's level to a per-side cap, which a career match leaves at its constructor's 2 (`GAMEPRG.REL 0x74320`), and each reader turns 2 into the cap 1 with a `movz` in the delay slot after setting 4, so levels 2–4 act as 1 | `movz $s0, $a1, $v0` (`0x9a474`, `00a2800a`) and `movz $s0, $a3, $v0` (`0x9a52c`, `00e2800a`) become `nop`, which keeps the cap 4 for all five levels. `--mod press-tendency` (lite) | **Checked over PINE** in a German league match on `LMAST-test-season2.iso` (2026-10-31): both readers' words read 0 (`nop`) in memory, with the caps at `02` as expected. A first version patched the cap's setter `0x74380` instead, which a career match never runs: its word was in memory and both caps still read 2. Whether high-press sides play differently is Nexxus's judgement ([`TESTING.md`](../TESTING.md)) |
 | The World National Cup final on the last turn of the year | bug (schedule data) | the knockout UID 122 plays turns 92–95, and 95 is the year's last turn ([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#turns)), so the season ends on the turn of the final and its results can't be viewed in the Competition menu (Nexxus's report). The group UIDs 114–121 play 89–91. The Euro National Cup ends on 94 | move both national cups back one turn (`schedule.py shift`, masks and start turns; the end turn stays 95): World Cup groups 88–90 and knockout 91–94, Euro groups 88–90 and knockout 91–93. No league or cup plays after turn 87, and the two cups are in different years of the cycle. The national-team calendar ([`SCHEDULE_LIST.TBB`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)) moves with them: match days 88–94 and 88–93, release on the final's turn, and the call-up on 88 with the first group game (87 has the second-division play-off finals). `--mod national-cups` writes `SCHEDULE_SYSTEM.PAC` and its copy in `PRELOAD/STATIONFILE.PAC`, and `SCHEDULE_LIST.TBB` and its copies in `PRELOAD/SIMLOCALMEM0`–`6.PAC`. With a league of another size (`leaguesize.py build`, patched with `--copies`), it moves the cups in the league build's `SCHEDULE_SYSTEM.PAC` instead: a rebuilt league keeps its first and last game day, so it never reaches turn 88. Checked with England at 22 clubs: one build holds both, and `schedule.py info` finds no new problems | tested in PCSX2 (Nexxus's reports): the Schedule screen's globes follow the new calendar (Euro year 2007-08: turns 88–93, week 4 empty; World Cup year 2009-10: turns 88–94, week 4 late empty). The World Cup's results after its final aren't seen, since that year is the fourth season of a career, but are taken to work: in the retail game the Euro National Cup's final is on turn 94 and its results can be viewed in the Competition menu after it (Nexxus's report). The moved World Cup final is on that same turn, and both cups' knockouts are built the same way (an end turn of 95 and the same flag); the bug came only from a final on the last turn |
 | Season-ticket demand by club status | bug (branch order), in both releases (Japanese `0x2728f0`) | [`ECONOMY.md`](ECONOMY.md#season-tickets): `pwkUnkei_GetExpectSeat` has factors 0.5–1.0 for status bands of 10,000, but its first test takes every status over 10,000, so no club gets more than 0.6 | `--mod season-status`: the ladder (`0x272840`, 31 words) rewritten as a straight run of the intended bands | restored, tested in PCSX2: a top-status club put 88,000 season tickets on sale and sold 72%, the fixed band's value (43% on retail; [`ECONOMY.md`](ECONOMY.md#season-tickets)). Makes big clubs richer, so with `--mod harder-economy` it softens `season-demand` |
 | PR events and the business cycle | bug (branch order), in both releases (Japanese `0x20e7f0`) | [`ECONOMY.md`](ECONOMY.md#pr-events): each event holds +20, +10, −5, −10 for business cycles 0, 1, 3 and 4, but `plClubEvent_Execute`'s ladder reads byte 2 for 0–1, byte 4 for 2 and byte 3 for 3–4, so the boom's +20 never applies and an average economy takes 10% off every event (41% success instead of 51%) | `--mod pr-cycle`: the ladder's first 11 words (`0x20dfb0`) read the byte of each cycle, none for cycle 2 | built 2026-10-25; not checked in the game |
@@ -128,7 +140,7 @@ Rules for an entry:
 | No European Club Cup popularity for the last 16 | bug (compares the wrong competition), in both releases (Japanese `0x268aec`) | [`ECONOMY.md`](ECONOMY.md#titles): `0x268858` gives the 4th points column (European League 120, European Club Cup 60) to places 8–15 only for compe 34 and to places 16–31 only for 35, so the European Club Cup pays its last-32 losers and not its last-16 ones | `--mod cup-last16`: places 8–15 get the column for both cups and 16–31 none. `xori $v1, $v1, 0x22` at `0x26894c` becomes `sltiu $v1, $v1, 0x24` (1 for 34 and 35), `xori $v1, $v1, 0x23` at `0x26896c` becomes `move $v1, $zero`, and the shared `movz` at `0x268970` becomes `movn` | filed by Nexxus and built 2026-10-26, confirmed from the code (the disassembled patch reads as intended). No in-game test: the points are hidden, and a last-16 exit takes a long run |
 | 475 combination records that never load | unused data (and a repeat check that only works for pattern 1) | [`BPB_FORMAT.md`](BPB_FORMAT.md#how-a-team-uses-the-combinations): `0x14c3f0` takes a team's records only from three 12-entry tables (`GAMEPRG.REL 0x28c7f0`, `0x28c820`, `0x28c850`) and from `0x24a5e8`[pattern − 1], the first of each attack pattern's 16. So 15 of each 16 (450 records, same script as the first, slightly different areas, no distance limits) and 25 basic records in no table never load. 22 of those 25 could start; 0, 1 and 18 have block A kind 1, which never triggers | **Basic records (data only):** swap entries of the three tables, same size, at their file offsets in `DLL/GAMEPRG.REL` (a `disc:` target). The duplicate 12 in set 0 is a free slot. More than 12 a set needs bigger tables: no free bytes follow them (strings do), so a new table elsewhere in the image, its address in the `lui`/`addiu` pairs at `0x14c484`/`0x14c488`, `0x14c4fc`/`0x14c504` and `0x14c56c`/`0x14c574` (local relocations, so only the immediates change), and the shuffle's count 12 (`addiu $a2, $zero, 0xc` at `0x14c468`, `0x14c4f4`, `0x14c564`). **Pattern variants (code):** a random 0–15 added to `0x24a5e8`[*p* − 1] in both branches of `0x14c3f0` (`fcEuroRand_Get0toI`, as `0x14c6f8` calls it), which needs room for the extra call: rewrite the branch's three repeated loads as one. A data-only fallback points `0x24a5e8`[*p* − 1] at another fixed variant. **Repeat check:** compare with the record (`0x24a5e8`[*p* − 1]), not *p* + 60, at `0x14c718`. Each change needs its Japanese addresses through `gamever.py` | candidate. Check first whether the extra records play sensibly: their areas are untested, and only the first of each 16 has distance limits. The effect is hard to see in a match, so a test needs a way to tell which combination ran (PINE: the controller, the team's `+0x1788`, keeps the running entry at `+0x6c0` (`0xc1af0`); that entry's `+0x80` points at the combination, whose `+0x4c` is the record) |
 | 32 dialogue categories | cut before both releases (no reference in the Japanese code either) | [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md): derby interviews, a facilities tour, notices | needs triggers in the event system and English text | research |
-| The manager's match policy | bug? (reads the wrong field), in both releases (Japanese `GAMEPRG.REL 0xd8f44`, `0xf34e8`) | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors): nothing reads the match policy (`PlTeamData +0x4889`); the match's tactic shifts by period and score (`GAMEPRG.REL 0xd96e8`) and what looks like its substitution tables (`0xf3cb0`) read the selection policy (`+0x4888`) instead, in groups that fit the match policy's names (act boldly and change tactics a lot together, "rarely change" in the mildest group) | two instructions: the offset `0x4888` → `0x4889` in `lbu $s2, 0x4888($v0)` at `GAMEPRG.REL 0xd970c` (`90524888` → `90524889`) and `lbu $v1, 0x4888($sp)` at `0xf3cb0` (`93a34888` → `93a34889`), through `gamever.py` for the Japanese ones | candidate. Check first in the game that the selection policy changes a computer club's in-match tactics or substitutions (`TODO.md` section 7) |
+| The manager's match policy | bug? (reads the wrong field), in both releases (Japanese `GAMEPRG.REL 0xd8f44`, `0xf34e8`) | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors): nothing reads the match policy (`PlTeamData +0x4889`); the match's tactic shifts by period and score (`GAMEPRG.REL 0xd96e8`) and what looks like its substitution tables (`0xf3cb0`) read the selection policy (`+0x4888`) instead, in groups that fit the match policy's names (act boldly and change tactics a lot together, "rarely change" in the mildest group) | two instructions: the offset `0x4888` → `0x4889` in `lbu $s2, 0x4888($v0)` at `GAMEPRG.REL 0xd970c` (`90524888` → `90524889`) and `lbu $v1, 0x4888($sp)` at `0xf3cb0` (`93a34888` → `93a34889`), through `gamever.py` for the Japanese ones | candidate. Check first in the game that the selection policy changes a computer club's in-match tactics or substitutions ([`TESTING.md`](../TESTING.md)) |
 | Tactics of a much stronger club | bug? (a missing case), in both releases (Japanese `0x22f46c`) | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors): `plTeam_SetStyleTeamParam` picks a column of slider steps (`0x534438`) from the strength ratio; above 1.19 it gives column 0, the same as up to 0.79, and column 4 (the opposite steps) is never used | one instruction at `0x22ef8c`: `movn $v1, $zero, $v0` (`0002180b`) becomes `addu $v1, $v1, $v0` (`00621821`), so the column is 3 + (ratio > 1.19). `$v0` is overwritten by the next instruction | candidate. Check first which end of a slider (0–6) is attacking: only then is it clear that column 4 was meant for the stronger club |
 | Goalkeeping aptitude of imported VPF players | bug (unset fields left at 0), in PAL (the Japanese release has no import) | [`PMPLAYER_FORMAT.md`](PMPLAYER_FORMAT.md#the-record), found by Ohayoghurt: the import stores only the first of a player's three positions (`SAVEPRG.REL 0x3ebc4`, `0x3ebd0`); the other two stay 0, the goalkeeper's cell, instead of 13 (none), and each gives the goalkeeper cell one more level, so every imported outfield player has goalkeeping level 2 | `--mod vpf-positions`: the main-position picker the import runs just before (`0x3ddc8`, its only caller `0x3ebb4`) loses its 9-case jump table (`0x547c0`): the same cells are worked out in a few words (3*i*/2 for an even index *i*, 3(*i* − 1)/2 + 1 for an odd one, plus 1 when the player leans right), and the words saved write 13 to positions 2 and 3 of the edit work (`+0x24`, `+0x28`) and the `PlPinfo` (`+0x1b8`, `+0x1bc`), through the caller's `$s1` and `$s5`. 19 words at `0x3de48`; the two relocated words of the table's address (`0x3de58`, `0x3de60`) stay as they are. Players imported before the fix keep the extra level in the save | restored, tested in PCSX2 (Nexxus's report, 2026-11-01): on `LMAST-test-vpfpos.iso` (this switch alone) G.Binns, a forward, came in with only his forward cell lit and the goalkeeper box dark. The old and new picker were also run in a small MIPS simulator for all 9 indices and both leanings: the same cell every time, and all four positions set to 13 |
 | Coach's training plan by policy | broken data (rows out of step with the names), in both releases (Japanese `SIMPRG.REL 0x224d70`) | [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#the-developers-staff-editors): the plan has 6 rows (`SIMPRG.REL 0x228cc0`) for 8 training policies; man-marking (3) gets the physical row, physical (4) the formation row, and formation, condition and match practice (5–7) the match row | needs two more rows (a man-marking one and a condition one, written new) and the clamp `slti $v0, $t1, 6` at `SIMPRG.REL 0xf0850` raised to 8. No free bytes follow the table (other data does), so the 8 rows need room elsewhere and the table's `lui`/`addiu` at `0xf06a8`/`0xf06b0` pointed there. Six rows can't fit eight names whatever their order | candidate. Only the player's own club uses the plan (computer clubs train without it), so decide first whether new rows are worth it |
@@ -137,13 +149,13 @@ Rules for an entry:
 
 Not restorations: changes to data that works but plays badly. They
 follow the same rules (evidence, smallest change, tested in PCSX2) and
-stay separate switches, so the restorations can be used without them
-(LMASTER lite). LMASTER full has the league schedules, and LMASTER max
-all of them. `--mod harder-economy` and `--mod balance` are the
-difficulty groups, in max only; `balance` is the switches built
-2026-10-24 to 26 with the values Nexxus chose (the groups' lists are
-in [the switch levels](#the-switch-levels); `injury-lines` is in
-[Status](#status), and in `--mod restorations`).
+are separate switches, so the restorations can be used without them
+(LMASTER lite). `league-balance` and `third-tier` are in the `leagues`
+group (LMASTER full and max); `--mod harder-economy` and `--mod balance`
+are the difficulty groups, in max only. `balance` is the switches built
+2026-10-24 to 26 with the values Nexxus chose. The groups' lists are in
+[the switch levels](#the-switch-levels). The third tier, its design and
+the text it rewrites follow the tables.
 
 | Change | Evidence | Fix | Status |
 |---|---|---|---|
@@ -167,15 +179,18 @@ are built now: the first three as `--mod harder-economy`, the fourth as
 |---|---|---|
 | Dearer facilities and their upkeep | `PLRESOURCECOMMON.PAC` entry 0 facility records: build cost, a tenth-size second cost at `+0x1c`, upkeep ([`ECONOMY.md`](ECONOMY.md#build-costs)) | **confirmed**: costs and upkeep are data, so this is a data edit; the business cycle and sponsor discounts still scale the build cost |
 | A wider ticket price range | the plan screen's limits (`SIMPRG.REL 0x3ef94`, `0x3ef98`) and the ticket demand table (`0x556250`, rows by price, thresholds at `0x556120`) ([`ECONOMY.md`](ECONOMY.md#the-ticket-demand-value)) | **confirmed**: both are fixed at 60–300 (£10–£50). Widening the screen alone makes every price past either end draw the same crowd as that end, so the table needs new rows as well |
-| Dearer advertising | the ad budget's limit (`SIMPRG.REL 0x3eec0`) and what it buys: ticket demand up to 30,000,000 and budget ÷ 600,000 supporter popularity a month ([`ECONOMY.md`](ECONOMY.md#what-the-ad-budget-does)) | **confirmed**: payment 17 is a twelfth of the budget a month, so a dearer ad means a smaller effect per pound (change the 600,000 divisor at `0x268ce0` and the table's 3,000,000 step at `0x2719e0` and `0x271a88`), not a higher price |
+| Dearer advertising | the ad budget's limit (`SIMPRG.REL 0x3eec0`) and what it buys: ticket demand up to 30,000,000 and budget ÷ 600,000 supporter popularity a month ([`ECONOMY.md`](ECONOMY.md#what-the-ad-budget-does)) | **confirmed**: payment 17 is a twelfth of the budget a month, so a dearer ad means a smaller effect per pound (the 600,000 divisor and the table's 3,000,000 step are at the sites listed in [`ECONOMY.md`](ECONOMY.md#what-the-ad-budget-does)), not a higher price |
 | Season tickets for top clubs | the status factor in `pwkUnkei_GetExpectSeat` (`0x272838`–`0x2728dc`) | **confirmed** bug: every club status above 10,000 gets 0.6, so the 0.7–1.0 steps for higher status are never reached ([`ECONOMY.md`](ECONOMY.md#season-tickets)). Built as the restoration `--mod season-status` (above) |
 | Dearer overseas bases, investment in them and their upkeep | `PLRESOURCESIM.PAC` entry 1: set-up cost per region and level rates (`_GetOverseasBranchEstablishCapital`, `0x232d88`; [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)), payments 18–19 | built as `--mod overseas-bases` (above) |
 | Merchandise: dearer to stock, bigger margins | income 7 (Merchandise), `pwkGd_GoodsMonthlySales` ([`ECONOMY.md`](ECONOMY.md#merchandise)) | built as `--mod merch-costs` (dearer stock, margins 50–60%) and `--mod fanbase` (sales by fanbase), above ([`ECONOMY.md`](ECONOMY.md#making-the-stock)); the shop prices (shop list `+0x8`, `0x241a00`) stay |
 | Reputation harder to raise | your club rank is the club status >> 11 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)) | built as `--mod slow-reputation` (above) |
 | Lesser players dearer, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the price limits ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | built as `--mod transfer-fees` and `--mod fee-tiers` (above) |
 
-Built as `--mod third-tier` (Nexxus's idea, design agreed
-2026-10-26): **a third tier and a harsher end.**
+### The third tier
+
+`--mod third-tier` (group `leagues`; Nexxus's idea, design agreed
+2026-10-26) gives every nation a hidden third tier and a harsher end to a
+career.
 
 The design:
 
@@ -195,7 +210,7 @@ The design:
 - Third-tier clubs should still show in the other clubs' club info and
   in the world rankings, if the game allows it.
 
-What is known so far:
+What the code and data show, and how it was built:
 
 - **The game over.** **Confirmed** (`SIMPRG.REL 0x15d958`): from 2007,
   with your club in the second division, the game ends when your final
@@ -316,12 +331,12 @@ What is known so far:
        25 and 26 in England.
      - The past records are seeded for competitions 0–48 only
        (`0x253200`, `slti 0x31`); the seed table's rows 49–55 are empty.
-     - `CScheEuro::calcCompetetionFinish` (`0x205fa8`, `slti 0x31`)
-       writes no record from competition 49 on. Past it, the yearly
-       honours (`pwkRec_GetCompeConventionRecord*`, `0x253af8`–`0x253c58`)
-       exist for competitions 0–48 only and return null past them, so a
-       third tier must write its table and skip the honours and the title
-       effects.
+     - `CScheEuro::calcCompetetionFinish` (its `slti 0x31` at
+       `0x205fa8`) writes no record from competition 49 on. Past it,
+       the yearly honours (`pwkRec_GetCompeConventionRecord*`,
+       `0x253af8`–`0x253c58`) exist for competitions 0–48 only and
+       return null past them, so a third tier must write its table and
+       skip the honours and the title effects.
      - Every own-nation version of a domestic UID (second division,
        cup qualifying, cup, league cup) differs from its other-nations
        version only by your club's and the rival's places, the cups
@@ -432,7 +447,7 @@ rules, is separate ([The text](#the-text)).
 | Game Over conditions, the Netherlands (487:1205), point 2 | English "23th in Spanish League Division 2", French "division espagnole", German "23." and "Spanischen Liga 2", Spanish "2ª Liga Alemana"; only Italian is right | the Dutch second division, 21st place, in those four languages |
 | Spanish intro to the division (487:1100) | "Hay 216 equipos" | 26 |
 | Team 435's name (categories 3, 4 and 100003, ids 2435 and 3435) | "AL-Hyde" | "Al-Hyde" (Nexxus's report), in all five languages |
-| The youth academy's second comment on a candidate (700:8657-8663) | "He seems to have almost no potential" and so on: the Japanese rates star quality, so it can contradict the summary line ("a superb player with great potential"); 8659 says charisma in English and Spanish, is untranslated in French and Italian, and repeats 8657 in German | the same seven lines rate charisma ("almost no charisma" up to "superb charisma") in all five languages ([`EVS_PROCEDURES.md`](EVS_PROCEDURES.md#youth-lists-confirmed); Nexxus's report, 2026-11-10) |
+| The youth academy's second comment on a candidate (700:8657-8663) | "He seems to have almost no potential" and so on: the Japanese rates star quality, so it can contradict the summary line ("a superb player with great potential"); 8659 says charisma in English and Spanish, is untranslated in French and Italian, and repeats 8657 in German | the same seven lines rate charisma ("almost no charisma" up to "superb charisma") in all five languages ([`EVS_PROCEDURES.md`](EVS_PROCEDURES.md#youth-candidates-comments-partly-confirmed); Nexxus's report, 2026-11-10) |
 
 The point-2 fixes follow the Italian texts, which name each nation's
 own league and place. Category 487 has no `PRELOAD` copy, so its files
@@ -488,22 +503,19 @@ front number, which appeared on the chest) and the builder's team test
 (`0x2c4ab8`, which only changes the keeper kits) were not it. A workflow
 of investigators over the code and four states found it (**confirmed** in
 the code, and seen to work). `CUniformLoader::_load_edit` (`0x2c2848`)
-creates three texture resources for every generated kit, whatever the
-club (the loop at `0x2c2ef0`–`0x2c2f58`, types {0, 5, 7} from the table
-at `0x55a248`: type 5 is `SPONSOR_TEXTURE.PAC`, type 7
-`SPONSOR_TEXTURE_S.PAC`, named `CmnTex_005_NNN` and `CmnTex_007_NNN`
-with the record number less 1). Betis's were loaded in the states
-(`CmnTex_005_064`, `CmnTex_007_208`). Then
-`CUniformBuilder::_setup_texture_list` (`0x2c5340`) throws them away: at
-`0x2c54bc`–`0x2c54d8` only teams 1 and 2 and the VS teams
+loads the sponsor and supplier textures for every generated kit,
+whatever the club (Betis's were loaded in the states, `CmnTex_005_064`
+and `CmnTex_007_208`). Then `CUniformBuilder::_setup_texture_list`
+(`0x2c5340`) throws them away: only teams 1 and 2 and the VS teams
 (`0x21f`–`0x22e`) go on to the real sponsor and supplier lists
-(`0x2c54e0`), and every other club gets the default list for both slots
-(`0x2c5504`), copied into texture list slots 4 and 6. The switch turns
-the `beqz` at `0x2c54d8` into a `j` to 12 words in the code segment
-(`0xf8380`): every club takes the real lists, except the national teams
-(460–542), which take the real supplier list and the default sponsor
-list, so they show their kit maker and no main sponsor (Nexxus: they
-should carry no sponsor, but suppliers are fine).
+(`0x2c54e0`), and every other club gets the default list for both slots,
+copied into texture list slots 4 and 6. The loader and the test are in
+[`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#the-sponsor-and-supplier-logos-on-a-generated-kit).
+The switch turns the `beqz` at `0x2c54d8` into a `j` to 12 words in the
+code segment (`0xf8380`): every club takes the real lists, except the
+national teams (460–542), which take the real supplier list and the
+default sponsor list, so they show their kit maker and no main sponsor
+(Nexxus: they should carry no sponsor, but suppliers are fine).
 
 **The licensed clubs.** The 116 Italian, Spanish and Dutch clubs have
 real kit textures with their sponsor in them, so a sponsor could not be
@@ -562,15 +574,16 @@ category 6 write to both. National team names run to 22 characters in
 the game's own lists, so they aren't held to the clubs' 18.
 
 **The switch.** `SRC/realnames.csv` holds only the real names (no game
-text): 1069 rows, keyed by category (3 teams, 10 stadiums, 9
-competitions, 11 stages, 6 nations) and id, with the English, French, German,
-Italian and Spanish names and a team's three-letter form.
+text): 1069 rows, keyed by category and id (433 teams in category 3,
+457 stadiums in 10, 48 competitions in 9, 123 stages in 11 and 8 nations
+in 6; `realnames.py info` prints the counts), with the English, French,
+German, Italian and Spanish names and a team's three-letter form.
 `realnames.py` writes them into:
 
 | Category | Ids | What |
 |---|---|---|
 | 3, 4, 100003 | 2000, 3000, 2000 + team | the team's name, in each language the row gives |
-| 10 | 11000 + team | the club's stadium (clubs 3–459). The game's is "\<club\> \<word\>" ("Highbury Stadium", "Highbury Stade"); a row gives the ground's own name, the same in every language, and a club with a real name and no row gets "\<real name\> \<word\>" |
+| 10 | 11000 + team | the club's stadium (clubs 3–459). The game's is "\<club\> \<word\>" ("Highbury Stadium", "Highbury Stade"); a row gives the ground's own name, the same in every language. Every club has a row now; the writer would still give a club with a real name and no row "\<real name\> \<word\>" |
 | 5 | 4000 + team | the three-letter form, in every language: the name's first three letters in capitals, as the game forms them, or an override where two clubs would share one (MCI, MUN, SHW, SHU) |
 | 9 | 10000 + competition | the competition's name; in capitals where the game has it so (French, Italian and Spanish) |
 | 100009 | the same | the English name in capitals, in every language, as the game has it |
@@ -593,27 +606,29 @@ shows Latin text in these lists ("NOT STADIUM", "BIR"), but whether the
 Japanese font fits an 18-letter club name in the player's club field
 isn't seen yet.
 
-**Stadiums (2026-10-30).** 382 of the 457 clubs have a stadium row,
-the grounds they played at in 2005-06 (Nexxus's choice, 2026-10-30,
-after a first list of 2006-07): Highbury for Arsenal, not the Emirates
-Stadium; the Stadio delle Alpi for Juventus and Torino, not the Stadio
-Olimpico di Torino they moved to in 2006; the Alkmaarderhout for AZ, not
-the DSB Stadion; La Condomina for Real Murcia, not the Nueva Condomina;
-the Ciudad Deportiva for Real Madrid Castilla, not the Alfredo Di
-Stéfano. Sponsor names give way to the
-ground's own (Westfalenstadion, Arena AufSchalke, Volksparkstadion,
-Son Moix, El Sadar, Stadion Letná); where a ground had no other name
-(Reebok Stadium, JJB Stadium, Ricoh Arena, KC Stadium, Walkers Stadium,
-Britannia Stadium, Arke Stadion, Polman Stadion, Rosada Stadion,
-Mandemakers Stadion, Kras Stadion, Finnair Stadium, Home Depot Center,
-Fukuda Denshi Arena) the row is left out. Names that belong to the club
-or its owner rather than a sponsor stay (Madejski Stadium, BayArena,
-Volkswagen Arena, Philips Stadion, MSV-Arena, Wacker-Arena). The other
-75 clubs, mostly the small and far-away ones whose 2005-06 ground isn't
-certain or needs letters cp850 lacks (Bežigrad, Andrův stadion), keep
-"\<club\> Stadium". The game's names are at most 30 characters
-("Athletic Club de Bilbao Stadio"), and so are the rows; `info` lists
-any longer. The rows are suggestions for Nexxus to check.
+**Stadiums.** All 457 clubs have a stadium row (`realnames.csv`
+category 10): the ground they played at in 2005-06 (Nexxus's choice,
+2026-10-30, after a first list of 2006-07). That means Highbury for
+Arsenal, not the Emirates Stadium; the Stadio delle Alpi for Juventus and
+Torino, not the Stadio Olimpico di Torino they moved to in 2006; the
+Alkmaarderhout for AZ, not the DSB Stadion; La Condomina for Real Murcia,
+not the Nueva Condomina; the Ciudad Deportiva for Real Madrid Castilla,
+not the Alfredo Di Stéfano. Sponsor names give way to the ground's own
+(Westfalenstadion, Arena AufSchalke, Volksparkstadion, Son Moix, El Sadar,
+Stadion Letná). Where a ground had no name but its sponsor's (Reebok
+Stadium, JJB Stadium, Ricoh Arena, KC Stadium, Walkers Stadium, Britannia
+Stadium, Arke Stadion, Polman Stadion, Rosada Stadion, Mandemakers
+Stadion, Kras Stadion, Finnair Stadium, Home Depot Center, Fukuda Denshi
+Arena) the row is generic, "\<club\> Stadium" with the club's real name
+("Bolton Wanderers Stadium"; Nexxus's choice, 2026-10-31). Names that
+belong to the club or its owner rather than a sponsor stay (Madejski
+Stadium, BayArena, Volkswagen Arena, Philips Stadion, MSV-Arena,
+Wacker-Arena). Letters cp850 lacks lose their accent (Bezigrad, Andruv
+stadion). The first build had rows for 382 clubs only; the other 75, mostly
+small and far-away clubs, got theirs on 2026-10-31. The game's names are
+at most 30 characters ("Athletic Club de Bilbao Stadio"), and so are the
+rows; `info` lists any longer. The rows are suggestions for Nexxus to
+check.
 
 **`--mod own-stadium`** (group `names`): your club's stadium is named
 after you, "\<your name\> Stadium", where the game used your city (Nexxus's
@@ -659,11 +674,13 @@ conditions first, so a row whose phrase isn't there is skipped, and the
 Netherlands' French conditions (487:1205, which the retail text calls
 the Spanish second division) have a row for each wording, both giving
 the Eerste Divisie; `info` marks a message that none of its rows
-matches in the game's own text. 63 messages get real names; 12 keep a
-generic phrase (an empty replacement), such as "première division" or
-"erste Liga" where any nation's top flight is meant, the World Club
-Championship's own name, and two European-cup wins that may be any cup
-(German 35557:0 "Europapokalsieg", Spanish 832:378 "Copa Europea").
+matches in the game's own text. 78 messages in the other languages are
+edited this way: 63 get real names, and 15 keep the game's wording (an
+empty replacement). Those 15 hold "première division" or "erste Liga"
+where any nation's top flight is meant, the World Club Championship's
+own name, the German "Europameisterschaft" and "Weltmeisterschaft", and
+two European-cup wins that may be any cup (German 35557:0
+"Europapokalsieg", Spanish 832:378 "Copa Europea").
 
 The league rules' "European League Rank/position" (30001:100 to 127) is
 the nation's place in the European ranking (563:1009: "country X is
@@ -702,12 +719,12 @@ The official club names, the UEFA and FIFA competition names, the
 Bayern Munich, Juventus FC, FC Barcelona, Real Madrid CF and SK Rapid
 Wien read in full; the UEFA Champions League, UEFA Intertoto Cup, UEFA
 EURO and FIFA World Cup show; Standings has "UEFA Ranking" with "Here
-are the UEFA rankings."; and grounds without a row show the club's
-real name ("Bolton Wanderers Stadium"). On `LMAST-test-season4.iso`
-(the same day) the 2005-06 nation and national team names show,
-"United Arab Emirates" and "Republic of Ireland" fit wherever team
-names appear, and the nation list says UAE. The other languages aren't
-seen yet.
+are the UEFA rankings."; and a club with no stadium row, as 75 had
+then, showed its real name and "Stadium" ("Bolton Wanderers Stadium").
+On `LMAST-test-season4.iso` (the same day) the 2005-06 nation and
+national team names show, "United Arab Emirates" and "Republic of
+Ireland" fit wherever team names appear, and the nation list says UAE.
+The other languages aren't seen yet.
 
 ```bash
 python SRC/realnames.py info DAT/MESSAGE/MES.PAC       # the names against the disc
@@ -732,9 +749,10 @@ and the command won't overwrite a table that exists. What it shows:
 - Every game club name already fits 18 characters (the longest is
   18). 113 competition and stage names are longer, so the limit can
   only be a guide for those.
-- 80 club names differ by language (French "Real Madrid Cast."),
-  and most competition names are translated, so each language
-  needs its own real name, not only the English one.
+- 80 team names differ by language: 78 national teams and two clubs
+  (French "Real Madrid Cast."). Most competition names are translated
+  too, so each language needs its own real name, not only the English
+  one.
 - Category 100003 differs from 3 in 7 names (spellings such as
   "Albinoleffe" and the typo "Motherwwell").
 - 142 names appear in other messages too: "European League" in 15
@@ -980,7 +998,7 @@ PCSX2's texture replacement. It is one switch, in full and max and not
 lite, because it is an improvement and no fix.
 
 ```bash
-python SRC/patch_disc.py patch <retail iso> out.iso --mod realism     --realism <LMAST-Realism>/textures/SLES-54151/replacements --copies --dat DAT
+python SRC/patch_disc.py patch <retail iso> out.iso --mod realism --realism <LMAST-Realism>/textures/SLES-54151/replacements --copies --dat DAT
 ```
 
 The pack's files are not in this repository. Without `--realism` the
@@ -1000,7 +1018,7 @@ carries them to the `PRELOAD` copies. The work is `texmap.py apply`
 ([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)):
 
 - the pack's pictures whose texture and palette match a disc texture
-  exactly (781 textures) go into their packs with `svr.py`'s writer;
+  exactly (799 textures) go into their packs with `svr.py`'s writer;
 - the **original crests of the licensed Italian, Spanish and Dutch
   clubs** that the pack doesn't replace get a transparent border of 2
   pixels (the picture is scaled down by 4), as Realism's logos have
@@ -1015,9 +1033,10 @@ built from `texmap.py apply`'s files with `--copies`. **Tested in PCSX2**
 (Nexxus's report, 2026-11-07, `LMAST-test-realism.iso`): the disc shows the
 pack's pictures and works; the mini logos first came out half transparent
 and were fixed ([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)).
-Since 2026-11-13 the
+The
 pictures in CSP packs go in too (`csp.py replace`: 7 pictures, 16 packs, the
-`Fixes` and `Leagues` folders; not seen in the game yet). Nexxus's scope
+`Fixes` and `Leagues` folders; built 2026-11-13, not seen in the game
+yet). Nexxus's scope
 (2026-11-12): the pack's `Fixes`, `Adboards` and `Leagues` folders are
 put on the disc, `Intro` waits for LMASTER's own intros, and `Rival` stays
 out (an upscale made from mipmaps, largely incompatible).
@@ -1041,10 +1060,12 @@ python SRC/patch_disc.py patch <retail iso> out.iso --mod modern-font --font "Ro
   without it the switch looks for `RobotoCondensed[wght].ttf` in a
   LMASTER Mod clone's `fonts` folder beside this repository, then in the
   system's fonts (`C:/Windows/Fonts`, the user's `Microsoft/Windows/Fonts`,
-  `/usr/share/fonts/truetype/roboto`). An edition or group that holds the
-  switch leaves it out when there is no file and says so; naming
-  `--mod modern-font` without one is an error. The editor's Build disc
-  window has a **Font file** box, filled in when the face is found. The
+  `/usr/share/fonts/truetype/roboto` and
+  `/usr/share/fonts/truetype/google-fonts`). An edition or group that
+  holds the switch leaves it out when there is no file and says so;
+  naming `--mod modern-font` without one is an error. The editor's
+  Build disc window has a **Font file** box, filled in when the face is
+  found. The
   face's own file says "Licensed under the Apache License, Version 2.0"
   (version 3.008); only drawn pictures, not the file, go into a disc.
 - **PAL only** (Nexxus's choice, 2026-11-13). The Japanese release draws
@@ -1087,10 +1108,10 @@ cut corners (the logo is a hexagon), "LMASTER MOD" in gold over, say,
 "v0.5.0 FULL". It replaces the label "LMAST Realism Mod Version 2.0" that
 the Realism pack's title picture carries, at the same place (x 12 to 140,
 y 49 to 112 of the 512x512 picture), so each release can name itself with
-no one redrawing a picture.
+no one redrawing a picture. The banner is 140x66 pixels at (8, 44).
 
 ```bash
-python SRC/patch_disc.py patch <retail iso> out.iso --mod lmaster-full --font "RobotoCondensed[wght].ttf" --version 0.5.0 ...
+python SRC/patch_disc.py patch <retail iso> out.iso --mod lmaster-full --font "RobotoCondensed[wght].ttf" --version 0.5.0 --copies --dat DAT
 ```
 
 - **The title picture** is the texture `sc_titlebg<n>_01` (512x512, 8 bits,
@@ -1119,9 +1140,27 @@ python SRC/patch_disc.py patch <retail iso> out.iso --mod lmaster-full --font "R
   picture; each pack's entry is stamped and checked by `titlebanner.py
   info`), a full or max disc, and the banner on the Japanese release.
 
-## Planned
+## Test tools
 
-Ideas Nexxus has agreed on (2026-10-27), not started:
+`skip-tutorial` and `launcher` are the group `test-tools`, in no edition.
+They help build test discs; they are no part of the mod.
+
+- **`--mod skip-tutorial`** (also `--skip-tutorial`; whole disc image
+  only) skips a new career's opening playoffs, the tutorial, but runs
+  their schedule steps, so the real year end runs (club rankings, the
+  club's status). The club must be created in England, or in the nation
+  `--skip-nation` names (England, France, Germany, Italy, Spain or
+  Netherlands). A smaller league makes a quicker season test. Details,
+  including the argument's address:
+  [`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs).
+  Tested in PCSX2 for England and Germany; the other nations are open in
+  [`TESTING.md`](../TESTING.md).
+- **`--mod launcher`** boots into the developers' launcher, a debug menu
+  of test modules and viewers (`RootMainSeq.sqb`). It works, tested in
+  PCSX2; the entries not yet tried are in [`TESTING.md`](../TESTING.md).
+  Details: [`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher).
+
+## Planned
 
 Possible, for LMASTER full and max (Nexxus's idea, 2026-11-01), not
 started:
@@ -1135,10 +1174,20 @@ started:
   the PAL code still holds them unreachable or they were cut, and the
   English text for its screens. Nothing is traced yet.
 
+## Not candidates
+
+- `EVENT/EVENTDATA_TURN.TBB`, `0SYSTEM/SCHEDULE.TBB` and the `CVS/`
+  files are development leftovers. The game has no code that reads them.
+- Language slot 6 of `MES.PAC` is an unused near-copy of English.
+- `CSE/GP_PRACTICEICON.CSP` is empty in PAL but not in the Japanese
+  release. PAL loads the per-language `GP_PRACTICEICON0`–`6.CSP`, which
+  hold the same icons.
+- The Japanese `PLRESOURCESIM.PAC` has no free-agent list: PAL added it.
+
 ## Still unknown
 
 The in-game checks still to make are in each row's status above, and
-[`TESTING.md`](../TESTING.md) and [`TODO.md`](../TODO.md) section 8
+[`TESTING.md`](../TESTING.md) and [`TODO.md`](../TODO.md#the-lmaster-mod)
 hold them as tasks. The open questions behind the candidates:
 
 - Whether the 475 unused combination records play sensibly, and how to
@@ -1153,13 +1202,19 @@ hold them as tasks. The open questions behind the candidates:
   third tier rewrites ([The text](#the-text)).
 - Why Renew Mobile Site was disabled
   ([`CLUBEVENT_FORMAT.md`](CLUBEVENT_FORMAT.md#still-unknown)).
+- Which preloaded copy of the youth academy's comments the screen reads:
+  `retail-text` patches both (`TACTICSLARGE` and `TACTICSMATCHLARGE`), so
+  the first test on a disc says ([`TESTING.md`](../TESTING.md)).
 
-## Not candidates
+## Checking the claims
 
-- `EVENT/EVENTDATA_TURN.TBB`, `0SYSTEM/SCHEDULE.TBB` and the `CVS/`
-  files are development leftovers. The game has no code that reads them.
-- Language slot 6 of `MES.PAC` is an unused near-copy of English.
-- `CSE/GP_PRACTICEICON.CSP` is empty in PAL but not in the Japanese
-  release. PAL loads the per-language `GP_PRACTICEICON0`–`6.CSP`, which
-  hold the same icons.
-- The Japanese `PLRESOURCESIM.PAC` has no free-agent list: PAL added it.
+```bash
+python SRC/patch_disc.py switches                  # the editions, groups and switches above
+python SRC/schedule.py league DAT/PARAM            # the leagues league-balance rebuilds
+python SRC/preload.py info DAT                     # the room in the PRELOAD copies --copies fills
+python SRC/fontmod.py info ISO/SLES_541.51 DAT/0SYSTEM "RobotoCondensed[wght].ttf"
+python SRC/titlebanner.py info DAT/CSE/SC_TITLEBG1.CSP "RobotoCondensed[wght].ttf"
+```
+
+`python SRC/regress.py list` shows every check; the ones that cover this
+doc are `patch_disc_switches`, `realnames`, `fontmod` and `titlebanner`.

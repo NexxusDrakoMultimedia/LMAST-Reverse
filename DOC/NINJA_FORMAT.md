@@ -1,12 +1,20 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Ninja 3D models and motions (`*.SNJ`, `*.SNO`, `*.SNM`, `*.SNP`, `*.SNA`)
+# Ninja models and motions: `*.SNJ`, `*.SNO`, `*.SNM`, `*.SNP`, `*.SNA`
 
-The game's models, skeletons and animations use Sega's **NN** ("Ninja
-Next") binary chunk format for PS2. The library is linked into
-`SLES_541.51` with its symbols (734 `nn*`/`nnu*` functions), so most of the
-layout below is confirmed from the code that reads it.
+These files hold the game's 3D models and the motions that animate them:
+the players and their faces and hair, the balls, the trophies, the
+stadiums and advert boards, and the cameras of the pre-rendered
+backgrounds. They use Sega's **NN** ("Ninja Next") binary
+chunk format for PS2. The library is linked into `SLES_541.51` with its
+symbols (734 `nn*`/`nnu*` functions), so most of the layout below is
+confirmed from the code that reads it. `python SRC/ninja.py info DAT`
+checks every file against this document; `ninja.py` also exports models to
+OBJ and animated, skinned models to glTF (see [Tools](#tools)). The folder
+docs say which models belong where: [`PLAYER_DIR.md`](PLAYER_DIR.md),
+[`STADIUM_DIR.md`](STADIUM_DIR.md), [`BG_DIR.md`](BG_DIR.md),
+[`TEST3D_DIR.md`](TEST3D_DIR.md) and [`ACROBATA_DIR.md`](ACROBATA_DIR.md).
 
 | Ext | Chunks | Contents |
 |---|---|---|
@@ -26,7 +34,9 @@ models; `EDITFACEPACK`: 2 heads). `python SRC/ninja.py info DAT` checks all
 8,822 against this document and reports no problems. `--prs` also expands
 PRSH-compressed entries, including the player face packs, which is much
 slower. That pass checks 54,051 blobs with no problems, including 41,861
-face and hair models from the face packs (21,388 of them heads).
+face and hair models from the face packs (21,388 of them heads). On the
+Japanese release (`DAT_JP/`) the same command checks 8,738 blobs and
+reports no problems.
 
 All values are little-endian.
 
@@ -46,10 +56,14 @@ All values are little-endian.
 | `0x19de98` | `nnDrawRigidVerticesProcessVUExt` | VU vertex list: `+0` type (`&3`, `&8` choose the shader), `+4` qword count, `+8` data, sent with `PXPutRef` as a DMA ref |
 | `0x19d978`, `0x143158`, `0x142f00` | `nnDrawObjectPXPlusLtdPS2`, `opt_nnDrawPriNodeObject` and its node helper | extended node: `+0xa4` materials, `+0xac` vertex lists, `+0xb8`/`+0xbc` subobjects (stride `0x20`: `+4` material, `+0xc`/`+0x10` meshsets); meshset stride `0x20`: `+0` flags, `+4` matrix, `+8` vertex list |
 | `0x16cab8` | `nnCalcNodeMotionCore` | submotion `+0` type (`&0x7800` rotation, `&0x700` translation), `+4` interpolation, `+8` node, `+0xc`/`+0x10` frame range, `+0x14`/`+0x18` passed to `nnCalcMotionFrame`; motion `+0xc`/`+0x10` submotions |
+| `0x18855c` | `nnPutMaterialCoreExt` | passes material `+0x50` as the texture layer |
+| `0x1885a8`–`0x1886e0` | `nnPutMaterialCoreExt` | the second layer's fields are read 0x70 further on (`+0xb0`, `+0xb4`, `+0xc0`) |
+| `0x187b24` | `nnSetMaterialSingleTextureExtPS2` | texture index = u16 at layer `+6`, used to pick the entry in the loaded texture list |
+| `0x143418` | helper of `opt_nnPutMaterialCorePXPlusLtd` | PX Plus: texture index = u32 at `+4` of each 0x40-byte layer at material `+0x10` |
 
 ## Container
 
-```
+```text
 NSIF  header (0x20 bytes)
 NSxx  data chunks, 16-byte aligned
 NOF0  pointer fix-ups
@@ -82,9 +96,8 @@ includes the chunk's `+8`, all pointers, and the NOF0 entries.
 words. The loader adds the data address to each one. A tool can use the set
 to tell pointers from plain values.
 
-`NFN0` (**empirical**, 974 files): 8 zero bytes, then the NUL-padded
-original file
-name (`M_player.sno`).
+`NFN0` (**empirical**, all 3,048 blobs that have one): 8 zero bytes, then
+the NUL-padded original file name (`M_player.sno`).
 
 ## `NNS_OBJECT` (`NSOB`, `NSNT`, `NSME`)
 
@@ -205,17 +218,9 @@ references are decoded so far. The colours (0–255 floats in `0x400`/`0x800`,
 | `0x800` | plain objects, 2 textures | `+0x50`, second layer at `+0xC0` | u16 at layer `+6` |
 | `0x1000` | PX Plus (players) | `+0x10` → layers of 0x40 bytes | u32 at layer `+4` |
 
-Confirmed from the game code:
-
-| Address | Symbol | What it shows |
-|---|---|---|
-| `0x18855c` | `nnPutMaterialCoreExt` | passes material `+0x50` as the texture layer |
-| `0x1885a8`–`0x1886e0` | `nnPutMaterialCoreExt` | the second layer's fields are read 0x70 further on (`+0xb0`, `+0xb4`, `+0xc0`) |
-| `0x187b24` | `nnSetMaterialSingleTextureExtPS2` | texture index = u16 at layer `+6`, used to pick the entry in the loaded texture list |
-| `0x143418` | helper of `opt_nnPutMaterialCorePXPlusLtd` | PX Plus: texture index = u32 at `+4` of each 0x40-byte layer at material `+0x10` |
-
-The index selects an entry of the object's `NSTL`. **Empirical**, across all
-5,392 blobs:
+The texture layouts above are **confirmed** by the last four rows of the
+[table at the top](#confirmed-from-the-game-code). The index selects an
+entry of the object's `NSTL`. **Empirical**, across all 5,392 blobs:
 
 - Every index is below the `NSTL` count. `ninja.py info` checks this.
 - In `0x400`/`0x800` materials, a layer whose first word (flags) is 0 has no
@@ -239,7 +244,7 @@ The player models name their kit, skin and number textures (`skn_00.svr`,
 game builds them from the `PLAYER/` packs.
 
 UVs use the GS convention (V runs downwards). `ninja.py obj` writes
-`1 - v`, and textured test renders (`CAMERON.SNO`, the trophies) map
+`1-v`, and textured test renders (`CAMERON.SNO`, the trophies) map
 correctly.
 
 ## Vertex lists
@@ -362,8 +367,8 @@ position with a different UV, as in an OBJ `v/vt/vn` face.
 | `0x20` | 8 | UV (f32) |
 
 Bones are matrix palette indices, always below the object's palette size.
-In `0x401` the second bone gets `1 - weight` (the weight is between 0 and 1
-in all 21,872 checked vertices).
+In `0x401` the second bone gets the rest of the weight, `1-weight` (the
+weight is between 0 and 1 in all 21,872 checked vertices).
 
 The primitive list pointer has type `0x20000`, and the list is:
 
@@ -384,10 +389,10 @@ strip is a triangle strip, wound like the VU strips.
 
 `{u32 count, ptr entries}`. Each entry is 0x14 bytes: `+0` type (0), `+4` →
 NUL-terminated file name (`ms_hed.svr`), `+8` u32 filter (`0x10001` in 873
-entries, `0x10004` in 350, `0x10005` in 44), then 8 bytes that are zero in
-all 1,267 entries. The textures are
-the `.SVR` files described in [`SVR_FORMAT.md`](SVR_FORMAT.md). There are
-also 104 `NSTL`-only files in archives.
+entries, `0x10004` in 396, `0x10005` in 44), then 8 bytes that are zero in
+all 1,313 entries. The textures are the `.SVR` files described in
+[`SVR_FORMAT.md`](SVR_FORMAT.md). There are also 442 `NSTL`-only blobs in
+archives (116 distinct names), mostly in the player model packs.
 
 ## Node names (`NSNN`)
 
@@ -402,7 +407,7 @@ search) in 173 files and type 1 (linear) in 5. For example,
 
 | Offset | Field |
 |---|---|
-| 0x00 | type: `0x10010001` (758), `0x10040001` (130), `0x10080001` (2), `0x40001` (1) |
+| 0x00 | type: `0x10010001` (3,481), `0x10040001` (764), `0x10080001` (2), `0x40001` (1) |
 | 0x04 | start frame (f32) |
 | 0x08 | end frame (f32) |
 | 0x0C | submotion count (confirmed) |
@@ -422,7 +427,8 @@ Submotion (0x28 bytes):
 | 0x20 | key size |
 | 0x24 | → keys |
 
-The key formats (**empirical**, from all 891 motions):
+The key formats (**empirical**, from all 4,248 motions; `info` rejects any
+other submotion type or key size):
 
 | Type | Key size | Key |
 |---|---|---|
@@ -503,7 +509,11 @@ whose branch in `nnSetLight` (`0x17b330`) reads:
 ## Still unknown
 
 - Material colours, GS register words and the layer flag bits.
-- Where the textures of models without `NSTL` come from.
+- Where the textures of models without `NSTL` come from, apart from the
+  face packs (their sibling `etc::PackData` blocks, which `ninja.py obj`
+  finds by name, see [Tools](#tools)). For the stadiums, the balls and
+  the `BG/HUMAN_HEAD_MODEL` heads, how the material's texture index maps
+  to a texture file isn't documented.
 - The node sphere/box fields (`+0x70` plain, `+0x80` extended) and
   extended node `+0xC0`.
 - Object type bits at `+0x44` and VU type bit `0x100`.

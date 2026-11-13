@@ -10,33 +10,62 @@ economy, fixed bugs. The end product is a set of GUI tools that change
 the game's data without anyone needing to know the file formats, and
 patches that players apply to their own disc.
 
-This file says what the project is for and how far each stage has got.
-[`TODO.md`](TODO.md) turns that into tasks, and [`DONE.md`](DONE.md)
-lists what is finished.
+This file says what the project is for and how far it has got.
+[`TODO.md`](TODO.md) turns each goal below into tasks, in the same
+order, and [`DONE.md`](DONE.md) lists what is finished.
 
 ## What a mod should be able to change
 
-- **The starting season.** The state a new game begins in: schedules,
-  competitions, league membership, clubs, squads and players. The game
-  then plays on from there as normal.
-- **Data.** Club, player, stadium and staff records, and the text that
-  goes with them.
-- **Parameters.** The tuning values in the `TBB1`/`TBL1` tables and the
-  executable: prices, growth rates, event odds, match settings and so
-  on.
-- **Text.** Message text in every language slot, including event
-  dialogue, news and mail.
+These eight goals are the project's one list. Each has a short "done
+when". The tasks that remain for each are in [`TODO.md`](TODO.md), under
+a heading of the same name.
 
-Graphics, models and sound are useful to extract, but editing them comes
-after the data above. The one exception is bringing Nexxus's
-LMAST Realism texture pack onto the disc
-([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
+1. **The starting season.** The state a new game begins in: schedules,
+   competitions, league membership, clubs, squads and players. The game
+   then plays on from there as normal. *Done when* every change the
+   editor offers here (a club moved, a division resized, a calendar
+   shifted) has been played through a season or more in the game.
+2. **Data.** Club, player, stadium and staff records, kits and crests,
+   and the text that goes with them. *Done when* every field of those
+   records has a name and a known range and is editable in a tab, or is
+   shown to have no effect.
+3. **Parameters.** The tuning values in the `TBB1`/`TBL1` tables and the
+   executable: prices, growth rates, event odds, match settings and so
+   on. *Done when* every table and constant has named fields, a writer
+   and, where a mod would touch it, a switch or a tab.
+4. **Text.** Message text in every language slot, including event
+   dialogue, news and mail. *Done when* every message category is
+   traced to the screen that shows it, and any message can be changed
+   in the Text tab.
+5. **Graphics and sound.** Extracting textures, models and sound comes
+   first; editing them comes after the data above. The one exception is
+   bringing Nexxus's LMAST Realism texture pack onto the disc
+   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
+   *Done when* every texture file can be written back and the pack's
+   chosen folders are seen on a disc in the game.
+6. **Playing a mod.** A player turns edits into a disc or an xdelta
+   patch, applies it to their own disc, and keeps its saves apart, on
+   the PAL release and on the Japanese one. *Done when* the image
+   formats players keep are covered and a career can be played, saved,
+   edited and carried to a modded disc on both releases.
+7. **The LMASTER Mod.** The project's own mod, in three editions (lite,
+   full and max): fixes for what the release cut or broke, real names,
+   a third tier and a harder economy. *Done when* every candidate is
+   built and tested in the game or set aside, and every switch works on
+   the Japanese release (the firm requirement for LMASTER 1.0.0, Nexxus's
+   choice, 2026-11-01; the modern font may stay PAL only).
+   See [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md).
+8. **The end point.** The reverse engineering is complete
+   ([below](#when-the-reverse-engineering-is-complete)). *Done when*
+   every file, every line of code and every mechanic is documented on
+   both releases and the editors work on the Japanese release as on
+   PAL.
 
 ## The path there
 
-Each stage builds on the one before it. The status below is a summary:
-[`TODO.md`](TODO.md) has the work left in each stage under the same
-numbers, and [`DONE.md`](DONE.md) what is finished.
+Each stage builds on the one before it, for each goal above. The status
+below is a summary: [`TODO.md`](TODO.md) tags every task with the stage
+it belongs to, and [`DONE.md`](DONE.md) lists what is finished.
 
 0. **Decrypt.** *Done.* `DATA.CVM`'s encrypted table of contents is
    decrypted with a key derived from its header, and `DATA.ISO` extracts
@@ -56,8 +85,10 @@ numbers, and [`DONE.md`](DONE.md) what is finished.
    file and writing it back gives the original bytes, checked over every
    file on the disc in `regress.py`. *Done for what a starting-season
    mod changes*, and edits through most writers are tested in PCSX2.
-   The rest of the stadium tables and the writers for the CSP,
-   ACROBATA and `PackData` texture packs are left.
+   Left: the rest of the stadium tables, the writers for the ACROBATA
+   and `PackData` texture packs, and a changed-size texture in a CSP
+   pack (`csp.py` rebuilds all the CSP packs and replaces same-size
+   textures).
 4. **Rebuild.** Put edited files back on a disc image that boots.
    *Done:* `patch_disc.py` patches files of any size, moves them, grows
    the disc, updates every copy and rebuilds archives, all tested in
@@ -69,7 +100,8 @@ numbers, and [`DONE.md`](DONE.md) what is finished.
    writer of game data except `schedule.py`'s and `sqb.py setcmd` (they
    edit commands, not values), and builds a disc or a patch;
    `saveedit.py` edits a career save. A tab for each writer still to
-   come (section 3 of `TODO.md`) is left.
+   come (the Data goal in `TODO.md`) is left, and so are the Candidates
+   page of the save editor and both editors on the Japanese release.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284)
    against the player's own unmodified disc image, never as game data or
    disc images, so no game data leaves the user's machine. Players
@@ -79,10 +111,8 @@ numbers, and [`DONE.md`](DONE.md) what is finished.
    can keep its own saves, and [`INSTALL.md`](INSTALL.md) is the
    players' guide.
 
-Alongside the stages, the [LMASTER Mod](DOC/LMASTER_MOD.md) is the
-project's own mod: fixes for what the release cut or broke, real names,
-a third tier and a harder economy, in three editions (lite, full and
-max). It is where most new findings get used first.
+Alongside the stages, the [LMASTER Mod](DOC/LMASTER_MOD.md) is where
+most new findings get used first: goal 7 above.
 
 ## Coverage of `DATA.CVM`
 
@@ -93,7 +123,7 @@ left as "unknown binary". Even a format nobody plans to edit is
 documented, because an unexplained file can hide a dependency that
 breaks a rebuilt disc.
 
-Where each folder stands (October 2026). The status is one of:
+Where each folder stands (2026-11-13). The status is one of:
 
 - **done**: every file type parses and is checked over all of `DAT/`.
   What is left is the meaning of some fields.
@@ -105,29 +135,30 @@ has the full list, and [`TODO.md`](TODO.md) the tasks.
 
 | Folder | Holds | Status | Docs, tools | Still open |
 |---|---|---|---|---|
-| `0SYSTEM/` | UI colours, crest/badge/sponsor textures, fonts | done | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md), [`FONT_FORMAT.md`](DOC/FONT_FORMAT.md), `system.py`, `font.py`, `fontmod.py` (a new face for font 0) | what `DETAILFLAG` switches, which UI element uses each colour |
-| `ACROBATA/` | 875 Acroarts event scenes | most files | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md), `acrobata.py` | the `ABDT` scene layout, which code plays which scene |
+| `0SYSTEM/` | UI colours, crest/badge/sponsor textures, fonts | done | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md), [`FONT_FORMAT.md`](DOC/FONT_FORMAT.md), `system.py`, `font.py`, `fontmod.py` (a new face for font 0) | what `DETAILFLAG` switches, which UI element uses each colour, who the `V001`–`V032` crests are |
+| `ACROBATA/` | 875 Acroarts event scenes (718 scene ids) | most files | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md), `acrobata.py` | the `ABDT` scene layout, which code plays which scene |
 | `BG/` | pre-rendered rooms' data, people, hands and props, trophies, the human database | done | [`BG_DIR.md`](DOC/BG_DIR.md), [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md), [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md), `zbf.py`, `ninja.py`, `humanid.py` | the room table's fields, what `HUMANID.BIN`'s object kinds select, `OR2` and `IS` |
-| `CSE/` | 2D screen layouts | done | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md), `csp.py` | – |
+| `CSE/` | 2D screen layouts | done, with a writer for same-size textures | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md), `csp.py` | a few header and node fields, the `0x200` bit of an animation track's kind |
 | `EMBLEM/` | the club editor's crest and flag parts, the player editor's tables | most files, with a writer for the crest, flag and player-editor tables | [`EMBLEM_DIR.md`](DOC/EMBLEM_DIR.md), `emblem.py` | which choices pick some `EDIT_PLAYER.TBB` rows, what a part's `rev` values do |
-| `EVENT/` | the event, news and mail tables | done | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md), `evsdatabin.py` | three NEWS columns, the condition and handler names |
-| `GAME/` | match data: commentary, sound, models, tactics AI | partly | [`GAME_DIR.md`](DOC/GAME_DIR.md), [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md), [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md), `sounddat.py`, `ninja.py`, `bpb.py`, `gamedata.py`, `packdata.py` | what the `.CBB` blocks and some combination areas select, which gait each play-book move order is, the rest of a `GAMEDATA.BIN` record, whether `AI_PARAM.BIN` is used, the cut-in pack's `CIB0`/`BMT1` blocks, the `RBD0` trailer, the `SHADOWCOLLI`/`WALLCOLLI` entries, `TEAM.TMB` |
-| `MESSAGE/` | all message text | done, with a writer | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md), `mbb.py` | which value the screen-set variables hold |
-| `NEWS/` | newspaper pictures and ranking months | done | [`NEWS_DIR.md`](DOC/NEWS_DIR.md), `news.py` | where ads and cartoons go on the page |
-| `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `leaguesize.py`, `plrsim.py`, `plrcommon.py`, `regulation.py`, `clubresult.py`, `training.py`, `camp.py`, `formset.py`, `tour.py`, `clubrank.py`, `natcal.py` | the values in `PLRESOURCECOMMON.PAC` entry 1 and table 4.1, a few schedule tables, what a few named player fields do |
-| `PLAYER/` | faces, kits, player models | most files, with a kit writer | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md), [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md), `packdata.py`, `uniform.py` | the face block-4 header, a few kit fields |
-| `PRELOAD/` | copies of other files for bulk loading | done, with a writer | [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md), `preload.py` | – |
-| `SEQ/` | the root sequencer scripts | most files | [`SEQ_DIR.md`](DOC/SEQ_DIR.md), [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md), `sqb.py` | two unused 2004 scripts, `WPX` |
+| `EVENT/` | the event, news and mail tables | done | [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md), [`EVENTDATA_TURN.md`](DOC/EVENTDATA_TURN.md), `evsdatabin.py` | three NEWS columns, the names of the condition and handler kinds, some event record fields |
+| `GAME/` | match data: commentary, sound, models, tactics AI | partly | [`GAME_DIR.md`](DOC/GAME_DIR.md), [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md), [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md), `sounddat.py`, `ninja.py`, `bpb.py`, `gamedata.py`, `packdata.py` | what the `.CBB` blocks and some combination areas select, which gait each play-book move order is, the rest of a `GAMEDATA.BIN` record, whether `AI_PARAM.BIN` is used, the cut-in pack's `CIB0`/`BMT1` blocks, the `RBD0` trailer, the `SHADOWCOLLI`/`WALLCOLLI` entries, `TEAM.TMB`, `BACK_MATCH.TBB`, which copy of `EFFECTS` and `TRAINING` the game loads |
+| `MESSAGE/` | all message text | done, with a writer | [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md), `mbb.py` | which value the screen-set variables hold, where the speaker names come from |
+| `NEWS/` | newspaper pictures and ranking months | done | [`NEWS_DIR.md`](DOC/NEWS_DIR.md), `news.py` | which paper a page uses, where ads and cartoons go on the page |
+| `PARAM/` | the starting season, player database, game tables | most files, with writers | [`PARAM_DIR.md`](DOC/PARAM_DIR.md) and the docs it links; `initteam.py`, `teaminit.py`, `pbdata.py`, `schedule.py`, `leaguesize.py`, `plrsim.py`, `plrcommon.py`, `regulation.py`, `clubresult.py`, `training.py`, `camp.py`, `formset.py`, `tour.py`, `clubrank.py`, `natcal.py` | the values in `PLRESOURCECOMMON.PAC` entry 1 and table 4.1, a few schedule tables, what reads `MAPTEAM_LIST.TBB`, `SPONSOR_BOARD.TBB` and `CLUBEVENT.TBB`, what a few named player fields do |
+| `PLAYER/` | faces, kits, player models | most files, with a kit writer | [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md), [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md), `packdata.py`, `uniform.py` | the face block-4 header, a few kit fields, which model is which |
+| `PRELOAD/` | copies of other files for bulk loading | done, with a writer | [`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md), `preload.py` | what a record's `+0x18` selects, `DUMMY.DAT` |
+| `SEQ/` | the root sequencer scripts, and which one starts which screen | most files | [`SEQ_DIR.md`](DOC/SEQ_DIR.md), [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md), `sqb.py` | two unused 2004 scripts, `WPX` |
 | `SOUND/` | 28 sound banks: effects and music | done | [`SOUND_DIR.md`](DOC/SOUND_DIR.md), `sounddat.py` | which screen plays which music, 4 banks the code never names |
 | `STADIUM/` | stadium models, crowds, adverts | done, with a writer for the looks and boards | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md), `stadium.py` | byte `+0x0c` of your stadium record, the crowd palettes |
 | `TEST3D/` | the developers' test data | most files | [`TEST3D_DIR.md`](DOC/TEST3D_DIR.md) | `SHADOWCOLLI.LBI`, who reads 110 of the 163 files |
 | `CVS/` and `*/CVS/` | the developers' version-control metadata, not read by the game | done | [`CVS_DIR.md`](DOC/CVS_DIR.md), `cvs.py` | – |
 
 Outside `DATA.CVM`, the disc's `AUDIO/` folder (music, commentary,
-chants and ambience) is done in [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md), the
-`DLL/*.REL` overlays in [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md), and
-memory-card saves in [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md).
-`OPMOVIE.SFD` (Sofdec video) is not studied.
+chants and ambience) is done in [`AUDIO_DIR.md`](DOC/AUDIO_DIR.md)
+(`afs.py` reads it; there is no writer), the `DLL/*.REL` overlays in
+[`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md), and memory-card saves in
+[`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md). `OPMOVIE.SFD` (Sofdec video) is
+not studied.
 
 ## Principles
 

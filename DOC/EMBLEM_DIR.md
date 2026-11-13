@@ -3,7 +3,7 @@
 
 # `DAT/EMBLEM`: the club editor's crest and flag parts
 
-`DAT/EMBLEM` (13 files, 5.2 MB, plus `CVS/`) is folder id **8** in the
+`DAT/EMBLEM` (13 files, 5.3 MB, plus `CVS/`) is folder id **8** in the
 game's file manager ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)). It holds what
 the club editor builds the player's crest and flag from: the part
 textures, the tables of presets and samples, and the editor's colour
@@ -14,7 +14,9 @@ an empty `DUMMY.DAT`.
 
 `python SRC/emblem.py info DAT/EMBLEM` checks the layouts described here.
 `python SRC/emblem.py colors DAT/EMBLEM` lists the palette, and
-`python SRC/emblem.py crests DAT/EMBLEM` the crests.
+`python SRC/emblem.py crests DAT/EMBLEM` the crests. `emblem.py set`
+writes the tables ([Editing](#editing)), and the mod editor's Crests and
+Player editor tabs use it.
 
 | File | Kind | Read by | Contents |
 |---|---|---|---|
@@ -276,7 +278,7 @@ or added, 0–4), `0x1d8c0` a skill (< 16), `0x1d928` a play-style slot
 | Table | Rows × bytes | Read by | What it holds |
 |---|---|---|---|
 | 0–8 | 14 × 33 | `0x1ae98` | the base abilities 0–32: the table by the main position's cell (`plMisc_Apos2Epos`, 9 cells), the row by the nation (`0x1d040`: rows 0–5 England, France, Germany, Italy, Spain, the Netherlands; 6 the rest of the first scouting region; 7–13 the other regions by `plMisc_Nati2DRegion`, several sharing a row) |
-| 9 | 4 × 13 | `WP::CPlayerEditWindowPositionSettingTask` (`0x128e8`, `0x12f58`) | which of the 13 positions (GK, LSB, RSB, CB, LWB, RWB, DM, LSM, RSM, OM, LWG, RWG, FW) belong to each of 4 groups: GK; LSB–CB; LWB–OM; LWG–FW (*empirical* reading of the 0/1 grid) |
+| 9 | 4 × 13 | `WP::CPlayerEditWindowPositionSettingTask` (`0x128e8`, `0x12f58`) | which of the 13 positions (GK, LSB, RSB, CB, LWB, RWB, DM, LSM, RSM, OM, LWG, RWG, FW) belong to each of 4 groups: GK; LSB–CB; LWB–OM; LWG–FW (**empirical** reading of the 0/1 grid) |
 | 10 | 9 × 9 | `0x1af68` | the 9 position aptitudes (abilities 33–41) by the cell of each of the player's positions (`+0x1c`–`+0x24`), 50 on its own cell; with two or three positions the rows are blended through `0x1cde8` (weights 3; 2 and 0; 1 and 1) |
 | 11 | 3 × 3 | `0x1b2d0` | the same for the 3 side aptitudes (42–44), by `plMisc_Apos2Side` |
 | 12 | 8 × 2 | `0x1b5d8` | the 8 dissatisfaction weights: {min, max}, min + rand(max − min + 1) (all 0–1) |
@@ -317,9 +319,9 @@ edits the tables ([below](#editing)).
 
 `emblem.py set` edits `EDIT_EMBLEM.TBB`, `EDIT_FLAG.TBB` and
 `EDIT_PLAYER.TBB` field by field into a new file of the same size, which
-`patch_disc.py` can put on a disc. It changes bytes in place, so the three short layer tables keep
-their odd tails. Each field takes the values the game's readers above
-use:
+`patch_disc.py` can put on a disc. It changes bytes in place, so the three
+short layer tables keep their odd tails. Each field takes the values the
+game's readers above use:
 
 | Target | Fields | Values |
 |---|---|---|
@@ -333,7 +335,7 @@ use:
 | `player:<table>:<row>:<column>` | one byte of `EDIT_PLAYER.TBB` | 0–99 in the ability tables (0–8, 10, 11, 15; the setter `0x1d700` caps at 99), 0–4 in the tendency tables (16, 22; clamped by `0x1d870`), 0–255 elsewhere |
 
 `rev` is limited to 0–3, the values the flag patterns use, as long as
-what it does is unchecked. **Nexxus's report** (2026-10-31): flag patterns
+what it does is unchecked. Nexxus's report (2026-10-31): flag patterns
 2–5, which are base 1 with `rev` 0, 1, 2 and 3 (`EDIT_FLAG.TBB` table 1
 rows 1–4), looked the same in the flag editor.
 
@@ -408,5 +410,17 @@ folder.
 - `EDIT_PLAYER.TBB`: which editor choices pick the rows of tables 19–21,
   25 and 26 (task `+0x38`, `+0x60`, `+0x64`), the rest of table 19's
   144 bytes, and tables 29–31 ([`EDIT_PLAYER.TBB`](#edit_playertbb)).
+  Whether the tables apply to a player brought in from Virtua Pro
+  Football, or only to one made in the editor, isn't traced either.
 - Why the 4bpp part textures' palette indices map to the chosen colours
   (the palette build wasn't traced).
+
+## Checking the claims
+
+```bash
+python SRC/emblem.py info      DAT/EMBLEM     # every table's shape, the cross-references, the three short layer tables (!!)
+python SRC/emblem.py colors    DAT/EMBLEM     # the 96 colours with their 32- and 16-colour ids
+python SRC/emblem.py crests    DAT/EMBLEM 8   # the starting crests, field by field
+python SRC/emblem.py roundtrip DAT/EMBLEM     # decode and re-encode all three TBB files
+python SRC/sles_disasm.py ISO/SLES_541.51 syms CColor   # the EDIT::CColor getters
+```

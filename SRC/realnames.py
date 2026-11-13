@@ -4,24 +4,24 @@
 Team! (PS2): the LMASTER real-names switch's data and writer.
 
 The game's names are message text in DAT/MESSAGE/MES.PAC (DOC/MBB_FORMAT.md,
-the name lists): category 3 is every team's name (id 2000 + team), 4 a
+the name lists). Category 3 is every team's name (id 2000 + team), 4 a
 copy (3000 + team), 100003 a long-form list (2000 + team) and 5 the
-three-letter forms (4000 + team); 9 names the competitions (10000 +),
-100009 the same in capitals in every language, 11 and 100011 their
-stages and groups (1000 +), and 10 each club's stadium (11000 + team,
-"<club> Stadium" in the game), and 6 and its copy 7 the nations (5000 +
-PlNati). PRELOAD/STATIONMES<lang>.PAC holds each
-language's copy of categories 1 and 3-11 (patch_disc.py --copies).
+three-letter forms (4000 + team). Category 9 names the competitions
+(10000 +), 100009 gives the same in capitals in every language, 11 and
+100011 name their stages and groups (1000 +), 10 holds each club's
+stadium (11000 + team, "<club> Stadium" in the game), and 6 and its copy
+7 name the nations (5000 + PlNati). PRELOAD/STATIONMES<lang>.PAC holds
+each language's copy of categories 1 and 3-11 (patch_disc.py --copies).
 
 realnames.csv, next to this script, holds only the real names: one row
 per name to change, keyed by category (3, 10, 9, 11 or 6) and id, with the
 English, French, German, Italian and Spanish names and, for a team, its
 three-letter form. An empty cell keeps the game's name. A stadium is
 named as of 2005-06; a club with a real name and no stadium row gets
-"<real name> Stadium" in its language. `apply` writes
-them into every list above, and puts a competition's real name in place of
-its game name in the other messages that mention it (the rules and
-the news; names of 6 or more characters, outside {tags}), in English.
+"<real name> Stadium" in its language. `apply` writes the names into
+every list above. It also puts a competition's real name in place of its
+game name in the other messages that mention it (the rules and the news;
+names of 6 or more characters, outside {tags}), in English.
 realnames_phrases.csv holds the other languages' mentions, edited by
 hand: per row a message (category, id, language), a phrase of its game
 text and what replaces it (empty to keep it). Club names in other
@@ -40,9 +40,15 @@ Usage:
 columns filled in (a name ending in "?" isn't taken), and writes
 realnames.csv (or out.csv). Letters the European text's encoding (cp850)
 has no code for lose their accent ("Željezničar" -> "Zeljeznicar"), as
-the game's own names do ("Besiktas"). The short form is the name's first three
-letters in capitals, as the game forms them (DOC/MBB_FORMAT.md), or the
-one SHORT_OVERRIDES gives where two clubs would share one.
+the game's own names do ("Besiktas"). The short form is the name's first
+three letters in capitals, as the game forms them (DOC/MBB_FORMAT.md), or
+the one SHORT_OVERRIDES gives where two clubs would share one.
+
+`info` checks the table against the disc: every id exists, every name
+encodes, and every short form is three letters. It also reports the names
+past the game's length limits, the short forms two clubs would share, and
+the mentions the hand-edited phrases leave open. `apply` writes a new
+MES.PAC and refuses to overwrite its input.
 """
 import csv
 import os

@@ -46,7 +46,7 @@ All fields are s16 (read with `lh`).
 | Offset | Name (`regulation.py`) | Meaning | Proof |
 |---|---|---|---|
 | `0x00` | `grade` | match grade, 0–5 (the game's `PlMatchGrade`). 0 is the top: the European and national-team competitions | `pwkSche_RecalcAudience` passes it as the `PlMatchGrade` of `pwkUnkei_GetAllAudience` (`0x255b1c`). `pwkDissatis_CompeEnd` indexes a 6-float table at `0x391c18` with it (`0x23a840`). Also read by `pwkOteam_GetTeamData`, `pwkTeam_PopUpdateTurnly`, `pwkTeam_GameCheck` and `plPinfo_UpDownKeymanCaptaion`. **confirmed** |
-| `0x02` | `clubs` | number of clubs | `SIMPRG.REL 0x960b0` puts it in a message as a number, and `0x15d8f0` takes the bottom places from it ([below](#place-slots)). **confirmed**. Equals the team-entry slot count for 163 of 164 UIDs (**empirical**, below); `leaguesize.py build` keeps it so |
+| `0x02` | `clubs` | number of clubs | `SIMPRG.REL 0x960b0` puts it in a message as a number, and `0x15d8f0` takes the bottom places from it ([below](#place-slots)). **confirmed**. Equals the team-entry slot count for 163 of 164 UIDs ([below](#what-the-rows-hold)); `leaguesize.py build` keeps it so |
 | `0x04` | `unk04` | values 0, 1, 2, 3, 14, 18, 19 | no reader found |
 | `0x06` | `prize_kind` | 2: the prizes are scaled by the UEFA rank of the player's nation | `plRec_GetMatchBonus` (`0x21e2ec`). **confirmed**, below |
 | `0x08` | `win_bonus` | the bonus for a win, × 10,000 in the game's money unit ([below](#money)) | `pwkUnkei_GetMatchIncome` (`0x2732b8`): `+0x08` × 10,000 into the match record's `+0xc`, booked by `pwkUnkei_BeforeReport` as income type 5 "Win bonus" ([`SAVE_FORMAT.md`](SAVE_FORMAT.md)). **confirmed**; tested in PCSX2 ([below](#tested-in-pcsx2)) |
@@ -72,17 +72,16 @@ When `prize_kind` is 2 it multiplies the prize by a percentage from
 Other kinds pay the prize as written. 66 rows have kind 2 and prizes, 5
 have kind 1 (UIDs 82–86, the runtime cups), and 94 have kind 0 and no
 prizes (**empirical**). The kind also picks the message `SIMPRG.REL`
-shows with the prize (`0x1337f4`). The first-division winner's prize is
-7,500 (£12,500,000 before the percentage).
+shows with the prize (`0x1337f4`).
 
 ### Money
 
 Both money fields are multiplied by 10,000 into the game's own money
 unit, which the screens convert to the chosen currency
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md): pounds are the unit ÷ 6, euros
-÷ 4). So a `win_bonus` of 90 is 900,000 units, £150,000, and a prize of
-7,500 is £12,500,000. `python SRC/regulation.py show` prints money in
-pounds.
+÷ 4). So a `win_bonus` of 90 is 900,000 units, £150,000, and the English
+first division's winner prize of 7,500 is £12,500,000 (before the UEFA
+percentage). `python SRC/regulation.py show` prints money in pounds.
 
 ### Place slots
 
@@ -153,6 +152,7 @@ changed count should be matched there.
 | Field | Values (rows) |
 |---|---|
 | `grade` | 0 (46), 1 (11), 2 (11), 3 (42), 4 (13), 5 (42) |
+| `unk04` | 0 (99), 1 (36), 2 (3), 3 (1), 14 (15), 18 (10), 19 (1) |
 | `win_bonus` | 0 (72), 30 (19), 60 (43), 90 (19), 120 (9), 150 (3) |
 | `ban_yellows` | 2 (48), 3 (58), 5 (40), 255 (19) |
 | `squad`, `squad2` | 16 (32), 18 (62), 23 (36), 25 (35) |
@@ -164,8 +164,9 @@ The first divisions are grade 2 and the second divisions grade 3.
 (`SCHEDULE_TEAM_ENTRY`) for 163 of the 164 UIDs; UID 123, a runtime
 schedule with no slots, says 10. All 165 rows fit the layout.
 
-The Japanese file differs in one field: UID 31 (Italy's play-off) has a
-win bonus of 0, where PAL has 60.
+The Japanese file differs in one byte, a field of UID 31 (Italy's
+play-off): its win bonus is 0, where PAL has 60
+([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)).
 
 ## Editing
 

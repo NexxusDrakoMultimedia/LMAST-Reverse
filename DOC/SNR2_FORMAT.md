@@ -1,24 +1,28 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# SNR2 overlays (`ISO/DLL/*.REL`)
+# SNR2 overlays (`ISO/DLL/*.REL`): the game code outside the executable
 
-The game code outside `SLES_541.51` lives in ten SN Systems relocatable
-overlays (`GAMEPRG`, `SIMPRG`, `SAVEPRG`, ...). Each one is a MIPS image
-**linked at base 0**, so image addresses equal file offsets. After the image
-come a symbol table and two relocation lists. The loader adds the load base to
-every local reference and patches imports by name.
+Every screen module except the two Dummy ones runs from code that is not
+in `SLES_541.51`. That code lives in ten SN Systems relocatable overlays
+(`GAMEPRG`, `SIMPRG`, `SAVEPRG`, ...), of which the executable loads
+eight at run time (the retail game never loads `NETPRG` and `DEBUGPRG`;
+[which overlay the game loads](#which-overlay-the-game-loads)).
+Each one is a MIPS image **linked at base 0**, so image addresses equal
+file offsets. After the image come a symbol table and two relocation
+lists. The loader adds the load base to every local reference and patches
+imports by name. `snr2.py` reads and disassembles them; it has no writer.
 
-The layout was worked out from the files. It holds with no exceptions for
-all ten overlays (`python SRC/snr2.py info <REL>` runs the checks). The
-module-path
+The layout was worked out from the files (**empirical**). It holds with no
+exceptions for all ten overlays of both the PAL and the Japanese release
+(`python SRC/snr2.py info <REL>` runs the checks). The module-path
 strings (`../PS2_EE_Release/gameprg.elf`) show they were converted from ELF.
 The header fields the loader reads are **confirmed** from SN Systems' DLL
 runtime in `SLES_541.51` (see [Loader](#loader-confirmed)).
 
 ## Layout
 
-```
+```text
 0x00      header (0x40 bytes, zero-padded to 0x80)
 0x80      code, then data (image continues up to name_off)
           ... symbol-name strings (inside the image)
@@ -42,24 +46,24 @@ loc_rel   packed local relocations, up to loc_rel_end (= EOF)
 | `0x1C` | `0x20FA10` | global destructors: `snDllUnload` calls it |
 | `0x20` | `0x2CD9B8` | = `0x0C + 12 × count`. `snDllLoaded` returns it to the caller when `0x24` is non-zero, so it may be the end of what must stay loaded |
 | `0x24` | 0 | flag for the above; 0 in every file |
-| `0x28` | `0x80` | load alignment: the load address must be a multiple of it (else error 4). `0x80` in every file |
+| `0x28` | `0x80` | load alignment: the load address must be a multiple of it (else error 4). `0x80` in every overlay except the Japanese `SAVEPRG.REL`, which has `0x200` ([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)) |
 | `0x2C` | `0x2E518E` | end of local relocations = file size |
 | `0x30` | 0 | zeroed by the loader (runtime use) |
 | `0x34` | `0x2CD9B8` | local relocation list: the loader walks it from here |
 | `0x38` | `0x2CD9B8` | an offset (the loader rebases it); use unknown |
 | `0x3C` | 0 | – |
 
-`0x20`, `0x34` and `0x38` are equal in every file, so the files alone
-can't tell them apart. The loader adds the load base to `0x04`, `0x0C`,
-`0x14`, `0x18`, `0x1C`, `0x20`, `0x34` and `0x38` (each if non-zero), which
-marks them as offsets.
+`0x20`, `0x34` and `0x38` are equal in every overlay of both releases, so
+the files alone can't tell them apart. The loader adds the load base to
+`0x04`, `0x0C`, `0x14`, `0x18`, `0x1C`, `0x20`, `0x34` and `0x38` (each if
+non-zero), which marks them as offsets.
 
 There's no BSS beyond the file: every relocated address lands inside the
 image.
 
 ## Symbols (12 bytes)
 
-```
+```text
 +0x00 u32 name       image offset of a NUL-terminated (GCC 2.x mangled) name
 +0x04 u32 value      image address; 0 for imports
 +0x08 u16 hash       low 16 bits of h = h*31 + c over the name
@@ -77,15 +81,30 @@ Imports resolve against:
 - the `SLES_541.51` export table: all of GAMEPRG's 1,134 imports, and most
   of every other overlay's
 - the exports of `SIMPRG.REL` (and a few of `SAVEPRG.REL`) for the rest, so
-  those overlays must be resident first. The imports that go to other
-  overlays are CEDITPRG 211, TESTPRG 127, YRSTPRG 59, VSPRG 26, MOVIEPRG 12,
-  SIMPRG 3 (from SAVEPRG) and SAVEPRG 1
+  those overlays must be resident first
+
+How many of each overlay's imports come from where (PAL release; a name the
+executable exports counts as the executable's; the totals are the `imp`
+column of [the per-overlay counts](#local-relocations-packed)):
+
+| Overlay | Imports | From `SLES_541.51` | From `SIMPRG.REL` | From `SAVEPRG.REL` |
+|---|---|---|---|---|
+| CEDITPRG | 653 | 442 | 211 | – |
+| DEBUGPRG | 97 | 97 | – | – |
+| GAMEPRG | 1,134 | 1,134 | – | – |
+| MOVIEPRG | 391 | 379 | 12 | – |
+| NETPRG | 4 | 4 | – | – |
+| SAVEPRG | 410 | 409 | 1 | – |
+| SIMPRG | 2,073 | 2,070 | – | 3 |
+| TESTPRG | 747 | 620 | 126 | 1 |
+| VSPRG | 368 | 342 | 24 | 2 |
+| YRSTPRG | 627 | 568 | 57 | 2 |
 
 ## External relocations (12 bytes)
 
 ELF `Elf32_Rel` plus an addend:
 
-```
+```text
 +0x00 u32 offset     image offset of the site
 +0x04 u32 info       sym_index << 8 | type
 +0x08 u32 addend     almost always 0 (e.g. 0xD0, 0x10000 for a handful)
@@ -101,7 +120,7 @@ The main executable also calls overlay functions, and it links to them the
 same way. Its `.sndata` table (the export table above) is a complete
 symbol table, and a relocation table sits just before it:
 
-```
+```text
 0x4a1420-0x4a2344  323 relocations {u32 site, u32 sym << 8 | type, u32 addend}
 0x4a2344-0x4cef6c  15,278 symbols  {u32 name, u32 value, u32 hash | kind << 16}
 ```
@@ -253,7 +272,7 @@ and the retail boot skips it
 These are sites that only need the load base added. The list is a byte
 stream:
 
-```
+```text
 code >= 4:   pos += code & ~3              (delta, multiple of 4, 4..252)
 code <  4:   pos  = next u32 (LE)          (absolute; the list is not sorted)
 type = code & 3:  0 = LO16, 1 = HI16, 2 = J26 (j/jal), 3 = W32 (data word)
@@ -268,6 +287,8 @@ reorders sites so that each `lui` comes just before its low halves. The
 target is `(hi << 16) + sext(lo)`. That's how `snr2.py xref` finds, for
 example, the two loads of the SOUNDDAT offset table at `GAMEPRG:0x248540`
 (`0x9BDC`, `0x9C90`).
+
+The ten overlays in the PAL release (`snr2.py info`):
 
 | Overlay | Local relocs | Ext relocs | Symbols (imp / exp / weak) |
 |---|---|---|---|
@@ -334,7 +355,7 @@ shows the constant each call passes in `$a1`. See
 [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#who-reads-each-parameter) for its
 use on the match's parameter getter.
 
-## Tool
+## Checking the claims
 
 ```bash
 python SRC/snr2.py info   ISO/DLL/GAMEPRG.REL                      # header, exports, checks
@@ -345,6 +366,8 @@ python SRC/snr2.py xref   ISO/DLL/GAMEPRG.REL g_pFileManager       # ... or an i
 python SRC/snr2.py dis    ISO/DLL/GAMEPRG.REL 9bd0 30 --sles ISO/SLES_541.51
 python SRC/snr2.py classes ISO/DLL/GAMEPRG.REL Intention           # classes, vtables, methods
 python SRC/snr2.py callers ISO/DLL/GAMEPRG.REL 9bdb8 fb            # each call, its $a1, the fb:: class
+python SRC/sles_disasm.py ISO/SLES_541.51 relocs pSetup            # the module setup functions and their overlays
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 10babc 20           # the overlay-table lookup
 ```
 
 `dis` labels imports as `%hi(name)` / `%lo(name)` / `name`, adding
@@ -354,7 +377,7 @@ site's resolved target.
 ## Still unknown
 
 - What `0x38` is for, and what `0x20`/`0x24` tell the caller. All three
-  are offsets equal to `0x34` in every file.
+  are offsets equal to `0x34` in every overlay of both releases.
 - Where the overlay index passed to the loading code at `0x10babc` comes
   from, and so which modules load which overlay at runtime. The module
   table gives the static answer.

@@ -10,7 +10,12 @@ systems. Clubs 442–459, the tutorial's third-tier opponents, are
 "non-resident": they get a temporary league record and players from the
 database only while they play ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)).
 The national teams are 460–542. This doc lists the code that fixes those
-limits, for making 442–459 full clubs (the LMASTER third tier, phase 2).
+limits, for making 442–459 full clubs (the LMASTER third tier, phase 2),
+and how `patch_disc.py --mod third-tier` does it. The tiers' schedules
+(phase 3) are in [`UID_LIMITS.md`](UID_LIMITS.md); the Japanese disc's
+port is in
+[`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc).
+Addresses are the PAL executable's and overlays'.
 
 ## How the sites were found
 
@@ -164,7 +169,7 @@ end wasn't looked at in that career; an earlier test showed it working
 
 ## Each loop's body
 
-Whether a loop over clubs can simply run to 459, or fills a buffer
+Whether a loop over clubs can just run to 459, or fills a buffer
 sized for 441 clubs. **Confirmed** from the code, as each was read:
 
 | Loop | Body | To 459 |
@@ -200,9 +205,19 @@ block 2, not in arrays of its own.
   objects. Each would overflow for a resident club past 441.
 - What `clearPlayerRecord` and `movePlayerRecord`'s test of 441 is for.
 
-## Checking
+## Checking the claims
 
 The scan is a short script over `gamever.image` of each file (every
 immediate of the six kinds equal to 440–442, with the nearest named
-function); `python SRC/sles_disasm.py ISO/SLES_541.51 addr <hex> 20`
-shows any site.
+function). Then:
+
+```bash
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x24b7e8 20
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x24b788 20
+python SRC/plrcommon.py show DAT/PARAM 3.5
+```
+
+`sles_disasm.py ... addr <hex> 20` shows any site; the first two lines
+are `pwkOteam_Team2Otindex` and `pwkOteam_GetPointer`. The third prints
+each club's nation (`plMisc_Club2Nati`'s table), from which the club
+counts per nation (44 for nation 1, 47 with the tier) follow.

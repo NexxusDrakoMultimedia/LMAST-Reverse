@@ -16,12 +16,14 @@ DOC/SCHEDULE_FORMAT.md#building-a-league-of-another-size):
                           (pwkRec_SetPastRecordLastTeam); table 0 lists
                           the same clubs as the starting divisions.
   the games               schedule.set_league, a round robin of the new size.
-  the game days           schedule.league_turns, one free turn per day.
+  the game days           schedule.league_turns: a free turn for each day
+                          added, the narrowest gap closed for each dropped.
   the regulations         REGULATION.TBB's `clubs` of the three leagues
-                          (regulation.py). SIMPRG.REL 0x15d8f0 takes the
-                          second division's bottom places as clubs - the
-                          down slot's count: the game over for finishing
-                          there two seasons running (0x15d958).
+                          (regulation.py). SIMPRG.REL 0x15d8f0 works out
+                          the second division's relegation line as
+                          `clubs` less the down slot's count, and the
+                          game over for finishing below it two seasons
+                          running (0x15d958) compares ranks with it.
                           CLUBRESULT.TBB's `clubs` too (clubresult.py),
                           which only cups read, kept in step.
   the club ranking        CLUB_RANK_SYSTEM.TBB table 3 has a row for each
@@ -56,13 +58,14 @@ inside its season (its own turns and the free ones).
 `build` takes one or more leagues, each with its first division's new
 size, and writes SCHEDULE_SYSTEM, SCHEDULE_COMPETITION and
 SCHEDULE_TEAM_ENTRY (.PAC and .HED, which go together),
-PLRRSRC_INITTEAMDATA.TBB, REGULATION.TBB and CLUBRESULT.TBB to <outdir>, reads them back and checks them
-(the rebuilt leagues' games against their turns, and each changed
-nation's first season played out again), and prints the patch_disc.py
-targets. Patch with --copies: the game reads the .HED copies in
-PRELOAD/STATIONFILE.PAC. With --over, each file is read from <folder>
-when it is there and from <DAT/PARAM> otherwise, as editor.py reads its
-mod folder (the editor's Season tab logs its saves this way).
+PLRRSRC_INITTEAMDATA.TBB, REGULATION.TBB, CLUBRESULT.TBB and, when the
+club ranking gains rows, CLUB_RANK_SYSTEM.TBB to <outdir>. It reads them
+back and checks them (the rebuilt leagues' games against their turns,
+and each changed nation's first season played out again), and prints the
+patch_disc.py targets. Patch with --copies: the game reads the .HED
+copies in PRELOAD/STATIONFILE.PAC. With --over, each file is read from
+<folder> when it is there and from <DAT/PARAM> otherwise, as editor.py
+reads its mod folder (the editor's Season tab logs its saves this way).
 
 <league> is a number 0-5 or a name: England, France, Germany, Italy,
 Spain, Netherlands.

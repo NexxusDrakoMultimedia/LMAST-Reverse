@@ -3,9 +3,14 @@
 
 # `PARAM/PLRESOURCESIM.PAC`: the season-mode resource pack
 
-`PLRESOURCESIM.PAC` is `plResource` entry 1 ([`PARAM_DIR.md`](PARAM_DIR.md)),
-loaded by the `SIMPRG.REL` load list for the season mode. It is a BINPAC
-of 16 entries: 12 TBB1 files and 4 raw streams. Every reader calls
+`PLRESOURCESIM.PAC` holds the season mode's setup data: cities and
+weather, the overseas branch costs, the computer clubs' records, which
+clubs each player is affiliated with, the transfer AI's tables, each
+scout's exclusive players, the good and bad player combinations and the
+free agents a new career starts with. It is `plResource` entry 1
+([`PARAM_DIR.md`](PARAM_DIR.md)), loaded by the `SIMPRG.REL` load list
+for the season mode. It is a BINPAC of 16 entries: 11 TBB1 files and 5
+raw streams (entries 5 and 11–14). Every reader calls
 `plResource_GetResourceDataBinPac` (`0x21e890`), `…BinPacTbb` (`0x21e940`)
 or `…BinPacTbbTbl` (`0x21e9e0`) with `ePLRSRC` 1 and **constant** entry and
 table numbers (empirical: every call in `SLES_541.51` was listed, and
@@ -51,6 +56,10 @@ Five byte tables, read through `GetAreaData_Pointer(i)` (`i < 5`).
 | 2 | 832 | 64 × 13 | `{u8 climate zone, s8 temperature[12]}`, one per month | `plCity_GetAverageTemperature` (`0x21fa60`) |
 | 3 | 832 | 64 × 13 | `{u8 weather zone, u8 row[12]}`, one per month | `plCity_GetListProbability` (`0x21fbd0`) |
 | 4 | 320 | 64 × 5 | `{u8 row, u8 chance[4]}` | the same |
+
+The Japanese release's tables 2, 3 and 4 stop short (44, 49 and 27 whole
+records, [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)), and its pack has
+no entry 15.
 
 The city record:
 
@@ -115,14 +124,10 @@ Caribbean, 10 East Asia, 11 South Asia and Middle East, 12 Oceania.
 **Nexxus's report:** the game uses this one numbering for every region list
 (tours, camps, scouting, popularity). `tour.py` and the Tours tab use
 these names.
-`patch_disc.py --mod overseas-bases` (in `--mod balance` and
-`--mod lmaster-max`) doubles the 13 costs, here and in the copies in
-`PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 17), so the investment and upkeep
-double too. What a level does stays as in retail (the popularity factor,
-the scouting delays in [`EVS_PROCEDURES.md`](EVS_PROCEDURES.md),
-`pwkRental_OverseasBranchCheck`), so every pound spent on a base buys
-half as much, as with `dearer-ads` (Nexxus's choice, 2026-10-26; an
-earlier version also made each level stronger). Not checked in the
+`patch_disc.py --mod overseas-bases` doubles the 13 costs here and in
+the copies in `PRELOAD/SIMLOCALMEM0`–`6.PAC` (entry 17), so the
+investment and upkeep double too. The switch is described in
+[`LMASTER_MOD.md`](LMASTER_MOD.md#improvements). Not checked in the
 game.
 
 ## Entry 2: unread
@@ -177,7 +182,8 @@ release lists 8,285 players, one short of the room.
 
 ## Entry 6: transfer AI tables
 
-Six byte tables, read by the computer clubs' transfer code:
+Six byte tables (1,056, 16, 12, 676, 416 and 512 bytes), read by the
+computer clubs' transfer code:
 `CAcquirePlayer::*` reads tables 0, 1, 3, 4 and 5, and
 `CComOffer::CalcuOfferClub`, `CContractReform::Execute` and
 `CMakeDataBase::GetOutOfClubRange` read the entry too. Two are indexed

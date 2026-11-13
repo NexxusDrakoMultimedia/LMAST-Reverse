@@ -6,7 +6,8 @@
 These rules apply everywhere the project meets people: issues, pull
 requests, commit messages, discussions, and anywhere else you speak for
 or about LMAST-Reverse. They are based on the rules of the Discord
-community of the maintainer, Nexxus (Pyra Drake).
+community of the maintainer, Nexxus (Pyra Drake). For how to report a
+bug or send a change, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## The rules
 
@@ -54,10 +55,14 @@ at their discretion and for any reason. Breaking a rule isn't required:
 bending the rules, being annoying, or failing a basic vibe check is
 enough.
 
-To report a problem, contact the maintainer privately, through the
+## Reporting a problem
+
+Contact the maintainer privately, through the
 [LMAST/SFCC English Fan Discord](https://discord.gg/7DNrGye9TZ) or
 GitHub ([NexxusDrakoMultimedia](https://github.com/NexxusDrakoMultimedia)).
 Reports are kept confidential.
+
+## Crisis support
 
 The maintainer and the community can't help with a mental health or
 other crisis. Please use [findahelpline.com](https://findahelpline.com/i/iasp)

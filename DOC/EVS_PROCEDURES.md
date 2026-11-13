@@ -1,20 +1,23 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Event procedures (type-4 events)
+# Event procedures: scouting, transfers and loans (type-4 events)
 
 Besides the EVENT, MAIL and NEWS records in the `EvsDataBin` tables (see
 [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)), the event system runs
 **procedures**: multi-step processes that exist only in code. They are the
-scouting, transfer and loan processes. A procedure is requested like any
-other event, with the ID `0x04000000 | index`, and has no table record. Each
-step sends mail from `EvsDataBin_MAIL.bin` and can schedule the next step.
+scouting, transfer and loan processes behind the mail you get about player
+lists, search reports, signings, offers for your players and loans. A
+procedure is requested like any other event, with the ID
+`0x04000000 | index`, and has no table record. Each step sends mail from
+`EvsDataBin_MAIL.bin` and can schedule the next step.
 
 All addresses are in `SIMPRG.REL` unless noted. The structure is
 **confirmed** from the code. What each procedure is *about* is
 **empirical**, read from the MAIL records it registers (English text,
-`python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN mail.csv --text
-DAT/MESSAGE/MES.PAC`).
+`python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN --text
+DAT/MESSAGE/MES.PAC`). The tool only reads the tables; the procedures
+themselves are code, so nothing here has a writer.
 
 ## Requests
 
@@ -56,33 +59,34 @@ A procedure sends a mail with
 
 | # | Code | MAIL it sends | Started by | Next |
 |---|---|---|---|---|
-| 9 | `0x126208` | 295–297, 370–372, 412, 415 "Player search report" | `0x9e7d0` (calls `Param::pwkTeam_SetScoutModeNot`) | 10 or 12 |
-| 10 | `0x126540` | 298–305, 373, 374, 416, 420 "Player acquisition to cancel" | 9 | 11 |
-| 11 | `0x1268a0` | 306–310 ("Player negotiation report", ...), 421 | 10 | – |
-| 12 | `0x126a50` | 300, 305, 398–400 ("Negotiating players", ...), 409 | 9 | 13 |
-| 13 | `0x126cd0` | 401, 402, 422, 423 | 12 | – |
-| 14 | `0x126e30` | 317–319 ("Player acquisition report", ...), 403, 404, 410 | `0x6b5f8`, kind 0 | 15 |
+| 9 | `0x126208` | 295–297, 415 "Player search report"; 370–372 "Player offer"; 412 "Player acquisition to cancel" | `0x9e7d0` (calls `Param::pwkTeam_SetScoutModeNot`) | 10 or 12 |
+| 10 | `0x126540` | 298–305 "Player acquisition report"; 373, 374 "Re-offer to buy player"; 416, 420 "Player acquisition to cancel" | 9 | 11 |
+| 11 | `0x1268a0` | 306–310 "Player negotiation report"; 421 "Player acquisition to cancel" | 10 | – |
+| 12 | `0x126a50` | 300, 305, 398, 399 "Player acquisition report"; 400 "Negotiating players"; 409 "Player offer" | 9 | 13 |
+| 13 | `0x126cd0` | 401, 402 "Player acquisition report"; 422, 423 "Player acquisition to cancel" | 12 | – |
+| 14 | `0x126e30` | 317–319, 403 "Player acquisition report"; 404 "Negotiating players"; 410 "Player offer" | `0x6b5f8`, kind 0 | 15 |
 | 15 | `0x1270a0` | 405 "Player acquisition report" | 14 | – |
-| 16 | `0x127198` | 323–325, 406, 407, 411 | `0x6b5f8`, kind 1 | 17 |
+| 16 | `0x127198` | 323–325, 406 "Player acquisition report"; 407 "Negotiating players"; 411 "Player offer" | `0x6b5f8`, kind 1 | 17 |
 | 17 | `0x127458` | 408 "Player acquisition report" | 16 | – |
-| 18 | `0x127550` | 352, 443 "Contract withdrawal (Youth)" | `0x6b5f8`, kind 2 | – |
-| 19 | `0x127688` | 353 "Permanent Move Offer", 354, 386, 387 | the Event module's check (below) | 20 |
-| 20 | `0x127948` | 337–343 ("Cancel Player Transfer", ...), 388, 389, 424, 442 | 19 | 21 |
-| 21 | `0x127cf0` | 339, 340, 344–348, 425, 442 | 20 | – |
-| 22 | `0x127ef8` | one of 314–316, 349–351, 334–336, 331–333, from a table (below) | `0x74418`, a scout request | itself |
-| 23 | `0x1281d0` | 363 "About players on a loan", 396, 397 | the Event module's check | 24 |
+| 18 | `0x127550` | 352 "New Youth Player Report"; 443 "Contract withdrawal (Youth)" | `0x6b5f8`, kind 2 | – |
+| 19 | `0x127688` | 353 "Permanent Move Offer"; 354 "Loan Deal Transfer Offer"; 386, 387 the replies | the Event module's check (below) | 20 |
+| 20 | `0x127948` | 337, 338, 341–343 "Transfer negotiation"; 339, 340, 424, 442 "Cancel Player Transfer"; 388, 389 the re-replies | 19 | 21 |
+| 21 | `0x127cf0` | 339, 340, 425, 442 "Cancel Player Transfer"; 344–348 "Transfer Negotiation 2" | 20 | – |
+| 22 | `0x127ef8` | one of 314–316 (players), 349–351 (youth), 334–336 (coaches), 331–333 (managers), from a table (below) | `0x74418`, a scout request | itself |
+| 23 | `0x1281d0` | 363 "About players on a loan"; 396, 397 "Cancel purchase of loaning player" | the Event module's check | 24 |
 | 24 | `0x128328` | 364 "Report to sell loaning player" | 23 | – |
-| 25 | `0x128440` | 359 "About Loaning player", 392, 393 | the Event module's check | 26 |
-| 26 | `0x128570` | 360 "Report to buy loaning player", 361, 394, 395 | 25 | 27 |
+| 25 | `0x128440` | 359 "About Loaning player"; 392 "Offer to buy loan deal player"; 393 "Buying loan deal player" | the Event module's check | 26 |
+| 26 | `0x128570` | 360, 361 "Report to buy loaning player"; 394 "Offer to negotiate with loan deal player"; 395 "Cancel purchase of player" | 25 | 27 |
 | 27 | `0x128710` | 362 "Loaning player negotiation" | 26 | – |
-| 28 | `0x128850` | 329 "Transfer negotiation", 330, 441 "Cancel Player Transfer" | `0x50e88`, a player-list screen (`0x12c058` argument 21) | – |
+| 28 | `0x128850` | 329 "Transfer negotiation"; 330, 441 "Cancel Player Transfer" | `0x50e88`, a player-list screen (`0x12c058` argument 21) | – |
 | 29 | `0x1289b0` | 356 "Contacting other club players" | the Event module's check | – |
 
 "Code" is the constructor. The MAIL column lists every MAIL ID built as a
 constant in the class's code, from its constructor up to the next one, so
 it covers the methods as well (only the constructor's own registration
 is certain to be that class's; the rest is by address). Each procedure
-sends one of them at a time, depending on how the step turns out.
+sends one of them at a time, depending on how the step turns out. The
+quoted titles are the English subjects of the records.
 
 Every "Next" step is queued with `0x12c160(req, 1, 4)`: the next turn,
 half a week later. The "Next" column lists the sites that build each ID; which
@@ -120,8 +124,10 @@ and switches on the list type at `+0x158`: 0 players, 1 youth, 2 coaches,
 3 managers. For each type it copies fields of its block at `+0x1c` into a
 "term" struct and calls the matching `Param` function.
 
-**Player lists (confirmed).** `pwkTeam_UpdatePlayerCandidates(PlPlistTerm*,
-int*)` (`SLES_541.51 0x260768`):
+#### Player lists (confirmed)
+
+`pwkTeam_UpdatePlayerCandidates(PlPlistTerm*, int*)` (`SLES_541.51
+0x260768`):
 
 | Block | Term | Search criterion |
 |---|---|---|
@@ -167,9 +173,10 @@ Player List", "Youth Player List", "Manager List", "Coach List"). The age
 options there are 550 none, 551 16–22, 552 23–29 and 553 over 30, matching
 values 0–3; value 4 (under 19) isn't offered for players.
 
-**Youth lists (confirmed).** `pwkTeam_UpdateYouthCandidates(PlYlistTerm*,
-int*)` (`0x262c40`) tests the player's own nationality (`getPbase` field
-`+0x14`), not his club's:
+#### Youth lists (confirmed)
+
+`pwkTeam_UpdateYouthCandidates(PlYlistTerm*, int*)` (`0x262c40`) tests the
+player's own nationality (`getPbase` field `+0x14`), not his club's:
 
 | Block | Term | Search criterion |
 |---|---|---|
@@ -178,15 +185,17 @@ int*)` (`0x262c40`) tests the player's own nationality (`getPbase` field
 | `+0x08` | `+0x0c` | position, if non-zero (`0x2623e8`, the same 12 positions) |
 | `+0x12` | `+0x10` | scout special condition, 36 = any (as for players) |
 
-**Youth candidates' comments (partly confirmed).** The youth academy
-screens describe a candidate in two lines, built by one function in
-`SIMPRG.REL` (`0xf6090`, called from `0xf44d8` and `0xf4844`):
+#### Youth candidates' comments (partly confirmed)
+
+The youth academy screens describe a candidate in two lines, built by one
+function in `SIMPRG.REL` (`0xf6090`, called from `0xf44d8` and `0xf4844`):
 
 - The summary line is category 700 message 8500 + a level 0–7. The level
   comes from the average of six values (floats at the candidate's
   `+0x8b8`, times 100: under 46 is level 0; otherwise (average − 45) / 7,
-  at most 6, then through a byte table at `SIMPRG.REL 0x1d2a70`, 7 rows of 16, picked by
-  a value at the youth team's data `+0x3f1c`). **Confirmed** (`0xf6118`–`0xf6168`).
+  at most 6, then through a byte table at `SIMPRG.REL 0x1d2a70`, 7 rows
+  of 16, picked by a value at the youth team's data `+0x3f1c`).
+  **Confirmed** (`0xf6118`–`0xf6168`).
 - The second line, when its kind argument is 10 or more, is message
   8657 + (kind − 10), up to 8663. **Confirmed** (`0xf617c`–`0xf6190`). The
   lower kinds pick a talent comment (8600–8656) instead.
@@ -208,9 +217,11 @@ whichever reading is right. Nexxus's report, 2026-11-10 (the intent
 as charisma is Nexxus's reading); the texts are checked, the two
 lines' values and the screen's name in the game are not.
 
-**Coach lists (confirmed).** `pwkTeam_UpdateCoachCandidates(PlClistTerm*,
-int*)` (`0x261d10`) walks 3,000 staff records (`getMbase`, ids from
-`0x6d2e`) and tests the coach's nationality (field `+0x14`):
+#### Coach lists (confirmed)
+
+`pwkTeam_UpdateCoachCandidates(PlClistTerm*, int*)` (`0x261d10`) walks
+3,000 staff records (`getMbase`, ids from `0x6d2e`) and tests the coach's
+nationality (field `+0x14`):
 
 | Block | Term | Search criterion |
 |---|---|---|
@@ -220,8 +231,10 @@ int*)` (`0x261d10`) walks 3,000 staff records (`getMbase`, ids from
 | `+0x0a` | `+0x10` | instruction age (590:950–954), if non-zero: the coach's byte `0x66` + (7, 8, 9, 6)[value − 1], from the table at `0x399600`, must be at least 70 |
 | `+0x14` | `+0x18` | salary limit (590:164), if positive: compared with `0x260fc0(coach +0x18, 7)` |
 
-**Manager lists (confirmed).** `pwkTeam_UpdateManagerCandidates(PlMlistTerm*,
-int*)` (`0x261500`), over the same 3,000 staff records:
+#### Manager lists (confirmed)
+
+`pwkTeam_UpdateManagerCandidates(PlMlistTerm*, int*)` (`0x261500`), over
+the same 3,000 staff records:
 
 | Block | Term | Search criterion |
 |---|---|---|
@@ -266,14 +279,16 @@ there is `PlPinfo +0x296`/`+0x298`, see
 [`SAVE_FORMAT.md`](SAVE_FORMAT.md)), if the 25 styles are laid out the
 same way.
 
-**The search repeats.** The procedure copies its own request (`0x12bff0`)
-and submits it again after `0x12efb0(region)`. That clamps the region to
-0–12 and reads a delay in turns from the byte table at `0x238ee0`: 4, 4,
-4, 4, 6, 6, 5, 5, 5, 6, 6, 5, 6. If the club has an overseas branch in the
-region (`pwkTown_GetPlOverseasBranchPointer`, byte `+1` set), the delay is
-4. So a scout reports every two weeks in Europe or with a branch, and
-every two and a half to three weeks elsewhere. The first report of a new
-scout request (`0x746b4`) waits the same delay.
+#### The search repeats
+
+The procedure copies its own request (`0x12bff0`) and submits it again
+after `0x12efb0(region)`. That clamps the region to 0–12 and reads a
+delay in turns from the byte table at `0x238ee0`: 4, 4, 4, 4, 6, 6, 5,
+5, 5, 6, 6, 5, 6. If the club has an overseas branch in the region
+(`pwkTown_GetPlOverseasBranchPointer`, byte `+1` set), the delay is 4.
+So a scout reports every two weeks in Europe or with a branch, and every
+two and a half to three weeks elsewhere. The first report of a new scout
+request (`0x746b4`) waits the same delay.
 
 ### Loaning out (procedure 28)
 
@@ -316,14 +331,16 @@ negotiation (see [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#scene-types)).
 
 ## Regions
 
-`PlDRegion` has 13 values, named by message `1:(310 + region)`. The report
-layout (`WP::CReport`, `SIMPRG.REL 0x99130`) and the region list
-(`0xbee14`) both add `0x136` to the region. The table below gives each
-region's scout-search repeat delay (the table at `0x238ee0`, above) and
-its delay for dealing with a club there: a second table at `0x238ef0`
-(`0x12f000`, 2 turns with an overseas branch), which `0x12f050(club)`
-reaches through `plMisc_Club2DRegion`. Procedure 9's player search
-report (`0x9e8c4`) waits that long. Both are in turns:
+`PlDRegion` has 13 values, named by message `1:(310 + region)`
+([`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md) shows how the game
+numbers its regions). The report layout (`WP::CReport`,
+`SIMPRG.REL 0x99130`) and the region list (`0xbee14`) both add `0x136` to
+the region. The table below gives each region's scout-search repeat delay
+(the table at `0x238ee0`, above) and its delay for dealing with a club
+there: a second table at `0x238ef0` (`0x12f000`, 2 turns with an
+overseas branch), which `0x12f050(club)` reaches through
+`plMisc_Club2DRegion`. Procedure 9's player search report (`0x9e8c4`)
+waits that long. Both are in turns:
 
 | Region | Name | Scout search | Club dealings |
 |---|---|---|---|
@@ -341,18 +358,21 @@ report (`0x9e8c4`) waits that long. Both are in turns:
 | 11 | South Asia and Middle East | 5 | 3 |
 | 12 | Oceania | 6 | 4 |
 
-Of the 25 calls to `0x12c160` in `SIMPRG.REL`, 17 use a delay of 1 and 3
-a delay of 0 (this turn); the scout and club delays above account for
-three more, and two take it from data (`0x130894` from `+0x9c` of its
-object, `0x13357c` from its caller).
+Of the 25 calls to `0x12c160` in `SIMPRG.REL`, 17 use a delay of 1 and 2
+a delay of 0 (this turn: `0x1a53c`, `0x12a2d8`). The scout and club delays
+above account for three more (`0x746b4`, `0x128160`, `0x9e8c4`), and three
+take it from data (`0x130894` and `0x130904` from `+0x9c` of their object,
+`0x13357c` from its caller).
 
 Messages 1:300–305 name the six continents.
 
-## For editing
+## Editing
 
 The procedures' logic and triggers are code, so a data mod can change only
-their mail text (the MAIL records in the table above), not when they
-happen. The offers they react to come from `Param` code.
+the mail text (the messages the MAIL records point to, in
+`MESSAGE/MES.PAC`, which `mbb.py` writes; [`MBB_FORMAT.md`](MBB_FORMAT.md)),
+not when the steps happen. The offers they react to come from `Param`
+code.
 
 ## Still unknown
 
@@ -368,3 +388,13 @@ happen. The offers they react to come from `Param` code.
   (`0x6b5f8`), 22 and 28. They're `WS::CPlateWindow` dialogs created through
   tables, so the usual symbol and caller searches don't name them.
 - How the scouting procedure 9 chooses between 10 and 12.
+
+## Checking the claims
+
+```bash
+python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN --text DAT/MESSAGE/MES.PAC   # the MAIL subjects quoted above
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 12c058 20 --sles ISO/SLES_541.51          # request initialiser, due time
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 12e5a8 12 --sles ISO/SLES_541.51          # the event clock
+python SRC/snr2.py xref ISO/DLL/SIMPRG.REL 12c160                                   # all 25 callers of the request scheduler, with their delays
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 260768 40                         # the player search
+```

@@ -10,26 +10,31 @@ These are the Sega Ninja (PS2) texture formats:
 
 Pixel/data format codes and the GS swizzle rule were confirmed against
 SLES_541.51 (graphics::CalculateTextureImageSize, nvSetupSVRTexObj,
-nvPrepareSVRTexImagePacket and its per-PSM table at 0x527620) - see
+nvPrepareSVRTexImagePacket and its per-PSM table at 0x527620); see
 DOC/SVR_FORMAT.md.
 
 `roundtrip` takes every file apart into its palette and linear levels
 (split) and puts it together again (join, with swizzle the inverse of
-unswizzle), then puts each texture's own picture back through the PNG
-path; both must come out identical. `replace` writes a copy of a file
-with one texture's picture changed. The picture must be the texture's own
-size; the format, size, mip chain length and padding stay, so the file
-keeps its length. A texture with its own palette gets a new palette built
-from the picture (--palette keep matches the old one instead); one whose
-palette is a .SVP is matched to that palette (--clut).
+unswizzle), then puts each texture's own picture back through the picture
+path of `replace` (body_from_pixels); both must come out identical. It
+also opens the packs that hold textures (BINPAC packs and MRGs with their
+PRSH entries, CSP packs, the ACROBATA pack, KC@P PackData packs) and
+checks a file that repeats across packs once. The 1.1 GB face pack is
+skipped unless you add --all. `replace` writes a copy of a file with
+one texture's picture changed. The picture must be the texture's own size;
+the format, size, mip chain length and padding stay, so the file keeps its
+length. A texture with its own palette gets a new palette built
+from the picture (--palette keep matches the old one instead, --palette
+new is the default); one whose palette is a .SVP is matched to that
+palette (--clut).
 
 Usage:
     python svr.py info      <file | dir> ...
     python svr.py png       <file | dir> <out_dir> [--clut file.SVP]
-    python svr.py roundtrip <file | dir> ...
+    python svr.py roundtrip <file | dir> ... [--all]
     python svr.py replace   <in.SVR | in.SVM> <out> <picture.png>
                             [--texture <name | index>] [--clut file.SVP]
-                            [--palette keep]
+                            [--palette keep | new]
 
 Requires: pip install pillow  (only for `png` and `replace`)
 """
@@ -602,7 +607,7 @@ def first_difference(a, b):
 # --- the textures on the disc ---------------------------------------------------
 
 TEXTURE_MAGICS = (b"GBIX", b"PVMH", b"PVPL")
-BIG_FILE = 200 << 20    # the 1.2 GB face pack takes minutes to expand; `roundtrip --all` includes it
+BIG_FILE = 200 << 20    # the 1.1 GB face pack takes minutes to expand; `roundtrip --all` includes it
 
 
 def blobs_in(label, data, name=""):

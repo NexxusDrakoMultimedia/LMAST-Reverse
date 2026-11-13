@@ -3,18 +3,19 @@
 
 # PAC / HED archive formats (`*.PAC`, `*.MRG`, `*.HED`)
 
-`DAT/` uses two archive formats:
+`DAT/` uses two archive formats. `SRC/pac.py` reads and writes both, and
+the PRSH compression around their entries.
 
 - **BINPAC**: a self-describing archive. `.PAC` and `.MRG` files are
   BINPACs (662 archives, plus 194 `.HED` headers). A `.HED` is almost
-  always a **byte-for-byte copy of
-  its partner's header**. The game loads the small `.HED` files first (some are
-  bundled into `PRELOAD/GAMEFILE*.PAC`), so it knows every entry's
-  offset before it touches the big archive, then reads single entries from
-  the `.PAC`/`.MRG` by offset.
+  always a **byte-for-byte copy of its partner's header**. The game loads
+  the small `.HED` files first (some are bundled into
+  `PRELOAD/GAMEFILE*.PAC`), so it knows every entry's offset before it
+  touches the big archive, then reads single entries from the
+  `.PAC`/`.MRG` by offset.
 - **KC@P**: a bare offset table in a `.HED` (or `*_HEADER.BIN`) that
-  indexes a separate, headerless data file. It's used for the face packs
-  and the player packs.
+  indexes a separate, headerless data file. It is used for the face
+  packs, the kit packs, the edit-face pack and the cut-in pack.
 
 Entries in either format may be wrapped in **PRSH** (Sega PRS
 compression).
@@ -37,6 +38,7 @@ The accessors come from `SLES_541.51` (symbols recovered with
 | `0x104968` | `fcEuroBinPac_SearchHeaderFilename(void*, const char*, int* off, int* size)` | linear `strcasecmp` over names. Also has a hashed path for a `CPHN` variant (see below) |
 | `0x104b80` | `fcEuroBinPac_CheckHeaderLimit` | stub: returns `hdr == NULL` |
 | `0x11b8b8` | `CLoader::l_realize_merge` | for each entry: `id = ListData(idx, 3 + idType)`, looked up in a 23-slot table (one per `CLoader::eFILETYPE`) to pick the realize handler for `hdr + ListData(idx, 0)` |
+| `0x10d848`–`0x10d9dc` | `CFcEuro_FileResource::Execute` | when a `PRELOAD` pack has loaded, reads each entry's columns 0, 1, 3 and 4 and registers the entry under its original file's name ([`PRELOAD_DIR.md`](PRELOAD_DIR.md#confirmed-from-the-game-code)) |
 
 ### Header (offset 0, 0x20 bytes)
 
@@ -53,7 +55,7 @@ The accessors come from `SLES_541.51` (symbols recovered with
 
 ### Entry table (at `0x20`, *N* entries)
 
-```
+```text
 stride = 4*(version + 1) + name_len          (named)
 stride = 4*(version + 2)                     (tagged: name_len is forced to 4)
 
@@ -86,9 +88,10 @@ stride = 4*(version + 2)                     (tagged: name_len is forced to 4)
     eMERGE_USER_ID_TYPE)`. The match picks the handler
     (`l_realize_texture_svm`, `l_realize_objectpack_snj`, ...), and
     unmatched entries are skipped. The meaning of each ID is therefore set
-    by the calling code, not fixed. Observed: `snd`/`snq`/`snp`/`snl`→0,
-    most `snj`/`sno`→0, `svm`→1/2/3, `sna`/`snt`→2, `snm`→3,
-    `svp`/`zbf`→4 (a few `svp`→2), some `sno`→5 (`CUTINHANDPACK`).
+    by the calling code, not fixed. **Empirical**, over all 309 `.MRG`:
+    `snd`/`snq`/`snp`/`snl`→0, most `snj`/`sno`→0, `svm`→1/2/3,
+    `sna`/`snt`→2, `snm`→3, `svp`/`zbf`→4 (69 of the 3,035 `svp`→2),
+    some `sno`→5 (`CUTINHANDPACK`).
     Empty slots are `dummy.bin`/`.bin` with size 0 and ID `0xFFFFFFFF`.
     Every `.MRG` has exactly one extra column, so `idType` is always 0 here.
 - The entry table is zero-padded up to `header_size`. The first entry's
@@ -120,7 +123,8 @@ gap:
 Names, flags and the extra columns are copied from the original header;
 only the header size and each entry's offset and size change.
 `python SRC/pac.py roundtrip DAT` rebuilds all 662 archives from their own
-entries and gets the same bytes back (in `regress.py` as
+entries and gets the same bytes back; it also checks the 6 KC@P headers,
+so it ends with "668 identical, 0 differ" (in `regress.py` as
 `pac_roundtrip`). `pac.py replace` puts new entries into an archive.
 
 A rebuilt archive is only safe where everything that holds its offsets
@@ -132,7 +136,7 @@ the two archives the executable indexes (`MES.PAC`,
 
 ### Variants seen
 
-| Ext | ver | align | name_len | Files | Notes |
+| Ext | ver | align | name_len | Archives | Notes |
 |---|---|---|---|---|---|
 | PAC/HED | 3 | 0x800 | 128 / 16 / 4 | 145 | textures, models, schedules |
 | PAC | 3 | 0x40 | 128 | 140 | `PRELOAD/GAMEFILE*` hold `.hed`, `.tbb`, ... |
@@ -143,13 +147,16 @@ the two archives the executable indexes (`MES.PAC`,
 | PAC/HED | 1 | 0x800 | 4 | 4 | `SHADOWCOLLI`, `WALLCOLLI`, `PLAYER_MODEL` |
 | PAC | 1 | 4 | tagged | 4 | motion packs |
 
+The counts are the 662 self-describing archives; the `.HED` copies are
+not counted.
+
 `*_PRESS.PAC` files (e.g. `PLAYER/NUMBER_00_PRESS.PAC`) repack the same
 content as their non-`PRESS` sibling. They use 16-byte alignment and store
 entries either PRSH-compressed (`.svm` models) or raw (`PVPL` CLUTs).
 
 ### Example: `PLAYER/NUMBER_00.HED` (= first 0x1000 bytes of `NUMBER_00.PAC`)
 
-```
+```text
 0000: 00100000 6400 0300 10104249 4e504143   hdr 0x1000, 100 entries, v3, named, "BINPAC"
 0010: 00080000 10000000 00000000 00000000   align 0x800, name_len 16
 0020: 00100000 20080000 2e2f6e75 6d5f3030   off 0x1000, size 0x820, "./num_00
@@ -162,8 +169,9 @@ entries either PRSH-compressed (`.svm` models) or raw (`PVPL` CLUTs).
 hashes the name and uses a bucket table of `{u16 first, u16 count}` at
 `+0x20`, 16-byte records `{u32 off, u32 size, u32 name_off, u32 hash}` at
 `+0x420`, and names at `+0x420 + count*16 + name_off*8`.
-`GetHeaderListData` also returns 0 for it. No file in `DAT/` uses this
-layout.
+`GetHeaderListData` tests a different word: it returns 0 when
+`u32@0x08` is `CPHN` (**confirmed**: `0x1046e8` and `0x104968` in the
+disassembly). No file in `DAT/` uses this layout.
 
 ### Anomaly: `GAME/PLAYERMOTION.HED`
 
@@ -221,17 +229,25 @@ python SRC/patch_disc.py patch disc.iso modded.iso PLAYER/FC_EURO_FACEPACK_01.HE
 
 It writes the header and the data file (under its own name) into the
 output's folder. Both go on the disc as targets: `--copies` carries the
-header to its `PRELOAD` copies (`FC_EURO_FACEPACK_01.HED` is entry 3 of
-the seven `SIMFILE` packs, `CUTINPACK_HEADER.BIN` entry 9 of
-`GAMEFILE5`/`6`), and a data file that needs more sectors is moved to
-the end of `DATA.ISO`. The 1.1 GB `FC_EURO_FACEPACK_00.BIN` can only
-move while the disc has room for another copy of it (about 1.1 GB of
-the 1.1 GB a single-layer DVD has spare). Checked on a copy of
-`DATA.CVM`: face 5 of `FC_EURO_FACEPACK_01` grown by three sectors moved
-the data file and rewrote the header in all eight places. **Tested in
-PCSX2** (Nexxus's report): a rebuilt `FC_EURO_FACEPACK_01` with entry 0
-recompressed and its data file moved loads in game
-([`REBUILD.md`](REBUILD.md#archives)).
+header to its `PRELOAD` copies (`python SRC/patch_disc.py copies DAT
+PLAYER/FC_EURO_FACEPACK_01.HED` lists them: entry 4 of the seven
+`GAMEFILE` packs and entry 3 of the seven `SIMFILE` packs;
+`CUTINPACK_HEADER.BIN` is entry 9 of all seven `GAMEFILE` packs), and a
+data file that needs more sectors is moved to the end of `DATA.ISO`.
+
+The 1.1 GB `FC_EURO_FACEPACK_00.BIN` (577,158 sectors) stays in place
+while it keeps its sector count. It can't move: a moved file is written
+after the end of `DATA.ISO` and its old sectors stay, and the disc
+has no room for another copy: a single-layer DVD holds 2,295,104
+sectors and the image is 1,732,512, which leaves 562,592, or 14,566
+fewer than the pack's 577,158 ([`REBUILD.md`](REBUILD.md#growing-the-disc)).
+
+Checked on a copy of `DATA.CVM`: face 5 of `FC_EURO_FACEPACK_01` grown by
+three sectors moved the data file and rewrote the header in all eight
+places (`copies` lists 15 for that header now: the file and its 14
+`PRELOAD` copies). **Tested in PCSX2** (Nexxus's report): a rebuilt
+`FC_EURO_FACEPACK_01` with entry 0 recompressed and its data file moved
+loads in game ([`REBUILD.md`](REBUILD.md#archives)).
 
 ## PRSH (compressed entry)
 
@@ -251,8 +267,8 @@ bits are read LSB-first, one byte at a time:
 - `01` + `lo, hi`: long copy. `offset = ((hi<<5)|(lo>>3)) - 0x2000`.
   `len = (lo&7)+2`, or if `lo&7 == 0`, `len = next_byte + 1`.
   `lo = hi = 0` ends the stream.
-- `00` + 2 bits `b1 b0` + 1 byte: short copy. `len = (b1<<1|b0)+2`,
-  `offset = byte - 0x100`.
+- `00` + 2 bits `b1 b0` + 1 byte: short copy. `offset = byte - 0x100`,
+  `len = (b1<<1|b0)+2`.
 
 All 5,496 PRSH entries inside BINPACs decompress to exactly their
 header's size, and so do all sampled face-pack entries. Every one has the
@@ -278,15 +294,19 @@ whose original was PRSH.
 - What, if anything, reads the stale `GAME/PLAYERMOTION.HED`.
 - What the `CPHN` variant was used for; no file on the disc has it.
 
-## Tool
+## Checking the claims
 
 ```bash
 python SRC/pac.py info DAT                                   # check every archive
 python SRC/pac.py list DAT/PRELOAD/GAMEFILE0.PAC              # entries + payload magic
 python SRC/pac.py extract DAT/PLAYER/NUMBER_00.HED out/       # .HED -> reads NUMBER_00.PAC
 python SRC/pac.py extract DAT/PLAYER/FC_EURO_FACEPACK_01.HED out/ --prs   # expand PRSH
+python SRC/pac.py unprs blob.prs blob.bin                    # expand one PRSH blob
 python SRC/pac.py roundtrip DAT                              # rebuild every BINPAC, compare
+python SRC/pac.py prscheck DAT/STADIUM/ADT_AW01A_N2.PAC      # recompress each PRSH entry, expand, compare
 python SRC/pac.py replace DAT/PRELOAD/STATIONMES1.PAC out/STATIONMES1.PAC 3_1.mbb=out/3_1.mbb
+python SRC/patch_disc.py copies DAT PLAYER/FC_EURO_FACEPACK_01.HED   # where a header is copied
+python SRC/sles_disasm.py ISO/SLES_541.51 dis fcEuroBinPac          # the accessors
 ```
 
 Extracted files are named `<index>_<name>`, or `<index><.ext>` when only an

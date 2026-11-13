@@ -3,10 +3,12 @@
 """Reader for GAME/SOUNDDAT.PAC and the commentary / sound-bank formats it
 holds, for Let's Make a Soccer Team! (PS2).
 
-SOUNDDAT.PAC has no directory. It is 12 fixed-size commentary slots, then a
-run of .TBL clip tables, then 40 ps2_DTPK sound banks. Each piece is
-self-describing enough to split the pack without the loose copies in
-DAT/GAME. See DOC/GAME_DIR.md for the layouts.
+SOUNDDAT.PAC has no directory. The PAL pack is 12 fixed-size commentary
+slots, then a run of .TBL clip tables, then 40 ps2_DTPK sound banks (the
+Japanese pack has 2 slots, 33 tables and 40 banks, DOC/JAPANESE_RELEASE.md).
+Each piece is self-describing enough to split the pack without the loose
+copies in DAT/GAME. DOC/GAME_DIR.md holds the layouts: the pack, the
+banks, the songs and the instruments.
 
 Usage:
     python sounddat.py info    <SOUNDDAT.PAC>                 # layout summary
@@ -22,12 +24,13 @@ Usage:
 
 <FNAMExx> is the .DAT/.TOC pair without extension, e.g. DAT/GAME/FNAMEEN.
 
-`music` reads two tables from the executable (DOC/SOUND_DIR.md): the 24
-SOUND banks the sound manager loads (0x35cb54: SYS_SE, map01-map23, with
-their TBLD and VAGD sizes and song requests) and the 63 music ids
-FC_EURO_BGM_CALLBACK::CFcEuro_ChangeBgm plays (0x5190d8: a song in one of
-those banks, or a streamed track). Given DAT/SOUND, it checks each record
-against its bank.
+`music` reads two tables from the executable (DOC/SOUND_DIR.md; the
+addresses are the PAL release's, and gamever.py finds them in the Japanese
+one): the 24 SOUND banks the sound manager loads (0x35cb54: SYS_SE,
+map01-map23, with their TBLD and VAGD sizes and song requests) and the 63
+music ids FC_EURO_BGM_CALLBACK::CFcEuro_ChangeBgm plays (0x5190d8: a song
+in one of those banks, or a streamed track). Given DAT/SOUND, it checks
+each record against its bank.
 
 Songs are Sega SoundFactory sequences, played by ISO/DRIVERS/SNDFI.IRX:
 MIDI-like streams with running status, where the last data byte's top bit
@@ -63,6 +66,7 @@ DTPK_LOOP = 4
 
 
 def align(n, a):
+    """`n` rounded up to a multiple of `a`."""
     return (n + a - 1) // a * a
 
 
@@ -97,7 +101,9 @@ def split_slot(d, base):
     bcb3 = lang_bcb + struct.unpack_from("<I", d, lang_bcb + 0x10)[0]
     count = struct.unpack_from("<I", d, bcb3 + 0x0C)[0]
     end = pos + count * 3
-    parts.append(("BCV", pos, pos if not any(d[pos:pos + 12]) else end))   # records 0-3: 0, 1, 2, 3
+    # A real BCV opens with the records 0, 1, 2, 3, so 12 zero bytes mean
+    # there is none (checked on the PAL and Japanese packs).
+    parts.append(("BCV", pos, pos if not any(d[pos:pos + 12]) else end))
     return parts
 
 
@@ -129,7 +135,9 @@ def walk_tbls(d, start, stop):
 # --- ps2_DTPK sound banks ----------------------------------------------------
 
 class Dtpk:
-    """ps2_DTPK bank: header, ps2_TBLD (tone tables), ps2_VAGD (PS-ADPCM)."""
+    """ps2_DTPK bank: header, ps2_TBLD (tone tables), ps2_VAGD (PS-ADPCM).
+    `samples` is [(offset in the VAGD, size, rate, flags)]; `ptrs` are the
+    TBLD's ten pointers (DOC/GAME_DIR.md, "ps2_DTPK: sound bank")."""
 
     def __init__(self, d, pos=0):
         if d[pos:pos + 8] != DTPK_MAGIC:
@@ -202,6 +210,7 @@ def song_areas(bank):
 
 
 def song_offsets(bank):
+    """The position of every song (sub-area kind 0xa8) in a bank."""
     return [p for kind, _, offs in song_areas(bank) if kind == AREA_SONGS for p in offs]
 
 
@@ -273,6 +282,7 @@ class Song:
 
 
 def midi_vlq(v):
+    """A MIDI variable-length quantity."""
     out = [v & 0x7F]
     v >>= 7
     while v:
@@ -356,6 +366,8 @@ def _s16(d, o):
 
 
 class Instruments:
+    """A bank's tone tables: setups, programs and level curves (the layouts
+    are in the comment above and DOC/GAME_DIR.md, "Instruments")."""
     def __init__(self, bank):
         self.bank, self.d, self.p = bank, bank.d, bank.ptrs
         self.base = bank.pos
@@ -415,6 +427,7 @@ class Instruments:
 
 
 def pick_layer(split, key):
+    """The layer of a split that sounds for `key`, or None."""
     if "keys" in split:
         return split["keys"].get(key)
     return next((l for l in split["layers"] if key <= l["hi"]), None)
@@ -446,6 +459,8 @@ REVERB_LEVEL = 0.0875
 
 
 def reverb_into(src, dst, spread):
+    """Add a reverb of `src` into `dst`: four feedback combs, then two
+    all-passes; `spread` (ms) detunes the right side from the left."""
     n = len(src)
     out = [0.0] * n
     for ms in (29.7, 37.1, 41.1, 43.7):
@@ -471,6 +486,7 @@ def reverb_into(src, dst, spread):
 
 
 def pan_gains(p):
+    """(left, right) gains for a pan of 0-127: equal power."""
     p = max(0, min(127, p)) / 127.0
     return math.cos(p * math.pi / 2), math.sin(p * math.pi / 2)
 
@@ -601,6 +617,8 @@ def render_song(bank, song):
 
 
 def find_banks(d, start=0):
+    """Yield each ps2_DTPK bank in `d` from `start` on; the search for the
+    next one begins after the previous bank's size."""
     pos = d.find(DTPK_MAGIC, start)
     while pos >= 0:
         bank = Dtpk(d, pos)
@@ -633,6 +651,7 @@ def vag_decode(data):
 
 
 def write_wav(path, samples, rate):
+    """A mono 16-bit WAV."""
     with wave.open(path, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
@@ -641,6 +660,7 @@ def write_wav(path, samples, rate):
 
 
 def dump_bank(bank, outdir, prefix=""):
+    """Decode every sample of a bank to WAV; looped ones have _loop in the name."""
     os.makedirs(outdir, exist_ok=True)
     for k, (_, size, rate, flags) in enumerate(bank.samples):
         name = "%s%02d_%dhz%s.wav" % (prefix, k, rate, "_loop" if flags & DTPK_LOOP else "")
@@ -684,6 +704,7 @@ def slots(d):
 
 
 def tbl_region(d):
+    """Where the clip tables start: right after the commentary slots."""
     size, count, _ = slots(d)
     return size * count
 
@@ -763,6 +784,7 @@ def cmd_dtpk(path, outdir):
 
 
 def dat_files(paths):
+    """The files named, or the .DAT and .PAC files of a named folder."""
     for p in paths:
         if os.path.isdir(p):
             for n in sorted(os.listdir(p)):
@@ -937,6 +959,7 @@ def read_music_tables(sles_path):
 
 
 def request_text(w):
+    """A bank request word in words: its kind, entry and sub-area."""
     kind, aid, entry = w & 0xFF, (w >> 8) & 0xFF, w >> 16
     what = {AREA_SONGS: "song", AREA_EFFECTS: "effect"}.get(kind, "kind %#x" % kind)
     return "%s %d of sub-area %d" % (what, entry, aid)

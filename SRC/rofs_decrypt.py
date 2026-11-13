@@ -12,6 +12,7 @@ recovered from the running game in PCSX2; header_key() derives it from
 the CVMH header the way the game does, so a rebuilt DATA.CVM of another
 size (which has another key) decrypts too. File contents themselves are not
 encrypted by this format, so they are copied through unchanged.
+extract_disc.py all runs cvm_to_iso() as its third step.
 
 Usage:
     python rofs_decrypt.py <input.cvm> <output.iso> [hex_key]
@@ -26,6 +27,8 @@ SECTOR = 2048
 PVD_SECTOR = 16
 DEFAULT_KEY = bytes.fromhex("5AFB657D4A575FD5")
 
+# The first 1,024 primes above 16384 (16411 to 26681), which _calc_one_val
+# picks from.
 PRIMES = [
   16411, 16417, 16421, 16427, 16433, 16447, 16451, 16453,
   16477, 16481, 16487, 16493, 16519, 16529, 16547, 16553,
@@ -158,7 +161,11 @@ PRIMES = [
 ]
 assert len(PRIMES) == 1024
 
-# hash-offset/src-offset pairs, keyed by the low 4 bits of a running seed
+# One recipe per value of idx = val1 % 9 from _calc_hash. Each of the 8
+# output bytes is a pair of digits: which of the 4 hash bytes to mix in
+# ('.' for none), then which of the 8 key bytes it starts from. '^' makes
+# the mixing an XOR and '+' an addition; the mode holds until it changes
+# and starts as XOR (_apply_scramble).
 SCRAMBLES = [
   "^03 .0 37 .4 .1 26 .2 15",  # 0
   "^12 .7 .5 23 00 .6 .4 31",  # 1
@@ -173,6 +180,8 @@ SCRAMBLES = [
 
 
 def _calc_one_val(buf, start_val):
+    """A 16-bit hash of `buf` from `start_val`. The game hashes the key
+    pairs with it too (0x1e7018, see header_key)."""
     val = start_val
     for b in buf:
         sb = b - 256 if b >= 128 else b  # signed char
@@ -182,6 +191,7 @@ def _calc_one_val(buf, start_val):
 
 
 def _calc_hash(seed):
+    """(4 hash bytes, scramble index 0-8) for a seed."""
     dw = (0x100001 * seed) & 0xFFFFFFFF
     buf = dw.to_bytes(4, "big")
     val1 = _calc_one_val(buf, 18973)
@@ -192,6 +202,7 @@ def _calc_hash(seed):
 
 
 def _apply_scramble(src, hash_bytes, scramble):
+    """The 8 key bytes `src` mixed with the hash bytes as `scramble` says."""
     dst = bytearray(8)
     p = 0
     typ = "^"
@@ -211,7 +222,9 @@ def _apply_scramble(src, hash_bytes, scramble):
 
 
 def decrypt_sectors(data, start_sec, sec_size, key):
-    """Decrypt one or more whole sectors in-place (returns new bytes)."""
+    """Decrypt one or more whole sectors and return the new bytes; `data` is
+    left as it was. `start_sec` is the number of the first sector, which
+    goes into the key stream."""
     key_len = len(key)
     out = bytearray(data)
     n_secs = len(data) // sec_size
@@ -237,9 +250,9 @@ def header_key(cvm_head):
     password string builds 8 bytes from 0x1e6f50/0x1e6fb8 by interleaving
     header +0x25..+0x28 with +0x20..+0x23, then (0x1e7018) replaces each
     byte pair with the big-endian 16-bit hash _calc_one_val(pair, 18973).
-    Header +0x20..+0x23 are the low 32 bits of the CVM's size (CVMH +0x1c),
-    so the key changes whenever DATA.CVM changes size. For this disc it
-    gives DEFAULT_KEY."""
+    Header +0x20..+0x23 are the low 32 bits of the CVM's size (a big-endian
+    u64 at +0x1c: 0x757a1800 here, the size of DATA.CVM), so the key changes
+    whenever DATA.CVM changes size. For this disc it gives DEFAULT_KEY."""
     if not struct.unpack_from(">I", cvm_head, 0x30)[0] & 0x10:
         return None
     return b"".join(_calc_one_val(bytes([cvm_head[0x25 + k], cvm_head[0x20 + k]]), 18973)
@@ -249,11 +262,15 @@ def header_key(cvm_head):
 # --- CVMH/ZONE header parsing -----------------------------------------
 
 def read_cvm_header(f):
+    """The fields of the CVMH and ZONE chunks that the decryption needs.
+    Each chunk is a 12-byte head (magic, big-endian u64 body length) and
+    its body."""
     f.seek(0)
     magic, length = struct.unpack(">4sQ", f.read(12))
     if magic != b"CVMH":
         raise ValueError(f"not a CVM file (expected CVMH, got {magic!r})")
     cvmh = f.read(length)
+    # The body starts at file +0xc, so these sit at file +0x30 and +0x88.
     flags_30 = struct.unpack(">I", cvmh[0x24:0x28])[0]
     iso_start_sector = struct.unpack(">I", cvmh[0x7C:0x80])[0]
     encrypted = bool(flags_30 & 0x10)
@@ -331,6 +348,9 @@ def find_toc_end_sector(f, hdr, key):
 # --- top-level extraction -----------------------------------------------
 
 def cvm_to_iso(cvm_path, iso_path, key=None, verbose=True):
+    """Write the plain ISO9660 image inside a DATA.CVM: the body is copied,
+    then the table-of-contents sectors are overwritten with their decrypted
+    contents. `key` defaults to the one header_key derives."""
     with open(cvm_path, "rb") as f:
         hdr = read_cvm_header(f)
         if key is None:

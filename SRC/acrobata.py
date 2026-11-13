@@ -13,8 +13,9 @@ are the pack's two extra columns:
          a POF0 pointer list and EOFC. SIMPRG.REL 0x1a69b0 checks the magic,
          the version word 0x77831b45 (2005080901, "Ver 20050809 R1") and
          the POF0 at +0x18, then relocates the pointers (0x1aaff8).
-  ABRS   the resources: the same header (no version check, 0x183208), then
-         wrapped chunks {magic, u32 size, u32 header 0x10, u32 0x80}
+  ABRS   the resources: the same header (the game checks no version here,
+         0x183208, but `info` still compares the word and every entry
+         carries it), then wrapped chunks {magic, u32 size, u32 header 0x10, u32 0x80}
          holding Ninja files (NSIF) and textures (GBIX, PVMH), then POF0
          and EOFC.
 

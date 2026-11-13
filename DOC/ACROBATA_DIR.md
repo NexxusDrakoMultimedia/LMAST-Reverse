@@ -4,14 +4,16 @@
 # `DAT/ACROBATA`: the 3D event scenes
 
 `DAT/ACROBATA` is folder id **13** in the game's file manager
-([`PRELOAD_DIR.md`](PRELOAD_DIR.md)). It holds one 115 MB pack,
+([`PRELOAD_DIR.md`](PRELOAD_DIR.md)). It holds one 120 MB pack,
 `ACROBATAPACKFILE.PAC`, and a 9-byte `DUMMY.DAT` (the text `hogehoge.`,
-a Japanese placeholder word). The pack has the 875 scenes of what the
+a Japanese placeholder word). The pack has the 875 entries of what the
 code calls **Acrobata**: the 3D scenes of the season mode. They cover the
 backgrounds of the club rooms, people walking and talking in them,
 event scenes, the month-start and year-start scenes, the newspaper
 intro, training scenes, the endings and the game-over scenes. The scenes
-are in the format of a middleware the code calls Acroarts.
+are in the format of a middleware the code calls Acroarts. The game asks
+for 718 scene ids; most are one entry, and 26 have one entry per language
+([Scene ids](#scene-ids)).
 
 `python SRC/acrobata.py info DAT/ACROBATA` checks every entry and its
 resources. `python SRC/acrobata.py scenes DAT/ACROBATA ISO` checks the
@@ -28,7 +30,7 @@ The pack isn't in any `PRELOAD` pack. It isn't listed in the folder's
 | `SLES 0x3a3b08` | `LOADER::AcrobataPackFile_tbl` | the executable's copy of the pack index: per entry {u32 offset, u32 size, u32 ABDA size, u32 ABRS size}, the same four values as the pack's header row |
 | `SLES 0x2faff8` | (`LOADER` helper) | turns a scene id into an entry index through the table at `0x55d7a8`: 20 bytes per id, {u32 flag, s16 entry[7]}. With the flag set, the entry is `entry[language]` (`Localize_GetLanguage`), otherwise `entry[0]` |
 | `SLES 0x2fb050`, `0x2fb080`, `0x2fb0b8` | (`LOADER` helpers) | read the offset, the size and the ABDA size of a scene's entry from `0x3a3b08` |
-| `SIMPRG.REL 0x116320` | `ACROBATA::getAckName(int)` | names scene ids 1–719: from the table at `0x1d7368`, or for language-dependent scenes from `0x22fd58` (an index) and `0x1d7ea8` (7 names per index, by language) |
+| `SIMPRG.REL 0x116320` | `ACROBATA::getAckName(int)` | names scene ids 1–718: from the table at `0x1d7368`, or for language-dependent scenes from `0x22fd58` (an index) and `0x1d7ea8` (7 names per index, by language) |
 | `SIMPRG.REL 0x1a69b0` | (Acroarts loader) | checks an `ABDA` chunk: the magic, the flag at `+0x0c` (bit `0x100` = already relocated), the version word at `+0x10`, which must be `0x77831b45`, and the `POF0` chunk at `+0x18`; then relocates the pointers (`0x1aaff8`) and sets the flag |
 | `SIMPRG.REL 0x183208` | (Acroarts loader) | the same checks for an `ABRS` chunk, without the version |
 | `SIMPRG.REL 0x247848`–`0x2478b0` | (strings) | the errors name the format: "ABDA(Acroarts Native Data) Version is incorrect", and print the expected and found versions as "Ver%8d R%d" |
@@ -37,7 +39,7 @@ The pack isn't in any `PRELOAD` pack. It isn't listed in the folder's
 
 The version word `0x77831b45` is 2005080901, printed as "Ver 20050809 R1":
 a date stamp, 9 August 2005, revision 1. The code compares it with its own
-library version, the same value. All 875 scenes carry it.
+library version, the same value. All 875 entries carry it.
 
 **The game doesn't read the pack's header.** It takes every offset and
 size from the copy in the executable. No code reading the header was
@@ -68,7 +70,7 @@ The chunk header of both parts:
 |---|---|---|
 | `+0x00` | char[4] | `ABDA` or `ABRS` |
 | `+0x04` | u32 | the bytes between the header and `EOFC`: the part is header size + this + `0x10` |
-| `+0x08` | u32 | header size: `0x30` for every `ABDA`; `0x30`–`0xe0` for `ABRS` |
+| `+0x08` | u32 | header size: `0x30` for every `ABDA`; `0x30`–`0x1d0` for `ABRS` (22 different sizes) |
 | `+0x0c` | u16 | flags; the loader sets `0x100` once the pointers are relocated |
 | `+0x10` | u32 | version, `0x77831b45` |
 | `+0x14` | u32 | 1 in every `ABDA`; 35 different values in `ABRS`, meaning unknown (it isn't the resource count) |
@@ -116,17 +118,21 @@ scene are `ACROBATA::CAckManager`, `CAckDiamante` and `CAckLight`
 
 ## Scene ids
 
-The game asks for scenes by id, 1–719 (**confirmed**, the two tables
-above). 693 ids have one entry, and 26 have one entry per language in the
-order of the language slots (Japanese, English, French, German, Italian,
-Spanish, and slot 6, which the language menu never picks,
-[`MBB_FORMAT.md`](MBB_FORMAT.md#languages)): 26 × 7 =
-182 entries. 693 + 182 = 875, so every entry belongs to exactly one id and
-language, and the executable's table agrees with `getAckName` for every id
-(**empirical**, `acrobata.py scenes`). The language-dependent scenes are
-the endings (one per league won, plus a European one), the game-over
-scenes, the `FC_EURO_LOGO`, the intro and option backgrounds, an
-important mail, the month-start events and `EV_PICT_GOOD_LISTING`.
+The game asks for scenes by id, 1–718 (**confirmed**, the two tables
+above; `acrobata.py scenes` lists all 718). 692 ids have one entry, and 26
+have one entry per language in the order of the language slots (Japanese,
+English, French, German, Italian, Spanish, and slot 6, which the language
+menu never picks, [`MBB_FORMAT.md`](MBB_FORMAT.md#languages)): 26 × 7 =
+182 entries. 692 + 182 = 874, so every entry but one belongs to exactly one
+id and language. The one left over is `W_BG_WALK_007`, which no id
+reaches. The executable's table agrees with `getAckName` for every id
+(**empirical**, `acrobata.py scenes`). The entries are named with a
+language suffix, `_du` for slot 6 (`FC_EURO_LOGO_du`;
+[`MBB_FORMAT.md`](MBB_FORMAT.md#languages)). The language-dependent
+scenes are the endings (one per league won, plus a European one), the game-over scenes,
+the `FC_EURO_LOGO`, the intro (`GM_BG_INTORO`, `GM_PRE_INTRO`) and option
+backgrounds, an important mail, the month-start events and
+`EV_PICT_GOOD_LISTING`.
 
 The names group the scenes (**empirical**, entry counts):
 
@@ -143,7 +149,7 @@ The names group the scenes (**empirical**, entry counts):
 | `FC_EURO_` | 8 | the logo (one per language) and `FC_EURO_TITLE` |
 | `MY_`, `test_` | 4 | leftovers: `MY_ROOM_LV01_TEST`, `MY_test_01a`/`b`, `test_abe` |
 
-The three largest entries are `BG_MY_LV01_02_test0`–`test2` (4.3–4.4 MB
+The three largest entries are `BG_MY_LV01_02_test0`–`test2` (4.5–4.6 MB
 each), test versions of a room background.
 
 ## Still unknown
@@ -151,4 +157,14 @@ each), test versions of a room background.
 - The `ABDT` scene layout, and so what a scene does.
 - `+0x14` of the chunk header, and the table in larger `ABRS` headers.
 - Which code asks for which scene id, and how PlayAcrobata turns the
-  root scripts' arguments (0, 1, 3–5, 7–17) into scenes.
+  root scripts' arguments (0–5, 7–17) into scenes.
+- Why `W_BG_WALK_007` has no scene id (the other six `W_BG_WALK` scenes
+  have ids 713–718).
+
+## Checking the claims
+
+```bash
+python SRC/acrobata.py info   DAT/ACROBATA        # every entry, its POF0 list and resources
+python SRC/acrobata.py scenes DAT/ACROBATA ISO    # the executable's index and scene table against the pack
+python SRC/pac.py list DAT/ACROBATA/ACROBATAPACKFILE.PAC   # the 875 entries and their sizes
+```

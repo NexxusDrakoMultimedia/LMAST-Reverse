@@ -3,11 +3,12 @@
 
 # `DAT/STADIUM`: stadium models, crowds and adverts
 
-`DAT/STADIUM` (320 files, 35 MB, plus `CVS/`) holds the 3D stadiums used in
-matches. There are **10 stadium models**, and the tables here build each of
-the game's **119 stadiums** from one of them. Everything is loaded by
-`DLL/GAMEPRG.REL`, the match overlay. All file names appear there as
-strings from `0x299960` on.
+`DAT/STADIUM` (319 files, 35.7 MB, plus `CVS/`) holds the 3D stadiums
+the match draws. There are **10 stadium models**, and the tables here
+build each of the game's **119 stadiums** from one of them: which model,
+which parts, which crowd, which advert boards. The match overlay
+`DLL/GAMEPRG.REL` loads every file here, and the file names appear in it
+as strings from `0x299960` on.
 
 Every container here is a BINPAC pack ([`PAC_FORMAT.md`](PAC_FORMAT.md)),
 a TBB table ([`TBB_FORMAT.md`](TBB_FORMAT.md)) or a `.PRI` file. The packs
@@ -16,7 +17,8 @@ and textures and palettes (`.svr`/`.svp`, [`SVR_FORMAT.md`](SVR_FORMAT.md)),
 mostly PRSH-compressed. `python SRC/pac.py info DAT/STADIUM`,
 `python SRC/tbb.py info DAT/STADIUM` and `python SRC/ninja.py info DAT
 --prs` parse all of them. `python SRC/stadium.py info DAT/STADIUM
-DAT/PARAM` checks the parts described here.
+DAT/PARAM` checks the parts described here, and `stadium.py` also writes
+the `BUILD_STADIUM` table ([Editing](#editing)).
 
 The `.PRI` layout and the `BUILD_STADIUM` table sizes are **confirmed**
 from `GAMEPRG.REL` (addresses are file offsets in that overlay).
@@ -145,16 +147,23 @@ adidas board only at computer clubs' grounds outside Spain.
 Nexxus saw the rotating electric boards missing at the player's ground
 (they show at the computer clubs' grounds) and appearing only after the
 LCD boards (2026-11-10), mostly at a level-4 ground. That fits the
-code: the seven `ho04a` rows have boards 43 and 52 off and the LCD set
-(46–50, 55–59) on, so style 1 has nothing to act on. Levels 1–3 and
-`ho03a` have the 42–45 and 51–54 boards on and the LCD set off, so there
-style 1 and style 2 each change something. Nexxus adds that the LCD
-board can't be built until about the second-last stadium and that it
-shows when built; the moving board shows in the earlier grounds and
-stops at the last. `ADT_HO04A_*` holds full models for the two boards
-style 1 changes (entries 1 and 24, 2,746 and 1,912 bytes in `D1`), so
-the assets are there; it is only the row's switches. Not yet seen in
-the game.
+code: the seven `ho04a` rows (stadiums 96–101 and 117) have boards 43
+and 52 off and the LCD set (46–50, 55–59) on, so style 1 has nothing to
+act on. The rows of `ho01a` to `ho03a` have the LCD set off and, but for
+stadiums 104 and 108, boards 43 and 52 on, so there style 1 and style 2
+each change something (**empirical**). Nexxus adds that the LCD board
+can't be built until about the second-last stadium and that it shows
+when built; the moving board shows in the earlier grounds and stops at
+the last. `ADT_HO04A_*` holds full models for the two boards style 1
+changes (entries 1 and 24, 2,746 and 1,912 bytes in `D1`), so the
+models exist and only the row's switches keep them from showing.
+
+The LMASTER Mod's `moving-boards` switch (lite) makes the level-4 rows
+like the level-3 ones. It changes stadiums 96–101, the ones
+`CONV_INFO_BUILD` reaches; stadium 117, the seventh `ho04a` row, isn't in
+that table. [`LMASTER_MOD.md`](LMASTER_MOD.md#status) lists the switch
+in the `club-fixes` group. Not yet seen in the game: `LMAST-test-boards.iso`
+was built on 2026-11-10 for the check.
 
 The value names (DAY/NIGHT, FINE…SNOW, SPRING…WINTER, ENGLAND…HOLLAND,
 JAN…DEC) are the viewer's lists at `GAMEPRG.REL 0x24d4c8`–`0x24d554`. Its
@@ -164,11 +173,14 @@ these settings (see [`SQB_FORMAT.md`](SQB_FORMAT.md)).
 
 ## Directory overview
 
+A count is the number of packs (each a `.PAC` with its `.HED`, so two
+files) or of single files.
+
 | Files | Count | Entries | Contents |
 |---|---|---|---|
 | `<MODEL>_{D1,D2,N1,N2}.PAC/.HED` | 40 | 46 each, PRSH `.sno` | the stadium's own parts: stands, fences, nets, roofs (`aw01a_d1_fen1.sno`) |
 | `<MODEL>_OP.PAC/.HED` | 10 | 1 PRSH `.sno` | one extra part per model (`01a_avm1.sno`) |
-| `<MODEL>.PRI` | 10 | – | draw priority of each part slot, see below |
+| `<MODEL>.PRI` | 10 | – | draw priority of each part slot, see [`.PRI`](#pri-part-draw-priorities) |
 | `STCMN_{D1,D2,N1,N2}.PAC/.HED` | 4 | 55 each | parts shared by all models: goals (`d1_gol01.sno`), pitches (`pit01_sp.sno`), ... |
 | `STCMN_SK.PAC/.HED` | 1 | 20 | skies: five per season (`sp`, `su`, `au`, `wi`), day fine, cloudy and rain (`f_`, `c_`, `r_sky`), then night fine and cloudy; entry season × 5 + *k*, [above](#the-10-models) |
 | `STADIUM_SVR.PAC` | 1 | 635 PRSH `.svr` | shared textures (`sky_cloud3.svr`, `txcmn_fen1_01.svr`, ...). The only pack here with no `.HED`. Also named in `GAMEPRG.REL 0x26651a` (`CMatchStadium`) |
@@ -184,7 +196,7 @@ these settings (see [`SQB_FORMAT.md`](SQB_FORMAT.md)).
 | `AUD_JAM_HI.TBB`, `AUD_JAM_LW.TBB` | 2 | u16, 1024 = 1.0 | how the crowd fills up. Loaded at `0x1d397c` / `0x1d399c`. See [Crowds](#crowds) |
 | `AUD_TEXTURE_CLUT_CMN.PAC/.HED` | 1 | 32 | crowd textures and palettes (`txcmn_aud_hi_00.svr`, `plcmn_aud_hi_00_a.svp`) |
 | `AUD_TEAM_COLOR_CLUT_CMN.PAC/.HED` | 1 | 128 `.svp` | crowd palettes in team colours (`pl_aud_tc_hi_000.svp`, `_lw_100` ...) |
-| `BUILD_STADIUM.TBB` | 1 | 3 tables | which model each of the 119 stadiums uses, and how it's dressed. See below |
+| `BUILD_STADIUM.TBB` | 1 | 3 tables | which model each of the 119 stadiums uses, and how it's dressed. See [`BUILD_STADIUM.TBB`](#build_stadiumtbb) |
 | `CONV_INFO_BUILD.TBB` | 1 | 6 × 25 bytes | stadium id by level. See [below](#conv_info_buildtbb) |
 | `TIME_CHECK.DAT` | 1 | 8 bytes (`ff ff 00 00 ff ff 00 00`) | read from `pfs0:Data/Stadium/` at `0x1cb0a0`, a development path |
 | `DUMMY.DAT` | 1 | 0 bytes | – |
@@ -295,10 +307,11 @@ in the [`.PRI` table](#pri-part-draw-priorities)):
 | 98–100 | 39–41 | advert rigs and the `_OP` part | only when request `+0x0d` is set (probably "adverts on") |
 | 107–109 | 36–38 | staff areas | – |
 
-Bytes 15, 17, 19 (7 in 104, 3 and 12 rows), 21–24 (always 0) and 101–106
-(0 or 7) are set but never read. The benches' high-detail models
-(`ben1h`–`ben3h`, `STCMN` 40, 42, 44) are never loaded either, so bytes
-15, 17 and 19 were probably meant for them.
+Bytes 15, 17 and 19 (each 0 or 7: byte 15 is 7 in 104 rows, byte 17 in
+3 and byte 19 in 12), 21–24 (always 0) and 101–106 (0 or 7) are set but
+never read. The benches' high-detail models (`ben1h`–`ben3h`, `STCMN`
+40, 42, 44) are never loaded either, so bytes 15, 17 and 19 were
+probably meant for them.
 
 The 119 rows match the 119 stadiums of `PARAM/STADIUM_DATA.TBB`
 ([`PARAM_DIR.md`](PARAM_DIR.md)). Models 3–5 (`ho01b`, `ho02a`, `ho03a`)

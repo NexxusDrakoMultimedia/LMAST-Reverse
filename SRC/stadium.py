@@ -15,7 +15,7 @@ from a model. See DOC/STADIUM_DIR.md. Addresses are GAMEPRG.REL offsets.
   BUILD_STADIUM.TBB      t0: 119 x 129 bytes, one row per stadium (0x1cdb38:
                          i * 0x81). Byte 0 is the model (0x1cd72c: < 10);
                          bytes 1-109 switch parts per lighting variant (the
-                         builders at 0x1cede0-0x1cf4e8, see PARTS); byte 110-114
+                         builders at 0x1cede0-0x1cf4e8, see PARTS); bytes 110-114
                          are SHADOWCOLLI entries and byte 128 the WALLCOLLI
                          entry (GAME/, 0x169d4 -> 0x212a8); byte 115 the crowd
                          set (0x1d3848); bytes 116-127 the 12 advert textures
@@ -47,11 +47,12 @@ from a model. See DOC/STADIUM_DIR.md. Addresses are GAMEPRG.REL offsets.
 
 `info` checks all of these and the cross-references between them: every
 crowd block has a model in its AUD_MODEL packs (counting the three-group
-and single ones, and marking an empty one a stadium can reach), every crowd set matches its
-stadium's model, every table-2 entry names a node list of its own model and
-variant, the collision entries exist in GAME/SHADOWCOLLI and GAME/WALLCOLLI
-(when DAT/GAME is next to DAT/STADIUM), and BUILD_STADIUM has one row per
-PARAM/STADIUM_DATA.TBB stadium.
+and single ones, and marking an empty one a stadium can reach), every
+crowd set matches its stadium's model, every table-2 entry names a node
+list of its own model and variant, the collision entries exist in
+GAME/SHADOWCOLLI and GAME/WALLCOLLI (when DAT/GAME is next to
+DAT/STADIUM), and BUILD_STADIUM has one row per PARAM/STADIUM_DATA.TBB
+stadium (when DAT/PARAM is given).
 
 The writer edits BUILD_STADIUM table 0 in place: `setlook` builds a
 stadium like another (its model, parts and crowd set, keeping its own
@@ -203,8 +204,8 @@ RIVAL_STADIUM = 114                 # the rival's ground (TEAM_INIT_DATA table 7
 SPONSOR_SEED = 0x4c4d               # "LM": any fixed seed, so every build is the same
 
 
-# How many different sponsors a ground shows grows with its size (the
-# Nexxus's request, 2026-10-31): SPONSOR_KINDS[k] is the most capacity (in
+# How many different sponsors a ground shows grows with its size
+# (Nexxus's request, 2026-10-31): SPONSOR_KINDS[k] is the most capacity (in
 # thousands) that gets k + SPONSOR_FEWEST different logos; bigger grounds
 # get all 12. A ground's size is the one --mod real-grounds gives it
 # (initteam.ground_bands; the ladder's ids keep the retail size).

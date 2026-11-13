@@ -37,7 +37,8 @@ clamps each byte (set_player_uniform_style_info, 0x2cd9c8); `info` flags
 values above those limits. The rest are the developers' own names, from the
 field table at 0x53dfe8 (players), 0x53fdd8 (managers) and 0x53f900
 (scouts): {offset, kind, name, setter, getter, min, max, ?, count, ...},
-0x2c bytes a row. Fields with no name would keep their offset as a name.
+0x2c bytes a row. Every field has a name now. An unknown one would be
+called f_<offset> (edit_spec treats those as read-only).
 
 The player detail screen's 14 bars (SPEED ... MARK, or SAVIN ... JUMP for
 goalkeepers) are averages of the first 33 abilities (ConvertPlayer_Bar,
@@ -123,11 +124,12 @@ def ranking_breaks(entry2, players):
     return sum(1 for k in range(RANKED - 1) if keys[k] > keys[k + 1])
 
 
-# The group table: 16 x 13 s32 at SLES 0x52fbf8, row 15 - rank and column
-# = main position, each the first place of that group in entry 2 (-1 if
-# empty). It is fixed in the executable. PlBpinfoTask's set-up (0x20c4a8)
-# builds getPinfoRank's 16 rank ranges at 0x5eac08 from it at load, and
-# serchPinfo ends a group where the next non-empty one starts (or at 0x63f7).
+# The group table: 16 x 13 s32 at SLES 0x52fbf8. The row is 15 - rank, the
+# column is the main position, and each value is the first place of that
+# group in entry 2 (-1 if the group is empty). It is fixed in the executable.
+# PlBpinfoTask's set-up (0x20c4a8) builds getPinfoRank's 16 rank ranges at
+# 0x5eac08 from it at load, and serchPinfo ends a group where the next
+# non-empty one starts (or at 0x63f7).
 GROUP_TABLE = 0x52fbf8
 GROUP_ROWS, GROUP_COLS = 16, 13
 
@@ -175,9 +177,9 @@ assert len(ABILITY) == 32
 # the readBits calls; the offset is where the game stores the value in its
 # PlPbase/PlMbase/PlSbase, kept so fields can be matched to game code.
 # Conversions: None, ("add", n), "status", "ability", "ability7", "signed".
-# Player field names from f_32 on come from the developers' player editor
-# in DEBUGPRG.REL, whose label for each field is followed by the read of
-# that field (DOC/PBDATA_FORMAT.md#the-developers-player-editor).
+# Player field names from +0x32 (face) on come from the developers' player
+# editor in DEBUGPRG.REL, whose label for each field is followed by the read
+# of that field (DOC/PBDATA_FORMAT.md#the-developers-player-editor).
 PLAYER_FIELDS = (
     ("nation", 0x14, 8, 1, None),        # plPinfo_IsForeigner/IsEU read +0x14
     ("rank", 0x18, 5, 1, None),          # getPinfoRank (ids >= 0x63f7)
@@ -241,7 +243,7 @@ MANAGER_FIELDS = (
     ("appeartype", 0x26, 4, 4, None),
     ("comptype", 0x2a, 2, 5, None),      # like the players' dissatis; no reader found
     # From moti_type on, names come from the developers' manager editor
-    # (MinfoEditorTask, DEBUGPRG.REL 0x1c98-0x21f0), which reads each
+    # (MinfoEditorTask, DEBUGPRG.REL 0x1c98-0x2214), which reads each
     # field after drawing its label.
     ("moti_type", 0x2f, 3, 1, None),     # also the affinity column (pwkDissatis_GetAffintyType)
     ("select_policy", 0x30, 3, 1, None),  # weights of plTeam_RegSel's player score (0x22f910); the match reads it too
@@ -351,6 +353,8 @@ def style_names(styles):
 # 0x11128); these are English renderings of those labels, using Virtua Pro
 # Football's English names where it has the same parameter.
 # DOC/PBDATA_FORMAT.md#ability-names lists the original labels.
+# SYSTEMS (just below) names the 8 formation systems that abilities 45-52
+# use.
 SYSTEMS = ("3-4-3", "3-5-2", "3-6-1", "4-3-3", "4-4-2", "4-5-1", "5-3-2", "5-4-1")
 ABILITY_NAMES = (
     "dribble pace", "dribble skill", "shot skill", "shot technique",
@@ -449,7 +453,8 @@ STAFF_ABILITY_NAMES = (
 assert len(STAFF_ABILITY_NAMES) == 48
 
 # The 45 scout abilities, from the scout editor's table (DEBUGPRG.REL
-# 0x13240), which numbers them 4-48: they are values 4-48 of the 49 at +0x29.
+# 0x13240), which numbers them 4-48. They are values 4-48 of the 49 seven-bit
+# values from +0x29, whose first 4 are the special searches (SEARCHES).
 SCOUT_ABILITY_NAMES = (
     "club negotiation", "player negotiation", "money negotiation",
     "search: professionals", "search: youth", "search: newcomers",

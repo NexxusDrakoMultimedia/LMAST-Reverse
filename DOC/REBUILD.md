@@ -1,29 +1,41 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Putting edited files back on the disc
-
-This is stage 4 of [`GOALS.md`](../GOALS.md). Same-size patching works,
-and so does a size change that stays inside a file's last sector, which
-is enough to rebuild the `PRELOAD` packs around a grown message file. A
-file that needs more sectors is moved to the end of `DATA.ISO`
-([Moving files](#moving-files)). Self-describing archives can be
-rebuilt with entries of another size, their `.HED` copies follow, and
-the two archives the executable indexes (`MES.PAC`, the Acrobata pack)
-get that index rewritten ([Archives](#archives)). KC@P packs (the
-face, player and cut-in packs) are rebuilt with `pac.py replace`, and
-PRS-compressed entries can be written again
-([`PAC_FORMAT.md`](PAC_FORMAT.md#writing-kcp)).
+# Putting edited files back on the disc: `patch_disc.py` and `vcdiff.py`
 
 `SRC/patch_disc.py` writes edited `DAT/` files into a copy of the disc
-image (or `DATA.CVM`, or `DATA.ISO`). The sections below go from the
-simplest case, a file that keeps its size, to one that has to move.
-That covers every edit the writers make: most keep the file's size
+image (or of `DATA.CVM` or `DATA.ISO`), and `SRC/vcdiff.py` turns the
+result into an xdelta patch you can share. This is stage 4 of
+[`GOALS.md`](../GOALS.md). `python SRC/patch_disc.py locate ISO/DATA.CVM
+PARAM/PBDATA_EU.PAC` shows where a file's bytes sit.
+
+The sections go from the simplest case to the hardest:
+
+- A file that keeps its size is written over its old bytes.
+- A size change that stays inside the file's last sector needs only the
+  directory record rewritten. That is enough to rebuild the `PRELOAD`
+  packs around a grown message file.
+- A self-describing archive can take entries of another size. Its `.HED`
+  copies follow, and the two archives the executable indexes (`MES.PAC`
+  and the Acrobata pack) get that index rewritten
+  ([Archives](#archives)).
+- A file that needs more sectors is moved to the end of `DATA.ISO`
+  ([Moving files](#moving-files)), and the disc grows when the end of
+  the image is full.
+
+KC@P packs (the face, player and cut-in packs) are rebuilt with
+`pac.py replace`, and PRS-compressed entries can be written again
+([`PAC_FORMAT.md`](PAC_FORMAT.md#writing-kcp)).
+
+That covers every edit the writers make. Most keep the file's size
 (`pbdata.py`, `initteam.py`, `teaminit.py`, `uniform.py`, `plrsim.py`,
 `sqb.py setcmd`, and `mbb.py`, whose grown message files use the spare
-room in their slot, [`MBB_FORMAT.md`](MBB_FORMAT.md#writing)); `tbb.py
-replace`, `leaguesize.py build`, `clubrank.py addrows` and some
-`--mod` switches (`third-tier`) can change it.
+room in their slot, [`MBB_FORMAT.md`](MBB_FORMAT.md#writing)).
+`tbb.py replace`, `leaguesize.py build`, `clubrank.py addrows` and some
+`--mod` switches (`third-tier`) can change it. Each `--mod` switch,
+group and edition is described in
+[`LMASTER_MOD.md`](LMASTER_MOD.md#the-switch-levels);
+`python SRC/patch_disc.py switches` lists them.
 
 ## Why same-size patching needs no encryption
 
@@ -39,13 +51,13 @@ file has the same size, it can be written over the old bytes and the
 record stays correct, so nothing is re-encrypted. The same holds for the
 disc's own directory entry for `DATA.CVM`. The file's byte offset is:
 
-```
+```text
 disc image:  DATA.CVM extent × 0x800 + iso_start_sector × 0x800 + extent × 0x800
 DATA.CVM:                              iso_start_sector × 0x800 + extent × 0x800
 DATA.ISO:                                                          extent × 0x800
 ```
 
-`iso_start_sector` is 3 on this disc (CVMH `+0x7c`). `patch_disc.py`
+`iso_start_sector` is 3 on this disc (CVMH `+0x88`; [`DATA_CVM_EXTRACTION.md`](DATA_CVM_EXTRACTION.md#format)). `patch_disc.py`
 decrypts the table of contents with `rofs_decrypt.py`'s key to find each
 extent. It never writes to the table of contents.
 
@@ -55,8 +67,9 @@ extent. It never writes to the table of contents.
 - The `CVMH` header has no checksum field. It holds sizes, a date and the
   `ROFSBLD Ver.1.52` string.
 - `0FLIST.DIR` in the disc root lists only the `AUDIO/*.afs` files.
-- `PBDATA_EU.PAC`'s records and `OTEAMMEMBER.TBB` appear nowhere else on
-  the disc. Many other files do have copies; see [Copies](#copies).
+- `PBDATA_EU.PAC`'s record table (entry 1) and `OTEAMMEMBER.TBB` appear
+  nowhere else on the disc. (`PBDATA_JP.PAC` repeats the pack's entries
+  0, 2 and 3.) Many other files do have copies; see [Copies](#copies).
 
 **Tested:**
 - Patching an edited `PBDATA_EU.PAC` (three fields of one player) into a
@@ -69,21 +82,23 @@ extent. It never writes to the table of contents.
 new game shows the edited player (renamed, new weight, leg and ability
 bars). So nothing checks the file contents, and the game reads
 `PBDATA_EU.PAC` from this one copy. Details are in
-[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#writing).
+[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#editing).
 
 ## Copies
 
 The same data is often on the disc more than once, and an edit has to
 reach every copy the game actually reads. `patch_disc.py copies` and
 `patch` find them by indexing `DAT/`: every loose file, every BINPAC
-header and every archive entry (54,032 units), by size and SHA-1. Two
-units are **copies** if their bytes are identical and their names match
-(equal, or one is the tail of a name of 15+ characters, since BINPAC
-names are truncated). Identical data under other names, such as shared
-stadium parts, is only reported. Compressed entries are compared as
-stored, so a copy stored with different compression wouldn't be found.
+header and every archive entry (54,032 units of 16 bytes or more), by
+size and SHA-1. Two units are **copies** if their bytes are identical
+and their names match (equal, or one is the tail of a name of 15 or more
+characters, since BINPAC names are truncated). Identical data under
+other names, such as shared stadium parts, is only reported. Compressed
+entries are compared as stored, so a copy stored with different
+compression isn't found.
 
-**Empirical, from the index:**
+**Empirical** (`patch_disc.py`'s `Index` over `DAT/`; `copies` prints
+the units of any file you name):
 
 | What | Count | Example |
 |---|---|---|
@@ -103,8 +118,9 @@ them. A screen that loads a `PRELOAD` pack registers its entries by name
 and reads them from the pack. Everywhere else the original is read. Some
 packs stay loaded all game (`STATIONFILE`, and `STATIONMES` with the club
 names), and others only on one screen (`MAIL`, the talk scenes). So
-`--copies` can't be narrowed: every copy is read somewhere. The details,
-with the loader of every pack, are in [`PRELOAD_DIR.md`](PRELOAD_DIR.md).
+`--copies` can't be narrowed: every copy is read somewhere.
+[`PRELOAD_DIR.md`](PRELOAD_DIR.md) has the loader of every pack and the
+test.
 
 A pack and its `.HED` patched together (`leaguesize.py build` writes
 both for the schedule packs) are each other's copies: the `.PAC` starts
@@ -124,14 +140,14 @@ A copy that already holds the new bytes is left alone, so a second run
 is harmless. A target can also be a single archive entry,
 `<path>#<index>` or `<path>#<name>`.
 
-Tested on a copy of `DATA.CVM`:
+**Tested** on a copy of `DATA.CVM`:
 - A one-byte edit to `REGULATION.TBB` with `--copies` wrote all 8
   locations. The whole CVM then differed from the original in exactly 8
   bytes.
 - A one-byte edit to `MES.PAC#7` (`100001_0.mbb`) also updated
   `SIMLOCALMEM0.PAC#34`.
 
-Confirmed in PCSX2: an `mbb.py import` edit to the welcome mail
+**Tested in PCSX2:** an `mbb.py import` edit to the welcome mail
 (`563_1.mbb`), patched with `--copies` into `MES.PAC` and
 `PRELOAD/MAIL1.PAC#6`, showed in a new game. With different text in the
 two copies, the mail showed the `MES.PAC` one when it popped up in a new
@@ -178,8 +194,8 @@ A file or pack that would need another sector is moved
 rebuilt around a grown `3_1.mbb` (45,264 to 45,328 bytes): the
 re-encrypted directory record is exact (patching the originals back gives
 a byte-identical `DATA.CVM`), and both lengthened club names showed in VS
-mode Team Selection. The details are in
-[`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack).
+mode Team Selection. [`PRELOAD_DIR.md`](PRELOAD_DIR.md#rebuilding-a-pack)
+has the full test.
 
 ## Archives
 
@@ -287,10 +303,10 @@ bytes of the CVM's size (`RSU_GenerateFixedKey`, `0x1e7550`; see
 [`DATA_CVM_EXTRACTION.md`](DATA_CVM_EXTRACTION.md)). A grown `DATA.CVM`
 therefore needs its table of contents, PVD through the last directory
 sector (16–102), encrypted with a new key. `patch` keeps the edited
-sectors decrypted until the end and encrypts all 87 again. Its first
-attempt only fixed the lengths, and the game showed a black screen at
-boot, even with nothing moved (`DATA.CVM` one sector longer). The
-unmodified disc booted in the same PCSX2.
+sectors decrypted until the end and encrypts all 87 again. Fixing only
+the lengths is not enough: a disc made that way showed a black screen at
+boot in PCSX2, even with nothing moved (`DATA.CVM` one sector longer),
+while the unmodified disc booted in the same PCSX2.
 
 `Image`, `rofs_decrypt.py` and `extract_disc.py` all derive the key from
 the header, so they read a rebuilt disc as they read the original.
@@ -333,8 +349,8 @@ checksum:
 | UDF end anchor (last sector) | moved to the new last sector, with its tag location; the old one is cleared |
 
 The anchor at sector 256 and the volume descriptor sequences stay where
-they are. Nexxus reports that an image with extra fan-work files added,
-so bigger than the original, still ran.
+they are. Nexxus's report: an image with extra fan-work files added, so
+bigger than the original, still ran.
 
 **Tested.** A disc with the grown `PBDATA_EU.PAC` and
 `PLAYER/FC_EURO_FACEPACK_01.BIN` grown by 25 MB of zeros (6,103 to 18,903
@@ -357,19 +373,18 @@ python SRC/patch_disc.py patch disc.iso modded.iso PARAM/REGULATION.TBB=out/REGU
 python SRC/patch_disc.py patch disc.iso modded.iso MESSAGE/MES.PAC=out/MES.PAC --copies   # rebuilds PRELOAD packs as needed
 python SRC/patch_disc.py patch disc.iso modded.iso PARAM/X.PAC=bigger.pac   # needs more sectors: moved to the end of DATA.ISO
 python SRC/preload.py info DAT                                        # each pack's free room
+python SRC/patch_disc.py patch disc.iso modded.iso --mod injury-value # a switch that brings its own edit, no target file
 python SRC/patch_disc.py patch disc.iso test.iso PARAM/...=... --skip-tutorial   # test disc without the opening playoffs
 ```
 
 `--skip-tutorial` is for test discs. It skips the opening playoffs of a
 new career (5–10 minutes): the developers' own switch (one word of the
 executable) plus edits to three sequencer scripts that run the
-playoffs' schedule steps without their matches
-([`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs)).
-Tested in PCSX2: the career goes from club creation to the 2006–07
-season with real club rankings, the playoff season's money and the
-usual sponsors. Start the career in England, or in the nation
-`--skip-nation` names. It needs the whole disc image. Running it again
-changes nothing.
+playoffs' schedule steps without their matches. The table of edits and
+the PCSX2 test are in
+[`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs).
+Start the career in England, or in the nation `--skip-nation` names. It
+needs the whole disc image. Running it again changes nothing.
 
 `patch` copies the image first (use `--in-place` to patch a copy you made
 yourself), plans every write against the unmodified image, then writes
@@ -382,12 +397,13 @@ image.
 Files on the disc outside `DATA.CVM` take a `disc:` prefix and need the
 whole disc image, for example `disc:SLES_541.51=out/SLES_541.51` (an
 executable edited by `pbdata.py --sles` or `uniform.py setexe`) or
-`disc:DLL/SAVEPRG.REL=...`. `--mod-saves` moves a modded disc's saves
-to their own memory-card folders, and every patch of a whole image
-prints the executable's PCSX2 CRC (see
-[`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)).
-These keep their size: `patch` doesn't
+`disc:DLL/SAVEPRG.REL=...`. They keep their size: `patch` doesn't
 rewrite the outer disc's directory records (or its UDF copies of them).
+
+`--mod-saves` moves a modded disc's saves to their own memory-card
+folders, and every patch of a whole image prints the executable's PCSX2
+CRC (see
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md#separate-saves-for-a-modded-disc)).
 
 `--rename disc:<path>=<NAME>` renames an outer file without changing the
 name's length. The disc is a UDF bridge (volume descriptors `BEA01` and
@@ -481,11 +497,10 @@ A patch describes the 3.5 GB ISO. Applied to a CSO (compressed ISO,
 which PCSX2 also runs), Delta Patcher fails with "The file you are trying
 to patch is not the right one" (xdelta3: `source file too short:
 XD3_INVALID_INPUT`). This project's tools read CSO, ZSO and CHD directly
-(`SRC/cso.py`, `SRC/chd.py`, below): `vcdiff.py apply` and `make` take
-one wherever they take
-an image, and `patch_disc.py patch` decompresses one into its output
-`.iso` and patches that. The output is always an ISO, which can be
-compressed again afterwards.
+(`SRC/cso.py` and `SRC/chd.py`, below): `vcdiff.py apply` and `make` take
+one wherever they take an image, and `patch_disc.py patch` decompresses
+one into its output `.iso` and patches that. The output is always an
+ISO, which can be compressed again afterwards.
 
 ```bash
 python SRC/cso.py check   disc.cso            # SHA-1 of the ISO inside; is it the Redump dump?
@@ -560,14 +575,33 @@ A patch holds only the changed bytes, so the game data it carries is
 limited to the edit itself (a few dozen bytes for a player edit). Keep
 patches out of the repo anyway, like everything built from the disc.
 
-## Still to do
+## Limits
 
 - **Dual-layer images.** The disc can grow to a single-layer DVD's
   2,295,104 sectors (about 1.1 GB more). Past that would need a layer
-  break.
-- **The big face pack.** `FC_EURO_FACEPACK_00.BIN` (1.1 GB) can be
-  rebuilt, but if it outgrows its sectors the move needs nearly all the
-  room a single-layer disc has left.
+  break, and `patch_disc.py` refuses to grow the disc that far.
+- **The big face pack.** `FC_EURO_FACEPACK_00.BIN` (1.1 GB, 577,158
+  sectors) can be rebuilt in place, but if it outgrows its sectors it
+  can't move: the disc has room for 562,592 more sectors, fewer than
+  the pack needs ([`PAC_FORMAT.md`](PAC_FORMAT.md#writing-kcp) has the
+  count).
 - **CHD speed and tracks.** Huffman and FLAC hunks decode slowly in
   Python, and CD CHDs with several tracks aren't read
   ([above](#compressed-images)).
+
+## Checking the claims
+
+```bash
+python SRC/patch_disc.py locate ISO/DATA.CVM PARAM/PBDATA_EU.PAC PARAM/OTEAMMEMBER.TBB MESSAGE/MES.PAC
+python SRC/patch_disc.py copies DAT PARAM/REGULATION.TBB PARAM/SCHEDULE_SYSTEM.PAC PARAM/PBDATA_EU.PAC BG/HUMAN_1000_PALETTE.MRG#header
+python SRC/patch_disc.py switches
+python SRC/preload.py info DAT
+python SRC/vcdiff.py roundtrip DAT/PARAM/PBDATA_EU.PAC DAT/PARAM/PBDATA_JP.PAC
+python SRC/vcdiff.py roundtrip DAT/PARAM/CLUBRESULT.TBB DAT/PARAM/REGULATION.TBB
+```
+
+`python SRC/regress.py` runs these as `patch_disc_locate`,
+`patch_disc_copies`, `patch_disc_switches`, `preload`,
+`vcdiff_roundtrip` and `vcdiff_roundtrip_grow`. The moved-file and
+grown-disc tests above were run on copies of the disc and aren't part
+of it.

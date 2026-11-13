@@ -8,8 +8,8 @@ Japanese one (SLPM-66316):
   1. verify   the image matches a Redump dump (PAL redump.info/disc/12334/,
               Japan redump.info/disc/30266/): size, CRC-32, MD5 and SHA-1
               of the 1-track 2048-byte image.
-  2. extract  the disc's ISO9660 filesystem into ISO/ (SLES_541.51, DLL/,
-              AUDIO/, DATA.CVM, ...).
+  2. extract  the disc's ISO9660 filesystem into ISO/ (the executable,
+              DLL/, AUDIO/, DATA.CVM, ...).
   3. decrypt  ISO/DATA.CVM into ISO/DATA.ISO with rofs_decrypt.py (only the
               archive's ISO9660 table of contents is encrypted).
   4. extract  ISO/DATA.ISO into DAT/.
@@ -18,14 +18,15 @@ ISO9660 is read directly (primary volume descriptor at sector 16, then the
 directory records), so nothing needs to be mounted. Names lose their ";1"
 version suffix, and each file gets the recording date from its directory
 record. Files that already exist with the right size are skipped, so an
-interrupted run can simply be restarted; --force rewrites them.
+interrupted run can be restarted; --force rewrites them.
 
 See DOC/DATA_CVM_EXTRACTION.md for the DATA.CVM format and key.
 
 Usage:
     python SRC/extract_disc.py all <disc.iso> [iso_dir] [dat_dir] [--force] [--no-verify]
         run every step; iso_dir and dat_dir default to ISO and DAT for
-        the PAL disc, ISO_JP and DAT_JP for the Japanese one
+        the PAL disc, ISO_JP and DAT_JP for the Japanese one. --no-verify
+        skips step 1 (for a dump that is not the Redump one)
     python SRC/extract_disc.py verify <disc.iso>
         hash the image and compare it with the Redump entry
     python SRC/extract_disc.py list <image.iso>

@@ -3,13 +3,19 @@
 
 # TBB table files (`*.TBB`)
 
-`.TBB` files under `DAT/` hold the game's parameter / lookup tables
+`.TBB` files under `DAT/` hold the game's parameter and lookup tables
 (league names, team init data, stadium layouts, uniform colours, event
 scripts, ...). There are 60 of them. Each is a small container of one or
 more `TBL1` tables; each table is a flat block of fixed-width binary rows.
+`SRC/tbb.py` reads and writes them. Ten commentary files in `GAME/`
+(`.BCR` and `.BCB`) reuse the same container with other table types
+([`GAME_DIR.md`](GAME_DIR.md)); `tbb.py` handles those as well, which
+makes 70 files in all.
 
-All values are little-endian. Every file in `DAT/` parses cleanly with
-the layout below (`python SRC/tbb.py info DAT`).
+All values are little-endian. Every file in `DAT/` parses with the layout
+below. `python SRC/tbb.py info DAT` lists every table and marks with `!!`
+the six whose size isn't a whole number of lines (see
+[below](#what-the-container-does-not-tell-you)); nothing else is flagged.
 
 ## Confirmed from the game code
 
@@ -23,11 +29,11 @@ accessors with their names:
 | `0x1fb2b8` | `TbbData::GetTableDataCount(const TBB_FILEHEADER*)` | checks magic `0x31424254` (`TBB1`), returns `hdr+0x08` |
 | `0x1fb270` | `TbbData::GetTableDataPtr(const TBB_FILEHEADER*, uint i)` | if `i < hdr+0x08`: `return hdr + ((u32*)(hdr + hdr[+0x04]))[i]` |
 | `0x2b9dd0` | `TblData::GetDataHeadPoint(TBB_FILEHEADER*, uint i)` | `tbl = GetTableDataPtr(i); return tbl + tbl[+0x04]` |
-| `0x2b9df8` | `TblData::GetDataTableCount(TBB_FILEHEADER*, uint i)` | `tbl[+0x08] / tbl[+0x0C]` (unsigned int division) |
+| `0x2b9df8` | `TblData::GetDataTableCount(TBB_FILEHEADER*, uint i)` | `tbl[+0x08] / tbl[+0x0C]` (unsigned int division; a line size of 0 would trap with `break 7`) |
 | `0x2b9db0` | `TblData::CTblData::GetDataTable1LineSize(uint i)` | `tbl[+0x0C]` |
 | `0x21e970` | `Param::plResource_GetDataFromTbl(void*)` | checks magic `0x314C4254` (`TBL1`), returns `tbl + tbl[+0x04]` |
 
-`CTblData` is just a wrapper holding a `TBB_FILEHEADER*` (`Setup(void*)`
+`CTblData` is a thin wrapper holding a `TBB_FILEHEADER*` (`Setup(void*)`
 stores it, `Clear()` zeroes it).
 
 ## Layout
@@ -39,7 +45,7 @@ stores it, `Clear()` zeroes it).
 | `0x00` | char[4] | magic `TBB1` |
 | `0x04` | u32   | offset of the table-offset array (always `0x10`) |
 | `0x08` | u32   | number of tables *N* |
-| `0x0C` | u32   | end of last table's data (unpadded file length). **Not read by the accessors**; `0` in MSGCOMMON, SCHEDULE, EVENTDATA_TURN and DATABASE_FILETABLE |
+| `0x0C` | u32   | end of last table's data (unpadded file length). **Not read by the accessors**; `0` in MSGCOMMON, SCHEDULE, EVENTDATA_TURN and DATABASE_FILETABLE. In the SQB scripts it is the file size in 11 of the 15 root scripts, the file size minus 8 in four, and `0` in the four 2004 files ([`SQB_FORMAT.md`](SQB_FORMAT.md#container)); two of those also list the end of the file as an extra table offset, so `tbb.py info` fails on them |
 | `0x10` | u32[N] | absolute file offset of each `TBL1` header |
 
 The offset array is zero-padded to a 16-byte boundary.
@@ -78,7 +84,7 @@ reproduced anyway so that an unedited file comes out identical.
 
 ### Example: `GAME/BACK_MATCH.TBB`
 
-```
+```text
 0000: 54424231 10000000 06000000 1f010000   TBB1, arr@0x10, 6 tables, end 0x11f
 0010: 30000000 60000000 80000000 a0000000   table offsets...
 0020: d0000000 f0000000 00000000 00000000
@@ -105,18 +111,19 @@ the size of the record the consumer actually walks:
 
 ### `EDIT_EMBLEM.TBB` t93, t101 and t105 (empirical)
 
-These are the only tables on the disc whose size isn't a whole number of
-lines. Each
-is 143 bytes, one byte short of the 144 (12 × 12) that most of their
-neighbours hold. The neighbours' 12-byte records start with the record's
-own index as a u16 (`00 00`, `01 00`, ... `0b 00`) and end with a `00`
-byte.
+Six tables on the disc have a size that isn't a whole number of lines,
+and `tbb.py info` marks each with `!!`: `EVENTDATA_TURN`'s one table and
+`AUD_JAM_HI`'s two (both explained in the table above), and these three.
+Each of these is 143 bytes, one byte short of the 144 (12 × 12) that most
+of their neighbours hold. The neighbours' 12-byte records start with the
+record's own index as a u16 (`00 00`, `01 00`, ... `0b 00`) and end with a
+`00` byte.
 
 In all three tables, records 0–3 and 5–11 match that pattern. Record 4 is
 11 bytes and has no `04 00` index at the start. In t101 it reads
 `8d 00 00 00 2b 00 00 00 50 50 00`. Every record after it therefore sits
 one byte earlier than a 12-byte line would expect. That is why `tbb.py
-info` shows `05`, `06`, ... as the *last* byte of each line from row 4 on.
+dump` shows `05`, `06`, ... as the *last* byte of each row from row 4 on.
 The single byte after the data is the usual `00` alignment padding.
 
 It looks like an authoring slip repeated in three tables that follow
@@ -128,8 +135,8 @@ and it walks the rows 12 bytes at a time, so **confirmed**: records 4–10
 come out misaligned, with wrong keys, and lookups for them find nothing.
 These are the layer tables of samples 20, 22 and 23 (see
 [`EMBLEM_DIR.md`](EMBLEM_DIR.md#the-layer-tables-12143)). `tbb.py info`
-keeps reporting them as `!!` because the data really doesn't fit the line
-size.
+keeps reporting all three as `!!` because the data really doesn't fit the
+line size.
 
 For single-type tables the line size is usually the element size, and
 for string tables the string width. It is *not* reliably the widest
@@ -147,13 +154,10 @@ Filenames appear (lower/mixed case) in the overlay that uses them, e.g.
 `DLL/YRSTPRG.REL` (`edit_player.tbb`). Cross-referencing those strings to
 their loaders is the way to recover per-table schemas.
 
-## Tool
+## Editing
 
 ```bash
-python SRC/tbb.py info DAT                          # list every table in every file
-python SRC/tbb.py dump DAT/GAME/BACK_MATCH.TBB 0     # hex + ASCII per row
 python SRC/tbb.py extract DAT/PARAM/REGULATION.TBB out/   # raw table blobs
-python SRC/tbb.py roundtrip DAT                     # rebuild every file; !! if any byte differs
 python SRC/tbb.py replace DAT/PARAM/REGULATION.TBB 0 out/REGULATION_000_L2.bin new.TBB
 ```
 
@@ -161,10 +165,23 @@ python SRC/tbb.py replace DAT/PARAM/REGULATION.TBB 0 out/REGULATION_000_L2.bin n
 change length: later tables move along, and the end field is recomputed
 unless it was `0`. The line size is kept, and a warning is printed if the
 new length isn't a whole number of lines. The game divides the size by
-the line size, so any extra bytes would just be ignored.
+the line size, so any extra bytes are ignored.
+
+The writers for single files (`regulation.py`, `training.py`,
+`teaminit.py`, `initteam.py` and the others that import `tbb.py`) edit
+fields inside a table and are documented with their files.
 
 ## Still unknown
 
 The container is fully known. What each table's columns mean is in the
 doc of the file that holds it ([`PARAM_DIR.md`](PARAM_DIR.md) and the
 folder docs).
+
+## Checking the claims
+
+```bash
+python SRC/tbb.py info DAT                          # list every table in every file
+python SRC/tbb.py dump DAT/GAME/BACK_MATCH.TBB 0     # hex + ASCII per row
+python SRC/tbb.py roundtrip DAT                     # rebuild every file; !! if any byte differs
+python SRC/sles_disasm.py ISO/SLES_541.51 dis TblData   # the accessors
+```

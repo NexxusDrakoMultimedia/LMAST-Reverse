@@ -5,13 +5,16 @@
 
 `DAT/0SYSTEM` (22 files, 24 MB, plus `CVS/`) is folder id **0** in the
 game's file manager (`0x14eb4c`, see [`PRELOAD_DIR.md`](PRELOAD_DIR.md)).
-It holds the UI colour table, the crest, badge and sponsor textures, the
-fonts, the memory-card icons and a few leftovers.
+It holds what every screen draws with: the UI colour table, the crests of
+clubs and nations, the competition badges, the sponsor logos, the fonts,
+the memory-card icons and a few leftovers.
 
 Every container parses with the existing tools: `python SRC/tbb.py info
 DAT/0SYSTEM`, `python SRC/pac.py info DAT/0SYSTEM` and `python SRC/svr.py
 info DAT/0SYSTEM`. `python SRC/system.py info DAT/0SYSTEM` checks the
-layouts described here.
+layouts described here, and `colors` and `emblem` print the colour table
+and a team's crest entry. The fonts have their own tool, `font.py`
+([`FONT_FORMAT.md`](FONT_FORMAT.md)).
 
 | File | Kind | Read by | Contents |
 |---|---|---|---|
@@ -27,7 +30,7 @@ layouts described here.
 | `SPONSOR_TEXTURE_S.PAC` | BINPAC, 232 SVR | type 7 | the same sponsors, `BG_IP_ADT_000`–`231`. **confirmed** |
 | `FONT_KANJI.SVR`, `FONT_ASCII.SVR` | SVR 1024², 256² | `CFontTexture_fc_euro::LoadTexture`, language 0 only | Japanese fonts. **confirmed**. See [`FONT_FORMAT.md`](FONT_FORMAT.md) |
 | `FONT_20_A.SVR` | SVR 256² | the same, languages 1–6 | the European font; its glyph rectangles and widths are in the executable. **confirmed** |
-| `FONT_8_A.SVR`, `FONT_8_B.SVR` | SVR 128² | the same, every language | small fonts. **confirmed** |
+| `FONT_8_A.SVR`, `FONT_8_B.SVR` | SVR 128² (the Japanese disc's `FONT_8_A` is 64²) | the same, every language | small fonts. **confirmed** |
 | `FONT_KANJI_A.SVP`, `FONT_KANJI_B.SVP` | SVP, 16 colours | nothing | copies of the two palettes of `FONT_KANJI` (one inside the SVR, one in the executable). **confirmed** |
 | `STATIC.ICO`, `STATIC_VS.ICO` | PS2 icon | `MC::CFcEuroIF::setFileInfo`, `SAVEPRG.REL` | the save and VS-data icons. **confirmed** |
 | `SAVE_VERSION.DAT` | text, 58 bytes | the root module's load list | a developer note (below) |
@@ -56,14 +59,15 @@ mode reads instead ([`PRELOAD_DIR.md`](PRELOAD_DIR.md)):
 | `0x2c2f2c`, table `0x55a248` | `CUniformLoader::_load_edit` | types 0, 5 and 7: the kit's crest and sponsors |
 | `GAMEPRG.REL 0x20858c`, table `0x29e2b0` | (match overlay) | types 0, 0 and 2: both teams' crests and the competition badge |
 | `SIMPRG.REL 0x2144e8`–`0x2146a0` | the season load list | 12 type-4 records that preload the mini-crest sheets |
-| `0x149108` | `CFontTexture_fc_euro::LoadTexture` | language 0 loads the font set at `0x35d400` (`font_kanji`, `font_ascii`, `font_8_a`, `font_8_b`); other languages the set at `0x35d458` (`font_20_a`, `font_8_a`, `font_8_b`) |
+| `0x149108` | `CFontTexture_fc_euro::LoadTexture` | loads one of two font sets by language; the lists (`0x35d400`, `0x35d458`) and the rest of the font code are in [`FONT_FORMAT.md`](FONT_FORMAT.md#the-files) |
 | `0x12af80` | `MC::CFcEuroIF::setFileInfo` | `static.ico` is the save's icon. `SAVEPRG.REL` names `static.ico` and `static_vs.ico` |
 | `0x51abe8` | root module load list | loads `save_version.dat` from folder 0. Nothing else in the code names it |
 
 ## Crests: `EMBLEM_TEXTURE` and `FLAG_TEXTURE`
 
 Each pack holds 634 128×128 textures in the same order. The entry for a
-team id (`ConvertFlag` `0x1057e8`, then `ConvertIndex` `0x105dc4`) is:
+team id (`ConvertFlag` `0x1057e8`, then the team branch of `ConvertIndex`
+from `0x105dc4`) is:
 
 | Team id | Entry | Names |
 |---|---|---|
@@ -77,7 +81,9 @@ the current schedule and on `GetEmblemTexture`/`GetEmblemTextureRival`.
 The `V` crests are probably the player's own and the rival's clubs, but
 that hasn't been checked.
 
-`python SRC/system.py emblem DAT/0SYSTEM <team id>` gives the entry.
+`python SRC/system.py emblem DAT/0SYSTEM <team id>` gives the entry. For a
+national team it needs the nation number, written `N<n>` (`N1` is
+`emb_N001`).
 
 **The two packs differ in one crest (empirical).** `emb_C140`, Siena, is a
 made-up crest (a white animal on a black and white oval) in
@@ -96,9 +102,9 @@ entries are identical in both packs. What ids it gets hasn't been traced.
 
 70 badges each, large (`*_L`, 17,440 bytes) and small (`*_S`, 2,080
 bytes), with the same names in the same order. The entry is the
-competition id from `ScheEuro_SubCtrl::getScheCompe_FromTBB`
-(`0x105d50`), except for the language-dependent badges
-(`0x105d64`–`0x105da4`):
+competition id from `ScheEuro_SubCtrl::getScheCompe_FromTBB` (`0x20a130`,
+called by `ConvertIndex` at `0x105d50`), except for the language-dependent
+badges (`0x105d64`–`0x105da4`):
 
 - Competition 49 (`0x31`, the exhibition) and 56–71 (VS mode): entry 56
   + language (`EXHIBITION_0`–`6`).
@@ -193,3 +199,12 @@ described here.
   [`FONT_FORMAT.md`](FONT_FORMAT.md#still-unknown).
 - What `CDetailTeamFlag` draws, and so whether `FLAG_TEXTURE`'s crests are
   ever shown (Siena's real crest never is).
+
+## Checking the claims
+
+```bash
+python SRC/system.py info DAT/0SYSTEM                  # counts, names, the one differing crest, icons, SAVE_VERSION.DAT
+python SRC/system.py colors DAT/0SYSTEM                # the 77 UI colours
+python SRC/system.py emblem DAT/0SYSTEM 140 N1         # a club's and a nation's crest entry
+python SRC/preload.py who DAT detailflag.tbb           # the PRELOAD packs that hold a copy of a file here
+```

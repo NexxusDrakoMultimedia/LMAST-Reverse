@@ -128,29 +128,44 @@ can play or share.
 
    Either or both. A patch on its own still needs room for a full
    temporary image while it is made.
-3. Optionally, add the project's ready-made changes. The **LMASTER
-   lite**, **LMASTER full** and **LMASTER max** buttons tick the groups
-   of that edition
-   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels)), and
-   **None** clears them. Each group has a box that ticks all its
-   switches; press its **+** to see them and tick them one by one.
-   [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels) says what
-   each group does. Tick **Separate saves** (the `saves` group) if the modded disc
-   should keep its careers apart from the original game's; LMASTER full
-   and max always have it, and the window shows the letters the saves
-   get (careers in `-F`, or `-M` with any difficulty switch; VS data in
-   `-V`). The test tools (the tutorial skip, the debug menu)
-   are in no edition. The **Graphics** group holds `random-sponsors`
-   (a sponsor and a kit supplier on every club's kit, drawn again each
-   season), `modern-font` (the game's main text in Roboto Condensed,
-   for the European languages; the **Font file** box holds the font's
-   file, filled in when the editor finds it, or the switch is left out
-   and the window asks before it builds without it; the same file draws the
-   version banner of the **Title screen** group, which every edition has) and `realism`, which puts LMAST
-   Realism's crests and match pictures on the disc; **LMAST Realism pack
-   folder** holds the pack's folder (a clone at `../LMAST-Realism` is
-   filled in for you; change it with Browse), or `realism` is left out
-   (the window asks before it builds without it).
+3. Optionally, add the project's ready-made changes, the LMASTER Mod.
+   The **LMASTER lite**, **LMASTER full** and **LMASTER max** buttons
+   tick exactly the groups of that edition, and **None** clears them;
+   neither touches the test tools. Each group has a box that ticks all
+   its switches (it shows partly ticked when only some are on); press
+   its **+** to see the switches and tick them one by one. The line
+   beside the buttons names the edition your ticks make. The command
+   the window shows names the highest levels that fit, such as
+   `--mod lmaster-full,balance`. What each group does is in
+   [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels), and
+   [`INSTALL.md`](INSTALL.md#4-building-a-patch) has a line on each.
+   Three groups need a note:
+   - **Separate saves** (the `saves` group) keeps the modded disc's
+     careers apart from the original game's. LMASTER full and max always
+     have it, and the line beside the buttons shows the letters the
+     saves get: careers in `-F`, or `-M` with any difficulty switch, and
+     VS data in `-V`.
+   - **Graphics** holds `random-sponsors` (a sponsor and a kit supplier
+     on every club's kit, drawn again each season), `modern-font` (the
+     game's main text in Roboto Condensed, for the European languages)
+     and `realism`, which puts LMAST Realism's crests and match
+     pictures on the disc. The **Font file** box holds the font's file,
+     filled in when the editor finds it. The **LMAST Realism pack
+     folder** box holds the pack's folder (a clone at `../LMAST-Realism`
+     is filled in for you; change either box with Browse). If a ticked
+     switch has no file, the window asks before it builds without it,
+     and the switch is left out.
+   - **Title screen** holds `title-banner`, a banner naming the LMASTER
+     Mod, its version and its edition, which every edition has. It is
+     drawn with the same font file as `modern-font`. The editor passes
+     the Font file box to the build only when `modern-font` is ticked;
+     with the banner alone, the build looks for the font itself and
+     leaves the banner out, with a note, if it finds none. Where it
+     looks, and where the version comes from, is in
+     [`INSTALL.md`](INSTALL.md#4-building-a-patch).
+
+   The **test tools** (the tutorial skip and the debug menu) are in no
+   edition. They sit below a divider and are ticked by hand.
 4. Check the list of edited files, then press **Build**.
 
 The output of each step shows in the window. If you have unsaved edits,
@@ -218,9 +233,9 @@ prepares; later ones open in about a second.
 |---|---|
 | Club | money, club status and its rank |
 | Finances | the season plan: advertising budget, ticket price, season-ticket rate and season tickets. The accounts are shown only |
-| Squad | for each player in the squad or youth team: the 64 abilities (one at a time, or all at once), fatigue, condition, motivation and the other condition fields, salary, contract years, age, the injury value, and captain and keyman experience |
+| Squad | for each player in the squad or youth team: the 64 abilities (one at a time, or all at once), fatigue, condition, motivation, power, form, age, the injury value, captain and keyman experience, the two policy points (the team's vision: possession to counter-attack, individual to organisation), salary and contract years |
 | Combinations | how well each pair of players works together, shown as the tactics screen's icons: one pair, or all of a player's pairs |
-| Staff | the manager's, youth manager's, coaches' and scouts' abilities, dissatisfaction and popularity |
+| Staff | the abilities of the manager, youth manager, coaches and scouts; the manager's, youth manager's and coaches' dissatisfaction and popularity |
 | Other clubs | the other 440 clubs' friendship with your club, and their rank |
 | Candidates | the scouted players and staff candidates, shown only |
 | Edit player | the Virtua Pro Football player the career imported, if it has one: the name, the database fields and the abilities |
@@ -274,10 +289,14 @@ To carry one over, copy it to the modded name: see
 
 - The save editor works on PAL saves only, not the Japanese release's.
 - The candidate lists can't be edited yet.
-- Edits from the Squad, Combinations, Staff, Other clubs and Edit
-  player pages have been checked in the editor but not all yet loaded
-  in the game; the Club page has been. The list is in
-  [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md).
+- Edits to the Club page, the season plan, a player's fatigue,
+  condition, motivation and abilities, a manager's dissatisfaction, a
+  coach's abilities, pair combinations and other clubs' friendship and
+  rank have been loaded in the game. The Squad page's age, salary,
+  contract years, injury value, captain and keyman experience and
+  policy points, and the Edit player page, have been checked in the
+  editor but not yet loaded. The list is in
+  [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#steps).
 
 What each field means, and how it was found, is in the format docs
 the [README](README.md#documentation-index) lists, such as

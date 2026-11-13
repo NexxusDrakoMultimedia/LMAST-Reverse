@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
-"""MBB1 message file reader for Let's Make a Soccer Team! (PS2).
+"""MBB1 message files, read and written, for Let's Make a Soccer Team! (PS2).
 
 All of the game's text lives in DAT/MESSAGE/MES.PAC, a BINPAC of 3738
 `<category>_<language>.mbb` files (534 categories x 7 language slots). Each
 .mbb is a 0x20-byte header and a list of {u16 id, u16 len, bytes} records
 whose text mixes plain characters with ESC (0x1B) control sequences. The
 layout and the escape opcodes were confirmed against SLES_541.51 (Msg::
-CMsgSubCategory::Initialize, Msg::CMsgNotify* Evaluate, ...) - see
+CMsgSubCategory::Initialize, Msg::CMsgNotify* Evaluate, ...). See
 DOC/MBB_FORMAT.md.
 
 Text is rendered with {tags} for escapes (a literal '{' is written '{{'):
@@ -38,15 +38,18 @@ name and length, an empty column for its real name (with a length
 formula for Excel), the French, German, Italian and Spanish names
 (and at the end of the row, empty columns for their real names), every
 copy of it (the variant lists 4, 100003, 100009, 100011 and the short
-name in 5), the stadium named after it (category 10), and the other
-messages that mention it. The categories also have copies in
+name in 5), the stadium named after it (category 10), the other
+messages that mention it, and an empty column for the club LMAST
+Realism's logo shows. The categories also have copies in
 PRELOAD/STATIONMES<lang>.PAC (--copies). It writes game text: keep the
-file out of the repo (names/ is ignored for it).
+file out of the repo (names/ is ignored for it). It refuses to
+overwrite a table that exists, since that may hold names typed by hand.
 
 `vars` reads the executable and DLL/SIMPRG.REL in the ISO dir (default
-ISO, or ISO_JP for the Japanese release): the game's table of global
+ISO; give ISO_JP for the Japanese release): the game's table of global
 variables (category 1) and the code behind each one (see
-DOC/MBB_FORMAT.md#global-variables).
+DOC/MBB_FORMAT.md#global-variables). It then lists the variable ids
+that other categories use.
 
 Writing: text uses the same {tags} as dump and csv (a literal '{' is '{{').
 In `set`, \\n in the text is a line break, and an id may be <id>:<copy>

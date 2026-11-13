@@ -91,3 +91,10 @@ don't need to match edited files.
 
 Nothing that matters for a mod. Whether the build wrote
 `SAVE_VERSION.DAT` and `GAMEDATA.BIN` (above) is inferred, not shown.
+
+## Checking the claims
+
+```bash
+python SRC/cvs.py info DAT          # every folder against its ENTRIES; the table above
+python SRC/cvs.py list DAT/EMBLEM   # original names, revisions and dates
+```

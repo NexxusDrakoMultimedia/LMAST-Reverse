@@ -4,7 +4,8 @@
 Soccer Team! (PS2).
 
 One TBB1 table of 8-byte rows, one per schedule UID (PLSCHE_GROUP), like
-REGULATION.TBB. SIMPRG.REL 0x167e90 loads it and returns the table; three
+REGULATION.TBB. Both files have 165 rows: row 164 belongs to no schedule.
+SIMPRG.REL 0x167e90 loads it and returns the table; three
 accessors read row `uid` (0x167f4c: uid << 3), all u16 (lhu). See
 DOC/CLUBRESULT_FORMAT.md.
 
@@ -27,7 +28,7 @@ Usage:
     python clubresult.py set       <in.TBB> <out.TBB> <uid> <field>=<value> ... [<uid> ...]
     python clubresult.py roundtrip <CLUBRESULT.TBB>
 
-`show` prints each row with the names a cup's places get. `set` edits
+`show` prints each row, with the names a cup's places get. `set` edits
 kind, third_place and clubs and writes a same-size file for
 patch_disc.py, which also patches the copies in PRELOAD/SIMFILE*.PAC
 (--copies).

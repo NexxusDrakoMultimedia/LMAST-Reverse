@@ -21,7 +21,9 @@ CTacticsLoader::setFormationData (0x2ed298). Moving the cursor to row r
             (plTeam_FormationID2Formation, 0x2f035c)
 
 Row r is named by category 492 message 10001 + r and described by 20001
-+ r (CTacticsMessage group 3, entries 0x15 and 0x16).
++ r (CTacticsMessage group 3, entries 0x15 and 0x16). The English names
+are "Set English", "Set French", "Set German", "Set Italy", "Set Spain",
+"Set Netherlands", "Set Brazil" and "Set Argentina".
 
 Usage:
     python formset.py info      <TACTICS_FORMATION_SET.TBB | DAT/PARAM>
@@ -30,7 +32,9 @@ Usage:
     python formset.py roundtrip <TACTICS_FORMATION_SET.TBB>
 
 `set` writes a same-size file for patch_disc.py, which also patches its
-copies in the PRELOAD/TACTICS* packs (--copies).
+copies in the PRELOAD/TACTICS* packs (--copies). The fields are the
+seven tactics above (attacking, attack_speed, attack_type, attack_side,
+pressure, offside, press_line) and formation.
 """
 import os
 import struct

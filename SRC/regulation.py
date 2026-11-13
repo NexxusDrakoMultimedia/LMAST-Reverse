@@ -6,7 +6,8 @@
 One TBB1 table (line size 2) of 120-byte rows, one per schedule UID
 (PLSCHE_GROUP): Param::plRec_MatchRegulations(group) (SLES 0x21dc60)
 returns row `group` (0x21dd18: group * 0x78). All 60 fields are s16 (lh).
-See DOC/REGULATION_FORMAT.md.
+The file has 165 rows: row 164 belongs to no schedule. See
+DOC/REGULATION_FORMAT.md.
 
   +0x00 grade        PlMatchGrade 0-5 (pwkUnkei_GetAllAudience 0x255b1c;
                      pwkDissatis_CompeEnd 0x23a840 indexes a 6-entry table)
@@ -19,8 +20,10 @@ See DOC/REGULATION_FORMAT.md.
   +0x0a prize1-32    by final position, x 10,000 (plRec_GetMatchBonus;
                      booked as income 6 at SIMPRG.REL 0x133844)
   +0x4a ban_yellows  yellow cards that ban a player (0x2851d4; <= 0 none)
-  +0x4c squad        players named for a match (0x2a37ac: bench line at - 11)
-  +0x4e squad2       set with squad (VS override 0x206e28); reader not found
+  +0x4c squad        players named for a match (0x2a37ac: the bench
+                     line is at squad - 11)
+  +0x4e squad2       equal to squad in every row (the VS override 0x206e28
+                     writes both); no reader found
   +0x50 foreigners   foreign players allowed in the matchday squad (0x24c6cc)
   +0x52 subs         substitutions allowed (SIMPRG.REL 0x172b5c)
   +0x54 6 slots of {count, compe, uid}: down1, down2 counted up from the
@@ -34,11 +37,11 @@ Usage:
     python regulation.py set       <in.TBB> <out.TBB> <uid> <field>=<value> ... [<uid> ...]
     python regulation.py roundtrip <REGULATION.TBB>
 
-`show` and `set` name the fields as above (prize1 is the winner's prize;
-`show` gives money in pounds, as the game shows it;
-slot fields are up1_count, up1_compe, up1_uid, ...). `set` writes a
-same-size file for patch_disc.py, which also patches the copies in
-PRELOAD/SIMFILE*.PAC (--copies).
+`show` and `set` name the fields as above. prize1 is the winner's prize,
+and the slot fields are up1_count, up1_compe, up1_uid, ... `show` prints
+money in pounds, as the game does. `set` writes a same-size file for
+patch_disc.py, which also patches the copies in PRELOAD/SIMFILE*.PAC
+(--copies).
 """
 import os
 import struct

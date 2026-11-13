@@ -31,7 +31,8 @@ colour palette, and the player-editor tables. See DOC/EMBLEM_DIR.md.
                       0x1cf98-0x1d418: the ranges the player editor
                       draws a new player's fields from.
 
-`info` checks the layouts and the counts the tables and packs share.
+`info` checks the layouts and the counts the tables and packs share, and
+prints the size of the empty DUMMY.DAT.
 `colors` lists the 96 colours with their 32- and 16-colour ids.
 `crests` prints the sample, initial and rival crests field by field.
 `set` edits EDIT_EMBLEM.TBB, EDIT_FLAG.TBB or EDIT_PLAYER.TBB field by

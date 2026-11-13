@@ -1,17 +1,19 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# The game's flow (the root scripts)
+# The game's flow: the root scripts as a flow chart
 
 The game's top level is a set of sequencer scripts in `DAT/SEQ/`
 ([`SQB_FORMAT.md`](SQB_FORMAT.md)). `RootMainSeq.sqb` runs from boot to
 power-off. It starts the other `Root*Seq` scripts as subroutines
 (`SeqSub.Create`) and the screens as modules (`Module.Start`). This page
 reads them as a flow chart: what runs, in which order, and on which
-branch. Everything here is **confirmed** from the scripts unless marked
-otherwise; the offsets are script offsets, as `sqb.py dis` prints them.
-The order matches the game manual's description of a new game and a
-season.
+branch, from the title screen through a new game, a season and the ways
+a career ends. Everything here is **confirmed** from the scripts unless
+marked otherwise; the offsets are script offsets, as `python SRC/sqb.py
+dis DAT/SEQ/ROOTMAINSEQ.SQB` prints them (more commands under
+[Checking the claims](#checking-the-claims)). The order matches the game
+manual's description of a new game and a season.
 
 ## Reading the scripts
 
@@ -84,16 +86,18 @@ the developers' flag `0x34d480` is 1, which plays the stored pair instead
 (3 and 4 in the executable). An LMASTER switch that picked two clubs from
 the counter instead (2026-10-30) showed Birmingham v Birmingham in
 PCSX2 and crashed (Nexxus's report); it was removed at Nexxus's request,
-with one that kept the movie to the first boot (row 1 cut to `{4}`). Why
-the picked pair didn't reach the match isn't traced.
+with one that kept the movie to the first boot (row 1 cut to `{4}`).
 
 ## New game
 
 `L5`: `Pwk.NewGame`, then `RootClubEditSeq` with `m4[5]` = 0:
 
-1. HomeSelect (league and hometown), OwnerNameEntry, SelectTeamColor,
-   SelectTeamStyle, `Pwk.ClubEditEnd`, InitialPersonnelAffairs,
-   SelectSecretary, then a save (Save module, argument 3).
+1. NewGameInstall (67; a non-zero result sets `m4[2]` and ends the
+   script), cutscene 11, then HomeSelect (league and hometown),
+   OwnerNameEntry, SelectTeamColor, SelectTeamStyle, `Pwk.ClubEditEnd`,
+   InitialPersonnelAffairs, SelectSecretary, cutscene 12, and a save
+   (Save module, argument 3). Cutscenes 0, 1 and 2 play between
+   `Pwk.RuntimeInitialize` and the save.
 2. The opening playoffs (`0x08b0`–`0x0cf0`, see
    [`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs)).
    A loss plays the game-over cutscene and sets `m4[2]` = 1.
@@ -121,7 +125,7 @@ from the matching numbers):
 
 ## The season loop (`RootMainSeq` `L15`–`L24`)
 
-```
+```text
 L15  Sche.YearStart, RootYearStartSeq, Pwk.CheckGameOverSikin (funds)
 L16  Sche.MonthStart, RootMonthStartSeq
 L17  turn start: Sche.TurnStart, Pwk.TurnStart, events 22, 4, 23
@@ -207,8 +211,8 @@ two years running, and fewer than 8 players. Those match the four checks.
 The relegation check itself is `SIMPRG.REL 0x15d958`
 ([`REGULATION_FORMAT.md`](REGULATION_FORMAT.md#place-slots)); it needs
 your final rank past the line in each of the last two seasons, and
-`--mod third-tier` makes it one
-([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)).
+`--mod third-tier` makes it one season
+([`LMASTER_MOD.md`](LMASTER_MOD.md#the-third-tier)).
 Which `Sche.YearEnd` value is the relegation and which is the other end
 of a career (an ending?) hasn't been traced. The PlayAcrobata argument
 isn't a scene id (scene 7 is a clubhouse background); how the module
@@ -217,7 +221,11 @@ maps it is still open ([`ACROBATA_DIR.md`](ACROBATA_DIR.md)).
 ## Event timings
 
 `RootEventSeq` starts the Event module (14) with `m4[3]` as its
-argument. **Confirmed:** the module keeps it at `+0x198`
+argument. It does nothing at all when `Dummy.CheckTurnSkip` is set,
+`Root13` returns non-zero, or the game is in VS mode (`Sche.IsVsMode`).
+When the Event module ends with result 1, the script runs the WildCard
+module (70) and returns to the Event module; any other result ends it.
+**Confirmed:** the module keeps the argument at `+0x198`
 (`SIMPRG.REL 0x6a50`) and passes it to `0x129e98` (`0x6c14`), which
 passes it to the event scan `0x12df08` (`0x129f14`) as the timing an
 event's `+0x68` must equal ([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)).
@@ -247,8 +255,10 @@ So the values the scripts set name the timings:
 | 22 | turn start, first | 0 |
 | 23 | turn start, third | 0 |
 
-The counts are the EVENT table's 382 records (37 more have −1, which
-never matches). The one-off timings carry the tutorial explanations,
+The counts are from the EVENT table's 382 records (**empirical**,
+`python SRC/evsdatabin.py` on `EVSDATABIN_EVENT.BIN`): 345 have a timing,
+and the other 37 have −1, which never matches. The one-off timings carry
+the tutorial explanations,
 for example 16 Jane on sponsors, 17 a foreign TV station, 15 Robert
 introducing himself, 12 and 13 the playoff manager. No script sets 20,
 and 14 only if `GetFirstMatchCount` reaches 2; no EVENT record uses
@@ -257,7 +267,11 @@ either.
 ## Still unknown
 
 - Which `Sche.YearEnd` value is which ending or game over, and what the
-  PlayAcrobata arguments (3, 4, 5, 7–10, 13–17) show.
+  PlayAcrobata arguments show. The root scripts start it with 0–5 and
+  7–17 (18 call sites, **empirical**, `python SRC/sqb.py dis` over
+  `DAT/SEQ/ROOT*.SQB`; 6 is never used); this file says when each
+  one plays, and how the module maps it to a scene is open
+  ([`ACROBATA_DIR.md`](ACROBATA_DIR.md#still-unknown)).
 - What the Dummy module run with argument 15 at turn start does (its
   non-zero result skips the main menu).
 - When `Root13` returns non-zero, which makes `RootEventSeq` skip the
@@ -265,6 +279,8 @@ either.
   open in [`SQB_FORMAT.md`](SQB_FORMAT.md#still-unknown).
 - Who sets the Load module's result 1: the Option module's save is
   assumed, not traced.
+- Why the pair of clubs picked from the counter didn't reach the demo
+  match (Birmingham v Birmingham, above).
 
 ## Checking the claims
 
@@ -272,7 +288,10 @@ either.
 python SRC/sqb.py dis DAT/SEQ/ROOTMAINSEQ.SQB
 python SRC/sqb.py dis DAT/SEQ/ROOTYEARSTARTSEQ.SQB
 python SRC/sqb.py dis DAT/SEQ/ROOTMAINMENUSEQ.SQB
+python SRC/sqb.py dis DAT/SEQ/ROOTCLUBEDITSEQ.SQB
+python SRC/sqb.py dis DAT/SEQ/ROOTMATCHSEQ.SQB
+python SRC/sqb.py dis DAT/SEQ/ROOTEVENTSEQ.SQB
 python SRC/sqb.py names DAT/SEQ/SQBFILENAME.TBB
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x6a00 140 --sles ISO/SLES_541.51   # Event module keeps its argument
-python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_EVENT.BIN events.csv        # the timing column
+python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_EVENT.BIN events.csv        # the timing column (write the CSV outside the repo)
 ```

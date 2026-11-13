@@ -36,7 +36,9 @@ code in CODE_TABLES (CFont_fc_euro::SetTexList 0x303c28).
 width, height, white ink, and how much ink lies inside a rectangle), the
 character lists, and the three 2-byte code tables against their pictures.
 `coverage` checks every text byte of the six European languages against
-font 0.
+font 0, and counts the bytes that fonts 1 and 2 lack. `dump` writes a
+font's glyph records as CSV, and `png` draws them as rectangles over the
+atlas.
 
 Usage:
     python font.py info     <executable> <DAT/0SYSTEM>

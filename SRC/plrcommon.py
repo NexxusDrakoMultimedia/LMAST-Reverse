@@ -49,6 +49,9 @@ Training-ground equipment (0.1) has the _b fields for the slots past the
 club's first group; stadiums (0.7) have cost, time0-2, capacity0-2 and the
 per-stand upkeep. `roundtrip` rebuilds the pack, then edits each field of
 each record on its own and checks that only that field's word changes.
+
+The LMASTER Mod's facility tiers and Special stadium are applied here too
+(facility_tiers, special_stadium); patch_disc.py calls them.
 """
 import os
 import struct

@@ -8,9 +8,10 @@ Confirmed from Pwk::PlayBookData::CPlayBookDataBase in SLES_541.51:
 
   file    u32 record count, then the records back to back; each starts
           with its u16 size (makeBookTop 0x2e82b0)
-  record  +0x04 u32 flags; +0x0a/+0x0c/+0x12 u16 offsets of three u16
-          arrays of n entries (points per path, start frame per path, path
-          kind); +0x0e u16 offset of the points; +0x16 u16 n, the paths;
+  record  +0x04 u32 flags; +0x08 u16 the end of the fixed header;
+          +0x0a/+0x0c/+0x12 u16 offsets of three u16 arrays of n entries
+          (points per path, start frame per path, path kind); +0x0e u16
+          offset of the points; +0x16 u16 n, the paths;
           +0x18 4 bytes, the ball's route through the paths (0xff = none,
           IBOOK::GetBallFlowID); +0x1c u16 (GetPLAYBOOK 0x2e7ec8)
   point   two u16, x and y: (value >> 3) / 64 metres, bit 2 the sign, bits
@@ -67,7 +68,8 @@ record first (0xc1438). Only 65 records can ever load.
 Usage:
     python bpb.py info <file.BPB | file.CBB | dir> ...
     python bpb.py dump <file.BPB> <record>
-    python bpb.py cbb  <file.CBB> [first [last]]
+    python bpb.py cbb  <file.CBB> [first [last]]   # every record, one record
+                                                   # (first) or first to last
 """
 import os
 import struct

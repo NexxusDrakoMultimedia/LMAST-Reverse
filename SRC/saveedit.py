@@ -16,14 +16,15 @@ its own. Money shows in pounds (the stored unit / 6) next to the stored
 value.
 
 Every field `save.py set` can write has an input: money, club status and
-status rank; the season plan; a player's 64 abilities (one or all),
-condition fields, salary, contract years, age, injury value and captain
-and keyman experience; pair combinations (one pair or all of a player's);
-staff abilities, dissatisfaction and popularity; another club's
-friendship and rank (the rival's rank follows your club status); the
-edit player's name, database fields and abilities. Edits
-go through save.apply_assigns, the function behind `save.py set`; a
-value it refuses is put back. The candidate lists are shown only.
+status rank; the season plan; a player's 64 abilities (one or all), age,
+fatigue, condition, motivation, power, form, injury value, captain and
+keyman experience, team vision, salary and contract years; pair
+combinations (one pair or all of a player's); staff abilities,
+dissatisfaction and popularity; another club's friendship and rank (the
+rival's rank follows your club status); the edit player's name,
+database fields and abilities. Edits go through save.apply_assigns, the
+function behind `save.py set`; a value it refuses is put back. The
+candidate lists are shown only.
 
 File > Save writes over the save's main file. First it copies the file
 as it is to a backup folder beside the memory card, not in it (a folder
@@ -63,6 +64,9 @@ Either way the save on the card must still be the one opened.
 
 Close the game in PCSX2 before saving, so it doesn't write the card
 over the edit.
+
+Run it from the repo root: it reads names from DAT/ (PBDATA_EU.PAC and
+MES.PAC) and the save code from ISO/.
 
 Usage:
     python SRC/saveedit.py open [<save folder or main file>]
@@ -886,8 +890,8 @@ class App:
         return editor.shown_path(self.save.path)
 
     def open(self, path, done=None, card=None):
-        """Decode the save (and the names, the first time) in a thread; the
-        first decode of a session records save.py's field list. `card` is
+        """Decode the save (and the names, the first time) in a thread; with
+        no .cache/ yet, the first decode records save.py's field list. `card` is
         (card file, save folder) when `path` is a save copied off a card file."""
         self.status("Loading %s ..." % path)
         self.root.configure(cursor="watch")
@@ -1223,7 +1227,8 @@ class App:
         return True
 
     def keep_changes(self):
-        """False when the user cancels leaving unsaved changes."""
+        """True when it is fine to go on: nothing is unsaved, the user chose
+        not to save, or saving worked. False on Cancel or a failed save."""
         if not self.changes:
             return True
         answer = messagebox.askyesnocancel("Unsaved changes", "Save the changes first?")

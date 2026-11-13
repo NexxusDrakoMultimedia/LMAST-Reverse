@@ -3,11 +3,12 @@
 
 # PS2 memory card images (`.ps2`)
 
-How PCSX2 stores a memory card in a single file, so the save tools can
-read and write saves on it. PCSX2 also offers *folder* cards: a
-directory named `<card>.ps2` holding each save folder as an ordinary
-folder (Nexxus's `Pyra.ps2` and `Hax.ps2`). `save.py` reads those
-directly; this format is the file kind (`Mcd001.ps2`).
+How PCSX2 stores a memory card in a single file. `SRC/ps2mc.py` reads and
+writes it, and the save editor (`saveedit.py`) puts saves on cards through
+it. PCSX2 also offers *folder* cards: a directory named `<card>.ps2`
+holding each save folder as an ordinary folder (Nexxus's `Pyra.ps2` and
+`Hax.ps2`). `save.py` reads those directly; this format is the file kind
+(`Mcd001.ps2`).
 
 The game doesn't read the card's file system itself: the PS2's memory
 card driver does. So nothing here cites the game code. Every claim is
@@ -124,6 +125,10 @@ input:
 - Every page written gets its ECC. The FAT clusters that changed are
   written back.
 - The result is checked like `info` before it is written.
+- A file needs at least one byte, and a name has at most 31 characters.
+
+`get` goes the other way: it writes a folder's files, or one file, out of
+a card.
 
 A new file's created and modified times are now (Japan time), and so is
 its folder's modified time. `--touch` does the same for a replaced file.
@@ -158,11 +163,12 @@ meant to show as a save needs the files a game writes.
   seen; `ps2mc.py` refuses page sizes other than 512 and clusters other
   than 2 pages.
 
-## Checking
+## Checking the claims
 
 ```bash
 python SRC/ps2mc.py info <card.ps2>
 python SRC/ps2mc.py ls <card.ps2> BESLES-54151-G000
+python SRC/ps2mc.py get <card.ps2> BESLES-54151-G000 out/
 python SRC/ps2mc.py roundtrip <card.ps2>
 python SRC/ps2mc.py selftest
 ```

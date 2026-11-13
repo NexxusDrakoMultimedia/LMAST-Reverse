@@ -10,11 +10,11 @@ kits, and the data of the developer launcher's viewers. The retail game
 doesn't need any of it. Its CVS history stops in October 2005
 ([`CVS_DIR.md`](CVS_DIR.md)), months before the rest of the data.
 
-Every file parses with the existing tools: `python SRC/ninja.py info
-DAT/TEST3D` (models and motions), `python SRC/svr.py info DAT/TEST3D`
-(textures and palettes), `python SRC/pac.py info DAT/TEST3D` and
-`python SRC/tbb.py info DAT/TEST3D`. None reports a problem. Only
-`SHADOWCOLLI.LBI` has no reader.
+The existing tools read every file here except `SHADOWCOLLI.LBI`, and
+none reports a problem: `python SRC/ninja.py info DAT/TEST3D` (models and
+motions), `python SRC/svr.py info DAT/TEST3D` (textures and palettes),
+`python SRC/pac.py info DAT/TEST3D` and `python SRC/tbb.py info
+DAT/TEST3D`.
 
 | Kind | Files | Notes |
 |---|---|---|

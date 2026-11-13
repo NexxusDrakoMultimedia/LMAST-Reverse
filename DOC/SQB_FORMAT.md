@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# SQB sequencer scripts (`SEQ/*.SQB`, `PARAM/PSC*.PAC`)
+# SQB scripts (`SEQ/*.SQB`, `PARAM/PSC*.PAC`): the game's flow and the PwkScripts
 
 `.SQB` files are **bytecode scripts**, not music. The game's sequencer
 (`CSeqController` in `SLES_541.51`) runs them. There are two kinds:
@@ -20,8 +20,10 @@
 
 Both use the same container, command encoding and built-in commands, but a
 different set of game commands. `python SRC/sqb.py info DAT/SEQ DAT/PARAM`
-decodes and checks all of them. `python SRC/sqb.py dis <file>` prints a
-listing.
+decodes and checks all of them, and `python SRC/sqb.py dis <file>` prints a
+listing. `sqb.py` can also swap single commands and change the cells of a
+PwkScript's data tables ([Editing](#editing)); the developers' launcher
+and the tutorial skip are built on it.
 
 The layout is **confirmed** from the interpreter in `SLES_541.51` (table
 below). The command names come from the executable's symbol table where
@@ -30,17 +32,14 @@ and is marked as such.
 
 ## Files
 
-`DAT/SEQ/` holds 19 `.SQB`, 2 `.TBB` and 1 `.WPX` file (plus `CVS/`):
-
-| File | What it is |
-|---|---|
-| `SQBFILENAME.TBB` | the root script list: 18 rows of `char[32]`, row = script id. Rows 1–15 are the `Root*Seq.sqb` files, 16 is `PinfoPoint.sqb`, 0 and 17 are `"NULL"`. `0x149f30` loads `SqbFilename.tbb`; `0x14a220` loads every row that isn't `"NULL"` (`strcmp` against `0x523118`) |
-| `GLOBALMEMORY.TBB` | 25 records of 16 bytes, the sequencer's global variables (below). Loaded as `GlobalMemory.tbb` by `0x14a050` |
-| `ROOT*SEQ.SQB` (15) | the root scripts, ids 1–15 |
-| `PINFOPOINT.SQB` | id 16: an older build of `PSCCOMMON.PAC#PscCommon_PinfoPoint.sqb` (same size, 4 script words differ) |
-| `A001.SQB` | a test loop (count 600 down in a function). Not in `SQBFILENAME.TBB` and not named anywhere in the code |
-| `CHECKCLUBEDIT.SQB`, `INFORMATION.SQB` | 2004 scripts for other command sets; see [what doesn't decode](#what-doesnt-decode) |
-| `INFORMATION.WPX` | a `TBB1` of 4 `TBL1` tables (49, 45, 45 bytes and 8 rows of 4), holding floats such as 30.0, 70.0, 300.0 and 380.0. No `.wpx` string appears in the executable or any overlay, so it isn't loaded. Content not decoded |
+The scripts live in two places. `DAT/SEQ/` holds 19 `.SQB` files, the two
+tables that name and feed them (`SQBFILENAME.TBB`, the script ids, and
+`GLOBALMEMORY.TBB`, the global variables) and `INFORMATION.WPX`.
+[`SEQ_DIR.md`](SEQ_DIR.md) lists each file and which root script starts
+which screen. Of the 19 scripts, 15 are root scripts (ids 1–15),
+`PINFOPOINT.SQB` is id 16, and three are never loaded: `A001.SQB`, a test
+loop, and `CHECKCLUBEDIT.SQB` and `INFORMATION.SQB`, 2004 scripts for other
+command sets ([what doesn't decode](#what-doesnt-decode)).
 
 The 24 `.sqb` entries of `PSCCOMMON.PAC` (20), `PSCGAME.PAC` (2) and
 `PSCPRACTICE.PAC` (2) are the PwkScript scripts (see
@@ -52,7 +51,7 @@ of `psccommon.pac` and `pscgame.pac` as nested packs.
 A script file is a `TBB1` container ([`TBB_FORMAT.md`](TBB_FORMAT.md)).
 Its tables are `SQB1` scripts and, in PwkScript files, `SQT1` data tables:
 
-```
+```text
 SQB1: {'SQB1', u32 data_offset = 0x10, u32 size, u32 0} + size bytes of commands
 SQT1: {'SQT1', u32 data_offset = 0x20, u32 size, u32 element_size,
        u32 flag, u32 row_length, u32 rows, u32 0} + size bytes
@@ -74,17 +73,20 @@ SQT1: {'SQT1', u32 data_offset = 0x20, u32 size, u32 element_size,
   traced.
 - **Empirical.** Every PwkScript has exactly one `SQB1` table, table 0.
 
-The root scripts store the file size at `TBB1 +0xc`. The four files dated
-2004 (`A001`, `CHECKCLUBEDIT`, `INFORMATION`, `PINFOPOINT`) store 0 there.
-`CHECKCLUBEDIT` and `PINFOPOINT` also count the end of the file as one more
-table offset, which is why `tbb.py info` can't read them. The game only reads
-the tables it asks for, so neither difference matters to it.
+The `TBB1` header word at `+0xc` holds the file size in 11 of the 15 root
+scripts. `RootMonthEndSeq`, `RootMonthStartSeq`, `RootYearEndSeq` and
+`RootYearStartSeq` store 8 less than the file size, and the four files
+dated 2004 (`A001`, `CHECKCLUBEDIT`, `INFORMATION`, `PINFOPOINT`) store 0
+(**empirical**). `CHECKCLUBEDIT` and `PINFOPOINT` also count the end of
+the file as one more table offset, which is why `tbb.py info` can't read
+them. The game only reads the tables it asks for, so none of these
+differences matter to it.
 
 ## Commands
 
 **Confirmed** from `CSeqController::UpdateCommand` (`0x1ffa90`):
 
-```
+```text
 command = {u32 table, u32 cmd} + argc × {u32 type, s32 value}
 ```
 
@@ -197,8 +199,9 @@ row.
 | 35 | (no symbol, `0x304df0`), `sqb.py`: `Base35` | 1 | – |
 | 36–38 | `Nop` | 4, 2, 2 | – |
 
-The root scripts use 14 of these and the PwkScripts use 9. 25 of the 39
-are never used.
+The root scripts use 14 of these and the PwkScripts use 9 (17 different
+commands in all), so 22 of the 39 appear in none of the 41 scripts
+(**empirical**).
 
 ### RootEvent (root table 4)
 
@@ -223,14 +226,14 @@ names are descriptive, not symbols:
 
 | Cmd | `sqb.py` name | Calls (confirmed by address unless marked) |
 |---|---|---|
-| 0 | `Module.Start` | `fcEuroModule_Entry` after looking up module `arg1` (wild card aware), `0x10b198`. `arg2` is passed on (**empirical**: `PlayAcrobata` gets arguments such as 0, 1, 11 and 12, which aren't scene ids, [`GAME_FLOW.md`](GAME_FLOW.md#game-over)) |
+| 0 | `Module.Start` | `fcEuroModule_Entry` after looking up module `arg1` (wild card aware), `0x10b198`. `arg2` is passed on (**empirical**: `PlayAcrobata` gets arguments 0–5 and 7–17, which aren't scene ids, [`GAME_FLOW.md`](GAME_FLOW.md#game-over)) |
 | 1, 2 | `Module.Wait`, `Module.GetBranch` | `CFcEuro_ModuleController::Wait` / `GetBranch` for module `arg1` |
 | 3, 4 | `Module.Activate`, `Module.Deactivate` | `SetActive(1)` (`0x10b500`), `SetActive(0)` (`0x10b588`) |
 | 5, 6 | `Module.Delete`, `Module.Get` | `fcEuroModule_Delete`, `GetModule` |
 | 7, 8 | `SeqSub.Create`, `SeqSub.Wait` | `new FC_EURO_EVCOM::CFcEuro_SeqSub`; `Wait` + `GetBranch`. **Empirical**: `arg1` is an `SQBFILENAME` id, the root script run as a sub-sequence (12 `RootLauncherSeq` from the main script, 13 `RootEventSeq` 21 times) |
 | 9 | `Root9` | a vtable `+0x40` call on the object in `arg1`. It always follows `SeqSub.Wait` on the same handle, so it probably deletes the sub-sequence (**empirical**) |
 | 10–12 | `FileRsrc.Entry`, `.Get`, `.Delete` | `fcEuroRsrc_EntryResource` / `GetResource` / `DeleteResource` of file resource `arg1` |
-| 13 | `Root13` | `0x10aea8`, sets `arg0` to 0 or 1 |
+| 13 | `Root13` | `0x10aea8`, sets `arg0` to 0 or 1. `RootEventSeq` skips the Event module when it is non-zero (**empirical**; [`GAME_FLOW.md`](GAME_FLOW.md#event-timings)) |
 | 14 | `SetGameMode` | `fcEuroRootTask_SetGameMode` |
 | 15 | `WaitFrames` | counts `arg1` frames down in `0x34dadc`, returning 2 until it reaches 0 |
 | 94–96 | `MsgRsrc.Entry`, `.SetupGlobal`, `.Delete` | message resources; 95 calls `fcEuroRootTask_SetupGlobalMessageCategory` |
@@ -248,7 +251,7 @@ names are descriptive, not symbols:
 the script name after `SeqSub.Create`. For example, the start of
 `RootMainSeq.sqb` is the boot sequence:
 
-```
+```text
   01f0  4:0   Module.Start                 m3[0], k30, 0  ; module SelectVideoMode
   0240  4:0   Module.Start                 m3[0], k29, 0  ; module SelectLanguage
   0320  4:0   Module.Start                 m3[0], k65, 0  ; module BootCheck
@@ -286,6 +289,9 @@ numbered:
 | 27, 28 | `Sinfo.Get`, `Sinfo.Set` | 2, 3 | member `arg1` of the scout's `PlSinfo` (`0x306ab8`, `0x306b78`) |
 | 29 | `Sinfo.Abil` | 2 | scout value `arg1` (0–47 of the 49 at `PlSbase +0x29`), `PlSinfo +0x2d + arg1` (`0x306c60`) |
 
+The PwkScripts use 20 of the 30 (**empirical**). Commands 4, 12, 17–19, 21,
+23, 24, 27 and 28 appear in none of them.
+
 **Confirmed.** The Get and Set commands fill a `pwEdIdAdr` block {base,
 structure, member, ...} for `PwkEditTask::GetValIdAdr` / `SetValIdAdr`
 (`0x23bf30` / `0x23bfd0`). That looks the structure up in the developers'
@@ -322,11 +328,13 @@ the result from `g[13]` (`0x256f94`).
 records. Argument type 6 reads `value` when `type` is 0.
 
 **Empirical.** All 25 records have type 0. `g[0]` and `g[7]` start at 2004
-(the first season; `g[7]` has max 2104). `g[1]` is 7 (1–31), `g[5]` 0
-(0–12) and `g[6]` 7 (0–31), which may be a day and a month (not
-checked). `g[13]` is a PwkScript's result and `g[14]`–`g[24]` its
-arguments (**confirmed**, `RunScript` above; `PinfoPoint` reads
-`g[14]`–`g[17]` and writes `g[13]`). Run
+(the first season; `g[7]` has max 2104). `g[1]` is 7 (1–31): `A001.SQB`
+adds 1 to it and wraps 31 back to 1, which fits a day of the month. `g[5]`
+0 (0–12) and `g[6]` 7 (0–31) may be a month and a day (not checked).
+`g[13]` is a PwkScript's result and `g[14]`–`g[24]` its arguments
+(**confirmed**, `RunScript` above; `PinfoPoint` reads `g[14]`–`g[17]` and
+writes `g[13]`). Of the 41 scripts, only `A001` uses a record outside
+`g[13]`–`g[21]` (it uses `g[1]`). Run
 `python SRC/sqb.py globals DAT/SEQ/GLOBALMEMORY.TBB` to list them.
 
 ## What the PwkScripts compute
@@ -392,12 +400,14 @@ In one case the first line is message 120 or 121 instead ("Transfer to
 selects that branch isn't traced. And when one of `CDetailManager`'s
 `DETAILFLAG` bytes is set and a fixed message exists for the player
 (`CDetailConstMessage::ExistConstMessage`), that message replaces both
-lines (`0x285e68`–`0x285eac`); which players have one isn't traced.
+lines (`0x285e68`–`0x285eac`); which players have one isn't traced. The
+flag bytes come from `0SYSTEM/DETAILFLAG.TBB`
+([`0SYSTEM_DIR.md`](0SYSTEM_DIR.md#detailflagtbb)).
 
 **Staff.** The six staff scripts share one pattern: take the best of a
 few ability groups (each group one ability or an average), then
 
-```
+```text
 row     = 4 × group + band(best)      band: 0–49 → 0, 50–69 → 1, 70–89 → 2, 90–100 → 3 (table 1)
 message = table 2 [row] [rank]        rank from Minfo.GetCore 2 / Sinfo.GetCore 3; 16 columns
 ```
@@ -444,14 +454,14 @@ python SRC/mbb.py dump   DAT/MESSAGE/MES.PAC --cat 201
 
 ### The scripts that never run
 
-For the record, what they would compute (**empirical**, from the
-listings). `PinfoPoint` adds table 1 [rank] to table 2 [`mgrowtype`]
-[age − 16]. `PinfoInit` sets each ability's three experience values from
-the growth types, the age and random numbers. `seasonticket`, the
-`Plpop*` copies and `spectator` combine their arguments (`g[14]`–`g[21]`)
-with year and money tables and a random 95–105 %, and the first six
-scale the result by `Table.Range2D` over the first argument and path 202.
-`SpectatorDistribution` splits a crowd by range tables.
+What they would compute is **empirical**, from the listings. `PinfoPoint`
+adds table 1 [rank] to table 2 [`mgrowtype`] [age − 16]. `PinfoInit` sets
+each ability's three experience values from the growth types, the age and
+random numbers. `seasonticket`, the `Plpop*` copies and `spectator`
+combine their arguments (`g[14]`–`g[21]`) with year and money tables and a
+random 95–105 %, and the first six scale the result by `Table.Range2D`
+over the first argument and path 202. `SpectatorDistribution` splits a
+crowd by range tables.
 
 ## What doesn't decode
 
@@ -485,56 +495,15 @@ A third set runs the 540 combination scripts in `GAME/COMBINATION2.CSB`
 `sqb.py` prefers a set that decodes with no argument or label problems,
 and falls back to the first that decodes at all.
 
+On the Japanese release the same 41 scripts decode with the same counts,
+except `RootYearStartSeq`, which has 128 commands (136 in the PAL
+release); see [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md).
+
 The 25 PwkScript files hold 68 `SQT1` tables. Every one of the 41 scripts
 that decodes ends exactly at the end of its table. Every argument has a
 valid type and index, and every label is defined once. `A001` uses only
 Base commands, so it decodes under both sets. `info` reports it under the
 root set, which is tried first.
-
-## Still unknown
-
-- What `SQT1 +0x10` (the flag) does, and what `Table.Rand17/18` read.
-- Base 35 and root `Root9` and `Root13`. Also which of 98/99 and 100/101
-  turns the feature on.
-- Which players have a fixed detail comment (`DETAILFLAG`,
-  `CDetailConstMessage`), and when the player page shows messages
-  120/121.
-- What `BranchIf` does differently from `JumpIf`.
-- The command sets `INFORMATION.SQB` and `CHECKCLUBEDIT.SQB` were written
-  for.
-- `INFORMATION.WPX`.
-- Whether the tutorial skip works in France, Italy, Spain and the
-  Netherlands (`--skip-nation`; England and Germany are played in
-  PCSX2), and whether the parts of `Sche.YearEnd` and `Sche.MonthEnd` it
-  skips (`pwkTeam_ChangePop_Year`) change anything.
-- The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG LIGHT
-  TEST; and why the blank test modules show nothing (missing data, or
-  waiting for input from the launcher).
-
-## Tool
-
-```bash
-python SRC/sqb.py info    DAT/SEQ DAT/PARAM            # check every script
-python SRC/sqb.py dis     DAT/SEQ/ROOTMAINSEQ.SQB      # listing with labels and module names
-python SRC/sqb.py dis     "DAT/PARAM/PSCCOMMON.PAC#PscCommon_PinfoPoint.sqb"   # with field names
-python SRC/sqb.py tables  "DAT/PARAM/PSCCOMMON.PAC#PscCommon_PinfoPoint.sqb"   # its SQT1 tables
-python SRC/sqb.py names   DAT/SEQ/SQBFILENAME.TBB      # script ids
-python SRC/sqb.py globals DAT/SEQ/GLOBALMEMORY.TBB     # global memory records
-python SRC/sqb.py roundtrip DAT/SEQ DAT/PARAM          # re-encode all 41 scripts byte for byte
-python SRC/sqb.py setcmd  DAT/SEQ/ROOTMAINSEQ.SQB out/ROOTMAINSEQ.SQB 0x98 0:27
-python SRC/sqb.py settable "DAT/PARAM/PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb" out/PSCCOMMON.PAC 1:0:2=3
-```
-
-`settable` changes cells of a PwkScript's `SQT1` tables
-(`table:row:element=value`, numbered as `tables` prints them), within
-the element size; given a pack entry it writes the whole pack, with the
-entry at its old size. `patch_disc.py --copies` then also updates the
-pack's copy in `PRELOAD/STATIONFILE.PAC`, which stays loaded all game.
-`roundtrip` writes every one of the 12,107 cells back and compares.
-
-`setcmd` is a minimal writer. It swaps one command for another with the
-same argument count, so the file keeps its size and can be patched onto the
-disc with `patch_disc.py`. It re-checks the script's labels before writing.
 
 ## Skipping the tutorial (the opening playoffs)
 
@@ -543,7 +512,7 @@ the club's way into the league (the game has no third division; Nexxus's
 report). `RootClubEditSeq.sqb` runs it after club creation and the first
 save, behind a developer switch:
 
-```
+```text
   0868  4:88  Dummy.CheckFirstMatchSkip    m3[1]
   0878  0:28  BranchIfNotZero              m3[0], m3[1], L9
   08b0  ...   (L2) Sche.InitializeFirstCheck, YearStart, MonthStart, then the
@@ -673,17 +642,18 @@ become available after the first year; neither contradicts this.)
 
 ### The supplier and the club's status
 
-A sponsor qualifies by conditions in its record. The sponsor database is
-213 records of `0x48` bytes at `SIMPRG.REL 0x23d978`, indexed by sponsor
-id (`plSponsor_GetDb`, `0x160dc0`); ids 206–212 have kind 3 at `+4`, the
-suppliers. **Confirmed** from the code:
+A sponsor qualifies by conditions in its record. The sponsor database is a
+table of `0x48`-byte records at `SIMPRG.REL 0x23d978`, indexed by sponsor
+id 1–212 (`plSponsor_GetDb`, `0x160dc0`, rejects any other id;
+[`ECONOMY.md`](ECONOMY.md#sponsors)). Ids 206–212 have kind 3 at `+4`,
+the suppliers. **Confirmed** from the code:
 
 | Address | Symbol | What it shows |
 |---|---|---|
 | `SIMPRG.REL 0x169818` | (candidate filter) | a condition is `{u8 kind, u16 threshold, u16 argument}` at `+0x1c`/`+0x1e`/`+0x20` (a second at `+0x22`, more from `+0x28`). The kind picks a function from the table at `0x1da458`; it writes a value to `0x2494a0`, and the condition holds when value ≥ threshold (≤ for kinds `0x11`, `0x1a`, `0x1b`). The supplier list (second argument 1) takes only kinds `0x17` and up |
 | `SIMPRG.REL 0x161c28` | (kind `0x18`) | the value is `pwkTeam_Status()` |
 | `SIMPRG.REL 0x162090` | (kinds `0x16`, `0x17`) | the value is 1: always holds |
-| `0x26e2f0` | `pwkTeam_Status` | the club's status, u16 at `+0x1126a` in pwork task 1 |
+| `0x26e2f0` | `pwkTeam_Status` | the club's status, u16 at `+0x1126a` in pwork task 1 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md)) |
 | `0x26dbb8` | `pwkTeam_StatusChange` | adds to the status, capped by the status rank (`+0x11264`, table at `0x555150`) |
 | `0x26e2a0` | `pwkTeam_YearEndCheck` (from `Sche.YearEnd`) | raises the status rank on a division change, then adds 500 (`0x26e2c4`: 500.0 to `0x26dd18`, which calls `pwkTeam_StatusChange`) |
 
@@ -703,7 +673,7 @@ screen: status 500, status rank 7, supplier Egamucho.
 writes 1 to its argument 0. `RootMainSeq.sqb` runs it at `0x88` and at
 `0x98` branches past the launcher when the value is non-zero:
 
-```
+```text
   0088  4:113 Dummy.CheckLauncher          m3[1]
   0098  0:28  BranchIfNotZero              m3[0], m3[1], L0
   00d0  4:7   SeqSub.Create                m3[2], k12  ; RootLauncherSeq.sqb
@@ -726,8 +696,10 @@ launcher is left, the main script continues with the normal boot at `L0`.
 
 `patch_disc.py patch <in.iso> <out.iso> --launcher` writes it to a disc
 (also a box in the editor's Build disc dialog); by hand it is
-`setcmd ... 0x98 0:27` (`BranchIfZero`), which changes 1 byte and sends the boot
-into the launcher.
+`setcmd ... 0x98 0:27` (`BranchIfZero`), which changes 1 byte and sends the
+boot into the launcher. The launcher and the tutorial skip are the
+`test-tools` group of the LMASTER Mod's switches, which no edition
+includes ([`LMASTER_MOD.md`](LMASTER_MOD.md)).
 
 **Tested in PCSX2** (the 1-byte patch written with `patch_disc.py`): the
 game boots into a developer menu instead of the video-mode screen. It has
@@ -846,7 +818,7 @@ row is `{char *name, u32 female}`, one row per ID:
 | 192–211 | `STAFF_M_01`–`12`, `STAFF_F_01`–`08` (1) |
 | 212–214 | no name |
 
-The flag is 1 on exactly the 40 `_F` names. The viewer's 215 IDs equal
+The flag is 1 on exactly the 48 `_F` names. The viewer's 215 IDs equal
 the 215 heads of `FC_EURO_FACEPACK_01`, the event-character pack
 ([`PLAYER_DIR.md`](PLAYER_DIR.md)), and the screenshots fit the table (ID
 10 `REFREE_11`, ID 211 `STAFF_F_08`). ID *n* is pack entry *n*: every head
@@ -874,3 +846,68 @@ required-status cutoff 10,000
 The stadium viewer's fields are the stadium build request:
 [`STADIUM_DIR.md`](STADIUM_DIR.md#the-build-request) names them from its
 BUILD panel's handler.
+
+## Editing
+
+`sqb.py` has two writers. Neither changes a script's size, so the result
+can be patched onto the disc with `patch_disc.py`.
+
+```bash
+python SRC/sqb.py setcmd   DAT/SEQ/ROOTMAINSEQ.SQB out/ROOTMAINSEQ.SQB 0x98 0:27
+python SRC/sqb.py settable "DAT/PARAM/PSCCOMMON.PAC#PscCommon_manager_syousai_nouryokuMS.sqb" out/PSCCOMMON.PAC 1:0:2=3
+```
+
+- `setcmd` swaps the command at a script offset (as `dis` prints it) for
+  another with the same argument count, keeping its arguments. It
+  re-checks the script's labels before writing. `sqb.set_commands` makes
+  several swaps in one script and checks the labels once, at the end (the
+  tutorial skip uses it).
+- `settable` changes cells of a PwkScript's `SQT1` tables
+  (`table:row:element=value`, numbered as `tables` prints them) within the
+  element size: 0–255 for a 1-byte cell, −32,768–32,767 for 2 bytes, a
+  signed 32-bit number for 4. Given a pack entry it writes the whole pack,
+  with the entry at its old size; given a whole pack, each entry name is
+  followed by its cells. `patch_disc.py --copies` then also updates the
+  pack's copy in `PRELOAD/STATIONFILE.PAC`, which stays loaded all game.
+- The mod editor's Comments tab edits the detail-screen comment tables
+  through `settable` and logs the command
+  ([`USAGE.md`](../USAGE.md)).
+
+## Still unknown
+
+- What `SQT1 +0x10` (the flag) does, and what `Table.Rand17/18` read (no
+  script uses them).
+- Base 35 and root `Root9` and `Root13`. Also which of 98/99 and 100/101
+  turns the feature on.
+- What reads and writes global memory records 0–12, and what they mean
+  (`g[0]` and `g[7]` look like a year, `g[1]`, `g[5]` and `g[6]` like a day
+  and a month). The scripts use only `g[1]`, in `A001`.
+- Which players have a fixed detail comment (`DETAILFLAG`,
+  `CDetailConstMessage`), and when the player page shows messages
+  120/121.
+- What `BranchIf` does differently from `JumpIf`.
+- The command sets `INFORMATION.SQB` and `CHECKCLUBEDIT.SQB` were written
+  for.
+- Whether the tutorial skip works in France, Italy, Spain and the
+  Netherlands (`--skip-nation`; England and Germany are played in
+  PCSX2), and whether the parts of `Sche.YearEnd` and `Sche.MonthEnd` it
+  skips (`pwkTeam_ChangePop_Year`) change anything.
+- The launcher entries not yet tried: YAMAZAKI TEST, Talk and BG LIGHT
+  TEST; and why the blank test modules show nothing (missing data, or
+  waiting for input from the launcher).
+
+## Checking the claims
+
+```bash
+python SRC/sqb.py info    DAT/SEQ DAT/PARAM            # check every script
+python SRC/sqb.py info    DAT/GAME/COMBINATION2.CSB    # the combination scripts
+python SRC/sqb.py dis     DAT/SEQ/ROOTMAINSEQ.SQB      # listing with labels and module names
+python SRC/sqb.py dis     "DAT/PARAM/PSCCOMMON.PAC#PscCommon_PinfoPoint.sqb"   # with field names
+python SRC/sqb.py tables  "DAT/PARAM/PSCCOMMON.PAC#PscCommon_PinfoPoint.sqb"   # its SQT1 tables
+python SRC/sqb.py names   DAT/SEQ/SQBFILENAME.TBB      # script ids
+python SRC/sqb.py globals DAT/SEQ/GLOBALMEMORY.TBB     # global memory records
+python SRC/sqb.py roundtrip DAT/SEQ DAT/PARAM          # re-encode all 41 scripts byte for byte
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 1ffa90 40   # CSeqController::UpdateCommand
+```
+
+`roundtrip` writes every one of the 12,107 `SQT1` cells back and compares.

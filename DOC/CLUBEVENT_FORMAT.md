@@ -69,9 +69,10 @@ it after every check; the Japanese build at `0x20f108`). So Renew
 Mobile Site is cut content: its record is complete (from 2010–11,
 popularity 30,001, priority 99), and so are its mail texts (category
 563, 11233 and 11234), but the game never lists it.
-`patch_disc.py --mod mobile-site` (in `--mod lmaster-lite`) makes that
-store a nop ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)), and
-`clubevent.py show` says whether an executable still clears it.
+`patch_disc.py --mod mobile-site` (in the `club-fixes` group, so every
+edition of the LMASTER Mod has it) makes that store a nop
+([`LMASTER_MOD.md`](LMASTER_MOD.md#status)), and `clubevent.py show`
+says whether an executable still clears it.
 
 ## The chance record (8 bytes)
 
@@ -118,13 +119,7 @@ ticket bonus −100 to 1,000 %, the cost up to 1,000,000 (£50 million; ×
 the executable, which gives back the same file on both releases.
 
 ```bash
-python SRC/clubevent.py info ISO
-python SRC/clubevent.py show ISO DAT/MESSAGE/MES.PAC
 python SRC/clubevent.py set ISO/SLES_541.51 out.elf 27:cost=400 38:ticket=10
-python SRC/sles_disasm.py ISO/SLES_541.51 dis plClubEvent_GetList plClubEvent_Execute
-python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x20e230 42
-python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x20e2d8 70
-python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x20e3f0 38
 ```
 
 **Tested in PCSX2** (Nexxus's report, 2026-10-31, `LMAST-test-season.iso`
@@ -143,3 +138,15 @@ first September.
 - Why event 37 is disabled. `--mod mobile-site` brings it back in the
   game (tested in PCSX2,
   [`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
+
+## Checking the claims
+
+```bash
+python SRC/clubevent.py info ISO
+python SRC/clubevent.py show ISO DAT/MESSAGE/MES.PAC
+python SRC/clubevent.py roundtrip ISO
+python SRC/sles_disasm.py ISO/SLES_541.51 dis plClubEvent_GetList plClubEvent_Execute
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x20e230 42
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x20e2d8 70
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x20e3f0 38
+```

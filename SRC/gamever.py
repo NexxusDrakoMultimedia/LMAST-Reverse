@@ -1,21 +1,25 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
-"""Game builds: the PAL release (SLES_541.51) and the Japanese one
+"""Game builds: the PAL release (SLES_541.51) and the Japanese release
 (SLPM_663.16, "Pro Soccer Club o Tsukurou! Europe Championship").
 
 The tools give addresses in the PAL executable and overlays (ISO/). This
 module finds the same address in another build's executable or overlay,
-so a tool given ISO_JP/ reads the right table. See DOC/JAPANESE_RELEASE.md.
+so a tool given ISO_JP/ reads the right table. DOC/JAPANESE_RELEASE.md
+has the method's results and what else differs on the Japanese disc.
 
 An address is found in the other build, in this order:
 
   1. symbol    the PAL address has a name (the executable's export table,
                an overlay's exports); the other build's symbol of that name.
-  2. reference every named PAL function that loads the address with a
+  2. reference every PAL function that has a name (its own, or one made
+               from its callers, see below) and loads the address with a
                lui/addiu-style pair (an overlay: a HI16/LO16 relocation)
                loads it as its n-th distinct address. The other build's
-               function of that name loads its n-th. Every such function
-               must give the same answer.
+               function of that name loads its n-th. The most functions
+               win; a close vote goes to the candidate whose words look
+               most like the PAL ones, and if that is no clearer, nothing
+               is found.
   3. bytes     the PAL bytes at the address (code with its address and
                jump fields masked) occur exactly once in the other file,
                or as often as in the PAL file: then the same occurrence.
@@ -23,18 +27,27 @@ An address is found in the other build, in this order:
                occurs exactly once in the other build's function of the
                same name: for code the other build changed a few words
                after the address.
-  5. near      as 2, with the closest address a named function loads,
-               up to 0x800 bytes away, plus the distance.
+  5. near      as 2, from an address a named function loads up to 0x800
+               bytes away; the result adds the same distance.
 
 Functions without a symbol are named after their callers ("f>2" is the
-third function f calls). A result from 2 must agree with a unique match
-from 3. Results are cached in .cache/gamever.json by the other
-file's SHA-1.
+third function f calls, counting from 0; "f>0>1" is the second function
+that one calls). When the PAL address is the start of such a function and
+every one of its names that the other build also has leads to the same
+function there, that function is the answer (reported as "function
+f>2"); it is tried before step 2. A result
+from 2 must agree with a unique match from 3. Results are cached in
+.cache/gamever.json (git-ignored) by the other file's SHA-1.
 
 Usage:
-    python gamever.py which <ISO dir | file>                # which build
-    python gamever.py at    <file> <PAL hex address> [size] # one address, and how it was found
-    python gamever.py check <ISO dir>                       # every address the tools use
+    python SRC/gamever.py which <ISO dir | file>                      # which build
+    python SRC/gamever.py at    <file> <PAL hex address> [hex size]   # one address, and how it was found
+    python SRC/gamever.py check <ISO dir>                             # every address the tools use
+
+`which` prints PAL or JP. `at` prints the address and how it was found
+(exit status 1 if it was not found); the size is how many bytes are
+compared and defaults to 0x40. `check` translates every address in
+ADDRESSES and exits with status 1 if any is not found.
 """
 import bisect
 import hashlib
@@ -54,8 +67,9 @@ CACHE = os.path.join(ROOT, ".cache", "gamever.json")
 NEAR = 0x800
 
 # Every address the tools read from the executable or an overlay:
-# (tool, constant, file, bytes to compare). A constant that is a tuple
-# names several addresses. `check` translates them all.
+# (tool, constant, file, bytes to compare). "exe" is the executable. A
+# constant that is a tuple names several addresses. `check` translates
+# them all.
 ADDRESSES = (
     ("acrobata", "EXE_INDEX", "exe", 0x40),
     ("acrobata", "EXE_SCENES", "exe", 0x40),
@@ -113,11 +127,13 @@ def exe_name(iso_dir):
 
 
 def exe_path(iso_dir):
+    """The executable's path in an extracted disc folder, PAL or Japanese."""
     return os.path.join(iso_dir, exe_name(iso_dir))
 
 
 def build_of(path):
-    """'PAL' or 'JP' for a disc folder, an executable, or an overlay in DLL/."""
+    """'PAL' or 'JP' for a disc folder, an executable, or an overlay in DLL/
+    (an overlay takes its build from the executable one folder up)."""
     if os.path.isdir(path):
         return EXES[exe_name(path)]
     name = os.path.basename(path).upper()
@@ -128,7 +144,8 @@ def build_of(path):
 
 
 def reference_of(path):
-    """The PAL file that `path` corresponds to."""
+    """The PAL file that `path` corresponds to: the PAL executable for an
+    executable (by name or ELF header), else the PAL overlay of that name."""
     name = os.path.basename(path)
     if name.upper() in EXES or open(path, "rb").read(4) == b"\x7fELF":
         return os.path.join(REFERENCE_ISO, PAL_EXE)
@@ -150,8 +167,8 @@ def _same_file(a, b):
 
 def _hilo_refs(words, base):
     """Distinct addresses built by `lui` plus an immediate use of the same
-    register (addiu, ori, a load or store), in order. Capstone isn't needed:
-    only the opcode fields are read."""
+    register (addiu, ori, a load or store), in order. Only the opcode fields
+    are read, so Capstone (which has no R5900 mode) isn't needed."""
     hi, out = {}, []
     for w in words:
         op, rs, rt, imm = w >> 26, (w >> 21) & 31, (w >> 16) & 31, w & 0xFFFF
@@ -247,9 +264,11 @@ class Image:
 
     def _name_callees(self, depth=3):
         """Give functions aliases after their named callers: 'caller>n' is
-        the n-th distinct function the caller calls. A function gets one
-        alias per caller, so a caller that only one build has doesn't
-        rename it; an alias that would name two functions is dropped."""
+        the n-th distinct function the caller calls (counting from 0), and
+        the new names are passed on to their own callees for `depth` rounds.
+        A function gets one alias per caller, so a caller that only one
+        build has doesn't rename it; an alias that would name two functions
+        is dropped."""
         self.aliases = {a: [n] for a, n in self.name_at.items() if a in self.refs}
         for _ in range(depth):
             new = {}
@@ -284,8 +303,9 @@ class Image:
 
     def pattern(self, addr, size):
         """A regex for the bytes at `addr`. Inside a function, the immediate
-        of lui/addiu/ori/loads/stores and jal's target are wildcards, since
-        addresses differ between builds."""
+        of lui/addiu/ori/loads/stores and the target of jal and j are
+        wildcards, since addresses differ between builds. Data is matched
+        byte for byte."""
         raw = self.bytes_at(addr, size)
         if raw is None:
             return None
@@ -338,12 +358,14 @@ def image(path):
 
 def translate(ref_path, path, addr, size=0x40):
     """(address in `path`, how it was found) for PAL address `addr` in
-    `ref_path`, or (None, why not)."""
+    `ref_path`, or (None, why not). `size` is how many bytes are compared.
+    The order of the attempts is the one in the module docstring."""
     ref, other = image(ref_path), image(path)
     name = ref.name_at.get(addr)
     if name and name in other.addr_of:
         return other.addr_of[name], "symbol %s" % name
-    # A function without a symbol: one of its caller-made names. They must agree.
+    # A function without a symbol: its caller-made names must all lead to
+    # the same function in the other build.
     theirs = {other.alias_addr[n]: n for n in ref.aliases.get(addr, ())
               if n in ref.alias_addr and n in other.alias_addr}
     if len(theirs) == 1:
@@ -364,7 +386,7 @@ def translate(ref_path, path, addr, size=0x40):
         return hits[0], "bytes"
     if hits:
         # The same bytes in several places: take the one in the same
-        # place in the order, if both files have the same number.
+        # place in the order, if both files have the same number of them.
         mine = ref.find(pat)
         if len(mine) == len(hits) and addr in mine:
             k = mine.index(addr)
@@ -386,7 +408,9 @@ def _named(im):
 
 def _in_function(ref, other, addr):
     """(address, how) from a shorter run of the bytes at `addr` found once
-    in the other build's function of the same name, or None."""
+    in the other build's function of the same name, or None. The function
+    is the named one that `addr` falls in; it ends at the next named
+    function of the other build."""
     names = _named(ref)
     i = bisect.bisect_right(names, addr) - 1
     if i < 0:
@@ -408,7 +432,10 @@ def _in_function(ref, other, addr):
 
 def _vote(ref, other, addr, size, exact):
     """(address, how) from the functions that load `addr` (exact) or an
-    address up to NEAR away; (None, why) if they disagree; None if none do."""
+    address up to NEAR away; (None, why) if they disagree; None if none do.
+    A function votes only if both builds' copies load as many distinct
+    addresses, since otherwise the code differs and the n-th can't be
+    trusted."""
     votes = {}
     for start, loads in ref.refs.items():
         for fname in ref.aliases.get(start, ()):
@@ -469,7 +496,9 @@ _cached, _digests = None, {}
 
 def at(path, addr, size=0x40):
     """PAL address `addr` as an address in `path` (an executable or
-    overlay of any build). Raises ValueError if it can't be found."""
+    overlay of any build); `addr` itself for a PAL file. `size` is how many
+    bytes are compared. A found address is cached in .cache/gamever.json.
+    Raises ValueError if it can't be found."""
     global _cached
     ref_path = reference_of(path)
     if _same_file(path, ref_path):
@@ -496,10 +525,13 @@ def at(path, addr, size=0x40):
 def imm(path, func, value):
     """A constant the code holds as an immediate (a loop bound, a table
     size): `value` in the PAL function at `func`, as the other build's
-    copy of that function has it. The instruction is the one with the
-    same opcode and registers, counted from the function's start; if
-    registers were allocated differently, the same opcode and destination,
-    then the same opcode alone."""
+    copy of that function has it. The PAL instruction is the first
+    addi, addiu, slti, sltiu, andi or ori with that immediate. Its twin is
+    the instruction with the same opcode and registers at the same count
+    from the function's start; if registers were allocated differently,
+    the same opcode and destination, then the same opcode alone. Raises
+    ValueError if the PAL function has no such immediate or the other
+    function has no matching instruction."""
     ref_path = reference_of(path)
     if _same_file(path, ref_path):
         return value
@@ -520,6 +552,7 @@ def imm(path, func, value):
 
 
 def _function_words(im, func):
+    """The instruction words of the function that starts at `func`."""
     i = im.starts.index(func)
     end = im.starts[i + 1] if i + 1 < len(im.starts) else im._code_end()
     o = im.v2f(func)
@@ -533,6 +566,10 @@ def _file_for(iso_dir, kind):
 
 
 def cmd_check(iso_dir):
+    """Translate every address in ADDRESSES into the build in `iso_dir` and
+    print how each was found. `!!` marks an address that wasn't found, and
+    "bytes differ" one whose bytes at the new place differ from PAL's.
+    Returns 1 if any address wasn't found."""
     import importlib
     problems = 0
     for tool, const, kind, size in ADDRESSES:

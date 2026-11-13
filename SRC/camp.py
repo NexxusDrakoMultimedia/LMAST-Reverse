@@ -143,9 +143,10 @@ def messages(mes_path, category, lang=1):
     return {}
 
 
-# What an editor offers: only the camp type, whose readers are known; the
-# rest is shown. The camp list numbers the types 1-87 (one too many for
-# the game's tables, which the camp-types fix lowers), so 0-87 covers both.
+# What an editor offers: the camp type, level and event_only, whose readers
+# are known; the rest is shown. The camp list numbers the types 1-87 (one
+# too many for the game's tables, which the camp-types fix lowers), so
+# 0-87 covers both.
 EDIT_RANGES = {"type": (0, CAMP_TYPES), "level": (0, len(LEVEL_POPULARITY) - 1),
                "event_only": (0, 1)}
 

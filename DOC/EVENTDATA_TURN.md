@@ -1,12 +1,22 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# `EVENT/EVENTDATA_TURN.TBB`
+# `EVENT/EVENTDATA_TURN.TBB`: an unused early event sheet
 
-An early export of the "turn" event sheet: one row per scripted event
+An early export of the "turn" event sheet, one row per scripted event
 (office visits, salesman pitches, locker-room talks, stadium news, ...).
-218 records of **281 bytes** in a single `TBL1` table (61,258 = 281 × 218).
-The TBL1 line size says 32, which is wrong as a stride (see
+The game never loads it. The events you see in play come from the numeric
+`EvsDataBin_*.BIN` tables that replaced it
+([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)). It stays on the disc as
+a leftover.
+
+The file holds 218 records of **281 bytes** in a single `TBL1` table
+(61,258 = 281 × 218). The Japanese release has a byte-identical copy
+(checked with `cmp`; [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)).
+`python SRC/eventdata_turn.py DAT/EVENT/EVENTDATA_TURN.TBB`
+prints every record as CSV; there is no writer.
+
+The `TBL1` line size says 32, which is wrong as a stride (see
 [`TBB_FORMAT.md`](TBB_FORMAT.md)). At 32 bytes a line, 10 bytes are left
 over (61,258 = 32 × 1,914 + 10), which is why `tbb.py info` reports 10
 trailing bytes. At 281 bytes the table divides exactly.
@@ -14,8 +24,9 @@ trailing bytes. At 281 bytes the table divides exactly.
 ## The game doesn't use it
 
 - **No references.** The name `EventData_TURN` doesn't appear in
-  `SLES_541.51`, any `DLL/*.REL` overlay, or any other file in `DAT/`
-  (including the `PRELOAD/SIMFILE*.PAC` load lists).
+  `SLES_541.51`, in any `DLL/*.REL` overlay or in any file in `DAT/`
+  (including the `PRELOAD/SIMFILE*.PAC` load lists). The one exception is
+  the CVS bookkeeping in `DAT/EVENT/CVS/ENTRIES`, below.
 - **Event IDs don't appear anywhere else.** None of its 200 distinct
   event IDs (`OSA000`, `OHI006`, `LOC0110`, ...) occur in any other file
   on the disc.
@@ -26,9 +37,9 @@ trailing bytes. At 281 bytes the table divides exactly.
   `EvsDataBin_MAIL.bin`. Those are fully numeric (no strings), so this
   TBB is a dead prototype of the same sheet.
 
-So the layout below is **empirical**, inferred from the data alone; no loader
-exists to confirm the field names. It does account for every non-zero
-byte in all 218 records, and no string overruns its slot.
+So the layout below is **empirical**, inferred from the data alone; no
+loader exists to confirm the field names. It does account for every
+non-zero byte in all 218 records, and no string overruns its slot.
 
 ## Record layout (281 bytes, packed, no alignment)
 
@@ -41,7 +52,7 @@ byte in all 218 records, and no string overruns its slot.
 | `0x30` | 32 | char[32] | timing | `TURNSTART` 101, `GAMESTART` 71, `MONTHSTART` 16, `MENUEND` 12, `-` 8 (follow-ups), `YEARSTART` 4, `TURNEND` 3 |
 | `0x50` | 1  | u8 | priority / weight | 100 ×124, 200 ×41 (all stadium `STA*`), 0 ×24, plus 1–10 and 101–250 |
 | `0x51` | 32 | char[32] | mood / event class | `EV_NORMAL`, `EV_LUCKY1/2`, `EV_UNLUCKY1/2`, `NEUTRAL`, `NEWS0`, `LOCKER1`, `OFFICE0`, `CAMP0/1/3`, `RIVAL`, `NON` |
-| `0x71` | 36 | char[36] | scene-type memo | `A`, `B`, `AorB`, `E+B`, `G`, `Y/N`, `B+Y/N`, `A+2…` + lossy Japanese |
+| `0x71` | 36 | char[36] | scene-type memo | `A`, `B`, `AorB`, `E+B`, `G`, `Y/N`, `B+Y/N`, `A+2…`, `EV_TYPE_A` + lossy Japanese |
 | `0x95` | 64 | char[64] | item / picture | `AROMA_OIL`, `KEEPER_GLOVE`, `SPIKE`, `UEFA_CUP_LOGO`, `ITALY_FIRSTLEAGUE_REGULATION` ... (longest 35 chars) |
 | `0xD5` | 36 | char[36] | location | `OFFICE`, `LOCKER`, `STADIUM`, `MY_ROOM`, `MEETING`, `ENTRANCE`, `GROUND`, `HOMETOWN`, `TV`, `YOUTH` |
 | `0xF9` | 32 | char[32] | character | `SECRETARY`, `PLAYER`, `MANAGER`, `ANNOUNCER&SUPPORTER`, `SALESMAN`, `AGENT`, `P_COACH`, `M_COACH`, `SCOUT`, `CAPTAIN` ... |
@@ -65,16 +76,22 @@ always-zero u32; the data can't tell those apart.
 - **Priority values.** `priority` is only a guess, taken from the
   distribution. The values 100 and 200 look like percentages or
   priority tiers, and 0 shows up on tutorial and chained events. The
-  shipping EVENT table has the same 100/200 split in its weight column
-  ([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)).
+  shipping EVENT table's weight column also has 100 and 200 as its two
+  common values (234 and 38 records of 382;
+  [`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)).
 
-## Tool
+## Checking the claims
 
 ```bash
-python SRC/eventdata_turn.py DAT/EVENT/EVENTDATA_TURN.TBB eventdata_turn.csv
+python SRC/tbb.py info DAT/EVENT/EVENTDATA_TURN.TBB            # 1,914 lines of 32, "10 trailing bytes"
+python SRC/eventdata_turn.py DAT/EVENT/EVENTDATA_TURN.TBB      # the 218 records as CSV on screen
 ```
 
-Non-ASCII bytes are written as `\xNN` so nothing is silently dropped.
+The CSV has one column per field above (`category`, `end_marker`,
+`event_id`, `timing`, `priority`, `mood`, `scene_memo`, `item`,
+`location`, `character`) after an `index` column. A second argument
+writes it to a file instead of the screen. Non-ASCII bytes are written
+as `\xNN` so nothing is silently dropped.
 
 ## Still unknown
 

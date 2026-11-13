@@ -20,9 +20,11 @@ Usage:
     python titlebanner.py preview <font.ttf> <out.png> [--version 0.5.0] [--edition Full]
     python titlebanner.py info    <SC_TITLEBG1.CSP> <font.ttf> [--version 0.5.0] [--edition Full]
 
-`preview` saves the banner at four times its size on the logo; `info`
-stamps a pack and reads the picture back, and checks that only the
-banner's rectangle changed.
+The options default to version 0.5.0 and edition Full. `preview` stamps
+DAT/CSE/SC_TITLEBG1.CSP of this repository's folder and saves the banner
+at four times its size on the logo; `info` stamps the pack it is given,
+reads the picture back, and checks that only the banner's rectangle
+changed.
 """
 import os
 import sys

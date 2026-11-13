@@ -1,13 +1,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
-"""PCSX2 texture hashes of the disc's textures, and a map from a PCSX2
-texture pack (LMAST Realism) onto them.
+"""PCSX2 texture hashes of the disc's textures, a map from a PCSX2
+texture pack (LMAST Realism) onto them, and a writer that puts the
+matching pictures into copies of the disc's files.
 
 PCSX2 replaces a texture by file name: `<texture>-<palette>-<state>.png`,
 for example `11e503e657dc5b20-649acd76961f6744-00001dd4.png`. This tool
 computes the same names from the textures on the disc, so a pack's PNGs
-can be matched to the disc texture each one replaces (the first step of
-putting a pack on the disc; DOC/TEXMAP.md, DOC/SVR_FORMAT.md).
+can be matched to the disc texture each one replaces, which is how a pack
+goes on the disc (DOC/TEXMAP.md, DOC/SVR_FORMAT.md).
 
 What PCSX2 hashes (read from its source, GSTextureCache.cpp
 HashCacheKey::Create / HashTextureLevel, and checked against 173 of 173
@@ -57,8 +58,9 @@ original crests of the licensed Italian, Spanish and Dutch clubs (teams 123
 to 244) that the pack doesn't replace down by 2N pixels, leaving N more
 transparent pixels on every side (--sles names the executable that holds the
 licence table; the default is the one in ISO/ next to DAT). A picture whose
-alpha never passes 0x80 is taken as the GS's 0 to 0x80. A texture in a CSP
-pack goes back with csp.py's replace. `apply` leaves the pack's `Intro`
+most common visible alpha is at most 0x80 is taken as the GS's 0 to 0x80
+(pack_picture). A texture in a CSP pack goes back with csp.py's replace.
+`apply` leaves the pack's `Intro`
 and `Rival` folders out (Nexxus's scope, 2026-11-12: LMASTER will have
 its own intros, and Rival is an upscale made from mipmaps); --all-folders
 puts them in. `name` decodes one file name.
@@ -321,6 +323,8 @@ def palette_words(tex, texa=(0, 0x80, 0)):
 
 
 def palette_hash(tex, texa=(0, 0x80, 0)):
+    """XXH3-64 of the palette as PCSX2 holds it, or None (a direct-colour
+    texture, or one whose palette is a .SVP)."""
     words = palette_words(tex, texa)
     return None if words is None else xxh3_64(words)
 
@@ -419,6 +423,7 @@ def cmd_index(args):
 
 
 def pack_files(folder):
+    """Every .png and .bmp under a pack folder, folder by folder."""
     for root, _, files in os.walk(folder):
         for name in sorted(files):
             if os.path.splitext(name)[1].lower() in (".png", ".bmp"):
@@ -754,7 +759,7 @@ def inset_pixels(tex, border):
 
 def licensed_crests(dat, sles):
     """(file, entry) of the crest of each licensed club (teams 123 to 244:
-    entry = team id - 3, 0SYSTEM_DIR.md) in both crest packs."""
+    entry = team id - 3, DOC/0SYSTEM_DIR.md, "Crests") in both crest packs."""
     import uniform
     teams, _ = uniform.licence_table(sles)
     return [(os.path.join(dat, "0SYSTEM", f).replace("\\", "/"), team - 3)
@@ -762,6 +767,9 @@ def licensed_crests(dat, sles):
 
 
 def is_preload(label):
+    """Whether a texture label names a file in DAT/PRELOAD (a copy of a file
+    that lives elsewhere; patch_disc.py --copies writes new bytes into
+    the copies too)."""
     return "/PRELOAD/" in label.replace("\\", "/").upper()
 
 

@@ -1,15 +1,18 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# `EvsDataBin_*.bin` event tables
+# Event, news and mail tables: `EVSDATABIN_{EVENT,NEWS,MAIL}.BIN`
 
-`DAT/EVENT/EVSDATABIN_{EVENT,NEWS,MAIL}.BIN` drive the club-management
-events: scripted office/locker/meeting scenes (EVENT), newspaper items
-(NEWS) and inbox mail (MAIL). They replaced the string-based
-`EVENTDATA_TURN.TBB` prototype
-([`EVENTDATA_TURN.md`](EVENTDATA_TURN.md)). All three are
-headerless arrays of fixed-size little-endian records, loaded whole by
-`DLL/SIMPRG.REL`.
+The three files in `DAT/EVENT/` decide what happens around your club
+between matches: the scripted scenes in the office, the locker room and
+meetings (EVENT), the newspaper items (NEWS) and the mail in your inbox
+(MAIL). They replaced the string-based `EVENTDATA_TURN.TBB` prototype
+([`EVENTDATA_TURN.md`](EVENTDATA_TURN.md)). All three are headerless
+arrays of fixed-size little-endian records, loaded whole by
+`DLL/SIMPRG.REL`. `python SRC/evsdatabin.py` reads them into CSV with
+named columns (see [Checking the claims](#checking-the-claims)); there is
+no writer. The LMASTER Mod edits the EVENT table with a patch, in the
+`salesman-items` switch ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)).
 
 | File | Record size | Records | Getter (SIMPRG) | `EvsWork` slot | ID type byte |
 |---|---|---|---|---|---|
@@ -21,6 +24,15 @@ Addresses below are `SIMPRG.REL` file offsets (the overlay is linked at 0).
 `python SRC/snr2.py dis ISO/DLL/SIMPRG.REL <addr> <n> --sles ISO/SLES_541.51`
 shows them with imports resolved.
 
+**The Japanese release** (**empirical**, `DAT_JP/EVENT/`):
+`EVSDATABIN_NEWS.BIN` and `EVSDATABIN_MAIL.BIN` are byte for byte the
+PAL files, and `EVSDATABIN_EVENT.BIN` differs in 12 records: PAL's
+records 352 and 353 (handler type 6, dialogue categories 36029 and
+36030, a player loaned out and a player back from loan, timing 4 and 9)
+are inactive stubs there, and the check type of ten later
+records is 2 higher. No other record differs. The details are in the
+`EVENT/` row of [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md).
+
 ## Common rules (confirmed in code)
 
 - **Loading.** `0x1291d8` opens the three files with
@@ -29,7 +41,7 @@ shows them with imports resolved.
   (EVENT), `+0x4` (NEWS) and `+0x8` (MAIL).
 - **IDs.** An event ID is `type << 24 | index`. `0x12e8f8`/`0x12e908`/`0x12e918`
   test `id >> 24 == 1/2/3`. `0x12dff0` builds `index | 0x01000000`.
-  `EVS::GetEventName` just formats the full ID with `"%08x"`.
+  `EVS::GetEventName` formats the full ID with `"%08x"`.
   The function at `0x12b580` (unnamed, after `EVS::CEvsManager::Req`)
   switches on the type byte (jump
   table `0x238860`): 1 EVENT (factory `0x12d758`), 2 MAIL (`0x128c48`),
@@ -71,14 +83,14 @@ from the value distribution only.
 | Offset | Type | Field | Evidence | Values |
 |---|---|---|---|---|
 | `0x00` | u32 | index | empirical (all rows) | = record index |
-| `0x04` | u32 | always-eligible key | confirmed | if every condition field below is 0, the event is eligible only when this is non-zero. 0–116 |
+| `0x04` | u32 | check type (`always_key` in the CSV) | confirmed: the check switch `0x142e38` has 117 types, table `0x23b110` (type 58: [the salesman items](#the-salesmans-items)). If every condition field below is 0, the event is eligible only when this is non-zero | 0–116, non-zero in 126 |
 | `0x08` | u32 | handler type | confirmed: `0x12d7d8` switches on it (80 cases), each case allocates a different handler object | 0–78 |
 | `0x0c` | u32 | ? | empirical | 0–9 (3 ×182) |
 | `0x10` | u32 | speaker/actor class | confirmed: indexes a 90-entry flag table at `0x23a3c8` (via `0x139718`) that picks the scene-type override | 0–89 |
 | `0x18` | u32 | second actor? | confirmed: indexes the flag table at `0x23a428` (same call) | 0–123 |
 | `0x1c` | u32 | ? | empirical | 0–18 |
 | `0x24`–`0x5c` | 5 × {u32, u32, u32} | ? | empirical | five groups at `0x24`/`0x30`/`0x3c`/`0x48`/`0x54`: (0–322, {0,2,46,47}, 0 or ~2000/3000/4000) |
-| `0x64` | u32 | dialogue (message ref) | confirmed: `0x1393d0` fetches the record with the EVENT getter, copies it to the stack and stores `+0x64` in the scene object at `+0x44` (unless the object's `+0x48` overrides it) | id is always 0; category 35000–36030 in 373 records, 0 in 8 (256, 311–315, 359, 361). The whole category is the scene's script |
+| `0x64` | u32 | dialogue (message ref) | confirmed: `0x1393d0` fetches the record with the EVENT getter, copies it to the stack and stores `+0x64` in the scene object at `+0x44` (unless the object's `+0x48` overrides it) | id is always 0; category 35000–36030 in 373 records, 0 in the null record 0 and in 8 more (256, 311–315, 359, 361). The whole category is the scene's script |
 | `0xe0` | u32 | scene type | confirmed: `0x12a578` returns it; `0x12a690` switches on it (29 cases). What happens after the scene: see [Scene types](#scene-types) | 0–28 |
 | `0xe8`, `0xec` | u32 | scene type override A/B | confirmed: used instead of `0xe0` when the actor flag has bit `0x02`, picked by `EvsWork+0x1f8 == 1` | – |
 | `0xf0`–`0x104` | 6 × u32 | scene type by variant | confirmed: used when the actor flag has bits `0x1c`, indexed by `EvsWork+0x1fc` (0–5) | – |
@@ -89,7 +101,7 @@ Checked in this order; any failure means the event can't fire.
 
 | Offset | Type | Field | Check |
 |---|---|---|---|
-| `0x68` | s32 | timing | must equal the timing the scan runs for (`0x12df08`'s 2nd arg). −1 never matches. The values are the moments the root scripts run the Event module for (**confirmed**, [`GAME_FLOW.md`](GAME_FLOW.md#event-timings)): 0 year start, 4 turn start, 5/6 before/after a match, 8 end of the main menu, 9 turn end, 16 before the Sponsor screen, ... |
+| `0x68` | s32 | timing | must equal the timing the scan runs for (`0x12df08`'s 2nd arg). −1 never matches. The values are the moments the root scripts run the Event module for (**confirmed**, [`GAME_FLOW.md`](GAME_FLOW.md#event-timings)): 0 year start, 4 turn start, 5/6 before/after a match, 8 end of the main menu, 9 turn end, 16 before the Sponsor screen, ... (the counts per timing are in that table). |
 | `0x7c` | u32 | earliest season | 0 = any, else `year − 2005 >= value` (`0x12e3b8`) |
 | `0x80` | u32 | season pattern | 0 = any, else `pattern[value][year − 2005]` (`0x12e3e0`) |
 | `0x84` | u32 | date pattern A | 0 = any, else `pattern[value][date[3]]` (`0x12e450`) |
@@ -160,13 +172,18 @@ Which handler types own these functions isn't traced yet.
 
 ### Other
 
-- **Weight.** `0x6c` is the weight/priority, default 100: 100 ×234,
-  200 ×38. It's the same 100/200 split as the TBB prototype's
+- **Weight.** `0x6c` is the weight/priority, default 100: 100 in 234
+  records, 200 in 38, and 27 other values from 0 to 250 in the rest.
+  100 and 200 are also the two common values of the TBB prototype's
   priority byte.
+- **`0xdc`** (**empirical**): 31 in records 109–114, the six
+  training-camp follow-ups that scene types 19–24 chain, 32 in record
+  214, the rival-manager follow-up that scene type 18 chains, and 0 in
+  the other 375. No reader is traced.
 - **Unused columns.** These are 0 in every record: `0x14`, `0x20`,
-  `0x60`, `0xa0`, `0xac`, `0xcc`, `0xd0`, `0xd4`, `0xe4`, `0xec`,
-  `0x108`, `0x10c`. `0xa0`, `0xac`, `0xcc` and `0xd0` are still read
-  by code, so they're real fields with no data.
+  `0x60`, `0x74`, `0xa0`, `0xac`, `0xcc`, `0xd0`, `0xd4`, `0xe4`,
+  `0xec`, `0x108`, `0x10c`. `0x74`, `0xa0`, `0xac`, `0xcc`, `0xd0` and
+  `0xec` are still read by code, so they're real fields with no data.
 - **Flags.** There are 342 (`0x156`) of them, one byte each, at
   `*(EvsWork + 0x20)`. Flag 0 means "none" and is always true.
 - **Runtime patches.** Code at `0x12e928` overwrites `+0x08`, `+0x68`
@@ -438,9 +455,11 @@ It takes the message categories from a table at `0x1d9b10` (`50833`,
 `50832`, ...) rather than from the record. `50832`/`50833` have the same
 ids as `832`/`833`, but their text only lists each message's variables
 (`W{var:1:3}{var:1:3}`), which the game uses to build variable lists. The
-readable text is in `832`/`833`. 42 records (1–15, …, 340) are placeholders
-with a label as the body (`TEXT_NP_MONTH_00`, `TEXT_NP_OFF_00`, …) and the
-headline `Dummy`. The game probably fills those in from code.
+readable text is in `832`/`833`. 42 records (1–31, 307 and 331–340, in
+the English text) have a label as the body (`TEXT_NP_MONTH_00`,
+`TEXT_NP_OFF_00`, …). Records 1–31 also have the headline `Dummy` and
+record 331 has `DUMMY`; the other 10 have real headlines. The game probably fills the bodies in from
+code.
 
 `+0xb0` has a second use: besides the date rule, check types 34/35 and the
 functions at `0x12fe20`, `0x130390`, `0x130960`, `0x130a50` and `0x15ec68`
@@ -467,7 +486,7 @@ read it.
 | `0x60` | u32 | chance % | see the condition block | 100 ×269, 0 ×174 |
 
 As with NEWS, `50563` is the variable-list companion of `563`. Every MAIL
-column with data now has a name.
+column that holds data has a name.
 
 ## Still unknown
 
@@ -476,10 +495,10 @@ column with data now has a name.
   decoded above.
 - Which handler types consume `effect1_value` directly, and so what
   kinds 9/16/18/19 mean.
-- What EVENT `+0x0c`, `+0x1c` and the five triplets at `+0x24`–`+0x5c`
-  are. They aren't read through the getter in the functions traced so
-  far; the 32-byte unaligned copies of `+0x00`–`+0x1f` (e.g. at
-  `0x13578c`) are a lead. The triplets may be variable specs like
+- What EVENT `+0x0c`, `+0x1c`, `+0xdc` and the five triplets at
+  `+0x24`–`+0x5c` are. They aren't read through the getter in the
+  functions traced so far; the 32-byte unaligned copies of
+  `+0x00`–`+0x1f` (e.g. at `0x13578c`) are a lead. The triplets may be variable specs like
   NEWS's (same offsets, same arg1 values 2/46/47); their third value
   also matches speaker-name ids used in `ESC 0xC1` (e.g. 3110).
 - The meaning of `date[2]` and `date[3]` in the date struct.
@@ -492,11 +511,25 @@ column with data now has a name.
 - Whether any of the 32 unreferenced dialogue categories is reached by an
   arithmetic category (base + offset), which the immediate/data search
   can't see.
+- What PAL's records 352 and 353 are for, and why the Japanese disc holds
+  them as inactive stubs (see the Japanese release note at the start of this file). The English
+  dialogue says that a player is loaned out from today (352) or has
+  just got back from loan (353).
 
-## Tool
+## Checking the claims
+
+`evsdatabin.py` has no `info` command. It stops with an error if a file
+isn't a whole number of records. The record counts and value ranges
+above come from its CSV. Columns that are 0 in every record are left out
+unless you pass `--all`; columns without a name are called by offset
+(`u_0c`). `--text` adds the message
+text of every reference, in the language `--lang` picks (default 1,
+English; 2 is French, see [`MBB_FORMAT.md`](MBB_FORMAT.md#languages)).
+Write the CSV outside the repo.
 
 ```bash
-python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_EVENT.BIN events.csv   # named EVENT columns
-python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_NEWS.BIN  news.csv --text DAT/MESSAGE/MES.PAC
-python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN  mail.csv --text DAT/MESSAGE/MES.PAC --lang 2
+python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_EVENT.BIN out/events.csv   # named EVENT columns
+python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_NEWS.BIN  out/news.csv --text DAT/MESSAGE/MES.PAC
+python SRC/evsdatabin.py DAT/EVENT/EVSDATABIN_MAIL.BIN  out/mail.csv --text DAT/MESSAGE/MES.PAC --lang 2
+python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x12b0b8 40 --sles ISO/SLES_541.51   # the weight getter
 ```

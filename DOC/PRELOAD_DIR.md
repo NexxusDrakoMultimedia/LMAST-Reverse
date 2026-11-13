@@ -12,10 +12,9 @@ not the originals.** An edit therefore has to reach both, which is what
 `patch_disc.py --copies` does ([`REBUILD.md`](REBUILD.md#copies)).
 
 `python SRC/preload.py info DAT` checks every pack against its sources
-and gives its free room for a rebuild.
-`python SRC/preload.py lists ISO` prints the load lists from the game
-code. `python SRC/preload.py who DAT <name>` says which packs hold a file
-and what loads them.
+and gives its free room for a rebuild. `python SRC/preload.py lists ISO`
+prints the load lists from the game code, and `python SRC/preload.py who
+DAT <name>` says which packs hold a file and what loads them.
 
 ## Confirmed from the game code
 
@@ -72,7 +71,8 @@ original is read only when a file is requested while none of the packs
 holding it is resident.
 
 The loaders, from `python SRC/preload.py lists ISO` (addresses in the
-file named, `SLES` = `SLES_541.51`):
+file named, `SLES` = `SLES_541.51`). The PAL release has 17 load lists:
+3 in the executable, 1 in `GAMEPRG.REL` and 13 in `SIMPRG.REL`.
 
 | Pack | Loaded by | Resident while |
 |---|---|---|
@@ -86,7 +86,7 @@ file named, `SLES` = `SLES_541.51`):
 | `TACTICSFILE<n>`, `TACTICSLARGE<n>` | `SLES 0x55b120`, `CTacticsManagerImplement::GetPreLoadData` (`0x2e3420`) outside a match | the tactics screen |
 | `TACTICSMATCHFILE<n>`, `TACTICSMATCHLARGE<n>` | `SLES 0x55b3a8`, the same function when its mode (`+0x44`) is 2 or 3 | the tactics screen in a match |
 | `GAMEFILE<n>`, `GAMELOCALMEM` | `GAMEPRG.REL` list `0x265590`, `GAME_MODULE` (`0xbd0`) | a match |
-| `TACTICSPITCH` | `CLoader::loadFileRequest` from `WP::CTacticsPitch`'s constructor (`SLES 0x2a89cc`) | the tactics pitch. Loaded but never read: its entries aren't registered, and the pitch reads the originals in `CSE/` ([below](#tacticspitchpac-is-loaded-but-not-used)) |
+| `TACTICSPITCH` | `CLoader::loadFileRequest` from `WP::CTacticsPitch`'s constructor (`SLES 0x2a8a04`) | the tactics pitch. Loaded but never read: its entries aren't registered, and the pitch reads the originals in `CSE/` ([below](#tacticspitchpac-is-loaded-but-not-used)) |
 
 `<n>` is the language digit, 0–6 (0 Japanese, 1 English, then French,
 German, Italian, Spanish and an unused seventh slot, as in `MES.PAC`).
@@ -174,6 +174,12 @@ A test disc was patched with different text in each copy:
   its pack's language digit.
 - Entries by folder: 861 `MESSAGE`, 394 `CSE`, 177 `GAME`, 100 `PLAYER`,
   64 `BG`, 62 `PARAM`, 49 `NEWS`, 21 `EVENT`, 14 `0SYSTEM`, 7 `EMBLEM`.
+- The 861 `MESSAGE` entries are copies of 763 distinct `MES.PAC` message
+  files (`python SRC/preload.py who DAT 3_1.mbb` lists the entries of
+  one; [`MBB_FORMAT.md`](MBB_FORMAT.md#writing)).
+- The `BG` entries are copies of ten loose `BG/` files, all
+  byte-identical; the files and the packs that hold them are listed in
+  [`BG_DIR.md`](BG_DIR.md#copies-and-files-nothing-names).
 
 ## What this means for mods
 
@@ -247,3 +253,16 @@ offsets.
 
 - What record field `+0x18` selects (3, 4 or 5).
 - `DUMMY.DAT` (not a pack).
+
+## Checking the claims
+
+```bash
+python SRC/preload.py info DAT
+python SRC/preload.py lists ISO
+python SRC/preload.py who DAT Regulation.tbb
+python SRC/patch_disc.py copies DAT PARAM/REGULATION.TBB
+```
+
+`python SRC/regress.py` runs the first two as `preload` and
+`preload_lists`. The counts above (139 packs, 1,749 entries, the free
+room) are the output of the first command.

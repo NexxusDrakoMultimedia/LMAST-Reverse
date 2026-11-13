@@ -13,9 +13,9 @@ AFS (little-endian):
   names n x 48 bytes: char name[32], 6 x u16 date (year, month, day, hour,
         minute, second), u32 (the previous entry's size: an AFS quirk)
 
-Every entry on this disc is CRI ADX (big-endian header):
-  +0x00 u16 0x8000        +0x02 u16 header size - 4 (data starts after it;
-  +0x04 u8 encoding (3)         "(c)CRI" ends just before)
+Every entry on both discs is CRI ADX version 4 (big-endian header):
+  +0x00 u16 0x8000        +0x02 u16 header size - 4 (the audio starts right
+  +0x04 u8 encoding (3)         after it; "(c)CRI" ends just before)
   +0x05 u8 frame size (18) +0x06 u8 bits per sample (4)
   +0x07 u8 channels       +0x08 u32 sample rate   +0x0c u32 samples
   +0x10 u16 high-pass cutoff (Hz)  +0x12 u8 version (4)  +0x13 u8 flags (0)
@@ -25,8 +25,9 @@ Every entry on this disc is CRI ADX (big-endian header):
              end at 0x22 and hold no loop)
 Frames are 18 bytes per channel, channels interleaved frame by frame: a
 u16 scale, then 32 signed 4-bit samples, high nibble first. Each sample
-is nibble * (scale + 1) + (c1 * s[-1] + c2 * s[-2]) >> 12, with c1 and c2
-from the cutoff and rate (the standard ADX predictor, as vgmstream).
+is nibble * (scale + 1), plus (c1 * s[-1]) >> 12 and (c2 * s[-2]) >> 12,
+clamped to 16 bits, with c1 and c2 from the cutoff and rate (the standard
+ADX predictor, as vgmstream).
 
 See DOC/AUDIO_DIR.md.
 
@@ -49,11 +50,13 @@ NAME_SIZE = 48
 
 
 class Entry:
+    """One archive entry; `date` is the name table's (y, m, d, h, mi, s), or None."""
     def __init__(self, index, offset, size, name, date):
         self.index, self.offset, self.size, self.name, self.date = index, offset, size, name, date
 
 
 class Afs:
+    """An AFS archive: its entry table and names. `read` returns one entry's bytes."""
     def __init__(self, path):
         self.path = path
         self.file_size = os.path.getsize(path)
@@ -97,6 +100,7 @@ class Afs:
 
 
 class Adx:
+    """An ADX file: the header fields, the loop points, and `decode` for the audio."""
     def __init__(self, data):
         if len(data) < 0x14 or struct.unpack_from(">H", data)[0] != ADX_MAGIC:
             raise ValueError("not ADX")
@@ -112,6 +116,9 @@ class Adx:
             flag, start, _, end, _ = struct.unpack_from(">IIIII", data, 0x24)
             if flag:
                 self.loop = (start, end)
+        # Version 3 keeps its loop at 0x18. No entry on either disc uses it
+        # (all 65,225 PAL and 66,195 Japanese entries are version 4), so
+        # this branch has never run on game data.
         elif self.version == 3 and header_end >= 0x2c and len(data) >= 0x2c:
             flag, start, _, end, _ = struct.unpack_from(">IIIII", data, 0x18)
             if flag:
@@ -134,6 +141,7 @@ class Adx:
         return p
 
     def coefs(self):
+        """The predictor coefficients (c1, c2) for the cutoff and sample rate."""
         z = math.cos(2.0 * math.pi * self.cutoff / self.rate)
         a = math.sqrt(2.0) - z
         b = math.sqrt(2.0) - 1.0

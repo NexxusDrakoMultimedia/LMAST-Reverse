@@ -65,8 +65,9 @@ def parse_csp(buf):
 
 def pack_align(buf):
     """The boundary a pack's entries sit on: 16 in 487 of the 489 packs, 64
-    in CORE_PARTS and TEAM_SELECT_BG (empirical). 64 when some entry is on
-    a 64-byte boundary a 16-byte layout would not have put it on."""
+    in CORE_PARTS and TEAM_SELECT_BG (empirical). It is the first of 16
+    and 64 that puts every entry where build_csp would; 16 if neither
+    does, so that roundtrip reports the pack."""
     ents = parse_csp(buf)
     for align in (16, 64):
         pos = -(-(4 + 16 * len(ents)) // align) * align

@@ -6,7 +6,8 @@
 Reverse-engineering notes and tools for the PAL PS2 release of
 **Let's Make a Soccer Team!** (`SLES_541.51`), and the mod built with
 them, the [LMASTER Mod](DOC/LMASTER_MOD.md): fixes for what the release
-cut or broke, real names, a hidden third tier and a harder economy.
+cut or broke, real names, a hidden third tier and a harder economy. The
+tools read the Japanese release (SLPM-66316) too.
 
 The repo has two halves:
 
@@ -21,13 +22,14 @@ was inferred from the data and checked against every file on the disc.
 
 No game data is included. You need your own copy of the disc.
 
-Where to start:
+## Start here
 
 | You want to | Read |
 |---|---|
 | play a mod someone made | [`INSTALL.md`](INSTALL.md): checking your disc, applying a patch, keeping your saves safe |
-| make a mod, or edit a career | [`USAGE.md`](USAGE.md): the mod editor and the save editor, tab by tab |
-| know what a file or system does | the [documentation index](#documentation-index) below |
+| make a mod, or edit a career | [`USAGE.md`](USAGE.md): the mod editor and the save editor, tab by tab. Set the project up first ([Requirements](#requirements) and [Setup](#setup) below) |
+| know what a file or system does | the [documentation index](#documentation-index) below; [`GOALS.md`](GOALS.md) shows how far each folder of the disc has got |
+| use or write a tool | the [tool tables](#tools) below, and [`AGENTS.md`](AGENTS.md) for the conventions |
 | help | [`CONTRIBUTING.md`](CONTRIBUTING.md), and "Next up" in [`TODO.md`](TODO.md) |
 | test something in the game | [`TESTING.md`](TESTING.md): the checks only a person playing can make, and how to report them |
 
@@ -38,48 +40,72 @@ same engine and whose edit players this game imports
 ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md)). Formats the two games
 share are documented here first, and VPF-Reverse builds on them.
 
+## Where the project stands
+
 The long-term aim is GUI tools for editing the game's data to build
-mods, and most of that is here now: every file on the disc is
-documented, the data a starting-season mod changes has writers and
-editor tabs, and edited files go back on a disc that boots. See
-[`GOALS.md`](GOALS.md) for the plan and where each stage stands,
-[`TODO.md`](TODO.md) for the next tasks and [`DONE.md`](DONE.md) for
-what's finished.
+mods, and most of that is here now. Every folder on the disc has a doc
+and nearly every file type is parsed. The data a starting-season mod
+changes has writers and editor tabs, and edited files go back on a disc
+that boots. A mod is shared as an xdelta patch against the player's own
+disc, and the LMASTER Mod is the first one built this way. What is left
+is mostly field meanings (each doc's "Still unknown" list), a few more
+editor tabs, and the checks in the game that only a person can make.
+[`GOALS.md`](GOALS.md) has the plan and where each stage stands,
+[`TODO.md`](TODO.md) the next tasks and [`DONE.md`](DONE.md) what is
+finished.
+
+## Repository map
+
+| Path | Holds | In git |
+|---|---|---|
+| [`DOC/`](DOC) | the notes: one doc per file format, folder and system (the [index](#documentation-index)) | yes |
+| [`SRC/`](SRC) | the Python tools (the [tables](#tools)), and the CSV tables some of them read: `realnames.csv`, `realnames_phrases.csv`, `grounds.csv`, `kits.csv` | yes |
+| [`PNACH/`](PNACH) | the PCSX2 widescreen patch ([`WIDESCREEN.md`](DOC/WIDESCREEN.md)) | yes |
+| top folder `.md` files and `LICENSE` | the guides: [`INSTALL.md`](INSTALL.md) for players, [`USAGE.md`](USAGE.md) for the editors, [`GOALS.md`](GOALS.md), [`TODO.md`](TODO.md), [`DONE.md`](DONE.md), [`TESTING.md`](TESTING.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`CONTRIBUTORS.md`](CONTRIBUTORS.md) and [`AGENTS.md`](AGENTS.md) (`CLAUDE.md` points Claude Code at it) | yes |
+| `ISO/`, `DAT/` | your disc: its files in `ISO/` (`SLES_541.51`, `DLL/`, `AUDIO/`, `DATA.CVM`) and the decrypted `DATA.ISO`, and the contents of `DATA.ISO` in `DAT/`, which is what most tools read | no: game data, never committed |
+| `ISO_JP/`, `DAT_JP/` | the same for the Japanese release (optional) | no: game data |
+| `mod/` | the editor's default mod folder: the edited game files | no: game data |
+| `.regress/` | `regress.py`'s baselines, which list file names and counts from your disc | no |
+| `.cache/` | `save.py`'s recorded field list and `gamever.py`'s address results | no |
+| `names/` | the name tables `mbb.py names` writes for you to fill in | no |
+| `*.iso`, `*.cso`, `*.zso`, `*.chd`, `*.xdelta` in the top folder | disc images (the Redump dump, built test discs) and patches | no |
 
 ## Disclaimer
 
-AI Usage Disclosure: This project follows the [0rwx Framework](https://0rwx.com/) at Level EXECUTE (x). 
-Automated AI agents and pipelines actively run tasks, execute scripts, 
-or manage workflows within the environment under the supervision of Nexxus Drako. 
+AI Usage Disclosure: This project follows the
+[0RWX](https://0rwx.com/) framework at level EXECUTE (AI:X). Automated AI
+agents and pipelines actively run tasks, execute scripts, or manage
+workflows within the environment under the supervision of Nexxus Drako.
+Claude (Anthropic) wrote the reverse engineering, the docs and the tools
+under Nexxus's direction, and Nexxus runs the in-game tests and reviews
+every change ([`CONTRIBUTORS.md`](CONTRIBUTORS.md)).
 
-She is neither anti-AI nor pro-AI, and she is pro user choice. If you hate genAI with
-the passion of a thousand suns, this project is not for you. If you're a
-far-right techbro chud, this project is ALSO not for you.
+Nexxus is neither anti-AI nor pro-AI, and is pro user choice. If you
+hate genAI with the passion of a thousand suns, this project is not for
+you. If you're a far-right techbro chud, this project is ALSO not for
+you.
 
 ## Requirements
 
-- Python 3, standard library only for most commands (`editor.py` uses
-  `tkinter`, which ships with Python)
-- `pip install pillow` for the PNG commands (`svr`, `csp`, `zbf`) and the
-  textures in `ninja.py`'s exports
-- `pip install capstone` for disassembly (`sles_disasm`, `snr2 dis`)
+- Python 3, standard library only for most commands. `editor.py` and
+  `saveedit.py` use `tkinter`, which ships with Python.
+- `pip install pillow` for everything that reads or writes a picture: the
+  PNG commands (`svr`, `csp`, `zbf`, `font`), the textures in `ninja.py`'s
+  exports, `texmap.py`, `fontmod.py`, `titlebanner.py` and the
+  `patch_disc.py` options that use them (`--realism`, `--font`)
+- `pip install capstone` for disassembly (`sles_disasm.py dis` and `addr`,
+  `snr2.py dis`)
+- A TrueType face (such as Roboto Condensed) for `fontmod.py` and
+  `titlebanner.py`; it is not in the repo
+- Python 3.14 or later to read a CHD made with zstd compression
+  ([`chd.py`](SRC/chd.py))
 
 ## Setup
 
-The tools expect this layout. Everything built from the disc is
-git-ignored, and none of it may be committed.
-
-```
-ISO/      the disc filesystem (SLES_541.51, DLL/, AUDIO/, DATA.CVM, ...)
-          + the decrypted DATA.ISO                              (ignored)
-DAT/      the contents of DATA.ISO, which is what most tools read (ignored)
-ISO_JP/, DAT_JP/   the same for the Japanese release, optional   (ignored)
-mod/      the editor's default mod folder                       (ignored)
-.regress/ regress.py's baselines; .cache/ save.py's field list  (ignored)
-SRC/      tools
-DOC/      format and system documentation
-PNACH/    PCSX2 patches (widescreen)
-```
+The tools expect the layout in the [repository map](#repository-map):
+your disc's files in `ISO/` and their extracted contents in `DAT/`
+(`ISO_JP/` and `DAT_JP/` for the Japanese release). Everything built
+from the disc is git-ignored, and none of it may be committed.
 
 Put a dump of the disc that matches Redump
 ([disc 12334](https://redump.info/disc/12334/), SLES-54151 v1.01) in the repo
@@ -130,8 +156,9 @@ python SRC/extract_disc.py all "Pro Soccer Club o Tsukurou! Europe Championship 
 Pass those folders to any tool. The PAL files in `ISO/` must be there
 too: tools give PAL addresses, and [`gamever.py`](SRC/gamever.py) finds
 them in the Japanese executable and overlays. `patch_disc.py` patches a
-Japanese disc too, with every `--mod` switch but `third-tier`. See
-[`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md).
+Japanese disc too, with every `--mod` switch except `realism`, which is
+made for the PAL release's textures; a few switches do nothing there and
+say so. See [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc).
 
 ## Tools
 
@@ -180,7 +207,7 @@ disassemble as unrelated MIPS instructions.
 | [`teaminit.py`](SRC/teaminit.py) | the player's new club (`TEAM_INIT_DATA.TBB`) by league and team style: squad, youth team, staff, staff lists and the rival club, named from the player database; edits records (`set`), round-trips; decodes the game's salary, transfer-fee and loan-fee limits from the executable (`limits`) | [`TEAMINIT_FORMAT.md`](DOC/TEAMINIT_FORMAT.md) |
 | [`clubresult.py`](SRC/clubresult.py) | how a final place is reported (`CLUBRESULT.TBB`), one row per schedule: league, cup or not ranked, the third-place match, and the clubs a cup's round names depend on ("Champion" to "Defeated 1st Rnd"); edits fields (`set`), round-trips | [`CLUBRESULT_FORMAT.md`](DOC/CLUBRESULT_FORMAT.md) |
 | [`training.py`](SRC/training.py) | the training tables (`TRAINING_LIST.TBB`): what each of the 139 practice menus trains and how tiring it is, the facility and camp bonuses, match growth by position, ability groups, the coaching staff ability per ability, and decline with age; edits values (`set`), round-trips | [`TRAINING_FORMAT.md`](DOC/TRAINING_FORMAT.md) |
-| [`camp.py`](SRC/camp.py) | the training camps (`CAMP_LIST.TBB`, `CAMP_EXPLANE.TBB`): each camp's city, nation and type, the clubs of its area and its description; edits fields (`set`), and fixes the camp types (`fixtypes`) and PAL's seven misplaced English camps (`fixcities`), round-trips | [`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md) |
+| [`camp.py`](SRC/camp.py) | the training camps (`CAMP_LIST.TBB`, `CAMP_EXPLANE.TBB`): each camp's city, nation and type, the clubs of its area and its description; edits fields (`set`), fixes the camp types (`fixtypes`), PAL's seven misplaced English camps (`fixcities`) and Santiago's description key (`fixsantiago`), round-trips | [`CAMP_FORMAT.md`](DOC/CAMP_FORMAT.md) |
 | [`formset.py`](SRC/formset.py) | the tactics screen's eight national presets (`TACTICS_FORMATION_SET.TBB`): seven team tactics and a formation each; edits them (`set`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#tactics_formation_settbb-tactics-presets) |
 | [`tour.py`](SRC/tour.py) | tour opponents by region (`TOUR_LIST.TBB`); edits pairs (`set`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region) |
 | [`clubrank.py`](SRC/clubrank.py) | the club ranking's tables (`CLUB_RANK_SYSTEM.TBB`): the nation groups, the points each competition gives for each final place, the world rank points by club rank, the club rank by position in each nation or division (with the positions each rank gets) and the year-end leagues; edits the points, world rank points and positions (`set`), adds rows for divisions of a new size (`addrows`), round-trips | [`PARAM_DIR.md`](DOC/PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables) |
@@ -193,7 +220,7 @@ disassemble as unrelated MIPS instructions.
 | [`plrsim.py`](SRC/plrsim.py) | the season-mode pack `PLRESOURCESIM.PAC`: checks all 16 entries (cities and weather, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ...) and prints any one, named from the player database; replaces free agents (`setfree`) and overseas bases' costs (`setbranch`), edits the affiliations, scouts' exclusives and combinations (`setgroup`), and checks that the pack rebuilds byte for byte (`roundtrip`) | [`PLRESOURCESIM_FORMAT.md`](DOC/PLRESOURCESIM_FORMAT.md) |
 | [`leaguesize.py`](SRC/leaguesize.py) | a nation's two divisions: checks that the first season plays out with each club once (`nations`), and changes the first division's size, moving clubs to or from the second (`plan`, which also gives the sizes each nation allows; `build`, for one or more leagues: the slots, last season's records, the games, the game days, the club counts in `REGULATION.TBB` and `CLUBRESULT.TBB`, and the club ranking's rows for a new size; the leagues' game days stay inside the season and clear of the national-team dates) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from) |
 | [`schedule.py`](SRC/schedule.py) | season schedule packs `SCHEDULE_{SYSTEM,COMPETITION,TEAM_ENTRY}.PAC`: turns, games, pairings, team sources; re-encodes all three packs and their `.HED` byte for byte (`roundtrip`); builds and checks league schedules of 2–32 clubs (`league`) and cup brackets of 2–128 (`knockout`) and finds free turns for their game days (`turns`); moves schedules' game days (`shift`); rebuilds the badly balanced leagues at their own size (`balance`) | [`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md) |
-| [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command, module and field names, prints and edits a PwkScript's data tables (`tables`, `settable`, one script or several in a pack), re-encodes every script byte for byte (`roundtrip`) and patches a command (`setcmd`); `SQBFILENAME`, `GLOBALMEMORY` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
+| [`sqb.py`](SRC/sqb.py) | `SQB1` sequencer scripts: the root flow scripts in `SEQ/` and the PwkScript formulas in `PSC*.PAC`; checks every command and label, disassembles with command, module and field names, prints and edits a PwkScript's data tables (`tables`, `settable`, one script or several in a pack), re-encodes every script byte for byte (`roundtrip`) and patches a command (`setcmd`); `names` and `globals` read `SQBFILENAME.TBB` and `GLOBALMEMORY.TBB` | [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md) |
 | [`uniform.py`](SRC/uniform.py) | club kits `UNIFORM_LIST.TBB` (designs and colours of every club's kits), the colour clash table `COLOR_TBL.TBB`, the 116 licensed kits' descriptors (`PLPACK` and the executable's copy), and the keeper kit table `UNIFORM_GK.TBB`; edits kits (`set`, `setlicence`, `setexe`, `setgk`; every row round-trips); `SRC/kits.csv` and `apply_kits` replace the licensed clubs' kits with generated ones for `--mod random-sponsors` | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) |
 | [`stadium.py`](SRC/stadium.py) | `DAT/STADIUM`: `.PRI` draw priorities, `BUILD_STADIUM.TBB` (which model each of the 119 stadiums uses), packs per model; `setlook` builds a stadium like another and `setboards` sets its 12 advert boards, and `roundtrip` checks each row's edit | [`STADIUM_DIR.md`](DOC/STADIUM_DIR.md) |
 | [`system.py`](SRC/system.py) | `DAT/0SYSTEM`: the 77 UI colours, `DETAILFLAG`, the 8 crest, badge and sponsor texture packs (which entry a team id picks), icons | [`0SYSTEM_DIR.md`](DOC/0SYSTEM_DIR.md) |
@@ -308,7 +335,7 @@ type; see [`EVSDATABIN_FORMAT.md`](DOC/EVSDATABIN_FORMAT.md#scene-types).
 | Tool | Reads | Does |
 |---|---|---|
 | [`patch_disc.py`](SRC/patch_disc.py) | the disc image, `ISO/DATA.CVM` or `ISO/DATA.ISO` | writes edited `DAT/` files, archive entries and files outside `DATA.CVM` (`disc:SLES_541.51`) back onto the disc, with their copies (below), and applies named switches (`--mod`; `--mod lmaster-lite`, `--mod lmaster-full` and `--mod lmaster-max` for the LMASTER Mod); `locate`, `copies` and `verify` find where a file lives, where its copies are, and check an image holds given bytes; `switches` prints the editions, groups and switches |
-| [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), i.e. where the game reads that file from |
+| [`preload.py`](SRC/preload.py) | `DAT/PRELOAD`, `ISO/SLES_541.51`, `ISO/DLL/*.REL` | checks every `PRELOAD` pack entry against the file it copies, gives each pack's free room for a rebuild, prints the game's load lists, and says which packs hold a file and which screen loads each (`who`), so you can tell where the game reads that file from |
 
 ```bash
 python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30
@@ -334,19 +361,18 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
   both. `--copies` updates every copy and rebuilds the packs around
   entries that change size ([`PRELOAD_DIR.md`](DOC/PRELOAD_DIR.md)).
 - **Switches** (`--mod <name>,...`, or each as a flag of its own).
-  The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)) comes in three
-  editions, `--mod lmaster-lite` (the fixes), `--mod lmaster-full` (the
-  fixes, the third tier, the restored injury lines, real names and
-  grounds, with the modded
-  disc's own saves in `-F`) and `--mod lmaster-max` (full and the
-  difficulty groups, saves in `-M`; both keep VS data in `-V`), made of
-  groups of switches; `--mod` takes a name of any level
+  The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md), the home of
+  every switch) comes in three editions made of groups of switches:
+  `--mod lmaster-lite` (the fixes), `--mod lmaster-full` (lite plus the
+  third tier and the other restored or added content, with the modded
+  disc's own saves in `-F`) and `--mod lmaster-max` (full plus the
+  difficulty groups, saves in `-M`; both keep VS data in `-V`).
+  `--mod` takes a name of any level
   ([the switch levels](DOC/LMASTER_MOD.md#the-switch-levels)), and
   `python SRC/patch_disc.py switches` prints the tree with a line on
-  each switch; [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md) has the details
-  of each. The test tools, in no edition, are
-  `skip-tutorial` (skips the opening playoffs; `--skip-nation` picks the
-  league) and `launcher` (boots into the developers' debug menu).
+  each switch. The test tools, in no edition, are `skip-tutorial` (skips
+  the opening playoffs; `--skip-nation` picks the league) and `launcher`
+  (boots into the developers' debug menu).
 - `--rename` renames a file outside `DATA.CVM`. Every patch of a whole
   image prints the executable's PCSX2 CRC.
 
@@ -414,7 +440,7 @@ listed (`afs.py`, `bpb.py`, `chd.py`, `cvs.py`, `gamedata.py`,
 | `gamever.py` | `sles_disasm.py`, `snr2.py`; and every tool that reads the executable or an overlay uses it to find PAL addresses in another build |
 | `extract_disc.py` | `rofs_decrypt.py` |
 | `svr.py` | `pac.py`; for `roundtrip`'s walk of the packs also `csp.py`, `acrobata.py` and `packdata.py` (imported when needed, they import `svr.py` in turn) |
-| `texmap.py` | `svr.py`, which opens every pack the textures sit in; `csp.py` and `pac.py` to write them back |
+| `texmap.py` | `svr.py`, which opens every pack the textures sit in; `csp.py` and `pac.py` to write them back; `uniform.py` and `gamever.py` for the executable's licence table (`--licensed-border`) |
 | `csp.py` | `svr.py` for the textures inside CSP packs |
 | `font.py` | `svr.py` for the pictures, `sles_disasm.py` and `gamever.py` for the executable (either build); `coverage` also `mbb.py` for `MES.PAC` |
 | `titlebanner.py` | `csp.py` and `svr.py` for the title picture; Pillow and the same TrueType face as `fontmod.py`; `patch_disc.py` calls it for `title-banner` |
@@ -424,39 +450,49 @@ listed (`afs.py`, `bpb.py`, `chd.py`, `cvs.py`, `gamedata.py`,
 | `eventdata_turn.py` | `tbb.py` |
 | `evsdatabin.py` | `mbb.py` for `--text` |
 | `packdata.py`, `ninja.py` | `pac.py` (KC@P entries, PRSH) and each other; `ninja.py` also `svr.py` for its exports |
-| `stadium.py`, `system.py`, `schedule.py` | `pac.py`, `tbb.py` |
+| `system.py`, `schedule.py` | `pac.py`, `tbb.py` |
+| `stadium.py` | `pac.py`, `tbb.py`, `initteam.py` and `ninja.py` |
 | `emblem.py`, `news.py` | `pac.py`, `tbb.py`, `svr.py` |
 | `mbb.py` | `pac.py` for `MES.PAC`; `sles_disasm.py`, `snr2.py`, `gamever.py` for `vars` |
+| `realnames.py` | `mbb.py` for `MES.PAC` |
 | `sqb.py` | `pac.py`, `packdata.py` for `COMBINATION2.CSB`, `pbdata.py` for field and ability names |
 | `pbdata.py` | `pac.py`, `tbb.py`, `initteam.py` (club names), `mbb.py` (Japanese names), `sles_disasm.py` and `gamever.py` (`--sles`) |
-| `initteam.py` | `pac.py`, `tbb.py`, `pbdata.py` and `mbb.py` for names |
+| `initteam.py` | `pac.py`, `tbb.py`, `pbdata.py` and `mbb.py` for names; `stadium.py` for `--mod real-grounds`' stadium rows |
 | `teaminit.py`, `plrcommon.py`, `plrsim.py` | `tbb.py` and `pbdata.py` for names; the last two `pac.py`; `teaminit.py limits` `sles_disasm.py` and `gamever.py` |
 | `regulation.py` | `tbb.py`, `schedule.py` for the team-entry check and `leaguesize.py` for the schedules' names |
 | `clubresult.py` | `tbb.py`, and `regulation.py` and `schedule.py` for the club-count checks |
 | `training.py` | `tbb.py`, `pbdata.py` for the ability names and `mbb.py` for the practice names |
 | `camp.py` | `pac.py`, `tbb.py`, and `mbb.py` for city and club names |
-| `formset.py`, `tour.py` | `tbb.py`, and `pbdata.py` (formations) or `camp.py` and `initteam.py` (club names) |
+| `formset.py` | `tbb.py`, and `pbdata.py` for the formations |
+| `tour.py` | `tbb.py`, and `camp.py` and `initteam.py` for club names |
 | `clubrank.py` | `tbb.py`, and `camp.py` for the competitions' names |
 | `leaguesize.py` | `schedule.py`, `initteam.py`, `regulation.py`, `clubresult.py`, `clubrank.py` |
-| `uniform.py` | `pac.py`, `tbb.py`, `packdata.py` and `svr.py` (licensed kits), `sles_disasm.py` (the executable's copy), `initteam.py` (club names) |
+| `uniform.py` | `pac.py`, `tbb.py`, `packdata.py` and `svr.py` (licensed kits), `sles_disasm.py` and `gamever.py` (the executable's copy), `initteam.py` (club names) |
 | `clubevent.py` | `sles_disasm.py` and `gamever.py` for the tables, `camp.py` for the names |
 | `natcal.py` | `tbb.py`, and `schedule.py` for the national cups' turns |
-| `acrobata.py` | `pac.py`, `ninja.py`, `svr.py`, `snr2.py`, `sles_disasm.py` |
-| `sounddat.py` | `sles_disasm.py` for `music` |
-| `preload.py` | `pac.py`, and `sles_disasm.py` for the load lists |
-| `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables; `teaminit.py` for the salary limits |
-| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `cso.py` (a CSO, ZSO or CHD input), `pac.py` (rebuilding archives), `tbb.py`, `sles_disasm.py` and `gamever.py` (the executable, the Japanese build), `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`, `third-tier`), `regulation.py`, `clubresult.py`, `initteam.py` and `pbdata.py` (`third-tier`), `camp.py` (the camp switches), `training.py` and `mbb.py` (`drill-names`, `injury-lines`), `plrcommon.py` (`facility-tiers`), `plrsim.py` (`overseas-bases`) |
+| `acrobata.py` | `pac.py`, `ninja.py`, `svr.py`, `snr2.py`, `sles_disasm.py`, `gamever.py` |
+| `sounddat.py` | `sles_disasm.py` and `gamever.py` for `music` |
+| `preload.py` | `pac.py`, and `sles_disasm.py` and `gamever.py` for the load lists |
+| `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables; `teaminit.py` for the salary limits; `gamever.py` |
+| `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `cso.py` (a CSO, ZSO or CHD input), `pac.py` (rebuilding archives), `tbb.py`, `sles_disasm.py` and `gamever.py` (the executable, the Japanese build), `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`, `third-tier`), `regulation.py`, `clubresult.py`, `initteam.py` and `pbdata.py` (`third-tier`), `camp.py` (the camp switches), `training.py` and `mbb.py` (`drill-names`, `injury-lines`), `plrcommon.py` (`facility-tiers`), `plrsim.py` (`overseas-bases`), `stadium.py` (the stadium switches), `uniform.py` (`random-sponsors`), `realnames.py` (`real-names`), `texmap.py` (`realism`), `fontmod.py` (`modern-font`), `titlebanner.py` (`title-banner`) |
 | `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `natcal.py` (National calendar), `teaminit.py` (New club), `plrsim.py` (Free agents, Player links, Overseas bases), `initteam.py` (Nations & stadiums), `stadium.py` (Stadiums), `regulation.py` and `clubresult.py` (Regulations), `clubrank.py` (Club ranking), `training.py` (Training), `camp.py` (Camps), `tour.py` (Tours), `plrcommon.py` (Facilities), `clubevent.py` (PR events), `formset.py` (Tactics), `uniform.py` (Kits), `emblem.py` (Crests, Player editor), `mbb.py` (Text), `sqb.py` (Comments); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
 | `saveedit.py` | `save.py`, `editor.py` (widgets), `ps2mc.py` (card files), `pbdata.py` and `initteam.py` for names |
 | `pmplayer.py` | `save.py` (cipher, CRC, and career saves for `check`), `pbdata.py` for field names, `gamever.py` |
-| `cso.py`, `vcdiff.py` | `chd.py` for CHD images; `vcdiff.py` reads images through `cso.py` |
+| `cso.py` | `chd.py` for CHD images |
+| `vcdiff.py` | `cso.py`, to read CSO, ZSO and CHD images |
+
+### Regression checks
 
 The disassemblers connect to the format tools through the docs: a
 format is found in the code, documented in `DOC/`, implemented in
 `SRC/` and checked over all of `DAT/` (the full workflow is in
 [`AGENTS.md`](AGENTS.md#workflow-for-a-new-format)). Every tool's check
-then goes into [`regress.py`](SRC/regress.py), which compares the output
-with a saved baseline:
+then goes into `regress.py`, which compares the output with a saved
+baseline:
+
+| Tool | Reads | Does |
+|---|---|---|
+| [`regress.py`](SRC/regress.py) | `DAT/`, `ISO/`, and `DAT_JP/`, `ISO_JP/` when present | runs every tool's checks (`info`, `roundtrip` and the rest; `list` shows each command) and compares the output with a baseline saved in `.regress/`. `bless` saves the baseline, `run` compares and exits 1 on any difference, including a `!!` line that disappears. With the Japanese release extracted, each check also runs over it as `jp_<name>` |
 
 ```bash
 python SRC/regress.py bless        # once, from a known-good state
@@ -582,19 +618,20 @@ it is merged. Everyone taking part follows the
 
 [`AGENTS.md`](AGENTS.md) has the conventions for docs and tools, the
 workflow for a new format or writer, and where each kind of record goes:
-facts and open questions in `DOC/`, tasks by stage in
+facts and open questions in `DOC/`, tasks by goal in
 [`TODO.md`](TODO.md), finished items in [`DONE.md`](DONE.md). It is
 written for AI assistants but applies to anyone.
 
 The project is run by Nexxus (Pyra Drake, Nexxus Drako Multimedia), who
-directs the research and makes the in-game tests; the docs record those
-results as "Nexxus's report".
+directs the research and makes the in-game tests; the docs
+record those results as "Nexxus's report".
 
 ## License
 
-The code in `SRC/` and the documentation in `DOC/` and this repository are
-licensed under the GNU General Public License, version 3 or (at your option)
-any later version. See [`LICENSE`](LICENSE). Each file carries an
+Everything in this repository, the code in `SRC/`, the documentation in
+`DOC/` and the guides in the top folder, is licensed under the GNU General
+Public License, version 3 or (at your option) any later version. See
+[`LICENSE`](LICENSE). Each `.py` and `.md` file carries an
 `SPDX-License-Identifier: GPL-3.0-or-later` header.
 
 This covers only the work in this repository. The game, its disc image and
@@ -610,11 +647,9 @@ builds on.
 
 ## Acknowledgements
 
-Neither the maintainer nor the community are equipped to deal with
-mental health or other crises. Please use
-[findahelpline.com](https://findahelpline.com/i/iasp) to find a local
-helpline, or if the crisis is life-threatening, contact your local
-emergency services.
+The maintainer and the community can't help with a mental health or
+other crisis. See [Crisis support](CODE_OF_CONDUCT.md#crisis-support) for
+where to turn.
 
 Nexxus Drako Multimedia was created on the stolen lands of the Jagera
 and Turrbal peoples, in what is now called Brisbane. Sovereignty was

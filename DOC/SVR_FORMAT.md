@@ -12,13 +12,14 @@ of the Dreamcast PVR/PVM/PVP files:
 | `.SVM` | `PVMH` + n × `PVRT` | texture archive (22 loose, 256 more inside `.MRG`s) |
 | `.SVP` | `PVPL`          | external palette for the `0x62`–`0x65` data formats (14 loose files, more inside archives) |
 
-All values are little-endian. `python SRC/svr.py info DAT` parses every
-file, and `python SRC/svr.py png DAT out/` decodes all 475 loose textures
-to PNG. Textures inside archives (the 801 in `.MRG`s, and the `.PAC`
-packs of `STADIUM/`, `PLAYER/`, `NEWS/`, `EMBLEM/` and `0SYSTEM/`) decode
-the same way after `python SRC/pac.py extract` (see
-[`PAC_FORMAT.md`](PAC_FORMAT.md)); `csp.py png` handles the ones in CSP
-packs ([`CSE_FORMAT.md`](CSE_FORMAT.md)).
+`SRC/svr.py` reads and writes all three. All values are little-endian.
+`python SRC/svr.py info DAT` parses every file, and `python SRC/svr.py
+png DAT out/` decodes all 475 loose textures to PNG. Textures inside
+archives (the 803 in `.MRG`s, and the `.PAC` packs of `STADIUM/`,
+`PLAYER/`, `NEWS/`, `EMBLEM/` and `0SYSTEM/`) decode the same way after
+`python SRC/pac.py extract` (see [`PAC_FORMAT.md`](PAC_FORMAT.md));
+`csp.py png` handles the ones in CSP packs
+([`CSE_FORMAT.md`](CSE_FORMAT.md)).
 
 ## Confirmed from the game code
 
@@ -227,8 +228,10 @@ swizzling on the disc (17 combinations, 52 runs; mirrored and red/blue
 swapped pictures): the file length, header fields and other textures stay
 the same, a picture that fits its palette comes back exactly, and one
 that doesn't gets the nearest palette colour at every pixel. Gradients
-over three palette sizes kept their transparent corner. Not yet seen in
-the game.
+over three palette sizes kept their transparent corner. **Tested in
+PCSX2** (Nexxus's report, 2026-11-07, `LMAST-test-realism.iso`): textures
+written this way into the crest, mini-crest and sponsor packs show in the
+game ([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)).
 
 **Containers.** A texture file inside a pack is replaced by putting the
 new bytes in the pack, which the pack tools do:
@@ -236,7 +239,7 @@ new bytes in the pack, which the pack tools do:
 | Holder | Textures | Can the pack be put back? |
 |---|---|---|
 | `.MRG`, `.PAC` (BINPAC): `0SYSTEM`, `EMBLEM`, `NEWS`, `STADIUM`, `PLAYER`, `BG`, `TEST3D`, `CSE/INST_SVR` | most of the disc's | yes, `pac.py replace` (rebuilt packs are identical); a changed-size entry moves the later ones, and the `.HED` copies and the `PRELOAD` copies need the same change ([`PAC_FORMAT.md`](PAC_FORMAT.md)). PRSH entries are recompressed by `pac.py`'s writer, which is not byte-identical to Sega's packer |
-| `*.CSP` packs, and the `.csp` entries of the `PRELOAD` packs | 780 + 471 | no writer: the table of offsets and sizes would be rewritten, and 483 of 489 files match a 16-byte-aligned layout |
+| `*.CSP` packs, and the `.csp` entries of the `PRELOAD` packs | 780 + 471 | a same-size texture, yes: `csp.py replace` splices it into its entry and no other entry moves, and `csp.py roundtrip` rebuilds all 489 packs byte for byte ([`CSE_FORMAT.md`](CSE_FORMAT.md#csp-pack)). A texture of another size is refused |
 | `ACROBATA/ACROBATAPACKFILE.PAC` | 2,137 | same-size bodies could be patched in place; a new size needs the part's wrapper chunks, its POF0 list and the executable's copy of the index (`SLES_541.51` `0x3a3b08`) |
 | KC@P `PackData` packs: `PLPACK_HOME`/`AWAY` (kits), `CUTINPACK`, `EDITFACEPACK`, the face packs | 1,392 + 444 + 7 + 41,863 | no `PackData` writer: block sizes and later offsets would be rewritten |
 | `ISO/DLL/GAMEPRG.REL` at `0x265fc0` | 1 (16x16, 4 bpp) | only a same-size patch in place |
@@ -248,7 +251,19 @@ new bytes in the pack, which the pack tools do:
   ([`ZBF_FORMAT.md`](ZBF_FORMAT.md#still-unknown)).
 - Pixel format `0x0A` (24-bit) is handled by the code but unused, so
   its layout is untested.
-- Whether the game shows a rewritten texture as the reader does (a
-  replaced texture on a built disc has not been looked at in PCSX2).
-- The writers for the CSP packs, the ACROBATA pack and the `PackData`
-  packs (the table above), and a changed-size texture in any of them.
+- Whether the game shows a rewritten texture in a CSP pack as the reader
+  does (`csp.py replace` has not been looked at in PCSX2; the pending
+  check is in [`TESTING.md`](../TESTING.md)).
+- The writers for the ACROBATA pack and the `PackData` packs (the table
+  above), and a changed-size texture in a CSP, ACROBATA or `PackData`
+  pack.
+
+## Checking the claims
+
+```bash
+python SRC/svr.py info DAT
+python SRC/svr.py png DAT out/                  # needs pillow
+python SRC/svr.py roundtrip DAT                 # every texture, in every pack
+python SRC/svr.py roundtrip DAT --all           # adds the 1.1 GB face pack
+python SRC/sles_disasm.py ISO/SLES_541.51 dis nvPrepareSVRTexImagePacket
+```

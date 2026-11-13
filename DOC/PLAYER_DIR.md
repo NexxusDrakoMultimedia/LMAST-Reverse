@@ -3,10 +3,12 @@
 
 # `DAT/PLAYER`: player models, faces, hair and kits
 
-`DAT/PLAYER` (92 files, 1.3 GB) holds everything needed to draw a player:
-body models, one head per real player, hair, glasses, the licensed club
-kits and the edit-mode kit parts. 1.1 GB of it is one file,
-`FC_EURO_FACEPACK_00.BIN`.
+`DAT/PLAYER` (91 files and a `CVS` folder, 1.3 GB) holds everything the
+game needs to draw a player: body models, a head for each player, hair,
+glasses, the licensed club kits and the edit-mode kit parts. Most of it
+is one file, `FC_EURO_FACEPACK_00.BIN` (1,182,019,584 bytes). `SRC/packdata.py` reads the
+`etc::PackData` containers inside the KC@P packs, and
+`python SRC/packdata.py info DAT` checks them.
 
 Every archive here is either a BINPAC or a KC@P pack (see
 [`PAC_FORMAT.md`](PAC_FORMAT.md)), and `python SRC/pac.py info DAT/PLAYER`
@@ -15,7 +17,13 @@ models (`NSIF`) or textures (`PVMH`/`GBIX`/`PVPL`, see
 [`SVR_FORMAT.md`](SVR_FORMAT.md)). The KC@P packs (the two face packs,
 the edit-face pack and the two licensed-kit packs, and `GAME/CUTINPACK`
 outside this folder) wrap each entry in a second container,
-**`etc::PackData`**, which is described below.
+**`etc::PackData`**, which is described below. The kits and their
+tables are in [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md).
+The player database that holds each player's face number and kit style
+is in [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md), which also covers how the
+game turns abilities into [match
+parameters](PBDATA_FORMAT.md#the-match-engines-player-parameters) and
+[the tendencies](PBDATA_FORMAT.md#the-tendencies).
 
 The `PackData` layout and the role of each block are **confirmed** from the
 game code. Everything else here (what the names mean, counts) is
@@ -25,7 +33,7 @@ game code. Everything else here (what the names mean, counts) is
 
 | Files | Container | Entries hold |
 |---|---|---|
-| `FC_EURO_FACEPACK_00.HED` + `.BIN` | KC@P, PRSH entries | 21,171 real-player heads, one `PackData` each (see [Face packs](#face-packs)) |
+| `FC_EURO_FACEPACK_00.HED` + `.BIN` | KC@P, PRSH entries | 21,171 heads, one `PackData` each: 7,945 named players and 13,226 numbered faces (see [Face packs](#face-packs)) |
 | `FC_EURO_FACEPACK_01.HED` + `.BIN` | KC@P, PRSH entries | 215 heads for event characters, each named after the character (referees, supporters, agents, staff, ...; see [Face packs](#face-packs)). The developer SATO TEST viewer shows them by entry number, and its name table lists the ids ([`SQB_FORMAT.md`](SQB_FORMAT.md#the-developer-launcher)) |
 | `EDITFACEPACK_BIN.HED` + `EDITFACEPACK.BIN` | KC@P, 1 raw entry | the face-edit resources, one `PackData` (see [Edit face pack](#edit-face-pack)) |
 | `PLPACK_HOME.HED` / `_AWAY` + `.PAC` | KC@P, 116 raw entries | licensed club kits, one `PackData` per club (see [Licensed kits](#licensed-kits-plpack_)) |
@@ -37,8 +45,8 @@ game code. Everything else here (what the names mean, counts) is
 | `CUTINHUMANPACK.MRG/.HED` | BINPAC v2 | 41 cut-in figures, `HUMAN_NNNN.snj` + `.svm` |
 | `EDIT_UNIFORM_{ORG,GK}_{SHT,PNT}`, `EDIT_UNIFORM_ORG_SOX` `.PAC/.HED` | BINPAC v3 | edit-kit textures (`org_000_sht.svr`, `gk_000_sht.svr` ...) |
 | `EDIT_UNI_{SHT,PNT}_NUM.PAC/.HED` | BINPAC v3 | the same kits with numbers applied (`00/num_00_99.svr` ...) |
-| `EDIT_UNIFORM_CLUT{,_PRESS}.PAC/.HED` | BINPAC v3 | 96 kit palettes (`org_uni_A1.svp` ...) |
-| `NUMBER_00`–`_07{,_PRESS}.PAC/.HED`, `NUMBER_CLUT{,_PRESS}` | BINPAC v3 | 8 shirt-number fonts × 100 numbers (`num_00_00.svr` ... `num_00_99.svr`), 96 palettes. The executable names only the `_PRESS` number packs (`number_00_press.pac` … `_07`, `number_clut_press.pac`, `SLES 0x45b0e8`); `SIMPRG.REL` names `number_clut.hed`/`.pac`. No code names the plain `NUMBER_0n.PAC` or its `.HED` (**empirical**, a string search of the executable and every overlay). In the `_PRESS` packs entry *n* is number *n*, a PRSH-compressed `PVMH` named `num_0f_nn` |
+| `EDIT_UNIFORM_CLUT.PAC/.HED`, `EDIT_UNIFORM_CLUT_PRESS.PAC` | BINPAC v3 | 96 kit palettes (`org_uni_A1.svp` ...) |
+| `NUMBER_00`–`_07.PAC/.HED` and `_PRESS.PAC`, `NUMBER_CLUT.PAC/.HED` and `_PRESS.PAC` | BINPAC v3 | 8 shirt-number fonts × 100 numbers (`num_00_00.svr` ... `num_00_99.svr`), 96 palettes. The executable names only the `_PRESS` number packs (`number_00_press.pac` … `_07`, `number_clut_press.pac`, `SLES 0x45b0e8`); `SIMPRG.REL` names `number_clut.hed`/`.pac`. No code names the plain `NUMBER_0n.PAC` or its `.HED` (**empirical**, a string search of the executable and every overlay). In the `_PRESS` packs entry *n* is number *n*, a PRSH-compressed `PVMH` named `num_0f_nn` |
 | `COLOR_TBL.TBB` | TBB, 96 × 96 bytes | the kit colour clash table (`UniformList_CheckColor`). See [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md) |
 | `UNIFORM_LIST.TBB` | TBB, 661 × 64 bytes | every club's home and away kits (designs and colours), bit-packed, read by `UniformList_*` (`0x2d2b68`–`0x2d3608`). See [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md) |
 | `UNIFORM_GK.TBB` | TBB, 209 × 3 and 38 × 66 bytes | keeper kits of your club, the rival and the VS teams, chosen by outfield shirt design, with 6 colour schemes per keeper design ([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#uniform_gktbb-keeper-kits-made-from-the-outfield-kit)) |
@@ -48,7 +56,7 @@ game code. Everything else here (what the names mean, counts) is
 | `DUMMY.DAT` | 0 bytes | – |
 
 The `_PRESS` archives repack their sibling with 16-byte alignment and PRSH
-entries, as elsewhere on the disc.
+entries, as elsewhere on the disc. They have no `.HED`.
 
 ## `etc::PackData`
 
@@ -106,7 +114,7 @@ entry size.
 
 ## Face packs
 
-`FC_EURO_FACEPACK_00.BIN` holds the heads of real players, and
+`FC_EURO_FACEPACK_00.BIN` holds the heads of players, and
 `FC_EURO_FACEPACK_01.BIN` those of event characters. Every KC@P entry is
 PRSH-compressed, and expands to a 5-block `PackData`.
 
@@ -205,15 +213,15 @@ case (`NED_280`).
 | 3 | 27 | `PVMH` textures (`tuku_tex01` ...) | opened as a texture |
 | 4–31 | 28 | 28 `PVPL` palettes, 256 colours each | a loop of 28 (`0x11ce18`) collects their data pointers |
 
-## Tool
+## Checking the claims
 
 `SRC/packdata.py` parses `PackData` in every KC@P pack it finds. Its
 `info` check covers the layout and the packing rule. The same check also
 passes on `GAME/CUTINPACK.BIN`, whose 277 entries are `PackData` with block
 types 19–24 ([`GAME_DIR.md`](GAME_DIR.md#directory-overview)).
 `FC_EURO_FACEPACK_00` is sampled (494 of 21,171 entries)
-unless `--all` is given. The full scan used for the counts above took
-several minutes.
+unless `--all` is given. The full scan, which the counts above come from,
+takes several minutes.
 
 ```bash
 python SRC/packdata.py info DAT                                 # all KC@P packs

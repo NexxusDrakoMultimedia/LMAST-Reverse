@@ -60,9 +60,11 @@ list of 139 pointers); `training.py` gives them with English names:
 
 Each column 0–63 is what the practice adds to that ability's growth;
 column 64 is its fatigue, passed with the facility and manager fatigue
-factors to `plPinfo_CalcPracTired` (`0x1590c8`–`0x159118`). The rest
-menus (27, 28) and the recovery drills and therapies have negative
-fatigue; the rest menus train nothing.
+factors to `plPinfo_CalcPracTired` (`SLES 0x21a860`, called at
+`SIMPRG.REL 0x159118`, after the row lookups from `0x1590c8`). The team
+menus conditioning, rest and extra rest (26–28) and the recovery drills
+and therapies have negative fatigue; those three team menus train
+nothing.
 
 Practices 12–16 (combinations A–E) don't use their own rows: `0x159f28`
 reads my-team data `+0x489f` + (number − 12) and uses row 12 + (value −
@@ -185,7 +187,8 @@ but no reader of them has been found.
 - Table 12's row is the youth team's practice menu (youth data `+0x3fbc`
   + 4 × slot, `0x15aae8`).
 
-The 87 camp types and 28 youth menus have no names yet.
+The 28 youth menus have no names yet; the camp types' are an open
+question in [`CAMP_FORMAT.md`](CAMP_FORMAT.md#still-unknown).
 
 ### Japanese release
 
@@ -240,8 +243,9 @@ turn advances, not when "Conduct Training" is chosen (Nexxus's report).
 - What reads category 700's drill list (messages 8222–8234, the older
   order with jackknife), and whether PAL shows it anywhere
   ([above](#drills-7486-pals-names-are-one-early)).
-- The names of the 87 camp types and 28 youth menus, and of the facility
-  rows.
+- The names of the 28 youth menus and of the facility rows. The camp
+  types' names are an open question in
+  [`CAMP_FORMAT.md`](CAMP_FORMAT.md#still-unknown).
 - Whether anything reads columns 64–70 of the facility tables.
 
 ## Checking the claims

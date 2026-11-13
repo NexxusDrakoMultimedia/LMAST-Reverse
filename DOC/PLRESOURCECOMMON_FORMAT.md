@@ -3,8 +3,12 @@
 
 # `PARAM/PLRESOURCECOMMON.PAC`: the common resource pack
 
-`PLRESOURCECOMMON.PAC` is `plResource` entry 0 ([`PARAM_DIR.md`](PARAM_DIR.md)).
-It is a BINPAC of 5 TBB1 files. Every reader calls
+`PLRESOURCECOMMON.PAC` holds fixed lookup data for clubs, players and
+nations: what a club can build and what it costs, the formation tables,
+which abilities feed which hexagon, which nation each club and national
+team belongs to, and each league nation's divisions and cups. It is
+`plResource` entry 0 ([`PARAM_DIR.md`](PARAM_DIR.md)) and a BINPAC of 5
+TBB1 files. Every reader calls
 `plResource_GetResourceDataBinPacTbbTbl` (`0x21e9e0`) with `ePLRSRC` 0 and
 **constant** entry and table numbers, so each table's reader is known
 (the tables below).
@@ -46,7 +50,7 @@ the build time (in turns) as a u8 from the record, and `payment_Equip`
 [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)) reads the upkeep
 as a u32:
 
-| Table | Build time | Read by | Upkeep |
+| Table | Build time | Read by (address of the load) | Upkeep |
 |---|---|---|---|
 | 0.0 sites | `+0xc` | `plTeam_BuildSite` (`0x229d74`) | (not read by `payment_Equip`) |
 | 0.1 training ground | `+0x10` | `plTeam_BuildSiteEquip` (`0x229e1c`) | (not read) |
@@ -55,7 +59,7 @@ as a u32:
 | 0.4 club-house equipment | `+0x10` | `plTeam_BuildChouseChEquip` (`0x22a9f8`) | `+0x14` |
 | 0.5 youth-house equipment | `+0x10` | `plTeam_BuildChouseAcEquip` (`0x22ab0c`) | `+0x14` |
 | 0.6 office equipment | `+0xc` | `plTeam_BuildChouseOfEquip` (`0x22abd8`) | `+0x10` |
-| 0.7 stadiums | `+0x30` + level × 0x10 | `plTeam_BuildStadium` (`0x229fc4`), `BuildStadiumStand` (`0x22a0c0`) | `+0x64` (per stand) |
+| 0.7 stadiums | `+0x30` + level × 0x10 | `plTeam_BuildStadium` (`0x229fc4`), `plTeam_BuildStadiumStand` (`0x22a0c0`) | `+0x64` (per stand) |
 | 0.8 stadium adverts | `+0xc` | `plTeam_BuildStadiumEquip` (advert form, `0x22a4a0`) | `+0x10` |
 
 **Build cost (confirmed).** The u32 just before the build time is the
@@ -216,7 +220,7 @@ Table 4.1 is not decoded.
 - What the values in entry 1 and table 4.1 mean.
 - The facility names: which message category names each record.
 
-## Checking
+## Checking the claims
 
 ```bash
 python SRC/plrcommon.py info DAT/PARAM

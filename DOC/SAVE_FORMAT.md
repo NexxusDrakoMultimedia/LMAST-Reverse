@@ -1,10 +1,22 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Save data (memory card)
+# Save data: a career on the memory card
 
-A saved game is a memory-card folder `BESLES-54151-Gnnn` (`nnn` = slot,
-`%03d`). It holds:
+When you save a career, the game writes a folder to the PS2 memory card,
+`BESLES-54151-Gnnn` (`nnn` is the slot, `%03d`; a modded disc uses its
+own letter, [below](#separate-saves-for-a-modded-disc)). One file in it
+holds the whole career: money, squad, staff, the other clubs, the
+schedule and every record. It is bit-packed and Blowfish encrypted.
+
+`SRC/save.py` reads and writes it, and the save editor
+([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md), `saveedit.py`) is built on
+it. `python SRC/save.py roundtrip <save>` is the check that a save
+decodes and re-encodes to the same bytes. Saves are never in the
+repository, so the counts below come from the five saves checked
+(G000 to G003 and G006).
+
+The folder holds:
 
 | File | Size | What |
 |---|---|---|
@@ -13,10 +25,9 @@ A saved game is a memory-card folder `BESLES-54151-Gnnn` (`nnn` = slot,
 | `dm.bin` | 93,184 | plain. Not decoded |
 | `icon.sys`, `static.ico` | 964, 70,264 | the standard PS2 browser icon |
 
-`python SRC/save.py` reads and writes the main file. It doesn't copy the
-field layout out of the game: it runs the game's own read and write
-functions from `SAVEPRG.REL` in a small interpreter (see
-[Decoding](#decoding)).
+`save.py` doesn't copy the field layout out of the game: it runs the
+game's own read and write functions from `SAVEPRG.REL` in a small
+interpreter (see [Decoding](#decoding)).
 
 ## Main file
 
@@ -27,7 +38,7 @@ functions from `SAVEPRG.REL` in a small interpreter (see
 | `0x320c0`, `0x32158` | Blowfish init, key schedule | standard Blowfish: P-array at `0x4bd78`, S-boxes at `0x4bdc0`. Key bytes go into P big-endian, cycling over the key |
 | `0x32358`, `0x32478` | decrypt, encrypt `(buf, size, key, keylen)` | ECB over 8-byte blocks. Each block is loaded as two native (little-endian) words, left then right. `size` must be a multiple of 8 |
 | `0x331f8`, `0x336f4` | load, save | key: the 10 bytes at `0x536a8`, `sakatsukue` |
-| `0x33200`–`0x3322c` | load | copies the 16-byte header; version `+0xc` must be `0x69` (`0x68` goes to an older reader at `0xe618`). The Japanese build's load wants `0x68` (and sends `0x63` to its older reader): [below](#the-japanese-release) |
+| `0x33200`–`0x3322c` | load | copies the 16-byte header; version `+0xc` must be `0x69` (loaded at `0x33204`, compared at `0x3322c`; `0x68` goes to an older reader at `0xe618`). The Japanese build's load wants `0x68` (and sends `0x63` to its older reader): [below](#the-japanese-release) |
 | `0x3328c`–`0x3329c` | load | header `+8` must equal the layout CRC from `0x32ce0` |
 | `0x32ce0` | layout CRC | CRC-16 (`0x31470`, table `0x53408`: reflected poly `0x8408`, init and xorout `0xFFFF`) over `getSize(0..9)` as ten u32 |
 | `0x21d908` (SLES) | `PlPworkTask::getSize` | block `i` is `0x533ac8[i] − 8` bytes |
@@ -109,7 +120,7 @@ All **confirmed** by the accessor named. Offsets are within the block.
 | 1 | `0x8e00` | PlMinfo | `pwkTeam_GetYManager` (`0x26bdd8`): `pwkTeam_GetYteamData` (`+0x4f00`) `+0x3f00` | the youth manager |
 | 1 | `0x8f8c` | 3 × PlSinfo | `pwkTeam_GetScouts` (`0x26d098`) | the scouts, 0x94 bytes each |
 | 1 | `0x9148` | 4 × PlMinfo | `pwkTeam_GetCoaches` (`0x26a7b8`) | the coaches, 0xbc bytes each |
-| 1 | `0x9440`–`0x9cc4` | 5 lists | `pwkTeam_Add*Candidate` | the candidate lists: players, youth, managers, coaches, scouts (below) |
+| 1 | `0x9438`–`0x9ccc` | 5 lists | `pwkTeam_Add*Candidate` | the candidate lists: players, youth, managers, coaches, scouts (below) |
 | 1 | `0xe290` | 3 × 0x2a0 | `0x266600` | read like PlPinfo by one foreign-player count, but the save holds ids of 0 and no players there; not identified |
 | 1 | `0xec8e` | 25 × 0x11e | `pwkTeam_GetPlayerStats` (`0x265810`, indexes `0xec90 + slot × 0x11e`) | each squad slot's match statistics (below) |
 | 1 | `0x12470` | – | `pwkUnkei_GetWork` (`0x271cf8`) | the season plan: ad budget, ticket prices, season tickets (below) |
@@ -118,17 +129,19 @@ All **confirmed** by the accessor named. Offsets are within the block.
 
 **Money** is stored in the game's own unit. `plMisc_MoneyRate`
 (`0x215660`) converts between currencies as `value × rate[to] ÷
-rate[from]`, with s16 rates at SLES `0x5314e8`: 12, 3, 2, 400. The stored
-unit is rate 12 and the pound is rate 2 (**empirical**: a save edited to
-2,000,000,000 shows £333,333,333, exactly ÷ 6). The euro is rate 3
-(**empirical**: in game, euro amounts are 1.5 times the pound amounts), so
-euros are the stored value ÷ 4 and the stored unit is worth €0.25. The
-yen is rate 400 (**empirical**, Japanese release in PCSX2: one save shows
-£5,152,906, €7,729,360 and ¥1,030,581,366 (10億3058万1366円). All three
-are rounded down from a stored 30,917,441 and no other stored value
-gives that yen amount), so yen are the stored value × 100 ÷ 3 and £1 =
-¥200. The stored unit (rate 12) isn't one of the three currencies. The
-Japanese executable has the same four rates.
+rate[from]`, with s16 rates at SLES `0x5314e8`: 12, 3, 2 and 400 (the
+Japanese executable has the same four). The stored unit is rate 12 and
+the pound is rate 2 (**empirical**: a save edited to 2,000,000,000
+shows £333,333,333, exactly ÷ 6). The euro is rate 3 (**empirical**: in
+game, euro amounts are 1.5 times the pound amounts), so euros are the
+stored value ÷ 4 and the stored unit is worth €0.25.
+
+The yen is rate 400. **Empirical**, Japanese release in PCSX2: one save
+shows £5,152,906, €7,729,360 and ¥1,030,581,366 (10億3058万1366円). All
+three are rounded down from a stored 30,917,441, and no other stored
+value gives that yen amount. So yen are the stored value × 100 ÷ 3, and
+£1 = ¥200. The stored unit (rate 12) isn't one of the three
+currencies.
 
 **Finances.** Money moves through `pwkGen_Income` (`0x244570`) and
 `pwkGen_Pay` (`0x2445f8`). Both change the s64 at block 0 `+0x0` and
@@ -153,9 +166,9 @@ Winnings, Facilities, Transfer fees and Other for the 7 income lines;
 Facilities, Staff costs, Advertising costs, Overseas investment and Other
 expenditure for the 5 payment lines. Messages 217 + *type* name the 12
 income types and 229 + *type* the 23 payment types. The code that reads
-those isn't found, so the type names are **empirical**: the counts are
-exactly 12 and 23, and every type traced from the code below matches its
-name.
+those messages hasn't been found, so the type names are **empirical**:
+the counts are exactly 12 and 23, and every type traced from the code
+below matches its name.
 
 | Income | Name (550:217 + type) | Payment | Name (550:229 + type) |
 |---|---|---|---|
@@ -241,19 +254,20 @@ season-ticket price as a percentage of the ticket price.
 
 **The plan screen's limits** (Nexxus's report, then **confirmed** from
 the screen's set-up at `SIMPRG.REL 0x3eda0`, which holds them as
-constants: [`ECONOMY.md`](ECONOMY.md#the-season-plan-screens-limits)):
-the ad budget runs from 0
-to £5,000,000 in steps of £10,000, the ticket price from £10 to £50, the
-rate from 50 to 150 in steps of 10, and season tickets in steps of 100
-up to 80% of the stadium's capacity (also in help message 1085:22).
-What each value does to attendance, income and popularity is in
-[`ECONOMY.md`](ECONOMY.md).
+constants; the table of constants is in
+[`ECONOMY.md`](ECONOMY.md#the-season-plan-screens-limits)): the ad
+budget runs from 0 to £5,000,000 in steps of £10,000, the ticket price
+from £10 to £50, the rate from 50 to 150 in steps of 10, and season
+tickets in steps of 100 up to 80% of the stadium's capacity (also in
+help message 1085:22). What each value does to attendance, income and
+popularity is in [`ECONOMY.md`](ECONOMY.md).
+
 In euros the steps are the same and the values 1.5 times as large. In
-the stored unit (£1 = 6, €1 = 4) both give the same ranges: ad budget
-0–30,000,000 and ticket price 60–300. Only the money steps differ
-(60,000 for pounds, 40,000 for euros). That fits the saves: G001's ad
-budget of 4,000,000 is €1,000,000, and G000's ticket price of 220 is
-€55, neither a whole number of pounds.
+the stored unit (£1 = 6, €1 = 4) both currencies give the same ranges:
+ad budget 0–30,000,000 and ticket price 60–300. Only the money steps
+differ (60,000 for pounds, 40,000 for euros). That fits the saves:
+G001's ad budget of 4,000,000 is €1,000,000, and G000's ticket price of
+220 is €55, neither a whole number of pounds.
 
 **Your stadium's capacity** (**confirmed**, `pwkUnkei_GetStandAllCapacity`,
 `0x271b48`): block 1 `+0x4e99` holds your stadium (`pwkTeam_GetStadium`,
@@ -324,13 +338,15 @@ table of u16 pairs per policy type at SLES `0x555340`
 −5,000 to +5,000 to each axis for players outside your club. Checked on
 screen: Carson (`0xffff`, `0x7fff`) is top centre; Aiblinger comes out
 0.57 up and 0.37 across, where his marker is on both screens.
+`save.py set` takes the two points as `<slot>:policy_counter=` and
+`<slot>:policy_organisation=` (0–65,535 each).
 
 `0x210` is the job change, the career a player has agreed to take up
 at the next season's start
 ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars)).
-The rest of the record between `0x18a` and `0x2a0` is read by the functions
-listed by a scan of every `PlPinfo` accessor (flags at `0x20c`,
-dissatisfaction bytes in the database copy), not decoded yet.
+The rest of the record between `0x18a` and `0x2a0` (flags at `0x20c`,
+dissatisfaction bytes in the database copy) is read by `PlPinfo`
+accessors that haven't been decoded yet ([Still unknown](#still-unknown)).
 
 **The condition line** under the bars is chosen by
 `WP::CDetailManager::ConvertPlayer_Condition` (`0x285728`), first match
@@ -700,7 +716,7 @@ The same countdown runs over the other candidate lists, which the
 
 | Block 1 offset | Records | Id at | Turns at | List |
 |---|---|---|---|---|
-| `0x9440` | 30 × 0x20 | `+0x0` | `+0x3` | players (`pwkTeam_AddPlayerCandidate`, `0x25b988`) |
+| `0x9438` | 30 × 0x20 | `+0x8` | `+0xb` | players (`pwkTeam_AddPlayerCandidate`, `0x25b988`: its loop starts at block 1 `+0x9438`, reads the s16 id at `+0x8` and the turns byte at `+0xb`) |
 | `0x97f8` | 30 × 0xc | `+0x0` | `+0x9` | youth players (`pwkTeam_AddYouthCandidate`, `0x25bdf0`) |
 | `0x9960` | 30 × 0xc | `+0x4` | `+0x8` | managers (`pwkTeam_AddManagerCandidate`, `0x269658`) |
 | `0x9ac8` | 30 × 0xc | `+0x4` | `+0x8` | coaches (`pwkTeam_AddCoachCandidate`, `0x269710`) |
@@ -784,20 +800,39 @@ back from both copies; not yet loaded in game.
 
 ## Editing
 
-`save.py set <save> <out> field=value ...` writes an edited main file.
-The fields it takes are described with the parts of the save above;
-`save.py spec` lists them all with the values each accepts. Given a save,
+`save.py set <save> <out> field=value ...` writes an edited main file
+and never changes its input. It encodes the result and decodes it
+again, so a value the build's save can't hold is refused, not cut short.
+The keys it takes, each described in the part of the save named:
+
+| Key | Edits | Described in |
+|---|---|---|
+| `money=` | club money | Money |
+| `status=`, `status_rank=` | your club's status and its rank; both club ranks follow | Your club and the rival |
+| `plan:ad_budget=`, `plan:ticket_price=`, `plan:season_ticket_rate=`, `plan:season_tickets=` | the season plan | The season plan |
+| `<slot>:<n>=`, `<slot>:all=` | a squad or youth player's 64 abilities | PlPinfo |
+| `<slot>:<field>=` | age, fatigue, condition, motivation, power, form, injury value, captain and keyman experience, the two policy points, salary, contract years | PlPinfo |
+| `combi:<a>:<b>=`, `combi:<a>:all=` | pair combinations | Pair combinations |
+| `<staff>:abil.<n>=` | a staff member's abilities (manager, youth manager, coaches, scouts) | Staff |
+| `<staff>:dissat.<kind>=`, `pop_supporters=`, `pop_players=` | dissatisfaction and popularity of managers and coaches | Staff |
+| `club:<team>:friendship=`, `club:<team>:rank=` | the other clubs | The other clubs |
+| `edit:<field>=`, `edit:name=` | the edit player | The edit player |
+
+`save.py spec` lists every key with the values it accepts. Given a save,
 `spec` fills in the ranges that depend on it (the status cap, the
 highest status rank that holds the current status, the season tickets
 the stadium allows) and checks each range on that save: both ends must
-be accepted and the values just outside refused (`!!` otherwise). Money
-takes any s64 value: `pwkGen_Pay` (`0x2445f8`) subtracts with no floor,
-so debt is negative, and `pwkGen_Income` (`0x244570`) only resets it
-to 0x7fffffff when the s64 itself would overflow. Save G000 holds
+be accepted and the values just outside refused (`!!` otherwise).
+
+Money takes any s64 value: `pwkGen_Pay` (`0x2445f8`) subtracts with no
+floor, so debt is negative, and `pwkGen_Income` (`0x244570`) only resets
+it to 0x7fffffff when the s64 itself would overflow. Save G000 holds
 7,308,451,892. **Tested in PCSX2** (Nexxus): a save edited to
-10,000,000,000 showed £1,666,666,666 in game. The save editor
-([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md))
-takes its ranges from the same list (`save.edit_spec`).
+10,000,000,000 showed £1,666,666,666 in game.
+
+The save editor ([`SAVE_EDITOR_PLAN.md`](SAVE_EDITOR_PLAN.md)) takes its
+ranges from the same list (`save.edit_spec`) and edits through the same
+`save.apply_assigns`, so its pages offer exactly these keys.
 
 ## Decoding
 
@@ -878,9 +913,16 @@ serializers:
   names players from `DAT_JP/PARAM/PBDATA_JP.PAC`, which holds those
   names on the Japanese disc.
 
-`set` checks every edit by decoding the new file again: a value the
-build's field can't hold (a wristband of 4 or more in a Japanese save)
-is refused, not cut short.
+`set`'s decode-again check ([Editing](#editing)) is what refuses a
+wristband of 4 or more in a Japanese save.
+
+`patch_disc.py --mod-saves` renames the Japanese disc's folders the same
+way (`BISLPM-66316-G` and `-C` to `-F` or `-M`, and `-V`), and
+`save.py rename` and `copy` accept the `BISLPM-66316-` names (in the
+code: `save.save_name`, `patch_disc.plan_mod_saves`). **Tested in
+PCSX2** (Nexxus's report, 2026-11-12): a career on a Japanese disc built
+with `--mod third-tier`, which turns `mod-saves` on, saves and loads
+([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc)).
 
 Checked on a Japanese save (`BISLPM-66316-G000`, 2006–07, turn 4):
 `info` and `roundtrip` (identical, 5,169,038 bits), `show` and `staff`
@@ -903,7 +945,9 @@ at `0x533ac8`, `PlPworkTask` (`0x21d6f0`) allocates their sum, and the
 save's size follows the stream, counted in a first pass over the same
 serializers (`SAVEPRG.REL 0x335b8`). The layout CRC becomes `0x6ca1`
 and the main file 649,968 bytes (5,199,564 bits); the field list has
-607,518 fields.
+607,518 fields. These figures are for the PAL build; the Japanese
+build's addresses and sizes are in
+[`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc).
 
 `save.py` reads such a save given the patched files (`--iso` a folder
 with the patched `SLES_541.51` and `DLL/SAVEPRG.REL`): it loads the
@@ -950,21 +994,22 @@ loads on a disc whose economy differs from the one it was played on,
 while VS teams are the same on both and share `-V` (Nexxus's choice,
 2026-10-27). Discs built before then used `-M` and `-D`; `python
 SRC/save.py rename <folder> <parent> V` moves old VS data to `-V`, and
-`rename <folder> <parent> F` a career to full's letter. The original game
-looks only for `-G` and `-C`, so it never opens a modded save, and a
-modded game never opens the original's. Moving the VS data is
-deliberate, as anti-cheat: teams built in a modded game can't be
-carried into Virtua Pro Football or an unmodded game's VS mode.
+`rename <folder> <parent> F` a career to full's letter.
+
+The original game looks only for `-G` and `-C`, so it never opens a
+modded save, and a modded game never opens the original's. Moving the
+VS data is deliberate, as anti-cheat: teams built in a modded game can't
+be carried into Virtua Pro Football or an unmodded game's VS mode.
 Category 2 stays, so the import from Virtua Pro Football still works.
-The editor's Build disc dialog has a box for it and shows the letters
-a build gets, and `--mod lmaster-full` and `--mod lmaster-max` always
-include it.
+The editor's Build disc dialog has a box for the switch and shows the
+letters a build gets, and `--mod lmaster-full` and `--mod lmaster-max`
+always include it.
 
 **Tested in PCSX2** (Nexxus's report, 2026-10-25, a `--mod lmaster-full`
-disc, today's max): a career saved on it went to `BESLES-54151-M000` on
-the folder card `Pyra.ps2`, beside the original's `-G` saves. No VS data
-was saved, so the VS folder (then `-D000`, now `-V000`) isn't tested, nor
-full's `-F`.
+disc, which was today's max): a career saved on it went to
+`BESLES-54151-M000` on the folder card `Pyra.ps2`, beside the original's
+`-G` saves. No VS data was saved, so the VS folder (then `-D000`, now
+`-V000`) isn't tested, nor full's `-F`.
 
 The serial stays SLES-54151 on purpose. PCSX2 takes a disc's serial
 from the boot file named in `SYSTEM.CNF` (`BOOT2 =
@@ -973,29 +1018,42 @@ SLES-54151 sets `eeClampMode: 3` ("Makes the game correctly register
 left and right Dpad button input") and the `memcardFilters` SLES-54151
 and SLES-54153, the folders a folder memory card shows the game. A disc
 booting under another serial loses both, and PCSX2 doesn't list it
-without a GameDB entry (tested in PCSX2 with an earlier `save.py serial`
-command, which renamed the executable to `PYRA_313.96`; it booted as
-PYRA-31396). `BESLES-54151-M000` (and `-F`, `-V`) still contains
-`SLES-54151`, so the filter shows it. That earlier command is removed.
+without a GameDB entry. Tested in PCSX2 with a build that renamed the
+executable to `PYRA_313.96`: it booted as PYRA-31396.
+`BESLES-54151-M000` (and `-F`, `-V`) still contains `SLES-54151`, so the
+filter shows it.
 
 **Tested in PCSX2** (Nexxus's report, disc `LMAST-savetest.iso`,
-`--mod-saves` only). A career saved to `BESLES-54151-M000` on a folder
-memory card, beside the original game's `-C000` and `-G000`–`-G006`, and
-loaded again. The original `-G` saves weren't listed, left and right on
-the D-pad registered, and PCSX2 kept the disc's settings as
-`SLES-54151_3CB248D5`. The VS data's move (then to `-D`, now `-V`)
-isn't tested.
+`--mod-saves` only, when the letters were `-M` and `-D`). A career saved
+to `BESLES-54151-M000` on a folder memory card, beside the original
+game's `-C000` and `-G000`–`-G006`, and loaded again. The original `-G`
+saves weren't listed, left and right on the D-pad registered, and PCSX2
+kept the disc's settings as `SLES-54151_3CB248D5`. The VS data's move
+(then to `-D`, now `-V`) isn't tested.
 
 **The CRC.** PCSX2 also computes a CRC of the executable, the XOR of its
 32-bit words (**empirical**: `3CB245D5` for the retail `SLES_541.51`,
 the name of PCSX2's `gamesettings/SLES-54151_3CB245D5.ini` and of its
 savestates). It keys per-game settings, savestates, patches and cheats
-on serial and CRC, so any edit to the executable gives a disc its own:
-`--mod-saves` alone makes it `3CB248D5`, the tutorial skip alone
-`3CB245D4`, and both `3CB248D4` (the XOR adds up their changes). Other
-executable edits change it again.
-`patch_disc.py` prints the executable's CRC at the end of every patch
-of a whole disc image. The Japanese `SLPM_663.16` is `8E66FF4E`.
+on serial and CRC, so any edit to the executable gives a disc its own.
+The XOR adds up the changes of each edit:
+
+| Executable edit | CRC |
+|---|---|
+| none (retail) | `3CB245D5` |
+| `--mod-saves` alone, `-F` and `-V` | `3CB251D5` |
+| `--mod-saves` alone, `-M` and `-V` | `3CB25AD5` |
+| `--mod-saves` alone as it was built for the test above, `-M` and `-D` | `3CB248D5` |
+| the tutorial skip alone | `3CB245D4` |
+
+The `--mod-saves` rows come from changing the two letters in the retail
+executable and taking the XOR again; the `-M` and `-D` row reproduces the
+`3CB248D5` PCSX2 showed. The tutorial skip's value is an earlier
+measurement. Together with `--mod-saves` the XOR gives `3CB251D4` (`-F`
+and `-V`) and `3CB25AD4` (`-M` and `-V`). Other executable edits change
+the CRC again. `patch_disc.py` prints the executable's CRC at the end of
+every patch of a whole disc image. The Japanese `SLPM_663.16` is
+`8E66FF4E`.
 
 The game opens `<folder>/<folder>`, so moving a save needs both names
 changed. `save.py rename <folder> <parent> [F|M|V|G|C]` copies a save
@@ -1028,15 +1086,15 @@ own files name their slot wasn't checked.
   staff candidate records, and what the youth limit of 4
   (`pwkTeam_GetYouthPlayerMax`) counts.
 - Other clubs: bytes `+0x9b`, `+0xa1` and `+0xa6`–`+0xa7`, the
-  non-resident clubs' temporary records (442 on,
-  [`CLUB_LIMITS.md`](CLUB_LIMITS.md)), the first u32 of PlMinfo/PlSinfo, PlSinfo
-  `+0x64`–`+0x8f`, and how far the manager's popularity goes in play.
+  non-resident clubs' temporary records (clubs 442 and up on a retail
+  disc, [`CLUB_LIMITS.md`](CLUB_LIMITS.md)), the first u32 of PlMinfo and
+  PlSinfo, PlSinfo `+0x64`–`+0x8f`, and how far the manager's popularity
+  goes in play.
 - The club ranking: when in the season it runs, which competitions
   `0x22`–`0x24` lower the status rank, the match record's byte behind
   the league factor of a status change, the three weighted values behind
-  the world rank
-  points (`SIMPRG.REL 0x151568`), and whether the club rank limits the
-  players an AI club signs.
+  the world rank points (`SIMPRG.REL 0x151568`), and whether the club
+  rank limits the players an AI club signs.
 - The Special Mention texts of dissatisfaction kinds 0–3 (kind 4 is
   confirmed in game).
 - The six u16 at PAL block 1 `+0x129d8`, which the Japanese save
@@ -1045,20 +1103,29 @@ own files name their slot wasn't checked.
 - Whether the game checks `info.bin` against the main file.
 - The VS data (`BESLES-54151-C000`, main file 16,152 bytes). It uses the
   same key and header (layout CRC `0x8ffb`, version 0), and its `info.bin`
-  (1,024 bytes) starts with a date under `FC_EURO_2005`. The layout inside
-  hasn't been traced (the VS load is at `SAVEPRG.REL 0x33868`).
+  (1,024 bytes) starts with a date under `FC_EURO_2005`; its `dm.bin` is
+  10,240 bytes (**empirical**, one card, decrypted header checked). The
+  layout inside hasn't been traced (the VS load is at
+  `SAVEPRG.REL 0x33868`).
 
-## Checking
+## Checking the claims
 
 The figures quoted from save G000 in this document are from its state at
 2024–25, Week 1 Midweek October (turn 24). The same slot has since been
-saved further on in play, so a newer G000 won't match them.
+saved further on in play, so a newer G000 won't match them. The tables
+quoted from the executable (the money rates, the status caps and the
+rival's ranks, the reputation and style thresholds, the combination
+thresholds) are read from `ISO/SLES_541.51` at the addresses given;
+the layout CRC and the block sizes are what `save.py blocks` prints.
 
 ```bash
 python SRC/save.py blocks
 python SRC/save.py info  <card>/BESLES-54151-G003
 python SRC/save.py roundtrip <card>/BESLES-54151-G00*
 python SRC/save.py show  <card>/BESLES-54151-G003
+python SRC/save.py staff <card>/BESLES-54151-G000
+python SRC/save.py editplayer <card>/BESLES-54151-G000
+python SRC/save.py fields
 python SRC/save.py combi <card>/BESLES-54151-G000 6
 python SRC/save.py clubs <card>/BESLES-54151-G000 167 54 432
 python SRC/save.py finances <card>/BESLES-54151-G000

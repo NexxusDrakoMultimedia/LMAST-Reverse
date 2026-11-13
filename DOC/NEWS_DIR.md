@@ -69,8 +69,7 @@ Entry 4 × *league* + *k*, with *league* from `pwkLg_GetMyLeague`:
 | 2 | `news_title_L_sp_1` | the first paper's special edition |
 | 3 | `news_title_L_sp_2` | the second paper's special edition |
 
-The code loads all four. Which of the two papers a given page uses
-hasn't been traced.
+The code loads all four.
 
 The mastheads show the league order (**seen in the textures**): 0 England,
 1 France, 2 Germany, 3 Italy, 4 Spain, 5 the Netherlands. Each country has
@@ -92,8 +91,7 @@ The names group the pictures (**empirical**, from the pack): weather
 `bus`), facilities being built (`dounyu_01`–`09`, with 32 variants each
 for 6 and 8), shops (`shop_line`, `shop_ten`, `shop_two`, 32 each),
 the front page (`front_twenty`, `front_two`, 32 each) and press, stand
-and shop pictures with `_a`/`_b` halves. What the 32 variants stand for
-hasn't been checked.
+and shop pictures with `_a`/`_b` halves.
 
 Names in a pack hold only the last 16 characters of the original path
 ([`PAC_FORMAT.md`](PAC_FORMAT.md)), so `news_art_rain.svr` appears as
@@ -109,8 +107,7 @@ at 4 bits per pixel, the adverts with 16-bit palettes and the rest with
 32-bit ones. `NEWS_CARTOON` holds 15 cartoons (`cartoon`,
 `cross`, `irony`) in the same three shapes. `NEWS_OTHER` holds
 `news_other_filter16` and `news_other_sponsaor_1` (spelled so). The
-factory loads all of them for every newspaper. Where each is placed
-wasn't traced.
+factory loads all of them for every newspaper.
 
 ## `NEWSMONTHFLAG.TBB`
 
@@ -154,3 +151,12 @@ only asks about the 12 ids above, so this never happens.
 - What the 32 variants of the shop, front-page and facility pictures
   stand for (probably the club colours).
 - Where the ads and cartoons go on the page, and how they are picked.
+
+## Checking the claims
+
+```bash
+python SRC/news.py info DAT/NEWS                       # pack counts, picture sizes, the month table
+python SRC/news.py months DAT/NEWS                     # the competition by month grid
+python SRC/pac.py list DAT/NEWS/NEWS_ART.HED           # the article pictures by name
+python SRC/preload.py who DAT news_ad.pac              # the PRELOAD packs that hold a copy
+```

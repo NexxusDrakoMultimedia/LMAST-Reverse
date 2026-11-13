@@ -24,8 +24,8 @@ texture packs and fonts. See DOC/0SYSTEM_DIR.md.
   SAVE_VERSION.DAT      a text note, loaded by the root module's list.
 
 `info` checks the layouts and the entry naming the index conversions rely
-on. `colors` prints the colour table. `emblem` gives the pack entry for a
-team id.
+on. `colors` prints the colour table. `emblem` gives the crest pack entry
+for a team id (a national team is given as N<n>, its nation number).
 
 Usage:
     python system.py info   <DAT/0SYSTEM>
@@ -157,8 +157,8 @@ def check_texture_packs(d):
         small = [re.sub(r"_S\.svr$", "", n) for n in packs[3][2]]
         if big != small:
             out.append("  !! MATCH_TEXTURE and MINIMATCH_TEXTURE name different badges")
-        # ConvertIndex (0x105d64-0x105da4): exhibition -> 56 + language,
-        # competition 0x30 -> 63 + language.
+        # ConvertIndex (0x105d64-0x105da4): the exhibition (competition
+        # 0x31) -> 56 + language, the Youth League (0x30) -> 63 + language.
         want = ["EXHIBITION_%d" % i for i in range(7)] + ["YOUTH_LEAGUE_%d" % i for i in range(7)]
         if big[56:70] != want:
             out.append("  !! entries 56-69 aren't EXHIBITION_0-6, YOUTH_LEAGUE_0-6")

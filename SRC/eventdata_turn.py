@@ -3,9 +3,12 @@
 """Decode DAT/EVENT/EVENTDATA_TURN.TBB into CSV.
 
 EVENTDATA_TURN is an early (CVS rev 1.1, Jan 2005) export of the turn
-event sheet. Nothing on the disc loads it - the shipping game uses the
-numeric EvsDataBin_EVENT.bin instead - so the record layout below is
-inferred from the data alone. See DOC/EVENTDATA_TURN.md.
+event sheet. Nothing on the disc loads it: the shipping game uses the
+numeric EvsDataBin_EVENT.bin instead. So the record layout (FIELDS below)
+is inferred from the data alone. See DOC/EVENTDATA_TURN.md.
+
+The CSV has an `index` column and one column per field. With no output
+file it prints to the screen. There is no `info` command.
 
 Usage:
     python eventdata_turn.py <EVENTDATA_TURN.TBB> [out.csv]

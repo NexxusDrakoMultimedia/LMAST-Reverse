@@ -5,14 +5,26 @@
 
 How the game charges for facilities, where the season plan's limits are
 set, and what the ad budget, ticket price and season tickets do to
-attendance, income and popularity. The research behind the LMASTER Mod's
-harder economy ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)).
+attendance, income and popularity. It also covers the club's other money
+flows: supporters, sponsors, TV, merchandise, transfer fees, PR events,
+camps and tours. This is the research behind the LMASTER Mod's harder
+economy ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)).
+
+This is not a file format. The numbers live in the executable
+(`SLES_541.51`) and in the season overlay (`SIMPRG.REL`), and the tools
+that read or change them are named where they come up.
+`python SRC/save.py finances <save>` shows a career's accounts.
 
 Money is in the game's stored unit (£1 = 6, €1 = 4); the accounts, the
 season plan and the income and payment types are in
 [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far). All addresses
 are PAL. Overlay addresses are in `SIMPRG.REL`, the rest in
 `SLES_541.51`.
+
+The `--mod` names are the LMASTER Mod's switches; which group and
+edition holds each is in
+[`LMASTER_MOD.md`](LMASTER_MOD.md#the-switch-levels). The commands under
+[Checking the claims](#checking-the-claims) read each kind of address.
 
 ## The business cycle
 
@@ -32,9 +44,9 @@ in state 2.
 **Confirmed from the game code.** The facility window
 (`WP::CInstDetailWnd`) starts a build through `0x153c28`. That function
 calls the build kind's own build function (jump table at `0x23ce40`),
-then pays the cost from `0x154b78` with `pwkGen_Pay` (`0x153de0`), as
-the payment type that the table at `0x23cdf0` gives the kind. A kind
-whose type is 23 is paid nothing.
+then pays the cost from `0x154b78` with `pwkGen_Pay` (`SLES 0x2445f8`,
+called at `0x153de0`), as the payment type that the table at `0x23cdf0`
+gives the kind. A kind whose type is 23 is paid nothing.
 
 `0x154b78` (kind, slot, mode) has two modes. Mode 1 returns the
 facility's monthly upkeep, unscaled, for the screen (getters at
@@ -119,6 +131,22 @@ The ad budget (`pwkUnkei_GetPR`) is read in four places:
 | `pwkSche_UpdateMonthly` (`0x255428`) | each month, the expected attendance of the next 8 turns (`GetExpectTicket`, stored with `pwkSche_SetTicket`) |
 | `0x268b00`, from `pwkTeam_ChangePop_Month` (`0x269350`) | supporter popularity: budget ÷ 600,000 points a month (below) |
 
+**Confirmed.** Three numbers in the executable (600,000 and 3,000,000
+twice, plus the 30,000 unit derived from the step) set the ad budget's
+scale, at the sites in the table. A mod that changes how much a pound of
+advertising buys edits these; the LMASTER Mod's `dearer-ads` switch does
+([`LMASTER_MOD.md`](LMASTER_MOD.md#the-switch-levels)):
+
+| Constant | Value | Site (`SLES_541.51`) |
+|---|---|---|
+| popularity divisor, in `0x268b00` | 600,000 | `0x268ce0` (`lui`), `0x268ce4` (`ori`) |
+| ticket demand column step, the column picked in `pwkUnkei_GetTicketHosei` | 3,000,000 | `0x2719e0` (`lui`), `0x2719e4` (`ori`) |
+| the same step, for the remainder that is interpolated | 3,000,000 | `0x271a88` (`lui`), `0x271a8c` (`ori`) |
+| interpolation unit, a hundredth of the step | 30,000 | `0x271aa0` (`addiu`) |
+
+The plan screen's limit on the budget is a separate constant in
+`SIMPRG.REL` ([above](#the-season-plan-screens-limits)).
+
 ### Supporter popularity
 
 **Confirmed.** A club's fanbase is its popularity in each of 14 regions
@@ -175,8 +203,7 @@ region (`0x268e70`; 0 with none): 1.02, 1.05, **10.8**, 1.11, 1.14, …
 1.47, rising by 0.03. The third value is a typo for 1.08 in both
 releases (Japanese `0x550bf8`): a club whose best player from a region
 has rank 2 gains popularity there ten times as fast.
-`patch_disc.py --mod overseas-pop` (in `--mod lmaster-lite`) sets it to
-1.08.
+`patch_disc.py --mod overseas-pop` sets it to 1.08.
 
 #### The monthly change
 
@@ -330,17 +357,17 @@ match:
 > (grade + importance) × weather × (95–104) ÷ 60,000,000
 
 The result is capped at the stadium's capacity. Home popularity is the
-region value above. `patch_disc.py --mod fanbase` (in `--mod balance`)
-makes the 130 195 and the 3,000 1,500 (`addiu` immediates at `0x2722d8`
-and `0x2722f0`), so the crowd follows popularity more and the fixed part
+region value above. `patch_disc.py --mod fanbase` changes the 130 to 195
+and the 3,000 to 1,500 (`addiu` immediates at `0x2722d8` and
+`0x2722f0`), so the crowd follows popularity more and the fixed part
 less: at the full 65,535 the first part grows by about half, while a
 club of popularity 5,000 and *k* = 10 keeps about what it had. *k* is
-the function's u8 argument, 0–32 by its
-tables (the club rank would fit; not traced). Grade is 11, 10, 9, 8, 8,
-8, 5, 0 by `PlMatchGrade` (`0x556218`). Importance is 11, 13, 12, 11,
-11, 40 by `IMPORTANT_MATCH` (`0x556238`). Weather is 10, 10, 5, 5, or
-10, 10, 8, 8 for the other table (`0x5561f8`, `0x556208`). The game's
-own random number gives the 95–104.
+the function's u8 argument, 0–32 by its tables (the club rank would fit;
+not traced). Grade is 11, 10, 9, 8, 8, 8, 5, 0 by `PlMatchGrade`
+(`0x556218`). Importance is 11, 13, 12, 11, 11, 40 by `IMPORTANT_MATCH`
+(`0x556238`). Weather is 10, 10, 5, 5, or 10, 10, 8, 8 for the other
+table (`0x5561f8`, `0x556208`). The game's own random number gives the
+95–104.
 
 For a league home match it then adds the season-ticket holders:
 
@@ -407,16 +434,16 @@ from the same immediates at `0x2728ec` and `0x2728f0`, which
 by popularity ÷ 4,369 and club status ÷ 4,369, from 10 (both low) to 80
 (both high). The demand is 0 when its first part is below 2,501.
 
-The status factor has a bug. The code tests status ≤ 10,000 for 0.5
-and otherwise gives 0.6. Its later steps (0.7, 0.8, 0.9, 1.0 above
-20,000, 30,000, 40,000 and 50,000) sit behind tests that can't succeed,
-because the first test already took every status above 10,000
+The status factor has a bug. The code tests status ≤ 10,000 for 0.5 and
+otherwise gives 0.6. Its later steps (0.7, 0.8, 0.9, 1.0 above 20,000,
+30,000, 40,000 and 50,000) sit behind tests that can't succeed, because
+the first test already took every status above 10,000
 (`0x272838`–`0x2728dc`). A top club sells season tickets as if it were
 an average one. The Japanese executable has the same 31 words (at
-`0x2728f0`). `patch_disc.py --mod season-status` (in `--mod lmaster-lite`)
-rewrites them as the intended ladder: 0.5 up to 10,000, then 0.6, 0.7,
-0.8 and 0.9 a band of 10,000, and 1.0 above 50,000. Checked by running
-both versions in a small MIPS simulator over the band edges.
+`0x2728f0`). `patch_disc.py --mod season-status` rewrites them as the
+intended ladder: 0.5 up to 10,000, then 0.6, 0.7, 0.8 and 0.9 a band of
+10,000, and 1.0 above 50,000. Checked by running both versions in a
+small MIPS simulator over the band edges.
 
 **Tested in PCSX2** (`LMAST-test-seasonstatus.iso`, Nexxus's career saved
 to `Mcd001.ps2` as G002 and read off it with `ps2mc.py get`): with
@@ -447,20 +474,24 @@ so it just sells out (it holds 100).
 ## Sponsors
 
 **Confirmed.** The sponsors are a table in `SIMPRG.REL`, not a disc
-file: 212 records of 0x48 bytes at `0x23d978`, ids 1–212
-(`plSponsor_GetDb`, `0x160dc0`). A candidate's fee is set when the
-candidate list is built (`0x1690a0`, `0x1691a8`): the record's `+0x14`
-(main sponsor) or `+0x18` (the other kind) × the business-cycle factor,
-1.25, 1.1, 1.0, 0.9 or 0.75 (doubles at `0x1daba0` and `0x1dac40`), stored
-at the candidate's `+0xc`. Signing books fee × 100 as income 0, once
-(`0xc8234`). A bigger club isn't paid more by the same sponsor; it is
-offered bigger ones (which sponsors a club is offered isn't traced).
+file: records of 0x48 bytes, ids 1–212, the record for id *n* at
+`0x23d978` + *n* × 0x48 (`plSponsor_GetDb`, `0x160dc0`, which refuses
+any other id; the slot at `0x23d978` itself is not a sponsor). A
+candidate's fee is set when the candidate list is built (`0x1690a0`,
+`0x1691a8`): the record's `+0x14` (main sponsor) or `+0x18` (the other
+kind) × the business-cycle factor, 1.25, 1.1, 1.0, 0.9 or 0.75 (doubles
+at `0x1daba0` and `0x1dac40`), stored at the candidate's `+0xc`. Signing
+books fee × 100 as income 0, once (`0xc8234`). A bigger club isn't paid
+more by the same sponsor; it is offered bigger ones (which sponsors a
+club is offered isn't traced).
 
-**Empirical:** 210 records have fees. `+0x14` runs £500,000–£45M
-(median £3.45M), `+0x18` £50,000–£45M (median £345,000). Four records
-(170, 174, 186, 194) hold the £1,350,000 of Africmap Airways, the first
-main sponsor of a new career
-([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md#tested-in-pcsx2)).
+**Empirical** (read from the overlay): 210 records have fees (all but
+211 and 212). `+0x14` runs £500,000–£45M (median £3.45M), `+0x18`
+£50,000–£45M (median £345,000). Four records (170, 174, 186, 194) hold
+the £1,350,000 of Africmap Airways, the first main sponsor of a new
+career ([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md#tested-in-pcsx2)).
+That doc also covers the Sponsor screen's fee negotiation, which the
+Japanese release has and PAL cuts.
 
 ## TV contracts
 
@@ -541,11 +572,11 @@ can't pay for (`pwkGen_GetSikin`) is greyed out:
 
 Ordering (`0xbc0b0`) keeps the lot's cost and its stock (the same lot
 sizes, `0x1d1090`[choice], 1-based), then pays the cost as payment 22
-(`pwkGen_Pay`, `0xbb814`; "Casual income", the misnamed expense, under
-Other expenditure) and puts the goods on sale with that stock
-(`0x164ec8`: slot `+0x0` id, `+0x4` stock, `+0x8` sold, `+0xc` player).
-Item 49 (`0x31`, price 150,000,000) is the exception: one unit at a fifth
-of its price (`0xbc418`).
+(`pwkGen_Pay`, called at `0xbb814`; "Casual income", the misnamed
+expense, under Other expenditure) and puts the goods on sale with that
+stock (`0x164ec8`: slot `+0x0` id, `+0x4` stock, `+0x8` sold, `+0xc`
+player). Item 49 (`0x31`, price 150,000,000) is the exception: one unit
+at a fifth of its price (`0xbc418`).
 
 So a unit costs 18–30% of its price, and each one sold brings in its
 price × the business cycle (75–125%): margins of 70–82% in an average
@@ -554,12 +585,11 @@ of 1,000 and £5.40 in a lot of 100,000. The levers for dearer stock and
 smaller margins are the 30, the discount table and the prices (shop list
 `+0x8`).
 
-`patch_disc.py --mod merch-costs` (in `--mod balance` and
-`--mod lmaster-max`) makes the 30 50 and halves each discount (rounded
-up): 100, 97, 95, 92, 90, 87, 85 and 80. A unit then costs 40–50% of its
-price, so margins in an average cycle are 50–60%, and stock that doesn't
-sell costs more. The £30 shirt costs £15 a unit in a lot of 1,000 and
-£12 in a lot of 100,000. The prices stay.
+`patch_disc.py --mod merch-costs` changes the 30 to 50 and halves each
+discount (rounded up): 100, 97, 95, 92, 90, 87, 85 and 80. A unit then
+costs 40–50% of its price, so margins in an average cycle are 50–60%,
+and stock that doesn't sell costs more. The £30 shirt costs £15 a unit
+in a lot of 1,000 and £12 in a lot of 100,000. The prices stay.
 
 **Tested in PCSX2** (Nexxus's report, 2026-10-25, a `--mod lmaster-full`
 disc): ordering goods costs half the price a unit, the biggest lot gets
@@ -618,21 +648,20 @@ rank 15, and a top club in a boom at most about £41M (£82M with
 `transfer-fees`). Which arguments are the growth type and the contract
 isn't traced from the callers.
 
-`--mod fee-tiers` (in `--mod balance`, Nexxus's choice of tiers,
-2026-10-26) multiplies table A's rows: ranks 0–5 ×2, 6–11 ×1.5, 12–14
-×2 and rank 15, the "football icon", ×3. With `transfer-fees` a mid club
-pays about £1.7M for a rank-0 player and £125M for a rank-15 one, and the
-best player at a top club in a boom reaches about £246M, under the £250M
-cap. **Tested in PCSX2** at the low end (Nexxus's report, 2026-10-27, a
-German career on an LMASTER max build):
-lesser players' fees came out about four times retail. A top player's
-fee above £120M isn't seen yet.
+`--mod fee-tiers` (Nexxus's choice of tiers, 2026-10-26) multiplies
+table A's rows: ranks 0–5 ×2, 6–11 ×1.5, 12–14 ×2 and rank 15, the
+"football icon", ×3. With `transfer-fees` a mid club pays about £1.7M
+for a rank-0 player and £125M for a rank-15 one, and the best player at
+a top club in a boom reaches about £246M, under the £250M cap. **Tested
+in PCSX2** at the low end (Nexxus's report, 2026-10-27, a German career
+on an LMASTER max build): lesser players' fees came out about four times
+retail. A top player's fee above £120M isn't seen yet.
 
 `pwkMoney_CalcPlayerMarketPrice` (`0x247d78`) isn't a transfer fee: it
 is the salary a player asks for (its callers are the contract renewal and
 the dissatisfaction check), 30,000 × form factors × two tables × 48.
 
-`--mod transfer-fees` (in `--mod balance`) makes the base 2,700,000.0
+`--mod transfer-fees` makes the base 2,700,000.0
 (the `lui` at `0x247288`) and the maximum 15,000,000, £250M (the four
 `lui`/`ori` pairs at `0x24a1c8`–`0x24a21c`), a whole number of every
 currency's step. Fees within the old cap double; fees the old cap held
@@ -684,13 +713,12 @@ more than a slump does. The Japanese executable has the same code
 That the bytes are meant in that order is **empirical** (byte 1 is
 otherwise unread, and the slump's changes are the negative ones), but
 which byte the code reads for each cycle is **confirmed**.
-`patch_disc.py --mod pr-cycle` (in `--mod lmaster-lite`) rewrites the
-ladder's first 11 words to read byte *K* + 1 below cycle 2, nothing at
-2 and byte *K* above it; `--mod pr-costs` (in `--mod balance`) makes
-the cost `+0x14` × 600 (the `addiu` at `0x20deec`), which doubles the
-booking and the refunds alike. **Tested in PCSX2** (Nexxus's report,
-2026-10-27, a German career on an LMASTER max build): PR
-events cost double.
+`patch_disc.py --mod pr-cycle` rewrites the ladder's first 11 words to
+read byte *K* + 1 below cycle 2, nothing at 2 and byte *K* above it;
+`--mod pr-costs` makes the cost `+0x14` × 600 (the `addiu` at
+`0x20deec`), which doubles the booking and the refunds alike. **Tested
+in PCSX2** (Nexxus's report, 2026-10-27, a German career on an LMASTER
+max build): PR events cost double.
 
 **Success** changes popularity, youth development and supporter
 complaints by the success record
@@ -737,7 +765,7 @@ With 25 players in an average cycle and no discount, a camp costs
 
 where *band* is your popularity in the tour's region against 10
 thresholds (`0x399478`: 0, 3,001, 8,001 … 60,001), T1 is 10 × 13 u32 at
-`0x399258` (25,200–36,500 in band 0 up to 67,900–101,300 in band 9), T0
+`0x399258` (24,500–36,500 in band 0 up to 67,900–101,300 in band 9), T0
 10 u32 at `0x399230` (1,000–20,000) and the cycle 125–75 at `0x399460`.
 So a tour earns about £1.2M–£6.3M against its cost of under £1M, and is
 always a profit. `pwkSche_CheckTourSucucess` (`0x256a20`) rates the
@@ -745,7 +773,7 @@ income against 1,500,000 and 30,000,000 (£250,000 and £5M) for the
 tour's report.
 
 `--mod camp-costs` doubles the camp rates and `--mod tour-costs` triples
-the tour rates (both in `--mod balance`), so camps cost £375,000–£2.5M
+the tour rates, so camps cost £375,000–£2.5M
 and tours £1.1M–£2.2M; a tour where the club is little known then about
 breaks even. Tour income is unchanged.
 
@@ -774,7 +802,10 @@ breaks even. Tour income is unchanged.
   leaving player takes; and whether the match streak count is the
   current run of wins or losses.
 
-## Checking
+## Checking the claims
+
+The `snr2.py` commands read `SIMPRG.REL` (the address is the overlay's);
+the `sles_disasm.py` commands read the executable.
 
 ```bash
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 153c28 160 --sles ISO/SLES_541.51

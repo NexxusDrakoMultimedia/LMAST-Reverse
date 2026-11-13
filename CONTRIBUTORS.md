@@ -18,10 +18,11 @@ records who did the work and who made it possible.
 | Contributor | Contribution |
 |---|---|
 | **Pyra Drake** (Nexxus) | every commit in the repository, the in-game test results recorded in `DOC/` ("Tested in PCSX2", "Nexxus's report"), the choices behind the LMASTER Mod ("Nexxus's choice"), [LMAST Realism](https://github.com/NexxusDrakoMultimedia/LMAST-Realism), and the project's goals and conventions |
-| **Claude** (Anthropic; Claude Opus 5.5, with one commit by Claude Sonnet 5) | the reverse engineering, the docs in `DOC/` and the tools in `SRC/`, written under the maintainer's direction; credited with a `Co-Authored-By` line on each commit it helped write |
+| **Claude** (Anthropic; Claude Opus 5.5 and Claude Sonnet 5.5, with one commit by Claude Sonnet 5) | the reverse engineering, the docs in `DOC/` and the tools in `SRC/`, written under the maintainer's direction; credited with a `Co-Authored-By` line on each commit it helped write |
 
 The README's [Disclaimer](README.md#disclaimer) explains how AI is used
-in this project. To see the commit counts for yourself:
+in this project. Every commit is authored by Pyra Drake; the assistants
+appear in the `Co-Authored-By` lines. To see the counts for yourself:
 
 ```bash
 git shortlog -sne
@@ -36,7 +37,7 @@ git log --format="%(trailers:key=Co-Authored-By,valueonly)" | sort | uniq -c
 | Contributor | Contribution |
 |---|---|
 | **@tw09627** on the LMAST Discord | first decrypted `DATA.CVM` (with the help of ChatGPT), which opened up the game's data for this project. The original write-up is kept in [`LMAST_DATA_CVM_INFO.md`](DOC/LMAST_DATA_CVM_INFO.md) |
-| **Ohayoghurt** on the LMAST Discord | found, with this project's tools, why every Virtua Pro Football player imported into the game can play in goal: the import leaves two position slots at the goalkeeper's id ([`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record)) |
+| **Ohayoghurt** on the LMAST Discord | found, with this project's tools, why every Virtua Pro Football player imported into the game can play in goal: the import leaves two position slots at the goalkeeper's id (report on the Discord, 2026-11-01; [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md#the-record)) |
 
 ## Community
 
@@ -46,25 +47,30 @@ git log --format="%(trailers:key=Co-Authored-By,valueonly)" | sort | uniq -c
 
 ## Third-party software
 
-The project builds on these, but includes none of their code. Each keeps
-its own license.
+The project builds on these and includes none of their code, except
+where a row says a tool reimplements an algorithm. Each keeps its own
+license; a license is named here only where the project's docs or code
+state it.
 
 | Project | Used for |
 |---|---|
 | [Python](https://www.python.org/) | every tool in `SRC/`, standard library only, with `tkinter` for the editors |
 | [Pillow](https://python-pillow.org/) | the PNG commands (`svr`, `csp`, `zbf`) and the textures in `ninja.py`'s exports (optional) |
 | [Capstone](https://www.capstone-engine.org/) | disassembly in `sles_disasm.py` and `snr2.py` (optional) |
-| [PCSX2](https://pcsx2.net/) | running the game for the in-game tests, its memory card images and save states; its texture-replacement naming and hashing, read from its source, which `texmap.py` reproduces ([`TEXMAP.md`](DOC/TEXMAP.md)) |
+| [PCSX2](https://pcsx2.net/) | running the game for the in-game tests, its memory card images and save states, and its PINE interface for tracing the running game ([`WIDESCREEN.md`](DOC/WIDESCREEN.md)); its texture-replacement naming and hashing, read from its source, which `texmap.py` reproduces ([`TEXMAP.md`](DOC/TEXMAP.md)) |
+| [Redump](https://redump.info/) | the checksums of the PAL and Japanese discs (disc [12334](https://redump.info/disc/12334/) and [30266](https://redump.info/disc/30266/)) that `extract_disc.py verify` compares an image with, and the image every patch is made against |
+| [xdelta3](https://github.com/jmacd/xdelta) | the patch format of shared mods (VCDIFF, RFC 3284); `vcdiff.py` makes and applies these patches in Python and reads xdelta3's LZMA and DJW compression ([`REBUILD.md`](DOC/REBUILD.md)). Players apply patches with a tool such as Delta Patcher or xdelta UI ([`INSTALL.md`](INSTALL.md)), which this project does not include |
 | [0RWX](https://0rwx.com/) by Namtao Productions (CC0) | the scale of AI usage the README declares this project at, AI:X, and its logo (public domain, linked from the site, not copied here) |
-| [Roboto Condensed](https://fonts.google.com/specimen/Roboto+Condensed) by Christian Robertson (Google; Apache License 2.0 in the version tested) | the face `fontmod.py` draws into the game's main font for `--mod modern-font`; the font file is the player's own and is not in the repo or in a patch, only pictures drawn from it |
-| [xxHash](https://xxhash.com/) by Yann Collet | the XXH3 64-bit hash PCSX2 names textures by; `texmap.py` writes the algorithm out in Python (BSD-2-Clause) and checks it against the library |
+| [Roboto Condensed](https://fonts.google.com/specimen/Roboto+Condensed) by Christian Robertson (Google; the font file tested, version 3.008, says "Licensed under the Apache License, Version 2.0") | the face `fontmod.py` draws into the game's main font for `--mod modern-font`; the font file is the player's own and is not in the repo or in a patch, only pictures drawn from it |
+| [xxHash](https://xxhash.com/) by Yann Collet | the XXH3 64-bit hash PCSX2 names textures by; `texmap.py` writes the algorithm out in Python (BSD-2-Clause) and checks it against known values (`texmap.py selfcheck`) |
 | [cvm_tool](https://github.com/JayFoxRox/cvm_tool) by JayFoxRox | the first `DATA.CVM` decryption; `rofs_decrypt.py` reimplements its ROFS algorithm in Python ([`DATA_CVM_EXTRACTION.md`](DOC/DATA_CVM_EXTRACTION.md)) |
 
 ## Sister project
 
 [VPF-Reverse](https://github.com/NexxusDrakoMultimedia/VPF-Reverse)
 covers *Virtua Pro Football*, which shares this game's engine. Formats
-the two games share are documented here first.
+the two games share are documented here first, and VPF-Reverse builds
+on them.
 
 ## Getting listed
 

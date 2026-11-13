@@ -8,7 +8,13 @@ The career calendar has 164 schedule UIDs, 0–163
 needs six more, one hidden league per nation
 ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements), phase 3). This doc
 lists what fixes the count at 164: the data, which sets it for most of
-the schedule code, and the few code sites that name it.
+the schedule code, and the few code sites that name it. It then records
+how `patch_disc.py --mod third-tier` adds the tiers' seasons, and what
+was seen in the game. The club side of the same switch is in
+[`CLUB_LIMITS.md`](CLUB_LIMITS.md); the Japanese disc's port is in
+[`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc).
+Addresses are the PAL executable's and overlays'. The data tables are
+checked with `python SRC/schedule.py info DAT/PARAM`.
 
 ## 164 is "no competition"
 
@@ -24,7 +30,9 @@ the club editor (`0x50030`, `0x513d4`), the player search
 (`0x9f944`, `0x9f960`), the events (`EVS::`, 13 sites) and the rival
 records (`0x15f304`, `0x15f79c`, `0x15f940`). `VSPRG.REL 0x6f8c` too.
 
-So UID 164 can't be a schedule. The third tier's UIDs are **165–170**.
+So UID 164 can't be a schedule. The third tiers' UIDs are **165–176**:
+165–170 for the other-nations versions and 171–176 for the own-nation
+versions ([below](#--mod-third-tier-the-tiers-seasons-phase-3)).
 
 ## The data
 
@@ -257,25 +265,27 @@ byes, spread over three rounds, looked odd
 there, and the lower cups now use the seeded layout
 (`LMAST-test-max-germany.iso`, not yet seen in game).
 
-**The first season's end failed, and is fixed** (Nexxus's report, with
-screenshots and the save, 2026-10-27). The tiers' year rows had `+7` at
-0, so `calcCompetetionFinish` (`0x205f88`) kept none of their results:
-the save's records for competitions 50–55 still held their seeds (count
-0), while the second divisions' were written. Each second division then
-took its tier's seeded rank 1, a club it already had, so in England
-Sheffield played the Champions Division twice, and in Germany Paderborn,
-last in the 2nd German League and at the tier's rank 1 since the
-career's start, stayed up. The rows now have `+7` at 1. The offline
-play-out keeps results only for such rows, and finds the bug in the old
+**The first season's end failed once, and is fixed** (Nexxus's report,
+with screenshots and the save, 2026-10-27). The tiers' year rows had
+`+7` at 0, so `calcCompetetionFinish` (`0x205f88`) kept none of their
+results: the save's records for competitions 50–55 still held their
+seeds (count 0), while the second divisions' were written. Each second
+division then took its tier's seeded rank 1, a club it already had. In
+England Sheffield played the Champions Division twice. In Germany
+Paderborn, last in the 2nd German League and at the tier's rank 1 since
+the career's start, stayed up. The rows now have `+7` at 1. The offline
+play-out keeps results only for such rows; it finds the bug in the old
 files (clubs twice from season 2) and none in the new
-(`LMAST-test-tiers-germany2.iso`). Because `updateTurnEnd` (`0x2033e0`)
-marks a result kept before calling `calcCompetetionFinish`, a career
-from the old disc only recovers if it is saved before the tiers' last
-game day (May) and loaded from the card on the new disc. The test
-career was saved later (turn 95, June), so its tiers' records were
-written into the save by hand, from their true final tables read out
-of block 5's pools ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-blocks)): in
-Germany Siegen won the tier and Trier was last.
+(`LMAST-test-tiers-germany2.iso`).
+
+`updateTurnEnd` (`0x2033e0`) marks a result kept before it calls
+`calcCompetetionFinish`, so a career from the old disc only recovers if
+it was saved before the tiers' last game day (May) and is loaded from
+the card on the new disc. The test career was saved later (turn 95,
+June), so its tiers' records were written into the save by hand, from
+their true final tables read out of block 5's pools
+([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-blocks)): in Germany Siegen won
+the tier and Trier was last.
 
 **Tested in PCSX2** (Nexxus's report, with screenshots, 2026-10-27): that
 career, loaded on `LMAST-test-tiers-germany2.iso`, plays through the
@@ -290,8 +300,11 @@ both versions move one club each way.
 
 - When a schedule's pool slots are freed, and the true peak of each
   pool over a season.
+- Where the Information screen's Competitions tab takes its list from.
+  It doesn't show the tiers, as the design wants, so it must use a list
+  of its own; that list isn't traced.
 
-## Checking
+## Checking the claims
 
 The scan is a short script over `gamever.image` of the executable and
 each overlay: every `addi`/`addiu`/`slti`/`sltiu`/`andi`/`ori` with an

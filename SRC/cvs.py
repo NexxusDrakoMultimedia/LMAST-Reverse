@@ -14,8 +14,8 @@ three standard CVS files. The game never reads them. See DOC/CVS_DIR.md.
 
 `info` checks every folder's REPOSITORY against its name and its ENTRIES
 against the files on the disc: a listed file that is missing is marked
-!!; files on the disc that CVS doesn't list (made by the build, not
-checked in) are listed as such. `list` prints a folder's entries with
+!!; files on the disc that CVS doesn't list (they look like build output,
+not checked in) are listed as such. `list` prints a folder's entries with
 their original names, revisions and dates. ROOT names a person's login,
 so neither command prints it.
 

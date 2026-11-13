@@ -29,7 +29,8 @@ Usage:
     python ninja.py obj  <model> <out.obj>    # static mesh in bind pose, plus
                                               # .mtl and PNGs of its NSTL textures;
                                               # <model> is a file or an info label
-                                              # (ARCHIVE#entry, ARCHIVE#entry.block)
+                                              # (ARCHIVE#entry:name for a BINPAC,
+                                              # ARCHIVE#entry.block for a KC@P pack)
     python ninja.py gltf <out.gltf> <input> ...
                                               # skinned, animated glTF. Inputs are
                                               # files, labels or whole archives: the

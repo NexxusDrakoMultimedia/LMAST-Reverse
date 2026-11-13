@@ -2,9 +2,10 @@
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """CSO and ZSO compressed disc images, which PCSX2 runs and many players
 keep instead of the 3.5 GB ISO of Let's Make a Soccer Team! (PS2). Read
-only: the tools that take a disc image (vcdiff.py, patch_disc.py) open one
-through open_image() and see the ISO's bytes; open_image() also hands CHD
-images to chd.py. Standard library only.
+only. vcdiff.py opens one through open_image() and sees the ISO's bytes;
+patch_disc.py decompresses one into its output ISO first (is_compressed,
+cmd_extract). open_image() also hands CHD images to chd.py. Standard
+library only.
 
   header  0x18 bytes: char[4] magic ("CISO" or "ZISO"), u32 header size
           (0x18), u64 the ISO's size, u32 block size, u8 version, u8 index

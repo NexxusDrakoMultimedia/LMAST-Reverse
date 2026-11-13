@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# The Japanese release
+# The Japanese release: what differs from the PAL disc
 
 *Pro Soccer Club o Tsukurou! Europe Championship* (プロサッカークラブをつくろう!
 ヨーロッパチャンピオンシップ), SLPM-66316, v1.05, the Redump dump
@@ -9,6 +9,14 @@
 release is dated 2006-07-16 (`DLL/VERSION.DAT`), so the Japanese one is the
 earlier build, and the reference for content PAL changed or cut (see
 [`LMASTER_MOD.md`](LMASTER_MOD.md)).
+
+This doc is the home of everything that differs on the Japanese disc:
+how to extract it, how the tools find the same code in its executable
+(`SRC/gamever.py`), what each LMASTER switch does there, and the
+differences in the data. The tools read the extracted `ISO_JP/` and
+`DAT_JP/`, and `python SRC/regress.py run` runs every check over them as
+`jp_<name>`; `python SRC/gamever.py check ISO_JP` is the one command that
+checks the address translation.
 
 ## Setting it up
 
@@ -27,9 +35,8 @@ present, `python SRC/regress.py run` also runs every check over them as
 `jp_<name>`.
 
 `patch_disc.py` patches a Japanese disc too, with every switch but
-LMASTER Realism's ([below](#patching-a-japanese-disc)), and `save.py --iso
-ISO_JP` reads
-and writes Japanese saves
+LMAST Realism's ([below](#patching-a-japanese-disc)), and `save.py --iso
+ISO_JP` reads and writes Japanese saves
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)). Still
 PAL-only: the editor and the save editor.
 
@@ -44,8 +51,10 @@ files in `ISO/` as the reference:
    `lui`/`addiu` pair (an overlay: a HI16/LO16 relocation) load the same
    address in the same position in the other build. Functions without a
    symbol get names from their callers (`f>2` is the third function `f`
-   calls). The functions must agree. If they don't, the candidate whose
-   words look most like the PAL table wins, or nothing does.
+   calls, `f>0>1` the second function that one calls). The most
+   functions win. A close vote goes to the candidate whose words look
+   most like the PAL table, and if that is no clearer, nothing is found.
+   A result must also agree with a unique match from step 3.
 3. **bytes**: the PAL bytes, with address fields masked in code, occur
    once in the other file (or as often as in PAL: the same occurrence).
 4. **function**: a shorter run of the PAL bytes (0x20, 0x10 or 8 bytes)
@@ -53,9 +62,18 @@ files in `ISO/` as the reference:
    the other build changed a few words further on.
 5. **near**: as 2, from an address up to 0x800 bytes away.
 
+A PAL address that is the start of a function with no symbol is tried
+first by its caller-made name: if the other build has exactly one
+function of that name, that is the answer (`gamever.py at` reports it as
+`function f>2`). This happens before step 2.
+
 `gamever.imm` does the same for constants held in instructions (loop
 bounds, table sizes). `python SRC/gamever.py check ISO_JP` lists every
-address the tools use and how each was found: all 37 are found.
+address the tools use and how each was found: all 45 are found.
+`python SRC/gamever.py at <file> <PAL address> [hex size]` translates one
+address (the size is how many bytes are compared, 0x40 by default), and
+the results are cached in `.cache/gamever.json` by the other file's
+SHA-1.
 
 Each table's use in a tool checks it a second way (**empirical**, run on
 the Japanese disc):
@@ -77,7 +95,7 @@ so LMASTER full and max can't be built for it; LMASTER lite and the
 groups without it can. `third-tier` is ported except for its rules text
 ([below](#the-third-tier-on-the-japanese-disc)).
 Every switch must work here before LMASTER 1.0.0 (Nexxus's choice,
-2026-11-01; [`TODO.md`](../TODO.md) section 8).
+2026-11-01; [`TODO.md`](../TODO.md#the-lmaster-mod)).
 
 ```bash
 python SRC/patch_disc.py patch "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso" out.iso --mod lmaster-lite,harder-economy,balance,league-balance,injury-lines --skip-tutorial
@@ -102,11 +120,11 @@ plans there, each on its own with the switches it needs):
 
 | Switch | On the Japanese disc |
 |---|---|
-| `sponsor-negotiation` | nothing to do: the release negotiates with the main sponsor ([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md)) |
+| `sponsor-negotiation` | nothing to do: the release negotiates with the main sponsor ([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md)). Its check (`SIMPRG.REL 0xc4b70`) is the same loop the PAL switch builds: it walks the 20 words at `this+0x12f0` and returns 0 if the sponsor id is in the list, 1 if not ([the restored check](SPONSOR_NEGOTIATION.md#the-restored-check)) |
 | `drill-names` | nothing to do: `801_1`–`6.mbb` already have the names in the Japanese numbering |
-| `mod-saves` | renames the memory-card folders `BISLPM-66316-G` and `-C`, found by name, to the same letters as PAL (`-F` or `-M`, and `-V`) |
+| `mod-saves` | renames the memory-card folders `BISLPM-66316-G` and `-C`, found by name, to the same letters as PAL (`-F` or `-M`, and `-V`); `save.py rename` and `copy` accept the `BISLPM-66316-` names ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)) |
 | `skip-tutorial` | as PAL; the undo of the earlier PAL-only skip is left out |
-| `injury-lines` | the code fix only: the Japanese text of the two lines (category 200, messages 4 and 7, "about 2 months", "about 9 months") is already there; slots 1–6 hold `test` |
+| `injury-lines` | the code fix only: the Japanese text of the two lines is already there (category 200, message 4 `全治約2ヶ月の軽傷`, "a light injury of about 2 months", and message 7 `全治約9ヶ月の重傷`, "a heavy injury of about 9 months"); the other slots (1–6) read `test` for both (`mbb.py dump DAT_JP/MESSAGE/MES.PAC --cat 200`) |
 | `fanbase` | the merchandise table holds half the PAL bases (5,000 at the top, 400 at the bottom); it is scaled from those with the same factors, ×3 at the top to ×0.5 at the bottom |
 | `tv-fees` | two TV stations' base offers are higher (270,000 and 300,000 against 150,000 and 111,000); the same rule halves everything above £2M |
 | `pr-cycle` | the same code, with `pwkTown_Keiki` at `0x2719d0` |
@@ -117,7 +135,9 @@ plans there, each on its own with the switches it needs):
 | `third-tier` | all 93 places plan; the rules text isn't changed ([below](#the-third-tier-on-the-japanese-disc)) |
 | `realism` | refused: its pack is named by PAL hashes |
 | `random-sponsors` | nothing done: its code is PAL's, and `patch_disc.py` notes it and leaves the release alone |
+| `title-banner` | nothing done: the release has one title pack, `CSE/SC_TITLEBG.CSP`, with another picture; `patch_disc.py` notes it and leaves the release alone |
 | `modern-font` | nothing done, by Nexxus's choice (2026-11-13): the release draws language 0 from `FONT_ASCII` and `FONT_KANJI` ([`FONT_FORMAT.md`](FONT_FORMAT.md#the-japanese-builds-fonts-language-0)), and `patch_disc.py` notes it and leaves the release alone |
+| `retail-text` | nothing done: the fixes are to PAL's text |
 | the rest | the same bytes, at other addresses |
 
 Every patched spot's surrounding code (8 words either side, immediates
@@ -125,7 +145,7 @@ and jump targets ignored) agrees between the builds in at least 12 of 17
 words, and the four below 14 are in `pwkUnkei_GetExpectSeat`, whose
 registers differ, and the merchandise table. A PAL disc patched with the
 same switches is byte for byte as before. No Japanese disc built with
-the switches has been run in the game yet.
+the other switches has been run in the game yet.
 
 The disc's UDF file system names the archive `Data.cvm` (PAL: `DATA.CVM`),
 so a patch that has to move files (a bigger `MES.PAC`) finds its UDF entry
@@ -153,7 +173,7 @@ season through the third tier is not checked yet.
 | Part | On PAL | On the Japanese disc |
 |---|---|---|
 | Code segment: a second program header and a cave in the executable for new code | 2 places, 34 bytes (`SLES_541.51` `0x2c`, `0x54`; the cave's file offset `0x46a350`) | the cave's file offset is `0x465fd0` (the first segment ends at `0x465f5c`, PAL `0x46a2dc`; the cave sits 0x74 after it in both); `e_phnum` and the second header are at the same header offsets; the 0x400 bytes there are zero |
-| Bigger save: block 2 (+18 records) and block 5 (+7), the serializers' loops and two wrappers | 7 places, 672 bytes (3 in the executable, 4 in `SAVEPRG.REL`) | the size table is at `0x52f838` (PAL `0x533ac8`) and only block 1 differs (76,256 against 76,272), so blocks 2 and 5 grow to the same sizes. The six `SAVEPRG.REL` sites map with identical bytes (`0x29460`, `0x1b7b4`, `0x29750`, `0x1ba48`, and the dispatchers' return points `0x2b914`, `0x2b94c`); the wrappers' jump from the return address to the serializer differs for the write one (`-0xfefc`, PAL `-0xff54`), and `_plBits_BitRead` and `BitWrite` are at `0x20caa0` and `0x20ca60` |
+| Bigger save: block 2 (+18 records) and block 5 (+7), the serializers' loops and two wrappers | 7 places, 672 bytes (3 in the executable, 4 in `SAVEPRG.REL`) | the size table is at `0x52f838` (PAL `0x533ac8`) and only block 1 differs (76,256 against 76,272; the table's entries are the block sizes plus 8), so blocks 2 and 5 grow to the same sizes. The six `SAVEPRG.REL` sites map with identical bytes (`0x29460`, `0x1b7b4`, `0x29750`, `0x1ba48`, and the dispatchers' return points `0x2b914`, `0x2b94c`); the wrappers' jump from the return address to the serializer differs for the write one (`-0xfefc`, PAL `-0xff54`), and `_plBits_BitRead` and `BitWrite` are at `0x20caa0` and `0x20ca60` |
 | Past records for competitions 49–55 | 1 place, 92 bytes (`pwkRec_GetCompePastRecord`) | the function is PAL's but for two `jal` targets; the rewrite inlines `plPwork_GetPwork`, whose global is `lui 0x39 / lw -0x36b8` there (PAL `0x9a8`). Block 5's own layout is the same |
 | Clubs 442–459 as full clubs | 41 places (31 executable, 7 `SIMPRG.REL`, 3 `YRSTPRG.REL`) | every one is the word PAL has (same opcode, registers and old immediate) at the same place in the same function; 37 map by `gamever.py`, and the four it can't place (`CMakeDataBase::MakeDB`, PAL `0x2230e0`, two of the four player-candidate loops, `0x2609d0` and `0x260b58`, and `YRSTPRG.REL 0x17014`) are the same word's next occurrence in the Japanese function of the same name, which holds as many of them as PAL's (`Port.expect`) |
 | The lists sized for 441 clubs | 30 places, 2,060 bytes (7 executable, 23 `SIMPRG.REL`) | the five relayed functions differ from PAL's in `jal` targets and data addresses only, so every stack offset, frame size and shift of the relay holds; the other places are immediates as for the clubs |
@@ -202,17 +222,26 @@ sees.
 | What | Japanese | PAL |
 |---|---|---|
 | Disc root | `HDD/` (install to the PS2 hard disk), `DRIVERS/` adds `ATAD`, `DEV9`, `HDD`, `PFS` | none |
-| Commentary | `AUDIO/BC_JPN.AFS` only: 65,501 unnamed clips, 23.4 hours, its entry count sign-extended from 16 bits ([`AUDIO_DIR.md`](AUDIO_DIR.md#afs)) | ten `BC_*.AFS` of 12,899 named clips |
+| Commentary | `AUDIO/BC_JPN.AFS` only: 65,501 unnamed clips, 23.4 hours, its entry count sign-extended from 16 bits ([`AUDIO_DIR.md`](AUDIO_DIR.md#afs)) | five `BC_*.AFS` of 12,899 named clips, and six short `BC_*2.AFS` archives (`BC_ENG2`, `BC_FRA2`, `BC_GER2`, `BC_ITA2`, `BC_SPA2`, `BC_JPN2T`) of 6 clips each |
 | `DAT/` | 2,029 files | 2,229: the extra 200 are per-language copies in `CSE/`, `GAME/`, `PRELOAD/` and `STADIUM/` |
 | `MES.PAC` | 3,647 files. Slots 1–6 hold placeholders (`test`); 45 records of `0_0.mbb` (the salesman) are filler bytes, not text | 3,738 files, all languages translated |
+| `PARAM/` | the same 33 files. 24 are byte for byte PAL's (among them `TEAM_INIT_DATA.TBB`, `INITNATIDATA.TBB`, `STADIUM_DATA.TBB`, `MAPTEAM_LIST.TBB`, `PLRRSRC_INITTEAMDATA.TBB`, `CLUBRESULT.TBB`, `SCHEDULE_LIST.TBB` and the three `SCHEDULE_*` packs with their `.HED`). Nine differ: `CAMP_LIST.TBB`, `OTEAMMEMBER.TBB`, `PBDATA_EU.PAC`, `PBDATA_JP.PAC`, `PLRESOURCECOMMON.PAC`, `PLRESOURCESIM.PAC`, `REGULATION.TBB`, `TRAINING_LIST.TBB` and `UNIFORM_NAME2.BIN`. `OTEAMMEMBER.TBB` has the same size (175,648 bytes) and other squads; `REGULATION.TBB` differs in one byte (`0xec0`: UID 31's win bonus is 0, PAL 60); `TRAINING_LIST.TBB` differs in one column ([`TRAINING_FORMAT.md`](TRAINING_FORMAT.md#japanese-release)) | 33 files |
+| `GAME/` | 80 files, with no `FNAME<lang>`, `.TBL`, `ROUTEBOX` or `VBOX` files. `BCFNAME.DAT` and `.TOC` are byte for byte PAL's and name the 65,501 entries of `BC_JPN.AFS`. `AI_PARAM.BIN` and `GAMEDATA.BIN` are byte for byte PAL's (**empirical**, `cmp` of `DAT/GAME` and `DAT_JP/GAME`) | 156 files, with the `FNAME<lang>` name lists and the `.TBL`, `ROUTEBOX` and `VBOX` files |
 | `GAME/SOUNDDAT.PAC` | 2 commentary slots of 0x51000 bytes (Japanese, two crowd tables), no BCV index; 33 clip tables from 0xa2000 | 12 slots of 0x1d800, 36 clip tables from 0x162000 |
+| Sound tables in the executable | `sounddat.py music ISO_JP/SLPM_663.16 DAT_JP/SOUND` prints the same 24 bank records and 63 music records as PAL; only the table addresses differ: bank table `0x35969c`, music table `0x514a58` | `0x35cb54` and `0x5190d8` |
 | `PARAM/PLRESOURCESIM.PAC` | 15 entries: no free-agent list. Entry 0's climate, weather and chance tables hold 44, 49 and 27 whole records | 16 entries; 64 records each |
-| `PARAM/PBDATA_*.PAC` | play style, wristband, gloves and keeper gloves above PAL's limits | within them |
+| `PARAM/PBDATA_*.PAC` | both packs hold 3,053,100 bytes of records, with different contents. Values go past PAL's limits: play style above 22, sleeves 0–2, wristband 0–7, gloves 0–5, `gk_cap` 0–2, keeper gloves 0–7, heights from 150 cm. Every `tendency` item has values 5 and 6 (thousands of players each; 233 for press), and goalkeeping has 136 sevens. The match reads 5 or more as 4 (PAL `GAMEPRG.REL 0x143490`, [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)). Measured over `DAT_JP/PARAM/PBDATA_EU.PAC` | play style up to 22, sleeves 0, wristband 0–3, gloves 0–3, `gk_cap` 0–1, keeper gloves 0–5, heights from 158 cm; `PBDATA_JP.PAC`'s entry 1 is empty |
 | `0SYSTEM/SPONSOR_TEXTURE*.PAC` | 233, 231 and 233 entries | 232 each |
 | `CSE/GP_PRACTICEICON.CSP` | the practice icons | 0 bytes; PAL loads the per-language `GP_PRACTICEICON0`–`6.CSP` instead |
+| `PRELOAD/` and the load lists | `preload.py info DAT_JP` finds 68 packs (2 not loaded by the code) and 1,134 entries, all identical to their sources. The executable and overlays hold 9 load lists (`preload.py lists ISO_JP`) | 139 packs, 1,749 entries (1,747 identical); 17 load lists |
+| Textures | `texmap.py index DAT_JP`: 15,072 textures, 7,507 distinct texture hashes, 7,770 distinct texture and palette pairs; the face pack is 1,141 MB | 15,615, 7,728 and 8,000; 1,127 MB |
+| `SEQ/` scripts and the overlays | the same 41 `.SQB` scripts decode and round-trip (12,107 SQT1 cells), with the same command and label counts as PAL except `ROOTYEARSTARTSEQ.SQB` (128 commands, PAL 136). All ten overlays pass `snr2.py info`; the header's load alignment (`+0x28`) is `0x200` in `SAVEPRG.REL` | the same 41 scripts; load alignment `0x80` in every overlay |
+| `EVENT/` | `EVENTDATA_TURN.TBB`, `EVSDATABIN_NEWS.BIN` (368 × 192) and `EVSDATABIN_MAIL.BIN` (444 × 112) are byte for byte PAL's. `EVSDATABIN_EVENT.BIN` (382 × 272) has the same size and differs in 12 records: 352 and 353 are inactive stubs (no dialogue, no handler, timing −1; PAL fills them in: handler type 6, dialogue categories 36029 and 36030, a player loaned out and a player back from loan), and the check type (`+0x04`) of records 354–359, 371, 377, 380 and 381 is 2 higher (109–118, PAL 107–116; the stubs hold 107 and 108). The salesman's records (166–190) are identical ([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md)) | the same tables |
 
-Each of these is a `!!` line in a `jp_` check, kept as the baseline,
-except the commentary, which `afs.py` reads as documented.
+Where a row doesn't fit a documented layout, it is a `!!` line in a
+`jp_` check, kept as the baseline. The commentary is not one (`afs.py`
+reads it as documented), and the rows about identical files come from
+comparing `DAT/` and `DAT_JP/` with `cmp`.
 
 ## Still unknown
 
@@ -221,6 +250,10 @@ except the commentary, which `afs.py` reads as documented.
   built with `--mod real-names` has been run (`TESTING.md`).
 - Why entry 0 of `PLRESOURCESIM.PAC` stops partway through its tables in
   the Japanese build, and whether its code reads fewer records.
+- Whether the third tier's rules text on the Japanese disc should be
+  written in Japanese (someone who reads the game's Japanese would have to
+  check it) or left in English
+  ([the third tier](#the-third-tier-on-the-japanese-disc)).
 - Whether the player-database limits come from the Japanese code (new
   play styles, kit options) or are data PAL corrected.
 - The sponsor texture counts, how the game opens `BC_JPN.AFS` (its

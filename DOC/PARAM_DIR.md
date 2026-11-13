@@ -5,22 +5,29 @@
 
 `DAT/PARAM` (33 files, 5.5 MB, plus `CVS/`) holds the fixed data behind the
 management game: the starting leagues and squads, computer teams, the
-competition calendar, match regulations, training and camps. Nearly all of
-it is loaded by the `Param::` code in `SLES_541.51` and by
-`DLL/SIMPRG.REL` (the season mode).
+competition calendar, match regulations, training and camps. The
+`Param::` code in `SLES_541.51` and `DLL/SIMPRG.REL` (the season mode)
+load nearly all of it.
 
-The containers are all known: 23 `TBB1` table files
-([`TBB_FORMAT.md`](TBB_FORMAT.md)), 8 BINPAC packs
-([`PAC_FORMAT.md`](PAC_FORMAT.md)) and 2 raw `.BIN` files. `python
-SRC/tbb.py info DAT/PARAM` and `python SRC/pac.py info DAT/PARAM` parse all
-of them. This doc says which code loads each file and, where the reader has
-been traced, what size its records are.
+The containers are all known: 18 `TBB1` table files
+([`TBB_FORMAT.md`](TBB_FORMAT.md)), 13 BINPAC files (10 `.PAC` packs and
+the 3 `.HED` headers of the schedule packs, [`PAC_FORMAT.md`](PAC_FORMAT.md))
+and 2 raw `.BIN` files. `python SRC/tbb.py info DAT/PARAM` and
+`python SRC/pac.py info DAT/PARAM` parse all of them. This doc says which
+code loads each file and, where the reader has been traced, what size its
+records are. The record layouts are in the doc of each file or system,
+linked in the table below.
 
 Loaders and the record sizes marked **confirmed** come from the game code
 (addresses below). Everything else is **empirical**. The row counts in
 the table are `size / line size` from the `TBL1` header, and the line size
 is often not the record size (see
 [`TBB_FORMAT.md`](TBB_FORMAT.md#what-the-container-does-not-tell-you)).
+
+The Japanese release has the same 33 files; 24 are byte for byte
+identical and nine differ (**empirical**, byte comparison of `DAT/PARAM`
+and `DAT_JP/PARAM`). [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#differences-in-the-data-empirical)
+lists which and how.
 
 ## How the files are loaded
 
@@ -75,15 +82,15 @@ revision 1.68 and `team_init_data.tbb` at 1.26.
 | `STADIUM_DATA.TBB` | TBB, 1 table | `SLES 0x22ad20`, `SIMPRG.REL` demo list | 119 stadiums × **3 bytes**: roof, level, capacity (thousands). **confirmed** (`0x22add4`: `i < 0x77`, `i * 3`; readers in [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#stadium_datatbb-stadiums)) |
 | `SCHEDULE_LIST.TBB` | TBB, 4 tables | `pwkSche_CheckTourSucucess` (`0x256a20`), `SIMPRG.REL 0x1ce120` | one table per year of a 4-year cycle, 96 × u8 national-team flags per turn. **confirmed**; `natcal.py` reads and writes it. See below |
 | `TRAINING_LIST.TBB` | TBB, 13 tables of bytes | the training module (`SIMPRG.REL 0x159998`, lists `0x23d618`, `0x23d690`), `SLES 0x246540` (table 11) | what each practice trains and its fatigue, facility and camp bonuses, match growth by position, ability groups and coaching, decline with age. **confirmed**, see [`TRAINING_FORMAT.md`](TRAINING_FORMAT.md) |
-| `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` lists `0x1cddb0`, `0x23d648`; `0x4bdd0` | the 153 training camps: city, nation, camp type, and the clubs of each area. **confirmed** in part, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
-| `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225df8`; `0xa4a80` | each camp city's description, message category 570. **confirmed**, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
-| `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x225dd0` | 48 × 20 bytes: an older copy of the club events, which the game takes from the executable instead ([`CLUBEVENT_FORMAT.md`](CLUBEVENT_FORMAT.md)). See below |
+| `CAMP_LIST.TBB` | TBB, 2 tables | `SIMPRG.REL` load lists `0x1cdd30` (entry 3), `0x23d618` (entry 1); `0x4bdd0` | the 153 training camps: city, nation, camp type, and the clubs of each area. **confirmed** in part, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
+| `CAMP_EXPLANE.TBB` | TBB, 1 table | `SIMPRG.REL` load list `0x225d78` (entry 3); `0xa4a80` | each camp city's description, message category 570. **confirmed**, see [`CAMP_FORMAT.md`](CAMP_FORMAT.md) |
+| `CLUBEVENT.TBB` | TBB, 1 table | `SIMPRG.REL` load list `0x225d78` (entry 2) | 48 × 20 bytes: an older copy of the club events, which the game takes from the executable instead ([`CLUBEVENT_FORMAT.md`](CLUBEVENT_FORMAT.md)). See below |
 | `CLUB_RANK_SYSTEM.TBB` | TBB, 5 tables | `SIMPRG.REL 0x1509c8` through `ScheEuro_LoadModule` | 104 / 1,254 / 64 / 2,210 / 144 bytes. The club ranking: table 2 is 32 s16 world rank points by club rank (for clubs outside UEFA nations), table 3 is 65 × 34-byte rows giving the club rank by position in the nation or division; tables 0, 1 and 4 are the nation groups, the points per final place and the leagues the year end waits for. **confirmed**; `clubrank.py` reads and writes it. See [below](#club_rank_systemtbb-the-club-rankings-tables) and [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far) ("How the club rank changes") |
-| `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1cddd8` | 166 × s16, each schedule UID's competition. Loaded but never read, see below |
-| `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` list `0x1ce170`, `0x4cab0` | 106 {region, club} pairs: the clubs a tour can play, by region. **confirmed**, see below |
+| `GROUP2COMPE.TBB` | TBB, 1 table | `SIMPRG.REL` load list `0x1cdd30` (entry 4) | 166 × s16, each schedule UID's competition. Loaded but never read, see below |
+| `TOUR_LIST.TBB` | TBB, 1 table | `SIMPRG.REL` load list `0x1cdd30` (entry 27), `0x4cab0` | 106 {region, club} pairs: the clubs a tour can play, by region. **confirmed**, see below |
 | `MAPTEAM_LIST.TBB` | TBB, 1 table | `SIMPRG.REL 0x80694` | 242 × {u16 team, u16 flag}; flag 1 = the real 2005/06 top divisions (empirical), see [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#mapteam_listtbb). Reader not found |
 | `TACTICS_FORMATION_SET.TBB` | TBB, 1 table | entry 11 of the `GetPreLoadData` list (`SLES 0x55b560`), and `SLES 0x55b2d8` | the tactics screen's 8 national presets: seven team tactics and a formation each. **confirmed**, see below |
-| `SPONSOR_BOARD.TBB` | TBB, 1 table | **not referenced by name** | 132 bytes, `01 02 03 ...` |
+| `SPONSOR_BOARD.TBB` | TBB, 1 table | **not referenced by name** | 132 bytes: `01 02 03 04 01 02 03 00 03 02 02 04 ...`. The values run 0–6 and their meaning is unknown. The disc's CVS record dates the file to Aug 2005 |
 | `PLRESOURCECOMMON.PAC` | BINPAC, 5 TBB entries | `ePLRSRC` 0 | team facilities, formations, nations. See [`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md) |
 | `PLRESOURCESIM.PAC` | BINPAC, 16 entries | `ePLRSRC` 1 | cities and weather, club records, nations, affiliations, scouts' exclusives, combinations, free agents, colours, ... See [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md) |
 | `SCHEDULE_SYSTEM.PAC/.HED` | BINPAC, 5 named TBBs | `ScheEuro_SubCtrl::requestLoad` (`0x209b50`) | `year_schedule_data`, `open_nation`, `make_list`, `PeriodName`, `savectrl`. See [`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md) |
@@ -117,11 +124,11 @@ flags:
 
 The retail tables (turn: flags):
 
-| Table | Years | Turns |
+| Table | Season starting in | Turns (flags added up) |
 |---|---|---|
-| 0, 2 | qualifying | 20, 26, 34, 36, 60, 68: 1+4+8; 88: 1+4; 89: 1+8 |
-| 1 | Euro National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–93: 1+2; 94: 1+2+8 |
-| 3 | World National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–94: 1+2; 95: 1+2+8 |
+| 0, 2 | 2006, 2010 … and 2008, 2012 …: Euro and World qualifying | 20, 26, 34, 36, 60, 68: 1+4+8; 88: 1+4; 89: 1+8 |
+| 1 | 2007, 2011 …: Euro National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–93: 1+2; 94: 1+2+8 |
+| 3 | 2009, 2013 …: World National Cup | the same up to 36; 88: 2+4; 89–91: 1; 92–94: 1+2; 95: 1+2+8 |
 
 A season starting in 2009 or 2025 uses table 3, a World Cup year, and
 one starting in 2007 table 1, a Euro year (Nexxus's report). Copies sit in
@@ -248,7 +255,8 @@ the same order (500, 500, 500 … 3000, 2000, 5000, 1000, 1000, 3000,
 around records 3, 10 and 27–37. So the file looks like an earlier
 version of the executable's table.
 
-`SIMPRG.REL` loads it with `Camp_Explane.tbb` (list `0x225d78`, entry 2;
+`SIMPRG.REL` loads it with `Camp_Explane.tbb` (load list `0x225d78`, entry 3, next to
+`ClubEvent.tbb` as entry 2;
 handle at `+0x56c` of the module set up at `0xa4760`, which reads
 `CAMP_EXPLANE` at `0xa4a80`). No code reading its records has been
 found. Edits to club events belong in the executable's tables
@@ -306,16 +314,16 @@ The regions are the game's 13 overseas regions, named in
 (Nexxus's report: the game numbers its regions the same way everywhere; the
 clubs below fit the names).
 
-**Empirical**: regions 0–12 hold 10, 8, 8, … 8 clubs: 0 Western Europe
-(Tottenham, Marseille, Dortmund, Lazio, Valencia, Feyenoord, Glasgow
-City, Porto, Basel, Brugge), 1 and 2 Central and Eastern Europe, 3
-Scandinavia and the Baltic, 4 and 5 South America, 6 North Africa
-(with Newcastle, Monaco, Kaiserslautern and Roma), 7 and 8 West and
-southern Africa, 9 North America, 10 East Asia, 11 the Middle East and
-12 Oceania. Five groups end with clubs from the six leagues. `python
-SRC/tour.py show DAT/PARAM/TOUR_LIST.TBB DAT/MESSAGE/MES.PAC` lists them,
-and `set` changes a pair. `python SRC/plrcommon.py show DAT/PARAM 3.0`
-lists the same 13 regions.
+**Empirical**: regions 0–12 hold 10, 8, 8, … 8 clubs. Region 0
+(Western Europe) has Tottenham, Marseille, Dortmund, Lazio, Valencia,
+Feyenoord, Glasgow City, Porto, Basel and Brugge; region 6 (North
+Africa) has Newcastle, Monaco, Kaiserslautern and Roma among its
+clubs. Five groups (6, 7, 8, 9 and 12) end with clubs from the six
+leagues. `python SRC/tour.py show
+DAT/PARAM/TOUR_LIST.TBB DAT/MESSAGE/MES.PAC` lists them, and `set`
+changes a pair. (`plrcommon.py`'s table 3.0 is a different list: it maps
+13 display regions to regions,
+[`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md#entry-3-nations).)
 
 ## `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN`
 
@@ -331,6 +339,11 @@ unused placeholders for kit names.
   nation tallies and the clubs' two counters feed (the three weighted
   values of `0x151568`).
 - Whether anything reads `CLUBEVENT.TBB`.
+- What reads `MAPTEAM_LIST.TBB`
+  ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#still-unknown)).
+- What `SPONSOR_BOARD.TBB` is for, and whether anything reads it or
+  `UNIFORM_NAME.BIN` and `UNIFORM_NAME2.BIN` by a route other than a file
+  name (the executable's `uniform_name` is a save-data field, see above).
 - The tactics sliders' limits.
 - What's still open in the files that have a doc is listed there, for
   example the schedule packs

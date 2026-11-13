@@ -2,8 +2,8 @@
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """Starting leagues and computer-team squads for Let's Make a Soccer Team! (PS2).
 
-Two TBB1 files in DAT/PARAM set up the clubs at the start of a career
-(see DOC/INITTEAM_FORMAT.md):
+These files in DAT/PARAM set up the clubs at the start of a career (see
+DOC/INITTEAM_FORMAT.md):
 
   PLRRSRC_INITTEAMDATA.TBB  table 0: 6 leagues x 2 divisions, each a list
                             of up to 26 u32 PlTeam ids ending at the first 0.
@@ -31,19 +31,19 @@ and its table readers (0x253228, 0x2531b0, 0x2532c8), plLg_EntryTeamSetToDiv
 (Msg::GetString 0x200ea8, category table 0x51ab38, base at 0x52f7b0).
 
 Usage:
-    python initteam.py info    <DAT/PARAM>                    # check both files
+    python initteam.py info    <DAT/PARAM>                    # check the files above
     python initteam.py leagues <DAT/PARAM> [--mes MES.PAC] [--lang N]
     python initteam.py past    <DAT/PARAM> [--mes MES.PAC] [--lang N]
     python initteam.py squads  <DAT/PARAM> [team ...] [--mes MES.PAC] [--lang N]
     python initteam.py set     <OTEAMMEMBER.TBB> <out.TBB> <team>:<slot> <field>=<value> ...
-    python initteam.py teams   <DAT/PARAM> [team ...]         # club records
+    python initteam.py teams   <DAT/PARAM> [team ...] [--mes MES.PAC] [--lang N]
     python initteam.py nations <DAT/PARAM>
     python initteam.py stadiums <DAT/PARAM>
     python initteam.py setteam <PLRESOURCESIM.PAC> <out.PAC> <team> <field>=<value> ... [<team> ...]
     python initteam.py setnation <INITNATIDATA.TBB> <out.TBB> <nation> <field>=<value> ... [<nation> ...]
     python initteam.py setstadium <STADIUM_DATA.TBB> <out.TBB> <stadium> <field>=<value> ... [<stadium> ...]
     python initteam.py swap    <PLRRSRC_INITTEAMDATA.TBB> <out.TBB> <team>:<team> ...
-    python initteam.py roundtrip <DAT/PARAM>                 # re-encode all three, !! if not identical
+    python initteam.py roundtrip <DAT/PARAM>                 # re-encode all five, !! if not identical
 
 `set` edits squad slots (fields player, age, shirt, contract) and writes a
 new OTEAMMEMBER.TBB of the same size, ready for patch_disc.py. A computer
@@ -529,8 +529,8 @@ class StadiumData:
 # own: {id: (capacity in thousands, level, the ground it looks like)}.
 # GetCapacityFromID adds 500 seats to 103, 105 and 107. A look is copied
 # only from a row the switch leaves as it is (103, 105, 107, 112, 113, 115,
-# 116 and 118 keep their own), so
-# the copy is the same however often it is made.
+# 116 and 118 keep their own), so the copy is the same however often it
+# is made.
 GROUNDS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grounds.csv")
 GROUND_IDS = {
     102: (40, 3, 69),                                         # ho03a, roof
@@ -824,8 +824,9 @@ def cmd_swap(path, out_path, args):
 
 
 def cmd_roundtrip(root):
-    """Re-encode the starting divisions, every squad slot and club record
-    and rebuild the three files; !! where anything differs."""
+    """Re-encode the starting divisions, every squad slot, club record,
+    nation row and stadium row, and rebuild the five files; !! where
+    anything differs."""
     path = find(root, INIT_TBB)
     try:
         init = InitTeamData(path)

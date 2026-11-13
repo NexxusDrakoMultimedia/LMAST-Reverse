@@ -13,26 +13,32 @@ as changed counts and parse results that shift after a code change.
 Nothing passes on its own. A '!!' line that disappears fails the run just
 like a new one: it may be a fix, or a check that stopped running, and only
 a person can tell which. `run` lists '!!' lines that appeared or disappeared
-before the diff, and `bless` prints each check's '!!' count (old -> new), so
-the review starts from the problems.
+before the diff, and `bless` prints each check's '!!' count (old -> new when
+it changed), so the review starts from the problems.
 
 A check also fails if it exits non-zero, writes to stderr, or its input is
-missing.
+missing. `bless` skips a check that fails this way, so a crash never becomes
+a baseline.
 
 With the Japanese release extracted to ISO_JP/ and DAT_JP/ (extract_disc.py
-does that), every check that reads the disc also runs over it as jp_<name>.
+does that), every check that reads the disc also runs over it as jp_<name>,
+except the few listed in JP_SKIP.
 
 Baselines are written to .regress/ (git-ignored: they list file names and
 counts from your copy of the disc). Paths are normalised to '/' so a baseline
 made on Windows matches on other systems.
 
 Usage:
-    python SRC/regress.py list                     # the checks and their commands
-    python SRC/regress.py run   [name ...] [--full] # compare with the baseline (exit 1 on any failure)
+    python SRC/regress.py list                      # the checks and their commands
+    python SRC/regress.py run   [name ...] [--full] # compare with the baseline
     python SRC/regress.py bless [name ...]          # save the current output as the baseline
 
-Names select checks by prefix, e.g. `run snr2` runs every overlay check.
---full prints the whole diff instead of the first 40 lines per check.
+Names select checks by prefix, e.g. `run snr2` runs every overlay check and
+`run jp_` every Japanese one. --full prints the whole diff instead of the
+first 40 lines per check. `list` marks a check that has no baseline yet
+with '*'. Exit status: 0 when every check passed, 1 when one failed (`run`)
+or was skipped (`bless`) or when a name matches no check, 2 when no
+command or an unknown command is given.
 """
 import difflib
 import glob
@@ -47,7 +53,8 @@ DIFF_LINES = 40
 
 
 def checks():
-    """(name, [tool, args...], [required inputs]) for every check."""
+    """(name, [tool, args...], [required inputs]) for every check. Each
+    command runs from the repo root; a check whose inputs are missing fails."""
     out = [
         ("pac", ["pac.py", "info", "DAT"], ["DAT"]),
         ("pac_roundtrip", ["pac.py", "roundtrip", "DAT"], ["DAT"]),
@@ -232,8 +239,9 @@ def checks():
          ["ISO/SLES_541.51", "DAT/0SYSTEM"]),
         ("font_coverage", ["font.py", "coverage", "ISO/SLES_541.51", "DAT/MESSAGE/MES.PAC"],
          ["ISO/SLES_541.51", "DAT/MESSAGE/MES.PAC"]),
-        # The modern font (fontmod.py): drawn from Roboto Condensed when a
-        # copy is installed (the face is not in the repo), then read back.
+        # The modern font (fontmod.py): drawn from Roboto Condensed, then
+        # read back. The face is not in the repo, so both checks are left out
+        # when no copy is installed.
         *[check
           for face in [next((p for p in (
               os.path.join(os.environ.get("WINDIR", "C:/Windows"), "Fonts", "RobotoCondensed[wght].ttf"),
@@ -285,8 +293,8 @@ def checks():
          ["ISO/SLES_541.51"]),
         ("sles_relocs", ["sles_disasm.py", "ISO/SLES_541.51", "relocs"], ["ISO/SLES_541.51"]),
         ("sles_fields", ["sles_disasm.py", "ISO/SLES_541.51", "fields"], ["ISO/SLES_541.51"]),
-        # Every executable and overlay address the tools use, found in the
-        # build (in PAL each must come out as itself).
+        # Every executable and overlay address the tools use, translated into
+        # the build by gamever.py (in PAL each must come out as itself).
         ("gamever", ["gamever.py", "check", "ISO"], ["ISO/SLES_541.51", "ISO/DLL"]),
     ]
     mes = "DAT/MESSAGE/MES.PAC"
@@ -297,7 +305,9 @@ def checks():
         # NEWS body/headline, MAIL sender/recipient/subject/body).
         out.append(("evsdatabin_text_" + kind.lower(),
                     ["evsdatabin.py", p, "--text", mes], [p, mes]))
-    # Each SOUND/*.DAT is one ps2_DTPK bank; dtpk takes a single file.
+    # Each SOUND/*.DAT is one ps2_DTPK bank; dtpk takes a single file. With
+    # nothing extracted, one placeholder check stands in and fails on its
+    # missing input (the same goes for the overlays below).
     banks = sorted(glob.glob(os.path.join(ROOT, "DAT", "SOUND", "*.DAT")))
     if not banks:
         out.append(("sounddat_dtpk", ["sounddat.py", "dtpk", "DAT/SOUND/*.DAT"], ["DAT/SOUND"]))
@@ -332,14 +342,18 @@ def _jp(arg):
 
 # The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15), and its
 # GAMEPRG.REL has the parameter getter at another address. Its MES.PAC
-# slots 1-6 are placeholders, which the European fonts don't draw.
+# slots 1-6 are placeholders, which the European fonts don't draw. The
+# modern font and the title banner are PAL switches (European fonts and
+# title pictures).
 JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "font_coverage", "fontmod", "titlebanner"}
 
 
 def jp_checks(pal):
     """The same checks over the Japanese release (extract_disc.py puts it in
-    ISO_JP/ and DAT_JP/), when it's there. A check whose command names no
-    path would only repeat the PAL one, so it has no Japanese version."""
+    ISO_JP/ and DAT_JP/), when it's there, except those in JP_SKIP. A check
+    whose command names no path (patch_disc_switches, ps2mc_selftest, the
+    save checks) would only repeat the PAL one, so it has no Japanese
+    version."""
     if not all(os.path.isdir(os.path.join(ROOT, d)) for d in ("ISO_JP", "DAT_JP")):
         return []
     out = []
@@ -362,6 +376,8 @@ def jp_checks(pal):
 
 
 def select(names):
+    """The checks whose names start with any of `names` (all if none given).
+    Exits with an error for a name that matches no check."""
     all_checks = checks()
     if not names:
         return all_checks
@@ -373,12 +389,16 @@ def select(names):
 
 
 def normalise(text):
+    """CRLF to LF and backslashes to '/', so a baseline made on Windows
+    matches one made on another system."""
     return text.replace("\r\n", "\n").replace("\\", "/")
 
 
 def run_check(argv, inputs):
     """Returns (output, errors). errors is a list of reasons the check itself
-    failed, independent of the baseline."""
+    failed, independent of the baseline: a missing input, a non-zero exit
+    code, or anything on stderr. The tool runs from the repo root with UTF-8
+    output."""
     missing = [p for p in inputs if not os.path.exists(os.path.join(ROOT, p))]
     if missing:
         return "", ["missing input: " + ", ".join(missing)]
@@ -396,10 +416,12 @@ def run_check(argv, inputs):
 
 
 def baseline_path(name):
+    """Where a check's baseline lives: .regress/<name>.txt."""
     return os.path.join(BASELINE_DIR, name + ".txt")
 
 
 def load_baseline(name):
+    """The saved output of a check, or None if it has no baseline."""
     p = baseline_path(name)
     if not os.path.exists(p):
         return None
@@ -408,6 +430,7 @@ def load_baseline(name):
 
 
 def problem_lines(text):
+    """The '!!' lines of an output, counted by their stripped text."""
     return Counter(l.strip() for l in text.splitlines() if "!! " in l)
 
 
@@ -425,6 +448,7 @@ def problem_changes(base, out):
 
 
 def cmd_list():
+    """Print every check with its command; '*' marks one with no baseline."""
     for name, argv, _ in checks():
         mark = " " if load_baseline(name) is not None else "*"
         print("%s %-22s python SRC/%s" % (mark, name, " ".join(argv)))
@@ -432,6 +456,8 @@ def cmd_list():
 
 
 def cmd_run(names, full):
+    """Run the selected checks against their baselines and print ok or FAIL
+    for each, with the reasons. Returns 1 if any check failed."""
     failed = []
     for name, argv, inputs in select(names):
         out, errors = run_check(argv, inputs)
@@ -461,6 +487,9 @@ def cmd_run(names, full):
 
 
 def cmd_bless(names):
+    """Save the output of the selected checks as their baselines, and print
+    what changed. A check that fails is skipped (returns 1). Review the
+    '!!' counts before keeping the result; never bless to silence a failure."""
     os.makedirs(BASELINE_DIR, exist_ok=True)
     status = 0
     for name, argv, inputs in select(names):

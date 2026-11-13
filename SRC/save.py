@@ -30,7 +30,8 @@ Confirmed from the game code:
   SAVEPRG.REL 0x32158   Blowfish key schedule (P/S constants at 0x4bd78, 0x4bdc0)
   SAVEPRG.REL 0x32358   decrypt(buf, size, key, keylen); 0x32478 encrypt
   SAVEPRG.REL 0x331f8   load: decrypt with the key at 0x536a8, length 10
-  SAVEPRG.REL 0x33228   version 0x69 (0x68 is read by the older reader 0xe618)
+  SAVEPRG.REL 0x33204   version 0x69 loaded for the compare at 0x3322c (0x68 goes to the
+                        older reader 0xe618)
   SAVEPRG.REL 0x32ce0   layout CRC over getSize(0..9); CRC-16 at 0x31470, table 0x53408
   SAVEPRG.REL 0x32d50   per-block loop: read 0x2b9b0 (table 0x4bd28), write 0x2ba08 (table 0x4bd50)
   0x21d908              PlPworkTask::getSize(i) = table 0x533ac8[i] - 8
@@ -71,7 +72,7 @@ Usage:
     python save.py set       <save> <out> edit:name=V.Drake edit:height=190 edit:ability.all=80
                                    (the imported edit player's PlPbase fields; `spec` lists them)
     python save.py decode    <save> <out.bin>             # the ten blocks, concatenated
-    python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks into a copy
+    python save.py encode    <in.bin> <save> <out>        # re-encode edited blocks (<save> is the template)
     python save.py roundtrip <save> ...                   # decode + encode, compare
     python save.py convert   <save> <out> <ISO dir>       # re-encode for another layout (--mod third-tier)
     python save.py blocks                                 # block sizes and offsets in .bin
@@ -79,19 +80,21 @@ Usage:
     python save.py rename    <save folder> <parent> [F|M|V|G|C]  # copy a save between -G/-C and a modded disc's -F/-M/-V
     python save.py copy      <save folder> [slot]          # copy a save to the card's next free slot (0-100)
 
-<save> is a BESLES-54151-Gnnn (or a modded disc's -Fnnn or -Mnnn) folder or the main file inside it (on a
-PCSX2 folder memory card these are plain files). Each run decodes the whole
-save from the cached field list, about a second (the first run records
-the list, about 10 seconds). Needs
+<save> is a BESLES-54151-Gnnn folder (a modded disc's saves are -Fnnn or
+-Mnnn) or the main file inside it; on a PCSX2 folder memory card these
+are plain files. Each run decodes the whole save from the cached field
+list, which takes about a second (the first run records the list, about
+10 seconds). Every command except rename and copy needs
 ISO/DLL/SAVEPRG.REL and ISO/SLES_541.51.
 
 Every command takes --iso <folder> (default ISO) for the build whose
 saves it reads, and --dat <folder> for names (default DAT, or DAT_JP
-with ISO_JP). With --iso ISO_JP it reads and writes the Japanese
-release's saves (BISLPM-66316-Gnnn): the same blocks, except that block
-1 is 16 bytes shorter and a player's wristband and gloves are kept in 2
-bits; names are cp932 and come from PBDATA_JP.PAC and the Japanese
-messages. `set` refuses a value the build's save can't hold. See
+with ISO_JP); rename and copy accept them but ignore them. With --iso
+ISO_JP it reads and writes the Japanese release's saves
+(BISLPM-66316-Gnnn): the same blocks, except that block 1 is 16 bytes
+shorter and a player's wristband and gloves are kept in 2 bits; names
+are cp932 and come from PBDATA_JP.PAC and the Japanese messages. `set`
+refuses a value the build's save can't hold. See
 DOC/SAVE_FORMAT.md#the-japanese-release.
 
 A modded disc patched with patch_disc.py --mod-saves keeps its career
@@ -128,7 +131,7 @@ NBLOCKS = 10
 HEADER = 0x10
 VERSION = 0x69                  # PAL; Game.version holds the build's
 # The load (0x331f8) compares the header's version with the immediate of
-# the addiu here (0x69 in PAL, 0x68 in the Japanese release).
+# the addiu at this address (0x69 in PAL, 0x68 in the Japanese release).
 VERSION_AT = 0x33204
 FILE_SIZE = 646184              # PAL; Game.file_size() is the build's
 
@@ -858,7 +861,9 @@ PLAN_TICKET, PLAN_RATE, PLAN_SEAT_PRICE, SEASON_TICKET_SHARE = 0x4, 0x8, 0xc, 80
 # which pwkTeam_CandidatesDecrement (0x2643c8) lowers each turn, dropping
 # the entry at 0. (name, offset, entries, entry size, id offset, turns offset)
 CANDIDATE_LISTS = (
-    ("players", 0x9440, 30, 0x20, 0x0, 0x3),    # pwkTeam_AddPlayerCandidate 0x25b988
+    # players: the game's records start at +0x9438 (id s16 at +0x8, turns at
+    # +0xb; pwkTeam_AddPlayerCandidate 0x25b988); +0x9440 reads the same bytes.
+    ("players", 0x9440, 30, 0x20, 0x0, 0x3),
     ("youth", 0x97f8, 30, 0xc, 0x0, 0x9),       # pwkTeam_AddYouthCandidate 0x25bdf0
     ("managers", 0x9960, 30, 0xc, 0x4, 0x8),    # pwkTeam_AddManagerCandidate 0x269658
     ("coaches", 0x9ac8, 30, 0xc, 0x4, 0x8),     # pwkTeam_AddCoachCandidate 0x269710
@@ -969,9 +974,9 @@ def salary_range(s=None):
 STAFF = (("manager", TEAM_OFF + 0x4854, 1, "M"), ("youth manager", 0x8e00, 1, "M"),
          ("coach", 0x9148, 4, "M"), ("scout", 0x8f8c, 3, "S"))
 # kind: (size, id offset (-1 = empty, plMinfo/plSinfo_CloseContract 0x216ef0/0x218a10),
-# contract years (pwkTeam_SignManager 0x269e20 stores them), salary / 100
-# (empirical, last word),
-# job (PlMinfo +0xa0), abilities offset, ability count)
+# contract years offset (pwkTeam_SignManager 0x269e20 stores them), salary / 100
+# offset (empirical: the record's last word), job offset (PlMinfo +0xa0),
+# abilities offset, ability count)
 STAFF_KIND = {"M": (0xbc, 0x9c, 0x9e, 0xb8, 0xa0, 4 + 0x66, 48),
               "S": (0x94, 0x60, 0x62, 0x90, None, 4 + 0x2d, 45)}
 # More of PlMinfo: +0xa4 one u16 per PlMCompKind, the manager's
@@ -2182,7 +2187,7 @@ def cmd_spec(game, path=None):
 # "-M" (max) and its VS data to "-V" (patch_disc.mod_saves); discs built
 # before 2026-10-27 used "-M" and "-D". `rename` copies a save between them.
 # The Japanese release names them BISLPM-66316-G and -C.
-CAREER_LETTERS, VS_LETTERS = "GFM", "CVD"        # the retail game's first
+CAREER_LETTERS, VS_LETTERS = "GFM", "CVD"        # the first of each is the retail game's
 SAVE_NAME = r"(BESLES-54151-|BISLPM-66316-)([GFMCVD])(\d*)"
 # MC::CFcEuroIF::setNo (0x12aea0) takes slots 0-100 (0x65 and up become 0).
 SLOT_MAX = 100

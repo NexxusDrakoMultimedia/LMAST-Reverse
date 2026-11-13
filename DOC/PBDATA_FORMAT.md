@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Player database (`PARAM/PBDATA_EU.PAC`, `PBDATA_JP.PAC`)
+# Player database: `PARAM/PBDATA_EU.PAC` and `PBDATA_JP.PAC`
 
 `PBDATA_EU.PAC` holds every real person the game knows: 27,950 players,
 3,000 managers and coaches, and 1,000 scouts. That covers names,
@@ -9,10 +9,18 @@ nationality, age, height, weight, positions, preferred shirt number, a
 required status, personality traits, skills, play styles and 64 ability
 ratings per player. The squads in
 `OTEAMMEMBER.TBB` ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)) refer to
-players by their index here.
+players by their index here. The match engine turns many of these fields
+into its own player parameters, so this doc also covers how the match
+reads them ([The match engine's player parameters](#the-match-engines-player-parameters)).
 
-`SRC/pbdata.py` reads it. `python SRC/initteam.py squads` uses it to put
-names on the squads.
+`SRC/pbdata.py` reads, checks and writes it, and the People tab of the
+editor edits it ([`USAGE.md`](../USAGE.md)). The squad listing of
+`SRC/initteam.py` uses it to put names on the squads. This command checks
+every record against the layout below:
+
+```bash
+python SRC/pbdata.py info DAT/PARAM/PBDATA_EU.PAC DAT/PARAM/PBDATA_JP.PAC
+```
 
 ## Confirmed from the game code
 
@@ -96,7 +104,7 @@ names the fields the editor labels leave out.
 | 4 | 4 | `+0x43` | explodetype | source name `explodetype`, 0–15 ×4: probably meant for the growth spurts (`pwkExplo_*`, see [explodetype](#explodetype-and-team-combos)). No label in the developers' editor. Mostly 0 (15,718, 24,808, 27,428 and 27,917 players), more often set for low-ranked players. Kept in the save but read by nothing: only the save's serializers touch `PlPinfo +0x1db`–`+0x1de` (its game copy) in the executable or any overlay |
 | 3 | 1 | `+0x47` | moti_type | motivation type, 0–7. **confirmed** |
 | 3 | 1 | `+0x48` | cond_type | condition type, 0–7. No reader found outside the debug and save code |
-| 5 | 1 | `+0x49` | potential | 0–7; read by `plPinfo_InitEditAbil` (`0x21b2b8`) |
+| 5 | 1 | `+0x49` | potential | the developers' range is 0–31; the database uses 0–7. Read by `plPinfo_InitEditAbil` (`0x21b2b8`) |
 | 4 | 3 | `+0x4a` | growth | physical, skill and mental growth types, 0–15. **confirmed** (`pwkGUtl_GetPhysical/Skill/MentalGrowCoe`, `0x245ef8`–`0x245f58`) |
 | 3 | 1 | `+0x4d` | travel | travel tolerance, 0–7. **confirmed** |
 | 3 | 1 | `+0x4e` | injury_res | injury resistance, 0–7. **confirmed** |
@@ -111,7 +119,7 @@ names the fields the editor labels leave out.
 | 2 | 1 | `+0x57` | sleeves | 0 by season, 1 short, 2 long. **confirmed**; always 0. See [Kit style](#kit-style) |
 | 3 | 1 | `+0x58` | wristband | 0 none, 1–4 a colour. **confirmed**; 0 in 27,256 players |
 | 3 | 1 | `+0x59` | gloves | outfield gloves in cold weather: 0 none, 1–4 a glove texture. **confirmed**; 0 in 27,187 players |
-| 2 | 1 | `+0x5a` | gk_cap | the goalkeeper's cap, 0–3: source name `nicknack_gkcap`. No reader was found, and value 3 showed no cap in PCSX2. 1 in 46 players |
+| 2 | 1 | `+0x5a` | gk_cap | the goalkeeper's cap, 0–3: source name `nicknack_gkcap`. 1 in 46 players. **confirmed**: only an edit player's face reads it ([Kit style](#kit-style)), so it does nothing for database players |
 | 3 | 1 | `+0x5b` | gk_gloves | goalkeeper's gloves, 0–5. **confirmed** |
 | 1 | 1 | `+0x5c` | gk_pants | 1: a goalkeeper wears long pants. **confirmed** |
 | 4 | 1 | `+0x5d` | boots | boot colours, 0–14. **confirmed** |
@@ -245,25 +253,9 @@ SB/CB, WB/DM, SM/OM and WG/FW are the side and centre of each row. 59–63
 are the five attack patterns the tactics screen calls Left Flank, Right
 Flank, Centre Drive, Counter Attack and Possession (messages 1:620–649),
 but nothing in the data or the code tells the five apart, so which
-letter is which pattern makes no difference
-([Ability names](#ability-names)). No call to the
-three functions that take an ability number (`plPinfo_Abil2PSM`,
-`pwkGUtl_GetGrowCoe`, `pwkGUtl_AddExp`) passes 59–63 as a constant;
-the match doesn't copy them ([The match engine's player
-parameters](#the-match-engines-player-parameters));
-and every practice grows all five equally. Their two other readers are
-loops over all five: the hexagon window's player rating, and the
-travelling salesman's boost for flag 336 (`0x21070c`, raising each by
-40% for the match), which no event sets in the retail game
-([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#the-salesmans-items)).
-A scan for loads at `PlPinfo +0x16c`, `+0x172`, `+0x178`, `+0x17e` and
-`+0x184` missed it because it reads them from the team data (`+0x18c`
-= squad slot 0's `+0x16c`). Besides that, only the hexagon table reads
-them, weighting 60 alone. Training's combinations A–E
-(practices 12–16) are a different set: they pick their row from the
-club's five pattern slots, and rows 12–16 train the left side, right
-side, centre, counterattack and possession, the tactics screen's order
-([`TRAINING_FORMAT.md`](TRAINING_FORMAT.md)).
+letter is which pattern makes no difference. The game only ever reads
+all five together; the readers are listed under "The attack patterns" in
+[Ability names](#ability-names).
 
 **Record fields (confirmed).** The player editor draws each field's label
 and then reads that field, a few instructions later, in record order
@@ -1212,8 +1204,10 @@ position, the values fit the names. Goalkeepers average about 0.3 for
 dribble, shoot, killer pass and one-two, and about 2 for goalkeeping.
 Other players average about 0.45 for goalkeeping. Forwards (cells 10–12)
 average about 1 for clear and press, and defenders (cells 1–3) about 1.5
-for shoot and killer pass. `PBDATA_JP.PAC` has some values of 5 and 6,
-which the match reads as 4.
+for shoot and killer pass. The Japanese release's `PBDATA_EU.PAC` has
+values of 5 and 6 in every item and some 7s in goalkeeping (counts in
+[`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#differences-in-the-data-empirical)).
+The match reads 5 or more as 4.
 
 `dribble_style` (parameter 140) has one reader, `0x9b540`, called from
 `0x8afdc`. The value goes to `0x13d710`/`0x13d780`, which pick one of four
@@ -1283,11 +1277,11 @@ Skills, clockwise from the top). Which index goes to which label is
 categories ([Ability names](#ability-names)): 0's main abilities are its
 "Attack" page, and 3's are its "Skill" page.
 
-| Hexagon | Main abilities (weight 80) | Label |
+| Hexagon | Main abilities (weight 80 unless noted) | Label |
 |---|---|---|
 | 0 | 2, 4–7, 14 (shot skill, passes, cross, header, placekick) | Attacking |
 | 1 | 10–13 (15–18 for goalkeepers) | Defence (defenders score ~90) |
-| 2 | 33, 42–44, 53–58 (59–63 at weight 16) | Teamwork |
+| 2 | 53–58, and 33 for goalkeepers; 42–44 at weight 60, 34–41 (field players) and 45–52 at 20, 59–63 at 16 | Teamwork |
 | 3 | 1, 3, 8, 9 (dribble skill, shot technique, trap, ball keeping) | Skills |
 | 4 | 0, 19–25 | Physical |
 | 5 | 26–32 | Attitude |
@@ -1366,10 +1360,13 @@ abilities 59–63 on its own. Every use takes all five:
 | `PLRESOURCECOMMON.PAC` 2.0, the hexagon weights | all five the same: Teamwork (2) weight 16 and Attacking (0) weight 20, for field players and goalkeepers |
 | `GP::PlTeamData2HEX_DATA` (`0x27b458`, at `0x27b70c`) | adds their average to a player's rating in the `GP::HEX_DATA` hexagon window, with the averages of 42–44 and 53–58 |
 | `TRAINING_LIST.TBB` | every practice grows the five by the same amount (+1, +4, +8 or +15) |
-| `--mod salesman-items` (flag 336) | raises all five in the match's copy of your squad ([above](#the-developers-player-editor)) |
+| the travelling salesman's boost for flag 336 (`0x21070c`; `--mod salesman-items`) | a loop over all five, raising each by 40% for the match. It reads them from the team data (`+0x18c` is squad slot 0's `+0x16c`), which is why a scan of `PlPinfo` offsets misses it. No event sets the flag in the retail game ([`EVSDATABIN_FORMAT.md`](EVSDATABIN_FORMAT.md#the-salesmans-items)) |
 
-The match doesn't copy them into its player parameters
-([The match engine's player parameters](#the-match-engines-player-parameters)).
+No call to the three functions that take an ability number
+(`plPinfo_Abil2PSM`, `pwkGUtl_GetGrowCoe`, `pwkGUtl_AddExp`) passes 59–63
+as a constant, and the match doesn't copy them into its player
+parameters ([The match engine's player
+parameters](#the-match-engines-player-parameters)).
 A scan of the executable and every overlay for halfword loads at their
 `PlPinfo` offsets (`+0x16c`–`+0x184`), and for offsets or indices built
 from 59, found no other reader (the hits are virtual-call slots at the
@@ -1377,7 +1374,10 @@ same offsets in other objects, and a per-player stride of `0x16c`).
 So the letters are just names: which one is which doesn't change
 anything in the retail game. The developers may have meant them for the
 club's five pattern slots (`PlTeamData +0x489f`), but no code ties a
-slot to one of them.
+slot to one of them. Training's combinations A–E (practices 12–16) are a
+different set: they pick their row from those five slots, and rows 12–16
+train the left side, right side, centre, counterattack and possession,
+the tactics screen's order ([`TRAINING_FORMAT.md`](TRAINING_FORMAT.md)).
 
 VPF's aptitude page names the position cells. Rooney and Beckham agree
 on 39 = OM (86/85, 72/70), 42 = centre (94/93, 88/87), 43 = left (82/82,
@@ -1574,8 +1574,11 @@ Ball Feeding and Controlled Shot are exactly his bits 2, 8 and 13.
 That bit *n* goes with message 6000 + *n* is **empirical**, from who holds
 which bit. Of 2,465 goalkeepers, 90, 91 and 86 hold bits 3, 5 and 10, and
 of 14,395 defenders and forwards only 1 holds any of the three. Bits 0 and
-1 go mostly to defenders (237 of 238), and bits 2, 4 and 11–14 mostly to
-forwards. The code confirms one: the substitutions screen tests bit 7, the
+1 go mostly to defenders (227 of the 238 holders among defenders and
+forwards). Bits 2, 4 and 11–14 go to forwards more than their share of
+the squad would give them: forwards are 6,180 of the 27,950 players
+(22%) but hold 557 of the 1,099 players who have any of those bits
+(51%). The code confirms one: the substitutions screen tests bit 7, the
 super sub (`CTacticsMenuSubstitutionsImplement::Update_MessDisplay`,
 `0x2f6558`). In the match, the skills are parameters 112–127; which
 classes read each is in [Who reads each parameter](#who-reads-each-parameter),
@@ -1914,20 +1917,22 @@ career national squads list each player's club, so they are drawn only
 from club players. The renamed fixed record doesn't appear, as the
 search limit above says.
 
-What `_getNationalTeamPoint` scores, why team 465 is accepted (it is
-the Netherlands' national team,
-[`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md#entry-3-nations)),
-and what flag `0x300` means aren't traced.
-
 ## `PBDATA_JP.PAC`
 
 The same header and identical entries 2 and 3, but entry 1 is empty (0
 bytes). The European disc carries no Japanese player records. `pbdata.py
 info` reports this as a note, not a problem.
 
-## Writing
+On the Japanese release both packs hold records (3,053,100 bytes in
+entry 1 of each, with different contents), and several values go past
+PAL's limits; the full list is in
+[`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#differences-in-the-data-empirical).
+`pbdata.py info` marks play style, wristband, gloves and keeper gloves
+with `!!`; those lines are the baseline of the `jp_pbdata` check.
 
-`pbdata.py` can write the database back out. Each record is re-encoded
+## Editing
+
+`pbdata.py` writes the database back out. Each record is re-encoded
 from its stored field values in `readBits` order: the 19 name bytes as
 they were, every field at its width, then the padding bits as they were.
 Entry 1 is then replaced in a copy of the pack. Records are fixed-size,
@@ -2039,7 +2044,17 @@ tab's note says ([`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md)).
   whether the youth coach's growth factor was meant to read ability 6
   instead of 7.
 - Header `+0x14`, `+0x24` and the last 8 header bytes.
-- What `_getNationalTeamPoint` scores.
+- National call-ups ([National team call-ups](#national-team-call-ups)):
+  what `_getNationalTeamPoint` scores, what flag `0x300` in
+  `PlPinfo +0x20c` means (it keeps a player out of the call-up and halves
+  his selection score), and why team 465, the Netherlands' national team
+  ([`PLRESOURCECOMMON_FORMAT.md`](PLRESOURCECOMMON_FORMAT.md#entry-3-nations)),
+  is accepted.
+- What `pwkOteam_InitNonresident` mode 1 (`0x24d4d8`, from
+  `PwkCallbackCommand_PromotionEnd`) does with the fixed squads.
+- What the kind table's float (`GAMEPRG.REL 0x29f680`, second field)
+  scales, and what the events `0x68`–`0x6d` that `PlayEffector` sends
+  for corners and throw-ins start.
 
 ## Checking the claims
 

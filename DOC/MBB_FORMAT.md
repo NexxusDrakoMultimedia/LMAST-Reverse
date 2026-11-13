@@ -1,9 +1,11 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# MBB1 message files (`MESSAGE/MES.PAC`)
+# MBB1 messages: all of the game's text (`MESSAGE/MES.PAC`)
 
-All of the game's text is in `DAT/MESSAGE/MES.PAC`, a named BINPAC (see
+Every word the game shows is a message: menu labels, club and player
+names, mail, newspaper articles, the dialogue of the scripted events and
+the tutorials. All of it is in `DAT/MESSAGE/MES.PAC`, a named BINPAC (see
 [`PAC_FORMAT.md`](PAC_FORMAT.md)) of **3,738 `.mbb` files**: 534 message
 categories × 7 language slots, named `<category>_<language>.mbb`. The two
 extra BINPAC columns repeat the category and language.
@@ -11,7 +13,10 @@ extra BINPAC columns repeat the category and language.
 `python SRC/mbb.py info DAT/MESSAGE/MES.PAC` checks every file. `dump`
 prints the text with the control codes shown as tags, and `csv` writes one
 row per message with one column per language. `set` and `import` write
-edited text back (see [Writing](#writing)).
+edited text back (see [Writing](#writing)); the editor's Text tab and
+`realnames.py` ([the real names](LMASTER_MOD.md#real-names)) do the same
+through `mbb.MesPack`. `vars` lists what fills each global variable, and
+`names` writes the club, national team and competition names to a table.
 
 The header, record layout, file naming, language numbers and escape opcodes
 are **confirmed** from `SLES_541.51`. The text encodings are **empirical**,
@@ -48,16 +53,24 @@ never selected.**
 | 3 | German | cp850 |
 | 4 | Italian | cp850 |
 | 5 | Spanish | cp850 |
-| 6 | unused | cp850. Mostly identical to English (64,455 of 65,889 shared ids), with some strings in other languages |
+| 6 | unused (probably Dutch, see below) | cp850. Mostly identical to English (64,455 of its 65,889 ids have the English text), with some strings in other languages |
 
-cp850 rather than cp437 is confirmed by characters that only it has: `0xB5`
-Á, `0xE0` Ó, `0xE9` Ú, `0xD6` Í, `0xB7` À, `0xC6` ã, `0x9B` ø, `0x9D` Ø.
+The language menu never picks slot 6. The Acrobata pack names its
+per-language scene entries with the suffixes `_jp`, `_uk`, `_fr`, `_ge`,
+`_it`, `_sp` and `_du` in slot order (`FC_EURO_LOGO_du`), so the game's
+own file names call slot 6 Dutch (**empirical**, `acrobata.py scenes`,
+[`ACROBATA_DIR.md`](ACROBATA_DIR.md#scene-ids)). The strings themselves
+are mostly English. The loader maps PS2 Dutch to English
+(`0x10e1c0`, above).
+
+cp850 rather than cp437 shows in characters that only it has (**empirical**):
+`0xB5` Á, `0xE0` Ó, `0xE9` Ú, `0xD6` Í, `0xB7` À, `0xC6` ã, `0x9B` ø, `0x9D` Ø.
 
 ## Layout
 
 All values are little-endian.
 
-```
+```text
 0x00  char[4]  "MBB1"
 0x04  u32      category id (matches the file name)
 0x08  u32      sub-category id; in MES.PAC, the language slot
@@ -82,7 +95,7 @@ csv` keeps both copies and numbers them in its `copy` column.
 
 A record is plain bytes interleaved with escape sequences:
 
-```
+```text
 0x1B  u8 opcode  u8 n  u8 args[n]
 ```
 
@@ -139,7 +152,7 @@ used in the English text (7,189 uses) are in the table. The most used:
 | 2058, 2076, 2079 | 238, 156, 152 | player, team, nation | the current event (`EVS::EvsWork`) |
 | 1102, 1104 | 172, 75 | number | screen-set slots |
 | 1000 | 146 | competition name | a competition of your club's, from the schedule (`GetScheEuro`, `getScheCompe` with your team data) |
-| 3, 5 / 4, 6 | – | text | your / the rival's hometown (slots 11, 5 / 12, 6, `VarBuf_MakeMyHometown`, `VarBuf_MakeRivalHometown`) |
+| 3, 5 / 4, 6 | 43, 0 / 4, 0 | text | your / the rival's hometown (slots 11, 5 / 12, 6, `VarBuf_MakeMyHometown`, `VarBuf_MakeRivalHometown`) |
 | 11 | 31 | nation | your club's nation (`pwkLg_GetMyNati`) |
 | 101, 102 | 2, 18 | secretary's name | `pwkTeam_GetSecretary`, `GetSecretaryBefore` |
 | 106 | 58 | manager's name | your team data |
@@ -207,32 +220,32 @@ scene's posture**. The two packs don't line up:
 packs end with entries without the `A` prefix (`mendan_sit_001`,
 `mendan_sit_ang_001`, `mendan_sit_sad_001`; `mendan_tati_001`,
 `mendan_tati_ang_001`, `mendan_tati_sad_001`). No text uses them as
-reactions, and what they're for isn't
-traced.
+reactions.
 
 The talk managers in `SIMPRG.REL` pass the posture. Contract, dismiss,
 move, promise, promise-result, staff-retire and withdraw talks sit
 (posture 1). `CTalkNormalManager` and one path of `CTalkPlayerRetire`
 stand (posture 0). The text is written for the right pack: in normal talk
-(categories 500–505, standing) `{react:9}` goes with neutral lines ("This new
-formation – I'm well up for it", a nod), and in contract talk (sitting)
-it goes with refusals ("I can't renew my contract for that sort of
-figure", `sad_001`). The `{face}` expression beside each reaction agrees:
-41 with angry, 51 with happy, 1 with nod, 31 and 21 with sad.
+(categories 500–505, standing) `{react:9}` goes with neutral lines (a
+reply about a new formation that ends "I'm well up for it", a nod), and
+in contract talk (sitting) it goes with refusals ("I can't renew my
+contract for that sort of figure", `sad_001`). The `{face}` expression
+beside each reaction agrees: 41 with angry, 51 with happy, 1 with nod,
+31 and 21 with sad.
 
 The escape appears only in the talk categories (500–599, 800–899,
-1100–1199), 2,185 times in every language slot, with values 0–12. 3 is
-never used. `setReaction` also does something extra for reaction 4 when
-standing, and for 2 or 4 when sitting (it sends a message to a second
-scene object named at `+0x588`); what that looks like in game isn't
-known.
+1100–1199; 52 categories in all), 2,185 times in each language slot
+(2,187 in Spanish), with values 0–12. 3 is never used. `setReaction`
+also does something extra for reaction 4 when standing, and for 2 or 4
+when sitting (it sends a message to a second scene object named at
+`+0x588`). The counts are **empirical** (`mbb.py info` gives the total of
+15,297 over the 7 slots).
 
 For editing: the same N means a different motion in the two packs, so what
 N shows depends on the scene's posture. The text only uses 0–12.
-Standing entry 13 (`sad_004`) is a reaction nothing uses. Whether
-`CLoader::l_get` (`0x119540`) bounds-checks N hasn't been checked.
-The same text can't be moved between a sitting and a standing scene
-without re-choosing its reactions.
+Standing entry 13 (`sad_004`) is a reaction nothing uses. The same text
+can't be moved between a sitting and a standing scene without
+re-choosing its reactions.
 
 The two other name-tag escapes resolve the same way: `0xC1` calls
 `Msg::GetGlobalVariable(char* buf, ushort id)` to fetch the speaker name
@@ -243,7 +256,7 @@ expression)` (`SIMPRG.REL 0x13ac60`) when
 ### Other control bytes
 
 - **`0x0A` / `0x0D` (raw).** Found next to `ESC 0x2F` in some strings (4,129
-  LFs in the EU languages, 27 CR+LF pairs in Japanese). Probably left over
+  LFs in language slots 1–6, 27 CR+LF pairs in Japanese). Probably left over
   from the source text. Their effect on display hasn't been checked.
   `mbb.py` shows them as `{lf}` / `{cr}`.
 - **`0x10`–`0x13` in the EU languages** are the pad buttons (○ × △ □). The
@@ -356,21 +369,22 @@ archive uses that form.
 ### Size
 
 An edited file that still fits its **original size** keeps it. Shorter
-text is followed by
-zero bytes up to the old size, and `data_size` still counts them. That is
-safe. `Initialize` (`0x30d1c8`) allocates `data_size − 3 × count` bytes
-for the strings at `0x30d1f4` (each record loses its 4-byte `{id, len}`
-and gains a NUL). It then copies exactly `count` records
-(`0x30d248`–`0x30d29c`), so it never reads the padding. The rule holds
-the other way round too. A `data_size` smaller than the records would
-make the copy overrun the buffer, so the builder always sets
-`data_size = file size − 0x20` and never cuts records short.
+text is followed by zero bytes up to the old size, and `data_size` still
+counts them. That is safe. `Initialize` (`0x30d1c8`) allocates
+`data_size − 3 × count` bytes for the strings at `0x30d1f4` (each record
+loses its 4-byte `{id, len}` and gains a NUL). It then copies
+exactly `count` records (`0x30d248`–`0x30d29c`), so it never reads the
+padding. The rule holds the other way round too. A `data_size` smaller
+than the records would make the copy overrun the buffer, so the builder
+always sets `data_size = file size − 0x20` and never cuts records
+short.
 
 Originally each file ends 0–3 bytes after its last record (994, 920, 886
 and 938 files), so a file hardly ever has room to spare inside its own size.
 
 Keeping the size means the `MES.PAC` header, every other entry, and the
-763 copies in `PRELOAD/*.PAC` all keep their offsets and sizes.
+copies in `PRELOAD/*.PAC` (763 of the message files have at least one, in
+861 pack entries) all keep their offsets and sizes.
 `patch_disc.py --copies` finds and updates those copies. Tested on a copy
 of `DATA.CVM`: editing `1_1.mbb` and `1_3.mbb` also rewrote
 `STATIONMES1.PAC#0` and `STATIONMES3.PAC#0`.
@@ -382,8 +396,8 @@ the unused rest of its slot in `MES.PAC`:
   entry up to the next one is filler, all ASCII `'0'` (`0x30`), in 3,737
   of 3,737 gaps (empirical). The last entry ends 1,648 bytes into the
   archive's last sector, and its slot runs to that sector's end, which
-  the game reads too. The median slot has 1,544 spare bytes, and only 15
-  have fewer than 64.
+  the game reads too. The median slot has 1,544 bytes beyond its file's
+  size, and only 14 have fewer than 64.
 - The game doesn't read `MES.PAC`'s header. It finds a message file in
   the executable's own copy of the index (**confirmed**):
   `CFcEuro_MsgResource::Execute` (`0x10f4b0`) walks 3,738 (`0xe9a`)
@@ -488,3 +502,15 @@ pack) was worked out with these tests; the rule is in
   stadium name.
 - Whether `CLoader::l_get` bounds-checks a reaction number, and what the
   pack entries without the `A` prefix are for.
+- Where the speaker names 2034–3167 and 4001–4099 (`{name:N}`) come from:
+  no message file names them, so they probably index a table in the code.
+
+## Checking the claims
+
+```bash
+python SRC/mbb.py info DAT/MESSAGE/MES.PAC          # layout, record counts, escape counts
+python SRC/mbb.py roundtrip DAT/MESSAGE/MES.PAC     # every record and file rebuilds byte for byte
+python SRC/mbb.py vars DAT/MESSAGE/MES.PAC          # the 880 global variables, their kind, source and uses
+python SRC/mbb.py dump DAT/MESSAGE/MES.PAC --lang 1 --cat 502   # one category in English
+python SRC/preload.py who DAT 3_1.mbb               # the PRELOAD packs that hold a copy
+```

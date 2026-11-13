@@ -13,7 +13,8 @@ u16 values. Neither has a copy elsewhere on the disc.
 bugs, [below](#two-bugs), which `patch_disc.py --mod camp-types` and
 `--mod camp-cities` fix; `--mod camp-santiago` and `--mod camp-clubs`
 fix two smaller slips (Santiago's description and Canberra's clubs).
-All four are part of the [LMASTER Mod](LMASTER_MOD.md).
+All four are in the `training-fixes` group, so every edition of the
+[LMASTER Mod](LMASTER_MOD.md#the-switch-levels) has them.
 
 ## Who reads them
 
@@ -48,9 +49,8 @@ from abroad). **Confirmed**: `SIMPRG.REL 0x4c8f8` collects up to 20
 clubs for the camp city chosen on screen (`+0x1e1c`), walking the pairs
 in order. Its loop runs 735 times (`0x2de` + 1, both releases), so the
 last two pairs, Canberra's Fukuoka and Kanagawa, are never offered.
-`patch_disc.py
---mod camp-clubs` raises the bound to `0x2e0` (one instruction at
-`SIMPRG.REL 0x4c9d4`).
+`patch_disc.py --mod camp-clubs` raises the bound to `0x2e0` (one
+instruction at `SIMPRG.REL 0x4c9d4`).
 
 ### When a camp is open
 

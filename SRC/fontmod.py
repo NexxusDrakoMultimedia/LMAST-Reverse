@@ -17,9 +17,10 @@ What it does, glyph by glyph:
     (cp850, with the few bytes the game draws differently);
   * the face is drawn four times too large and reduced, for smooth edges,
     in white, with the 16 alpha levels of the picture's own palette;
-  * the baseline sits at one row for every glyph; a glyph that would
-    leave rows 1-24 (accented capitals, long descenders) is squeezed
-    vertically, only as much as it needs;
+  * the baseline sits at one row for every glyph; an accented capital
+    keeps its letter at full height and only its mark is pressed into
+    the rows above, and any other glyph that would leave rows 1-24 (long
+    descenders) is squeezed vertically, only as much as it needs;
   * the width is the face's advance rounded to whole pixels (widened when
     ink reaches past it), because a glyph's advance is its rectangle's
     width;
@@ -28,9 +29,14 @@ What it does, glyph by glyph:
     shapes); the 17 empty records all point at one blank cell.
 
 Usage:
-    python fontmod.py info    <exe> <0SYSTEM dir> <font.ttf> [--size N] [--weight N]
-    python fontmod.py preview <exe> <0SYSTEM dir> <font.ttf> <out.png> [--size N] [--weight N]
-    python fontmod.py render  <exe> <0SYSTEM dir> <font.ttf> <out dir> [--size N] [--weight N]
+    python fontmod.py info    <exe> <0SYSTEM dir> <font.ttf> [options]
+    python fontmod.py preview <exe> <0SYSTEM dir> <font.ttf> <out.png> [options]
+    python fontmod.py render  <exe> <0SYSTEM dir> <font.ttf> <out dir> [options]
+
+Options (each takes a value): --size N (default 24, the face's pixel
+size), --weight N (default 450, for a variable face's weight axis),
+--baseline N (the baseline row, default 21), --gamma G (default 1.0,
+alpha ** G), --tracking T (default 0.0, pixels added to every advance).
 
 `info` builds the new picture and records and checks them; `preview`
 saves the old and new pictures and sample lines as the game scales them;
@@ -202,8 +208,8 @@ def build(exe_path, zero_dir, ttf, size=DEFAULT_SIZE, weight=DEFAULT_WEIGHT,
     old_px = tex.pixels()
     face = Face(ttf, size, weight)
     s = PIXEL_SCALE
-    # The baseline row: descenders get the rows 5 below it, caps what is
-    # left above (the rows 1 to baseline - 1).
+    # The baseline row: descenders get the DESCENT rows from it down to
+    # row LAST, caps the rows above it.
     if baseline is None:
         baseline = LAST + 1 - DESCENT
     cells = []                                      # (k, byte, w, rows of 0-255, adv) per record

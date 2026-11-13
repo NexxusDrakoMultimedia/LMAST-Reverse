@@ -29,13 +29,13 @@ is known, its source file exists and holds the same bytes, and a
 language-digit entry ends in the pack's own digit. It also gives each
 pack's free room: the bytes left in its last sector, which is how far a
 rebuilt pack may grow (the game reads whole sectors, ADXF_GetFsizeSct;
-patch_disc.py --copies rebuilds packs, see DOC/PRELOAD_DIR.md). `lists` prints every
-load list that names a PRELOAD pack, from the executable and overlays.
-`who` finds the packs holding a file and says what loads them.
+patch_disc.py --copies rebuilds packs, see DOC/PRELOAD_DIR.md). `lists`
+prints every load list that names a PRELOAD pack, from the executable and
+overlays. `who` finds the packs holding a file and says what loads them.
 
 Usage:
     python preload.py info  <DAT>                   # check every pack against its sources
-    python preload.py lists <ISO>                   # load lists in SLES_541.51 and DLL/*.REL
+    python preload.py lists <ISO>                   # <ISO> is the ISO/ folder: executable and DLL/*.REL
     python preload.py who   <DAT> <name> ...        # which packs hold a file, and who loads them
 """
 import os
@@ -83,7 +83,7 @@ LOADERS = {
     "GAMEFILE": (True, "match (GAMEPRG list 0x265590, GAME_MODULE 0xbd0)"),
     "GAMELOCALMEM": (False, "match (GAMEPRG list 0x265590, GAME_MODULE 0xbd0)"),
     # Loaded through CLoader::loadFileRequest (WP::CTacticsPitch, SLES
-    # 0x2a89cc) without the register flag, so nothing reads its entries:
+    # 0x2a8a04) without the register flag, so nothing reads its entries:
     # the pitch requests the CSE/ originals (DOC/PRELOAD_DIR.md).
     "TACTICSPITCH": (False, "tactics pitch model (CLoader, SLES 0x2a89cc)"),
 }

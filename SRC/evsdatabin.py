@@ -15,7 +15,8 @@ Usage:
     python evsdatabin.py <EVSDATABIN_*.BIN> [out.csv] [--all] [--text MES.PAC] [--lang N]
 
 --all keeps columns that are zero in every record. --lang picks the
-language for --text (default 1, English; see mbb.py).
+language for --text (default 1, English; see mbb.py). There is no `info`
+command: a file that isn't a whole number of records raises an error.
 """
 import csv
 import os
@@ -24,10 +25,10 @@ import sys
 
 RECORD_SIZES = {"EVENT": 272, "NEWS": 192, "MAIL": 112}
 
-# Name prefixes: '-' marks a signed field, '@' a message reference.
-
-# Offset -> name for EVENT records. Signed fields are marked with a
-# leading '-'.
+# Name prefixes in the tables below: '-' marks a signed field, '@' a message
+# reference. Offsets are record offsets; a column with no name is `u_<offset>`.
+#
+# Offset -> name for EVENT records.
 EVENT_FIELDS = {
     0x00: "index",
     0x04: "always_key",
@@ -74,7 +75,8 @@ EVENT_FIELDS = {
 }
 
 # NEWS and MAIL carry the same condition block as EVENT at their own
-# offsets: NEWS check 0x12c220, MAIL check 0x128a48 (EVENT 0x12d530).
+# offsets. Their check functions are in SIMPRG.REL: NEWS 0x12c220, MAIL
+# 0x128a48 (EVENT 0x12d530); DOC/EVSDATABIN_FORMAT.md compares them.
 NEWS_FIELDS = {
     0x00: "index",
     0x04: "check_type",
@@ -105,7 +107,7 @@ NEWS_FIELDS = {
     0xb0: "-date_rule_kind",
     0xb8: "chance_pct",
 }
-# Five article variables, {kind, arg1, arg2} each (0x14c4d8).
+# Five article variables, {kind, arg1, arg2} each (SIMPRG.REL 0x14c4d8).
 for _n in range(5):
     NEWS_FIELDS[0x24 + 12 * _n] = "var%d_kind" % (_n + 1)
     NEWS_FIELDS[0x28 + 12 * _n] = "var%d_arg1" % (_n + 1)

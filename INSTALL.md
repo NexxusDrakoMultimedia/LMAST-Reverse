@@ -4,9 +4,10 @@
 # Installing a mod
 
 A guide for players: how to play a mod made with this project. Check
-your disc, apply the patch, and keep your saves safe. The first three
-sections need no Python. The last one is for people who build a patch;
-the [README](README.md) covers setting the project up.
+your disc, apply the patch, and keep your saves safe. Sections 1 and 2
+need Python only for the optional commands shown; moving a career to
+a modded disc (section 3) uses it. Section 4 is for people who build
+a patch; the [README](README.md) covers setting the project up.
 
 For help, and to share what you've made, there's the
 [LMAST/SFCC English Fan Discord](https://discord.gg/7DNrGye9TZ).
@@ -15,8 +16,8 @@ For help, and to share what you've made, there's the
 
 - The PAL disc of *Let's Make a Soccer Team!* (SLES-54151, v1.01), as
   an `.iso` that matches the Redump dump
-  ([disc 12334](https://redump.info/disc/12334/)), or a CSO/ZSO of it if
-  you use this project's tools (below).
+  ([disc 12334](https://redump.info/disc/12334/)), or a CSO/ZSO/CHD of
+  it if you use this project's tools (below).
 - PCSX2.
 - An xdelta patcher, such as Delta Patcher or xdelta UI.
 - The mod's patch (`.xdelta`).
@@ -73,13 +74,18 @@ your image, it isn't the Redump one: check the hashes again.
 
 ### A modded disc can have its own saves
 
-A mod built with `--mod-saves` (LMASTER full and max always are) saves
-to different folders on the memory card:
+A mod built with the `saves` group (`--mod-saves`; the LMASTER Mod's
+full and max editions always have it) saves to different folders on the
+memory card:
 
 | | Original game | LMASTER full | LMASTER max |
 |---|---|---|---|
 | careers | `BESLES-54151-G000` and up | `BESLES-54151-F000` and up | `BESLES-54151-M000` and up |
 | VS data | `BESLES-54151-C000` | `BESLES-54151-V000` | `BESLES-54151-V000` |
+
+A build that is not one of those two editions but has `--mod-saves` uses
+`-M` for careers when it turns on any switch of the difficulty groups,
+and `-F` otherwise.
 
 The original game never sees these saves, and the modded game never
 sees the original's, so a mod can't spoil your original careers.
@@ -123,11 +129,13 @@ The original stays as it is.
 
 ### PCSX2 patches
 
-A mod that changes the game's program gets its own PCSX2 CRC (the
-patcher prints it, for example `SLES-54151_2CB2B141`), so a `.pnach`
-made for the original, such as the widescreen patch
-([`WIDESCREEN.md`](DOC/WIDESCREEN.md)), won't load on it. Copy it under
-the new CRC's name to try it; that hasn't been tested.
+PCSX2 names a game's settings, savestates and `.pnach` patches by its
+serial and a CRC of the executable. A mod that changes the executable
+gets its own CRC (the patcher prints it at the end of a build), so a
+`.pnach` made for the original, such as the widescreen patch
+([`WIDESCREEN.md`](DOC/WIDESCREEN.md), named for the original's
+`SLES-54151_3CB245D5`), won't load on it. Copy it under the new CRC's
+name to try it; that hasn't been tested.
 
 ### Editing a save
 
@@ -149,17 +157,55 @@ tier and the real names change files the game also keeps copies of,
 and the patcher finds those copies through `DAT/`.
 
 `--mod` takes an edition, a group or a single switch, or several
-separated by commas (`--mod lmaster-lite,harder-economy`):
+separated by commas (`--mod lmaster-lite,harder-economy`). There are
+three editions:
 
-| Name | What it is |
+| Edition | What it is |
 |---|---|
-| `lmaster-lite` | the fixes: groups `training-fixes`, `injury-fixes`, `club-fixes`, `match-fixes`, `text-fixes`, and `title-screen` (a banner on the title screen that names the LMASTER Mod, its version and its edition; it needs the font file: `--font <file>`, and is left out without it) |
-| `lmaster-full` | lite, plus `leagues` (the third tier, balanced schedules), `restorations` (the cut injury lines), `names` (real names, your own stadium), `stadiums` (real grounds, sponsor boards), `graphics` (LMAST Realism's crests and match pictures, which need the pack: a clone at `../LMAST-Realism`, or `--realism <folder>`, and an edition without the pack skips them; random sponsors and kit suppliers on every club's kit, which turns the Italian, Spanish and Dutch clubs' licensed kits into generated ones; and the game's main text in Roboto Condensed, which needs the font file: `--font <file>`, and an edition without it skips it) and `saves` |
+| `lmaster-lite` | the fixes: the first six groups below. Careers keep the original game's save folders |
+| `lmaster-full` | lite, plus `leagues`, `restorations`, `names`, `stadiums`, `graphics` and `saves` |
 | `lmaster-max` | full, plus the difficulty groups `harder-economy` and `balance` |
-| `--mod-saves` | the modded disc's own save folders (group `saves`) |
 
-`python SRC/patch_disc.py switches` prints every group and switch with
-a line on what it does, and
+Each group holds the switches of one feature:
+
+| Group | In | What it does |
+|---|---|---|
+| `training-fixes` | lite | training camps, drill names and the salesman's items work as intended |
+| `injury-fixes` | lite | two injury-table errors fixed |
+| `club-fixes` | lite | sponsor negotiation, season tickets, PR events, popularity and moving advert boards |
+| `match-fixes` | lite | the rival's manager, pressing, national cups a turn earlier, and the Virtua Pro Football import |
+| `text-fixes` | lite | wrong lines in the game's text |
+| `title-screen` | lite | a banner on the title screen naming the LMASTER Mod, its version and its edition |
+| `leagues` | full | a hidden third tier under each second division, and balanced league schedules |
+| `restorations` | full | the cut injury condition lines |
+| `names` | full | real names for leagues, clubs, stadiums and national teams, and your club's stadium named after you |
+| `stadiums` | full | every club at a ground of its real size, with sponsor boards |
+| `graphics` | full | LMAST Realism's crests and match pictures, random sponsors and kit suppliers (the Italian, Spanish and Dutch clubs' licensed kits become generated ones), and the game's main text in Roboto Condensed |
+| `saves` | full | the modded disc's own save folders (`--mod-saves`) |
+| `harder-economy` | max | dearer facilities and advertising, smaller sponsor and TV fees, fewer season tickets sold |
+| `balance` | max | more long injuries, dearer transfers, camps, tours, PR and overseas bases, slower reputation |
+| `test-tools` | none | the tutorial skip and the developers' debug menu, for testing |
+
+Some switches need files that are not in this repository:
+
+- **The Roboto Condensed font** (`RobotoCondensed[wght].ttf`) for
+  `modern-font` (group `graphics`) and `title-banner` (group
+  `title-screen`): give it with `--font <file>`, or the patcher finds
+  it in a LMASTER-Mod clone's `fonts` folder beside this project or in
+  your system's fonts.
+- **The LMAST Realism pack** for `realism` (group `graphics`): a clone
+  at `../LMAST-Realism`, or `--realism <folder>`.
+- **The banner's version** (optional): `--version <x.y.z>`, else the
+  `VERSION` file of a LMASTER-Mod clone beside this project. Without
+  one the banner shows only the edition.
+
+An edition or group that holds `modern-font`, the banner or `realism`
+leaves it out, with a note, when its file is missing. Naming the
+switch itself, as in `--mod modern-font`, without its font file is an
+error.
+
+`python SRC/patch_disc.py switches` prints every edition, group and
+switch with a line on what it does, and
 [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels) has the
 details. The mod editor does the same through File > Build disc
 ([`USAGE.md`](USAGE.md#building-a-disc-or-a-patch)).

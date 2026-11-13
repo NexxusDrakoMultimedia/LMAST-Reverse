@@ -19,13 +19,14 @@ and target (VCD_TARGET) windows, xdelta3's application header and its
 per-window Adler-32 (checked), and xdelta3's secondary compression of the
 sections: LZMA (xdelta3's default since 3.1, through the lzma module) and
 DJW (decoded here). FGK, which xdelta3 3.2 no longer builds, is refused.
-Tested with patches from xdelta3 3.1.0 and 3.2.2 (DOC/REBUILD.md). The
-source, and make's inputs, may be CSO, ZSO or CHD images (cso.py, chd.py).
+Tested with patches from xdelta3 3.1.0 and 3.2.2
+(DOC/REBUILD.md#sharing-a-mod). The source, and make's inputs, may be
+CSO, ZSO or CHD images (cso.py, chd.py).
 
 Usage:
     python vcdiff.py make  <source> <target> <out.xdelta>
     python vcdiff.py apply <source> <patch.xdelta> <out>
-    python vcdiff.py info  <patch.xdelta>
+    python vcdiff.py info  <patch.xdelta>              # windows, new bytes, application header
     python vcdiff.py roundtrip <source> <target>      # make + apply in memory, check the result
 
 `make` and `apply` print SHA-1s so a patch can be published with the hash
@@ -90,6 +91,7 @@ def put_int(n):
 
 
 class Reader:
+    """A cursor over VCDIFF bytes: single bytes, base-128 integers, slices."""
     def __init__(self, data, pos=0):
         self.data, self.pos = data, pos
 
@@ -180,7 +182,7 @@ def encode(src_file, tgt_file, out_file, progress=None):
     hs, ht = hashlib.sha1(), hashlib.sha1()
     out_file.write(MAGIC + b"\x00")
     pos = 0
-    while pos < tgt_len or pos == 0:
+    while pos < tgt_len or pos == 0:       # an empty target still gets one window
         tgt_file.seek(pos)
         tgt = tgt_file.read(WINDOW)
         src_file.seek(pos)
@@ -201,6 +203,7 @@ def encode(src_file, tgt_file, out_file, progress=None):
 
 
 def _size(f):
+    """The length of a seekable file, leaving its position as it was."""
     here = f.tell()
     f.seek(0, os.SEEK_END)
     n = f.tell()
@@ -397,6 +400,8 @@ class Secondary:
 # --- decoder -----------------------------------------------------------------
 
 class Window:
+    """One parsed window: its source or target segment, and its (already
+    secondary-decompressed) data, instruction and address sections."""
     def __init__(self, indicator, seg_len, seg_pos, tgt_len, data, inst, addr, checksum):
         self.indicator, self.seg_len, self.seg_pos = indicator, seg_len, seg_pos
         self.tgt_len, self.data, self.inst, self.addr = tgt_len, data, inst, addr
@@ -529,6 +534,7 @@ def decode(src_file, patch, out_file, progress=None):
 
 
 def file_sha1(path):
+    """SHA-1 of a file, read a window at a time."""
     h = hashlib.sha1()
     with open(path, "rb") as f:
         while buf := f.read(WINDOW):
@@ -539,6 +545,7 @@ def file_sha1(path):
 # --- commands ----------------------------------------------------------------
 
 class Progress:
+    """Prints a label, then a mark at each 10% of `done` / `total`."""
     def __init__(self, label):
         self.label, self.shown = label, 0
         print(label, end="", flush=True)

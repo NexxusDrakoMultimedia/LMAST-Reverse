@@ -15,7 +15,7 @@ zeros to a multiple of 0x400, so the file is 0x2000 bytes.
   0x0000  s16 id[23]       a slot is used when its id is >= 0 (0x3a400)
   0x002e  0x2e bytes       not read by the import
   0x005c  record[23]       0x134 bytes each, record i at 0x5c + i * 0x134
-  0x1bf8  0x40 bytes       not read by the import
+  0x1c08  0x30 bytes       not read by the import
   0x1c38  u32 CRC-16 of 0x0000-0x1c37
 
 The import (0x3a3b8) converts each used record with 0x3e198 into the

@@ -1,16 +1,19 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Play books: `GAME/PLAYBOOK.BPB` and `GAME/COMBINATION.BPB`
+# Play books and combinations: `PLAYBOOK.BPB`, `COMBINATION.BPB` and `COMBINATION2.CBB`
 
-The play books hold the movements of the players and the ball in the
-match AI's set plays and moves: one path per player (and one for the
-ball), each a list of points in metres on the pitch. `GAMEPRG.REL` loads
-`playbook.bpb` ([`GAME_DIR.md`](GAME_DIR.md)), and
-`Pwk::PlayBookData::CPlayBookDataBase` in `SLES_541.51` reads it.
+Three files in `DAT/GAME/` hold the match AI's rehearsed moves.
 
-`python SRC/bpb.py info DAT/GAME` checks both files.
-`python SRC/bpb.py dump DAT/GAME/PLAYBOOK.BPB 0` prints one play's paths.
+| File | What it holds in the game | Where it is read |
+|---|---|---|
+| `PLAYBOOK.BPB` | the 256 set plays, of which a match uses 40: 16 corners and 24 free kicks. One path per player and one for the ball, each a list of points in metres on the pitch | `GAMEPRG.REL` loads `playbook.bpb` ([`GAME_DIR.md`](GAME_DIR.md)); `Pwk::PlayBookData::CPlayBookDataBase` in `SLES_541.51` reads it |
+| `COMBINATION.BPB` | the 30 diagrams of the attack patterns on the tactics screen, in the same layout | the tactics screen, through the same class ([below](#which-play-is-which)) |
+| `COMBINATION2.CBB` (with `COMBINATION2.CSB`) | the 540 combinations a team tries in open play: the areas where the participants must stand, and a script per combination | `fb::CombinationSequencer` in `GAMEPRG.REL` ([below](#combination2cbb-and-csb)) |
+
+`python SRC/bpb.py info DAT/GAME` checks all three files; the Japanese
+release's files give the same output. `python SRC/bpb.py dump
+DAT/GAME/PLAYBOOK.BPB 0` prints one play's paths.
 
 ## Confirmed from the game code
 
@@ -56,8 +59,9 @@ first array:
 | `+0x08` | *n* × 2 u16 | each player's start, x then y, coded like the points; the reader takes at most 22 values |
 
 **Empirical:** *n* is 11 in the 196 twelve-path plays and the number of
-non-ball paths in the others, and play 0's first spot (33.6, 52.1) is at
-the corner flag, where its ball starts.
+non-ball paths in the others. Play 0's first spot, (33.6, 52.1), is the
+corner taker's, beside the corner flag where its ball starts, (33.0,
+51.5).
 
 **Path kinds** (**confirmed**). `0x109598` splits a kind into the role
 type (high byte), a value (bits 0–6) and a flag (bit 7). The set-play
@@ -267,15 +271,15 @@ the middle, 60% from wide and 10% from near the goal line. Of the
 corners, the 70% list's ten are all a cross from the flag into the box
 (the ball's first stop at x −12.0 to +8.9 m, y 42.2–49.6 m), and the
 30% list's six are all short corners, played first to a team-mate on
-the flag's side (x 20.2–28.9 m). All 100
-corner records start at the same flag, (33.0, 51.4).
+the flag's side (x 20.2–28.9 m). In all 100 corner records the
+ball starts at the same flag (x 32.4–33.4 m, y 51.2–51.8 m).
 
 So a match can use 40 of the 256 plays: 16 corners and 24 free kicks.
 Records 196–255, the type −1 range, are never asked for: no code builds
 an id from `0x4000` to `0x6fff`, and their path kinds (249–253) aren't
 role types. Within the 100 corner records the groups are loose themes
 at most: short corners (a first pass to x > 19 m) are records 30–36,
-40–42, 45–49, 78–79 and all of 90–99 (to a team-mate beside the flag),
+40–42, 46–49, 78–79 and all of 90–99 (to a team-mate beside the flag),
 and the rest go straight into the box.
 
 **`COMBINATION.BPB` is the tactics screen's.** Its copies in the
@@ -287,24 +291,27 @@ byte 0) as id `0x7000` + *p* − 1: record *p* − 1. So its 30 records are
 the 30 attack patterns' diagrams, in the order `LS00`–`LS05`, `RS`,
 `CT`, `CA`, `PO` ([`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)), and the
 screen's list (`CPlayBookList::MakeList`, `0x2f9618`) shows the club's
-choices from `PlTeamData +0x498c`/`+0x498f`, the bytes the match takes a
+choices from `PlTeamData +0x498c`/`+0x498f`, the bytes the match takes
 your club's attack patterns from
 ([below](#how-a-team-uses-the-combinations)).
 
-## Empirical
+## The two `.BPB` files in numbers
+
+All **empirical** (`python SRC/bpb.py info DAT/GAME`).
 
 `PLAYBOOK.BPB` (65,112 bytes) holds 256 plays, 2,594 paths and 7,221
 points, and its records end exactly at the end of the file. 196 plays
-have 12 paths, the others 3–5. Every play has exactly one path whose
-kind has high byte `0xfe`: the ball. In play 0 the ball starts at (33.0,
-51.5), at a corner flag of a 68 × 105 m pitch (goal line at y = 52.5),
-and its route goes to path 1; ten other paths are runs into the box. So
-x runs across the pitch and y along it, in metres from the centre spot.
-The other kinds are in the table above. The point codes are 0, 1, 2, 3
-and 20; they change along a run (20, then 2, then 1 near its end), so
-they look like movement styles. Path kind values (bits 0–6) are 0–6
-(0 in 2,210 of the 2,338 player paths) and the flag (bit 7) is set in
-73 paths, all in free-kick records (101–195).
+have 12 paths (10 have 3, 38 have 4 and 12 have 5). Every play has
+exactly one path whose kind has high byte `0xfe`: the ball. In play 0 the
+ball starts at (33.0, 51.5), at a corner flag of a 68 × 105 m pitch (goal
+line at y = 52.5), and its route goes to path 1; paths 1–10 are runs into
+the box and path 0 is the corner taker. So x runs across the pitch and y
+along it, in metres from the centre spot. The other kinds are in the
+table above. The point codes are 0, 1, 2, 3 and 20; they change along a
+run (20, then 2, then 1 near its end), so they look like movement
+styles. Of the 2,338 player paths, 2,210 have kind value 0 (bits 0–6;
+the values run 0–6), and the flag (bit 7) is set on 73, all in
+free-kick records (101–195).
 
 `COMBINATION.BPB` (4,516 bytes) parses with the same layout: 30 records
 of 4–5 paths, 528 points, a 0x1c-byte header, path kinds all 0 and no
@@ -362,8 +369,9 @@ bounds (a box).
 277 have 4 slots, 253 three and 10 two; the slot types are 2 (835
 slots), 1 (474), 3 and 4 (18 each), 0 and 6 (one each), and 5 and 7
 never appear. Only records 0–59 fill blocks A and B (A kind 0 or 1, B
-kind 0 or 2); in the other 480 both kinds are 3 and the u32s of block C
-are 0. The bytes between fields are `0xcd`, `0xbb`, `0xaa` and `0x97`,
+kind 0 or 2, except record 18, which has A kind 1 and B kind 3); in the
+other 480 both kinds are 3. The u32s of block C are non-zero in records
+0–59 only. The bytes between fields are `0xcd`, `0xbb`, `0xaa` and `0x97`,
 the fill patterns of uninitialised memory, so the records are C structs
 written with their padding. The areas are mostly circles of radius 100
 or 150 at offsets such as (±100, −50) and (0, 150).
@@ -372,6 +380,13 @@ or 150 at offsets such as (±100, −50) and (0, 150).
 with each slot type's name.
 
 ### How a team uses the combinations
+
+In a match each team holds 11 combinations. It tries them when a
+team-mate receives the ball and about once a second in open play, and
+starts one whose participants all find a player standing in the right
+area. Eight are basic moves drawn at random from a fixed list for the
+team's style, and up to three are the club's own attack patterns. The
+details follow.
 
 **Confirmed** from `GAMEPRG.REL`. Each team has a combination
 controller (the team's `+0x1788`) holding 11 `fb::Combination` objects
@@ -624,7 +639,7 @@ dy) + 90°, and `0x1c5ff0` is atan2 of its two arguments in that order
 (the swap and quadrant fixes at `0x1c603c`–`0x1c60c4`). Side 0 is the
 one the code doesn't mirror, and in the side-0 frame a team attacks
 toward +y (**empirical**: every corner in `PLAYBOOK.BPB` starts at the
-+y end, play 0's ball at (33.6, 52.1), and the set plays mirror a path
++y end, play 0's ball at (33.0, 51.5), and the set plays mirror a path
 only for the other side, `0xa5af8`). So:
 
 | Command | Angle | Direction |
@@ -802,11 +817,12 @@ participants are the ones the record's slots found
   `0x1181c4`), what the second word the free-kick and receiver passes
   give the pass builder (`+0x9c`) does, and how the three receiver
   handlers (`0x108650`, `0x108728`, `0x108858`) differ.
-- Whether the corner records' ten groups meant anything to the
-  developers beyond loose themes, and what records 196–255 (kind 3,
-  roles 249–253) were for.
+- Whether the corner records' ten groups of ten (a play id's `id >> 8`)
+  meant anything to the developers beyond loose themes, and what records
+  196–255 (kind 3, roles 249–253) were for.
 - `TACTICS_PLAYBOOK_EDIT.TBB` (180 rows of 4 bytes, read through
-  `CTacticsLoader::getPlayBookEditTable`).
+  `CTacticsLoader::getPlayBookEditTable`; load-list entries in
+  [`GAME_DIR.md`](GAME_DIR.md)). What its rows mean is open.
 - Whether anything reads A's two values, block B and C's four u32
   through a pointer the search missed (no reader found).
 - What fills `PlTeamData +0x498c`/`+0x498f` (the attack patterns of a
@@ -824,10 +840,19 @@ participants are the ones the record's slots found
   mode 7's flag are, and the plays at the player's `+0xfc`, `+0x100`
   and `+0x108` that modes 2 and 3 switch to.
 
-## Checking
+## Checking the claims
+
+`info` prints one line per file: the record, path and point counts, the
+header size and the point codes of the players' paths for the `.BPB`
+files, and the record count, record sizes and slot-type counts for the
+`.CBB`. Any record that breaks the layout gets a `!!`. The counts above
+come from that output.
 
 ```bash
 python SRC/bpb.py info DAT/GAME
 python SRC/bpb.py dump DAT/GAME/PLAYBOOK.BPB 0
+python SRC/bpb.py cbb DAT/GAME/COMBINATION2.CBB 0 3
+python SRC/sqb.py dis "DAT/GAME/COMBINATION2.CSB#2"
 python SRC/sles_disasm.py ISO/SLES_541.51 dis GetPLAYBOOK__Q33Pwk12PlayBookData makeBookTop SplitID
+python SRC/snr2.py dis ISO/DLL/GAMEPRG.REL 0xc7a78 60 --sles ISO/SLES_541.51
 ```

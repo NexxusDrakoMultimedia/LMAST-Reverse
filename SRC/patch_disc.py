@@ -39,6 +39,7 @@ Usage:
     python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--realism <pack folder>] [--font <font.ttf>] [--version <x.y.z>]
     python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--mod <switch>,...]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
+    python patch_disc.py switches                                         # the editions, groups and switches
 
 `patch` re-reads every patched range afterwards. Keep an unmodified copy
 of the disc: --in-place cannot be undone except by patching the original
@@ -67,53 +68,58 @@ volume size, the UDF partition length in both partition descriptors and
 the integrity descriptor's size table change, and the UDF end anchor moves
 to the new last sector. Files outside DATA.CVM keep their size.
 
-The Japanese release (SLPM_663.16) takes the same switches but
-realism, which is made for the PAL release (so not lmaster-full or
-lmaster-max); third-tier is ported there except its rules text, which stays
-as the Japanese game has it. Each gives its bytes as PAL offsets; on a Japanese disc
-they are found in its executable and overlays with gamever.py (so the
-PAL files in ISO/ must be there), and checked as on PAL; a jump
-table's case addresses take the Japanese addresses of the same code.
-sponsor-negotiation does nothing there (the release negotiates already),
-nor does vpf-positions (it has no Virtua Pro Football import), drill-names finds the names already in
-place, mod-saves renames BISLPM-66316-G/C, and fanbase scales the
+The Japanese release (SLPM_663.16) takes the same switches except
+realism, which is made for the PAL release (so lmaster-full and
+lmaster-max can't be built for it). third-tier is ported there, but its
+rules text stays as the Japanese game has it. Each switch gives its bytes
+as PAL offsets; on a Japanese disc they are found in its executable and
+overlays with gamever.py (so the PAL files in ISO/ must be there) and
+checked as on PAL, and a jump table's case addresses take the Japanese
+addresses of the same code. A few switches do nothing there, and say so
+in a note: sponsor-negotiation (the release negotiates already),
+vpf-positions (it has no Virtua Pro Football import), drill-names (the
+names are already in place), and random-sponsors, retail-text,
+modern-font and title-banner (they are made for PAL's code, text and
+fonts). mod-saves renames BISLPM-66316-G/C, and fanbase scales the
 Japanese merchandise table, which holds half the PAL bases. See
 DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc.
 
 Switches come in three levels (DOC/LMASTER_MOD.md#the-switch-levels),
-and --mod takes names of any level, comma-separated (or repeated):
-    python patch_disc.py switches       # print the editions, groups and switches
+and --mod takes names of any level, comma-separated (or repeated).
+`switches` prints the editions, groups and switches.
 Editions: --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes,
 the groups training-fixes, injury-fixes, club-fixes, match-fixes,
-text-fixes and title-screen; --mod lmaster-full adds leagues, restorations, names and
-saves, and --mod
-lmaster-max adds the difficulty groups harder-economy and balance to
-full. Both always save to their own folders: full's careers in -F, max's
-in -M (mod-saves picks M when any difficulty switch is on), and the VS
-data of both in -V.
+text-fixes and title-screen; --mod lmaster-full adds the groups leagues,
+restorations, names, stadiums, graphics and saves, and --mod lmaster-max
+adds the difficulty groups harder-economy and balance to full. Full and
+max always save to their own folders: full's careers in -F, max's in -M
+(mod-saves picks M when any difficulty switch is on), and the VS data of
+both in -V.
 Groups: training-fixes (camp-types, camp-cities, camp-santiago,
-camp-clubs, drill-names, salesman-items), injury-fixes (injury-value, injury-row),
-club-fixes (sponsor-negotiation, season-status, pr-cycle, mobile-site,
-overseas-pop, cup-last16, moving-boards), match-fixes (rival-manager, press-tendency,
-national-cups, vpf-styles, vpf-positions), text-fixes (retail-text), title-screen (title-banner), harder-economy (facility-tiers,
-wider-tickets, dearer-ads,
-sponsor-fees, tv-fees, season-demand), balance (injury-odds,
-overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
-merch-costs, pr-costs, camp-costs, tour-costs), leagues
-(league-balance, third-tier), restorations (injury-lines), names
-(real-names, own-stadium), stadiums (special-stadium, real-grounds, sponsor-boards), saves (mod-saves),
-graphics (realism, random-sponsors, modern-font), and test-tools (skip-tutorial,
-launcher), which is in no edition.
+camp-clubs, drill-names, salesman-items), injury-fixes (injury-value,
+injury-row), club-fixes (sponsor-negotiation, season-status, pr-cycle,
+mobile-site, overseas-pop, cup-last16, moving-boards), match-fixes
+(rival-manager, press-tendency, national-cups, vpf-styles,
+vpf-positions), text-fixes (retail-text), title-screen (title-banner),
+harder-economy (facility-tiers, wider-tickets, dearer-ads, sponsor-fees,
+tv-fees, season-demand), balance (injury-odds, overseas-bases,
+transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs,
+pr-costs, camp-costs, tour-costs), leagues (league-balance, third-tier),
+restorations (injury-lines), names (real-names, own-stadium), stadiums
+(special-stadium, real-grounds, sponsor-boards), saves (mod-saves),
+graphics (realism, random-sponsors, modern-font), and test-tools
+(skip-tutorial, launcher), which is in no edition.
 modern-font (the game's main text in Roboto Condensed, SRC/fontmod.py) and
 title-banner (the LMASTER Mod's version on the title screen,
 SRC/titlebanner.py) draw with a font file: --font <RobotoCondensed[wght].ttf>,
-or a copy beside this repository (an edition without one leaves them out);
---version gives the banner its version (else ../LMASTER-Mod/VERSION). Both are
-PAL only (the Japanese release skips them with a note).
+or the copy found in a LMASTER-Mod clone's fonts folder beside this
+repository or in the system's fonts (an edition without one leaves them
+out); --version gives the banner its version (else ../LMASTER-Mod/VERSION).
+Both are PAL only (the Japanese release skips them with a note).
 third-tier turns on mod-saves and needs --copies and --dat; real-names
-and realism need them too. Each switch
-also works as a flag of its own (--skip-tutorial, ...). With switches
-and no targets, `patch <image> <out_image>` is enough.
+and realism need them too. Each switch also works as a flag of its own
+(--skip-tutorial, ...). With switches and no targets,
+`patch <image> <out_image>` is enough.
 
 --skip-tutorial (test discs; whole disc image only) skips the opening
 playoffs of a new career, the tutorial, but runs their schedule steps: it
@@ -153,16 +159,16 @@ DOC/PBDATA_FORMAT.md#the-tendencies.
 national-cups moves the World National Cup (UIDs 114-122) and the Euro
 National Cup (98-102) one turn earlier (schedule.shift_pack), so the World
 Cup final is no longer on the year's last turn, where the season ended
-before its results could be viewed. It writes PARAM/SCHEDULE_SYSTEM.PAC and its copy in
-PRELOAD/STATIONFILE.PAC. The national-team calendar moves with them
-(PARAM/SCHEDULE_LIST.TBB and its copies in PRELOAD/SIMLOCALMEM0-6.PAC): in
-the tournament years the matches and the release are a turn earlier, and
-the call-up stays on turn 88 with the first group game. With a
-SCHEDULE_SYSTEM.PAC target (leaguesize.py build, a league of another size)
-the cups are moved in the target's bytes, and --copies carries them to
-STATIONFILE.PAC; so is a SCHEDULE_LIST.TBB target (a calendar edited with
-natcal.py), whose --copies go to the SIMLOCALMEM packs. See
-DOC/LMASTER_MOD.md.
+before its results could be viewed. It writes PARAM/SCHEDULE_SYSTEM.PAC
+and its copy in PRELOAD/STATIONFILE.PAC. The national-team calendar moves
+with them (PARAM/SCHEDULE_LIST.TBB and its copies in
+PRELOAD/SIMLOCALMEM0-6.PAC): in the tournament years the matches and the
+release are a turn earlier, and the call-up stays on turn 88 with the
+first group game. With a SCHEDULE_SYSTEM.PAC target (leaguesize.py build,
+a league of another size) the cups are moved in the target's bytes, and
+--copies carries them to STATIONFILE.PAC. A SCHEDULE_LIST.TBB target (a
+calendar edited with natcal.py) is moved the same way, and its --copies
+go to the SIMLOCALMEM packs. See DOC/LMASTER_MOD.md.
 
 league-balance rebuilds the league schedules that send a club to one
 venue up to 9 times running: the 22-club leagues (UIDs 11, 30, 40, 48),
@@ -198,10 +204,13 @@ retail-text fixes messages the retail game gets wrong: point 2 of the
 Game Over conditions for Spain and the Netherlands (MES.PAC 487:1204 and
 1205) names their own league and place where some languages name
 Italy's, Spain's or Germany's, the Spanish intro (487:1100) says 26 clubs
-for 216, and team 435's name is Al-Hyde, not AL-Hyde (categories 3, 4
-and 100003, and the STATIONMES copies of 3 and 4). A MES.PAC target gets
-the fixes in its own bytes; the Japanese release is left alone. See
-DOC/LMASTER_MOD.md#retail-text-fixes.
+for 216, team 435's name is Al-Hyde, not AL-Hyde (categories 3, 4
+and 100003, and the STATIONMES copies of 3 and 4), and the youth
+academy's second comment on a candidate (700:8657-8663) rates charisma
+(the Japanese text's star quality) instead of potential, and its
+TACTICSLARGE and TACTICSMATCHLARGE copies get the same bytes. A MES.PAC
+target gets the fixes in its own bytes; the Japanese release is left
+alone. See DOC/LMASTER_MOD.md#retail-text-fixes.
 
 real-names (LMASTER full and max) gives every league, competition, club
 and national team its real name of the era, in the five European
@@ -222,19 +231,46 @@ See DOC/LMASTER_MOD.md#stadiums.
 real-grounds (LMASTER full and max) puts each club at a ground of its
 real 2005-06 capacity, rounded to 5,000 (SRC/grounds.csv), with a look to
 fit: your own ground's ladder up to 35,000 and at 50,000-60,000,
-STADIUM_DATA ids 102-118 for 40,000-45,000 (the ho03a model), 65,000-75,000
-(the aw04b bowl) and 80,000-85,000 (the ho04a bowl, only for the biggest),
-built like those grounds (BUILD_STADIUM rows copied). The clubs of one size
-are spread over as many ids as possible, each within 3,000 of its real
-size. The rival's ground (114) stays its
-own. It turns on special-stadium (the
-100,000 ids). A target PLRESOURCESIM.PAC or STADIUM_DATA.TBB takes the
-change in its own bytes, unless its own edit is in the way.
+STADIUM_DATA ids 102-118 for 20,000-30,000 (aw01a: 103, 105, 107),
+40,000-45,000 (the ho03a model: 102, 104, 106), 40,000-50,000 (aw03a:
+112, 113, 115) and 65,000-90,000 (the aw04b bowl), built like those
+grounds (BUILD_STADIUM rows copied). Only Camp Nou, at 100,000, uses the
+ho04a bowl (the Special stadium's ids 96-101). The clubs of one size are
+spread over as many ids as possible, each within 3,000 of its real size.
+The rival's ground (114) stays its own. It turns on special-stadium (the
+100,000 ids). A target PLRESOURCESIM.PAC or
+STADIUM_DATA.TBB takes the change in its own bytes, unless its own edit
+is in the way.
 
 sponsor-boards (LMASTER full and max) draws every stadium's 12 advert
 boards afresh from all 205 sponsor logos (BUILD_STADIUM.TBB), a fixed
 shuffle per stadium (the rival's ground keeps its own); the retail grounds
-use 119 of them. The adidas board the match adds stays.
+use 119 of them. The adidas board the match adds stays. moving-boards
+(LMASTER lite, full and max) makes the last ground's board switches like
+the level before it (BUILD_STADIUM rows 96-101, bytes 42-69), so the
+moving board bought at an earlier ground still shows. See
+DOC/LMASTER_MOD.md#stadiums.
+
+random-sponsors (LMASTER full and max) gives the computer clubs' kits a
+main sponsor and a kit supplier, drawn again every season. In the retail
+game only your club and the rival show them, because pwkTeam_GetUnif
+(SLES 0x26e9d8) sets them to 0 for every other club. Its two stores at
+0x26ec1c and 0x26ec24 become a call to code in the LMASTER code segment,
+and a jump at 0x2c54d8 (CUniformBuilder::_setup_texture_list) lets every
+club but the national teams use the sponsor and supplier logo lists. The
+114 Italian, Spanish and Dutch clubs of SRC/kits.csv lose their
+licensed kits and get generated ones (UNIFORM_LIST.TBB and its SIMFILE
+copies, uniform.apply_kits), since a licensed kit carries its sponsor in
+the texture. The code is PAL's; the Japanese release is left alone. See
+DOC/LMASTER_MOD.md#random-sponsors.
+
+realism (LMASTER full and max) puts LMAST Realism's crests and match
+pictures in the texture packs (texmap.py apply, DOC/TEXMAP.md), with a
+2 px transparent edge on the licensed crests. The pack is not in the
+repository: --realism names its replacements folder (or the pack's
+folder), else a LMAST-Realism clone beside this repository is used; an
+edition without the pack leaves the switch out. It needs --copies and
+--dat. See DOC/LMASTER_MOD.md#lmast-realism-on-the-disc.
 
 own-stadium (LMASTER full and max; whole disc image only) names your
 club's stadium after you, "<your name> Stadium", where the game used your
@@ -245,8 +281,8 @@ injuries in the value table (SLES 0x532d70) from 1600 to 16001, where the
 kinds before it end. injury-row (whole disc image only) clamps
 judgeKegaKind's table row to 10 (SLES 0x21a08c, 6 words), so a player of
 35 or more at full fatigue no longer reads past the injury tables; see
-DOC/INJURIES.md. vpf-styles (whole disc image
-only) fixes the Virtua Pro Football import's play-style sort: its compare
+DOC/INJURIES.md. vpf-styles (whole disc image only) fixes the Virtua Pro
+Football import's play-style sort: its compare
 (DLL/SAVEPRG.REL 0x3df00) subtracted pointers, so only styles 1-4 could
 come in; 4 words make it compare the ratings, best first (through the
 tail of the executable's strcmp, 0x31a5b4), and one more (0x3dfe0) rates
@@ -308,6 +344,7 @@ costs in PLRESOURCESIM.PAC entry 1 (and its PRELOAD/SIMLOCALMEM0-6.PAC
 copies), which doubles their investment and upkeep too; what a level
 does is unchanged, so every pound buys half as much, as with dearer-ads.
 See DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches.
+
 transfer-fees (whole disc image only) doubles the base of every transfer
 fee (SLES 0x247288, 1,350,000.0 -> 2,700,000.0) and raises price kind 1's
 cap from 7,200,000 to 15,000,000 (£120M -> £250M) in all four
@@ -320,16 +357,16 @@ image only) halves what raises club status: a match's win and draw
 factors (SLES 0x399668), the points for final places (0x555188,
 0x555260, 0x555288) and the yearly 500 (0x26e2c4); losses stay.
 third-tier (whole disc image only, with --copies and --dat; in
-lmaster-full and lmaster-max; turns on mod-saves) adds the LMASTER third tier: a hidden
-league under each second division, competitions 50-55, as schedule UIDs
-165-170 (3 clubs) and, for your nation, 171-176 (5 clubs). Each season
-the second division's last club goes down and the tier's winner comes
-up; your second division has its real size, two of its clubs starting
-in the tier; finishing last in it ends the game after one season. Each
-nation's lower cup (the English League Cup, the Club Cups) takes all of
-its tier's clubs too, its qualifying round as it was, and starts on Dec
-w1 midweek (turn 40). Clubs
-442-459 become full clubs (block 2 records, squads added to
+lmaster-full and lmaster-max; turns on mod-saves) adds the LMASTER third
+tier: a hidden league under each second division, competitions 50-55, as
+schedule UIDs 165-170 (3 clubs) and, for your nation, 171-176 (5 clubs).
+Each season the second division's last club goes down and the tier's
+winner comes up; your second division has its real size, two of its
+clubs starting in the tier; finishing last in it ends the game after one
+season. Each nation's lower cup (the English League Cup, the Club Cups)
+takes all of its tier's clubs too, its qualifying round as it was, and
+starts on Dec w1 midweek (turn 40). Clubs 442-459 become full clubs
+(block 2 records, squads added to
 OTEAMMEMBER.TBB, the club checks, loops and lists that stopped at 441),
 the save grows (block 2 by their 18 records, block 5 by the past records
 of competitions 49-55), and the schedule files grow (SCHEDULE_SYSTEM,
@@ -344,15 +381,16 @@ career over. See DOC/UID_LIMITS.md, DOC/CLUB_LIMITS.md,
 DOC/SAVE_FORMAT.md and DOC/LMASTER_MOD.md. The names it was built as,
 save-expand, tier-clubs, tier-lists, tier-uids and one-season-end, are
 taken as third-tier.
-fanbase (whole disc image only)
-scales the merchandise base by supporters (SIMPRG.REL 0x1d9ec8, 17 rows)
-from x0.5 at the bottom to x3 at the top, makes walk-up crowds and
-season-ticket demand count home popularity at 195 in place of 130 with
-the fixed part 1,500 in place of 3,000 a step (SLES 0x2722d8, 0x2722f0,
-0x2728ec, 0x2728f0), and widens the TV offers' popularity factor from
-0.9-1.15 to 0.75-1.25 (SIMPRG.REL 0x163a60-0x163b2c). merch-costs (whole
-disc image only) makes a unit of merchandise stock cost 50% of its shop
-price instead of 30% (SIMPRG.REL 0xbcce4) and halves the bulk discounts
+
+fanbase (whole disc image only) scales the merchandise base by
+supporters (SIMPRG.REL 0x1d9ec8, 17 rows) from x0.5 at the bottom to x3
+at the top, makes walk-up crowds and season-ticket demand count home
+popularity at 195 in place of 130 with the fixed part 1,500 in place of
+3,000 a step (SLES 0x2722d8, 0x2722f0, 0x2728ec, 0x2728f0), and widens
+the TV offers' popularity factor from 0.9-1.15 to 0.75-1.25 (SIMPRG.REL
+0x163a60-0x163b2c). merch-costs (whole disc image only) makes a unit of
+merchandise stock cost 50% of its shop price instead of 30% (SIMPRG.REL
+0xbcce4) and halves the bulk discounts
 (0x1d10d8: 100, 95, ... 60 -> 100, 97, 95, 92, 90, 87, 85, 80). See
 DOC/ECONOMY.md.
 
@@ -381,13 +419,14 @@ DOC/ECONOMY.md#supporter-popularity and #titles.
 memory-card folders become BESLES-54151-Fnnn for career saves (-G on the
 original), or -Mnnn on a disc with any harder-economy or balance switch
 (LMASTER max), and BESLES-54151-Vnnn for VS data (-C on the original),
-the same on both: two bytes of SLES_541.51 (0x5213e8, 0x5213f8;
-MC::CFcEuroIF::initialize 0x12ad38). Discs built before 2026-10-27 used
--M and -D; save.py rename moves a save to the new names. The original
-game never opens them, and a modded game's VS teams can't reach Virtua
-Pro Football or an unmodded VS mode. The serial stays SLES-54151, so
-PCSX2's GameDB entry still applies (its D-pad clamp fix and memory-card
-filters). See DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc.
+the whole change being one letter in each of two names in SLES_541.51
+(0x5213e8, 0x5213f8; MC::CFcEuroIF::initialize 0x12ad38). Discs built
+before 2026-10-27 used -M and -D; save.py rename moves a save to the new
+names. The original game never opens them, and a modded game's VS teams
+can't reach Virtua Pro Football or an unmodded VS mode. The serial stays
+SLES-54151, so PCSX2's GameDB entry still applies (its D-pad clamp fix
+and memory-card filters). See
+DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc.
 
 Every patch of a whole disc image ends with the executable's PCSX2 CRC
 (the XOR of its 32-bit words; 3CB245D5 unmodified). PCSX2 names a game's
@@ -411,10 +450,11 @@ under other names (shared stadium parts, say) is only reported.
 PRELOAD packs: an entry that changes size (a message file mbb.py grew
 into its MES.PAC slot, say) is written by rebuilding its pack with
 pac.build_binpac, which moves the later entries; the pack may grow to the
-end of its last sector, and one that needs more is moved (above). Entries of a PRELOAD pack, as copies or as
-<path>#<entry> targets, are located through the header the pack has in
-the image now, so a second run works on a rebuilt pack. Any other copy
-is a fixed-size slot and keeps the old data, with a warning.
+end of its last sector, and one that needs more is moved (above).
+Entries of a PRELOAD pack, as copies or as <path>#<entry> targets, are
+located through the header the pack has in the image now, so a second
+run works on a rebuilt pack. Any other copy is a fixed-size slot and
+keeps the old data, with a warning.
 
 Other archives: a <path>#<entry> target of another self-describing
 archive that changes size rebuilds the archive (rebuild_entry_targets)
@@ -2265,10 +2305,10 @@ def plan_launcher(f, img):
 
 # calcKegav (SLES 0x21a120) gives an injury of kind k a value of
 # min + random(max - min + 1) from one of the kind's (min, max) pairs in the
-# u16 table at 0x532cf8 (0x14 bytes a kind). Every kind starts where the one
-# before ends, except kind 6, whose first pair is 1600-19000 where
-# 16001-19000 fits (a dropped digit, in both releases): so a kind-6 injury,
-# shown as 18 months, could be as short as a light one.
+# u16 table at 0x532cf8 (0x14 bytes a kind). Kind 5 ends at 16000, so kind
+# 6's first pair should start at 16001; it is 1600-19000 (a dropped digit,
+# in both releases): so a kind-6 injury, shown as 18 months, could be as
+# short as a light one.
 INJURY_VALUE = (0x532d70, 1600, 16001)
 
 
@@ -4046,10 +4086,10 @@ def tier_lists_words(f, img):
 #   puts your club and the rival at ranks S - 2 and S - 1 and sends the
 #   two seeded clubs there down to your 5-club tier.
 # - Season end: calcCompetetionFinish (0x205fa8) writes the tables of
-#   competitions to 55, of those whose year row's +7 is 1 (0x205f88). The yearly honours exist for 0-48 only, so for
-#   49 on, a detour skips pwkRec_ShiftCompeConventionRecord (0x205fc0)
-#   and everything after the table (0x20631c), in the LMASTER code
-#   segment at TIER_CAVE.
+#   competitions to 55, of those whose year row's +7 is 1 (0x205f88). The
+#   yearly honours exist for 0-48 only, so for 49 on, a detour skips
+#   pwkRec_ShiftCompeConventionRecord (0x205fc0) and everything after the
+#   table (0x20631c), in the LMASTER code segment at TIER_CAVE.
 # No change to the ticket-price module's loop over UIDs (SIMPRG.REL
 # 0x3cfcc, your home games): its "none found" test compares with a second
 # 164 (0x3cfb8), and raising only its bound made the Set Up Ticket Price
@@ -4068,14 +4108,15 @@ TIER_UID_FILES = ("PARAM/SCHEDULE_SYSTEM.PAC", "PARAM/SCHEDULE_COMPETITION.PAC",
                   "PARAM/SCHEDULE_TEAM_ENTRY.PAC", "PARAM/REGULATION.TBB", INITTEAM_FILE,
                   "PARAM/CLUBRESULT.TBB")
 # The lower cups (the English League Cup, the other nations' Club Cups,
-# England to the Netherlands) take every club of their tier's record (the
-# Nexxus's choice): a knockout grown by 3 clubs, 5 in your nation's version,
-# its qualifying round as it was. The bracket is seeded with byes in the
-# first round only (schedule.knockout_bracket_seeded; Nexxus's choice,
-# 2026-10-27): the top slots go straight to the second round. Every lower cup starts on Dec w1 midweek
-# (turn 40, Nexxus's choice), the cups' start turn and the main cup's
-# first round, whose clubs (the qualifying winners and the first
-# division) a lower cup doesn't have, as on the turns they already share.
+# England to the Netherlands) take every club of their tier's record
+# (Nexxus's choice): a knockout grown by 3 clubs, 5 in your nation's
+# version, its qualifying round as it was. The bracket is seeded with byes
+# in the first round only (schedule.knockout_bracket_seeded; Nexxus's
+# choice, 2026-10-27): the top slots go straight to the second round.
+# Every lower cup starts on Dec w1 midweek (turn 40, Nexxus's choice), the
+# cups' start turn and the main cup's first round, whose clubs (the
+# qualifying winners and the first division) a lower cup doesn't have, as
+# on the turns they already share.
 # Its other rounds stay on the disc's midweeks for that many rounds (44,
 # 50, 54, 76: the first of them moves to 40), and a 5th round (England's
 # own version, 17 clubs) keeps 44. Never a European or national-team day
@@ -4823,8 +4864,8 @@ def plan_real_names(f, img, adopted=()):
     return [], ["note: real-names: put the names in %s" % MES_FILE]
 
 
-# own-stadium: my club's stadium takes my name, "<name> Stadium", in place
-# of the city's (LMASTER full and max, Nexxus's choice, 2026-10-30).
+# own-stadium: your club's stadium takes your name, "<name> Stadium", in
+# place of the city's (LMASTER full and max, Nexxus's choice, 2026-10-30).
 # Msg::VarBuf_MakeMyStadium (SLES 0x11eaf8) builds the stadium name,
 # variable slot 9, which category 10's message 11001 shows, as
 # snprintf("%s %s", slot 3, the word "Stadium"); slot 3 is the city. Slot
@@ -4978,9 +5019,10 @@ def plan_modern_font(f, img, adopted=()):
 
 
 # title-banner: a banner on the title screen that names the LMASTER Mod, its
-# version and its edition (every edition; titlebanner.py, DOC/LMASTER_MOD.md
-# #title-banner). It is drawn with the face of modern-font, so it needs the
-# same file (--font) and an edition without one leaves it out. The version
+# version and its edition (every edition; titlebanner.py,
+# DOC/LMASTER_MOD.md#title-banner). It is drawn with the face of
+# modern-font, so it needs the same file (--font) and an edition without
+# one leaves it out. The version
 # is --version, else the VERSION file of a LMASTER-Mod clone beside this
 # repository. European languages only, like modern-font.
 TITLE_PACKS = ["CSE/SC_TITLEBG%d.CSP" % n for n in range(1, 7)]
@@ -5440,10 +5482,11 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
 HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards", "random-sponsors")
 
 # One switch per feature: parts that need each other are one switch
-# (DOC/LMASTER_MOD.md, the switch levels). Switches that need another switch, that
-# write whole files (file_<switch>(f, img, dat) -> [(target, data)]),
-# whose files have PRELOAD copies the game loads instead (--copies), that
-# turn on others (a bigger save needs saves of its own), and old names.
+# (DOC/LMASTER_MOD.md#the-switch-levels). The tables below list the
+# switches that need another switch (none now), that write whole files
+# (file_<switch>(f, img, dat) -> [(target, data)]), whose files have
+# PRELOAD copies the game loads instead (--copies), that turn on others
+# (a bigger save needs saves of its own), and old names.
 SWITCH_NEEDS = {}
 SWITCH_FILES = {"third-tier": file_third_tier, "real-names": file_real_names,
                 "realism": file_realism, "modern-font": file_modern_font,

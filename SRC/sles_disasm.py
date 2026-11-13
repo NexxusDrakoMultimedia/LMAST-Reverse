@@ -42,6 +42,10 @@ from snr2 import name_hash  # noqa: E402
 
 
 class Elf:
+    """A loaded ELF image: self.data is the whole file, self.segments the
+    PT_LOAD (address, file offset, size) triples that v2f / f2v convert
+    between, and self.sections {name: (address, size)}."""
+
     def __init__(self, path):
         with open(path, "rb") as f:
             self.data = f.read()
@@ -84,7 +88,9 @@ class Elf:
 
 
 def recover_symbols(elf):
-    """Return {name: address} from the .sndata export table."""
+    """Return {name: address} from the .sndata export table. An entry is
+    a pointer into .sndata at the first character of a printable string
+    (the byte before it is NUL), followed by a word-aligned .text address."""
     d = elf.data
     sn_lo, sn_size = elf.sections[".sndata"]
     tx_lo, tx_size = elf.sections[".text"]
@@ -243,6 +249,11 @@ class _RawInsn:
 
 
 class Disassembler:
+    """Capstone MIPS64 disassembly of the executable. A jal or j target is
+    named from the recovered symbols. A relocated site (an overlay call or
+    a hi/lo pair) is named from `links` instead, since the file holds a
+    placeholder there."""
+
     def __init__(self, elf, syms, links=None):
         from capstone import Cs, CS_ARCH_MIPS, CS_MODE_MIPS64, CS_MODE_LITTLE_ENDIAN
         self.elf = elf
@@ -254,7 +265,9 @@ class Disassembler:
 
     def _insns(self, addr, count):
         """Decode one word at a time so an opcode capstone rejects doesn't
-        end the listing; EE lq/sq are decoded by hand, the rest shown as .word."""
+        end the listing. A rejected lq/sq is decoded by hand and any other
+        rejected word is shown as .word. (Capstone decodes some lq/sq as DSP
+        instructions instead, see the note at the top.)"""
         o = self.elf.v2f(addr)
         for k in range(count):
             a, w = addr + k * 4, self.elf.data[o + k * 4:o + k * 4 + 4]

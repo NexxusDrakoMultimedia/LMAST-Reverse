@@ -23,7 +23,7 @@ the detail screens' comment scripts (4, 5, 15-20) are ever run.
              below 200, and must be unique (ResolveLabel 0x1ffbf0). Jumps
              and branches take the label in argument 2, Call in argument 1.
 
-Two command sets run these scripts, each a COMMAND_INFO array of 5 tables
+Three command sets run these scripts, each a COMMAND_INFO array of 5 tables
 {u32 *argc, fn *cb, u32 count, u32 0}:
 
   root  Seq_fc_euro::pCommandInfoTbl 0x5668b0, registered at 0x10e750:
@@ -32,15 +32,18 @@ Two command sets run these scripts, each a COMMAND_INFO array of 5 tables
         by id from SqbFilename.tbb (0x14a220).
   pwk   Param::PwkScript, 0x552df0 (SetCommandTable 0x256e00): 0 Base,
         1-3 empty, 4 Param (30). Runs the PARAM/PSC*.PAC scripts.
+  combi GAMEPRG.REL's set for GAME/COMBINATION2.CSB (table 4, 29
+        commands; COMBI below). The game builds it at GAMEPRG.REL 0x29fc90.
 
-`info` decodes every SQB1 table of every .SQB file and every .sqb entry of a
-BINPAC pack under the given paths, with the set that fits, and checks each
-command, argument type, memory index and label. A script that decodes under
-neither set is a problem (`!!`); so is a missing or repeated label.
+`info` decodes every SQB1 table of every .SQB file, every .sqb entry of a
+BINPAC pack and every script of a .CSB under the given paths, with the set
+that fits, and checks each command, argument type, memory index and label.
+A script that decodes under none of the sets is a problem (`!!`); so is a
+missing or repeated label.
 
 Usage:
     python sqb.py info    <file | dir> ...        # check every script
-    python sqb.py dis     <file.SQB | pack.PAC#entry.sqb | file.CSB#n> [root|pwk|combi]
+    python sqb.py dis     <file.SQB | pack.PAC#entry.sqb | file.CSB#n> [root|pwk|combi]  # default: the set that fits
     python sqb.py tables  <pack.PAC#entry.sqb>    # a PwkScript's SQT1 data tables
     python sqb.py names   <SQBFILENAME.TBB>       # script id -> file
     python sqb.py globals <GLOBALMEMORY.TBB>      # {type, value, min, max}

@@ -25,10 +25,11 @@ their rows of cycle c (1-4) going to table c - 1 and a second-year turn
 to the next table; every match turn lies between a call-up and its
 release (both may be on the match turn); only the finals years (tables 1
 and 3, Euro and World) hold the finals flag, and there it is on the
-call-up and the release too. `info` checks all four, the first against
-SCHEDULE_SYSTEM.PAC in the same folder. The
-match flag follows the schedule, so `set` leaves it alone: `patch_disc.py
---mod national-cups` moves the cups and the calendar together.
+call-up and the release too. `info` checks all four tables, and checks
+the match flags against SCHEDULE_SYSTEM.PAC when it is in the same
+folder. The match flag follows the schedule, so `set` leaves it alone:
+`patch_disc.py --mod national-cups` moves the cups and the calendar
+together.
 
 The game also reads the copies in PRELOAD/SIMLOCALMEM0-6.PAC (entry 31);
 patch_disc.py's --copies updates them. See

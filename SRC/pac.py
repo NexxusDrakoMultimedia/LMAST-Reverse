@@ -35,8 +35,8 @@ start on 0x800-byte sectors with zero padding, as CLoader::loadFaceRequest
 (0x1192a0) reads them.
 
 The PRS writer is greedy LZ77 in the format stPrsInf::Extract (0x1ff570)
-reads; it gives other bytes than Sega's packer (101% of its size over the
-disc's 5,496 PRSH entries), so `prscheck` compares the expanded data.
+reads; it gives other bytes than Sega's packer (101.3% of its size over
+the disc's 5,496 PRSH entries), so `prscheck` compares the expanded data.
 """
 import os
 import struct
@@ -321,7 +321,7 @@ class KcAtP:
 
 
 KCAP_SECTOR = 0x800     # CLoader::loadFaceRequest (0x1192a0) reads sectors: start >> 11,
-                        # (end - start) >> 11; every entry starts on one (empirical, all 5)
+                        # (end - start) >> 11; every entry starts on one (empirical, all 6 headers)
 
 
 def kcap_payload(slot):

@@ -13,9 +13,16 @@ TBB1 tables (see DOC/SCHEDULE_FORMAT.md):
                             save-buffer type per UID.
   SCHEDULE_COMPETITION.PAC  164 entries, one per UID: a 16-byte header, the
                             games (4 bytes each) and the pairings.
+                            A game's bits 8-9 (Game.flag) are only ever 0 or 1:
+                            set on every day of 111 UIDs, on none of 13 and on
+                            some days of 40 (DOC/SCHEDULE_FORMAT.md). What they
+                            do is not known.
   SCHEDULE_TEAM_ENTRY.PAC   164 entries: where each entrant slot's team
                             comes from (last season's rank, a current table
                             position, a random pick from a list, a fixed team).
+                            Header bytes 0-1 are {UID, 0} in all 164
+                            entries of both releases; whether the game reads
+                            them is not known.
 
 Confirmed from SLES_541.51: ScheEuro_SubCtrl::initYearScheduleData
 (0x20a008), getYearSchedule (0x20a170), get_open_turn (0x209968),
@@ -29,7 +36,8 @@ ScheduleControllerBaseSystem::entryWinTeamTournament (0x2dcc80).
 
 `info` checks every entry against that layout and cross-checks the packs:
 each competition's game days against its UID's turn mask, and its entrant
-count against the team-entry slots.
+count against the team-entry slots. It also compares GROUP2COMPE.TBB with
+the year rows when that file is in the folder.
 
 Usage:
     python schedule.py info  <DAT/PARAM>            # check all three packs
@@ -60,8 +68,9 @@ each club alternates home and away, the second leg starts one round
 later than the first so rematches are far apart, and an odd size gets a
 rest day. With no size it checks every size, once and twice round, and
 compares each with the disc's own template of that size (`!!` on a
-generated league that breaks a rule). leaguesize.py build puts a league
-of a new size into the packs, with its turn mask and team-entry slots.
+generated league that breaks a rule), then shows what `balance` makes of
+the pack. leaguesize.py build puts a league of a new size into the packs,
+with its turn mask and team-entry slots.
 
 `knockout` builds cup brackets for 2-128 clubs (knockout_tables,
 set_knockout): each half of a bracket splits in two again, a half of odd
@@ -69,13 +78,13 @@ size (it holds a bye) goes to the outer side, and a tie is played as soon
 as both sides are known, one or two legs. The seeded layout
 (knockout_bracket_seeded, `seeded`) is the usual draw instead: byes in
 the first round only, for the top slots, and each round played together;
-patch_disc.py --mod third-tier builds the lower cups with it. A winner's link (table 3) names
-the pairing and side it goes to, which is what the game follows
-(entryWinTeamTournament 0x2dcc80); the pairing names it as slot entrants
-+ pairing. With no size it rebuilds every knockout on the disc from its
-shape (71 of 87 come out byte for byte; the rest are listed with how they
-differ) and checks every size in both layouts (`!!` on a generated
-bracket that breaks a rule).
+patch_disc.py --mod third-tier builds the lower cups with it. A winner's
+link (table 3) names the pairing and side it goes to, which is what the
+game follows (entryWinTeamTournament 0x2dcc80); the pairing names it as
+slot entrants + pairing. With no size it rebuilds every knockout on the
+disc from its shape (71 of 87 come out byte for byte; the rest are listed
+with how they differ) and checks every size in both layouts (`!!` on a
+generated bracket that breaks a rule).
 
 `turns` lists each league UID's game days and how many it could have:
 the free turns inside its season, where no game of its own, of its
@@ -225,7 +234,7 @@ class System:
 class Game:
     def __init__(self, w0, w1):
         self.day = w0 & 0xff
-        self.flag = (w0 >> 8) & 3       # unknown
+        self.flag = (w0 >> 8) & 3       # unknown; 0 or 1 on both discs
         self.round = (w0 >> 10) & 0xf   # 1 final, 2 semi, 3 quarter, 4 last 16, 0 other
         self.pair = w1 & 0x1ff
         self.swap = (w1 >> 9) & 3       # home = pair[swap], away = pair[1 - swap]
@@ -528,19 +537,19 @@ def knockout_bracket_seeded(n):
 
 def knockout_tables(n, legs=1, final_legs=None, labels="final", single=False, layout="disc"):
     """(pairings, next links, games) of a knockout of n entrant slots in the
-    layout of SCHEDULE_COMPETITION tables 1-3 (see the doc's knockout
-    tables). Pairings name entrant slots, or the winner of pairing p as
-    slot n + p. With layout "disc" (knockout_bracket) a tie is played as
-    soon as both sides are known; with "seeded" (knockout_bracket_seeded)
-    each round is played together, the first round's ties first and the
-    clubs with a bye from the second. A tie's legs are on consecutive game
-    days, the second with home and away swapped
-    (swap 1). Pairings are numbered by their first game day, then left to
-    right. A winner's link names the pairing and side it goes to; the
-    final's, and with `single` every first-round tie's (a round whose
-    winners go on to another UID), leave the competition: the pairing
-    count plus the order they leave in. `labels` sets Game.round: "all"
-    numbers the rounds from the final (1 final, 2 semi-finals, ...),
+    layout of SCHEDULE_COMPETITION tables 1-3 (see
+    DOC/SCHEDULE_FORMAT.md#building-a-knockout). Pairings name entrant
+    slots, or the winner of pairing p as slot n + p. With layout "disc"
+    (knockout_bracket) a tie is played as soon as both sides are known;
+    with "seeded" (knockout_bracket_seeded) each round is played together,
+    the first round's ties first and the clubs with a bye from the second.
+    A tie's legs are on consecutive game days, the second with home and
+    away swapped (swap 1). Pairings are numbered by their first game day,
+    then left to right. A winner's link names the pairing and side it goes
+    to; the final's, and with `single` every first-round tie's (a round
+    whose winners go on to another UID), leave the competition: the
+    pairing count plus the order they leave in. `labels` sets Game.round:
+    "all" numbers the rounds from the final (1 final, 2 semi-finals, ...),
     "final" marks the final only and "none" leaves every game 0."""
     if labels not in LABELS:
         raise ValueError("labels is one of %s" % ", ".join(LABELS))
@@ -625,10 +634,11 @@ def knockout_shape(c):
 
 def set_knockout(c, n, legs=1, final_legs=None, labels="final", single=False, layout="disc"):
     """Make Competition `c` a knockout of n entrants with knockout_tables'
-    pairings, next links and games (`layout` as there). The other header bytes are kept, and
-    so is game bit w0 8 for each game day the old entry had (it is the
-    same for every game of a day; new days get the last day's). Returns
-    the number of game days, which the UID's turn mask must match."""
+    pairings, next links and games (`layout` as there). The other header
+    bytes are kept, and so is game bit w0 8 for each game day the old
+    entry had (it is the same for every game of a day; new days get the
+    last day's). Returns the number of game days, which the UID's turn
+    mask must match."""
     if c.next is None:
         raise ValueError("UID is a league (3 tables); only a knockout can be rebuilt")
     flags = {g.day: g.flag for g in c.games}

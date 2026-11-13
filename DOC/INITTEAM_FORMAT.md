@@ -1,9 +1,10 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Starting leagues and squads
+# Starting clubs, squads, nations and stadiums
 
-Two tables in `DAT/PARAM` set up the clubs at the start of a career:
+The starting divisions and squads of a career come from two tables in
+`DAT/PARAM`:
 
 | File | What it sets up |
 |---|---|
@@ -12,8 +13,18 @@ Two tables in `DAT/PARAM` set up the clubs at the start of a career:
 
 Both are plain `TBB1` files ([`TBB_FORMAT.md`](TBB_FORMAT.md)). Which code
 loads them is in [`PARAM_DIR.md`](PARAM_DIR.md#how-the-files-are-loaded)
-(`ePLRSRC` 4 and 3). `SRC/initteam.py` reads both, and gives clubs their
-names from `MES.PAC`.
+(`ePLRSRC` 4 and 3). Four more tables describe the clubs and their
+world, and are covered below: the club records (`PLRESOURCESIM.PAC`
+entry 3), the nations (`INITNATIDATA.TBB`), the stadiums
+(`STADIUM_DATA.TBB`) and `MAPTEAM_LIST.TBB`. The club the player starts
+is in [`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md).
+
+`SRC/initteam.py` reads and writes all of them, and gives clubs their
+names from `MES.PAC`. `python SRC/initteam.py info DAT/PARAM` checks
+them. On the Japanese release `PLRRSRC_INITTEAMDATA.TBB`,
+`INITNATIDATA.TBB`, `STADIUM_DATA.TBB` and `MAPTEAM_LIST.TBB` are byte
+for byte the PAL files; `OTEAMMEMBER.TBB` and `PLRESOURCESIM.PAC` differ
+([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)).
 
 ## Confirmed from the game code
 
@@ -90,14 +101,10 @@ the sign is **not traced**.
 tables 0 and 1. Each club takes the other's place in the starting
 divisions and in last season's results. The first season is built from
 those results: the league schedules fill their slots from `LAST_RANK`
-records (in England UID 0 keeps ranks 1–17 of competition 0 and takes
-the second division's top two and the winner of competition 2, the
-3rd–6th promotion playoffs; UIDs 1 and 2 take ranks 18–20 of
-competition 0, the playoff losers and the rest of the second division,
-[`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#what-decides-the-first-seasons-leagues)),
-and the cups take their entrants the same way. So a swapped club starts
-in the other's division and inherits its promotion, relegation and cup
-places.
+records, and the cups take their entrants the same way
+([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#what-decides-the-first-seasons-leagues)
+works through England). So a swapped club starts in the other's
+division and inherits its promotion, relegation and cup places.
 
 What a swap keeps, and why:
 
@@ -110,7 +117,8 @@ What a swap keeps, and why:
 - **Only league clubs.** Both clubs must be in table 0 (teams 3–244).
   Clubs from the rest of Europe and beyond (245 on) have squads and club
   records but no place in the emblem screens' league lists and no
-  `MAPTEAM_LIST` row; whether one can play in a league isn't tested.
+  `MAPTEAM_LIST` row; whether one can play in a league is under
+  [Still unknown](#still-unknown).
 - **Not touched:** table 2, `MAPTEAM_LIST.TBB` (its reader isn't known),
   the club records (city, stadium, manager) and the schedules, none of
   which names a league club: their `PLTEAMID` records name only team 1
@@ -182,7 +190,8 @@ The names go on past 441 to 542 (`Australia`, `New Zealand`). Those teams
 have no squad in this file.
 
 **Extended by `--mod third-tier`.** The table may also hold 18 more
-squads after club 441, for clubs 442–459 (457 squads, 182,848 bytes);
+squads after club 441, for clubs 442–459 (457 squads, 182,800 bytes of
+table; the file grows from 175,648 to 182,848 bytes);
 `initteam.py` reads either size. `initteam.add_tier_squads` builds them
 from the database (each club's 25 players from `0x63f7`), as the
 LMASTER third tier needs
@@ -268,7 +277,9 @@ of save block 5 at `0x4663c`, and `+4` into bytes at `0x4670c`.
 `plTeam_GetCapacityFromID` (`0x22ae18`, `0x22adc8`, `0x22ae68`).** 119
 records of 3 bytes: roof (0/1, 52 have one), stadium level (0–4), and
 capacity in thousands. `GetCapacityFromID` adds 500 seats for stadiums
-103, 105 and 107. Capacities run from 8,000 to 110,000.
+103, 105 and 107. Capacities run from 8,000 to 110,000. The LMASTER
+Mod's `real-grounds` switch rewrites ids 102–118 and each club's stadium
+id ([`LMASTER_MOD.md`](LMASTER_MOD.md#stadiums)).
 
 ## `MAPTEAM_LIST.TBB`
 
@@ -281,23 +292,38 @@ starting divisions (`PLRRSRC_INITTEAMDATA` table 0, which has the
 2005: Sunderland, West Ham and Wigan in, Crystal Palace, Norwich and
 Southampton out, and likewise in the other five leagues.
 
-`initteam.py teams`, `nations` and `stadiums` list all of this, `info`
-checks it, and `setteam` edits a club record into a same-size copy of
-`PLRESOURCESIM.PAC`. `setnation` and `setstadium` edit the two tables
-above, field by field, into same-size copies:
+## Editing
+
+`initteam.py` edits these files into same-size copies that
+`patch_disc.py` puts on the disc:
 
 ```bash
-python SRC/initteam.py setnation DAT/PARAM/INITNATIDATA.TBB out.TBB 3 uefa_rank=1 uefa_points=500 60 world=99
-python SRC/initteam.py setstadium DAT/PARAM/STADIUM_DATA.TBB out.TBB 5 roof=1 level=4 capacity=90
+python SRC/initteam.py set DAT/PARAM/OTEAMMEMBER.TBB out/OTEAMMEMBER.TBB 7:1 age=15   # team 7, slot 1: Terry
+python SRC/initteam.py setteam DAT/PARAM/PLRESOURCESIM.PAC out/PLRESOURCESIM.PAC 7 stadium=100
+python SRC/initteam.py swap DAT/PARAM/PLRRSRC_INITTEAMDATA.TBB out/PLRRSRC_INITTEAMDATA.TBB 7:41
+python SRC/initteam.py setnation DAT/PARAM/INITNATIDATA.TBB out/INITNATIDATA.TBB 3 uefa_rank=1 uefa_points=500 60 world=99
+python SRC/initteam.py setstadium DAT/PARAM/STADIUM_DATA.TBB out/STADIUM_DATA.TBB 5 roof=1 level=4 capacity=90
 ```
 
-`setnation` refuses the UEFA fields for nations 53–145, which the game
-doesn't read, and keeps each row's two pad bytes. `setstadium` takes a
-roof of 0 or 1, a level of 0–4 (the range on the disc) and a capacity
-in thousands (0–255). `roundtrip` rebuilds both files through the same
-encoders; both equal the originals byte for byte, on both releases.
-The editor's Nations & stadiums tab makes the same edits and logs
-them as `setnation` and `setstadium` commands. Neither edit has been
+Shirt numbers are limited to 1–99, the range `pwkTeam_SetUnumberOpinfo`
+keeps. `setnation` refuses the UEFA fields for nations 53–145, which the
+game doesn't read, and keeps each row's two pad bytes. `setstadium`
+takes a roof of 0 or 1, a level of 0–4 (the range on the disc) and a
+capacity in thousands (0–255).
+
+Every command writes through the same encoders that `roundtrip` checks:
+all 10,975 squad slots, 457 club records, the starting divisions and
+past records, the 145 nation rows and the 119 stadium rows re-encode,
+and the five files rebuild byte for byte (on both releases). Changing a
+division's size needs new schedules: `leaguesize.py build`
+([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#where-the-clubs-come-from)).
+
+The editor's Clubs tab edits the club records and squads, refusing a
+player already in another squad, a repeated shirt number and a manager
+who already has a club. Its Season tab swaps clubs and changes first
+division sizes. Its Nations & stadiums tab makes the `setnation` and
+`setstadium` edits and logs them as those commands. All save through
+these functions. Neither the nation nor the stadium edit has been
 checked in the game.
 
 ## Still unknown
@@ -307,6 +333,8 @@ checked in the game.
   ages (a PCSX2 test in [`TESTING.md`](../TESTING.md)).
 - Club-record bytes `0x0b`, `0x0c`, `0x0d` and `0x0f`.
 - What reads `MAPTEAM_LIST.TBB`, and what its flag is for.
+- Whether a club from outside the six leagues (teams 245 on) can play in
+  a league. `swap` refuses them, and none is tested.
 
 ## Checking the claims
 
@@ -318,33 +346,10 @@ python SRC/initteam.py squads DAT/PARAM 7      # one squad
 python SRC/initteam.py teams DAT/PARAM 7       # a club record, with names
 python SRC/initteam.py nations DAT/PARAM
 python SRC/initteam.py stadiums DAT/PARAM
-python SRC/initteam.py roundtrip DAT/PARAM     # every squad slot and club record re-encodes
+python SRC/initteam.py roundtrip DAT/PARAM     # every squad slot, club record, nation and stadium re-encodes
 python SRC/sles_disasm.py ISO/SLES_541.51 dis plOteam_ pwkOteam_Init2 plTeam_IsAgreeTransferChangeMoney
 python SRC/sles_disasm.py ISO/SLES_541.51 dis pwkRec_GetUefaNation pwkRec_GetWorldNation plTeam_GetCapacityFromID
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 253228 40
 python SRC/sles_disasm.py ISO/SLES_541.51 dis plLg_EntryTeamSetToDiv UpdateConyear pwkTeam_SetUnumberOpinfo
 python SRC/sles_disasm.py ISO/SLES_541.51 dis GetString__3MsgQ23Msg5eTYPEUib GlobalMsgSetup
 ```
-
-## Writing
-
-`initteam.py` edits all three files into same-size copies that
-`patch_disc.py` puts on the disc:
-
-```bash
-python SRC/initteam.py set DAT/PARAM/OTEAMMEMBER.TBB out/OTEAMMEMBER.TBB 7:1 age=15   # team 7, slot 1: Terry
-python SRC/initteam.py setteam DAT/PARAM/PLRESOURCESIM.PAC out/PLRESOURCESIM.PAC 7 stadium=100
-python SRC/initteam.py swap DAT/PARAM/PLRRSRC_INITTEAMDATA.TBB out/PLRRSRC_INITTEAMDATA.TBB 7:41
-```
-
-Shirt numbers are limited to 1–99, the range `pwkTeam_SetUnumberOpinfo`
-keeps. `set`, `setteam` and `swap` write through the same encoders that
-`roundtrip` checks (all 10,975 squad slots and 457 club records
-re-encode, and all three files rebuild byte for byte). Changing a
-division's size needs new schedules: `leaguesize.py build`
-([`SCHEDULE_FORMAT.md`](SCHEDULE_FORMAT.md#where-the-clubs-come-from)).
-
-The editor's Clubs tab edits the club records and squads, refusing a
-player already in another squad, a repeated shirt number and a manager
-who already has a club; its Season tab swaps clubs and changes first
-division sizes. Both save through these functions.

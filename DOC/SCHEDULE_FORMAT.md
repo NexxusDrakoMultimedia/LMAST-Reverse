@@ -4,8 +4,11 @@
 # Season schedule: `SCHEDULE_SYSTEM`, `SCHEDULE_COMPETITION`, `SCHEDULE_TEAM_ENTRY`
 
 The career calendar is built from three BINPAC packs in `DAT/PARAM`
-([`PARAM_DIR.md`](PARAM_DIR.md)). All their entries are `TBB1` files
-([`TBB_FORMAT.md`](TBB_FORMAT.md)):
+([`PARAM_DIR.md`](PARAM_DIR.md)). They say which competitions exist, on
+which turns of the year their games fall, which clubs enter each one and
+who plays whom. `SRC/schedule.py` reads and writes them, and
+`SRC/leaguesize.py` builds on it to change a division's size. All their
+entries are `TBB1` files ([`TBB_FORMAT.md`](TBB_FORMAT.md)):
 
 | Pack | Entries | Holds |
 |---|---|---|
@@ -14,16 +17,22 @@ The career calendar is built from three BINPAC packs in `DAT/PARAM`
 | `SCHEDULE_TEAM_ENTRY.PAC/.HED` | 164 | one per UID: where each entrant's team comes from |
 
 A **schedule UID** (0–163) is one run of games: a league division, a cup
-round, a group of a group stage. The game calls it `PLSCHE_GROUP`. Several
-UIDs belong to one **competition** (`PLSCHE_COMPE`, 0–71). For example, UIDs 1
-and 2 are both competition 1: one is used when it is the player's own
-league, the other when it isn't. Entry *n* of both 164-entry packs
-belongs to UID
-*n*, and `REGULATION.TBB` is indexed by the same number.
+round, a group of a group stage. The game calls it `PLSCHE_GROUP`.
+Several UIDs belong to one **competition** (`PLSCHE_COMPE`, 0–71). For
+example, UIDs 1 and 2 are both competition 1: one is used when it is the
+player's own league, the other when it isn't. Entry *n* of both
+164-entry packs belongs to UID *n*, and
+[`REGULATION.TBB`](REGULATION_FORMAT.md) is indexed by the same number.
+The LMASTER third tier adds UIDs 165–176
+([`UID_LIMITS.md`](UID_LIMITS.md#--mod-third-tier-the-tiers-seasons-phase-3));
+this doc describes the disc's 164.
 
 The layouts below are **confirmed** from the game code unless marked
 **empirical**. `python SRC/schedule.py info DAT/PARAM` checks all of it
-against the disc and reports one problem (UID 117, below).
+against the disc and reports one problem (UID 117, below). The Japanese
+release's three packs and their `.HED` files are byte for byte the PAL
+ones (checked with `cmp`), so everything here holds for both
+([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)).
 
 ## Competitions
 
@@ -167,7 +176,7 @@ national teams have all of June.
 | 1 | `open_nation.tbb` | 1 | 72 × 44 bytes: host nation of each competition |
 | 2 | `make_list.tbb` | 9 | team-list definitions |
 | 3 | `PeriodName.tbb` | 2 | round names (`initPeriodNameData` `0x209d90`). Not decoded |
-| 4 | `savectrl.tbb` | 1 | 164 × u8, one save-buffer type per UID (values 0, 1, 2) |
+| 4 | `savectrl.tbb` | 1 | 164 × u8, one save-buffer type per UID: type 0 for 62 UIDs, 1 for 36, 2 for 66 ([`UID_LIMITS.md`](UID_LIMITS.md#the-save-pools)) |
 
 ### `year_schedule_data` row (20 bytes)
 
@@ -246,9 +255,11 @@ fills the places past the pairings with `0xff`. On the disc `0x0A` is 2
 in the single-round UIDs, whose every winner leaves (UIDs 4, 58, 97,
 the 2-club friendlies, ...), and 3 in the other knockouts; `0x0F` is 1
 in UID 122 only, the one with a match for third place (two clubs leave,
-its final's winner and the third-place winner). `0x0B`–`0x0E` are 1, 1,
-1, 1 in the knockouts with two-legged ties and 0, 1, 0, 1 in the
-others (**empirical**).
+its final's winner and the third-place winner). UID 80, a single final,
+has `0x0A` 3 too: with one pairing both rules give 2 places.
+**Empirical:** `0x0B`–`0x0E` are 1, 1, 1, 1 in the 20 knockouts with
+two-legged ties, 0, 0, 0, 0 in the 19 one-game friendlies (UIDs 124–141
+and 148) and 0, 1, 0, 1 in the other 48.
 
 **Empirical:** a league has `n(n−1)/2` pairings and plays each twice or
 once. A knockout has `n − 1` pairings (fewer for a single round: UID 4 has
@@ -259,7 +270,7 @@ once. A knockout has `n − 1` pairings (fewer for a single round: UID 4 has
 | Bits | Meaning |
 |---|---|
 | `w0` 0–7 | game day. Days run 0 to *d* − 1 with no gaps |
-| `w0` 8–9 | unknown (0 or 1). **Empirical** (all 164 UIDs, both releases): the same for every game of one game day. 1 on every day of the cups, groups and VS leagues; in the domestic leagues on a few days only (UID 0: days 0, 18 and 35; UID 1: 11 of its 50 days, most of them midweek turns) |
+| `w0` 8–9 | unknown (only bit 8 is ever set, so 0 or 1). **Empirical** (all 164 UIDs, both releases): the same for every game of one game day. Set on every day of 111 UIDs and on no day of 13 (UIDs 50, 51, 117, 123 and the odd UIDs 125–141). On some days of 40: the 18 domestic divisions (UID 0: days 0, 18 and 35; UID 1: 11 of its 50 days, most of them midweek turns) and 22 cup and group UIDs (the promotion playoffs UIDs 3 and 31 have it on all but their last day) |
 | `w0` 10–13 | round (**empirical**): 1 final, 2 semi-final, 3 quarter-final, 4 last 16, 0 anything else |
 | `w1` 0–8 | pairing index |
 | `w1` 9–10 | home/away swap: home is `pair[swap]` |
@@ -303,11 +314,12 @@ isn't known.
 
 ## `SCHEDULE_TEAM_ENTRY.PAC` entry
 
-A TBB with 4 or 5 tables of 6-byte records. Table 0 is the header:
+A TBB with 4 or 5 tables of 6-byte records (all 164 on the disc have 5).
+Table 0 is the header:
 
 | Offset | Type | Meaning |
 |---|---|---|
-| `0x00` | u8[2] | unknown |
+| `0x00` | u8[2] | `{UID, 0}` (**empirical**: all 164 entries, both releases). Whether the game reads them isn't known |
 | `0x02` | u8 | `LAST_RANK` records used |
 | `0x03` | u8 | `LIST` records used |
 | `0x04` | u8 | `NOW_RANK` records (0 = skip the table) |
@@ -397,22 +409,19 @@ that changes size moves the entries after it, and the pack and its
 `.HED` must be written together; `patch_disc.py --copies` then updates
 the `STATIONFILE` copies.
 
-`python SRC/schedule.py shift <SCHEDULE_SYSTEM.PAC> <out.PAC> <delta>
-<uid>[-<uid>] ...`
-moves UIDs' game days by `delta` turns: the turn mask and the start turn.
-The end turn stays, a UID that runs across the year end is refused, and
-the start may not pass the first game day. The games are by game day, so
-`SCHEDULE_COMPETITION` doesn't change, and the year rows keep their size,
-so neither does the `.HED`. `patch_disc.py --mod national-cups` uses it
-([`LMASTER_MOD.md`](LMASTER_MOD.md)):
+`schedule.py shift` moves UIDs' game days by `delta` turns: the turn
+mask and the start turn. The end turn stays, a UID that runs across the
+year end is refused, and the start may not pass the first game day. The
+games are by game day, so `SCHEDULE_COMPETITION` doesn't change, and the
+year rows keep their size, so neither does the `.HED`.
+`patch_disc.py --mod national-cups` uses it ([`LMASTER_MOD.md`](LMASTER_MOD.md)):
 
 ```bash
+python SRC/schedule.py shift <SCHEDULE_SYSTEM.PAC> <out.PAC> <delta> <uid>[-<uid>] ...
 python SRC/schedule.py shift DAT/PARAM/SCHEDULE_SYSTEM.PAC out/SCHEDULE_SYSTEM.PAC -1 98-102 114-122
 ```
 
-`python SRC/schedule.py balance <SCHEDULE_COMPETITION.PAC> <out.PAC>
-[<uid> ...]`
-rebuilds the badly balanced league templates
+`schedule.py balance` rebuilds the badly balanced league templates
 ([below](#building-a-league-of-another-size)) with `set_league` at their
 own size: by default UIDs 1, 11, 30, 40, 48, 154 and 155, the ones with
 more than two games running at one venue. The entrants, game days and
@@ -425,6 +434,7 @@ pack. On both releases it changes exactly those seven entries, and
 league-balance` uses it ([`LMASTER_MOD.md`](LMASTER_MOD.md#improvements)):
 
 ```bash
+python SRC/schedule.py balance <SCHEDULE_COMPETITION.PAC> <out.PAC> [<uid> ...]
 python SRC/schedule.py balance DAT/PARAM/SCHEDULE_COMPETITION.PAC out/SCHEDULE_COMPETITION.PAC
 ```
 
@@ -443,7 +453,8 @@ and a double round robin uses 2(*n* − 1) days. The second half repeats
 the first half's days in the same order with home and away swapped (day
 19 of the 20-club league is day 0 reversed). Pairings are listed in the
 order they are first played, each as (home, away) of its first game,
-and return games have swap 1. The 5-club groups (UIDs 87–112) are
+and return games have swap 1. The 5-club groups (UIDs 87–96 and
+103–112, the groups of the two national cups' "Primary" rounds) are
 irregular: some clubs play twice on one day.
 
 The templates differ a lot in how well home and away games alternate:
@@ -483,24 +494,14 @@ entry encodes and re-reads with no problems; a 22-club UID 0 grows from
 2,000 to 2,416 bytes, which moves the entries after it (see
 [Writing](#writing)).
 
-`python SRC/leaguesize.py build` puts it all together (below). Still
-open:
-
-- Memory: each loaded UID takes its games, entrants and table rows from
-  shared save-buffer pools, one per `savectrl` type (sizes and use in
-  [`UID_LIMITS.md`](UID_LIMITS.md#the-save-pools); `alloc_save_buffer`
-  `0x2097e8`). The big leagues are all type 0, whose 5,824 games hold a
-  normal season's 5,300 or so, but when a schedule's slots are freed
-  isn't traced. The 22-club test below saved and reloaded without
-  trouble, which doesn't rule out a limit for bigger changes.
-- Promotion and relegation into the second season are tested for
-  England at 22 clubs only (below). Other nations and sizes are checked
-  by `build` but not in game.
-- The club ranking: the game skips a division whose size has no row in
-  `CLUB_RANK_SYSTEM.TBB` (**confirmed**), so `build` adds the rows a
-  resized league needs, England at 22 six of them
-  ([`PARAM_DIR.md`](PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables)).
-  That a resized league is then ranked isn't checked in game.
+`python SRC/leaguesize.py build` puts it all together
+([below](#where-the-clubs-come-from)). It also adds the club ranking's
+rows: the game skips a division whose size has no row in
+`CLUB_RANK_SYSTEM.TBB` (**confirmed**), so a resized league needs them,
+England at 22 six of them
+([`PARAM_DIR.md`](PARAM_DIR.md#club_rank_systemtbb-the-club-rankings-tables)).
+What a bigger league might still break is under
+[Still unknown](#still-unknown).
 
 ### Where the clubs come from
 
@@ -587,9 +588,8 @@ Netherlands, where both versions run out of days at 15. Empirical:
 `build` writes and checks every nation at both ends and all six at
 their largest in one go. The free turns are counted on the disc's
 calendar; a mod that already moved a league's game days gets a range
-from its own files. The national teams' dates are never used (Nexxus's
-choice, 2026-11-12): the squads are called up and released on them, and
-the disc's leagues never play then.
+from its own files. The national teams' dates stay closed (Nexxus's
+choice, 2026-11-12; [why](#game-days-for-a-league-of-another-size)).
 
 **Tested in PCSX2** (Nexxus's report): England's first division at 22
 clubs (`leaguesize.py build`, patched with `--copies` and
@@ -668,8 +668,8 @@ and on each the squads are called up and released on the match turn
 itself (flags 1+4+8 in
 [`SCHEDULE_LIST.TBB`](PARAM_DIR.md#schedule_listtbb-the-national-team-calendar)).
 The tools never put a league game there: the calls are kept apart on
-purpose (Nexxus's choice, 2026-11-12; an option to open them was built
-and removed before it was ever played in the game). Starting the
+purpose (Nexxus's choice, 2026-11-12; an option to open them was
+built and removed before it was ever played in the game). Starting the
 season earlier or ending it later gains nothing safe: July weeks 1–3
 hold the European qualifiers and the runtime cups, and late May the
 playoffs and the European finals.
@@ -720,9 +720,9 @@ both releases. The others:
 
 | UIDs | Differs in | Why |
 |---|---|---|
-| 17, 37, 46 (the 10-club French, Italian and Spanish Club Cups, own-nation) | pairings | the disc's placeholders for four winners disagree with their links ([table 3](#table-3-next-pairing-knockout-only-2-bytes-each)); the builder writes the bracket the links play |
+| 17, 37, 46 (the 10-club French Club Cup's own-nation version and the Italian and Spanish Club Cups' other-nations versions) | pairings | the disc's placeholders for four winners disagree with their links ([table 3](#table-3-next-pairing-knockout-only-2-bytes-each)); the builder writes the bracket the links play |
 | 122 (16 clubs) | everything | a match for third place, which the builder doesn't make |
-| 130–141 (runtime friendlies) | the game | their one game has home and away swapped, alternately with UIDs 124–129 |
+| 130–141 (runtime friendlies) | the game | their one game has home and away swapped against UIDs 124–129 (swap 1) |
 
 It also builds and checks every size from 2 to 128, one leg and two
 (each slot named once, each link back to its winner, no tie before its
@@ -762,25 +762,36 @@ nation's lower cup by its tier's clubs
 
 ## Still unknown
 
-- What game bit `w0` 8 selects (a per-day mark, set on every cup day;
-  `set_league` writes 0, so a league `leaguesize.py build` resizes loses
-  its marked days), bit 9, header bytes `0x0B`–`0x0E`, and the first two
-  team-entry header bytes.
+- What game bit `w0` 8 selects (a per-day mark; `set_league` writes 0,
+  so a league `leaguesize.py build` resizes loses its marked days), what
+  bit 9 would do (it is never set), what header bytes `0x0B`–`0x0E` of a
+  competition entry mean, and whether the game reads the first two bytes
+  of a team-entry header.
 - `PeriodName.tbb`, and the `make_list` source functions and tables
   1–8. (The `savectrl` values are the save pools' types,
   [`UID_LIMITS.md`](UID_LIMITS.md#the-save-pools).)
+- Which code greys an Information-menu entry, and when the game unloads
+  a finished schedule. The names of message category 100011 (`European
+  League Group A`, ...) aren't matched to UIDs.
 - Whether the save-buffer pools have room for bigger leagues than the
-  ones tested ([Building a league of another
-  size](#building-a-league-of-another-size)),
-  and how other nations' and sizes' promotion and relegation play out in
-  game (only England at 22 is tested). What the game does with UID 117's
-  extra game days.
+  ones tested. Each loaded UID takes its games, entrants and table rows
+  from shared pools, one per `savectrl` type (`alloc_save_buffer`
+  `0x2097e8`). The big leagues are all type 0, whose 5,824 games hold a
+  normal season's 5,300 or so, but when a schedule's slots are freed
+  isn't traced. The 22-club test saved and reloaded without trouble,
+  which doesn't rule out a limit for bigger changes.
+- How promotion and relegation into the second season play out for
+  other nations and sizes: only England at 22 clubs is tested, the rest
+  is checked by `build` alone. Likewise whether the club ranking ranks a
+  resized league.
+- What the game does with UID 117's extra game days.
 
 ## Checking the claims
 
 ```bash
-python SRC/schedule.py info  DAT/PARAM        # every entry; reports UID 117
+python SRC/schedule.py info  DAT/PARAM        # every entry and the cross-checks; reports UID 117
 python SRC/schedule.py year  DAT/PARAM        # the 184 year_schedule_data rows
+python SRC/schedule.py roundtrip DAT/PARAM    # all 333 entries and three packs re-encode byte for byte
 python SRC/schedule.py compe DAT/PARAM 6      # a 32-team knockout: games, pairings, links
 python SRC/schedule.py entry DAT/PARAM 6      # where its 32 teams come from
 python SRC/schedule.py league DAT/PARAM       # generated leagues of 2-32 clubs beside the disc's, and what balance rebuilds
@@ -788,6 +799,18 @@ python SRC/schedule.py knockout DAT/PARAM     # the disc's knockouts rebuilt by 
 python SRC/schedule.py knockout DAT/PARAM 10  # one generated 10-club bracket, day by day
 python SRC/schedule.py turns  DAT/PARAM       # each domestic league's game days and room for more
 python SRC/schedule.py turns  DAT/PARAM 0 42  # the English first division's season with 42 game days
+python SRC/leaguesize.py nations DAT/PARAM         # each nation's divisions with their k and m
 python SRC/leaguesize.py plan DAT/PARAM England 22  # a bigger English first division: slots and checks
 python SRC/sles_disasm.py ISO/SLES_541.51 dis Sche_Block_decode_main2 makeTeamEntryIDList
 ```
+
+`info` checks each competition's game days against its UID's turn mask
+and its entrant count against the team-entry slots. When
+`GROUP2COMPE.TBB` is in the folder it also compares that file with the
+year rows: entry n is UID n-1's competition, a group stage gets the one
+before, entry 0 is 0 and the last entry is 72.
+
+`league` with no size, after the generated leagues, prints an in-memory
+`balance` report for the seven UNBALANCED UIDs (the longest run and the
+number of breaks before and after) and marks `!!` any other entry the
+rebuild changes.

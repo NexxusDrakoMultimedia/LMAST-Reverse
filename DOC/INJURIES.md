@@ -1,11 +1,17 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Copyright (C) 2026 Nexxus Drako Multimedia -->
 
-# Injuries
+# Injuries: kinds, lengths and the condition line
 
-How a player gets injured, how long it lasts, and what the condition line
-says about it. The game calls an injury *kega* (怪我). A player's injury is
-stored in his `PlPinfo` record (see [`SAVE_FORMAT.md`](SAVE_FORMAT.md)):
+How a player gets injured, how long it lasts, how a heavy injury heals
+into a light one, and what the condition line under a player's bars
+says. The game calls an injury *kega* (怪我). The code is in
+`SLES_541.51` and `SIMPRG.REL`, and there is no tool of its own: the
+[checking commands](#checking-the-claims) read the tables straight from
+the executable and the messages from `MES.PAC`.
+
+A player's injury is stored in his `PlPinfo` record (see
+[`SAVE_FORMAT.md`](SAVE_FORMAT.md)):
 
 | Offset | Type | Meaning |
 |---|---|---|
@@ -32,7 +38,9 @@ by age. A rested player almost never gets one:
   39% at fatigue 1000. Ages 30–34 count as 50 more fatigue, ages 35 and
   over as 100 more.
 - Fatigue of 700 or more already shows "Seriously fatigued" on the
-  condition line, so most players who could get a long injury are resting.
+  condition line (the order of the lines is in
+  [`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)), so most players
+  who could get a long injury are resting.
 
 The condition line counts down as the player recovers. A "six months"
 injury later shows "three months" and then a light-injury message.
@@ -107,9 +115,8 @@ were; a heavy match injury is then six months or longer this often:
 | `injury-odds` | 5 | 5 | 5 | 10 | 22 | 30 | 38 | 40 | 46 | 62 | 78 |
 
 The practice column becomes 2, 2, 2, 2, 8, 12, 20, 30, 44, 58, 62.
-`python -c "import sys; sys.path.insert(0, 'SRC'); import patch_disc as
-p; print(p.injury_odds(open('ISO/SLES_541.51', 'rb').read()))"`
-prints both tables before and after. Not checked in the game.
+The command in [Checking the claims](#checking-the-claims) prints both
+tables before and after. Not checked in the game.
 
 **Row 11 is out of bounds.** Fatigue 1000 with an age of 35 or more gives
 row 11, which neither table has. The game then reads the next bytes: for
@@ -145,8 +152,9 @@ more at full fatigue.
 | 7 | 25000–28500, 31000–36000 | two years |
 | 8 | `0xffff` (not from the table) | can't recover |
 
-Every kind starts where the one before ends, except kind 6. Its first
-pair starts at 1600 where 16001 would fit, so a kind-6 injury can be as
+Kinds 4 and 5 each start one above where the kind before ends (6,001
+and 10,001), and kind 5 ends at 16,000, so kind 6 should start at
+16,001. Its first pair starts at 1600, so a kind-6 injury can be as
 short as a light one. It looks like a dropped digit (**empirical**: a
 reading of the table, not proven). **Confirmed** how the table is used:
 `calcKegav` (`0x21a120`) picks one of the kind's pairs at random and
@@ -178,8 +186,9 @@ the Japanese build's `plPinfo_KegaRecoverDaysChno` (SLPM_663.16
 `0x217618`) is the same code (**confirmed**, see
 [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)). In PAL French, German,
 Italian and Spanish both lines read "See Let's Make revised text 0425".
-In Japanese, message 4 is a *light* injury of two months
-(全治約2ヶ月の軽傷), which no light kind lasts long enough to be. English
+In Japanese, messages 4 and 7 are real text: a light injury of two
+months, which no light kind lasts long enough to be, and a heavy one of
+nine months ([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)). English
 kept text for both.
 
 The Japanese build's kind and value tables (`0x52e998`, `0x52ea00`,
@@ -244,11 +253,15 @@ injury in the right range on the Squad screen.
   how long "two months" shows before a healing kind-3 injury turns
   light.
 
-## Checking
+## Checking the claims
 
 ```bash
 python SRC/sles_disasm.py ISO/SLES_541.51 dis judgeKegaKind calcKegav plPinfo_KegaRecoverDaysChno
 python SRC/sles_disasm.py ISO/SLES_541.51 dis plPinfo_CheckKega__
 python SRC/snr2.py dis ISO/DLL/SIMPRG.REL 0x163638 60 --sles ISO/SLES_541.51
 python SRC/mbb.py dump DAT/MESSAGE/MES.PAC --lang 1 --cat 200
+python -c "import sys; sys.path.insert(0, 'SRC'); import patch_disc as p; d = open('ISO/SLES_541.51', 'rb').read(); print(p.injury_odds({a: d[a - p.EXE_BASE:a - p.EXE_BASE + 99] for a in p.INJURY_TABLES}))"
 ```
+
+The last command prints `(address, retail bytes, injury-odds bytes)` for
+the practice and match kind tables, nine bytes a row.

@@ -27,12 +27,14 @@ File > Build disc (Ctrl+B) writes a modded disc image, an xdelta patch,
 or both, optionally with patch_disc.py's switches: a button per edition,
 a box per group that opens to its switches (patch_disc.EDITIONS, GROUPS;
 DOC/LMASTER_MOD.md#the-switch-levels), named in the command at the
-highest levels that fit (patch_disc.mod_names). `patch_disc.py patch ...
+highest levels that fit (patch_disc.mod_names). Two more boxes give the
+folder of LMAST Realism's pictures (--realism) and the modern font's
+file (--font) for the switches that need them. `patch_disc.py patch ...
 --copies` puts the mod folder on a copy of the original, and `vcdiff.py
 make` compares the two. For a patch on its own that image is temporary
-(<patch>.building.iso, removed after). It shows their output and logs
-both commands. The original must be the Redump dump for a patch others
-can apply.
+(<patch>.building.iso, removed after). The dialog shows the output of
+both commands and logs them in editor.log. The original must be the
+Redump dump for a patch others can apply.
 
 Tabs:
     People   players, managers and scouts (pbdata.py; DOC/PBDATA_FORMAT.md).
@@ -127,9 +129,10 @@ Tabs:
              Columns the game doesn't read are shown, not edited.
     Camps    the training camps (CAMP_LIST.TBB, camp.py set;
              DOC/CAMP_FORMAT.md): each camp's town, description and the
-             clubs of its area, and its camp type, the one field edited,
-             with what that type trains (from the Training tab, as the
-             retail game reads it and with the LMASTER camp-types fix).
+             clubs of its area are shown; its camp type, level and
+             event-only flag are edited. What a type trains comes from
+             the Training tab, as the retail game reads it and with the
+             LMASTER camp-types fix.
     Tours    the clubs a tour can play, by region (TOUR_LIST.TBB, tour.py
              set; DOC/PARAM_DIR.md#tour_listtbb-tour-opponents-by-region):
              each pair's club and region, at most 40 clubs a region.
@@ -2175,12 +2178,12 @@ CAMP_LABELS = {"event_only": "event only", "unk0a": "+0x0a"}
 
 
 class CampsTab(Tab):
-    """The training camps (CAMP_LIST.TBB) through camp.set_field's checks
+    """The training camps (CAMP_LIST.TBB) through camp.edit_range's limits
     and camp.encode_file, as `camp.py set` does. The type, level and
-    event-only flag are edited (camp.edit_range); the rest, the clubs of
-    the camp's area and its description (CAMP_EXPLANE.TBB, message
-    category 570) are shown.
-    Names come from MES.PAC (cities, category 961; clubs, category 3)."""
+    event-only flag are edited; the rest, the clubs of the camp's area
+    and its description (CAMP_EXPLANE.TBB, message category 570), are
+    shown. Names come from MES.PAC (cities, category 961; clubs,
+    category 3)."""
     title = "Camps"
 
     def __init__(self, app):
@@ -6742,9 +6745,9 @@ class BuildDialog:
         self.switch_changed()
 
     def switch_changed(self):
-        """Tick what the chosen switches turn on (third-tier's saves), then
-        show each group's box as ticked, empty or partly ticked, and name
-        the edition the choice is."""
+        """Tick the switches the chosen ones imply (patch_disc.SWITCH_IMPLIES:
+        third-tier needs mod-saves), then show each group's box as ticked,
+        empty or partly ticked, and name the edition the choice is."""
         for name in patch_disc.implied(self.chosen()):
             self.switches[name].set(1)
         chosen = self.chosen()
