@@ -6569,6 +6569,12 @@ class BuildDialog:
         suggested = patch_disc.realism_folder(patch_disc.REALISM_SUGGESTED)
         self.realism = tk.StringVar(value=settings.get("realism_pack")
                                     or (shown_path(suggested) if suggested else ""))
+        # The modern font's face: the last one chosen, else where patch_disc
+        # finds it (patch_disc.font_found), which the box lets you change.
+        patch_disc.font_face = None
+        found = patch_disc.font_found()
+        self.font = tk.StringVar(value=settings.get("font_face")
+                                 or (shown_path(found) if found else ""))
         # patch_disc.py's switches by name, saved as e.g. "skip_tutorial".
         self.switches = {name: tk.IntVar(value=settings.get(name.replace("-", "_"), 0))
                          for name in patch_disc.SWITCH_NAMES}
@@ -6603,12 +6609,18 @@ class BuildDialog:
         ttk.Entry(form, textvariable=self.realism).grid(row=3, column=1, sticky="ew", pady=3)
         ttk.Button(form, text="Browse...", command=lambda: self.browse(self.realism, "folder")
                    ).grid(row=3, column=2, padx=(8, 0), pady=3)
+        # The face for --mod modern-font (Roboto Condensed; not part of this project).
+        ttk.Label(form, text="Font file (Roboto Condensed)").grid(row=4, column=0, sticky="w",
+                                                                 padx=(0, 8), pady=3)
+        ttk.Entry(form, textvariable=self.font).grid(row=4, column=1, sticky="ew", pady=3)
+        ttk.Button(form, text="Browse...", command=lambda: self.browse(self.font, "open")
+                   ).grid(row=4, column=2, padx=(8, 0), pady=3)
         # patch_disc.py's switch levels: an edition button ticks exactly its
         # groups (the test tools stay as they are), each group's box ticks
         # its switches, and the switches show under a group when it is
         # opened. The docstring and the docs say what each changes.
         editions = ttk.Frame(form)
-        editions.grid(row=3, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        editions.grid(row=5, column=0, columnspan=3, sticky="w", pady=(6, 0))
         for name, text, _ in patch_disc.EDITIONS:
             ttk.Button(editions, text=text, command=lambda e=name: self.choose_edition(e)
                        ).pack(side="left", padx=(0, 8))
@@ -6617,7 +6629,7 @@ class BuildDialog:
         self.edition = ttk.Label(editions)
         self.edition.pack(side="left", padx=(8, 0))
         tree = ttk.Frame(form)
-        tree.grid(row=4, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        tree.grid(row=6, column=0, columnspan=3, sticky="w", pady=(6, 0))
         text = {s[0]: s[3] for s in patch_disc.SWITCHES}
         in_edition = set(sum((g for _, _, g in patch_disc.EDITIONS), ()))
         self.groups = {}        # name -> (its box's IntVar, its box, its switches' frame)
@@ -6644,7 +6656,7 @@ class BuildDialog:
                              "for a patch others can apply. It is only read. A patch without "
                              "the image still needs room for a temporary one while it is made.",
                   foreground="#555", wraplength=900, justify="left"
-                  ).grid(row=5, column=0, columnspan=3, sticky="w", pady=(6, 0))
+                  ).grid(row=7, column=0, columnspan=3, sticky="w", pady=(6, 0))
         self.update_entries()
         self.switch_changed()
 
@@ -6694,6 +6706,7 @@ class BuildDialog:
             json.dump({"original": self.original.get(), "make_image": self.make_image.get(),
                        "output": self.output.get(), "make_patch": self.make_patch.get(),
                        "patch": self.patch.get(), "realism_pack": self.realism.get(),
+                       "font_face": self.font.get(),
                        **{name.replace("-", "_"): var.get()
                           for name, var in self.switches.items()}},
                       f,
@@ -6816,6 +6829,8 @@ class BuildDialog:
             cmd += ["--mod", ",".join(mods)]
         if "realism" in self.chosen() and self.realism.get():
             cmd += ["--realism", shown_path(self.realism.get())]
+        if "modern-font" in self.chosen() and self.font.get():
+            cmd += ["--font", shown_path(self.font.get())]
         out = [cmd]
         if self.make_patch.get():
             out.append(["vcdiff.py", "make", original, output, self.patch.get()])
@@ -6857,6 +6872,12 @@ class BuildDialog:
                     "Build disc", "Realism is ticked, but the LMAST Realism pack folder is not "
                     "set or has no replacements folder in it, so its pictures are left out."
                     "\n\nBuild anyway?", parent=self.win):
+                return False
+        if "modern-font" in self.chosen() and not os.path.isfile(self.font.get()):
+            if not messagebox.askyesno(
+                    "Build disc", "Modern font is ticked, but the font file is not set or "
+                    "does not exist, so the game keeps its own font.\n\nBuild anyway?",
+                    parent=self.win):
                 return False
         existing = [p for p in (output, self.patch.get() if self.make_patch.get() else "")
                     if p and os.path.exists(p)]

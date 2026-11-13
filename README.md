@@ -224,6 +224,8 @@ python SRC/pbdata.py set DAT/PARAM/PBDATA_EU.PAC out/PBDATA_EU.PAC 101 age=30 ab
 | [`texmap.py`](SRC/texmap.py) | the PCSX2 texture-replacement name (XXH3 hash of the data, palette hash, state) of every texture on the disc; `match` maps a texture pack such as LMAST Realism onto the disc textures it replaces, `apply` writes the matching pictures (and a transparent border on the licensed crests) into copies of the pack files | [`TEXMAP.md`](DOC/TEXMAP.md) |
 | [`csp.py`](SRC/csp.py) | `.CSP`/`.CSE` 2D screen layouts (sprites, node tree, animation); `replace` writes a same-size texture back into a pack, `roundtrip` rebuilds every pack | [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md) |
 | [`font.py`](SRC/font.py) | the fonts: the glyph rectangles, widths and character lists in the executable (European fonts) and the Japanese 2-byte code tables, checked against the `FONT_*.SVR` pictures; `dump` writes the glyph table as CSV, `png` draws the rectangles over a picture, `coverage` checks every message byte against font 0 | [`FONT_FORMAT.md`](DOC/FONT_FORMAT.md) |
+| [`titlebanner.py`](SRC/titlebanner.py) | the version banner on the title screen (`title-banner`): draws a navy and gold box naming the LMASTER Mod, its version and its edition in the title picture's own palette and splices it into the six `SC_TITLEBG<n>.CSP`; `preview` draws it on the logo, `info` checks that only the banner's rectangle changed | [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner) |
+| [`fontmod.py`](SRC/fontmod.py) | a modern face for the game's main font (`modern-font`): draws a TrueType face such as Roboto Condensed into `FONT_20_A` and rewrites font 0's 214 glyph records to the new rectangles and widths; `info` reads the result back through `font.py`'s checks, `preview` draws old and new side by side, `render` writes the picture and the records | [`FONT_FORMAT.md`](DOC/FONT_FORMAT.md), [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font) |
 | [`zbf.py`](SRC/zbf.py) | `.zbf` depth buffers for pre-rendered rooms | [`ZBF_FORMAT.md`](DOC/ZBF_FORMAT.md) |
 | [`ninja.py`](SRC/ninja.py) | Ninja models and motions `.SNJ`/`.SNO`/`.SNM`/`.SNP`/`.SNA`, loose and inside archives; OBJ export, animated glTF export | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) |
 
@@ -415,6 +417,8 @@ listed (`afs.py`, `bpb.py`, `chd.py`, `cvs.py`, `gamedata.py`,
 | `texmap.py` | `svr.py`, which opens every pack the textures sit in; `csp.py` and `pac.py` to write them back |
 | `csp.py` | `svr.py` for the textures inside CSP packs |
 | `font.py` | `svr.py` for the pictures, `sles_disasm.py` and `gamever.py` for the executable (either build); `coverage` also `mbb.py` for `MES.PAC` |
+| `titlebanner.py` | `csp.py` and `svr.py` for the title picture; Pillow and the same TrueType face as `fontmod.py`; `patch_disc.py` calls it for `title-banner` |
+| `fontmod.py` | `font.py` for the glyph table and its checks, `svr.py` to write the picture; Pillow (and a TrueType face, which is not in the repo); `patch_disc.py` calls it for `modern-font` |
 | `zbf.py` | `pac.py`, to read depth buffers straight from `BG_*.MRG` |
 | `humanid.py` | `pac.py` for the `PRELOAD` copies; `sles_disasm.py` and `gamever.py` for the object table |
 | `eventdata_turn.py` | `tbb.py` |

@@ -36,7 +36,7 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--realism <pack folder>]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--realism <pack folder>] [--font <font.ttf>] [--version <x.y.z>]
     python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--mod <switch>,...]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
 
@@ -84,8 +84,8 @@ Switches come in three levels (DOC/LMASTER_MOD.md#the-switch-levels),
 and --mod takes names of any level, comma-separated (or repeated):
     python patch_disc.py switches       # print the editions, groups and switches
 Editions: --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes,
-the groups training-fixes, injury-fixes, club-fixes, match-fixes and
-text-fixes; --mod lmaster-full adds leagues, restorations, names and
+the groups training-fixes, injury-fixes, club-fixes, match-fixes,
+text-fixes and title-screen; --mod lmaster-full adds leagues, restorations, names and
 saves, and --mod
 lmaster-max adds the difficulty groups harder-economy and balance to
 full. Both always save to their own folders: full's careers in -F, max's
@@ -95,15 +95,21 @@ Groups: training-fixes (camp-types, camp-cities, camp-santiago,
 camp-clubs, drill-names, salesman-items), injury-fixes (injury-value, injury-row),
 club-fixes (sponsor-negotiation, season-status, pr-cycle, mobile-site,
 overseas-pop, cup-last16, moving-boards), match-fixes (rival-manager, press-tendency,
-national-cups, vpf-styles, vpf-positions), text-fixes (retail-text), harder-economy (facility-tiers,
+national-cups, vpf-styles, vpf-positions), text-fixes (retail-text), title-screen (title-banner), harder-economy (facility-tiers,
 wider-tickets, dearer-ads,
 sponsor-fees, tv-fees, season-demand), balance (injury-odds,
 overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase,
 merch-costs, pr-costs, camp-costs, tour-costs), leagues
 (league-balance, third-tier), restorations (injury-lines), names
 (real-names, own-stadium), stadiums (special-stadium, real-grounds, sponsor-boards), saves (mod-saves),
-graphics (realism), and test-tools (skip-tutorial, launcher), which is in
-no edition.
+graphics (realism, random-sponsors, modern-font), and test-tools (skip-tutorial,
+launcher), which is in no edition.
+modern-font (the game's main text in Roboto Condensed, SRC/fontmod.py) and
+title-banner (the LMASTER Mod's version on the title screen,
+SRC/titlebanner.py) draw with a font file: --font <RobotoCondensed[wght].ttf>,
+or a copy beside this repository (an edition without one leaves them out);
+--version gives the banner its version (else ../LMASTER-Mod/VERSION). Both are
+PAL only (the Japanese release skips them with a note).
 third-tier turns on mod-saves and needs --copies and --dat; real-names
 and realism need them too. Each switch
 also works as a flag of its own (--skip-tutorial, ...). With switches
@@ -4898,6 +4904,134 @@ def plan_realism(f, img, adopted=()):
     return [], ["note: realism: put the pack's pictures in the texture packs"]
 
 
+# modern-font: the game's main text drawn in Roboto Condensed (LMASTER full
+# and max; fontmod.py, DOC/LMASTER_MOD.md#modern-font). The face is not in
+# the repo (its file is the player's own), so --font <file.ttf> names it;
+# an edition that holds the switch skips it without one. European
+# languages (the PAL release) only: the Japanese release draws language 0
+# from other fonts (DOC/FONT_FORMAT.md).
+FONT_FILE = "0SYSTEM/FONT_20_A.SVR"
+FONT_RECORDS = 0x563990                  # font 0's glyph records (fontmod.py, FONT_FORMAT.md)
+FONT_FACE_NAME = "RobotoCondensed[wght].ttf"
+font_face = None                         # set by main from --font
+# Where the face is looked for when --font isn't given: a clone of the
+# LMASTER Mod beside this repository, then the system's fonts.
+FONT_SUGGESTED = [os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                               "..", "LMASTER-Mod", "fonts", FONT_FACE_NAME),
+                  os.path.join(os.environ.get("WINDIR", "C:/Windows"), "Fonts", FONT_FACE_NAME),
+                  os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "Windows", "Fonts",
+                               FONT_FACE_NAME),
+                  "/usr/share/fonts/truetype/roboto/" + FONT_FACE_NAME,
+                  "/usr/share/fonts/truetype/google-fonts/" + FONT_FACE_NAME]
+font_built = {}                          # one build per run: the plan and the file share it
+
+
+def font_found():
+    """The face's file for the switch: --font, else the first suggested place."""
+    if font_face:
+        return font_face if os.path.isfile(font_face) else None
+    return next((p for p in FONT_SUGGESTED if os.path.isfile(p)), None)
+
+
+def font_build(f, img):
+    """fontmod.build over the image's own executable and FONT_20_A."""
+    import tempfile
+    import fontmod
+    path = font_found()
+    if not path:
+        raise ValueError("--mod modern-font needs --font <%s> (or a copy of it in a LMASTER-Mod "
+                         "clone's fonts folder beside this repository)" % FONT_FACE_NAME)
+    if path not in font_built:
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = os.path.join(tmp, "SLES_541.51")
+            with open(exe, "wb") as g:
+                g.write(read_file(f, img, SLES_FILE)[1])
+            with open(os.path.join(tmp, "FONT_20_A.SVR"), "wb") as g:
+                g.write(read_file(f, img, FONT_FILE)[1])
+            font_built[path] = fontmod.build(exe, tmp, path)
+    return font_built[path]
+
+
+def file_modern_font(f, img, dat):
+    """[(target, data)] for --mod modern-font: FONT_20_A with the new face."""
+    if img.port is not None:
+        return []
+    import fontmod
+    return [(FONT_FILE, fontmod.svr_bytes(font_build(f, img)))]
+
+
+def plan_modern_font(f, img, adopted=()):
+    """Jobs for --mod modern-font: font 0's glyph records rewritten to the
+    new picture's rectangles and widths (the picture is written whole by
+    file_modern_font)."""
+    if img.port is not None:
+        return [], ["note: modern-font is for the European languages (the PAL release); "
+                    "the Japanese release draws its text from other fonts: skipped"]
+    import fontmod
+    result = font_build(f, img)
+    new = fontmod.records_bytes(result)
+    off = FONT_RECORDS - 0xff000
+    words = [(SLES_FILE, off, read_at(f, img, SLES_FILE, off, len(new)), new,
+              "%s 0x%x (the %d glyph records of font 0)" % (SLES_FILE, FONT_RECORDS,
+                                                          len(result["records"])))]
+    return word_jobs(f, img, "modern-font", words)
+
+
+# title-banner: a banner on the title screen that names the LMASTER Mod, its
+# version and its edition (every edition; titlebanner.py, DOC/LMASTER_MOD.md
+# #title-banner). It is drawn with the face of modern-font, so it needs the
+# same file (--font) and an edition without one leaves it out. The version
+# is --version, else the VERSION file of a LMASTER-Mod clone beside this
+# repository. European languages only, like modern-font.
+TITLE_PACKS = ["CSE/SC_TITLEBG%d.CSP" % n for n in range(1, 7)]
+banner_version = None                    # set by main from --version
+banner_edition = "Custom"                # set by main from the switches chosen
+LMASTER_VERSION_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                    "..", "LMASTER-Mod", "VERSION")
+
+
+def banner_version_text():
+    """The version for the banner: --version, else a LMASTER-Mod clone's VERSION."""
+    if banner_version:
+        return banner_version
+    try:
+        with open(LMASTER_VERSION_FILE, encoding="utf-8") as g:
+            return g.read().strip()
+    except OSError:
+        return ""
+
+
+def edition_title(mods):
+    """"Max", "Full" or "Lite" when `mods` holds that whole edition, else "Custom"."""
+    for name, title in (("lmaster-max", "Max"), ("lmaster-full", "Full"), ("lmaster-lite", "Lite")):
+        if set(SWITCH_GROUPS[name]) <= set(mods):
+            return title
+    return "Custom"
+
+
+def file_title_banner(f, img, dat):
+    """[(target, data)] for --mod title-banner: the six title packs with the
+    banner drawn on their title picture."""
+    if img.port is not None:
+        return []
+    import titlebanner
+    path = font_found()
+    if not path:
+        raise ValueError("--mod title-banner needs --font <%s>" % FONT_FACE_NAME)
+    banner = titlebanner.draw(path, banner_version_text(), banner_edition)
+    return [(t, titlebanner.stamp_pack(read_file(f, img, t)[1], banner)) for t in TITLE_PACKS]
+
+
+def plan_title_banner(f, img, adopted=()):
+    """--mod title-banner writes no bytes of its own: its packs are whole files
+    (file_title_banner)."""
+    if img.port is not None:
+        return [], ["note: title-banner is for the European languages (the PAL release); "
+                    "skipped"]
+    return [], ["note: title-banner: the banner names %s %s on the title screen"
+                % (banner_version_text() or "(no version)", banner_edition)]
+
+
 def plan_own_stadium(f, img):
     """Jobs for --mod own-stadium."""
     func = OWN_STADIUM_FUNC
@@ -5258,6 +5392,11 @@ SWITCHES = (
      "Graphics: LMAST Realism's crests and match pictures in the texture packs, and a "
      "2 px transparent edge on the licensed crests; needs --realism <pack folder>, "
      "--copies and --dat"),
+    ("modern-font", plan_modern_font, [SLES_FILE, FONT_FILE],
+     "Graphics: the game's main text in Roboto Condensed (PAL release; needs --font <file>)"),
+    ("title-banner", plan_title_banner, TITLE_PACKS,
+     "Title screen: a banner names the LMASTER Mod, its version and its edition (PAL release; "
+     "needs --font <file>)"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],
@@ -5307,7 +5446,8 @@ HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards", "random-spo
 # turn on others (a bigger save needs saves of its own), and old names.
 SWITCH_NEEDS = {}
 SWITCH_FILES = {"third-tier": file_third_tier, "real-names": file_real_names,
-                "realism": file_realism}
+                "realism": file_realism, "modern-font": file_modern_font,
+                "title-banner": file_title_banner}
 SWITCH_COPIES = ("third-tier", "real-names", "realism")
 SWITCH_IMPLIES = {"third-tier": ("mod-saves",), "real-grounds": ("special-stadium",)}
 SWITCH_ALIASES = {name: "third-tier" for name in ("save-expand", "tier-clubs", "tier-lists",
@@ -5337,7 +5477,8 @@ GROUPS = (       # (name, title, switches)
     ("restorations", "Restored content", ("injury-lines",)),
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
-    ("graphics", "Graphics", ("realism", "random-sponsors")),
+    ("graphics", "Graphics", ("realism", "random-sponsors", "modern-font")),
+    ("title-screen", "Title screen", ("title-banner",)),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )
@@ -5345,7 +5486,8 @@ GROUPS = (       # (name, title, switches)
 # content and its own saves; LMASTER max adds the difficulty groups to it
 # (Nexxus's split, 2026-10-27). Full and max save careers under their
 # own letters (SAVE_LETTERS), so neither mixes with the retail game's.
-LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes", "text-fixes")
+LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes", "text-fixes",
+               "title-screen")
 FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "graphics", "saves")
 DIFFICULTY_GROUPS = ("harder-economy", "balance")
 EDITIONS = (     # (name, title, groups)
@@ -5886,7 +6028,25 @@ def main(argv):
     if realism_pack:
         values.append("realism")
     named = any(n == "realism" for v in values for n in v.lower().split(","))
+    global font_face
+    font_face = _opt(args, "--font", None)
+    if font_face:
+        values.append("modern-font")
+    global banner_version, banner_edition
+    banner_version = _opt(args, "--version", None)
     mods = parse_mods(values)
+    banner_edition = edition_title(mods)
+    for switch in ("modern-font", "title-banner"):
+        named_here = any(n == switch for v in values for n in v.lower().split(","))
+        if switch in mods and not font_found():
+            if named_here:
+                raise SystemExit("--mod %s needs --font <%s>" % (switch, FONT_FACE_NAME)
+                                 if not font_face else "--font %s: no such file" % font_face)
+            mods.discard(switch)          # an edition or group without the face: left out
+            print("note: %s skipped (give --font <%s>)" % (switch, FONT_FACE_NAME))
+        elif switch in mods and not font_face:
+            print("note: %s: using %s (--font picks another)"
+                  % (switch, os.path.normpath(font_found())))
     if "realism" in mods and not realism_pack:
         realism_pack = realism_folder(REALISM_SUGGESTED)
         if realism_pack:

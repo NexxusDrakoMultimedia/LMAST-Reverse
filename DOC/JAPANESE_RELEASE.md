@@ -117,6 +117,7 @@ plans there, each on its own with the switches it needs):
 | `third-tier` | all 93 places plan; the rules text isn't changed ([below](#the-third-tier-on-the-japanese-disc)) |
 | `realism` | refused: its pack is named by PAL hashes |
 | `random-sponsors` | nothing done: its code is PAL's, and `patch_disc.py` notes it and leaves the release alone |
+| `modern-font` | nothing done, by Nexxus's choice (2026-11-13): the release draws language 0 from `FONT_ASCII` and `FONT_KANJI` ([`FONT_FORMAT.md`](FONT_FORMAT.md#the-japanese-builds-fonts-language-0)), and `patch_disc.py` notes it and leaves the release alone |
 | the rest | the same bytes, at other addresses |
 
 Every patched spot's surrounding code (8 words either side, immediates

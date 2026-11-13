@@ -29,11 +29,12 @@ level:
 | `club-fixes` | sponsor-negotiation, season-status, pr-cycle, mobile-site, overseas-pop, cup-last16, moving-boards | yes | yes | yes |
 | `match-fixes` | rival-manager, press-tendency, national-cups, vpf-styles, vpf-positions | yes | yes | yes |
 | `text-fixes` | retail-text ([below](#retail-text-fixes)) | yes | yes | yes |
+| `title-screen` | title-banner ([below](#title-banner)) | yes | yes | yes |
 | `leagues` | league-balance, third-tier | – | yes | yes |
 | `restorations` | injury-lines | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
-| `graphics` | realism ([below](#lmast-realism-on-the-disc)), random-sponsors ([below](#random-sponsors)) | – | yes | yes |
+| `graphics` | realism ([below](#lmast-realism-on-the-disc)), random-sponsors ([below](#random-sponsors)), modern-font ([below](#modern-font)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -1020,6 +1021,103 @@ pictures in CSP packs go in too (`csp.py replace`: 7 pictures, 16 packs, the
 (2026-11-12): the pack's `Fixes`, `Adboards` and `Leagues` folders are
 put on the disc, `Intro` waits for LMASTER's own intros, and `Rival` stays
 out (an upscale made from mipmaps, largely incompatible).
+
+## Modern font
+
+`--mod modern-font` (group `graphics`, LMASTER full and max, not lite:
+it changes the look and fixes nothing) draws the game's main text in
+Roboto Condensed (Nexxus's idea, 2026-11-13). The European languages
+draw all their text from one picture, `FONT_20_A`, through 214 glyph
+records in the executable ([`FONT_FORMAT.md`](FONT_FORMAT.md)); the
+switch draws the face into a new picture and rewrites the records to
+match, so the game's own layout code measures the new letters. It is one
+switch because the picture and the records only work together.
+
+```bash
+python SRC/patch_disc.py patch <retail iso> out.iso --mod modern-font --font "RobotoCondensed[wght].ttf"
+```
+
+- **The face's file is not in this repository.** `--font` names it;
+  without it the switch looks for `RobotoCondensed[wght].ttf` in a
+  LMASTER Mod clone's `fonts` folder beside this repository, then in the
+  system's fonts (`C:/Windows/Fonts`, the user's `Microsoft/Windows/Fonts`,
+  `/usr/share/fonts/truetype/roboto`). An edition or group that holds the
+  switch leaves it out when there is no file and says so; naming
+  `--mod modern-font` without one is an error. The editor's Build disc
+  window has a **Font file** box, filled in when the face is found. The
+  face's own file says "Licensed under the Apache License, Version 2.0"
+  (version 3.008); only drawn pictures, not the file, go into a disc.
+- **PAL only** (Nexxus's choice, 2026-11-13). The Japanese release draws
+  language 0 from other fonts, so the switch does nothing there and says
+  so; it doesn't stop `lmaster-full` from building.
+- **What it writes:** `0SYSTEM/FONT_20_A.SVR` (the same size and palette,
+  new pixels) and the glyph records of font 0 at `SLES_541.51 0x563990`
+  (2,168 of their 4,280 bytes change). The two 8x8 pixel fonts stay.
+- **How the face is fitted** (`fontmod.py`): size 24 pixels, weight 450,
+  baseline at row 21 of the font's 26 rows, drawn four times too large
+  and reduced in white, with the 16 alpha levels of the picture's own
+  palette. A glyph's width is the face's advance rounded to whole pixels.
+  Summed over every message of each language, the text comes out 0.996
+  to 1.005 times as wide as the original face's (size 22 gave 0.94, size 26
+  1.08), so strings that fit before still fit. Accented capitals keep their
+  letter at full height and only the mark is pressed into the rows above
+  it (a whole-glyph squeeze turned acute and caron marks into dots), and
+  the long descenders of `g j p q y ( ) @` are pressed into 4 rows. The pad
+  buttons and the euro sign with a small s keep the game's own art, and the 17
+  empty records all point at one blank cell. 192 glyphs are drawn, 5 kept,
+  17 blank; the picture uses 251 of its 256 rows and nothing is off its
+  edge. `fontmod.py info` reads the result back through `font.py`'s checks
+  (214 records on whole pixels, advance = width, 214 as tall as the font,
+  no ink outside a rectangle) and compares every pixel with the glyph that
+  was drawn.
+- **Tested in PCSX2** (Nexxus's report, 2026-11-13,
+  `LMAST-test-font.iso`): the game boots and the new face shows. The
+  video-mode menu, the pre-match screen (menu, league name, club names,
+  the pound counter) and the Select Hometown screen (a list of counties,
+  the two-line description under it, the button legends) read cleanly and
+  fit. Not looked at yet: the longest names in the lists, the news and
+  match screens and the pad icons ([`TESTING.md`](../TESTING.md)).
+
+## Title banner
+
+`--mod title-banner` (group `title-screen`, in every edition, Nexxus's
+request, 2026-11-13) puts a banner on the title screen that names the
+LMASTER Mod, its version and its edition: a navy box with a gold edge and
+cut corners (the logo is a hexagon), "LMASTER MOD" in gold over, say,
+"v0.5.0 FULL". It replaces the label "LMAST Realism Mod Version 2.0" that
+the Realism pack's title picture carries, at the same place (x 12 to 140,
+y 49 to 112 of the 512x512 picture), so each release can name itself with
+no one redrawing a picture.
+
+```bash
+python SRC/patch_disc.py patch <retail iso> out.iso --mod lmaster-full --font "RobotoCondensed[wght].ttf" --version 0.5.0 ...
+```
+
+- **The title picture** is the texture `sc_titlebg<n>_01` (512x512, 8 bits,
+  a 256-colour palette whose every index is used) in `CSE/SC_TITLEBG1.CSP`
+  to `SC_TITLEBG6.CSP`, entry 2, the same picture in the six languages
+  (`texmap.py match` on the Realism pack's `Intro` folder, 2026-11-13).
+  The packs are in no `PRELOAD` pack. The banner is drawn with the colours the
+  picture has (each pixel takes the nearest palette entry; every other
+  pixel keeps its index, so the logo is byte for byte as it was) and
+  `csp.py`'s splice keeps each pack's length (`titlebanner.py`).
+- **The words:** `--version` gives the version, else the `VERSION` file of a
+  LMASTER Mod clone beside this repository, else the banner shows only the
+  edition. The edition is "Lite", "Full" or "Max" when the switches chosen
+  are that whole edition, else "Custom".
+- **The face** is the one `modern-font` draws with (`--font`; the editor's
+  Font file box): an edition without a font file leaves the banner out and
+  says so, and naming `--mod title-banner` without one is an error.
+- **PAL only** for now: the Japanese release has one title pack,
+  `SC_TITLEBG.CSP`, with another picture; the switch does nothing there
+  and says so.
+- **Tested in PCSX2** (Nexxus's report, 2026-11-13, a lite disc with
+  `modern-font`, `--version 0.5.0`): the title screen shows the banner
+  at the top left, "LMASTER MOD" over "v0.5.0 LITE" in the navy and
+  gold box, with the logo untouched and the menu below it as before.
+  Not looked at: the other five languages' title packs (the same
+  picture; each pack's entry is stamped and checked by `titlebanner.py
+  info`), a full or max disc, and the banner on the Japanese release.
 
 ## Planned
 

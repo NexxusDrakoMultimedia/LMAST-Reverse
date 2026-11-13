@@ -153,8 +153,8 @@ separated by commas (`--mod lmaster-lite,harder-economy`):
 
 | Name | What it is |
 |---|---|
-| `lmaster-lite` | the fixes: groups `training-fixes`, `injury-fixes`, `club-fixes`, `match-fixes`, `text-fixes` |
-| `lmaster-full` | lite, plus `leagues` (the third tier, balanced schedules), `restorations` (the cut injury lines), `names` (real names, your own stadium), `stadiums` (real grounds, sponsor boards), `graphics` (LMAST Realism's crests and match pictures, which need the pack: a clone at `../LMAST-Realism`, or `--realism <folder>`, and an edition without the pack skips them; and random sponsors and kit suppliers on every club's kit, which turns the Italian, Spanish and Dutch clubs' licensed kits into generated ones) and `saves` |
+| `lmaster-lite` | the fixes: groups `training-fixes`, `injury-fixes`, `club-fixes`, `match-fixes`, `text-fixes`, and `title-screen` (a banner on the title screen that names the LMASTER Mod, its version and its edition; it needs the font file: `--font <file>`, and is left out without it) |
+| `lmaster-full` | lite, plus `leagues` (the third tier, balanced schedules), `restorations` (the cut injury lines), `names` (real names, your own stadium), `stadiums` (real grounds, sponsor boards), `graphics` (LMAST Realism's crests and match pictures, which need the pack: a clone at `../LMAST-Realism`, or `--realism <folder>`, and an edition without the pack skips them; random sponsors and kit suppliers on every club's kit, which turns the Italian, Spanish and Dutch clubs' licensed kits into generated ones; and the game's main text in Roboto Condensed, which needs the font file: `--font <file>`, and an edition without it skips it) and `saves` |
 | `lmaster-max` | full, plus the difficulty groups `harder-economy` and `balance` |
 | `--mod-saves` | the modded disc's own save folders (group `saves`) |
 

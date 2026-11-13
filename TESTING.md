@@ -214,6 +214,18 @@ list.
 
 ## Patches, text and what things look like
 
+- [ ] The modern font and the title banner on a full or max disc
+      (`python SRC/patch_disc.py patch "<the PAL image>" out.iso --mod
+      lmaster-max --font "RobotoCondensed[wght].ttf" --version 0.5.0
+      --copies --dat DAT`): look through the screens for text that is
+      cut off, overlaps or sits badly, mainly the longest club, player and
+      stadium names in the lists and tables, the news pages, the match
+      screens (scoreboard, substitutions, results), the Text-heavy
+      messages, and the pad buttons and euro sign; switch the language to
+      French, German, Spanish or Italian once and see that the title
+      banner is there too (Nexxus saw the font on the pre-match and
+      Select Hometown screens and the banner on a lite disc, 2026-11-13)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font))
 - [ ] LMAST Realism's `Fixes`, `Adboards` and `Leagues` pictures on a disc
       built with `--mod realism` (`python SRC/patch_disc.py patch "<the
       PAL image>" out.iso --mod realism --copies --dat DAT --realism

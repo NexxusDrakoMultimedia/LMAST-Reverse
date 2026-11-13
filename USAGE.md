@@ -142,7 +142,11 @@ can play or share.
    `-V`). The test tools (the tutorial skip, the debug menu)
    are in no edition. The **Graphics** group holds `random-sponsors`
    (a sponsor and a kit supplier on every club's kit, drawn again each
-   season) and `realism`, which puts LMAST
+   season), `modern-font` (the game's main text in Roboto Condensed,
+   for the European languages; the **Font file** box holds the font's
+   file, filled in when the editor finds it, or the switch is left out
+   and the window asks before it builds without it; the same file draws the
+   version banner of the **Title screen** group, which every edition has) and `realism`, which puts LMAST
    Realism's crests and match pictures on the disc; **LMAST Realism pack
    folder** holds the pack's folder (a clone at `../LMAST-Realism` is
    filled in for you; change it with Browse), or `realism` is left out

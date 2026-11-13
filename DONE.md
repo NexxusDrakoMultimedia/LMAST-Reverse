@@ -231,6 +231,16 @@ Each result is recorded in the doc linked.
 
 ## 8. LMASTER Mod and other patches
 
+- [x] `--mod modern-font` (group `graphics`, LMASTER full and max, PAL
+      only): the game's main text drawn in Roboto Condensed, with the
+      glyph records rewritten to the new widths so text fits as before
+      (`fontmod.py`); seen working in PCSX2
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font))
+- [x] `--mod title-banner` (group `title-screen`, every edition): a navy
+      and gold banner on the title screen names the LMASTER Mod, its
+      version and its edition, replacing Realism's label
+      (`titlebanner.py`); seen working in PCSX2
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner))
 - [x] `--mod random-sponsors` (group `graphics`, LMASTER full and max):
       every club's kit shows a main sponsor and a kit supplier, drawn
       again each season, and the Italian, Spanish and Dutch clubs get

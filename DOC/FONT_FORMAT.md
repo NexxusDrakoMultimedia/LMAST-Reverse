@@ -14,8 +14,10 @@ rectangles, or move the rectangles by patching the executable.
 The Japanese language (language 0) uses other machinery: fixed-size cells
 and Shift-JIS lookup tables (`FONT_ASCII`, `FONT_KANJI`). The PAL
 executable carries that code and its tables too, but only language 0
-reaches it. Folder overview: [`0SYSTEM_DIR.md`](0SYSTEM_DIR.md). Tool:
-`font.py`.
+reaches it. Folder overview: [`0SYSTEM_DIR.md`](0SYSTEM_DIR.md). Tools:
+`font.py` reads and checks the fonts; `fontmod.py` draws a new face into
+font 0 (the switch `modern-font`,
+[`LMASTER_MOD.md`](LMASTER_MOD.md#modern-font)).
 
 ## The files
 
@@ -287,8 +289,10 @@ pairs at `0x3a7260` and `0x3a7268`; the table sizes are the immediates in
 ## What a replacement face must keep
 
 For the European fonts (PAL; the Japanese build's fonts 0 and 1 have their
-own tables). Checked against the code and the data, not yet tried in the
-game.
+own tables). Checked against the code and the data, and tried in the game
+for font 0: `fontmod.py` follows every row below, and the disc it builds
+shows the new face with the menus and the pre-match screen fitting
+(Nexxus's report, 2026-11-13).
 
 | Item | Why | Consequence |
 |---|---|---|
@@ -348,8 +352,9 @@ plane that doesn't fit its picture. The Japanese build's `FONT_8_A` has
 - Whether a generated string uses `0xba` or the Central European
   letters (the messages don't), and whether any visible text uses
   `FONT_8_A`'s repeated bytes.
-- In the game: that editing a record or the list in the executable
-  changes the drawn text, and that such a patch works on both builds.
+- In the game: that editing the character list (as opposed to the records
+  and the picture, which work) changes the drawn text, and a font patch on
+  the Japanese build (none exists; `modern-font` is PAL only).
 - Japanese: whether code `0x9087` (the first plane-B kanji) really goes
   to the plane-A font (the comparison at the Japanese build's `0x311188`
   reads as "greater than"); what a failed lookup draws; which characters

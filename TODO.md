@@ -356,21 +356,17 @@ is built and tested, or set aside.
       ACROBATA pack writers (section 3). The kits stay Realism-only
       ([`TEXMAP.md`](DOC/TEXMAP.md),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc))
-- [ ] A modern face for the game's text, such as Roboto Condensed
-      (Nexxus's idea, 2026-11-13). The fonts are understood now: the
-      glyph rectangles, advances and character lists are in the
-      executable, the pictures only pixels. Left: a script that renders
-      the face into `FONT_20_A`'s rectangles (or into a new layout, with
-      the records rewritten and widths fitted per glyph), the
-      picture and executable writes as a switch, and PCSX2 checks: that
-      an edited record changes the text, that club and player names
-      still fit the lists, and how the picture is sampled. The small
-      fonts are 8x8 pixel art and stay. PAL only if the Japanese
-      release is too much work (Nexxus's choice, 2026-11-13): the one
-      exception to every switch working there; its fixed 10-pixel
-      half-width cells would need a monospaced look. The face's
-      licence needs confirming
-      ([`FONT_FORMAT.md`](DOC/FONT_FORMAT.md#what-a-replacement-face-must-keep))
+- [ ] LMASTER Mod's build for the two switches that draw with a font
+      file (`modern-font` and `title-banner`, 2026-11-13): its release
+      build should pass `--version <VERSION>` and `--font` (a `fonts`
+      folder in that repository with `RobotoCondensed[wght].ttf` and the
+      Apache 2.0 licence text, which `patch_disc.py` already looks in),
+      and its changelog should list both ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font))
+- [ ] The title banner on the Japanese release (2026-11-13): the release
+      has one title pack, `SC_TITLEBG.CSP`, with another picture, so the
+      switch skips it there; `modern-font` stays PAL only (Nexxus's
+      choice), but every other switch is needed on the Japanese release
+      before LMASTER 1.0.0 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner))
 
 Bugs and ideas reported in play (Nexxus's reports, 2026-11-10). None is
 investigated yet: each needs the cause found in the game code, then a

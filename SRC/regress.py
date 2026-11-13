@@ -232,6 +232,21 @@ def checks():
          ["ISO/SLES_541.51", "DAT/0SYSTEM"]),
         ("font_coverage", ["font.py", "coverage", "ISO/SLES_541.51", "DAT/MESSAGE/MES.PAC"],
          ["ISO/SLES_541.51", "DAT/MESSAGE/MES.PAC"]),
+        # The modern font (fontmod.py): drawn from Roboto Condensed when a
+        # copy is installed (the face is not in the repo), then read back.
+        *[check
+          for face in [next((p for p in (
+              os.path.join(os.environ.get("WINDIR", "C:/Windows"), "Fonts", "RobotoCondensed[wght].ttf"),
+              os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "Windows", "Fonts",
+                           "RobotoCondensed[wght].ttf"),
+              "/usr/share/fonts/truetype/roboto/RobotoCondensed[wght].ttf") if os.path.isfile(p)),
+              None)] if face
+          for check in (("fontmod", ["fontmod.py", "info", "ISO/SLES_541.51", "DAT/0SYSTEM", face],
+                         ["ISO/SLES_541.51", "DAT/0SYSTEM", face]),
+                        # The title screen's version banner (titlebanner.py).
+                        ("titlebanner", ["titlebanner.py", "info", "DAT/CSE/SC_TITLEBG1.CSP", face,
+                                         "--version", "0.5.0", "--edition", "Full"],
+                         ["DAT/CSE/SC_TITLEBG1.CSP", face]))],
         ("emblem", ["emblem.py", "info", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         ("emblem_roundtrip", ["emblem.py", "roundtrip", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         # The real names against the disc's name lists (PAL text only).
@@ -318,7 +333,7 @@ def _jp(arg):
 # The Japanese PLRESOURCESIM.PAC has no free-agent list (entry 15), and its
 # GAMEPRG.REL has the parameter getter at another address. Its MES.PAC
 # slots 1-6 are placeholders, which the European fonts don't draw.
-JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "font_coverage"}
+JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "font_coverage", "fontmod", "titlebanner"}
 
 
 def jp_checks(pal):
