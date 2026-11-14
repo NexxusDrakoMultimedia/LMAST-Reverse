@@ -81,8 +81,9 @@ What to work on next, most valuable first.
    ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from)).
 5. **The LMASTER Mod: the newest switches in the game.** Each is built on
    a test disc and waits for a look: `modern-font` and `title-banner`
-   (seen on a few screens, 2026-11-13; the rest of the screens still to
-   go through), `random-sponsors` (seen on Real Betis and England's
+   (seen on a few screens, 2026-11-13; the font's stray pixels, reported
+   2026-11-14, are fixed and need a fresh disc to confirm; the rest of
+   the screens still to go through), `random-sponsors` (seen on Real Betis and England's
    national team; the other clubs, leagues and the generated Italian,
    Spanish and Dutch kits are left), `moving-boards` and the charisma
    line of `retail-text` (both built 2026-11-10)

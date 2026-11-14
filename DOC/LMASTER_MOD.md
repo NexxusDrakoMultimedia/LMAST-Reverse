@@ -1083,7 +1083,8 @@ python SRC/patch_disc.py patch <retail iso> out.iso --mod modern-font --font "Ro
   1.08), so strings that fit before still fit. Accented capitals keep their
   letter at full height and only the mark is pressed into the rows above
   it (a whole-glyph squeeze turned acute and caron marks into dots), and
-  the long descenders of `g j p q y ( ) @` are pressed into 4 rows. The pad
+  the long descenders of `g j p q y ( ) @` are pressed into 3 rows (ink
+  stays in rows 2 to 23, see the next point). The pad
   buttons and the euro sign with a small s keep the game's own art, and the 17
   empty records all point at one blank cell. 192 glyphs are drawn, 5 kept,
   17 blank; the picture uses 251 of its 256 rows and nothing is off its
@@ -1091,6 +1092,19 @@ python SRC/patch_disc.py patch <retail iso> out.iso --mod modern-font --font "Ro
   (214 records on whole pixels, advance = width, 214 as tall as the font,
   no ink outside a rectangle) and compares every pixel with the glyph that
   was drawn.
+- **The blank margin around every rectangle:** the text is drawn scaled
+  (20/26), and the specks of the first build fit a bilinear filter that
+  reads the texel just outside a glyph's rectangle (**empirical**). If
+  that texel carries a neighbour's
+  ink, it shows as stray pixels (dots above the "I" of Italy, a clipped
+  "s" in Netherlands). The game's own picture keeps that ring blank (4 of
+  214 rectangles have ink just outside it); the first build of this face
+  did not (up to 93 of 214 per side). Now the ink stays in rows 2 to 23 of
+  each rectangle, so the rows where two rectangle rows overlap are blank
+  on both sides, neighbours in a row sit side by side only where one of
+  the two facing edge columns is blank (otherwise one blank column is
+  left between them), and `fontmod.py info` reports any rectangle with ink
+  in its ring (it reports none).
 - **Tested in PCSX2** (Nexxus's report, 2026-11-13,
   `LMAST-test-font.iso`): the game boots and the new face shows. The
   video-mode menu, the pre-match screen (menu, league name, club names,
@@ -1098,6 +1112,16 @@ python SRC/patch_disc.py patch <retail iso> out.iso --mod modern-font --font "Ro
   the two-line description under it, the button legends) read cleanly and
   fit. Not looked at yet: the longest names in the lists, the news and
   match screens and the pad icons ([`TESTING.md`](../TESTING.md)).
+  Nexxus's report, 2026-11-14 (same disc, screenshots of the Select
+  Hometown lists and the owner-name keyboard): the font has some stray
+  pixels. In the screenshots they are specks beside letters (above the "I"
+  of Italy, after the "n" of Spain, a clipped "s" in Netherlands, flecks
+  around the accents on the keyboard). Every one sits where a neighbouring
+  glyph's ink lies just outside a rectangle, so the cause is the missing
+  margin above (**empirical**; the game's sampler is not read from the
+  code). Fixed the same day, and checked only in `fontmod.py preview`
+  (glyphs sampled from the whole picture, with the stray specks of the
+  old layout visible and none in the new one), not yet in the game.
 
 ## Title banner
 

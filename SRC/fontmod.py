@@ -19,8 +19,13 @@ What it does, glyph by glyph:
     in white, with the 16 alpha levels of the picture's own palette;
   * the baseline sits at one row for every glyph; an accented capital
     keeps its letter at full height and only its mark is pressed into
-    the rows above, and any other glyph that would leave rows 1-24 (long
+    the rows above, and any other glyph that would leave rows 2-23 (long
     descenders) is squeezed vertically, only as much as it needs;
+  * the picture keeps a blank margin around every rectangle: ink only in
+    rows 2-23, and neighbours in a row share a blank column where both
+    edges carry ink. The game filters bilinearly and reads the texel just
+    outside a rectangle's edge; ink there would show as stray pixels in
+    the neighbouring glyph. `info` reports any rectangle that has some;
   * the width is the face's advance rounded to whole pixels (widened when
     ink reaches past it), because a glyph's advance is its rectangle's
     width;
@@ -52,11 +57,16 @@ import svr
 
 PIXEL_SCALE = 4             # the face is drawn this many times too large
 ROWS = 26                   # the font's height (descriptor +8)
-FIRST, LAST = 1, 24         # rows a glyph may ink; 0 and 25 are shared with
-                            # the next rectangle row (rectangles overlap by one)
+FIRST, LAST = 2, 23         # rows a glyph may ink. Rectangle rows are PITCH
+                            # apart, so rows 0-1 of one meet rows 24-25 of the
+                            # one above (they overlap by one). The game samples
+                            # with bilinear filtering and reads the texel just
+                            # outside a rectangle's edge, so that texel must be
+                            # blank: ink in rows 1 or 24 would bleed into the
+                            # neighbouring rectangle row as stray pixels.
 PITCH = 25                  # rows between rectangle rows
 PAD = 6                     # columns of room each side of a drawn glyph
-DESCENT = 4                 # rows below the baseline (to row LAST)
+DESCENT = 3                 # rows below the baseline (to row LAST)
 DEFAULT_SIZE = 24
 DEFAULT_WEIGHT = 450
 # Bytes the game draws differently from cp850 (DOC/FONT_FORMAT.md).
@@ -95,6 +105,16 @@ def to_index(table, coverage):
     """The palette index whose alpha is nearest to `coverage` (0-255)."""
     best = min(table, key=lambda t: abs(t[0] - coverage))
     return best[1]
+
+
+def blank_columns(rows, w, table):
+    """(left, right): the blank columns at each side of a cell of `rows`
+    (0-255 coverage), counted as the picture will hold it (a coverage that
+    rounds to the transparent palette entry is no ink)."""
+    cols = [any(to_index(table, r[x]) for r in rows) for x in range(w)]
+    if True not in cols:
+        return w, w
+    return cols.index(True), cols[::-1].index(True)
 
 
 class Face:
@@ -250,20 +270,31 @@ def build(exe_path, zero_dir, ttf, size=DEFAULT_SIZE, weight=DEFAULT_WEIGHT,
         if gamma != 1.0:
             rows = [[int(255 * (v / 255) ** gamma) for v in r] for r in rows]
         cells.append((k, b, w, rows, float(w), "drawn"))
-    # --- pack the rectangles: rows of PITCH, in the old order, with the
-    # blank cell (for every record without ink) at the end.
+    # --- pack the rectangles: rows of PITCH, with the blank cell (for every
+    # record without ink) at the end. The game's own art goes first: it inks
+    # rows 1-22, so it takes the top rectangle row, where no row lies above.
+    # The texel just outside a rectangle is read by the game's bilinear
+    # filter, so it must be blank: a drawn glyph's rows 0, 1, 24 and 25 are
+    # (FIRST, LAST), and neighbours in a row share a column of blank texels,
+    # a spare one between them only where both edges carry ink.
     placed = {}
     blank_w = max((c[2] for c in cells if c[5] == "blank"), default=0)
     x = y = 0
-    order = [c for c in cells if c[5] != "blank"]
+    order = [c for c in cells if c[5] == "kept"] + [c for c in cells if c[5] == "drawn"]
+    prev_right = None
     for c in order:
-        if x + c[2] > W:
-            x, y = 0, y + PITCH
+        left, right = blank_columns(c[3], c[2], table)
+        gap = 0 if prev_right is None or (prev_right >= 1 and left >= 1) else 1
+        if x + gap + c[2] > W:
+            x, y, gap = 0, y + PITCH, 0
+        x += gap
         placed[c[0]] = (x, y)
         x += c[2]
-    if x + blank_w > W:
-        x, y = 0, y + PITCH
-    blank_at = (x, y)
+        prev_right = right
+    bx, by = x + 1, y
+    if bx + blank_w > W:
+        bx, by = 0, y + PITCH
+    blank_at = (bx, by)
     if y + ROWS > H:
         problems.append("the glyphs need %d rows, the picture has %d" % (y + ROWS, H))
     # --- draw the new picture
@@ -285,12 +316,32 @@ def build(exe_path, zero_dir, ttf, size=DEFAULT_SIZE, weight=DEFAULT_WEIGHT,
         # an empty rectangle keeps its old width and advance
         ww = w if kind != "blank" else round(f.records[k][2] * W - f.records[k][0] * W)
         records.append((xx / W, yy / H, (xx + ww) / W, (yy + ROWS) / H, adv if kind != "blank" else f.records[k][4]))
-    # --- checks: rows 0 and ROWS - 1 of every drawn rectangle are blank
+    # --- checks: a drawn glyph inks only rows FIRST to LAST, and no rectangle
+    # has ink in the ring of texels just outside it (what the game's bilinear
+    # filter reads past the rectangle's edge).
     for c in cells:
         k, b, w, rows, adv, kind = c
         if kind == "drawn":
-            if any(rows[0]) or any(rows[ROWS - 1]):
-                problems.append("glyph %#04x %r inks a shared row" % (b, char_of(b)))
+            if any(any(rows[r]) for r in list(range(FIRST)) + list(range(LAST + 1, ROWS))):
+                problems.append("glyph %#04x %r inks a row outside the band %d-%d"
+                                % (b, char_of(b), FIRST, LAST))
+    for r in sorted({(round(u0 * W), round(v0 * H), round(u1 * W)) for u0, v0, u1, _, _ in records}):
+        x0, y0, x1 = r
+        y1 = y0 + ROWS
+        sides = []
+        if y0 > 0 and any(new[(y0 - 1) * W + x] for x in range(x0, x1)):
+            sides.append("above")
+        if y1 < H and any(new[y1 * W + x] for x in range(x0, x1)):
+            sides.append("below")
+        if x0 > 0 and any(new[y * W + x0 - 1] for y in range(y0, min(y1, H))):
+            sides.append("left")
+        if x1 < W and any(new[y * W + x1] for y in range(y0, min(y1, H))):
+            sides.append("right")
+        if sides:
+            who = [char_of(c[1]) for c, rec in zip(cells, records)
+                   if (round(rec[0] * W), round(rec[1] * H), round(rec[2] * W)) == r]
+            problems.append("%s: ink just outside the rectangle at (%d, %d), %s"
+                            % ("".join(who), x0, y0, " and ".join(sides)))
     lines = ["%d records: %d drawn, %d kept, %d blank; picture rows used %d of %d; squeezed %s"
              % (len(cells), sum(c[5] == "drawn" for c in cells), sum(c[5] == "kept" for c in cells),
                 sum(c[5] == "blank" for c in cells), y + ROWS, H, "".join(squeezed) or "none")]
@@ -404,9 +455,11 @@ def sample(result, text, which="new", zoom=20 / 26, ground=(40, 40, 90)):
             continue
         u0, v0, u1, v1, adv = recs[code - 4]
         x0, y0, x1, y1 = round(u0 * W), round(v0 * H), round(u1 * W), round(v0 * H) + ROWS
-        glyph = atlas.crop((x0, y0, x0 + int(adv), y0 + ROWS))
+        # Sample from the whole picture, not a crop of the rectangle: the
+        # game's filter reads the texels just outside the rectangle too, and
+        # that is where stray pixels from neighbouring glyphs come from.
         gw, gh = max(1, round(adv * zoom)), round(ROWS * zoom)
-        scaled = glyph.transform((gw, gh), Image.AFFINE, (1 / zoom, 0, 0, 0, 1 / zoom, 0),
+        scaled = atlas.transform((gw, gh), Image.AFFINE, (1 / zoom, 0, x0, 0, 1 / zoom, y0),
                                  Image.BILINEAR)
         ink = Image.new("RGB", (gw, gh), (255, 255, 255))
         out.paste(ink, (int(round(x)), 2), scaled)
