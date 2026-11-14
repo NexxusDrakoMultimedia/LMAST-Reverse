@@ -534,6 +534,10 @@ saves.
 | [`CLUB_LIMITS.md`](DOC/CLUB_LIMITS.md) | where the code fixes the clubs at 441 (resident clubs 1–441, the non-resident 442–459): every site of 440–442, sorted into club loops, resident checks, buffers and the rest, and how the third tier makes 442–459 full clubs |
 | [`UID_LIMITS.md`](DOC/UID_LIMITS.md) | where the game fixes the schedules at 164: UID 164 as the default rules, the files that set the count, the code that names it, the save pools the schedules share, and the third tier's leagues and seasons |
 | [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md) | memory-card saves: Blowfish key, header and layout CRC, the ten Pwork blocks, money, date and squad fields, separate saves and the PCSX2 CRC for a modded disc |
+| [`RAM_MAP.md`](DOC/RAM_MAP.md) | the runtime memory map, for tools and RetroAchievements sets: the address space (what is fixed, where the overlays and heap blocks load), how to read pointer chains, the mode, demo and launcher indicators, save and load behaviour, and the ids a Rich Presence script can map to names; it indexes the next three docs |
+| [`RAM_MATCH.md`](DOC/RAM_MATCH.md) | runtime memory during and after a match: the match object, score, clock, teams, goals, cards and statistics |
+| [`RAM_CAREER.md`](DOC/RAM_CAREER.md) | runtime memory of the club and its people: career identity, player records, finances, transfers and staff |
+| [`RAM_SEASON.md`](DOC/RAM_SEASON.md) | runtime memory of the season: the calendar, competitions and tables, national teams, career records, and the event, mail and news flags |
 | [`PS2MC_FORMAT.md`](DOC/PS2MC_FORMAT.md) | PCSX2's memory card image files: pages and their ECC, the superblock, the FAT, directory entries, and how `ps2mc.py` writes a card |
 | [`PMPLAYER_FORMAT.md`](DOC/PMPLAYER_FORMAT.md) | Virtua Pro Football's edit players (`pmplayer.bin`): file layout, CRC, each record field and what the career import makes of it, and its play-style bug |
 | [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md) | the save editor's design on top of `save.py`: its pages, the steps it was built in, the decisions made, and what is tested in the game |

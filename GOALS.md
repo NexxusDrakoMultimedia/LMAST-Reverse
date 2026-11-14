@@ -185,7 +185,11 @@ Nexxus's definition (2026-11-01): the reverse engineering is complete
 when every file, every line of code and every mechanic of the game is
 fully documented, on both releases, and the mod editor and the save
 editor work on the Japanese release as on PAL. The stages above get the
-data editable well before that; this is the end point after them.
+data editable well before that; this is the end point after them. It
+includes the game's runtime memory, which a RetroAchievements set needs:
+[`RAM_MAP.md`](DOC/RAM_MAP.md) and the three docs it indexes record the
+PAL release's, read from the code and not yet measured in the running
+game.
 
 Only then might a follow-on project begin: **LMAST-Recompiled**, a full
 decompilation of the game, recompiled, ported to other platforms and

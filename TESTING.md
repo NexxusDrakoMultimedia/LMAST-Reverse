@@ -367,6 +367,21 @@ Each of these switches has been built and is waiting for someone to play it.
       if you can
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#retail-text-fixes))
 
+## The end point
+
+What these prove: the runtime memory map
+([`RAM_MAP.md`](DOC/RAM_MAP.md)) matches the running game. Its rows come
+from reading the code and nothing in them was measured in PCSX2, so each
+doc says where a check is still owed.
+
+- [ ] A save state of a career (a menu, and a mid-match state): the
+      addresses that open the map hold what the doc says (the root
+      pointers, the demo flag `0x34d43c`, the schedule pointer
+      `0x390650`, the match object's score and clock), and the pointer
+      chains still resolve after a load. Needs a tool that reads the
+      addresses over PINE (a task in [`TODO.md`](TODO.md#the-end-point))
+      ([`RAM_MAP.md`](DOC/RAM_MAP.md#for-achievement-authors))
+
 ## Test tools
 
 Not a goal of their own: these help every other check

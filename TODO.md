@@ -589,6 +589,22 @@ and the Japanese release is extracted and read by the same tools through
 has no effect on the game, on both releases, and the editors work on the
 Japanese release as on PAL.
 
+- [ ] **write** `SRC/ramcheck.py`: read the runtime memory map's
+      addresses from a running PCSX2 over PINE (or from a save state's
+      `eeMemory.bin`), follow each pointer chain and print the values,
+      with `!!` where a row's range or root check fails; and export the
+      tables as RetroAchievements code notes. Until it exists the map is
+      read from the code only
+      ([`RAM_MAP.md`](DOC/RAM_MAP.md#for-achievement-authors))
+- [ ] **test** The runtime memory map against the running game, in
+      [`TESTING.md`](TESTING.md#the-end-point)
+- [ ] **understand** The runtime memory map's open questions: every
+      "Still unknown" list of [`RAM_MAP.md`](DOC/RAM_MAP.md#still-unknown),
+      [`RAM_MATCH.md`](DOC/RAM_MATCH.md#still-unknown),
+      [`RAM_CAREER.md`](DOC/RAM_CAREER.md#still-unknown) and
+      [`RAM_SEASON.md`](DOC/RAM_SEASON.md#still-unknown), and the
+      Japanese release's addresses (they follow from `gamever.py` once a
+      row is confirmed in the game)
 - [ ] **read** `GAME/` leftovers: the `SHADOWCOLLI.PAC` and
       `WALLCOLLI.PAC` entries (with `TEST3D/SHADOWCOLLI.LBI`), the
       `RBD0` trailer, `TEAM.TMB`, `BACK_MATCH.TBB`, the row layout of

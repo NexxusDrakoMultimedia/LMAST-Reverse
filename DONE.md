@@ -177,6 +177,15 @@ Every folder of `DAT/` has a doc and a tool, and the game code is mapped.
       all ([coverage table](GOALS.md#coverage-of-datacvm),
       [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md),
       [`README.md`](README.md#how-the-tools-fit-together))
+- [x] The runtime memory map for RetroAchievements sets: where the game
+      keeps its data while it runs (EE RAM addresses, root pointers,
+      overlay and heap placement, the mode, demo and launcher
+      indicators, save and load behaviour, and the match, club, season
+      and event data), read from the game code and checked twice
+      ([`RAM_MAP.md`](DOC/RAM_MAP.md),
+      [`RAM_MATCH.md`](DOC/RAM_MATCH.md),
+      [`RAM_CAREER.md`](DOC/RAM_CAREER.md),
+      [`RAM_SEASON.md`](DOC/RAM_SEASON.md))
 
 ## Tests in PCSX2
 
