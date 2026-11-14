@@ -1119,9 +1119,10 @@ python SRC/patch_disc.py patch <retail iso> out.iso --mod modern-font --font "Ro
   around the accents on the keyboard). Every one sits where a neighbouring
   glyph's ink lies just outside a rectangle, so the cause is the missing
   margin above (**empirical**; the game's sampler is not read from the
-  code). Fixed the same day, and checked only in `fontmod.py preview`
-  (glyphs sampled from the whole picture, with the stray specks of the
-  old layout visible and none in the new one), not yet in the game.
+  code). Fixed the same day: `fontmod.py preview` (glyphs sampled from
+  the whole picture) shows the specks of the old layout and none in the
+  new one, and on the rebuilt disc (`LMAST-test-font2.iso`) the stray
+  pixels are gone (Nexxus's report, 2026-11-14).
 
 ## Title banner
 

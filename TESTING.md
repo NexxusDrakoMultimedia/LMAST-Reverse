@@ -329,9 +329,8 @@ Each of these switches has been built and is waiting for someone to play it.
       banner is there too (Nexxus saw the font on the pre-match and
       Select Hometown screens and the banner on a lite disc, 2026-11-13;
       the first disc's font had stray pixels beside letters, reported
-      2026-11-14 and fixed in `fontmod.py` the same day, so build the disc
-      again and check that they are gone on the Select Hometown lists and
-      the owner-name keyboard, and in the small text of the other screens)
+      2026-11-14; fixed in `fontmod.py` the same day, and Nexxus saw them
+      gone on the rebuilt disc, so a disc built now has the fix)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner))
 - [ ] Computer clubs' sponsors, suppliers and the unlicensed kits
