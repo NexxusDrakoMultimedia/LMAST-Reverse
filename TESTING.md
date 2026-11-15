@@ -378,11 +378,10 @@ roots, the module table, the demo flag, the match object and the goal
 tally held ([`RAM_MAP.md`](DOC/RAM_MAP.md#tested-in-pcsx2)). Each doc
 says where a check is still owed.
 
-- [ ] Save states for what no state has shown yet: one after a
-      second-half goal in a match whose half-time tactics screen you did
-      open (the first career match got the score words there, the second
-      never did), one in the second half of extra time. A VS match, added time, extra time, a
-      shoot-out and both full-time screens are already read. Run
+- [ ] A save state for what no state has shown yet: the second half of
+      extra time. A VS match, added time, extra time, a shoot-out, both
+      full-time screens and the half-time tactics screen are already
+      read. Run
       `python SRC/ramcheck.py check <eeMemory.bin>` on a state's memory
       dump, or `check pine` with the game running (PINE on, one
       client at a time, which also tests the addresses live), and report

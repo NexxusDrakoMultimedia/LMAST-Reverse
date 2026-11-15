@@ -1274,11 +1274,10 @@ every open question. These six matter most for an achievement set.
   across a career match and a VS match, and a shoot-out to its result
   state. Not measured: where the shoot-out kicks are counted (the match
   buffer did not change; the engine object did), the second half of
-  extra time, and a second-half goal after the half-time tactics screen
-  was shown (the first career match got the score words there; a second
-  one, with an injury-time goal, never did because the half-time screens were skipped,
-  and the clock sat pinned at
-  5400.00 through injury time). See "Tested in PCSX2" in
+  extra time. The score words are a snapshot written when the half-time
+  tactics screen is set up (0-0 before it, 1-1 on it, still 1-1 after a
+  later goal; never written when the screen is skipped), and the clock
+  sits pinned at 5400.00 through injury time. See "Tested in PCSX2" in
   `RAM_MATCH.md`.
 - **VS-mode matches.** One VS match with a custom team was measured to
   its end (see "Tested in PCSX2"): the match-day object, the group

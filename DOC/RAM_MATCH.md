@@ -175,7 +175,7 @@ Do not rely on these.
 | "Demo flag (P+0x1f544) means a title-screen attract match with no result recorded" | Not shown. The flag comes from `isDemoMode`, which for the VS class returns `[CScheEuro+0x40c]`, set from the runtime-selected-competition regulation flag 4 (`plEve_IsFlagRuntimeSelectCompe`). Only the skip of the result path at GAMEPRG.REL 0x1120 is supported. The script flag `fcEuro_CheckDemoFlag` (0x1093a0, word 0x34d43c) is a different variable. |
 | Why the PlGiTask exists during the title attract demo | Measured: it does (see "Tested in PCSX2"). `RootDemoMatchSeq` calls `Sche.MatchStart` at 0x118, but `initializeTodayMatch` is guarded by `getTodayMatchNum(1)` (0x113a6c), and what the demo setup makes it return was not traced. |
 | `finalizeTodayMatch` runs on every exit path (for example quitting mid-match), so 0x3906d8 is never stale | Not verified. |
-| "Final score is written once at full time" | Refuted for a match with a half-time break: the writer 0x14c9a8 runs once per side inside the screen set-up function 0x9150, and in PCSX2 the score words were written at the half-time tactics screen (see "Tested in PCSX2"). Not seen to run again at full time. They did not catch up with a goal in injury time (see "Tested in PCSX2"). Whether they include own goals, extra-time or shoot-out goals, is unverified. |
+| "Final score is written once at full time" | Refuted for a match with a half-time break: the writer 0x14c9a8 runs once per side inside the screen set-up function 0x9150, and in PCSX2 the score words were written at the half-time tactics screen (see "Tested in PCSX2"). Not seen to run again at full time. They did not catch up with a goal in injury time, nor with a second-half goal after the tactics screen was shown (they stayed 1-1 with a 1-2 tally; see "Tested in PCSX2"). Whether they include own goals, extra-time or shoot-out goals, is unverified. |
 | Writer 0x77c00 of the live tally, "called on a goal", own goals credit the scoring side | No static caller found (no relocation, no raw `jal`, no vtable word). Only the reader side is confirmed. |
 | Side 0 of the tally is home | Inferred from the `SetGameScore` argument order only. Other code (0xaadd8, 0xa9d68) flips the side by comparing a team key with G+0x10c. |
 | That the HUD clock shows exactly G+0x8908 | Not checked. |
@@ -207,7 +207,7 @@ match" (G lives for the whole GAME_MODULE).
 - Is there a single clean "match in progress, kick-off taken, full time" flag? P != 0 spans the whole match day. G != 0 spans the whole GAME_MODULE lifetime. The engine's game-state machine (kick-off, half time, full time, results) was not traced. A PINE watch of G+0x8908 and P+0x1f540 around a match would settle it.
 - Does the score at P+0x1faf0 and P+0x1fb9c (`SetGameScore`) cover only 90 minutes or also include extra-time goals and shoot-out kicks? The tally uses 8 time slots and no shoot-out slot was identified. Compare it with the on-screen score after an extra-time match.
 - Who reads P+0x1faf0, P+0x1fb9c and P+0x1f540? Nexxus's reading is the half-time tactics screen (see "Tested in PCSX2"); the accessors `GetGameScore` 0x2140a0 and `GetGameTime` 0x33c390 have no caller found yet.
-- Is 0x9150 also entered at full time? In PCSX2 it ran at the half-time tactics screen and did not run again at full time in a match with no second-half goal. Its early return (MatchManager + 0x96c >= 2) may be why. In a second career match (injury-time goal, 2-2) they stayed 0-0 to the final whistle, and Nexxus had skipped past the half-time screens there. Whether a match whose tactics screen was shown gets a second-half goal in them is not known. They are not the final score. The wrappers 0x8f98 and 0x8fb8 are reached from 0x1aa3a0, with the choice depending on MatchManager + 0x6e4, but this chain was not traced further.
+- Is 0x9150 also entered at full time? In PCSX2 it ran at the half-time tactics screen and did not run again at full time in a match with no second-half goal. Its early return (MatchManager + 0x96c >= 2) may be why. In a second career match (injury-time goal, 2-2) they stayed 0-0 to the final whistle, because the half-time screens were skipped, and in a third they stayed 1-1 after a second-half goal that made the tally 1-2. They are a snapshot taken when the tactics screen is set up, not the final score. The wrappers 0x8f98 and 0x8fb8 are reached from 0x1aa3a0, with the choice depending on MatchManager + 0x6e4, but this chain was not traced further.
 - Does G+0x8908 match the HUD clock, and how is injury time represented? `GetTimeMode` (P+0x7c) and the injury-time limit were not traced. The `*LOSSTIME*` tables in `DOC/GAME_DIR.md` suggest the displayed injury time lives in the GAME data tables.
 - Does the clock stop during stoppages, replays, set pieces and the half-time break (the speed at +0x70 may be 0 then)? Where is the controller task's +0x5c pointer to G set?
 - Where is the live period (first half, second half, extra time, penalties) kept inside G, and what do the state values 6 to 0xb at G+0x891c mean? (0 to 5 are the period segments, 11 was seen at full time.) Only the PlGiTask side (P+0x80 and the goal event period bytes) was identified.
@@ -770,6 +770,33 @@ What it shows (empirical, one match):
   and 15967), kept counting while the clock was pinned. Neither is
   confirmed as the added time or a timer.
 
+### Four states of a third career match
+
+Nexxus's report, 2026-11-16: four states of another career match (team
+182 against club 1, UID 38) around the half-time tactics screen, taken
+to settle the open question (slots 1 to 4): half-time before the
+tactics screen, the tactics screen, half-time after it, and just after a
+second-half goal. All four pass `ramcheck.py check` with 0 problems.
+
+| State | Clock | State word | Tally (side 0 - side 1, by slot) | Score words, copy |
+|---|---|---|---|---|
+| Half-time, before the tactics screen | 2700.00 | 2 | 1 (slot 0) - 1 (slot 0) | 0-0, 0 |
+| The tactics screen | 2700.00 | 2 | same | 1-1, 2700 |
+| Half-time, after the screen | 2700.00 | 2 | same | 1-1, 2700 |
+| Just after a second-half goal | 2980.31 | 2 | 1 (slot 0) - 1 (slot 0) and 1 (slot 2) | 1-1, 2700 |
+
+What it shows (empirical):
+
+- **Entering the tactics screen writes the score words and the copy.**
+  They read 0-0 and 0 just before it and 1-1 and 2700 on it, with the
+  tally unchanged at 1-1. This is the same as in the first career match
+  and settles why the second one never got them (its half-time screens
+  were skipped).
+- **A later goal does not update them.** After the second-half goal the
+  tally was 1-2 (side 1, slot 2) and the words still read 1-1. They are a
+  snapshot taken when the screen is set up, which fits Nexxus's reading
+  that they exist for that screen. Read the live tally for the score.
+
 ### Ten states of a VS match
 
 Nexxus's report, 2026-11-16: five states of a VS match started from the
@@ -866,10 +893,7 @@ What it shows (empirical, one match):
   be told apart from a career menu by the VS-mode schedule object, and
   the match pointer stays the gate for a match.
 
-Not measured: the second half of extra time, and whether the score words
-hold a second-half goal in a match where the tactics screen was shown
-(the second career match above skipped past the half-time screens and
-never got them).
+Not measured: the second half of extra time.
 
 ### Ten states of a shoot-out
 

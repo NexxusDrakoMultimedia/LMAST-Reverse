@@ -205,7 +205,8 @@ Confirmed in the game; each result is recorded in the doc linked.
       career match, and a VS match with a custom team played into extra
       time (state word, tally rows, added time, extra time, the end
       screens), a shoot-out in the same VS mode, and an injury-time goal in a
-      second career match
+      second career match, and the half-time tactics screen
+      (the score words are a snapshot written when it is set up)
       ([`RAM_MAP.md`](DOC/RAM_MAP.md#tested-in-pcsx2),
       [`RAM_MATCH.md`](DOC/RAM_MATCH.md#tested-in-pcsx2))
 
