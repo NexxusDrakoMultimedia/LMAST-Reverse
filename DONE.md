@@ -195,6 +195,11 @@ Every folder of `DAT/` has a doc and a tool, and the game code is mapped.
 
 Confirmed in the game; each result is recorded in the doc linked.
 
+- [x] The runtime memory map's roots, the heap table, the overlay
+      registry and the career work buffer, read from five career save
+      states (the match rows are not yet seen)
+      ([`RAM_MAP.md`](DOC/RAM_MAP.md#tested-in-pcsx2))
+
 - [x] Edits through the writers: the player database, squads and clubs,
       free agents, regulations, kits, training, facilities, messages, a
       starting crest, a PR event

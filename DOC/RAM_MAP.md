@@ -1081,6 +1081,34 @@ python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x10b2c0 10
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x10b670 8
 ```
 
+## Tested in PCSX2
+
+First measurements, 2026-11-15, from five of Nexxus's save states of one
+disc (`SLES-54151`, CRC `3CB245D5`), slots 1 to 5: five different
+careers, all in the same menu, loaded in one run of the emulator. The
+`eeMemory.bin` of each was read with `python SRC/ramcheck.py check` (and
+`read` for single values). Nothing in the five was a match, so the match
+rows of `RAM_MATCH.md` are still unmeasured.
+
+| What was read | Seen in all five states | Rows it supports |
+|---|---|---|
+| 128 code words over 0x100000 to 0x346c90 | equal to `SLES_541.51` | the executable loads at 0x100000 and does not move |
+| Heap block table 0x35dae8 | sizes as documented for blocks 0 to 6, entry 7 empty; buffers 0x5f9b40, 0xa84b80, 0xc74bc0, 0xf79c00, 0x1999c40, 0x1bf1c80, 0x1e09cc0, the same in every state | the heap table |
+| Overlay registry 0x35ed98 | count 3, one loaded slot: `simprg.elf` at 0xc75000 (inside block 2, whose buffer is 0xc74bc0), the other slots empty | the registry, and that SIMPRG sits in heap block 2 |
+| Career work buffer root 0x3909a8 | 0x5abd80, buffer 0x1e0a1d0, total size 0xfcd38 and the same 11 block offsets in every state, across five different careers | the root and chain, and that the buffer is created once per boot and not per load or new career |
+| Schedule object 0x390650 | non-zero, mode vtable 0x406c28 (Normal); the object's address differs between careers (0xb34890 in slot 1, 0xb31650 in slots 2 to 5) | a new schedule object per career, in the Normal mode |
+| Demo flag 0x34d43c, language slots 0x34defc and 0x34df00 | 0, and 1 and 1 (English) | those rows |
+| Match-day pointer 0x3906d8, match-data pointer 0x390784, BPDATA 0x39066c | 0 (no match day), 0x1f06f90, 0xb53850 | 0x390784 is non-zero outside a match, as `RAM_MATCH.md` says; the match-day pointer is the gate |
+| Module activity table 0x5698d0, slots 0 to 8 | all 0 | at a career's menu no module controller is stored; the table is not a "career is running" flag |
+| Club status (block 1 + 0x1126a) and club rank (block 1 + 0x46ac) | 65535 and 31, 1510 and 0, 57619 and 28, 13044 and 6, 65535 and 31 | rank = min(status >> 11, 31) in all five |
+| Funds (block 0 + 0x0, s64), date (block 0 + 0x88), league and division (block 3 + 0x0 and + 0x4) | plausible values: funds from 15,070,842 to 23,659,064,744, years 2006, 2008, 2019, 2024 and 2098, leagues 0 and 4, divisions 0, 1 and 22 | the field offsets |
+
+`ramcheck.py check` read all 73 static rows of the four docs with a size
+of 1, 2, 4 or 8 in each state and reported no problem (no pointer outside
+RAM). Still owed: a match state (the match object and its chain), a title
+or demo state (the demo flag at 1, the module table filled), and a read
+from a running game over PINE, which tests the same addresses live.
+
 ## Still unknown
 
 Each section above ends with its own "Still unknown" list, which holds
