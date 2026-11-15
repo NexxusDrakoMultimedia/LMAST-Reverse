@@ -197,8 +197,16 @@ Confirmed in the game; each result is recorded in the doc linked.
 
 - [x] The runtime memory map's roots, the heap table, the overlay
       registry and the career work buffer, read from five career save
-      states (the match rows are not yet seen)
-      ([`RAM_MAP.md`](DOC/RAM_MAP.md#tested-in-pcsx2))
+      states, and then the module table, the demo flag, the match object
+      (flags, team ids, competition, clock) and the engine pointer, read
+      from ten save states from the init screen to a quick-mode match,
+      and then the goal tally, the state word and the half-time and
+      full-time hand-over of the score words, from eight states of one
+      career match, and a VS match with a custom team played into extra
+      time (state word, tally rows, added time, extra time, the end
+      screens)
+      ([`RAM_MAP.md`](DOC/RAM_MAP.md#tested-in-pcsx2),
+      [`RAM_MATCH.md`](DOC/RAM_MATCH.md#tested-in-pcsx2))
 
 - [x] Edits through the writers: the player database, squads and clubs,
       free agents, regulations, kits, training, facilities, messages, a

@@ -371,18 +371,22 @@ Each of these switches has been built and is waiting for someone to play it.
 
 What these prove: the runtime memory map
 ([`RAM_MAP.md`](DOC/RAM_MAP.md)) matches the running game. Its rows come
-from reading the code and nothing in them was measured in PCSX2, so each
-doc says where a check is still owed.
+from reading the code. Thirty-seven save states are already read (five career
+menus, ten from the init screen to a quick-mode match, eight of one
+career match and eleven of a VS match played into extra time), and the
+roots, the module table, the demo flag, the match object and the goal
+tally held ([`RAM_MAP.md`](DOC/RAM_MAP.md#tested-in-pcsx2)). Each doc
+says where a check is still owed.
 
-- [ ] A mid-match save state and a title or demo save state: the
-      addresses that open the map hold what the doc says (the demo flag
-      `0x34d43c` at 1 in the demo, the module table filled, the match
-      object's score and clock through its chain). Five career-menu save
-      states are already read
-      ([`RAM_MAP.md`](DOC/RAM_MAP.md#tested-in-pcsx2)). Run `python
-      SRC/ramcheck.py check pine` with the game running (PINE on, one
-      client at a time), or `check <eeMemory.bin>` on a save state's
-      memory dump, and report the `!!` lines
+- [ ] Save states for what no state has shown yet: one after a goal
+      scored in the second half (the half-time state shows the score words
+      are written then, so this tells whether they catch up), one in a
+      shoot-out or the second half of extra time. A VS match, added time,
+      extra time and both full-time screens are already read. Run
+      `python SRC/ramcheck.py check <eeMemory.bin>` on a state's memory
+      dump, or `check pine` with the game running (PINE on, one
+      client at a time, which also tests the addresses live), and report
+      the `!!` lines
       ([`RAM_MAP.md`](DOC/RAM_MAP.md#for-achievement-authors))
 
 ## Test tools

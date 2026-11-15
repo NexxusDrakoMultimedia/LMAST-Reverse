@@ -154,11 +154,11 @@ mean the value is constant.
 | 0x35c9a8 | 4 | u32 pointer | static | CGameRootTask pointer | Game root task. Written once at 0x112c9c under the same one-shot guard. Getter at 0x113038. Its root module controller is at object +0x1c (read by `GetRootModule` 0x112f60, null until the first Execute of CGameRootTask). Non-zero means the task tree exists. | confirmed |
 | 0x35c9ac | 4 | u32 | static | eFcEuroGameMode | Write-only. The only writer is `SetGameMode` 0x113090 (store 0x113098), called only from the sequencer handler at 0x10c324. The only reader, `GetGameMode` 0x113080, has no caller in the executable, and no overlay imports it. The only scripts that call SetGameMode are ROOTMAINSEQ 0x06a0 and 0x08a8, both with the literal 0, so the word is always 0. Not a mode indicator. | confirmed for address, size and accessors; empirical for the value 0 (scripts and import tables) |
 | 0x35d4a0 | 4 | u32 | static | Per-frame counter | Incremented once per call of `ExecuteUpdateGameSystem` 0x149b40 (the increment at 0x149b48 to 0x149b58, lui 0x36 / -0x2b60), which the main loop calls at 0x14eee4, between `CSbTaskManager::Execute` 0x11d800 and `Draw` 0x11d828. Zeroed at game-system init (store at 0x14974c, in a branch delay slot). Getter `etc::GetGlobalCounterGameSystem` 0x14a448. Known readers, both in the executable's own .text: 0x1148b8 (demo pairing, mod 50) and 0x2748a8 (in the FC_EURO_WS_COMMON code). No overlay reader was shown. Wraps at 32 bits. Runs in every mode, so it shows the process is alive, not that a match is running. | confirmed for the address, increment, zero-store, getter and caller; empirical that the main loop runs once per video frame (the vsync wait was not read) |
-| 0x39066c | 4 | u32 pointer to Param::PlBpinfoTask (0x120 bytes) | static | PlBpinfoTask singleton (`plBp_GetBpinfo` 0x20ded0) | Heap object built from the PBDATA pack by the Bp-data read callbacks. Set by `plBp_Create` 0x20dd78 (store 0x20ddf0, called at 0x11034c inside the Bp creator 0x1101c8), cleared by `plBp_Delete` 0x20de70 only when called with a non-zero argument (store 0x20deac, from 0x110398). Create reuses the object through `init` 0x20c5d8 when the pointer is already non-zero. Over 60 callers of the getter. Its lifetime equals that of the BPDATA buffer at 0x35c960: set by `Pwk.BpDataReadFile` (0x110d6c) and zeroed by `BpDataFreeFile` (0x110dbc). So it is 0 at boot, logo and title, 0 during the 3D match (the Game module), and non-zero in the attract demo, new game, club edit, career and after a match. Target layout is documented elsewhere. | confirmed (store, clear and size; the script brackets come from `sqb.py dis` of the ROOT scripts) |
+| 0x39066c | 4 | u32 pointer to Param::PlBpinfoTask (0x120 bytes) | static | PlBpinfoTask singleton (`plBp_GetBpinfo` 0x20ded0) | Heap object built from the PBDATA pack by the Bp-data read callbacks. Set by `plBp_Create` 0x20dd78 (store 0x20ddf0, called at 0x11034c inside the Bp creator 0x1101c8), cleared by `plBp_Delete` 0x20de70 only when called with a non-zero argument (store 0x20deac, from 0x110398). Create reuses the object through `init` 0x20c5d8 when the pointer is already non-zero. Over 60 callers of the getter. Its lifetime equals that of the BPDATA buffer at 0x35c960: set by `Pwk.BpDataReadFile` (0x110d6c) and zeroed by `BpDataFreeFile` (0x110dbc). So it is 0 at boot, logo and title, 0 during the 3D match (the Game module), and non-zero in new game, club edit, career and after a match. Tested in PCSX2: it is also 0 in the attract demo (a Game-module match), and non-zero on the pre-match screen. Target layout is documented elsewhere. | confirmed (store, clear and size; the script brackets come from `sqb.py dis` of the ROOT scripts) |
 | 0x35c960 | 4 | u32 pointer | static | BPDATA buffer pointer | Written at 0x110d70 (start of `BpDataReadFile`, before the asynchronous read completes) and zeroed at 0x110de0 (`BpDataFreeFile`). Script brackets: ROOTMAINSEQ 0x530..0x7f0 (new game and club edit, also re-freed and re-read inside ROOTCLUBEDITSEQ 0x5c0..0x638 and 0xea8..0x13a0) and ..0x1948 (career end); ROOTDEMOMATCHSEQ 0x68..0x1e0 (the attract demo); ROOTMATCHSEQ frees it at 0x488 (zero from just before the 3D match) and re-reads it at 0x688. | confirmed (code and `sqb.py dis`) |
 | 0x391cf8 | 4 | u32 pointer to PwkEditTask (0x23c bytes) | static | PwkEdit singleton | Set by `pwkEdit_Create` 0x23c328 (store 0x23c354) from `Pwk.Create` (0x1104c8), cleared by `pwkEdit_Delete` 0x23c3a0 (store 0x23c3d0) from `Pwk.Delete`, which is unreachable. So it is non-zero for the whole boot after the first script command and cannot gate any mode. Getter at 0x23c3e8; its name is not recorded in the symbols, so "pwkEdit_GetPwkEdit" is unconfirmed. Created in retail too, not debug-only. | confirmed |
 | 0x5eb170 | 4 | u32 pointer to PwkScript (0x24 bytes) | static (.bss) | PwkScript singleton | Set by `pwkScript_Create` 0x256ff8 (store 0x257020) from `Pwk.Create` (0x1104d0), cleared by `pwkScript_Delete` 0x257058 (store 0x257088) from `Pwk.Delete` (unreachable). Getter `pwkScript_GetPwkScript` 0x2570a0. Same lifetime as 0x391cf8: set once at the start of the boot, never cleared in retail. It is not a "Pwk world loaded" flag. | confirmed |
-| 0x3906d8 | 4 | u32 pointer to Param::PlGiTask buffer (0x32668 bytes) | static | plGi pointer (`plGi_Get` 0x210960) | The match-day gate. Set by `plGi_Create` 0x2108f0 (store 0x210920) to the value of [0x390784] (read by 0x210148), zeroed by `plGi_Delete` 0x210940 (store 0x210954). While non-zero it equals [0x390784]. Callers of `plGi_Create`: 0x20373c (`CScheEuro::initializeTodayMatch`, called at 0x113abc inside `Sche.MatchStart` 0x113a38 only when `getTodayMatchNum(1)` is non-zero) and 0x11451c (`Sche.CreateGiForFirstMatch`). Callers of `plGi_Delete`: 0x203808 (`deleteGameInterFace`, via `finalizeTodayMatch` at 0x11406c inside `Sche.MatchEnd`) and 0x114540 (`DeleteGiForFirstMatch`). So it is non-zero from MatchStart to MatchEnd of a match scheduled today, covering the pre-match menu, the 3D match and the post-match screens, and 0 on days without a match. The accessors read the 0x390784 slot, so team ids, stats and logs stay readable after `plGi_Delete` until the next `plGi_Create`. | confirmed (jal scan and code); whether a title-demo match creates it is not traced |
+| 0x3906d8 | 4 | u32 pointer to Param::PlGiTask buffer (0x32668 bytes) | static | plGi pointer (`plGi_Get` 0x210960) | The match-day gate. Set by `plGi_Create` 0x2108f0 (store 0x210920) to the value of [0x390784] (read by 0x210148), zeroed by `plGi_Delete` 0x210940 (store 0x210954). While non-zero it equals [0x390784]. Callers of `plGi_Create`: 0x20373c (`CScheEuro::initializeTodayMatch`, called at 0x113abc inside `Sche.MatchStart` 0x113a38 only when `getTodayMatchNum(1)` is non-zero) and 0x11451c (`Sche.CreateGiForFirstMatch`). Callers of `plGi_Delete`: 0x203808 (`deleteGameInterFace`, via `finalizeTodayMatch` at 0x11406c inside `Sche.MatchEnd`) and 0x114540 (`DeleteGiForFirstMatch`). So it is non-zero from MatchStart to MatchEnd of a match scheduled today, covering the pre-match menu, the 3D match and the post-match screens, and 0 on days without a match. The accessors read the 0x390784 slot, so team ids, stats and logs stay readable after `plGi_Delete` until the next `plGi_Create`. | confirmed (jal scan and code); a title-demo match creates it too (tested in PCSX2, group 148 and the VS schedule object) |
 | 0x3906dc | 4 | u32 pointer to plGiManage object (0x24 bytes) | static | plGiManage pointer (`plGiManage_Get` 0x214130) | Heap block from `FcEuroMalloc(0x24, 0x10)` (0x2140d4), set by `plGiManage_Create` 0x2140c8 (store 0x2140e4) from `PwkCallbackCommand_GetGameIfData` (script command `Pwk.GetGameIfData`, ROOTMATCHSEQ 0x998), freed and zeroed by `plGiManage_Delete` 0x2140f0 (store 0x214114) from `PwkCallbackCommand_FreeGameIfData`. Non-zero only between those two script commands (the post-match income stage), and the address changes every match. | confirmed (jal scan and scripts) |
 | 0x34defc | 4 | u32 | static (.data) | Current language slot | `Localize_GetLanguage` 0x10e2a0. Written at boot by `Localize_DefaultLanguage` 0x10e1c0 (stores at 0x10e20c to 0x10e25c and 0x10e264) and later by `Localize_SetLanguage` 0x10e2b0 (the language menu). Encoding: 0 JP, 1 UK English, 2 FR, 3 DE, 4 IT, 5 ES, 6 Dutch (never selected). Used to build file names (the digit, 0x10cad4) and "%d_%d.mbb" (0x10e2f8). File value 0. | confirmed (jump table at 0x51a6d0, lui 0x52 / -0x5930; encoding also in `DOC/MBB_FORMAT.md`) |
 | 0x34df00 | 4 | u32 | static (.data) | Boot-time language slot | `Localize_GetFixedLanguage` 0x10e290. Copy of the boot default, written only at 0x10e278 in the executable (overlays not searched). `Localize_DefaultLanguage` turns a `sceScfGetLanguage` result of 0 into 1 (`movn` at 0x10e1d8), then looks up values 1 to 7 in the table at 0x51a6d0, which gives slots 1, 2, 5, 3, 4, 1, 1 for results 1 to 7 (English 1, French 2, Spanish 5, German 3, Italian 4, and 6 and 7 fall back to 1). A result of 8 or more takes the default at 0x10e260 and stores 1. Does not change after boot. File value 0. | confirmed |
@@ -269,7 +269,7 @@ These parts were disputed, left open, or not shown. Do not rely on them.
 | Pwork block offsets identical on every boot | The shuffle state 0x569dc0 starts at the constant 0x12345678 and `Pwk.Create` is the first script command, so the order may be deterministic, but draws between `fcEuroRand_Init` (0x112940) and `Pwk.Create` were not enumerated and no run was observed. |
 | CScheEuro +0x40c is an attract or demo flag | Refuted as stated: the only writer is `TeamEntryLoadCompCB`, which sets it from runtime-select-competition flag 4. Whether demo matches use it is unverified. |
 | CScheEuro turn field and `getNowTurn` 0x2042a8 | The turn is read through the ScheduleControllerBaseSystem pointer at u32[s+0]. The inner offset was not traced. |
-| A match object (0x3906d8) exists in a title-demo match | `Sche.MatchStart` is called at ROOTDEMOMATCHSEQ 0x118, but `initializeTodayMatch` is guarded by `getTodayMatchNum(1)` (0x113a6c), and what the demo setup makes it return was not traced. |
+| A match object (0x3906d8) exists in a title-demo match | Measured: yes, in both attract-demo states (non-zero, demo and VS flags 1, group 148). Why `getTodayMatchNum(1)` (0x113a6c) is non-zero in the demo was not traced. |
 | Cancelling the attract demo with a button | Whether it skips the `SetDemoFlag 0` at ROOTDEMOMATCHSEQ 0x208 (and so leaves 0x34d43c at 1) and whether CScheEuro is finalized on that path was not traced. |
 | Stale non-zero values after a soft reset, the developer launcher or a save state from another boot | Whether 0x390650, 0x3906d8, 0x39066c or 0x35c960 can keep old values was not checked. Heap target addresses across boots were not measured. |
 | `pwkEdit_GetPwkEdit` as the symbol name at 0x23c3e8 | The getter is not named in the symbols. |
@@ -780,7 +780,7 @@ Every chain starts at a static word in `SLES_541.51`. The static roots are 0x390
 | Block i base | base_i = u32[T+0x1c] + u32[T+0x28+4*i], i = 0..10 | T != 0, D != 0, and the sum lies in 0x00100000 to 0x01FFFFFF. | The offsets are set once in the constructor, so they do not change on New Game or Load. Whether the shuffle gives the same offsets on every boot is open (see "Unconfirmed"), so re-read the chain rather than hard-code it. |
 | Block 0 + 0x298 (save point), + 0x0 (funds), + 0x88 (date) | block 0 = u32[T+0x1c] + u32[T+0x28]; then + 0x298, + 0x0 or + 0x88 | The chain above, in a career (new or loaded). The new-game date (2005 turn 92) and funds (0) hold only until the first date advance or payment. | The save point changes only on a save (SetSavePoint at the start of the save task), a load (restored) and a new game (cleared to 0). The date changes at every turn advance, funds on payments. |
 | Scheduler object | u32[0x390650] (static), fields +0x408 and +0x418 | Pointer non-zero while a scheduler object exists: opening playoffs, a career, VS Mode, the title attract demo. +0x408 == 1 only inside the load-time initialisation window. | The pointer value (heap) changes each time the object is recreated and is zeroed at each Sche.Finalize (end of the opening playoffs, return to the title, end of a VS or demo match). It persists across menus, matches and season rollover while the career runs. New Game creates it twice (FirstCheck, Finalize, then Initialize). |
-| BPDATA buffer | u32[0x35c960] (static) | Non-zero from ROOTMAINSEQ 0x0530 (after the read wait completes) in a career, and during the demo. Zero during a 3D match and in the club-editing gaps listed above. | Address 0x35c960 fixed. The pointer value changes on each ReadFile (session entry, the New Game club-edit re-reads, and after every 3D match), so debounce it. |
+| BPDATA buffer | u32[0x35c960] (static) | Non-zero from ROOTMAINSEQ 0x0530 (after the read wait completes) in a career, and in the demo's set-up (the script brackets 0x68..0x1e0; tested in PCSX2: 0 in both attract states, loading and playing, so the demo has freed it by then). Zero during a 3D match and in the club-editing gaps listed above. | Address 0x35c960 fixed. The pointer value changes on each ReadFile (session entry, the New Game club-edit re-reads, and after every 3D match), so debounce it. |
 
 On the Japanese release resolve each root through `gamever.py`; the Japanese build also differs in save constants (version 0x68, CRC 0x16da, key string at 0x53f28 per `DOC/SAVE_FORMAT.md`). The pwork global there is a different address (`DOC/JAPANESE_RELEASE.md`).
 
@@ -1030,11 +1030,10 @@ Refuted:
 - Whether the demo flag clears promptly when the player skips or
   interrupts the demo (whether `SetDemoFlag 0` at 0x208 is skipped), and
   whether `CScheEuro` is finalised on that path. Not traced.
-- Whether the PlGiTask (0x3906d8) is created in a title-demo match:
-  `Sche.MatchStart` is called at script offset 0x118 of
-  `ROOTDEMOMATCHSEQ.SQB`, but `initializeTodayMatch` is guarded by
-  `getTodayMatchNum(1)` and what the demo setup makes it return was not
-  traced. So whether 0x5eacb0 is set during the demo is also unknown.
+- Why the title-demo match has a PlGiTask. It does (0x3906d8 is
+  non-zero and 0x5eacb0 is 148 in both attract states, see "Tested in
+  PCSX2"), so `getTodayMatchNum(1)` returns non-zero in the demo, but
+  what the demo setup makes it return was not traced.
 - Whether a soft reset, the developer launcher or a save-state load
   from another boot leaves stale non-zero values in 0x390650, 0x3906d8
   or the other roots.
@@ -1087,8 +1086,8 @@ First measurements, 2026-11-15, from five of Nexxus's save states of one
 disc (`SLES-54151`, CRC `3CB245D5`), slots 1 to 5: five different
 careers, all in the same menu, loaded in one run of the emulator. The
 `eeMemory.bin` of each was read with `python SRC/ramcheck.py check` (and
-`read` for single values). Nothing in the five was a match, so the match
-rows of `RAM_MATCH.md` are still unmeasured.
+`read` for single values). Nothing in the five was a match; the match
+rows were measured in the ten states further down.
 
 | What was read | Seen in all five states | Rows it supports |
 |---|---|---|
@@ -1105,29 +1104,171 @@ rows of `RAM_MATCH.md` are still unmeasured.
 
 `ramcheck.py check` read all 73 static rows of the four docs with a size
 of 1, 2, 4 or 8 in each state and reported no problem (no pointer outside
-RAM). Still owed: a match state (the match object and its chain), a title
-or demo state (the demo flag at 1, the module table filled), and a read
-from a running game over PINE, which tests the same addresses live.
+RAM). Still owed: a read from a running game over PINE, which tests the
+same addresses live, and a VS-mode match, a shoot-out and a played
+(not quick) full match.
+
+### Ten states from boot to a quick match
+
+Second measurement, Nexxus's report, 2026-11-15 and 2026-11-16: ten save
+states of the same disc and one run of the emulator, slots 1 to 10, taken
+in order through the game's start-up and a career match. Each was read
+with `ramcheck.py check` and with the chains of `RAM_MATCH.md` (the
+match rows through 0x3906d8, the engine through the registry). All ten
+report no problem. Nexxus's labels for the slots are in the first column.
+
+| Slot | Screen | Module table (ids set) | Schedule object 0x390650 | Match pointer 0x3906d8 | Demo flag 0x34d43c | Match group 0x5eacb0 | Overlays in the registry |
+|---|---|---|---|---|---|---|---|
+| 1 | Init screen | 30 (SelectVideoMode) | 0 | 0 | 0 | 0 | simprg, movieprg |
+| 2 | Title screen | 45 (Title) | 0 | 0 | 0 | 0 | simprg, movieprg |
+| 3 | Match attract loading | 6 (Game) | 0xaefe10, VS | 0x1f06f90 | 1 | 148 | gameprg |
+| 4 | Match attract demo | 6 (Game) | 0xaefe10, VS | 0x1f06f90 | 1 | 148 | gameprg |
+| 5 | Demo movie | 45 (Title) | 0 | 0 | 0 | -1 | simprg, movieprg |
+| 6 | Pre match screen | 24 (SimRoot), 35 (MatchMenu) | 0xb33f10, Normal | 0x1f06f90 | 0 | 38 | simprg |
+| 7 | Career match, beginning | 6 (Game) | 0xb33f10, Normal | 0x1f06f90 | 0 | 38 | gameprg |
+| 8 | Career match, 2 minutes in | 6 (Game) | 0xb33f10, Normal | 0x1f06f90 | 0 | 38 | gameprg |
+| 9 | Career match, loading | 6 (Game) | 0xb31650, Normal | 0x1f06f90 | 0 | 38 | gameprg |
+| 10 | Career match, quick mode | 6 (Game) | 0xb31650, Normal | 0x1f06f90 | 0 | 38 | gameprg |
+
+(Slots 9 and 10 were first named the other way round; Nexxus corrected
+that. The match clock agrees: 0.00 in the loading state and 146.25 in
+quick mode.)
+
+What the ten states show:
+
+- **The demo flag 0x34d43c is the attract-demo flag.** It is 1 in both
+  attract states (3 and 4) and 0 everywhere else, the demo movie of slot
+  5 included. The movie runs under the Title module (id 45), so it is not
+  a match and not a separate module.
+- **The attract demo does build a match.** The match pointer 0x3906d8 is
+  non-zero (0x1f06f90, the constant 0x390784 buffer), the schedule object
+  is the VS one, and in the PlGiTask the demo flag (P + 0x1f544) and the
+  VS flag (P + 0x1f548) are both 1. The static match group 0x5eacb0 is 148
+  (the first VS group, `DOC/SCHEDULE_FORMAT.md`) with grade 5. The two
+  teams are ids 130 and 87, not ids from the 543 to 558 range that
+  `RAM_MATCH.md` gave for VS teams, so that range is not what the demo
+  uses. After the demo, in the demo movie state, the group and grade read
+  -1 and -1.
+- **The match pointer is a match-day gate, as documented.** It is 0 on
+  the init, title and demo-movie screens, and non-zero from the pre-match
+  screen through the 3D match, in the attract demo and in the quick-mode
+  state. Both flags read 0 in the career match, the team ids read 182 and
+  1 (id 1 is the player's club, and it is the second of the two), the
+  competition is 22, the schedule UID 38 and the grade 2, and the score
+  reads 0-0 (the table's final score is written only by the end-of-match
+  hand-over). The values are the same in every career-match state.
+- **The match engine chain works.** GAMEPRG's base comes from the
+  registry as 0xc75000 in all six states that have it loaded, the same
+  address SIMPRG has in the other states, and G read through
+  `[base + 0x2490fc]` is 0x1c0de90 in them. The match clock at G + 0x8908
+  is 0.00 at kick-off and in the loading state, 123.75 two minutes in, and
+  146.25 in the quick-mode state; the goal tally and the state word at
+  G + 0x891c read 0 throughout. G is non-zero in the loading state, so the
+  engine object exists before the first frame is played, as the doc says.
+- **The module table matches the scripts.** Init is module 30, the title
+  is 45, the attract demo and every 3D match are Game (6), and the pre
+  match screen is SimRoot (24) plus MatchMenu (35). SimRoot is deleted
+  before Game starts, as documented. Module 30 was not in the table's row
+  list; it is `SelectVideoMode` (`GAME_FLOW.md`). The value stored in a
+  slot is a controller pointer and not a flag: 0x5ac180 in most states
+  and 0x5ac280 in the attract demo.
+- **The BPDATA pointers are 0 in the attract demo**, not non-zero as the
+  rows said: 0x39066c and 0x35c960 are 0 in slots 3 and 4 (and in all the
+  3D-match states), and non-zero only in the pre-match screen (0xb56110
+  and 0x1137e80, with SimRoot and MatchMenu loaded). They are also 0 on
+  the init, title and demo-movie screens.
+- **The schedule object is new for each match day's flow.** Its address
+  changes when it is deleted and created again: 0xb33f10 in slots 6 to 8,
+  0xb31650 in 9 and 10, and 0xaefe10 in the attract demo.
+- **The work buffer exists from the init screen on.** Its root, buffer
+  and 11 offsets are the same in all ten states (and in the five career
+  states above), which confirms that it is created once per boot.
+- **The overlay bases did not move.** SIMPRG and GAMEPRG were at 0xc75000
+  in all fifteen states that had either loaded, and MOVIEPRG at 0xf7a000
+  in the three that had it; this is one run of the emulator, so it does
+  not show they are the same on every boot.
+
+### Eight states of one career match
+
+Third measurement, Nexxus's report, 2026-11-16: eight save states of one
+career match (slots 1 to 8, taken after the ten above had been read and
+then overwritten): the start, just before a goal, just after it, the
+half-time result screen, the half-time tactics screen, the final whistle,
+the full-time result screen and the post-match screen. All eight pass
+`ramcheck.py check` with 0 problems. `RAM_MATCH.md` ("Eight states of one
+career match") has the table of clock, state word, tally and score
+words, and what it shows. In short:
+
+- The first seven states are all under the Game module (6), with GAMEPRG
+  at 0xc75000, G at 0x1c0de90, the match pointer at 0x1f06f90, both flags
+  0, teams 182 and 1, UID 38, competition 22 and grade 2.
+- The live goal tally and the state word moved as expected, and the
+  final-score words and the game time copy were first written at the
+  half-time tactics screen (0-0 and 0 before it, 1-0 and 2700 after it),
+  not at full time.
+- On the post-match screen the Game module is gone: the module table
+  shows SimRoot (24) and MatchMenu (35), the engine chain no longer
+  resolves, the static match group mirror reads -1 and -1, and the BPDATA
+  pointers are non-zero again (0xb56f90 and 0x1137e80). The match
+  pointer is still 0x1f06f90 and the score words still read 1-0.
+- The schedule object stayed at 0xb31650 (Normal mode) in all eight
+  states, the same address as in slots 9 and 10 of the ten above.
+
+### Ten states of a VS match
+
+Fourth measurement, Nexxus's report, 2026-11-16: ten save states of one
+VS match with a custom team, played into extra time (slots 1 to 10): the
+intro, the start, a second-half goal, a second-half equalizer, added time,
+the start of extra time, an extra-time free kick, an extra-time goal, the
+final whistle and the final screen. All ten pass `ramcheck.py check`
+with 0 problems. `RAM_MATCH.md` ("Ten states of a VS match", which
+covers all ten) has the table. In short:
+
+- The match pointer is 0x1f06f90, the demo flag 0, the VS flag 1, the
+  script flag 0x34d43c 0, the group mirror 148 and 5, the teams 543 and 13
+  (the first range of VS team ids), and the schedule object is in VS mode
+  (vtable 0x406a68, address 0xb56990).
+- The state word is the period segment: 0 first half, 2 second half, 3 at
+  90:00, 4 and 5 in extra time, 11 at the final whistle. The tally rows
+  follow it, and the clock runs on from 5400 into extra time.
+- The score words, the game time copy and the result type and period never
+  changed (0-0, 0, 0 and 1), even with a 2-1 tally and extra time. The
+  tally is the only live score.
+- After the match the Game module is gone, the engine chain and the group
+  mirror are gone, and the BPDATA pointers are back, as in the career
+  match.
+- On the VS mode hub screen (taken separately) the match pointer is 0,
+  only SimRoot is active, the VS-mode schedule object already exists, and
+  VSPRG is loaded at 0x1105800 beside SIMPRG at 0xc75000.
 
 ## Still unknown
 
 Each section above ends with its own "Still unknown" list, which holds
-every open question. These five matter most for an achievement set.
+every open question. These six matter most for an achievement set.
 
-- **No value was measured in a running game.** The buffer base of each
-  heap block, the load base of each overlay and the shuffled block
-  offsets of the career work buffer were never read at run time. Whether
-  they are the same on every boot of the same disc is open, so no
-  heap-resident address may be hard-coded. See "Address space layout"
+- **Only one boot was measured.** The buffer base of each heap block,
+  the load base of each overlay and the shuffled block offsets of the
+  career work buffer were read in fifteen save states of one run of the
+  emulator, and they were the same in all. Whether they are the same on
+  every boot of the same disc is open, so no heap-resident address may
+  be hard-coded. See "Address space layout"
   and "Save, load and new game transitions".
 - **Cancelling the attract demo.** Whether a button press skips
   `SetDemoFlag 0` at `ROOTDEMOMATCHSEQ` 0x208, leaves the demo flag
   0x34d43c at 1 and skips `Sche.Finalize`, was not traced. A set that
   needs the demo guard depends on it. See "Game mode, screens and flow"
   and "Non-career modes and guards".
-- **Matches in the demo and in VS mode.** Whether the match-day object
-  (0x3906d8) and the current match group (0x5eacb0) exist in a title-demo
-  match or a VS match was not traced. See "Game mode, screens and flow"
+- **The rest of a match.** Goals, the half-time screens, the second
+  half, added time, extra time and both full-time screens were measured
+  across a career match and a VS match. Not measured: a shoot-out, the
+  second half of extra time, and a career match with a second-half goal
+  (the score words are written at the half-time tactics screen and may
+  not catch it). See "Tested in PCSX2" in `RAM_MATCH.md`.
+- **VS-mode matches.** One VS match with a custom team was measured to
+  its end (see "Tested in PCSX2"): the match-day object, the group
+  mirror, the flags and the VS-mode schedule object exist as documented.
+  Not measured: a VS match with a different competition, or one that
+  ends in a shoot-out. See "Game mode, screens and flow"
   and "Rich presence identifiers".
 - **Save and load progress.** No static "save in progress" or "load
   finished" flag was found, and the number of frames a load takes to

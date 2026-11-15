@@ -589,9 +589,11 @@ and the Japanese release is extracted and read by the same tools through
 has no effect on the game, on both releases, and the editors work on the
 Japanese release as on PAL.
 
-- [ ] **test** The runtime memory map against the running game with
-      `python SRC/ramcheck.py check`, in
-      [`TESTING.md`](TESTING.md#the-end-point). `ramcheck.py` follows
+- [ ] **test** The rest of the runtime memory map against the running
+      game with `python SRC/ramcheck.py check` (states after a
+      second-half goal in a career match, a shoot-out, the second half of
+      extra time, a live PINE read),
+      in [`TESTING.md`](TESTING.md#the-end-point). `ramcheck.py` follows
       the heap table, the overlay registry and the career work buffer
       and checks every static row; the pointer-relative rows (P+, T+,
       slot+) are not followed yet

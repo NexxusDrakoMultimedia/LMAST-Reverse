@@ -115,7 +115,7 @@ first command of `ROOTMAINSEQ.SQB`) and freed only by an unreachable
 | 0x3906d8 | 4 | u32 pointer, 0 when none | static | PlGiTask pointer (P) | Non-zero from `plGi_Create` until `plGi_Delete`, and zero otherwise. Create is called at 0x20373c in `CScheEuro::initializeTodayMatch` (reached at 0x113abc inside `Sche.MatchStart` 0x113a38, only when `getTodayMatchNum(1)` is non-zero) and at 0x11451c in `ScheCallbackCommand_CreateGiForFirstMatch`. Delete is called at 0x203808 in `deleteGameInterFace` (via `finalizeTodayMatch` at 0x11406c inside `Sche.MatchEnd`) and at 0x114540. While non-zero it equals the permanent buffer root [0x390784]. It means "a match day's game interface exists" (pre-match menu, 3D match, result screens), not "the 3D match is playing". | confirmed, `plGi_Get` 0x210960, `plGi_Create` 0x2108f0, `plGi_Delete` 0x210940 |
 | [0x3906d8] + 0x1f544 | 4 | u32, always 0 or 1 | heap | Demo flag (PlGiTask) | 0 or 1, written once per match by the inline store at SLES 0x203d98 (`sltu` of the result of the virtual call at vtable +0x24, `isDemoMode`), cleared by `PlGiTask::init` at 0x210ff0. `isDemoMode` returns 0 for Normal and FirstPromote and `[CScheEuro+0x40c]` for VS (0x33b8e8). That word is set at SLES 0x206e5c and 0x206e60 from `plEve_IsFlagRuntimeSelectCompe(..., 4)`. When non-zero, `GAMEPRG.REL` 0x1120 and 0x1ea8b8 skip the result path, and `GAMEPRG.REL` 0x1c2918 returns mode 2. Mode there: 2 when this flag is set, else 1 if the VS flag is set, else 0. Whether it means "title attract match" is not settled (see Unconfirmed). | confirmed for address, size, writer, reset and the mode function; the meaning is empirical |
 | [0x3906d8] + 0x1f548 | 4 | u32, always 0 or 1 | heap | VS-mode flag | 0 or 1. Copy of `CScheEuro::IsVsMode()` (vtable +0x1c): 0 for Normal (0x33b5a0) and FirstPromote (0x33b740), 1 for VS (0x33b8e0). Stored once per match by `initializeOneMatch` at SLES 0x203d7c. Zeroed by `PlGiTask::init` at 0x210ff4. Reads 0 from creation until `initializeOneMatch` has run. The title attract demo also builds the VS-mode `CScheEuro` (`Initialize_VsMode`), so it has VS = 1. `SetVSFlag` 0x33c420 has no callers; the inline store is the writer. | confirmed for address, size, writer and values; the "VS mode" meaning is empirical |
-| [0x3906d8] + 0x1fba0 (home), + 0x24540 (away) | 4 | u32 team id | heap | Team ids | First word of each side's primary 0x49a0-byte `PlTeamData`. Id 1 is the player's own club in a career match built through `initializeOneMatch` (0x2039e4). Ids 0x21f to 0x22e (543 to 558) are the 16 VS-mode teams (`SetTeamData` 0x210ab8 tests id - 0x21f < 0x10), so the highest id admitted is 0x22e. Working copies of the same sides are at + 0x28ee0 and + 0x2d880. Filled by `PlGiTask::SetTeamData` 0x210970. The accessor at 0x210198 builds 0x10000 + 0xfba0 and reads from [0x390784], so the words stay readable after `plGi_Delete` until the next `plGi_Create`. Slot 0 = home is inferred from the argument name. | confirmed for address, size and the id tests (id == 1, id < 0x21f); side order empirical |
+| [0x3906d8] + 0x1fba0 (home), + 0x24540 (away) | 4 | u32 team id | heap | Team ids | First word of each side's primary 0x49a0-byte `PlTeamData`. Id 1 is the player's own club in a career match built through `initializeOneMatch` (0x2039e4). Ids 0x21f to 0x22e (543 to 558) are the 16 VS-mode teams (`SetTeamData` 0x210ab8 tests id - 0x21f < 0x10), so the highest id admitted is 0x22e. The title attract demo, a VS match, used ids 130 and 87 in PCSX2, so that range is not what it uses. Working copies of the same sides are at + 0x28ee0 and + 0x2d880. Filled by `PlGiTask::SetTeamData` 0x210970. The accessor at 0x210198 builds 0x10000 + 0xfba0 and reads from [0x390784], so the words stay readable after `plGi_Delete` until the next `plGi_Create`. Slot 0 = home is inferred from the argument name. | confirmed for address, size and the id tests (id == 1, id < 0x21f); side order empirical |
 | [0x3906d8] + 0x1faf0 (home), + 0x1fb9c (away) | 4 | u32 | heap | Final score per side | Goals handed from the engine to `PlGiTask::SetGameScore` 0x214070 (negative inputs clamped to 0). Cleared to 0 by `bufer_clear` at each `plGi_Create`, so 0 before the hand-over. Sole writer: `GAMEPRG.REL` 0x14cb6c (0x14cb80 writes 0-0 when the tally pointer is null), inside the function at 0x14c9a8, which runs once per side, called at GAMEPRG.REL 0x9230 inside the screen set-up function 0x9150. So the words are refreshed each time that screen is set up, not by a dedicated "match end" routine. Not a live score. Values are tiny (a sum of 8 bytes), so an 8-bit read of each word is enough. | confirmed (address, writer and the zero state) |
 | G + 0x4920 + side*0x80 + slot*0x10 + 8 (slot 0 to 7) | 1 each, 8 per side | u8 | heap, root in overlay data | Live goal tally per side | Goals of each side split into 8 match-time slots (thresholds in the u16 table at GAMEPRG.REL 0x26c238). Goals for a side = the sum of the 8 bytes (`GAMEPRG.REL` 0x77cb0). Side 0 feeds the first score argument of `SetGameScore` at 0x14cb6c, side 1 the second. Side order is "first team in the engine's ordering by G+0x10c", home by inference only. G is non-zero only while the engine object exists. | empirical (the reader side is read in code; no writer was found) |
 | G + 0x8908 | 4 | float32, seconds | heap, root in overlay data | Match clock | Elapsed match time in game seconds on the 90-minute scale. It is zeroed at construction (0x72170) and at 0x167848, 0x16ba64, 0x16bafc and 0x16bbe0. It is a match clock while the state word at G+0x891c is 0 to 7, but not a free-running one: the controller task init (0x1664c8) loads its float at +0x6c from G+0x8908 (0x16650c), so it is not reset at every phase change. Per frame the task adds speed (+0x70) / (vsync multiplier * 59.94) to +0x6c and mirrors it to G+0x8908 (0x1667a4 to 0x166880). The period value is stored into it at 0x166f9c, 0x167000, 0x16711c and 0x1671d0 (and via 0x16b988 and 0x16b9a8), so it is snapped at period changes and runs on past period limits during added time. Period-end table (u16, GAMEPRG.REL 0x26c238): 2700, 2700, 5400, 5400, 6300, 6300, 7200, 7200 (end of 45', 90', 105', 120'). Read as a float. | empirical; readers at GAMEPRG.REL 0xaacc0 and 0x14cb20 confirmed |
@@ -158,7 +158,7 @@ Concrete advice for an author, taken only from the rows above.
 - Mode check: the PlGiTask flags are not a clean "career match" test. VS flag (P+0x1f548) == 0 excludes VS matches and the title attract demo (which runs as VS), and demo flag (P+0x1f544) == 0 excludes the runtime-selected "no result" case. Both also read 0 for opening-playoff (FirstPromote) matches, and both read 0 until `initializeOneMatch` has run, so latch the check after the match has started, not on the first frame where P is non-zero. Both are strict 0 or 1, so an 8-bit read is enough. For the title attract demo, the separate script flag at 0x34d43c is 1 only from `RootDemoMatchSeq` 0x18 to 0x208 (writer 0x109394 in `fcEuroDummyCommand_SetDemoFlag`).
 - Per-club or per-opponent sets: read the two team ids at P+0x1fba0 and P+0x24540 and check for id 1 (the player's club in a career match). Latch them once non-zero, because the next `plGi_Create` clears the buffer. Which of the two is home is inferred, not confirmed.
 - Live score: sum the 8 bytes per side at G + 0x4920 + side*0x80 + slot*0x10 + 8, compare with the previous frame, and require G != 0. Pitfall: side 0 is only inferred to be home, and the engine orders sides by G+0x10c. Latch the last value before teardown, because G is zeroed when the engine is destroyed.
-- Final result: P+0x1faf0 and P+0x1fb9c are 0 until the hand-over at GAMEPRG.REL 0x14cb6c, and are refreshed each time the tactics screen is set up. A 0-0 result cannot be told from "not yet handed over" by these words alone. Read them before the next `plGi_Create`.
+- Final result: P+0x1faf0 and P+0x1fb9c are 0 until the hand-over at GAMEPRG.REL 0x14cb6c, and are refreshed each time the tactics screen is set up. A 0-0 result cannot be told from "not yet handed over" by these words alone. Read them before the next `plGi_Create`. In PCSX2 they were written at the half-time tactics screen, not at full time, so a goal after half time may be missing from them: use the live tally for the score.
 - Clock: read as a float, never an integer. The clock keeps running past a period limit during added time until it is snapped at the period change. Use floor(t / 60) against the previous frame for minute triggers. Guard against G changing between frames, since a delta across two different match objects is meaningless.
 - Extra time and shoot-out: P+0x84 == 2 and P+0x80 == 4 mark a shoot-out, P+0x84 == 3 away goals, P+0x84 == 1 a goal in extra time. P+0x80 is 1 from `plGi_Create`, so it is not a start-of-match signal. For shoot-out winners compare the bytes at P+0x322d0 and P+0x32390 after the match has ended, not during the shoot-out, because they are written in a batch.
 - Competition-specific sets: read the UID at P+0x1f480 and look it up with `SRC/schedule.py` (`DOC/SCHEDULE_FORMAT.md`). It changes at every `initializeOneMatch`, including AI matches of the same day, so confirm that the player's own match is the one in progress. The competition at P+0x1f920 can be -1 once a match is set up, and reads 0 before that.
@@ -173,16 +173,16 @@ Do not rely on these.
 | Claim | Why it is not relied on |
 |---|---|
 | "Demo flag (P+0x1f544) means a title-screen attract match with no result recorded" | Not shown. The flag comes from `isDemoMode`, which for the VS class returns `[CScheEuro+0x40c]`, set from the runtime-selected-competition regulation flag 4 (`plEve_IsFlagRuntimeSelectCompe`). Only the skip of the result path at GAMEPRG.REL 0x1120 is supported. The script flag `fcEuro_CheckDemoFlag` (0x1093a0, word 0x34d43c) is a different variable. |
-| Whether the PlGiTask exists during the title attract demo | `RootDemoMatchSeq` calls `Sche.MatchStart` at 0x118, but `initializeTodayMatch` is guarded by `getTodayMatchNum(1)` (0x113a6c), and what the demo setup makes it return was not traced. |
+| Why the PlGiTask exists during the title attract demo | Measured: it does (see "Tested in PCSX2"). `RootDemoMatchSeq` calls `Sche.MatchStart` at 0x118, but `initializeTodayMatch` is guarded by `getTodayMatchNum(1)` (0x113a6c), and what the demo setup makes it return was not traced. |
 | `finalizeTodayMatch` runs on every exit path (for example quitting mid-match), so 0x3906d8 is never stale | Not verified. |
-| "Final score is written once at full time" | The writer 0x14c9a8 runs once per side inside the screen set-up function 0x9150, so the two values are written twice. Whether that screen is entered at half time, full time or both is not settled. Whether the score includes own goals, extra-time or shoot-out goals is unverified. |
+| "Final score is written once at full time" | Refuted for a match with a half-time break: the writer 0x14c9a8 runs once per side inside the screen set-up function 0x9150, and in PCSX2 the score words were written at the half-time tactics screen (see "Tested in PCSX2"). Not seen to run again at full time. Whether a goal after half time reaches them, and whether they include own goals, extra-time or shoot-out goals, is unverified. |
 | Writer 0x77c00 of the live tally, "called on a goal", own goals credit the scoring side | No static caller found (no relocation, no raw `jal`, no vtable word). Only the reader side is confirmed. |
 | Side 0 of the tally is home | Inferred from the `SetGameScore` argument order only. Other code (0xaadd8, 0xa9d68) flips the side by comparing a team key with G+0x10c. |
 | That the HUD clock shows exactly G+0x8908 | Not checked. |
 | G+0x8910 as added (injury) time, and G+0x8918 as a per-tick counter | Guesses from the code ("looks like", "probably"); not verified. |
-| State word G+0x891c: what each value means | The state word reaches 0xb (jump table at 0x290180 covers 0 to 8). The meaning of each value is unverified. |
+| State word G+0x891c: what each value means | The state word reaches 0xb (jump table at 0x290180 covers 0 to 8). The meaning of each value is unverified. Seen in PCSX2: it is the period segment (0 first half, 1 end of the first half, 2 second half, 3 at 90:00, 4 and 5 in the first half of extra time; the tally row of a goal is the word at that moment), 2 on the half-time screens and 11 at the final whistle and the full-time result screen. Values 6 to 10 were not seen. |
 | "5400.0 means 90:00" | The period-end table has 5400 as the end of the 90th minute, and a compare with 5400.0 exists at GAMEPRG.REL 0xd9260. A reviewer of the game-time copy also saw thresholds 5100, 6000 and 6900. Treat 5400 as likely but untested in play. |
-| P+0x1f540 holding about 2700 at half time, or above 5400 with added time | Not observed. |
+| P+0x1f540 holding about 2700 at half time, or above 5400 with added time | 2700 at half time was observed in PCSX2 (exactly 2700, with the clock at 2700.00). A value above 5400 with added time was not. |
 | Values 4 and 5 of the developers' 0 to 5 range for P+0x80 | Value 4 is produced by `PK`. Value 5 is not produced by any code read. The guard in `OwnGoal` and the callers of `EnterOT` were not found. |
 | Shoot-out byte counts "scored kicks" and is live during the shoot-out | The only call passes a constant 1 for the scored argument, and whether a missed kick is ever sent as a PK event is unknown. The byte is written in a batch after the match. Side 0 = home assumed. |
 | P+0x1f484 as the previous UID | Refuted: it is a copy of P+0x1f474, a different field whose writer was not traced. P+0x1f488 is reported as a signed period byte by another draft and is not checked here. |
@@ -206,10 +206,10 @@ match" (G lives for the whole GAME_MODULE).
 
 - Is there a single clean "match in progress, kick-off taken, full time" flag? P != 0 spans the whole match day. G != 0 spans the whole GAME_MODULE lifetime. The engine's game-state machine (kick-off, half time, full time, results) was not traced. A PINE watch of G+0x8908 and P+0x1f540 around a match would settle it.
 - Does the score at P+0x1faf0 and P+0x1fb9c (`SetGameScore`) cover only 90 minutes or also include extra-time goals and shoot-out kicks? The tally uses 8 time slots and no shoot-out slot was identified. Compare it with the on-screen score after an extra-time match.
-- Which screen entry calls 0x9150 (half time, full time or both), and what its early return (MatchManager + 0x96c >= 2) means. This decides when exactly P+0x1faf0, P+0x1fb9c and P+0x1f540 are final. The wrappers 0x8f98 and 0x8fb8 are reached from 0x1aa3a0, with the choice depending on MatchManager + 0x6e4, but this chain was not traced further.
+- Is 0x9150 also entered at full time? In PCSX2 it ran at the half-time tactics screen and did not run again at full time in a match with no second-half goal. Its early return (MatchManager + 0x96c >= 2) may be why. A state after a goal scored in the second half would show whether P+0x1faf0 and P+0x1fb9c catch up. Until then they are not the final score. The wrappers 0x8f98 and 0x8fb8 are reached from 0x1aa3a0, with the choice depending on MatchManager + 0x6e4, but this chain was not traced further.
 - Does G+0x8908 match the HUD clock, and how is injury time represented? `GetTimeMode` (P+0x7c) and the injury-time limit were not traced. The `*LOSSTIME*` tables in `DOC/GAME_DIR.md` suggest the displayed injury time lives in the GAME data tables.
 - Does the clock stop during stoppages, replays, set pieces and the half-time break (the speed at +0x70 may be 0 then)? Where is the controller task's +0x5c pointer to G set?
-- Where is the live period (first half, second half, extra time, penalties) kept inside G, and what does each state value 0 to 0xb at G+0x891c mean? Only the PlGiTask side (P+0x80 and the goal event period bytes) was identified.
+- Where is the live period (first half, second half, extra time, penalties) kept inside G, and what do the state values 6 to 0xb at G+0x891c mean? (0 to 5 are the period segments, 11 was seen at full time.) Only the PlGiTask side (P+0x80 and the goal event period bytes) was identified.
 - Side mapping: which tally side is home, and what G+0x10c denotes. Controller assignment (`GetOperator`, `GetPort`: P+0x8a+side, P+0x8c+side*4) and the `CTacticsManager`'s "player's side" were not decoded.
 - Venue, stadium and neutral ground: `GetStadium` 0x212c60 returns the `PlGi_Stadium` block, and `InitStadium` 0x212fa0 and `IsNeutrality` 0x33c4e0 were not decoded. The HUD's home/away flag and the match weather (PlGi_Env) were not located.
 - Friendly, league or cup: no single match-type variable was found. Use the schedule UID (P+0x1f480) with `SRC/schedule.py`, or the regulation row data. National-team matches (`pwkSche_IsNationalMatch` 0x256b30) were not checked for a flag in P.
@@ -320,8 +320,8 @@ pointer on use is cheap and safe. P, R and G change every match.
   (`Sche.MatchStart` to `Sche.MatchEnd` of a match scheduled today, and
   the first-match setup). That covers the pre-match menu, the 3D match
   and the post-match screens. Not valid on the title screen, in menus
-  on days without a match. Whether a title attract demo creates one is
-  not traced. B equals `u32[0x390784]` at all times it is non-zero, so
+  on days without a match. A title attract demo creates one (tested in
+  PCSX2: non-zero, with the demo and VS flags both 1). B equals `u32[0x390784]` at all times it is non-zero, so
   it is stable for the boot. `plGi_Create` is briefly non-zero while
   the buffer is still being cleared, so do not read contents on the
   first non-zero frame.
@@ -560,10 +560,10 @@ above), and the demo and VS flag clear addresses (demo is 0x210ff0, VS is
 - What writes the "player joined" marker tested by `IsJoin` (u16 at
   stats + 0x1a + 2*slot), and is a non-zero rating the played marker
   for substitutes?
-- Does the title attract demo or a VS match create a PlGiTask? Only two
-  `plGi_Create` call sites exist in the executable; overlays were not
-  scanned. What does the demo flag imply for matches that are not
-  recorded?
+- Does a VS match the player starts create a PlGiTask? (The title attract
+  demo does: tested in PCSX2.) Only two `plGi_Create` call sites exist in
+  the executable; overlays were not scanned. What does the demo flag
+  imply for matches that are not recorded?
 - Who calls the per-match reset functions 0x190e18 and 0x77c00, and does
   the post-match `MatchMenu` run before B is cleared? Whether goal logs
   stay valid until `deleteGameInterFace` is not shown.
@@ -637,6 +637,186 @@ python SRC/sles_disasm.py ISO/SLES_541.51 dis plRec_GameResult2Win
 python SRC/sles_disasm.py ISO/SLES_541.51 addr 0x210918 6
 ```
 
+## Tested in PCSX2
+
+Nexxus's report, 2026-11-15: five save states of a career match flow
+(pre-match screen, kick-off, two minutes in, loading, quick mode) and
+two of the title attract demo, read from `eeMemory.bin` with the chains
+above. The whole of the table's PlGiTask part held where it could be
+checked. `RAM_MAP.md` has the full ten-state table.
+
+| Row | Read | Result |
+|---|---|---|
+| PlGiTask pointer 0x3906d8 | 0 on the init, title and demo-movie screens, 0x1f06f90 on the pre-match screen, in all career match states and in both attract-demo states | as documented, and equal to [0x390784] |
+| Demo flag (P + 0x1f544), VS flag (P + 0x1f548) | 0 and 0 in every career state, 1 and 1 in both attract-demo states | as documented: the demo is a VS match with the demo flag set |
+| Team ids (P + 0x1fba0, + 0x24540) | 182 and 1 in the career match (the player's club is id 1, the second side); 130 and 87 in the demo | the career ids fit; the demo ids are not in the 543 to 558 range the table gave for VS teams (a VS match the player starts with a custom team read 543 and 13, so the range does hold for those) |
+| Competition (P + 0x1f920), UID (+ 0x1f480, + 0x1f924), grade (+ 0x6c) | 22, 38, 38 and 2 in the career match; 56, 148, 148 and 5 in the demo | as documented; the static copy at 0x5eacb0 and 0x5eacb4 read 38 and 2, and 148 and 5, and -1 and -1 after the demo |
+| Result type and period (P + 0x84, + 0x80) | 0 and 1 in every state | the values the table gives for a match that has not ended |
+| Final score (P + 0x1faf0, + 0x1fb9c), game time copy (+ 0x1f540), shoot-out goals (+ 0x322d0, + 0x32390) | 0 | as documented for a match with no hand-over yet |
+| GAMEPRG base and G | the base is 0xc75000 in all six states that had GAMEPRG loaded, G = [base + 0x2490fc] is 0x1c0de90 in all six | the registry scan and the G pointer work; G exists in the loading state too |
+| Match clock (G + 0x8908) | 0.00 at kick-off and in the loading state, 123.75 two minutes in, 146.25 in quick mode | a float of elapsed seconds, as documented |
+| Goal tally (G + 0x4920 ...) and state word (G + 0x891c) | 0 in all six | nothing was scored; the state word was only seen at 0 |
+
+### Eight states of one career match
+
+Nexxus's report, 2026-11-16: eight more states of a single career match
+(club id 1 against team 182, UID 38, competition 22, grade 2), read the
+same way. The states were taken at the start, just before a goal, just
+after it, on the half-time result screen, on the half-time tactics
+screen, at the final whistle, on the full-time result screen and on the
+post-match screen. All eight pass `ramcheck.py check` with 0 problems.
+The second half was not sampled, so no state shows a clock between
+2700 and the final whistle.
+
+| State | Clock (G + 0x8908) | State word (G + 0x891c) | Tally (side 0 - 1) | Score words (P + 0x1faf0, + 0x1fb9c) | Game time copy (P + 0x1f540) |
+|---|---|---|---|---|---|
+| Start | 308.18 | 0 | 0-0 | 0-0 | 0 |
+| Just before a goal | 2606.36 | 0 | 0-0 | 0-0 | 0 |
+| Just after the goal | 2700.00 | 1 | 1-0 | 0-0 | 0 |
+| Half-time result screen | 2700.00 | 2 | 1-0 | 0-0 | 0 |
+| Half-time tactics screen | 2700.00 | 2 | 1-0 | 1-0 | 2700 |
+| Final whistle | 0.00 | 11 | 1-0 | 1-0 | 2700 |
+| Full-time result screen | 0.00 | 11 | 1-0 | 1-0 | 2700 |
+| Post-match screen | no engine | no engine | no engine | 1-0 | 2700 |
+
+What it shows (empirical, one match):
+
+- **The live tally works.** One goal moved the side 0 sum from 0 to 1
+  in the state taken just after it. The first score word agrees with
+  side 0 once it is written, so the two use the same side order. Which
+  club is side 0 was not read: the player's club is the second team id,
+  so this goal may have been the opponent's.
+- **The score words are written at the half-time tactics screen.** They
+  still read 0-0 on the half-time result screen, with the tally already
+  at 1-0, and read 1-0 on the tactics screen that follows. The game time
+  copy changes from 0 to 2700 at the same moment. This settles that the
+  hand-over at GAMEPRG.REL 0x9150 runs when the tactics screen is set
+  up at half time. It did not run again at full time in this match: the
+  copy stayed 2700 through the final whistle and both later screens,
+  and a refresh at full time would have stored the clock it found
+  (0.00). Whether a goal scored after half time reaches the score words
+  was not measured, so do not treat them as the final score yet.
+- **The score words survive the engine.** On the post-match screen the
+  Game module is no longer active, the engine chain no longer resolves
+  (no GAMEPRG match in the registry, so no G) and the static group
+  mirror at 0x5eacb0 and 0x5eacb4 has gone to -1 and -1, but the
+  PlGiTask pointer is unchanged and the score words and the copy still
+  read 1-0 and 2700. Latch the tally before the engine goes.
+- **Result type and period stayed 0 and 1** for the whole 90-minute
+  match, goal included, as the table says ("a goal in normal time never
+  changes it").
+- **The state word has more values than the one before kick-off.** 0
+  in play, 1 straight after the goal, 2 on both half-time screens and 11
+  at the final whistle and the full-time result screen. What each value
+  means is not settled by this: the state word changed at the goal as
+  well as at the break.
+- **The clock is not a full-time reading.** It stopped at exactly
+  2700.00 from the goal through half time (the goal state was already at
+  the period limit, 94 seconds after the state before it) and it read
+  0.00 at the final whistle, so it was reset, not run on to 5400.
+- The first state's clock (308.18) is the match some minutes in, not 0.
+  The state was taken after kick-off, so it says nothing about the clock
+  at kick-off.
+
+### Ten states of a VS match
+
+Nexxus's report, 2026-11-16: five states of a VS match started from the
+menu with a custom team (slots 1 to 8, taken after the eight above had
+been read and then overwritten): the intro, the start, just after a
+second-half goal, just after a second-half equalizer, in added time, and
+three in extra time of the same match (first half of extra time just
+started, a free kick, a goal), the final whistle and the final screen.
+All ten pass `ramcheck.py check` with 0
+problems.
+
+| State | Clock | State word | Tally per slot (side 0 / side 1) | Score words, game time copy |
+|---|---|---|---|---|
+| Intro | 0.00 | 0 | none | 0-0, 0 |
+| Start | 88.96 | 0 | none | 0-0, 0 |
+| Second-half goal | 2964.55 | 2 | side 1 slot 2 = 1 | 0-0, 0 |
+| Second-half equalizer | 5195.41 | 2 | side 0 slot 2 = 1, side 1 slot 2 = 1 | 0-0, 0 |
+| Added time | 5400.00 | 3 | same | 0-0, 0 |
+| Extra time, first half just started | 5430.38 | 4 | same | 0-0, 0 |
+| Extra time, a free kick | 6300.00 | 5 | same | 0-0, 0 |
+| Extra time, a goal | 6300.00 | 5 | side 0 slot 2 = 1 and slot 5 = 1, side 1 slot 2 = 1 | 0-0, 0 |
+| Final whistle | 0.00 | 11 | same (2-1) | 0-0, 0 |
+| Final screen | no engine | no engine | no engine | 0-0, 0 |
+
+What it shows (empirical, one match):
+
+- **A VS match the player starts has its own flags and ids.** The
+  PlGiTask pointer is 0x1f06f90, the demo flag (P + 0x1f544) is 0 and the
+  VS flag (P + 0x1f548) is 1, the script flag 0x34d43c is 0, and the
+  schedule object's mode vtable is 0x406a68 (VS). The team ids are 543
+  (the custom team, the first word) and 13, the competition is 56, the UID
+  148 and the grade 5, and the static group mirror reads 148 and 5. These
+  are the same competition, UID and grade as the title attract demo, so
+  those three do not tell a VS match from the demo; the demo flag does
+  (1 in the demo, 0 here). The BPDATA pointers are 0, as in every 3D
+  match.
+- **The state word is the period segment.** The tally row a goal goes
+  into is the state word at the time of the goal: the second-half goals
+  are in slot 2, the first-half goal of the career match above is in slot
+  0, and the word reads 0 in the first half, 1 at the end of the first
+  half (the career match's 2700.00 state), 2 in the second half and 3 at
+  90:00 with the clock at exactly 5400.00. This matches the period-end
+  table (2700, 2700, 5400, 5400, 6300, 6300, 7200, 7200, slots 0 to 7).
+  The word was also 2 on the half-time screens and 11 at the final
+  whistle of the career match.
+- **Both sides score into the tally.** The goal made it 0-1 (side 1) and
+  the equalizer 1-1 (side 0), and the sums of the 8 bytes per side give
+  the score. Which side is home was not read.
+- **The score words and the game time copy stayed 0-0 and 0 in the whole
+  VS match**, second-half goals included. In the career match they were
+  written at the half-time tactics screen. Either no tactics screen was
+  entered in this VS match (it may have been skipped) or it does not run
+  that hand-over. So the score words are not reliable in either mode:
+  use the live tally.
+- The clock read 2964.55 in the second half and 5195.41 later, on the
+  90-minute scale, so it runs through the second half and was not reset
+  at half time here.
+
+- **Extra time follows the same segment model.** The state word is 4
+  just after the break at 5400 (clock 5430.38, so the clock runs on from
+  5400 and was not reset) and 5 at 6300.00, the end of the first half of
+  extra time. The extra-time goal went into side 0 slot 5, the row the
+  word held, so the goal made it 2-1 by the tally sum. The words stayed
+  0-0 and 0 again.
+- **The result type and period (P + 0x84, + 0x80) stayed 0 and 1 after
+  an extra-time goal.** The table gives 1 after such a goal (`Goal`
+  0x211830, when period - 2 is below 2), so those writers did not run
+  yet. They are most likely written with the other end-of-match events,
+  as the shoot-out bytes are (still 0 and 0 here), so neither is live in
+  extra time. Read them after the match, not during it.
+
+- **The VS match's end looks like the career match's.** At the final
+  whistle the state word is 11, the clock 0.00 and the tally still 2-1,
+  under the Game module. On the final screen the module table shows
+  SimRoot (24) and MatchMenu (35), the engine chain no longer resolves,
+  the group mirror is -1 and -1 and the BPDATA pointers are non-zero
+  again (0xb54b10 and 0x1137e80). The match pointer, the team ids 543
+  and 13, the VS flag 1 and the schedule object (VS mode) are unchanged.
+- **In this VS match the score words never left 0-0.** They read 0-0, the
+  game time copy 0, and the result type and period 0 and 1 at the final
+  whistle and on the final screen, with a 2-1 tally and extra time
+  played. So a VS match never handed its score to the PlGiTask words
+  (at least when the half-time tactics screen is not shown), and a
+  0-0 there says nothing. The live tally is the only score source seen
+  working in both modes, and it must be latched before the engine goes.
+
+- **The VS mode hub screen (one more state, taken before the match).**
+  The match pointer 0x3906d8 is 0, the group mirror -1 and -1, the demo
+  flag 0, and only SimRoot (24) is active in the module table (no
+  MatchMenu). The schedule object already exists in VS mode (vtable
+  0x406a68, address 0xb56990, the one the match then used) and the BPDATA
+  pointers are non-zero (0xb54b10 and 0x1137e80). The overlay registry
+  holds SIMPRG at 0xc75000 and VSPRG at 0x1105800. So the VS menus can
+  be told apart from a career menu by the VS-mode schedule object, and
+  the match pointer stays the gate for a match.
+
+Not measured: the second half of extra time, a shoot-out, and whether the
+score words catch up in a career match after a second-half goal.
+
 ## Still unknown
 
 The five questions that matter most for a tool or an achievement set.
@@ -658,10 +838,11 @@ the shorter questions are only there.
   section's list has the details; a PINE watch around one match would
   settle it.
 - When is the final score final, and what does it include? The words
-  written by `PlGiTask::SetGameScore` are refreshed each time one screen
-  is set up, and it is not known whether that happens at half time, full
-  time or both, or whether extra-time and shoot-out goals are in them.
-  Both sections ask which screen calls GAMEPRG.REL 0x9150.
+  written by `PlGiTask::SetGameScore` were written at the half-time
+  tactics screen in PCSX2 and not again at full time (a match with one
+  first-half goal). Whether a second-half goal reaches them, and whether
+  extra-time and shoot-out goals are in them, is not known. Until it is,
+  read the live tally for the score and latch it before the engine goes.
 - Which side is home, and which side is the player's club? Side 0 is
   only inferred to be home, and the engine orders its sides by a team
   key. The records that name your club (team id 1, the first word of the
