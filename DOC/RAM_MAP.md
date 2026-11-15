@@ -77,6 +77,10 @@ non-zero and in range before you follow it.
    Re-read a chain after any reset or load.
 5. Do not build a set from rows marked "Unconfirmed". Test the rows you
    do use in a running game first, since none of this was observed live.
+   `python SRC/ramcheck.py check pine` reads them from a running PCSX2
+   (or `check <eeMemory.bin>` from a save state's memory dump) and marks
+   with `!!` what does not hold. `python SRC/ramcheck.py notes` writes
+   the rows as code notes, and `notes --csv` as a table.
 
 ## The RAM docs
 

@@ -378,8 +378,10 @@ doc says where a check is still owed.
       addresses that open the map hold what the doc says (the root
       pointers, the demo flag `0x34d43c`, the schedule pointer
       `0x390650`, the match object's score and clock), and the pointer
-      chains still resolve after a load. Needs a tool that reads the
-      addresses over PINE (a task in [`TODO.md`](TODO.md#the-end-point))
+      chains still resolve after a load. Run `python SRC/ramcheck.py
+      check pine` with the game running (PINE on, one client at a time),
+      or `check <eeMemory.bin>` on a save state's memory dump, and report
+      the `!!` lines
       ([`RAM_MAP.md`](DOC/RAM_MAP.md#for-achievement-authors))
 
 ## Test tools

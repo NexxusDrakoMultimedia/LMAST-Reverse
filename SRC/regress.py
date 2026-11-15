@@ -113,6 +113,11 @@ def checks():
          ["DAT/PARAM/SCHEDULE_LIST.TBB"]),
         ("natcal_roundtrip", ["natcal.py", "roundtrip", "DAT/PARAM/SCHEDULE_LIST.TBB"],
          ["DAT/PARAM/SCHEDULE_LIST.TBB"]),
+        # The runtime memory map's four docs: every row parsed, and the
+        # code notes written from them (no disc data; the checks against a
+        # running game need PCSX2 or a save state's memory dump).
+        ("ramcheck", ["ramcheck.py", "info"], []),
+        ("ramcheck_notes", ["ramcheck.py", "notes"], []),
         ("clubrank", ["clubrank.py", "info", "DAT/PARAM"], ["DAT/PARAM"]),
         # Every table's rows, with the ranks each position gets.
         ("clubrank_show", ["clubrank.py", "show", "DAT/PARAM/CLUB_RANK_SYSTEM.TBB",

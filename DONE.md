@@ -186,6 +186,10 @@ Every folder of `DAT/` has a doc and a tool, and the game code is mapped.
       [`RAM_MATCH.md`](DOC/RAM_MATCH.md),
       [`RAM_CAREER.md`](DOC/RAM_CAREER.md),
       [`RAM_SEASON.md`](DOC/RAM_SEASON.md))
+- [x] `ramcheck.py` checks that map against a running PCSX2 over PINE or
+      a save state's memory dump, and writes its rows as
+      RetroAchievements code notes
+      ([`RAM_MAP.md`](DOC/RAM_MAP.md#for-achievement-authors))
 
 ## Tests in PCSX2
 
