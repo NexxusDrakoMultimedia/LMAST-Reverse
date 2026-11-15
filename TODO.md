@@ -591,7 +591,8 @@ Japanese release as on PAL.
 
 - [ ] **test** The rest of the runtime memory map against the running
       game with `python SRC/ramcheck.py check` (states after a
-      second-half goal in a career match, the second half of extra time,
+      second-half goal after the half-time tactics screen, the second half of
+      extra time,
       where the shoot-out kicks are counted, a live PINE read),
       in [`TESTING.md`](TESTING.md#the-end-point). `ramcheck.py` follows
       the heap table, the overlay registry and the career work buffer
