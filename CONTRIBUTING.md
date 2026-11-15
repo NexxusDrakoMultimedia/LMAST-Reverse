@@ -49,6 +49,25 @@ You don't need to write code to help.
   the functions that need them.
 - **Writers never change their input.** They write to a new output path.
 
+The [Code of Conduct](CODE_OF_CONDUCT.md) sets the standard for how we
+treat each other. These are the project's own norms for what we post:
+
+- **Write in English.** The maintainers can only moderate English, and
+  this project serves the English-speaking LMAST community. Quoting the
+  game's own Japanese text, or other languages under study, is fine.
+- **Cite your sources.** Say where a fact, tool or file came from, and
+  credit the people who made it ([`CONTRIBUTORS.md`](CONTRIBUTORS.md)).
+- **Link pages anyone can read.** Don't link pages that need an account
+  to view.
+- **Keep it on topic and safe for work.** No explicit or NSFW content in
+  text, images or links, and no political discussion: this is a
+  reverse-engineering project.
+- **Post with care.** Everything you post should have a point and some
+  work put into it. Unchecked, mass-generated AI output doesn't count
+  ([Using AI assistants](#using-ai-assistants)).
+- **Just speak.** You don't need permission to open an issue, ask a
+  question or suggest an idea.
+
 ## Reporting a bug
 
 Please include:
