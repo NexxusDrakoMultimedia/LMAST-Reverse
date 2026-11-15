@@ -204,7 +204,7 @@ Confirmed in the game; each result is recorded in the doc linked.
       full-time hand-over of the score words, from eight states of one
       career match, and a VS match with a custom team played into extra
       time (state word, tally rows, added time, extra time, the end
-      screens)
+      screens), and a shoot-out in the same VS mode
       ([`RAM_MAP.md`](DOC/RAM_MAP.md#tested-in-pcsx2),
       [`RAM_MATCH.md`](DOC/RAM_MATCH.md#tested-in-pcsx2))
 

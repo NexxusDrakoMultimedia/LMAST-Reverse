@@ -814,8 +814,47 @@ What it shows (empirical, one match):
   be told apart from a career menu by the VS-mode schedule object, and
   the match pointer stays the gate for a match.
 
-Not measured: the second half of extra time, a shoot-out, and whether the
-score words catch up in a career match after a second-half goal.
+Not measured: the second half of extra time, and whether the score words
+catch up in a career match after a second-half goal.
+
+### Ten states of a shoot-out
+
+Nexxus's report, 2026-11-16: ten states of a second VS match (slots 1 to
+10, taken after the VS states above had been read and then overwritten),
+all in the shoot-out: the start, kicks 1 to 8 one state each, and the
+shoot-out result. All ten pass `ramcheck.py check` with 0 problems. The
+match had one goal per side, both in the first half (tally slot 0), and
+went straight to the shoot-out.
+
+| State | Clock | State word | Tally | Score words, copy | Result type and period | Shoot-out bytes (P + 0x322d0, + 0x32390) |
+|---|---|---|---|---|---|---|
+| Shoot-out start | 0.00 | 8 | 1-1 (slot 0 each) | 0-0, 0 | 0 and 1 | 0 and 0 |
+| Kicks 1 to 8 | 0.00 | 8 | 1-1 | 0-0, 0 | 0 and 1 | 0 and 0 |
+| Shoot-out result | 0.00 | 11 | 1-1 | 0-0, 0 | 0 and 1 | 0 and 0 |
+
+What it shows (empirical, one match):
+
+- **The state word is 8 for the whole shoot-out** and 11 once it is over
+  (the same value as at the end of a normal match). Value 8 is past the
+  eight tally rows, which the tally writer ignores, so no kick is added to
+  the tally: it stayed 1-1.
+- **Nothing in the PlGiTask buffer moved.** A diff of the whole 0x40000
+  bytes at the match pointer across the ten states found no change at
+  all. The result type and period stayed 0 and 1 and the shoot-out bytes
+  0 and 0 through the kicks and on the result screen (the Game module was
+  still active), so the table's `PK` writers have not run by then. They
+  are written after this point (or only in matches whose result is
+  recorded), so do not read a shoot-out from them while the match runs.
+- **The kicks live in the engine object, not decoded.** Across the ten
+  states 222 dwords of the engine object changed. The ones with small
+  values include G + 0x10c, which went 1, 1, 0, 1, 0, 1, 0, 1, 0, 0
+  (alternating from kick 1 to kick 7, then 0), G + 0x8b80 and + 0x8b84
+  (alternating 0 and 1 in step) and G + 0x8b88 and + 0x8b8c (values such
+  as 20, 22, 6, 7, 21, 10, 9, perhaps kicker indices). None is a running
+  count of goals, and what each means is not settled.
+- **At the result the Game module is still active.** The shoot-out
+  result state is not a result screen; the end screens were seen in the
+  VS match above.
 
 ## Still unknown
 

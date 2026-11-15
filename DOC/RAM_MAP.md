@@ -1105,8 +1105,7 @@ rows were measured in the ten states further down.
 `ramcheck.py check` read all 73 static rows of the four docs with a size
 of 1, 2, 4 or 8 in each state and reported no problem (no pointer outside
 RAM). Still owed: a read from a running game over PINE, which tests the
-same addresses live, and a VS-mode match, a shoot-out and a played
-(not quick) full match.
+same addresses live.
 
 ### Ten states from boot to a quick match
 
@@ -1241,6 +1240,18 @@ covers all ten) has the table. In short:
   only SimRoot is active, the VS-mode schedule object already exists, and
   VSPRG is loaded at 0x1105800 beside SIMPRG at 0xc75000.
 
+### Ten states of a shoot-out
+
+Fifth measurement, Nexxus's report, 2026-11-16: ten states of a second VS
+match in its shoot-out (the start, kicks 1 to 8 and the result), all with
+0 problems from `ramcheck.py check`. `RAM_MATCH.md` ("Ten states of a
+shoot-out") has the table. In short: the engine state word is 8 during
+the whole shoot-out and 11 after it, the tally stays at 1-1 because
+state 8 is outside its eight rows, and the match buffer, with the
+result type and period (0 and 1) and the shoot-out bytes (0 and 0), did
+not change at all. The kicks are somewhere in the engine object, not
+decoded.
+
 ## Still unknown
 
 Each section above ends with its own "Still unknown" list, which holds
@@ -1260,15 +1271,17 @@ every open question. These six matter most for an achievement set.
   and "Non-career modes and guards".
 - **The rest of a match.** Goals, the half-time screens, the second
   half, added time, extra time and both full-time screens were measured
-  across a career match and a VS match. Not measured: a shoot-out, the
-  second half of extra time, and a career match with a second-half goal
-  (the score words are written at the half-time tactics screen and may
-  not catch it). See "Tested in PCSX2" in `RAM_MATCH.md`.
+  across a career match and a VS match, and a shoot-out to its result
+  state. Not measured: where the shoot-out kicks are counted (the match
+  buffer did not change; the engine object did), the second half of
+  extra time, and a career match with a second-half goal (the score
+  words are written at the half-time tactics screen and may not catch
+  it). See "Tested in PCSX2" in `RAM_MATCH.md`.
 - **VS-mode matches.** One VS match with a custom team was measured to
   its end (see "Tested in PCSX2"): the match-day object, the group
   mirror, the flags and the VS-mode schedule object exist as documented.
-  Not measured: a VS match with a different competition, or one that
-  ends in a shoot-out. See "Game mode, screens and flow"
+  Not measured: a VS match with a different competition. See "Game
+  mode, screens and flow"
   and "Rich presence identifiers".
 - **Save and load progress.** No static "save in progress" or "load
   finished" flag was found, and the number of frames a load takes to

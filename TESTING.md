@@ -380,9 +380,9 @@ says where a check is still owed.
 
 - [ ] Save states for what no state has shown yet: one after a goal
       scored in the second half (the half-time state shows the score words
-      are written then, so this tells whether they catch up), one in a
-      shoot-out or the second half of extra time. A VS match, added time,
-      extra time and both full-time screens are already read. Run
+      are written then, so this tells whether they catch up), one in the
+      second half of extra time. A VS match, added time, extra time, a
+      shoot-out and both full-time screens are already read. Run
       `python SRC/ramcheck.py check <eeMemory.bin>` on a state's memory
       dump, or `check pine` with the game running (PINE on, one
       client at a time, which also tests the addresses live), and report
