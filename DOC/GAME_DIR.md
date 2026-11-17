@@ -41,7 +41,7 @@ loose commentary files and a smaller pack
 | `TACTICS_PLAYBOOK_EDIT.TBB` | TBB, 1 table | 180 rows of 4 bytes. Entry 13 of the tactics screen's load list (`SLES 0x55b5b0`, **confirmed**), stored by `CTacticsLoader::setPlayBookEditTable` (`0x2ed2b8`, the field at `+0x40c`, one call at `0x2e33dc`). The rows are one six-value cycle repeated 30 times (**empirical**, below), and no reader of the field was found ([`BPB_FORMAT.md`](BPB_FORMAT.md#still-unknown)) |
 | `AI_PARAM.BIN` | 467 × f32 | no reader found, by name or by content: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md#ai_parambin). Identical on the Japanese release (`cmp`) |
 | `GAMEDATA.BIN` | 4,131 records of 0x30 bytes | the match engine's table (loader slot 10); a few fields read: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md) (`python SRC/gamedata.py info DAT/GAME`). Identical on the Japanese release (`cmp`) |
-| `TEAM.TMB` | `TMB1` | 441 records, one per resident club: a name (`Highbury`, `Chelsea`, `USER_TEAM_32`), a 3-letter code and a block of 23 numbers: see [`TEAM.TMB`](#teamtmb) below (`python SRC/tmb.py info DAT`). Dated Mar 2005, not referenced by name, identical on the Japanese release (`cmp`) |
+| `TEAM.TMB` | `TMB1` | 441 records (313 clubs, 36 placeholders, 60 nations, 32 user teams): a name (`Highbury`, `Chelsea`, `USER_TEAM_32`), a 3-letter code and a block of 23 numbers: see [`TEAM.TMB`](#teamtmb) below (`python SRC/tmb.py info DAT`). Dated Mar 2005, not referenced by name, identical on the Japanese release (`cmp`) |
 | `CVS/` | CVS metadata | original lowercase names and revision numbers |
 | `DUMMY.DAT` (0 bytes), `VBNAME.VBN` (`test0`) | junk | – |
 
@@ -453,8 +453,12 @@ tactics screen's load list does name `tactics_playbook_edit.tbb`
 
 ### `TEAM.TMB`
 
-A `TMB1` file of 441 records, one per resident club (the game's 441
-resident clubs, [`CLUB_LIMITS.md`](CLUB_LIMITS.md)). **Empirical**,
+A `TMB1` file of 441 records, the same count as the game's resident
+clubs ([`CLUB_LIMITS.md`](CLUB_LIMITS.md)) but a different mix: 313 clubs
+(records 0 to 312: England, France, Germany, Italy, Spain, the
+Netherlands, then the rest of Europe), 36 `OTHER_WORLD_1` to `_36`
+placeholders (313 to 348), 60 national teams (349 to 408, `Spain` to
+`Jamaica`) and 32 `USER_TEAM_1` to `_32` slots (409 to 440). **Empirical**,
 checked over the whole file by `python SRC/tmb.py info DAT`:
 
 | Offset | Size | Holds |
@@ -475,11 +479,46 @@ Each record:
 
 The file is padded with zero bytes to `0x8000`. The first number of a
 record divided by 23 gives 373 different values over the 441 records,
-and the last records (the user teams) share one. The first record is
-`Highbury` (an Arsenal ground in London), so a name is a city or ground
-and not always a club name. What the 23 numbers index (a block of 23
-player slots?), and which club each record stands for, is not known. The
-file is the same on the Japanese release (`cmp`).
+and the last records (the user teams) share one. What the 23 numbers
+index (a block of 23 player slots?) is not known, and they are not the
+game's team ids: matching by name, a record's first number divided by 23
+is the game's team id only by chance (4 codes agree in 441). The file is
+the same on the Japanese release (`cmp`).
+
+**The names are not the real names, and not the game's either.**
+Compared with the game's own English team names (message category 3,
+teams 1 to 459, read from `MES.PAC`; **empirical**), 224 of the 313 club
+records carry a name the game also uses, and only 125 of those share its
+3-letter code (`Highbury` is `LON` here and `HIG` in the game, `Manchester`
+`MCT` and `MAN`, `Villa` `WMI` and `VIL`). The other 89 clubs are named
+differently or not in the game's list at all: lower English clubs such as
+`Walsall`, `Bradford` and `Swansea`, and longer forms such as
+`Dep.La Coruna`, `Athletic de Bilbao`, `Inter Milan` and `Florence`.
+Like the game, the file uses licence-free names for some clubs
+(`Highbury` for Arsenal, `City`, `Villa`) and plain forms for others
+(`Chelsea`, `Liverpool`), so it is neither a real-names list nor a copy of
+the game's text. It is not player facing, as far as a static search
+shows (**empirical**): no code string names the file or even `TMB`, no
+`PRELOAD` pack holds a copy (`python SRC/preload.py who DAT TEAM.TMB`),
+and names that only it carries (`Dep.La Coruna`, `Athletic de Bilbao`,
+`Stoke-On-Trent`, `OTHER_WORLD_1`) occur in no code or other file of the
+disc. So the LMASTER real-names switch
+([`LMASTER_MOD.md`](LMASTER_MOD.md)) does not need to change it. A
+running-game check would only prove the negative.
+
+Nexxus's suggestion was that the 32 `USER_TEAM` records belong to VS
+Mode, which lets you import user teams. Nexxus then confirmed that VS
+Mode takes 16 (Nexxus's report, 2026-11-18), which matches the code: the
+VS team ids are 543 to 558, 16 of them (`SetTeamData` `0x210ab8` tests
+`(id minus 0x21f) < 0x10`, [`RAM_MAP.md`](RAM_MAP.md)), and their names
+are typed by the user and kept in the VS data save. So the count of 32
+does not match VS Mode, and the file is also full of clubs and nations
+that VS Mode has no use for. Nexxus's reading: 32 user teams were
+planned during development, and this file is a leftover of that plan.
+That fits an early team table of the developers' (dated Mar 2005), but
+it is not shown from the code: the VS team-select code (`VSPRG.REL`,
+`CVSModeTeamSelect*`) has not been traced, so the link to VS Mode is
+neither shown nor ruled out.
 
 ### `BACK_MATCH.TBB`
 

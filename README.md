@@ -230,7 +230,7 @@ disassemble as unrelated MIPS instructions.
 | [`acrobata.py`](SRC/acrobata.py) | `DAT/ACROBATA`: the 875 Acroarts event scenes (`ABDA`/`ABRS`, `POF0` pointers, the Ninja and texture resources inside), and the executable's index copy and scene-id table | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md) |
 | [`humanid.py`](SRC/humanid.py) | `BG/HUMANID.BIN`, the human database: for each human id, the search function and the person (object) shown on a warm, mild or cold day; the executable's object table | [`BG_DIR.md`](DOC/BG_DIR.md#humanidbin) |
 | [`cvs.py`](SRC/cvs.py) | the developers' `CVS/` folders: each file's original name, revision and date, and which files the build added | [`CVS_DIR.md`](DOC/CVS_DIR.md) |
-| [`tmb.py`](SRC/tmb.py) | `GAME/TEAM.TMB`: checks its 441 records (name, 3-letter code, a block of 23 numbers) and lists them | [`GAME_DIR.md`](DOC/GAME_DIR.md#teamtmb) |
+| [`tmb.py`](SRC/tmb.py) | `GAME/TEAM.TMB`: checks its 441 records (313 clubs, 36 placeholders, 60 nations, 32 user teams; each a name, a 3-letter code and a block of 23 numbers) and lists them | [`GAME_DIR.md`](DOC/GAME_DIR.md#teamtmb) |
 
 ```bash
 python SRC/pac.py info DAT

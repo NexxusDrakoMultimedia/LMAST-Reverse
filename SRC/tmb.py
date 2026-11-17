@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
-"""Reader for GAME/TEAM.TMB (Let's Make a Soccer Team!, PS2): a list of the
-441 resident clubs with a name, a 3-letter code and a block of 23 numbers
-each. No code in the executable or the overlays names the file, so the
-game does not appear to read it (DOC/GAME_DIR.md, "TEAM.TMB").
+"""Reader for GAME/TEAM.TMB (Let's Make a Soccer Team!, PS2): 441 records,
+313 clubs, 36 placeholders, 60 national teams and 32 user teams, each with
+a name, a 3-letter code and a block of 23 numbers. No code in the
+executable or the overlays names the file, so the game does not appear to
+read it (DOC/GAME_DIR.md, "TEAM.TMB").
 
 Layout (empirical, checked over the whole file):
 
