@@ -37,11 +37,11 @@ loose commentary files and a smaller pack
 | `CUTINPACK.BIN` + `_HEADER.BIN` | KC@P of 277 `etc::PackData` entries | the match's cut-ins ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp), [`PLAYER_DIR.md`](PLAYER_DIR.md)). Every entry starts with a `CIB0` block (type 19); after it come Ninja models (types 20 and 24, 71 in all), `PVMH` textures (21, 71), motions (22, 3,357) and 7 `BMT1` blocks (23). 24 entries hold only the `CIB0` block (**empirical**, `packdata.py info --all`). `CIB0` and `BMT1` aren't decoded. The header is entry 9 of the seven `PRELOAD/GAMEFILE` packs ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp)) |
 | `PLAYBOOK.BPB`, `COMBINATION.BPB` | play books | the players' and ball's paths, in metres: the corner and free-kick plays, and the tactics screen's 30 attack pattern diagrams: see [`BPB_FORMAT.md`](BPB_FORMAT.md) (`Pwk::PlayBookData`; `python SRC/bpb.py info DAT/GAME`). `COMBINATION.BPB` is entry 12 of the tactics screen's load list (`SLES 0x55b588`, **confirmed**) |
 | `COMBINATION2.CBB/.CSB` | 540 combination records / 540 PRS-packed `SQB1` scripts | the combinations' data and scripts: see [`BPB_FORMAT.md`](BPB_FORMAT.md#combination2cbb-and-csb) |
-| `BACK_MATCH.TBB` | TBB, 6 tables | lines of 8, 4, 4, 8, 1 and 1 bytes ([`TBB_FORMAT.md`](TBB_FORMAT.md) shows it as the example). No executable or overlay names it; its use is unknown |
-| `TACTICS_PLAYBOOK_EDIT.TBB` | TBB, 1 table | 180 rows of 4 bytes. Entry 13 of the tactics screen's load list (`SLES 0x55b5b0`, **confirmed**), read through `CTacticsLoader::getPlayBookEditTable`; the row layout is open ([`BPB_FORMAT.md`](BPB_FORMAT.md#still-unknown)) |
+| `BACK_MATCH.TBB` | TBB, 6 tables | lines of 8, 4, 4, 8, 1 and 1 bytes ([`TBB_FORMAT.md`](TBB_FORMAT.md) shows it as the example). No string in the executable or any overlay names it (**empirical**, a search of all 11 files, case-insensitive), so its use is unknown. Its values are small round numbers: see [`BACK_MATCH.TBB`](#back_matchtbb) below |
+| `TACTICS_PLAYBOOK_EDIT.TBB` | TBB, 1 table | 180 rows of 4 bytes. Entry 13 of the tactics screen's load list (`SLES 0x55b5b0`, **confirmed**), stored by `CTacticsLoader::setPlayBookEditTable` (`0x2ed2b8`, the field at `+0x40c`, one call at `0x2e33dc`). The rows are one six-value cycle repeated 30 times (**empirical**, below), and no reader of the field was found ([`BPB_FORMAT.md`](BPB_FORMAT.md#still-unknown)) |
 | `AI_PARAM.BIN` | 467 × f32 | no reader found, by name or by content: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md#ai_parambin). Identical on the Japanese release (`cmp`) |
 | `GAMEDATA.BIN` | 4,131 records of 0x30 bytes | the match engine's table (loader slot 10); a few fields read: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md) (`python SRC/gamedata.py info DAT/GAME`). Identical on the Japanese release (`cmp`) |
-| `TEAM.TMB` | `TMB1` | team names, 3-letter codes, stadiums (`Highbury`/`LON`). Dated Mar 2005, not referenced by name. Probably stale |
+| `TEAM.TMB` | `TMB1` | 441 records, one per resident club: a name (`Highbury`, `Chelsea`, `USER_TEAM_32`), a 3-letter code and a block of 23 numbers: see [`TEAM.TMB`](#teamtmb) below (`python SRC/tmb.py info DAT`). Dated Mar 2005, not referenced by name, identical on the Japanese release (`cmp`) |
 | `CVS/` | CVS metadata | original lowercase names and revision numbers |
 | `DUMMY.DAT` (0 bytes), `VBNAME.VBN` (`test0`) | junk | – |
 
@@ -442,12 +442,91 @@ isn't decoded). Checked by ear against the game for nine songs.
 What each bank is for (crowd loops per stadium or atmosphere?) is still
 unknown.
 
+## Files nothing is known to read
+
+Three small files have contents that parse but no reader that anything
+in the code shows. A search of the executable and all ten overlays
+(case-insensitive, **empirical**) finds no string `BACK_MATCH`,
+`TEAM.TMB`, `.TMB`, `TMB1`, `EFFECTS.DAT` or `TRAINING.DAT`; the
+tactics screen's load list does name `tactics_playbook_edit.tbb`
+(`SLES 0x45c100`).
+
+### `TEAM.TMB`
+
+A `TMB1` file of 441 records, one per resident club (the game's 441
+resident clubs, [`CLUB_LIMITS.md`](CLUB_LIMITS.md)). **Empirical**,
+checked over the whole file by `python SRC/tmb.py info DAT`:
+
+| Offset | Size | Holds |
+|---|---|---|
+| `+0x00` | 4 | `TMB1` |
+| `+0x04` | u32 | `0x10`, where the records start |
+| `+0x08` | u32 | the bytes the records take: 32,634 = 441 × 74 |
+| `+0x0c` | u32 | the record size, `0x4a` |
+
+Each record:
+
+| Offset | Size | Holds |
+|---|---|---|
+| `+0x00` | 0x16 | name, cp850, NUL padded (`Highbury`, `Chelsea`, `Manchester`, `Rennes`, `USER_TEAM_32`) |
+| `+0x16` | 4 | 3-letter code, NUL padded (`LON`, `CHE`, `MCT`, `U32`) |
+| `+0x1a` | 23 × u16 | 23 consecutive numbers; the first is a multiple of 23 (0, 138, 276, 230, ...) |
+| `+0x48` | u16 | always 6 |
+
+The file is padded with zero bytes to `0x8000`. The first number of a
+record divided by 23 gives 373 different values over the 441 records,
+and the last records (the user teams) share one. The first record is
+`Highbury` (an Arsenal ground in London), so a name is a city or ground
+and not always a club name. What the 23 numbers index (a block of 23
+player slots?), and which club each record stands for, is not known. The
+file is the same on the Japanese release (`cmp`).
+
+### `BACK_MATCH.TBB`
+
+A TBB of six tables ([`TBB_FORMAT.md`](TBB_FORMAT.md)). **Empirical**,
+`python SRC/tbb.py dump DAT/GAME/BACK_MATCH.TBB <table>`:
+
+| Table | Line | Rows | Values |
+|---|---|---|---|
+| 0 | 8 | 3 | four u16 each: 0, 50, 100, 200 / 400, 300, 100, 50 / 0, 50, 200, 100 |
+| 1 | 4 | 3 | two u16 each: 0, 110 / 0, 20 / 0, 80 |
+| 2 | 4 | 2 | four bytes each: 0, 1, 3, 6 / 0, 1, 4, 2 |
+| 3 | 8 | 4 | four u16 each: 5, 20, 2, 0 / 5, 20, 25, 0 / 8, 85, 3, 0 / 7, 95, 68, 0 |
+| 4 | 1 | 16 | 0, 2, 4, 6, 8, 9, 10 to 15, 16, 17, 18, 20 |
+| 5 | 1 | 31 | 56 to 68 in pairs, 69 four times, then 71 |
+
+Nothing says what they scale or select. The name suggests a background
+of the match (crowd, or the pre-rendered rooms), but that is a guess.
+
+### `TACTICS_PLAYBOOK_EDIT.TBB`
+
+One table of 180 rows of 4 bytes, each a u32 from 0 to 3. **Empirical**:
+the rows are the six-value cycle 1, 2, 3, 0, 3, 2 repeated 30 times, with
+no row different from its place in the cycle, so the data carries no
+per-row information. The count 180 matches neither `PLAYBOOK.BPB` (256
+plays) nor `COMBINATION.BPB` (30).
+
+The loader side is **confirmed**: load-list entry 13 is stored by
+`CTacticsLoader::setPlayBookEditTable` (`SLES 0x2ed2b8`) into the loader's
+field `+0x40c`, from one call at `SLES 0x2e33dc`, right after
+`setPlayBookData` (`0x2ed2a8`, field `+0x408`) stores entry 12,
+`COMBINATION.BPB` (`0x2e337c`: entry `0xc`, then `0x2e33b0`: entry `0xd`). The
+getter `getPlayBookEditTable` (`0x2ed2c0`) has no caller in the executable
+(a scan of every `jal`) and no overlay imports it. A scan of every
+`lw ..., 0x40c(...)` in the executable and the overlays finds only loads of
+other objects' fields (a loader's state at `SLES 0x1526a4` and `0x152894`,
+a list window at `0x2b24f4`, and stack slots). So the table is loaded and
+kept but nothing is seen to read it.
+
 ## Checking the claims
 
 ```bash
 python SRC/sounddat.py info    DAT/GAME/SOUNDDAT.PAC             # layout summary
 python SRC/sounddat.py extract DAT/GAME/SOUNDDAT.PAC out/ --wav  # 136 pieces + 590 WAVs
 python SRC/sounddat.py dtpk    DAT/GAME/EFFECTS.DAT out/         # list/decode one bank file
+python SRC/tmb.py info DAT                                       # TEAM.TMB: 441 records, look for !!
+python SRC/tbb.py dump DAT/GAME/TACTICS_PLAYBOOK_EDIT.TBB 0      # 180 rows: the cycle 1, 2, 3, 0, 3, 2
+python SRC/sles_disasm.py ISO/SLES_541.51 addr 2ed2a8 8          # setPlayBookData / setPlayBookEditTable (+0x408, +0x40c)
 python SRC/sounddat.py tbl     DAT/GAME/EU_WCOT_LOSSTIME.TBL DAT/GAME/FNAMEEN
 python SRC/sounddat.py fname   DAT/GAME/FNAMEEN 10409
 python SRC/sounddat.py songs   DAT/SOUND DAT/GAME/SOUNDDAT.PAC   # songs of every bank
@@ -476,9 +555,13 @@ slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
 - The entries of `SHADOWCOLLI.PAC` and `WALLCOLLI.PAC` (both loaded into
   `CStadiumCollision`, [`STADIUM_DIR.md`](STADIUM_DIR.md)), which
   `TEST3D/SHADOWCOLLI.LBI` resembles ([`TEST3D_DIR.md`](TEST3D_DIR.md)).
-- `TEAM.TMB`'s layout, and confirming that nothing reads it.
+- What `TEAM.TMB`'s 23 numbers index and which club each of its records
+  stands for ([above](#teamtmb)); nothing in the code names it.
 - What `BACK_MATCH.TBB` holds and what loads it (no code names it), and
-  the row layout of `TACTICS_PLAYBOOK_EDIT.TBB`.
+  whether anything reads `TACTICS_PLAYBOOK_EDIT.TBB`, whose rows are a
+  six-value cycle ([above](#tactics_playbook_edittbb)). Both could be
+  read through a pointer a static search misses: a live check of the
+  tactics screen would settle the second.
 - Whether the game loads `GAME/EFFECTS.DAT` and `GAME/TRAINING.DAT` or only
   the `SOUND/` files of the same names (the two sets differ).
 - The DTPK kinds `L`/`J`/`H`/`K`, TBLD pointers 4–7, the driver command

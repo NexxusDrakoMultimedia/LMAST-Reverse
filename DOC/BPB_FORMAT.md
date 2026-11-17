@@ -820,9 +820,10 @@ participants are the ones the record's slots found
 - Whether the corner records' ten groups of ten (a play id's `id >> 8`)
   meant anything to the developers beyond loose themes, and what records
   196–255 (kind 3, roles 249–253) were for.
-- `TACTICS_PLAYBOOK_EDIT.TBB` (180 rows of 4 bytes, read through
-  `CTacticsLoader::getPlayBookEditTable`; load-list entries in
-  [`GAME_DIR.md`](GAME_DIR.md)). What its rows mean is open.
+- `TACTICS_PLAYBOOK_EDIT.TBB` (180 rows of 4 bytes, a six-value cycle
+  repeated 30 times; stored in `CTacticsLoader +0x40c`, where no reader
+  was found: [`GAME_DIR.md`](GAME_DIR.md#tactics_playbook_edittbb)).
+  Whether anything reads it is open.
 - Whether anything reads A's two values, block B and C's four u32
   through a pointer the search missed (no reader found).
 - What fills `PlTeamData +0x498c`/`+0x498f` (the attack patterns of a

@@ -606,7 +606,8 @@ Japanese release as on PAL.
       row is confirmed in the game)
 - [ ] **read** `GAME/` leftovers: the `SHADOWCOLLI.PAC` and
       `WALLCOLLI.PAC` entries (with `TEST3D/SHADOWCOLLI.LBI`), the
-      `RBD0` trailer, `TEAM.TMB`, `BACK_MATCH.TBB`, the row layout of
+      `RBD0` trailer, what `TEAM.TMB`'s 23 numbers index, what
+      `BACK_MATCH.TBB` is for and whether anything reads
       `TACTICS_PLAYBOOK_EDIT.TBB`, the cut-in pack's `CIB0`/`BMT1`
       blocks, the commentary's `BCR2`/`BCB3`/`BCV` records, whether the
       game loads `GAME/EFFECTS.DAT` and `TRAINING.DAT` or only the

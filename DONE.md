@@ -190,6 +190,14 @@ Every folder of `DAT/` has a doc and a tool, and the game code is mapped.
       a save state's memory dump, and writes its rows as
       RetroAchievements code notes
       ([`RAM_MAP.md`](DOC/RAM_MAP.md#for-achievement-authors))
+- [x] Three `GAME/` leftovers settled: `TEAM.TMB` read (441 records of a
+      name, a 3-letter code and 23 numbers, checked by the new `tmb.py`),
+      `BACK_MATCH.TBB`'s six tables written out, and
+      `TACTICS_PLAYBOOK_EDIT.TBB` shown to be one six-value cycle that the
+      loader stores and no code seen reads. None of the three, nor
+      `EFFECTS.DAT` and `TRAINING.DAT`, is named anywhere in the
+      executable or the overlays
+      ([`GAME_DIR.md`](DOC/GAME_DIR.md#files-nothing-is-known-to-read))
 
 ## Tests in PCSX2
 

@@ -271,6 +271,7 @@ def checks():
          ["DAT/ACROBATA", "ISO/SLES_541.51", "ISO/DLL/SIMPRG.REL"]),
         # The developers' CVS checkout files, against what is on the disc.
         ("cvs", ["cvs.py", "info", "DAT"], ["DAT"]),
+        ("tmb", ["tmb.py", "info", "DAT"], ["DAT"]),
         # The executable's sound-bank and music tables, against SOUND/*.DAT.
         ("sounddat_music", ["sounddat.py", "music", "ISO/SLES_541.51", "DAT/SOUND"],
          ["ISO/SLES_541.51", "DAT/SOUND"]),
