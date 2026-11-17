@@ -281,10 +281,10 @@ A table-0 row (**confirmed** where cited):
 |---|---|
 | 0 | model index, 0–9 (`0x1cd72c`: ≥ 10 is replaced by 0) |
 | 1–109 | per-part switches, 0, 3, 4 or 7. The builders test byte *k* against the current variant's bit (`01 02 04 04` at `0x299828`, D1 D2 N1 N2), so a part shows only in the variants whose bit is set. Which byte switches which part is in the table below. Bytes 42–69 and 94–97 switch the 32 advert boards (`BUILD_ADVERTISE` `+6`). Bit 8 of bytes 43 and 52 turns their boards electric (`0x1cd9c8`) |
-| 110–114 | up to five `GAME/SHADOWCOLLI.PAC` entries (1–26, 0 = none), loaded by `0x169d4` → `0x212a8` into the stadium collision object (`CStadiumCollision`) |
+| 110–114 | up to five `GAME/SHADOWCOLLI.PAC` entries (1–26, 0 = none), loaded by `0x169d4` → `0x212a8` into the stadium collision object (`CStadiumCollision`); each is a triangle mesh, see [`LBI_FORMAT.md`](LBI_FORMAT.md) |
 | 115 | crowd set, 0–17 (request `+0xa9`, read at `0x1d3848`). Picks the `AUD_SET` file (see [Crowds](#crowds)). In all 119 rows its model matches byte 0 |
 | 116–127 | the 12 advert textures, copied to the request at `+0x20` when the caller leaves it empty (the offset list at `0x299750`). `0x1d31b8` turns each into a texture index (value − 1, clamped to 205, plus 7) for advert slots 1–12 |
-| 128 | the `GAME/WALLCOLLI.PAC` entry (1–37), loaded by the same code |
+| 128 | the `GAME/WALLCOLLI.PAC` entry (1–37), loaded by the same code; the walls as triangles, see [`LBI_FORMAT.md`](LBI_FORMAT.md) |
 
 Row bytes that switch parts (**confirmed** from the builders; slots as
 in the [`.PRI` table](#pri-part-draw-priorities)):

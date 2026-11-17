@@ -604,8 +604,9 @@ Japanese release as on PAL.
       [`RAM_SEASON.md`](DOC/RAM_SEASON.md#still-unknown), and the
       Japanese release's addresses (they follow from `gamever.py` once a
       row is confirmed in the game)
-- [ ] **read** `GAME/` leftovers: the `SHADOWCOLLI.PAC` and
-      `WALLCOLLI.PAC` entries (with `TEST3D/SHADOWCOLLI.LBI`), the
+- [ ] **read** `GAME/` leftovers: what `CStadiumCollision` does with
+      the `SHADOWCOLLI.PAC` and `WALLCOLLI.PAC` triangles (the format is
+      read, [`LBI_FORMAT.md`](DOC/LBI_FORMAT.md#still-unknown)), the
       `RBD0` trailer, what `TEAM.TMB`'s 23 numbers index, what
       `BACK_MATCH.TBB` is for and whether anything reads
       `TACTICS_PLAYBOOK_EDIT.TBB`, the cut-in pack's `CIB0`/`BMT1`
@@ -638,7 +639,7 @@ Japanese release as on PAL.
       ([`GAME_FLOW.md`](DOC/GAME_FLOW.md#still-unknown),
       [`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#still-unknown))
 - [ ] **understand** The overlay loader: where the overlay index comes
-      from, and the SNR2 header fields `0x20`/`0x24`/`0x38`
+      from, and whether anything calls `snDllMove` or `snDllGetFreeMemory`
       ([`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md#still-unknown))
 - [ ] **understand** Decide whether the match-engine sections of
       [`PBDATA_FORMAT.md`](DOC/PBDATA_FORMAT.md) (about 900 lines: player

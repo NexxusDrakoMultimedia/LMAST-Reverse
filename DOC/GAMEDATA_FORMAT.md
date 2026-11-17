@@ -76,15 +76,45 @@ of any motion pack (`PLAYERMOTION.HED` has 1,008 entries, `OPTMOTION.PAC`
 
 ## `AI_PARAM.BIN`
 
-1,868 bytes: 467 f32 values (0.12, 0.4, 0.2, 0.26, 0.0, 0.02, 1.0, 0.33,
-...). **Empirical:** no file name in `SLES_541.51` or any overlay refers to
-it, and none of them holds a copy of its data (four 32-byte samples were
-searched for). So no reader can be found. It may be unused by the retail
-game, but that isn't confirmed. It isn't a copy of the match's built-in
-tuning table either (`GAMEPRG.REL 0x270000`, 1,951 entries, see
-[`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#where-the-match-reads-the-parameters)),
-whose values sit between kind words: at the best alignment only 41 of the
-467 values match.
+1,868 bytes, dated February 2005: 467 f32 values (0.12, 0.4, 0.2, 0.26,
+0.0, 0.02, 1.0, 0.33, ...), identical on the Japanese release. All
+**empirical**:
+
+- **No reader.** No file name in `SLES_541.51` or any overlay refers to it
+  (a case-insensitive search of all 11 files for `ai_param`, `aiparam`
+  and `AI_PAR`), no `PRELOAD` pack holds it (`python SRC/preload.py who DAT
+  AI_PARAM.BIN`), none of the code or any other file of the disc holds
+  six 32-byte samples of its data, and nothing compares against 467 (the
+  only immediates of 466 to 468 are `addiu` arithmetic, none a loop
+  bound). The one string containing `aiparam` is a source path:
+  `c:/home/project_eu/CommonSystems/SoccerSystem/Common/fb/thought/fb_aiparams.cpp`
+  at `GAMEPRG.REL 0x26ffb0`. The AI's source paths (`fb/thought/*.cpp`, 16
+  of them, `fb_aiparams.cpp` first and `fb_team.cpp` last, in alphabetical
+  order) are spread from `0x26ffb0` to `0x27c36b`, and each is followed by
+  that file's data. The next one, `fb_aiswitch.cpp`, is at `0x273d90`, and
+  the match's built-in tuning table (`0x270000`, 1,951 entries,
+  [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#where-the-match-reads-the-parameters))
+  ends at `0x273d78` just before it, so the table is `fb_aiparams.cpp`'s
+  data. The path is the only trace of an `aiparams` module's name, and
+  `AI_PARAM.BIN` is not named.
+- **Not a copy of that table.** Taking the table by its entry index (0 to
+  1,950, each used once, the kind in the top byte), the file's value *i* is
+  the table's value at index *i* for 26 of the 467. The first 14 agree
+  exactly (0.12, 0.4, 0.2, 0.26, ..., indexes 0 to 13), then they drift
+  (index 14 is 0.26 in the table and 0.21 in the file). Aligned as a
+  sequence, no block longer than those 14 values is shared. Where the
+  table holds other kinds of value, the file does not: kind 2 and 3 at
+  indexes 250 to 257 and 302 to 311 are 130, 60, 170, 50, 400, ... in the
+  table and 10, 30, 0.75, 0.05, 35, ... in the file, and kind 0 at 432 to
+  441 is 0, 3, 0, 2, ... in the table and 0.35, 0.25, 0.05, ... in the
+  file. So the file does not follow the table's layout from index 14 on.
+  The older figure of 41 matching values at the best alignment is not
+  reproduced by this comparison (it was a different one).
+
+It reads best as an earlier or separate snapshot of the AI's parameters,
+from before the table was compiled into `GAMEPRG.REL` (it is dated 28
+February 2005, the same day as `TEST3D/SHADOWCOLLI.LBI`), but that is an
+inference. The game has no loader for it.
 
 ## Still unknown
 
@@ -93,7 +123,9 @@ whose values sit between kind words: at the best alignment only 41 of the
   `0x165328` and `0x1d9c48` are on objects not yet matched to the
   per-player block), what record 1408 is, and
   which callers use `0x13ab80`–`0x13ad00`'s comparisons for what.
-- Whether anything loads `AI_PARAM.BIN` by another route.
+- Whether anything loads `AI_PARAM.BIN` by another route, and how its 467
+  values map onto the parameter table's indexes after the first 14 (a
+  live check would show whether any of them changes the AI).
 
 ## Checking the claims
 

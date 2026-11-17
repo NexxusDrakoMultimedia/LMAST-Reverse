@@ -44,17 +44,18 @@ loc_rel   packed local relocations, up to loc_rel_end (= EOF)
 | `0x14` | `0x2AE54C` | module path string, which is also the end of the image |
 | `0x18` | `0x20FA68` | global constructors: `snDllLoaded` calls it after linking |
 | `0x1C` | `0x20FA10` | global destructors: `snDllUnload` calls it |
-| `0x20` | `0x2CD9B8` | = `0x0C + 12 × count`. `snDllLoaded` returns it to the caller when `0x24` is non-zero, so it may be the end of what must stay loaded |
-| `0x24` | 0 | flag for the above; 0 in every file |
+| `0x20` | `0x2CD9B8` | offset of an array of `0x24` u32 words (the loader adds the load base to each non-zero one); `snDllLoaded` hands the rebased pointer to its caller (through an optional out pointer) when `0x24` is non-zero, and `snDllMove` always does. In every file it sits where the symbol table ends (`0x0C + 12 × count`) and its array is empty |
+| `0x24` | 0 | the number of words in the `0x20` array; 0 in every file, so the feature is unused (**confirmed**, below) |
 | `0x28` | `0x80` | load alignment: the load address must be a multiple of it (else error 4). `0x80` in every overlay except the Japanese `SAVEPRG.REL`, which has `0x200` ([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)) |
 | `0x2C` | `0x2E518E` | end of local relocations = file size |
-| `0x30` | 0 | zeroed by the loader (runtime use) |
+| `0x30` | 0 | zeroed by the loader, then the link of a list of loaded modules: the loader walks `[0x361da4]` through each header's `0x30` to the last one and stores the new module's load address there (**confirmed**, `SLES 0x15b224` to `0x15b25c`) |
 | `0x34` | `0x2CD9B8` | local relocation list: the loader walks it from here |
-| `0x38` | `0x2CD9B8` | an offset (the loader rebases it); use unknown |
+| `0x38` | `0x2CD9B8` | the end of the part of the module that must stay in memory: `snDllGetFreeMemory` (`0x15b8b8`) returns the rebased `0x38` when it is non-zero, and `load base + 0x2C` (the file end) when it is zero. In every file it equals `0x34`, the start of the relocation lists, so what follows (the relocation data) is free once the module is linked. No caller of `snDllGetFreeMemory` was found (**confirmed** for the function) |
 | `0x3C` | 0 | – |
 
-`0x20`, `0x34` and `0x38` are equal in every overlay of both releases, so
-the files alone can't tell them apart. The loader adds the load base to
+`0x20`, `0x34` and `0x38` are equal in every overlay of both releases (all
+20 files, `0x24` is 0 in each), so the files alone can't tell them apart;
+the loader's code does ([the rows above](#header)). It adds the load base to
 `0x04`, `0x0C`, `0x14`, `0x18`, `0x1C`, `0x20`, `0x34` and `0x38` (each if
 non-zero), which marks them as offsets.
 
@@ -168,7 +169,9 @@ symbol names:
 | `0x15ae98` | (link) | rebases the header offsets, resolves each symbol by kind (a jump table on `+0x0A`; imports go through `0x15a648(name, hash)`), then applies the packed local relocations from `0x34` |
 | `0x15b448` | `snDllLoaded(header, out)` | header check → link → `0x15b288(name, header)`, which probably registers the module (its result indexes 12-byte slots at `0x35ed98`) → call the constructors at `0x18` |
 | `0x15b590` | `snDllUnload` | calls the destructors at `0x1C`, then `0x15b370` and `0x15acd8` (not traced) and `snDllCacheFlush` |
-| `0x15b6b0`, `0x15b828` | `snDllMove`, `snDllGetFunctionAddress` | not traced |
+| `0x15b6b0` | `snDllMove` (dst, src, out) | unloads the module at `src`, copies `src+0x2c` bytes (the file size) to `dst`, links it there and stores `0x20` into `out`. No `jal` in the executable calls it (**confirmed**, a scan of every `jal`) |
+| `0x15b828` | `snDllGetFunctionAddress` | not traced |
+| `0x15b8b8` | `snDllGetFreeMemory` | returns the module's rebased header `0x38`, or `base + 0x2c` when it is zero |
 
 Local relocation types 0–3 are the four cases of the
 loader's switch on `code & 3` (type 0 is passed on as ELF type 6,
@@ -376,8 +379,11 @@ site's resolved target.
 
 ## Still unknown
 
-- What `0x38` is for, and what `0x20`/`0x24` tell the caller. All three
-  are offsets equal to `0x34` in every overlay of both releases.
+- Whether anything calls `snDllGetFreeMemory` (no `jal` to `0x15b8b8` or
+  `snDllMove` `0x15b6b0` exists in the executable), and whether any
+  overlay was ever linked with a non-empty `0x20` array: both callers of
+  `snDllLoaded` (`0x10dd1c`, `0x10dfb0`) pass a null out pointer, so
+  nothing reads it.
 - Where the overlay index passed to the loading code at `0x10babc` comes
   from, and so which modules load which overlay at runtime. The module
   table gives the static answer.

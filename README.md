@@ -230,6 +230,7 @@ disassemble as unrelated MIPS instructions.
 | [`acrobata.py`](SRC/acrobata.py) | `DAT/ACROBATA`: the 875 Acroarts event scenes (`ABDA`/`ABRS`, `POF0` pointers, the Ninja and texture resources inside), and the executable's index copy and scene-id table | [`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md) |
 | [`humanid.py`](SRC/humanid.py) | `BG/HUMANID.BIN`, the human database: for each human id, the search function and the person (object) shown on a warm, mild or cold day; the executable's object table | [`BG_DIR.md`](DOC/BG_DIR.md#humanidbin) |
 | [`cvs.py`](SRC/cvs.py) | the developers' `CVS/` folders: each file's original name, revision and date, and which files the build added | [`CVS_DIR.md`](DOC/CVS_DIR.md) |
+| [`lbi.py`](SRC/lbi.py) | `GAME/SHADOWCOLLI.PAC`, `GAME/WALLCOLLI.PAC`, `TEST3D/SHADOWCOLLI.LBI`: checks every entry's link bundle and its triangles (unit normals, plane equations, vertices inside their boxes) and lists the boxes | [`LBI_FORMAT.md`](DOC/LBI_FORMAT.md) |
 | [`tmb.py`](SRC/tmb.py) | `GAME/TEAM.TMB`: checks its 441 records (313 clubs, 36 placeholders, 60 nations, 32 user teams; each a name, a 3-letter code and a block of 23 numbers) and lists them | [`GAME_DIR.md`](DOC/GAME_DIR.md#teamtmb) |
 
 ```bash
@@ -476,6 +477,7 @@ listed (`afs.py`, `bpb.py`, `chd.py`, `cvs.py`, `gamedata.py`,
 | `acrobata.py` | `pac.py`, `ninja.py`, `svr.py`, `snr2.py`, `sles_disasm.py`, `gamever.py` |
 | `sounddat.py` | `sles_disasm.py` and `gamever.py` for `music` |
 | `preload.py` | `pac.py`, and `sles_disasm.py` and `gamever.py` for the load lists |
+| `lbi.py` | `pac.py` |
 | `save.py` | `sles_disasm.py` and `snr2.py` to run the game's serializers; `pbdata.py`, `initteam.py`, `tbb.py` for field layouts, names and tables; `teaminit.py` for the salary limits; `gamever.py` |
 | `patch_disc.py` | `extract_disc.py` and `rofs_decrypt.py` (finding files, rewriting directory records), `cso.py` (a CSO, ZSO or CHD input), `pac.py` (rebuilding archives), `tbb.py`, `sles_disasm.py` and `gamever.py` (the executable, the Japanese build), `sqb.py` (`--skip-tutorial`), `schedule.py` (`national-cups`, `league-balance`, `third-tier`), `regulation.py`, `clubresult.py`, `initteam.py` and `pbdata.py` (`third-tier`), `camp.py` (the camp switches), `training.py` and `mbb.py` (`drill-names`, `injury-lines`), `plrcommon.py` (`facility-tiers`), `plrsim.py` (`overseas-bases`), `stadium.py` (the stadium switches), `uniform.py` (`random-sponsors`), `realnames.py` (`real-names`), `texmap.py` (`realism`), `fontmod.py` (`modern-font`), `titlebanner.py` (`title-banner`) |
 | `editor.py` | the writers it edits through: `pbdata.py` (People), `initteam.py` (Clubs, Season), `leaguesize.py` (Season), `natcal.py` (National calendar), `teaminit.py` (New club), `plrsim.py` (Free agents, Player links, Overseas bases), `initteam.py` (Nations & stadiums), `stadium.py` (Stadiums), `regulation.py` and `clubresult.py` (Regulations), `clubrank.py` (Club ranking), `training.py` (Training), `camp.py` (Camps), `tour.py` (Tours), `plrcommon.py` (Facilities), `clubevent.py` (PR events), `formset.py` (Tactics), `uniform.py` (Kits), `emblem.py` (Crests, Player editor), `mbb.py` (Text), `sqb.py` (Comments); `extract_disc.py` and `patch_disc.py` for Build disc, `sles_disasm.py` and `pac.py` for the executable and pack headers |
@@ -614,6 +616,7 @@ saves.
 | [`NINJA_FORMAT.md`](DOC/NINJA_FORMAT.md) | Ninja (NN) models, skeletons, motions, VU/PX Plus vertex streams |
 | [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md) | club kits: `UNIFORM_LIST` bit layout, kit designs and colours, the 96 colours, the `COLOR_TBL` clash table, `UNIFORM_GK` keeper kits |
 | [`BPB_FORMAT.md`](DOC/BPB_FORMAT.md) | the match AI's play books: records of player and ball paths, point coordinates, play ids; the `COMBINATION2.CBB` records and the 29 combination commands |
+| [`LBI_FORMAT.md`](DOC/LBI_FORMAT.md) | the stadium shadow and wall collision files (`SHADOWCOLLI.PAC`, `WALLCOLLI.PAC`): echidna link bundles of triangles |
 | [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md) | `GAME/GAMEDATA.BIN`'s 0x30-byte ball-contact records (partial) and the unread `AI_PARAM.BIN` |
 
 ## Working on the project

@@ -198,6 +198,16 @@ Every folder of `DAT/` has a doc and a tool, and the game code is mapped.
       `EFFECTS.DAT` and `TRAINING.DAT`, is named anywhere in the
       executable or the overlays
       ([`GAME_DIR.md`](DOC/GAME_DIR.md#files-nothing-is-known-to-read))
+- [x] The stadium collision files read: the 27 `SHADOWCOLLI.PAC` and 38
+      `WALLCOLLI.PAC` entries and `TEST3D/SHADOWCOLLI.LBI` are echidna
+      link bundles of triangles (7,218 in all), checked by the new
+      `lbi.py`. The SNR2 header's `0x20`, `0x24`, `0x30` and `0x38` fields
+      are explained from the loader, and `AI_PARAM.BIN` is shown not to be
+      a copy of the built-in tuning table (its source file is
+      `fb_aiparams.cpp`)
+      ([`LBI_FORMAT.md`](DOC/LBI_FORMAT.md),
+      [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md#header),
+      [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md#ai_parambin))
 
 ## Tests in PCSX2
 

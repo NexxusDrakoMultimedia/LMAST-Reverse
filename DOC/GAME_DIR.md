@@ -33,13 +33,13 @@ loose commentary files and a smaller pack
 | `*.SNP` | Ninja `NSIF` + `NSNT` | node tree |
 | `*.SVR` | `GBIX` + `PVRT` | textures ([`SVR_FORMAT.md`](SVR_FORMAT.md), `svr.py`). `GM_KEYHELP0-6` / `GM_TITLE0-6` are probably per-language sets; the code names only `gm_keyhelp.svr` / `gm_title.svr` |
 | `*.SVM`, `EF001.BIN`, `FLARE.BIN` | `PVMH` | texture archives |
-| `BALLMOTION`, `OPTMOTION*`, `PLAYERMOTION`, `SHADOWCOLLI`, `WALLCOLLI` | BINPAC | see [`PAC_FORMAT.md`](PAC_FORMAT.md) |
+| `BALLMOTION`, `OPTMOTION*`, `PLAYERMOTION`, `SHADOWCOLLI`, `WALLCOLLI` | BINPAC | see [`PAC_FORMAT.md`](PAC_FORMAT.md). The entries of `SHADOWCOLLI` (27) and `WALLCOLLI` (38) are `.lbi` link bundles holding a stadium's shadow and wall triangles: see [`LBI_FORMAT.md`](LBI_FORMAT.md) (`python SRC/lbi.py info DAT`) |
 | `CUTINPACK.BIN` + `_HEADER.BIN` | KC@P of 277 `etc::PackData` entries | the match's cut-ins ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp), [`PLAYER_DIR.md`](PLAYER_DIR.md)). Every entry starts with a `CIB0` block (type 19); after it come Ninja models (types 20 and 24, 71 in all), `PVMH` textures (21, 71), motions (22, 3,357) and 7 `BMT1` blocks (23). 24 entries hold only the `CIB0` block (**empirical**, `packdata.py info --all`). `CIB0` and `BMT1` aren't decoded. The header is entry 9 of the seven `PRELOAD/GAMEFILE` packs ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp)) |
 | `PLAYBOOK.BPB`, `COMBINATION.BPB` | play books | the players' and ball's paths, in metres: the corner and free-kick plays, and the tactics screen's 30 attack pattern diagrams: see [`BPB_FORMAT.md`](BPB_FORMAT.md) (`Pwk::PlayBookData`; `python SRC/bpb.py info DAT/GAME`). `COMBINATION.BPB` is entry 12 of the tactics screen's load list (`SLES 0x55b588`, **confirmed**) |
 | `COMBINATION2.CBB/.CSB` | 540 combination records / 540 PRS-packed `SQB1` scripts | the combinations' data and scripts: see [`BPB_FORMAT.md`](BPB_FORMAT.md#combination2cbb-and-csb) |
 | `BACK_MATCH.TBB` | TBB, 6 tables | lines of 8, 4, 4, 8, 1 and 1 bytes ([`TBB_FORMAT.md`](TBB_FORMAT.md) shows it as the example). No string in the executable or any overlay names it (**empirical**, a search of all 11 files, case-insensitive), so its use is unknown. Its values are small round numbers: see [`BACK_MATCH.TBB`](#back_matchtbb) below |
 | `TACTICS_PLAYBOOK_EDIT.TBB` | TBB, 1 table | 180 rows of 4 bytes. Entry 13 of the tactics screen's load list (`SLES 0x55b5b0`, **confirmed**), stored by `CTacticsLoader::setPlayBookEditTable` (`0x2ed2b8`, the field at `+0x40c`, one call at `0x2e33dc`). The rows are one six-value cycle repeated 30 times (**empirical**, below), and no reader of the field was found ([`BPB_FORMAT.md`](BPB_FORMAT.md#still-unknown)) |
-| `AI_PARAM.BIN` | 467 × f32 | no reader found, by name or by content: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md#ai_parambin). Identical on the Japanese release (`cmp`) |
+| `AI_PARAM.BIN` | 467 × f32 | no reader found, by name or by content, and not a copy of the match's built-in tuning table (its first 14 values equal the table's first 14, then they differ): see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md#ai_parambin). Identical on the Japanese release (`cmp`) |
 | `GAMEDATA.BIN` | 4,131 records of 0x30 bytes | the match engine's table (loader slot 10); a few fields read: see [`GAMEDATA_FORMAT.md`](GAMEDATA_FORMAT.md) (`python SRC/gamedata.py info DAT/GAME`). Identical on the Japanese release (`cmp`) |
 | `TEAM.TMB` | `TMB1` | 441 records (313 clubs, 36 placeholders, 60 nations, 32 user teams): a name (`Highbury`, `Chelsea`, `USER_TEAM_32`), a 3-letter code and a block of 23 numbers: see [`TEAM.TMB`](#teamtmb) below (`python SRC/tmb.py info DAT`). Dated Mar 2005, not referenced by name, identical on the Japanese release (`cmp`) |
 | `CVS/` | CVS metadata | original lowercase names and revision numbers |
@@ -591,9 +591,10 @@ slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
   (0x350 bytes, purpose unknown), the BCB3 item fields and script
   opcodes, and the BCV records.
 - What the cut-in pack's `CIB0` and `BMT1` blocks hold.
-- The entries of `SHADOWCOLLI.PAC` and `WALLCOLLI.PAC` (both loaded into
-  `CStadiumCollision`, [`STADIUM_DIR.md`](STADIUM_DIR.md)), which
-  `TEST3D/SHADOWCOLLI.LBI` resembles ([`TEST3D_DIR.md`](TEST3D_DIR.md)).
+- What `CStadiumCollision` does with the triangles of `SHADOWCOLLI.PAC`
+  and `WALLCOLLI.PAC`, which entry is which stadium's, and the flag and
+  colour words (the format itself is read:
+  [`LBI_FORMAT.md`](LBI_FORMAT.md#still-unknown)).
 - What `TEAM.TMB`'s 23 numbers index and which club each of its records
   stands for ([above](#teamtmb)); nothing in the code names it.
 - What `BACK_MATCH.TBB` holds and what loads it (no code names it), and

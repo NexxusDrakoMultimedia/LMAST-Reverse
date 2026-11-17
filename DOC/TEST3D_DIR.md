@@ -10,8 +10,9 @@ kits, and the data of the developer launcher's viewers. The retail game
 doesn't need any of it. Its CVS history stops in October 2005
 ([`CVS_DIR.md`](CVS_DIR.md)), months before the rest of the data.
 
-The existing tools read every file here except `SHADOWCOLLI.LBI`, and
-none reports a problem: `python SRC/ninja.py info DAT/TEST3D` (models and
+The existing tools read every file here, `SHADOWCOLLI.LBI` through
+`python SRC/lbi.py info DAT`, and none reports a problem:
+`python SRC/ninja.py info DAT/TEST3D` (models and
 motions), `python SRC/svr.py info DAT/TEST3D` (textures and palettes),
 `python SRC/pac.py info DAT/TEST3D` and `python SRC/tbb.py info
 DAT/TEST3D`.
@@ -104,16 +105,16 @@ these are not named anywhere.
 
 ## `SHADOWCOLLI.LBI`
 
-1,536 bytes, dated February 2005, and not named in the code. It starts
-like each of the 27 entries of `GAME/SHADOWCOLLI.PAC` (`ff ff ff ff`, then
-counts and floats), the stadium shadow-collision data
-([`STADIUM_DIR.md`](STADIUM_DIR.md)), but it matches none of them. The
-format isn't decoded; that is a separate task, together with the `GAME/`
-pack.
+1,536 bytes, dated February 2005, and not named in the code. It is the
+same format as each of the 27 entries of `GAME/SHADOWCOLLI.PAC`, a stadium's
+shadow-collision data ([`STADIUM_DIR.md`](STADIUM_DIR.md)): an echidna link
+bundle holding 4 nodes and 16 triangles, which `python SRC/lbi.py info DAT`
+reads and checks like the pack's entries ([`LBI_FORMAT.md`](LBI_FORMAT.md)).
+It matches none of the 27 entries.
 
 ## Still unknown
 
 - Who reads the executable's lists at `0x346d20`, `0x3472d0` and
   `0x4b0634` (probably the 3D TEST module, launcher entry 72, which hangs).
 - Who calls `CPlayer::ChangeUniform` with the test kits.
-- `DATABASE_FILETABLE.TBB`'s `0x37`, and the `.LBI` format.
+- `DATABASE_FILETABLE.TBB`'s `0x37`.
