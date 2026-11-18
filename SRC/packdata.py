@@ -30,6 +30,18 @@ Usage:
     python packdata.py list    <header> <index>            # blocks of one entry
     python packdata.py extract <header> <index> <outdir>   # write each block's data
     python packdata.py names   <header> [first [last]]     # model and texture names
+    python packdata.py cutin   <header>                    # check the CIB0 and BMT1 blocks
+
+`cutin` checks the two block kinds GAME/CUTINPACK.BIN uses besides Ninja
+models and motions. A BMT1 block (type 23) is spline data (confirmed from
+SLES 0x11ed60, which passes `base + u32[1]`, `u32[2]` and a stride of 0x40
+to CreateSISplineInterpolator): "BMT1", u32 0x10 (the offset of the
+points), u32 n, a zero word, then n points of 0x40 bytes (16 floats; the
+twelfth, a frame-time-like value, rises along the curve in five of the
+seven blocks and dips slightly in two: empirical). A CIB0 block (type 19)
+starts with "CIB0"; its table is not decoded. `cutin` marks a bad magic,
+a BMT1 header, or a BMT1 size that is not 0x10 + n x 0x40 with !!, and
+reports how many BMT1 blocks have a twelfth float that does not rise.
 
 `names` prints the NFN0 model name and the NSTL texture names of each
 entry's first Ninja block. In FC_EURO_FACEPACK_01 they name the event
@@ -233,10 +245,54 @@ def cmd_names(path, first=0, last=None):
             print("%5d  %-24s %s" % (index, model, " ".join(textures) or "-"))
 
 
+BMT1_TYPE, CIB0_TYPE = 23, 19
+BMT1_POINT = 0x40
+BMT1_TIME = 11          # the float of a point that looks like a frame time
+
+
+def cmd_cutin(path):
+    """Check every CIB0 and BMT1 block of a KC@P pack, and print the totals."""
+    h = pac.load_header(path)
+    if not isinstance(h, pac.KcAtP):
+        raise SystemExit("%s: not a KC@P header" % path)
+    cib = bmt = points = dips = 0
+    with open(pac.data_path(path, h), "rb") as f:
+        for i, (off, size, _, _) in enumerate(h.entries):
+            buf = read_entry(f, off, size)
+            for bi, (btype, bsize, d) in enumerate(PackData(buf).blocks):
+                if btype not in (CIB0_TYPE, BMT1_TYPE) or not bsize:
+                    continue
+                b = buf[d:d + bsize]
+                where = "entry %d block %d" % (i, bi)
+                if btype == CIB0_TYPE:
+                    cib += 1
+                    if b[:4] != b"CIB0":
+                        print("%s  CIB0  !! bad magic %r" % (where, b[:4]))
+                    continue
+                bmt += 1
+                problems = []
+                magic4, start, n, zero = struct.unpack_from("<4sIII", b, 0)
+                if magic4 != b"BMT1" or start != 0x10 or zero:
+                    problems.append("header %r %#x %d %d" % (magic4, start, n, zero))
+                elif bsize != start + n * BMT1_POINT:
+                    problems.append("size %d is not %#x + %d x %#x" % (bsize, start, n, BMT1_POINT))
+                else:
+                    times = [struct.unpack_from("<f", b, start + p * BMT1_POINT + 4 * BMT1_TIME)[0]
+                             for p in range(n)]
+                    points += n
+                    if times != sorted(times):
+                        dips += 1
+                print("%s  BMT1  points=%d%s" % (where, n, "  !! " + "; ".join(problems) if problems else ""))
+    print("%s  CIB0 blocks=%d  BMT1 blocks=%d  points=%d  BMT1 blocks whose 12th float dips=%d" % (
+        path, cib, bmt, points, dips))
+
+
 def main(argv):
     args = [a for a in argv[2:] if a != "--all"]
     cmd = argv[1] if len(argv) > 1 else ""
-    if cmd == "info" and args:
+    if cmd == "cutin" and len(args) == 1:
+        cmd_cutin(args[0])
+    elif cmd == "info" and args:
         cmd_info(args, "--all" in argv)
     elif cmd == "list" and len(args) == 2:
         cmd_list(args[0], int(args[1], 0))

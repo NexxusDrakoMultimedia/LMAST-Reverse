@@ -84,6 +84,25 @@ long and 21.87 high, and the box runs to about 830 either way.
 the first spans x from -630 to 631 and z from 375 to 546), four
 triangles in all.
 
+## Where the format is used
+
+Only `.lbi` data. `LINK_InitBundle` has four callers in the executable:
+`l_realize_lbi` (`0x11be18`), the pack variant `l_realize_pack_lbi`
+(`0x11bf50` and `0x11c030`) and `CLbiDataHandle::load_complete`
+(`0x101c1c`), all of them LBI loaders; `LINK_FixupPointers` is reached only
+through it, and `LINK_GetBundleStart` has no caller (a scan of every
+`jal`, so a call through a pointer would not show). The only named
+`echidna::` functions are these three. None of the other loader types
+(`l_realize_binary`, `_motion`, `_object_snj`, `_object_sno`,
+`_texture_svr`, `_texture_svm`, `_merge`, `_chunk`, `_facepack`,
+`_licenceuniform`, `_editfacepack`, ...) calls it. A scan of all 2,229
+files of `DAT/` and of every BINPAC entry in them, for the bundle's first
+words (a non-zero word, `0`, then two tagged pointers), finds exactly these
+66 and no other file or BINPAC entry (**empirical**; the PRS-compressed
+entries of KC@P packs were not expanded for it). The `RBD0` trailer and the cut-in
+pack's `CIB0` and `BMT1` blocks are not link bundles: each has a magic and
+its own header ([`GAME_DIR.md`](GAME_DIR.md)).
+
 ## Confirmed from the game code
 
 | Address | Symbol | What it shows |

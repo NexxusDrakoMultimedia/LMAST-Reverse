@@ -160,6 +160,9 @@ def checks():
         # The money limits (salaries, transfer and loan fees) from their initializer.
         ("teaminit_limits", ["teaminit.py", "limits", "ISO"], ["ISO/SLES_541.51"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),
+        # The cut-in pack's CIB0 and BMT1 blocks (spline layout, magic).
+        ("packdata_cutin", ["packdata.py", "cutin", "DAT/GAME/CUTINPACK_HEADER.BIN"],
+         ["DAT/GAME/CUTINPACK_HEADER.BIN", "DAT/GAME/CUTINPACK.BIN"]),
         # The 215 event-character heads by name.
         ("packdata_names", ["packdata.py", "names", "DAT/PLAYER/FC_EURO_FACEPACK_01.HED"],
          ["DAT/PLAYER/FC_EURO_FACEPACK_01.HED"]),

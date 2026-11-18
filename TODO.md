@@ -607,10 +607,11 @@ Japanese release as on PAL.
 - [ ] **read** `GAME/` leftovers: what `CStadiumCollision` does with
       the `SHADOWCOLLI.PAC` and `WALLCOLLI.PAC` triangles (the format is
       read, [`LBI_FORMAT.md`](DOC/LBI_FORMAT.md#still-unknown)), the
-      `RBD0` trailer, what `TEAM.TMB`'s 23 numbers index, what
+      `RBD0` trailer's values (a big-endian u16 array, layout read), what
+      `TEAM.TMB`'s 23 numbers index, what
       `BACK_MATCH.TBB` is for and whether anything reads
-      `TACTICS_PLAYBOOK_EDIT.TBB`, the cut-in pack's `CIB0`/`BMT1`
-      blocks, the commentary's `BCR2`/`BCB3`/`BCV` records, whether the
+      `TACTICS_PLAYBOOK_EDIT.TBB`, the cut-in pack's `CIB0` records
+      (`BMT1` is read, a spline), the commentary's `BCR2`/`BCB3`/`BCV` records, whether the
       game loads `GAME/EFFECTS.DAT` and `TRAINING.DAT` or only the
       `SOUND/` files of the same names, and the `DTPK` kinds
       ([`GAME_DIR.md`](DOC/GAME_DIR.md#still-unknown))

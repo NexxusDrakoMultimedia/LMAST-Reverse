@@ -208,6 +208,14 @@ Every folder of `DAT/` has a doc and a tool, and the game code is mapped.
       ([`LBI_FORMAT.md`](DOC/LBI_FORMAT.md),
       [`SNR2_FORMAT.md`](DOC/SNR2_FORMAT.md#header),
       [`GAMEDATA_FORMAT.md`](DOC/GAMEDATA_FORMAT.md#ai_parambin))
+- [x] Link bundles and the cut-in blocks: the echidna link-bundle format
+      is used only by `.lbi` data (no other file or BINPAC entry is one),
+      the `ROUTEBOX` `RBD0` trailer is a big-endian u16 array with a
+      header, the cut-in pack's `BMT1` blocks are splines of 0x40-byte
+      points (checked by `packdata.py cutin`), and `CIB0` has a partly
+      read header
+      ([`GAME_DIR.md`](DOC/GAME_DIR.md#the-cut-in-packs-cib0-and-bmt1-blocks),
+      [`LBI_FORMAT.md`](DOC/LBI_FORMAT.md#where-the-format-is-used))
 
 ## Tests in PCSX2
 

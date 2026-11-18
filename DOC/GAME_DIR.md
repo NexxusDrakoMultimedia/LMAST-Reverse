@@ -34,7 +34,7 @@ loose commentary files and a smaller pack
 | `*.SVR` | `GBIX` + `PVRT` | textures ([`SVR_FORMAT.md`](SVR_FORMAT.md), `svr.py`). `GM_KEYHELP0-6` / `GM_TITLE0-6` are probably per-language sets; the code names only `gm_keyhelp.svr` / `gm_title.svr` |
 | `*.SVM`, `EF001.BIN`, `FLARE.BIN` | `PVMH` | texture archives |
 | `BALLMOTION`, `OPTMOTION*`, `PLAYERMOTION`, `SHADOWCOLLI`, `WALLCOLLI` | BINPAC | see [`PAC_FORMAT.md`](PAC_FORMAT.md). The entries of `SHADOWCOLLI` (27) and `WALLCOLLI` (38) are `.lbi` link bundles holding a stadium's shadow and wall triangles: see [`LBI_FORMAT.md`](LBI_FORMAT.md) (`python SRC/lbi.py info DAT`) |
-| `CUTINPACK.BIN` + `_HEADER.BIN` | KC@P of 277 `etc::PackData` entries | the match's cut-ins ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp), [`PLAYER_DIR.md`](PLAYER_DIR.md)). Every entry starts with a `CIB0` block (type 19); after it come Ninja models (types 20 and 24, 71 in all), `PVMH` textures (21, 71), motions (22, 3,357) and 7 `BMT1` blocks (23). 24 entries hold only the `CIB0` block (**empirical**, `packdata.py info --all`). `CIB0` and `BMT1` aren't decoded. The header is entry 9 of the seven `PRELOAD/GAMEFILE` packs ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp)) |
+| `CUTINPACK.BIN` + `_HEADER.BIN` | KC@P of 277 `etc::PackData` entries | the match's cut-ins ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp), [`PLAYER_DIR.md`](PLAYER_DIR.md)). Every entry starts with a `CIB0` block (type 19); after it come Ninja models (types 20 and 24, 71 in all), `PVMH` textures (21, 71), motions (22, 3,357) and 7 `BMT1` blocks (23). 24 entries hold only the `CIB0` block (**empirical**, `packdata.py info --all`). A `BMT1` block is spline data (a camera path, probably) and a `CIB0` block has a partly read header: see [the cut-in blocks](#the-cut-in-packs-cib0-and-bmt1-blocks) (`python SRC/packdata.py cutin DAT/GAME/CUTINPACK_HEADER.BIN`). The header is entry 9 of the seven `PRELOAD/GAMEFILE` packs ([`PAC_FORMAT.md`](PAC_FORMAT.md#kcp)) |
 | `PLAYBOOK.BPB`, `COMBINATION.BPB` | play books | the players' and ball's paths, in metres: the corner and free-kick plays, and the tactics screen's 30 attack pattern diagrams: see [`BPB_FORMAT.md`](BPB_FORMAT.md) (`Pwk::PlayBookData`; `python SRC/bpb.py info DAT/GAME`). `COMBINATION.BPB` is entry 12 of the tactics screen's load list (`SLES 0x55b588`, **confirmed**) |
 | `COMBINATION2.CBB/.CSB` | 540 combination records / 540 PRS-packed `SQB1` scripts | the combinations' data and scripts: see [`BPB_FORMAT.md`](BPB_FORMAT.md#combination2cbb-and-csb) |
 | `BACK_MATCH.TBB` | TBB, 6 tables | lines of 8, 4, 4, 8, 1 and 1 bytes ([`TBB_FORMAT.md`](TBB_FORMAT.md) shows it as the example). No string in the executable or any overlay names it (**empirical**, a search of all 11 files, case-insensitive), so its use is unknown. Its values are small round numbers: see [`BACK_MATCH.TBB`](#back_matchtbb) below |
@@ -149,10 +149,25 @@ A TBB1 container whose tables are `BCR2` rather than `TBL1`:
 
 `ROUTEBOX_EU` holds 106 such tables and `ROUTEBOX_KAN` 11
 (`python SRC/tbb.py info DAT/GAME`). After the TBB1's end-of-data field
-there is a **0x350-byte trailer**. It starts with the magic `RBD0`, then
-`u32 0x10` and a size (`0x340` in EU, `0x334` in KAN), and continues with
-u16 values ending in `ff 00`. It differs between the two files and its
-purpose is unknown.
+there is a **0x350-byte trailer** (**empirical**, both files):
+
+| Offset | Holds |
+|---|---|
+| `+0x00` | `RBD0` |
+| `+0x04` | u32 `0x10`, the offset of the data |
+| `+0x08` | u32 the data size: `0x340` in EU, `0x334` in KAN |
+| `+0x0c` | u32 the number of u16 values, always half the size: 416 and 410 |
+| `+0x10` | the values, **big-endian** u16 (they read as multiples of 256 if read little-endian like the rest of the game): 415 and 409 small numbers, then a last value `0xff00` (`ff 00`, which is the ending the first notes saw). KAN is padded to `0x350` with 12 zero bytes |
+
+The numbers are 0 to 100, mostly 1 to 8, with runs of equal values, so
+they look like one small parameter per entry of something. The first 108
+are identical in the two files and KAN then differs from EU at 3 more
+places (index 108: 12 and 10; 246 and 247: 3 and 6). Its length does not
+follow the table count (106 and 11 `BCR2` tables) or their sizes (all
+multiples of 16), so what an entry is is unknown. No reader of `RBD0`
+was found: a scan of the executable and overlays for the usual
+`lui`/`ori` pair that builds a magic found `CIB0` and `BMT1` but none of
+`RBD0`, `BCR2` or `BCB3`, so that scan does not prove there is no reader.
 
 #### `.BCB`: vbox table
 
@@ -442,6 +457,49 @@ isn't decoded). Checked by ear against the game for nine songs.
 What each bank is for (crowd loops per stadium or atmosphere?) is still
 unknown.
 
+## The cut-in pack's `CIB0` and `BMT1` blocks
+
+Every entry of `CUTINPACK.BIN` starts with a `CIB0` block (type 19, 277 of
+277); 7 entries also hold a `BMT1` block (type 23, entries 11, 21, 23, 24,
+25, 39 and 61). A scan of the executable and overlays for the magic
+constants finds one reader of `CIB0` and three of `BMT1`.
+
+**`BMT1`: a spline.** **Confirmed** from the reader (`SLES 0x11ed60`): it
+checks the magic, then calls `CreateSISplineInterpolator` (`0x1f9cb8`) with
+the address `base + u32[1]`, the count `u32[2]` and a stride of `0x40`
+(`GAMEPRG.REL 0x16070c` and `0x1b13d4` also build the `BMT1` constant; those two were not read).
+**Empirical**, all 7 blocks (`python SRC/packdata.py cutin`):
+
+| Offset | Holds |
+|---|---|
+| `+0x00` | `BMT1` |
+| `+0x04` | u32 `0x10`, the offset of the points |
+| `+0x08` | u32 the number of points n (2, 4, 5 or 6; 29 in all) |
+| `+0x0c` | u32 0 |
+| `+0x10` | n points of `0x40` bytes, 16 floats each, so a block is `0x10` + n × `0x40` bytes long |
+
+A point reads like a spline key (**inference**, read by hand from two
+blocks): floats 0 to 2 a position (entry 11: from (-8, 1.5, 8) to
+(8, 1.5, 8), a sideways run at 1.5 high), floats 4 to 6 and 8 to 10 two
+tangent-like vectors, float 11 a frame-time-like number (190, 255, 310, 365,
+410 in entry 21), floats 12 to 14 a direction and float 15 an angle-like
+value (-18, 12, -9, 18, 3). Float 11 rises along the curve in five blocks and
+dips slightly in two (127 then 120 in entry 25, 130 then 127 in entry
+61), so it is not a strict time. They look like camera paths for the
+cut-in's set pieces, but what plays them is not traced.
+
+**`CIB0`: partly read.** The reader is a magic check at `GAMEPRG.REL
+0x1c50e8` (it returns the block address when the first word is `CIB0`,
+else 0), followed by a run of small accessors that take a table pointer
+and an index. **Empirical**, all 277 blocks: the header is `0x38` bytes;
+`u32[1]` is a small number (0 to 14; 8 in 49 blocks), `u32[3]` is a record
+count (1 in 22 blocks, 2 in 1 and 3 in 254) and `u32[4]` is `0x38` in every
+block, the offset of that many records of `0x1c` bytes, which is the first
+accessor (`0x1c5108`: it tests the index against `+0xc` and returns
+`base + u32[+0x10] + index * 0x1c`) and fits inside every block. Blocks are
+300 to 2,316 bytes. What the records, `u32[1]` and the other header words
+(`0x12c`, then pairs that look like offsets and counts) are is not known.
+
 ## Files nothing is known to read
 
 Three small files have contents that parse but no reader that anything
@@ -587,10 +645,12 @@ slot and TBL pieces match a loose file in `DAT/GAME` byte for byte.
   no names of their own.
 - The meaning of the bank selectors `t`/`v`, the second byte of each
   selector pair, and what loads bank 39.
-- The BCR2 record layout, the `RBD0` trailer of the `ROUTEBOX` tables
-  (0x350 bytes, purpose unknown), the BCB3 item fields and script
+- The BCR2 record layout, what each of the `RBD0` trailer's 415 and 409
+  values of the `ROUTEBOX` tables is for, the BCB3 item fields and script
   opcodes, and the BCV records.
-- What the cut-in pack's `CIB0` and `BMT1` blocks hold.
+- What the cut-in pack's `CIB0` records and its other header words hold,
+  and what the camera-like `BMT1` splines are played by (the reader of a
+  `CIB0` block is at `GAMEPRG.REL 0x1c50e8`).
 - What `CStadiumCollision` does with the triangles of `SHADOWCOLLI.PAC`
   and `WALLCOLLI.PAC`, which entry is which stadium's, and the flag and
   colour words (the format itself is read:
