@@ -283,6 +283,12 @@ def checks():
         ("cluberas_info", ["cluberas.py", "info", "DAT"], ["DAT"]),
         ("cluberas_check", ["cluberas.py", "check", "DAT"], ["DAT"]),
         ("cluberas_selftest", ["cluberas.py", "selftest", "DAT"], ["DAT"]),
+        # Kit eras (--mod kit-eras): the plan from the kit suppliers' designs, and the machine
+        # code and its chain from the sponsors' code run against it (PAL addresses: no
+        # Japanese run).
+        ("kiteras_info", ["kiteras.py", "info", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
+        ("kiteras_check", ["kiteras.py", "check", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
+        ("kiteras_selftest", ["kiteras.py", "selftest", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         # The executable's sound-bank and music tables, against SOUND/*.DAT.
         ("sounddat_music", ["sounddat.py", "music", "ISO/SLES_541.51", "DAT/SOUND"],
          ["ISO/SLES_541.51", "DAT/SOUND"]),
@@ -362,7 +368,8 @@ def _jp(arg):
 # slots 1-6 are placeholders, which the European fonts don't draw. The
 # modern font and the title banner are PAL switches (European fonts and
 # title pictures).
-JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "font_coverage", "fontmod", "titlebanner"}
+JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "font_coverage", "fontmod", "titlebanner",
+           "kiteras_info", "kiteras_check", "kiteras_selftest"}
 
 
 def jp_checks(pal):

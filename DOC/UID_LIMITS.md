@@ -206,7 +206,7 @@ in the record already, as the retail code did.
 **Season end.** `CScheEuro::calcCompetetionFinish` writes the tables of
 competitions to 55 (`0x205fa8`). The yearly honours
 (`pwkRec_GetCompeConventionRecord*`) exist for 0–48 only, so two
-detours in the LMASTER code segment (`0xf8280`, after the save wrappers'
+detours in the LMASTER code segment (`0xe0280` since 2026-11-19, `0xf8280` before; after the save wrappers'
 `0x280` bytes) skip them from 49: the call to
 `pwkRec_ShiftCompeConventionRecord` (`0x205fc0`), and everything after
 the table (`0x20631c`: the winner, best eleven, MVP, top scorer, title

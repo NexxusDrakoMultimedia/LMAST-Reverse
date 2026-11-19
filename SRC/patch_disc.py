@@ -2697,7 +2697,7 @@ def target_moving_boards(file, data, old):
 # carries its sponsor in the texture, so the switch also unlicenses the 114
 # clubs of SRC/kits.csv: their UNIFORM_LIST.TBB rows get flag 1 and a
 # generated kit (uniform.apply_kits).
-SPONSOR_CAVE, SPONSOR_HOOK, KEIKA = 0xF8000 + 0x300, 0x26EC1C, 0x244430   # CAVE + 0x300
+SPONSOR_CAVE, SPONSOR_HOOK, KEIKA = 0xE0000 + 0x300, 0x26EC1C, 0x244430   # CAVE + 0x300
 # PlUnif +4 and +5 hold sponsor record numbers (MES category 10000): your club's
 # were 74 (a main sponsor, 1-199) and 207 (a supplier: records 206-212 are the
 # seven suppliers, Binnonn to Doclla), seen in a PCSX2 state (2026-11-10). The
@@ -2717,7 +2717,7 @@ SPONSOR_KINDS, SUPPLIER_KINDS, SUPPLIER_FIRST = 199, 7, 206
 # The earlier try, widening CUniformBuilder::Init's flag $s5 at 0x2c4ab8, only changed
 # the keeper kits and is gone.
 SPONSOR_GATE_WORD = 0x2C54D8
-GATE_CAVE = 0xF8000 + 0x3A0                     # CAVE + 0x3a0, after the sponsors' code
+GATE_CAVE = 0xE0000 + 0x3A0                     # CAVE + 0x3a0, after the sponsors' code
 GATE_REAL, GATE_AFTER = 0x2C54E0, 0x2C550C      # the real lists; past the code that picks them
 GATE_DEFAULT = 0x2C5504                         # the default lists: where the hooked beqz went
 NATIONAL_FIRST, NATIONAL_COUNT = 460, 83
@@ -2763,7 +2763,9 @@ def sponsor_cave():
             lui(T0, c >> 16), ori(T0, T0, c & 0xFFFF), mult3(T2, T1, T0),
             srl(T2, T2, 16), addiu(T0, ZERO, SUPPLIER_KINDS), divu(T2, T0), mfhi(T2),
             addiu(T2, T2, SUPPLIER_FIRST), sb(T2, 5, S2)]  # +5: the supplier
-    body += [ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20), jr(RA), NOP]
+    # With kit-eras the code goes on to the kit code (it ends with the jr the hook returns by).
+    body += [ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20),
+             j(KIT_CAVE) if kit_eras else jr(RA), NOP]
     out = guard + body
     if 4 * len(out) > GATE_CAVE - SPONSOR_CAVE:
         raise ValueError("the sponsors' code outgrows its space")
@@ -3629,10 +3631,13 @@ def words(*ws):
 # the executable that the game leaves zero, above the BIOS's EELOAD
 # (0x82000). Code there is reached from the executable and from every
 # overlay with plain j/jal. The file keeps its size.
-# CAVE_SIZE grew from 0x400 to 0x1400 for club-eras' tables (the file's bytes after the
-# cave are zero for 0x57d58 more, on the PAL and the Japanese executable alike, and EE RAM
-# below the executable is free to 0x100000).
-CAVE, CAVE_FILE, CAVE_SIZE = 0xF8000, 0x46A350, 0x1400
+# CAVE_SIZE grew from 0x400 to 0x1400 for club-eras' tables, to 0x4200 for kit-eras' and to
+# 0xbd00 for kit-standards' (6-byte kit rows), and moved down from 0xf8000 to 0xe0000 for room (RAM from 0x94000 to
+# 0x100000 is zero in every PCSX2 state read, 2026-11-19; the executable starts at 0x100000)
+# (the file's bytes after the cave are zero for 0x57d58 more, on the PAL and the Japanese
+# executable alike, and EE RAM below the executable is free to 0x100000).
+CAVE, CAVE_FILE, CAVE_SIZE = 0xE0000, 0x46A350, 0xBD00
+assert SPONSOR_CAVE == CAVE + 0x300 and GATE_CAVE == CAVE + 0x3A0
 PHDR2 = 0x54
 PAL_SEGMENT_END = 0x46A2DC      # the first segment's file end; the cave's file offset follows it by 0x74
 PWORK_GETTER = 0x21D6E0         # plPwork_GetPwork: lui $v1, hi; jr $ra; lw $v0, lo($v1)
@@ -4215,25 +4220,34 @@ def _asm(base, items):
 # tactics and formations (his record). The code is at CAVE + 0x400, its result word at
 # CAVE + 0x500, then the tables.
 ERA_CAVE, ERA_VAR = CAVE + 0x400, CAVE + 0x500
-ERA_TIERS, ERA_CLUBS, ERA_POOL = CAVE + 0x510, CAVE + 0x590, CAVE + 0x900
+ERA_TIERS, ERA_CLUBS, ERA_POOL = CAVE + 0x510, CAVE + 0x590, CAVE + 0x940
 ERA_HOOK, ERA_GETDB = 0x2166D0, 0x2165D8
 ERA_FIRST, ERA_CLUB_COUNT, ERA_SEASONS, ERA_TIER_COUNT = 3, 439, 3, 16
+ERA_CLUB_COUNT_TIER3 = 457          # --mod tier3-eras: teams 442-459, the third tier's clubs, too
+tier3_eras = False                  # set by main for --mod tier3-eras
+
+
+def era_club_count():
+    """The number of clubs the eras change: teams 3-441, and 442-459 with tier3-eras."""
+    return ERA_CLUB_COUNT_TIER3 if tier3_eras else ERA_CLUB_COUNT
 # A test option, --eras-offset N (0 to 2): the routine adds N to the season, so N = 1 puts a
 # third of the clubs (team id mod 3 equal to 2) in era 1 already in season 0, N = 2 two thirds.
 # 0, the default, is the switch as released.
 eras_offset = 0                                   # set by main from --eras-offset
 
 
-def era_words(offset=None):
+def era_words(offset=None, clubs=None):
     """The routine at ERA_CAVE, as words (cluberas.cmd_selftest runs them); `offset`
-    seasons added to the season (the build's --eras-offset by default)."""
+    seasons added to the season (the build's --eras-offset by default), for the first
+    `clubs` clubs from team 3 (era_club_count() by default)."""
     offset = eras_offset if offset is None else offset
+    clubs = era_club_count() if clubs is None else clubs
 
     def at(reg, addr):
         return [lui(reg, addr >> 16), ori(reg, reg, addr & 0xFFFF)]
     items = [
-        addiu(T0, A0, -ERA_FIRST), sltiu(T1, T0, ERA_CLUB_COUNT),
-        ("beqz", T1, "fallback"), NOP,                       # not a club of teams 3-441
+        addiu(T0, A0, -ERA_FIRST), sltiu(T1, T0, clubs),
+        ("beqz", T1, "fallback"), NOP,                       # not a club of teams 3-441 (-459)
         addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(A0, 8, SP), sd(T0, 16, SP),
         jal(KEIKA), NOP,                                     # $v0: the season, from 0
         ld(A0, 8, SP), ld(T0, 16, SP),
@@ -4266,16 +4280,17 @@ def plan_club_eras(f, img, adopted=()):
     import tempfile
     if img.port is not None:
         return [], ["note: club-eras: the code is PAL's; the Japanese release is left alone"]
-    if (cluberas.TEAM_FIRST, cluberas.CLUBS, cluberas.ERA, cluberas.TIERS) != (
-            ERA_FIRST, ERA_CLUB_COUNT, ERA_SEASONS, ERA_TIER_COUNT):
+    if (cluberas.TEAM_FIRST, cluberas.CLUBS, cluberas.CLUBS_TIER3, cluberas.ERA, cluberas.TIERS) != (
+            ERA_FIRST, ERA_CLUB_COUNT, ERA_CLUB_COUNT_TIER3, ERA_SEASONS, ERA_TIER_COUNT):
         raise ValueError("club-eras: cluberas.py and patch_disc.py disagree on the sizes")
+    last = cluberas.TEAM_LAST_TIER3 if tier3_eras else cluberas.TEAM_LAST
     with tempfile.TemporaryDirectory() as tmp:
         os.makedirs(os.path.join(tmp, "PARAM"))
         for name in ("PLRESOURCESIM.PAC", "PBDATA_EU.PAC", "TEAM_INIT_DATA.TBB"):
             _, data = read_file(f, img, "PARAM/" + name)
             with open(os.path.join(tmp, "PARAM", name), "wb") as g:
                 g.write(data)
-        plan = cluberas.build(tmp)
+        plan = cluberas.build(tmp, last)
     bad = cluberas.problems(plan)
     if bad:
         raise ValueError("club-eras: " + "; ".join(bad))
@@ -4283,8 +4298,8 @@ def plan_club_eras(f, img, adopted=()):
                (ERA_TIERS, cluberas.tier_bytes(plan), "the tiers"),
                (ERA_CLUBS, cluberas.club_bytes(plan), "the clubs' tiers and places"),
                (ERA_POOL, cluberas.pool_bytes(plan), "the managers' pool")]
-    if ERA_POOL + len(regions[-1][1]) > CAVE + CAVE_SIZE:
-        raise ValueError("club-eras' tables outgrow the code segment")
+    if ERA_CLUBS + len(regions[2][1]) > ERA_POOL or ERA_POOL + len(regions[-1][1]) > KIT_CAVE:
+        raise ValueError("club-eras' tables outgrow their space in the code segment")
     jobs = list(code_segment_words(f, img))
     for addr, new, what in regions:
         off = CAVE_FILE + addr - CAVE
@@ -4294,6 +4309,191 @@ def plan_club_eras(f, img, adopted=()):
     jobs.append(sles_word(ERA_HOOK, jal(ERA_GETDB), jal(ERA_CAVE),
                           "plOteam_GetManagerNoOffset: call the managers' code, not plOteam_GetDb"))
     return word_jobs(f, img, "club-eras", jobs)
+
+
+# kit-eras (LMASTER full and max; Nexxus's idea, 2026-11-19; kiteras.py): the club-eras'
+# computer clubs also change kits, every time their era changes, to a design of one of the
+# kit suppliers, keeping the home shirt's colours, with new away colours that do not clash.
+# It runs at the end of the sponsors' code (random-sponsors, which it needs: the sponsors'
+# `jr` becomes a `j` here), once pwkTeam_GetUnif has filled the club's PlUnif ($s1: the
+# team id, $s2: the PlUnif). For the clubs of teams 3-441 in era 1 or later it writes the
+# supplier (+5), the home shirt (+0x1b) and shorts (+0x20) designs, the away shirt (+0x3f)
+# and shorts (+0x44) designs, the away colours (+0x40-0x42 the shirt, +0x45-0x47 the shorts,
+# +0x49 and +0x4a the socks) and the numbers' colour (+0x4b, +0x4c), from the table of
+# kiteras.py: 4 bytes a club and variant, the variant (era - 1) mod 6.
+KIT_CAVE, STD_CAVE = CAVE + 0x1400, CAVE + 0x1600        # the kit code, the standards' code: 0x200 bytes each
+KIT_TABLE = CAVE + 0x1800                                 # the kit table (16,452 bytes with tier3-eras)
+STD_TABLE = CAVE + 0x5850                                 # the standards' table (25,592 bytes)
+kit_eras = False                                          # set by main for --mod kit-eras
+kit_standards = False                                     # set by main for --mod kit-standards
+
+
+def kit_words(offset=None, clubs=None):
+    """The routine at KIT_CAVE, as words (kiteras.cmd_selftest runs them); `offset` seasons
+    are added to the season as in era_words (the build's --eras-offset by default), for the
+    first `clubs` clubs from team 3 (era_club_count() by default)."""
+    import kiteras
+    offset = eras_offset if offset is None else offset
+    clubs = era_club_count() if clubs is None else clubs
+
+    def at(reg, addr):
+        return [lui(reg, addr >> 16), ori(reg, reg, addr & 0xFFFF)]
+    items = [
+        addiu(T0, S1, -kiteras.TEAM_FIRST), sltiu(T1, T0, clubs),
+        ("beqz", T1, "out"), NOP,                            # not a club of teams 3-441 (-459)
+        addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(V1, 8, SP), sd(T0, 16, SP),
+        jal(KEIKA), NOP,                                     # $v0: the season, from 0
+        ld(T0, 16, SP),
+        sll(T1, V0, 0), slti(T1, T1, 0),                     # 1 in the opening playoffs (season -1)
+        ] + ([addiu(V0, V0, offset)] if offset else []) + [
+        movn(V0, ZERO, T1),
+        addiu(T2, ZERO, ERA_SEASONS), divu(S1, T2), mfhi(T3), addu(V0, V0, T3),
+        divu(V0, T2), mflo(T4),                              # era = (season + team mod 3) div 3
+        ("beqz", T4, "done"), NOP,                           # era 0: the retail kit
+        addiu(T4, T4, -1), addiu(T5, ZERO, kiteras.VARIANTS), divu(T4, T5), mfhi(T4),
+        mult3(T0, T0, T5), addu(T0, T0, T4),
+        sll(T1, T0, 1), sll(T0, T0, 2), addu(T0, T0, T1)] + at(T1, KIT_TABLE) + [   # x 6 bytes an entry
+        addu(T0, T0, T1),
+        lbu(T1, 0, T0), lbu(T2, 1, T0), lbu(T3, 2, T0), lbu(T4, 3, T0),
+        sb(T1, 0x1B, S2), sb(T2, 0x3F, S2),                  # the home and away shirts
+        srl(T5, T4, 5), addiu(T5, T5, kiteras.SUPPLIER_FIRST), sb(T5, 5, S2),   # the supplier
+        andi(T4, T4, 31), addiu(T4, T4, kiteras.SHORTS_FIRST), sb(T4, 0x20, S2), sb(T4, 0x44, S2),
+        srl(T5, T3, 7), andi(T3, T3, 0x7F),                  # black numbers' flag; the away colour 1
+        addiu(T6, ZERO, 7), addiu(T7, ZERO, 95), movn(T6, T7, T5),   # white (A8) or black (L8)
+        lbu(A0, 4, T0), lbu(A1, 5, T0),                      # the away colours 2 and 3
+        sb(T3, 0x40, S2), sb(A0, 0x41, S2), sb(A1, 0x42, S2),   # the away shirt
+        sb(T3, 0x45, S2), sb(A0, 0x46, S2), sb(A1, 0x47, S2),   # the away shorts
+        sb(T3, 0x49, S2), sb(A0, 0x4A, S2),                  # the away socks
+        sb(T6, 0x4B, S2), sb(T6, 0x4C, S2),                  # the numbers
+        ("label", "done"), ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20)
+        ] + ([j(STD_CAVE), NOP] if kit_standards else []) + [   # kit-standards goes on, in every era
+        ("label", "out"), jr(RA), NOP]
+    out = _asm(KIT_CAVE, items)
+    if 4 * len(out) > STD_CAVE - KIT_CAVE:
+        raise ValueError("kit-eras' code outgrows its space")
+    return out
+
+
+def std_words(offset=None, clubs=None):
+    """The routine at STD_CAVE, as words (kiteras.cmd_selftest runs them): the kit standard for
+    the clubs of teams 3-441 (-459), whatever their era, from kiteras.py's standards table (4
+    bytes an entry, the entry 0 in era 0, else 1 + (era - 1) mod 6): per side the six side bytes
+    (shirt emblem, shorts emblem, number design, front number 1, shorts position, 1), the
+    collar, the two number colours and the captain's band."""
+    import kiteras
+    offset = eras_offset if offset is None else offset
+    clubs = era_club_count() if clubs is None else clubs
+
+    def at(reg, addr):
+        return [lui(reg, addr >> 16), ori(reg, reg, addr & 0xFFFF)]
+
+    def side(word, base, kit, snum, shnum):
+        return [srl(T3, word, 7), andi(T3, T3, 1), sb(T3, base, S2),              # the shirt's emblem type
+                srl(T3, word, 8), andi(T3, T3, 1), sb(T3, base + 1, S2),          # the shorts' emblem type
+                srl(T3, word, 4), andi(T3, T3, 7), sb(T3, base + 2, S2),          # the number design
+                addiu(T3, ZERO, 1), sb(T3, base + 3, S2), sb(T3, base + 5, S2),   # the front number on
+                srl(T3, word, 9), andi(T3, T3, 1), sb(T3, base + 4, S2),          # the position on shorts
+                andi(T3, word, 15), sb(T3, kit + 4, S2),                          # the collar
+                srl(T3, word, 10), andi(T3, T3, 7), sb(T3, kit + 14, S2),         # the captain's band
+                sb(snum, kit + 12, S2), sb(shnum, kit + 13, S2)]                  # the two number colours
+    items = [
+        addiu(T0, S1, -kiteras.TEAM_FIRST), sltiu(T1, T0, clubs),
+        ("beqz", T1, "out"), NOP,                            # not a club of teams 3-441 (-459)
+        addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(V1, 8, SP), sd(T0, 16, SP),
+        jal(KEIKA), NOP,
+        ld(T0, 16, SP),
+        sll(T1, V0, 0), slti(T1, T1, 0),
+        ] + ([addiu(V0, V0, offset)] if offset else []) + [
+        movn(V0, ZERO, T1),
+        addiu(T2, ZERO, ERA_SEASONS), divu(S1, T2), mfhi(T3), addu(V0, V0, T3),
+        divu(V0, T2), mflo(T4),                              # era = (season + team mod 3) div 3
+        ("beqz", T4, "entry"), NOP,                          # era 0: the entry 0 ($t4 is 0)
+        addiu(T4, T4, -1), addiu(T5, ZERO, kiteras.VARIANTS), divu(T4, T5), mfhi(T4), addiu(T4, T4, 1),
+        ("label", "entry"),
+        addiu(T5, ZERO, kiteras.STD_ENTRIES), mult3(T0, T0, T5), addu(T0, T0, T4), sll(T0, T0, 3)
+        ] + at(T1, STD_TABLE) + [addu(T0, T0, T1), lhu(T1, 0, T0), lbu(T8, 2, T0), lbu(T9, 3, T0),
+        lhu(T2, 4, T0), lbu(T6, 6, T0), lbu(T7, 7, T0)
+        ] + side(T1, 6, 0x1B, T8, T9) + side(T2, 0x2A, 0x3F, T6, T7) + [
+        srl(T3, T1, 13), addiu(T3, T3, kiteras.SUPPLIER_FIRST), sb(T3, 5, S2),   # the supplier, from the tier
+        ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20),
+        ("label", "out"), jr(RA), NOP]
+    out = _asm(STD_CAVE, items)
+    if 4 * len(out) > KIT_TABLE - STD_CAVE:
+        raise ValueError("kit-standards' code outgrows its space")
+    return out
+
+
+def _kit_plan(f, img, switch):
+    """kiteras.py's plan for the disc's files (teams 3-441, or 3-459 with tier3-eras), checked."""
+    import kiteras
+    import tempfile
+    if (kiteras.TEAM_FIRST, kiteras.CLUBS, kiteras.CLUBS_TIER3) != (
+            ERA_FIRST, ERA_CLUB_COUNT, ERA_CLUB_COUNT_TIER3):
+        raise ValueError("%s: kiteras.py and patch_disc.py disagree on the clubs" % switch)
+    last = kiteras.TEAM_LAST_TIER3 if tier3_eras else kiteras.TEAM_LAST
+    with tempfile.TemporaryDirectory() as tmp:
+        for sub, names in (("PLAYER", ("UNIFORM_LIST.TBB", "COLOR_TBL.TBB", "EDIT_UNIFORM_CLUT.HED",
+                                       "EDIT_UNIFORM_CLUT.PAC")),
+                           ("PARAM", ("PLRESOURCESIM.PAC",))):
+            os.makedirs(os.path.join(tmp, sub))
+            for name in names:
+                _, data = read_file(f, img, sub + "/" + name)
+                with open(os.path.join(tmp, sub, name), "wb") as g:
+                    g.write(data)
+        _, rel = read_file(f, img, NEGO_FILE)
+        plan = kiteras.build(tmp, rel, last)
+        bad = kiteras.problems(plan, tmp)
+    if bad:
+        raise ValueError("%s: " % switch + "; ".join(bad))
+    return plan
+
+
+def _region_jobs(f, img, regions):
+    """Cave jobs for [(address, new bytes, what)]."""
+    jobs = []
+    for addr, new, what in regions:
+        off = CAVE_FILE + addr - CAVE
+        held = read_at(f, img, SLES_FILE, off, len(new))
+        jobs.append((SLES_FILE, off, held if held != new else bytes(len(new)), new,
+                     "%s 0x%x (%s at 0x%x)" % (SLES_FILE, off, what, addr)))
+    return jobs
+
+
+def plan_kit_eras(f, img, adopted=()):
+    """Jobs for --mod kit-eras: the code segment, the kit routine and its table in it. The
+    sponsors' code already calls the routine (random-sponsors, which this switch needs)."""
+    import kiteras
+    if img.port is not None:
+        return [], ["note: kit-eras: the code is PAL's; the Japanese release is left alone"]
+    plan = _kit_plan(f, img, "kit-eras")
+    table = kiteras.table_bytes(plan)
+    if KIT_TABLE + len(table) > STD_TABLE:
+        raise ValueError("kit-eras' table outgrows its space in the code segment")
+    jobs = list(code_segment_words(f, img)) + _region_jobs(
+        f, img, [(KIT_CAVE, words(*kit_words()), "the kit code"), (KIT_TABLE, table, "the kit table")])
+    return word_jobs(f, img, "kit-eras", jobs)
+
+
+def plan_kit_standards(f, img, adopted=()):
+    """Jobs for --mod kit-standards: the standards' routine and table. The kit code (kit-eras,
+    which this switch needs) jumps on to the routine at its end."""
+    import kiteras
+    if img.port is not None:
+        return [], ["note: kit-standards: the code is PAL's; the Japanese release is left alone"]
+    plan = _kit_plan(f, img, "kit-standards")
+    table = kiteras.std_table_bytes(plan)
+    if STD_TABLE + len(table) > CAVE + CAVE_SIZE:
+        raise ValueError("kit-standards' table outgrows the code segment")
+    jobs = list(code_segment_words(f, img)) + _region_jobs(
+        f, img, [(STD_CAVE, words(*std_words()), "the standards' code"), (STD_TABLE, table, "the standards' table")])
+    return word_jobs(f, img, "kit-standards", jobs)
+
+
+def plan_tier3_eras(f, img, adopted=()):
+    """--mod tier3-eras writes nothing of its own: it makes club-eras and kit-eras (which it
+    needs, with third-tier) take teams 442-459, the third tier's clubs, as well as 3-441
+    (main sets tier3_eras, which their plans and routines read)."""
+    return [], []
 
 
 def tier_cave(build):
@@ -5575,13 +5775,25 @@ SWITCHES = (
      "Club: the moving advert board bought at an earlier ground shows at the last ground "
      "too (its boards are the plain ones, as at the level before, not the LCD set)"),
     ("random-sponsors", plan_random_sponsors, [SLES_FILE, UNIFORM_FILE] + UNIFORM_PACKS,
-     "Graphics: every club's kit shows a main sponsor and a kit supplier, drawn again every "
+     "Clubs: every club's kit shows a main sponsor and a kit supplier, drawn again every "
      "season, and the Italian, Spanish and Dutch clubs lose their licensed kits for generated "
      "ones (LMASTER full and max)"),
     ("club-eras", plan_club_eras, [SLES_FILE],
      "Clubs: every computer club changes manager every 3 seasons, a third of the clubs each "
      "year, the better clubs getting the better managers and every club one of its own; the "
      "manager's tactics and formations come with him (LMASTER full and max)"),
+    ("kit-eras", plan_kit_eras, [SLES_FILE],
+     "Clubs: every computer club changes kits every time its era changes, to a design of one "
+     "of the seven kit suppliers (the better clubs the better suppliers), keeping the home "
+     "shirt's colours and taking new away colours that do not clash (LMASTER full and max)"),
+    ("kit-standards", plan_kit_standards, [SLES_FILE],
+     "Clubs: every computer club's kits follow a standard in every era: front numbers and "
+     "shorts numbers on, an emblem of type 1 or 2 on shirt and shorts, collar, number design and "
+     "emblems varied with the home and away kits alike more often than not, number colours and "
+     "the captain's band that show on the colours they sit on (needs kit-eras; LMASTER full and max)"),
+    ("tier3-eras", plan_tier3_eras, [],
+     "Clubs: the club and kit eras take the third tier's clubs (teams 442-459) too, not only "
+     "teams 3-441 (needs club-eras, kit-eras and third-tier; LMASTER full and max)"),
     ("realism", plan_realism, REALISM_FILES,
      "Graphics: LMAST Realism's crests and match pictures in the texture packs, and a "
      "2 px transparent edge on the licensed crests; needs --realism <pack folder>, "
@@ -5639,7 +5851,9 @@ HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards", "random-spo
 # (file_<switch>(f, img, dat) -> [(target, data)]), whose files have
 # PRELOAD copies the game loads instead (--copies), that turn on others
 # (a bigger save needs saves of its own), and old names.
-SWITCH_NEEDS = {}
+SWITCH_NEEDS = {"kit-eras": ("random-sponsors",),
+                "kit-standards": ("kit-eras",),
+                "tier3-eras": ("club-eras", "kit-eras", "third-tier")}
 SWITCH_FILES = {"third-tier": file_third_tier, "real-names": file_real_names,
                 "realism": file_realism, "modern-font": file_modern_font,
                 "title-banner": file_title_banner}
@@ -5672,8 +5886,8 @@ GROUPS = (       # (name, title, switches)
     ("restorations", "Restored content", ("injury-lines",)),
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
-    ("graphics", "Graphics", ("realism", "random-sponsors", "modern-font")),
-    ("eras", "Club eras", ("club-eras",)),
+    ("graphics", "Graphics", ("realism", "modern-font")),
+    ("eras", "Club eras", ("club-eras", "random-sponsors", "kit-eras", "kit-standards", "tier3-eras")),
     ("title-screen", "Title screen", ("title-banner",)),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
@@ -6261,10 +6475,18 @@ def main(argv):
     if offset is not None:
         if not offset.isdigit() or int(offset) > 2:
             raise SystemExit("--eras-offset takes 0, 1 or 2")
-        if "club-eras" not in mods:
-            raise SystemExit("--eras-offset goes with --mod club-eras")
+        if "club-eras" not in mods and "kit-eras" not in mods:
+            raise SystemExit("--eras-offset goes with --mod club-eras or --mod kit-eras")
         global eras_offset
         eras_offset = int(offset)
+    if "skip-tutorial" in mods:
+        print("note: skip-tutorial: on this disc the Edit Emblem screen can freeze after a kit edit in club "
+              "creation (the heap is fragmented; see DOC/LMASTER_MOD.md#test-tools): not a switch's fault, "
+              "test Edit Emblem on a disc built without it")
+    global kit_eras, kit_standards, tier3_eras
+    kit_eras = "kit-eras" in mods
+    kit_standards = "kit-standards" in mods
+    tier3_eras = "tier3-eras" in mods
     nation = _opt(args, "--skip-nation", None)
     if nation is not None:
         names = [n.lower() for n in SKIP_NATIONS]

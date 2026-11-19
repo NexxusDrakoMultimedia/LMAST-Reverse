@@ -363,14 +363,16 @@ Each of these switches has been built and is waiting for someone to play it.
       banner reads TEST BUILD; the offset puts two thirds of the clubs in
       era 1 from 2006-07). Never run as one disc: the code segment grew to
       0x1400 bytes and holds the third tier, the sponsors, the logo gate
-      and the managers' code together (no overlap). Check: it boots and the
+      and the managers' code together (no overlap; the segment now sits at
+      `0xe0000` and is `0xbd00` bytes, since 2026-11-19). Check: it boots and the
       banner reads TEST BUILD; a career starts in Germany; a season plays
       to its end with no freeze, saving and loading once; the third tier
       (England's at the foot of the second division) and the real names
       show; kits carry a sponsor and a supplier logo, none blank, and the
       grounds' advert boards vary; and a computer club's manager is the
       plan's (`cluberas.py expect DAT <team> <season> 2`, read at
-      `0xf8500` after a match loads). Edit Emblem after a kit edit can freeze
+      `0xf8500` (`0xe0500` since the move on 2026-11-19) after a match
+      loads). Edit Emblem after a kit edit can freeze
       on any skip-tutorial disc (see above), so test it on a disc built
       without `skip-tutorial`; and see that your
       club's and the rival's sponsors are the game's own (the sponsor
@@ -389,7 +391,7 @@ Each of these switches has been built and is waiting for someone to play it.
       opening playoffs are over; `python SRC/cluberas.py expect DAT <team>
       0 2` gives the manager a club should have, and a club's manager is
       shown nowhere, so it is a PINE check): (1) a club whose team id
-      leaves 0 keeps its retail manager (the result word at `0xf8500` stays
+      leaves 0 keeps its retail manager (the result word at `0xf8500`, now `0xe0500`, stays
       as it was, and the match shows the retail manager's name in the
       team's data); (2) the opening playoffs are retail (read it before
       them); (3) a whole season plays normally, with no freeze at a match
@@ -398,6 +400,62 @@ Each of these switches has been built and is waiting for someone to play it.
       clubs whose team id leaves 2 first), then every three seasons; read
       the team ids in a match with `read pine 0x3906d8 u32` (the pointer
       P), then the u32 at P+`0x1fba0` and P+`0x24540`
+- [ ] Computer clubs' kits by era (`--mod kit-eras`, the disc is
+      `LMAST-test-kits5.iso`, which holds `kit-eras`, `kit-standards` and
+      `tier3-eras`; PCSX2 treats it as a new game). **Started:** a state of
+      Nexxus's in a match against Hansa Rostock (team 119, era 1) holds
+      the plan's bytes exactly, see
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras); still open are an
+      era 0 club as the control, a third-tier club, how the kits look (the
+      standard's emblems, numbers, collars, the number and logo colours),
+      and the later seasons. Build with
+      `python SRC/patch_disc.py patch "<retail disc>.iso"
+      LMAST-test-kits5.iso --mod lmaster-max --copies --dat DAT --realism
+      ../LMAST-Realism --test-build --eras-offset 2`, without
+      `--skip-tutorial` (it makes the Edit Emblem screen freeze, see the
+      check above), and start a career in any nation. The era is
+      (season + offset + team id mod 3) div 3, so with the offset 2 in
+      season 0 the clubs whose team id leaves 1 or 2 when divided by 3 are
+      in era 1 and those that leave 0 are in era 0. Check: (1) a club in
+      era 1 shows a supplier's shirt and shorts design in a match, with its home
+      colours (shirt colours 1 and 2) as before, and the supplier logo on
+      the shirt is the supplier whose design it wears; (2) its away kit
+      has new colours that do not clash with the home kit (the away kit
+      is worn when the two clubs' home colours clash); (3) your club, the
+      rival and the national teams are untouched; (4) a club in era 0
+      still has its retail kit; (5) after the season rolls on (season 1)
+      the other clubs' kits change too, and the first group's again after
+      the next era. Any match against a computer club will do: save a state
+      in it, read the two team ids as above, and compare the kit bytes with
+      `python SRC/kiteras.py show DAT <team>`. Put the result into
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras)
+- [ ] Kit standards and the third tier's eras (`--mod kit-standards`,
+      `--mod tier3-eras`; the same disc, `LMAST-test-kits5.iso`, built as
+      in the check above). Every computer club's kits follow a standard in
+      every era, era 0 included. Check, in a match against a computer club
+      (take several, from different leagues and eras): (1) every shirt
+      shows a front number, a shorts number and an emblem on the shirt and
+      on the shorts; (2) the collar and the number design differ between
+      clubs and between eras, and a club's home and away kits match in
+      most clubs but not all (the away kit takes the home kit's value 75
+      percent of the time, each of collar, number design and emblems
+      rolled on its own); (3) the number colours and the captain's band
+      show against the colours they sit on (some kits with a light and a
+      dark shirt colour cannot be good on both: say which look wrong);
+      (4) the supplier logo is drawn in the number colour and shows on the
+      shirt; (5) the third tier's clubs (teams 442 to 459, for example a
+      club of England's third tier) change kit and manager like the
+      others (`python SRC/kiteras.py show DAT <team>` and `python
+      SRC/cluberas.py expect DAT <team> <season> 2` give the plan); (6)
+      your club, the rival and the national teams are untouched. To
+      compare the bytes, save a state in the match and read the kit with
+      PINE: the match pointer is `P = u32[0x3906d8]`, and a computer
+      club's kit is built per match, so read it from the match's own data
+      as for the club eras check above. (Your own club's kit is read from
+      the career's PlPworkTask entry 1, as for the kit editor items.) Put
+      the result into
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards) and
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras)
 - [ ] Transfer fees on a max disc after the cut to the lower tiers (`--mod
       fee-tiers`, 2026-11-19): in the Post Player list the estimate for a
       player of rank 0 to 5 should be the retail game's, and for rank 6 to

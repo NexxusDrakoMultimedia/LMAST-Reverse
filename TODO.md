@@ -420,10 +420,71 @@ aside, and every switch works on the Japanese release.
       reach the computer club's match (Nexxus's states, 2026-11-19). Left
       to see: a group-0 club keeping its retail manager, the opening
       playoffs unchanged, the later eras and a whole season
-      ([`TESTING.md`](TESTING.md#newer-switches)). Not built: sponsors and
-      suppliers by club rank (the sponsor table's fees, suppliers by fee
-      with the two no-fee ones tied and lowest)
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
+      ([`TESTING.md`](TESTING.md#newer-switches)). The kit suppliers and
+      kits by club rank are built (`--mod kit-eras`, 2026-11-19, not yet
+      seen in the game), and so are the kit standard (`--mod
+      kit-standards`) and the third tier's clubs in both eras (`--mod
+      tier3-eras`, 457 clubs instead of 439), on the test disc
+      `LMAST-test-kits5.iso`. Open: the main sponsor's tiering, kept as
+      the per-season random draw on purpose (Nexxus's choice), and the
+      in-game checks of the kits, the standard and the third tier
+      ([`TESTING.md`](TESTING.md#newer-switches),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras))
+- [ ] **test** Kit standards and the third tier's eras (`--mod
+      kit-standards`, `--mod tier3-eras`, built 2026-11-19): in a match
+      against a computer club every shirt shows a front number, a shorts
+      number and emblems; collars, number designs and emblems differ
+      between clubs and eras, with the away kit matching the home kit
+      most of the time; the number colours, the supplier logo and the
+      captain's band show on the kit; and the third tier's clubs
+      (teams 442 to 459) change too
+      ([`TESTING.md`](TESTING.md#newer-switches))
+- [ ] **rebuild** Rationalise the switch names (Nexxus, 2026-11-19): merge
+      similar switches and groups (the `eras` group now holds five), rename
+      and polish them, keeping every old name as an alias in
+      `patch_disc.SWITCH_ALIASES` so existing build lines keep working. Do
+      it at a quiet moment, then update `LMASTER_MOD.md`, `INSTALL.md`,
+      `USAGE.md` and the editor's Build disc page
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
+- [ ] **understand** What the kit editor's items look like, for the
+      kit standard: what the three emblem types, the eight number designs
+      and the eleven collars draw; how the shorts number position is
+      encoded for a generated kit (the viewer calls 0 off, 1 right and 2
+      left, but the states show a number at 0); which shirt colour the
+      back and the sleeves take per design; and whether a computer club's
+      emblem is drawn at all. A Uniform Viewer or kit editor check with
+      save states
+      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#the-kit-editors-items-and-their-bytes))
+- [ ] **edit** Keeper kits for the 114 clubs `--mod random-sponsors` turns
+      from licensed into generated (Nexxus's list of ideas, 2026-11-19):
+      their keeper kits in `UNIFORM_LIST.TBB` are placeholders (shorts and
+      socks in colour 0, a light pink, design 0, odd collars). Give them
+      real keeper kits through the game's own keeper table, with the kit
+      standard's collar, number colour and captain's band
+      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#uniform_gktbb-keeper-kits-made-from-the-outfield-kit))
+- [ ] **edit** Standard kits for new clubs (2026-11-19): the 32 club-creation
+      presets (`CEDITPRG.REL 0x150a0`, `pwkTeam_SetUnif` at `0x20fc`) all
+      start with the front number and the shorts number off. Set their side
+      bytes to the kit standard, so a new club starts with the front number,
+      the shorts number and the emblems on
+      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#the-kit-editors-items-and-their-bytes))
+- [ ] **edit** The kit standard's number colours for the keeper kits
+      (2026-11-19): 101 of 686 keeper shirt numbers clash with the keeper
+      shirt, and 78 shorts numbers with the shorts. The number-colour rule
+      of `kiteras.py` applies to them too
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards))
+- [ ] **edit** Main sponsors by club strength (2026-11-19, the original eras
+      idea, kept random so far on purpose): tier the main sponsor by its
+      fee, so the stronger clubs get the bigger sponsors, still drawn per
+      season inside the tier ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
+- [ ] **write** A state checker (2026-11-19): one command that reads a PCSX2
+      state (a `.p2s` zip), finds the two clubs of a match and compares their
+      kit bytes and managers with the plans of `kiteras.py` and
+      `cluberas.py`, as the checks of 2026-11-19 did by hand, so every
+      in-game check is quicker for a tester ([`TESTING.md`](TESTING.md))
 - [ ] **rebuild** **Needed before LMASTER 1.0.0** (Nexxus's choice,
       2026-11-01): every switch works on the Japanese release
       (SLPM-66316), except the modern font, which may be PAL only

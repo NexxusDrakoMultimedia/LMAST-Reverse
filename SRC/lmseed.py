@@ -16,6 +16,7 @@ What uses it:
   random-sponsors patch_disc.sponsor_hash: the three multipliers of the
                   sponsor and supplier hash the game's code runs
   club-eras       cluberas.build: the order of the clubs inside each tier
+  kit-eras        kiteras.build: each club's suppliers, designs and away colours, club by club
 
 Usage:
     python lmseed.py selftest      # known answers of the generator and the properties

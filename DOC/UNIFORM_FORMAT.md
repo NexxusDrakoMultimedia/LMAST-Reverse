@@ -101,7 +101,7 @@ Which sponsor and supplier numbers have a logo texture isn't known.
 | 10, 11 | 7 each | socks colours |
 | 12 | 7 | shirt number colour (front and back) |
 | 13 | 7 | shorts number colour |
-| 14 | 3 | captain mark colour |
+| 14 | 3 | captain mark colour (the editor offers 0 to 4: white, black, blue, red, yellow) |
 
 **Confirmed** from `CUniformLoader::_load_edit` (`0x2c2848`). It requests
 the textures of fields 0, 5 and 9 (`_load_unif_req`, `0x2c2d10`, `0x2c2d98`,
@@ -172,16 +172,24 @@ side; the table uses design 0 of both.
 
 | Side field | Bits | Contents |
 |---|---|---|
-| 0 | 2 | unknown (0 or 1) |
-| 1 | 2 | unknown (0 or 1) |
-| 2 | 5 | unknown (0–7) |
-| 3 | 1 | front number shown (the viewer prints the front number colour only when set) |
-| 4 | 2 | shorts number position: 0 off, 1 right, 2 left (names at `TESTPRG.REL 0x23560`) |
-| 5 | 2 | unknown (0–2) |
+| 0 | 2 | the shirt's Emblem Type (the editor's item: 3 options, values 0 to 2) |
+| 1 | 2 | the shorts' Emblem Type (3 options, values 0 to 2) |
+| 2 | 5 | the number design (8 options, values 0 to 7) |
+| 3 | 1 | the front number: 0 none, 1 the number on the chest |
+| 4 | 2 | the position of the number on the shorts (3 options, values 0 to 2; 2 is the setting that decouples it from the emblem) |
+| 5 | 2 | not an editor item; a match feeds the builder the constant 1 for it, so it never matters in a match (0–2 in the data) |
 
-Side fields 3 and 4 are **confirmed** from the same viewer code. Side field
-1 has exactly the same value counts as side field 3 (878 × 0, 202 × 1), so
-it may be related, but that isn't checked.
+**Confirmed** from `SIMPRG.REL`'s kit editor, which reads and writes these
+bytes ([below](#the-kit-editors-items-and-their-bytes)). The Uniform
+Viewer of `TESTPRG.REL` names side field 4 "off, right, left" (names at
+`TESTPRG.REL 0x23560`) and prints the front number colour only when
+side field 3 is set; for a generated kit the states below contradict the
+viewer's names for field 4 (position 0 shows a number), so the names are
+not confirmed for a generated kit, and the field is the editor's item
+"Position on shorts". Side fields 1 and 3 have the same value counts
+over the whole table (878 × 0, 202 × 1), which is chance: they are
+different items, and in the computer clubs their counts differ
+([below](#the-kit-editors-items-and-their-bytes)).
 
 **Sponsor and supplier logos (empirical).** In PCSX2 states (Nexxus,
 2026-11-10) your club's match kit record and the rival's, whose kits show
@@ -191,7 +199,13 @@ side at 1 (your club's side fields `0 1 0 1 1 1`, the rival's
 1 0` with a valid sponsor and supplier and no logos. The difference is
 not what hides a computer club's logos: the texture-list test is
 ([below](#the-sponsor-and-supplier-logos-on-a-generated-kit)), and
-`--mod random-sponsors` doesn't set these fields.
+`--mod random-sponsors` doesn't set these fields (`--mod kit-standards`
+does, [`LMASTER_MOD.md`](LMASTER_MOD.md#kit-standards)).
+
+**The logo's colour (Nexxus's observation, 2026-11-19).** The supplier
+logo on the shirt takes the shirt number colour (kit field 12): the number
+colour decides the logo's colour too, so a number colour that does not
+show on the shirt hides the logo as well.
 
 ### Colours
 
@@ -214,6 +228,178 @@ white (A8) through greys to near-black (L8). Entries 64–191 of every ramp
 hold its main shade (entry 128: A1 (255, 222, 222), A4 (148, 41, 41), A8
 white), which the editor shows as each colour's swatch
 (`uniform.colour_swatches`).
+
+## The kit editor's designs per supplier
+
+The kit editor does not offer every shirt and shorts design: it offers
+the ones the club's kit supplier makes. **Confirmed** from `SIMPRG.REL`
+(found 2026-11-19, from Nexxus's pointer; not yet seen in the game).
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `SLES 0x257390` | `pwkSponsor_GetSupplier` | the supplier id of your club; `UniformEdit` calls it at `SIMPRG 0x3fab4` |
+| `SIMPRG 0x3fab4` | `UniformEdit` | index = supplier - 206 (`0xce`); anything outside 206 to 212, 0 (no supplier) included, becomes 7 and uses Doclla's mask |
+| `SIMPRG 0x21d758` | supplier mask table | 8 u32: `0x80 0x40 0x20 0x10 0x08 0x04 0x02 0x02` |
+| `SIMPRG 0x21d318` | shirt masks | one mask per outfield shirt design 0 to 208, exactly one bit each |
+| `SIMPRG 0x21d660` | shorts masks | one mask per shorts design 0 to 60, exactly one bit each |
+| `SIMPRG 0x42b40`, `0x42b80` | shirt list builders | keep the designs whose mask AND the supplier's mask is non-zero, ascending |
+| `SIMPRG 0x42c10`, `0x42c50` | shorts list builders | the same for shorts |
+| `SIMPRG 0x41ea8`-`0x41ed4` | the design menu | offers only that list |
+| `SIMPRG 0x3fb54`-`0x3fd18` | editor start | re-validates the existing kit (below) |
+| `SIMPRG 0x21d778` | style group table | 166 entries of {u16 group, u16 design}, groups 0 to 3; a design not in it counts as group 0 |
+
+The lists, by supplier:
+
+| Supplier | Shirt designs | Shorts |
+|---|---|---|
+| 206 Binnonn | 60 to 74 and 76 to 89 (29) | 36 to 39 |
+| 207 Opnatis | 91 to 119 (29) | 40 to 43 |
+| 208 Wrandon | 3, 75 and 120 to 144 (27) | 44 to 47 |
+| 209 Untelio | 145 to 170 (26) | 48 to 51 |
+| 210 Jompela | 171 to 190 (20) | 52 to 54 |
+| 211 Egamucho | 6, 7, 10, 11, 15, 18, 25, 27, 28, 34, 38, 41, 44, 45, 53, 59 (16) | 55 to 57 |
+| 212 Doclla | 90 and 191 to 208 (19) | 58 to 60 |
+
+No supplier lists 43 shirt designs (0 to 2, 4, 5, 8, 9, 12 to 14, 16, 17,
+19 to 24, 26, 29 to 33, 35 to 37, 39, 40, 42 to 43, 46 to 52, 54 to 58) or
+shorts 0 to 35, which are the designs most computer clubs wear. Socks (0 to
+17), the keeper kit designs and all colours are not limited by the supplier.
+
+**Re-validation.** When the editor opens, the existing kit is checked
+against the list: a shirt outside it becomes the last list design of the same
+style group (table `0x21d778`), else the list's first; shorts outside it
+become the list's first. The result is written back with `pwkTeam_SetUnif`
+(flag 1). So signing a new supplier rewrites an out-of-list shirt and
+shorts without a word.
+
+**Club creation.** In season -1 nothing is signed and the game stores
+supplier 212 (Doclla; the game's own, Nexxus: retail's first contract year
+has Egamucho, and the editor in season -1 makes do with Doclla), so the editor offers
+Doclla's 19 shirts (the menu reads Pattern n/19), 3 shorts (1/3) and the
+18 socks. The 32 club-creation presets in `CEDITPRG.REL` (`0x150a0`,
+`CSelectTeamColorModule`, chosen by the 32-colour palette id, function
+`0x20b0`, `pwkTeam_SetUnif` at `0x20fc`) all have shirt 206, shorts 60 and
+socks 14.
+
+**The clash rule the editor applies to you** (the second kit only,
+`+0x5f4` is 0). `UniformList_CheckColor` (`COLOR_TBL`, [above](#color_tbltbb-which-colours-clash)) is called on the home shirt's colour 1 and the
+away shirt's colour 1 (`SIMPRG 0x40358` and `0x42594`, `CEDITPRG 0x686c`).
+On entry a clashing away colour 1 is reset to the byte of the 96-byte table
+at `SIMPRG 0x21cb78` indexed by the home colour 1, and a warning flag at
+`+0x948` opens message `0x20`. In the colour palette the 32 selectable colours that
+clash with the home colour 1 are greyed out
+(`SetPaletteSelectStateArray`, `0x43e98`). Nothing checks colours 2 and 3,
+the shorts, the socks or two equal designs.
+
+**Where the kit lives.** Your kit is in the career's `pwork` block
+(`PlPworkTask` entry 1, offset 0: the `PlUnif`; entry 2 at `+0x244` is the
+rival's), not in `UNIFORM_LIST`. `pwkTeam_GetUnif` re-stamps `+4` and `+5`
+from `pwkSponsor_GetMainSponsor` and `pwkSponsor_GetSupplier` on every read.
+A computer club reads its `UNIFORM_LIST` row (`UniformList_GetDataTeam`,
+called only at `0x26ebe8` and `0x26ec08` in `pwkTeam_GetUnif`), and the
+loader accepts any design below 209 shirts, 61 shorts and 18 socks, so a
+computer club can wear any supplier's design. No four-kit generator exists
+in the game (searched); the only whole kits are the 32 presets. `--mod
+kit-eras` uses these lists ([`LMASTER_MOD.md`](LMASTER_MOD.md#kit-eras);
+`python SRC/kiteras.py info DAT` prints them from `SIMPRG.REL`).
+
+## The kit editor's items and their bytes
+
+The kit editor of a career's club creation (`SIMPRG.REL`'s
+`CUniformEditor`) edits two kits of one `PlUnif`: it holds a pointer to
+the side's six side bytes (`+0x58`) and one to its outfield kit (`+0x5c`).
+**Confirmed** from `SIMPRG.REL`, found by an investigator and matched with
+Nexxus's two save states and screenshots (2026-11-19). The editor has
+one jump table of accessors per kind of item:
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `SIMPRG.REL 0x1095f8`–`0x10968c` | `CUniformEditor::Initialize` | side = `PlUnif + 6` (home) or `+ 0x2a` (away); the kit = side + 0x15, the outfield kit |
+| `0x109d98`, `0x109fb8` | `GetColorIndex`, `SetColorIndex` (tables `0x22a660`, `0x22a6c0`) | colour items: 0 shirt colours (kit fields 1 to 3), 1 shorts colours (6 to 8), 2 socks colours (10, 11), 3 shirt number colour (12), 4 shorts number colour (13), 5 captain's band (14) |
+| `0x109ee8`, `0x10a0f0` | `GetDesignIndex`, `SetDesignIndex` (`0x22a680`, `0x22a6e0`) | design items: 0 shirt (kit field 0), 1 shorts (5), 2 socks (9), 3 side field 2, 4 side field 5 |
+| `0x109f50`, `0x10a158` | `GetOptionIndex`, `SetOptionIndex` (`0x22a6a0`, `0x22a700`) | option items: 0 collar (kit field 4), 1 side field 0, 2 side field 1, 3 side field 3, 4 side field 4 |
+| `0x41e6c`, `0x41e7c`, `0x41ee8` | the menu's builders | Shirt Emblem Type (`SetOptionIndex` 1), Collar (4), Shorts Emblem Type |
+| `SLES 0x2c4b80`, `0x2c4bf0`, `0x2c4bf4` | `CUniformBuilder::Init` | a match writes the style byte it would feed as the constant 1 (side field 5 never matters in a match); the constant 2 is hard-wired for licensed kits |
+
+The menu, with the text of each item (MES category 470, ids 106 to 116):
+
+| Menu | Item | Byte | Options |
+|---|---|---|---|
+| Shirt | Design | kit 0 | the supplier's list ([above](#the-kit-editors-designs-per-supplier)) |
+| Shirt | Colour 1, 2, 3 | kit 1 to 3 | 32 colours |
+| Shirt | Emblem Type (id 110) | side 0 | 3: values 0 to 2 |
+| Shirt | Collar | kit 4 | 11: values 0 to 10 (`l_nml_bdy_01` to `11`) |
+| Shorts | Design | kit 5 | 61 |
+| Shorts | Colour 1 to 3 | kit 6 to 8 | 32 colours |
+| Shorts | Emblem Type | side 1 | 3: values 0 to 2 |
+| Socks | Design | kit 9 | 18 |
+| Socks | Colour 1, 2 | kit 10, 11 | 32 colours |
+| Number | Design | side 2 | 8: values 0 to 7 |
+| Number | Shirt number (colour) | kit 12 | 32 colours |
+| Number | Front number (id 114) | side 3 | 2: option 1 is value 0, no front number; option 2 is value 1, the number on the chest (its page reads "Position 1/2, 2/2") |
+| Number | Position on shorts (id 115) | side 4 | 3: values 0, 1, 2 |
+| Number | Colour on shorts (id 116) | kit 13 | 32 colours |
+| Captain's band | Colour | kit 14 | 5: values 0 to 4 |
+
+Every colour item offers 32 of the 96 colours (the map is table 6 of
+`DAT/EMBLEM/COLOR_TABLE.TBB`: A1 A2 A4 A6 A7 B2 B4 C2 C4 C5 D2 D4 E5 E7 F6
+G3 H3 H5 H7 I1 I4 I6 J3 J5 K3 K6 K7 L6, then A8 E8 H8 L8). A kit written
+by a tool may use all 96.
+
+**The coupling** (**confirmed**, both ways). Choosing the shorts Emblem
+Type *v* also sets side field 4 to *v* when *v* is under 2
+(`0x41ee0`–`0x41f04`), and choosing Position on shorts *v* also sets side
+field 1 to *v* when *v* is under 2 (`0x41f8c`–`0x41fb4`). The third option
+(value 2) of either breaks the pair, so the emblem side is then free
+(1, 2 or 3) and the number can be on 1, 2 or 3 (Nexxus). The coupling is
+not applied when the editor opens, and retail data does not follow it:
+side fields 1 and 4 are equal in 345 of the 686 retail kits (the
+computer clubs and the placeholder rows).
+
+**Nexxus's states** (2026-11-19, `LMAST-test-kits.iso`; the player's kit
+in PCSX2 save states, read from the career's work block, `PlPworkTask`
+entry 1 `+0` = `PlUnif`). Slot 1 had the home kit with every option on its
+first value (white), slot 2 the away kit at the highest useful values:
+
+| Kit | Collar | Socks design | Band | Side fields 0 to 5 | Shirt design |
+|---|---|---|---|---|---|
+| Home, option 1 everywhere | 0 | 0 | 0 | 0 0 0 0 0 1 | 90 |
+| Away, the highest | 10 | 17 | 4 | 1 1 7 1 1 0 | 208 |
+
+So menu option *n* is byte *n* − 1 for the collar, the socks and the band.
+In the screenshots the shorts number was on the viewer's left leg with
+the emblem on the right for the home kit (side field 4 = 0) and the other
+way round for the away kit (side field 4 = 1).
+
+**Retail data** (**empirical**, `UNIFORM_LIST` teams 3 to 459: 114
+licensed placeholder rows and 343 computer clubs, 260 with flag 1 and 83
+with flag 3; counts over the 343 clubs, home, then away):
+
+| Field | Home | Away |
+|---|---|---|
+| Side 0 | 0: 306, 1: 37 | 0: 312, 1: 31 |
+| Side 1 | 0: 242, 1: 101 | 0: 245, 1: 98 |
+| Side 2 | 0: 261, 1: 32, 2: 3, 3: 8, 4: 13, 5: 4, 6: 2, 7: 20 | similar |
+| Side 3 (front number) | 0: 337, 1: 6 | 0: 301, 1: 42 |
+| Side 4 | 0: 111, 1: 229, 2: 3 | 0: 115, 1: 226, 2: 2 |
+| Side 5 | 0: 21, 1: 194, 2: 128 | 0: 18, 1: 198, 2: 127 |
+| Collar (kit 4) | 0: 106, 1: 26, 2: 98, 3: 27, 4: 47, 6: 4, 7: 35 | similar; no collar 5 or above 7 |
+| Captain mark (kit 14) | 0: 170, 1: 11, 2: 12, 3: 53, 4: 97 | – |
+
+Shirt number colour against the shirt's colour 1: 18 home and 15 away
+kits clash in `COLOR_TBL`, and the contrast ratio is under 3 to 1 in 49
+and 42. The editor has no rule for number or band colours: the only clash
+rule it applies is the second kit's shirt colour 1.
+
+**The game's own club presets** (`CEDITPRG.REL 0x150a0`: 32 presets of
+`0x50` bytes, applied by `pwkTeam_SetUnif` at `0x20fc`; the rival's at
+`0x15aa0`) all use shirt design 206, shorts 60 and socks 14; the home
+side fields are `0 1 0 0 0 1` and the away `1 0 1 0 1 0`.
+`set_default_uniform_style` (`SLES 0x2cf3a0`) defaults the emblem
+styles to 0 and the shorts number position to 1.
+
+`--mod kit-standards` writes these bytes for every computer club
+([`LMASTER_MOD.md`](LMASTER_MOD.md#kit-standards)).
 
 ## Licensed kits
 
@@ -486,13 +672,14 @@ disc:SLES_541.51=out/SLES_541.51`. Edits to `UNIFORM_LIST.TBB` and
 
 ## Still unknown
 
-- What flag 3 changes (flags 1, 2, 4 are known), side fields 0, 1, 2 and
-  5, and the two unused bits.
+- What flag 3 changes (flags 1, 2, 4 are known), and the two unused bits.
+- What the kit editor's items look like on the shirt ([above](#the-kit-editors-items-and-their-bytes)): the emblem types (2 is hard-wired for licensed kits, `CUniformBuilder::Init` `0x2c4bf0`, probably "no emblem overlay"); the encoding of the shorts number positions for a generated kit (the viewer calls 0 off, 1 right and 2 left, which Nexxus's states contradict: position 0 shows a number); what the number designs and the collars look like; per shirt design, which shirt colour the back and the sleeves take; and whether a computer club's emblem is drawn at all.
 - Descriptor bytes 14 and 15, and what the pack's copy of the descriptor
   is used for: which copy a match reads (an edit to one copy only would
   tell), and whether a front number can show at all (a front number
   colour showed nothing on AC Milan's shirt, Nexxus's report).
 - What the 121 rows with team id 0 are.
+- The kit editor's per-supplier lists ([above](#the-kit-editors-designs-per-supplier)): that the game offers exactly those designs (read in the code, not yet seen in the editor), the Japanese release's addresses, and which of the 32 palette slots is greyed out.
 - What the keeper kit stored with your club holds, and whether screens
   outside a match show it rather than the `UNIFORM_GK` kit (the code says
   they should; not checked).
@@ -506,5 +693,8 @@ python SRC/uniform.py licensed  DAT/PLAYER ISO/SLES_541.51   # the 116 licensed 
 python SRC/uniform.py clash     DAT/PLAYER A8                # colours that clash with white
 python SRC/uniform.py gk        DAT/PLAYER 35                # keeper design 35 and its schemes
 python SRC/uniform.py roundtrip DAT/PLAYER/UNIFORM_LIST.TBB  # re-pack all 661 rows
+python SRC/kiteras.py   info      DAT                         # the per-supplier lists, read from SIMPRG.REL
+python SRC/kiteras.py   selftest  DAT                         # kit-eras and kit-standards: the code against the plan (the editor's items and bytes)
+python SRC/sles_disasm.py ISO/SLES_541.51 syms CUniformBuilder  # the builder's functions (the editor's own code is in SIMPRG.REL: snr2.py dis ISO/DLL/SIMPRG.REL 0x109d98 40 --sles ISO/SLES_541.51)
 python SRC/tbb.py roundtrip     DAT/PLAYER/UNIFORM_GK.TBB    # the container re-writes
 ```

@@ -157,6 +157,43 @@ You can build the mod in three editions from named switches
       `--mod title-banner` (the mod's name on the title screen) and
       `--mod random-sponsors` (a sponsor and supplier on every kit)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font))
+- [x] `--mod kit-eras` (PAL only, full and max, built on
+      `random-sponsors`): computer clubs change kit supplier, shirt and
+      shorts design and away kit with each club era, using the designs
+      the kit editor offers for the supplier and keeping the home
+      colours. The group `eras` ("Club eras") now holds `club-eras`,
+      `random-sponsors` and `kit-eras`, and `graphics` holds `realism`
+      and `modern-font`
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras),
+      [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#the-kit-editors-designs-per-supplier))
+- [x] `--mod kit-standards` (PAL only, group `eras`, needs `kit-eras`;
+      Nexxus's idea and rules, 2026-11-19): every computer club's kits, in
+      every era, get a front number, a shorts number, emblems on the shirt
+      and shorts, number colours that show on the colours they sit on
+      (they also colour the supplier logo) and a captain's band to match.
+      From era 1 the collar, number design and emblem pair are rolled
+      again for each variant, the away kit matching the home kit's value
+      most of the time. Built on the kit editor's items, read from
+      `SIMPRG.REL`
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards),
+      [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#the-kit-editors-items-and-their-bytes))
+- [x] The kit standard sets every club's supplier in every era, from its
+      tier (Nexxus's idea, 2026-11-19), so the logo and the look agree in
+      era 0 too; the away colours 2 and 3 draw their free choices only from
+      the club's hues and the greys, and `patch_disc.py` notes that the
+      Edit Emblem screen can freeze on a `--skip-tutorial` disc
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#test-tools))
+- [x] `--mod tier3-eras` (group `eras`, needs `club-eras`, `kit-eras` and
+      `third-tier`; Nexxus's idea, 2026-11-19): the club eras and kit eras
+      also take the third tier's clubs (teams 442 to 459), 457 clubs
+      instead of 439, with a bigger manager pool
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras))
+- [x] The mod's code segment moved down in memory, from `0xf8000` to
+      `0xe0000`, and grew to `0xbd00` bytes to hold the kit tables (the
+      memory from `0x94000` to `0x100000` is unused in every state read).
+      Every address in the docs is relative to the segment
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards))
 - [x] The Japanese disc: every switch but `realism`, `third-tier`'s code,
       save and data ported (its rules text is not)
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))

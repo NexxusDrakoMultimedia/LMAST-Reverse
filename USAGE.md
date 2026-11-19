@@ -145,20 +145,24 @@ can play or share.
      have it, and the line beside the buttons shows the letters the
      saves get: careers in `-F`, or `-M` with any difficulty switch, and
      VS data in `-V`.
-   - **Graphics** holds `random-sponsors` (a sponsor and a kit supplier
-     on every club's kit, drawn again each season), `modern-font` (the
-     game's main text in Roboto Condensed, for the European languages)
-     and `realism`, which puts LMAST Realism's crests and match
-     pictures on the disc. The **Font file** box holds the font's file,
+   - **Graphics** holds `modern-font` (the game's main text in Roboto
+     Condensed, for the European languages) and `realism`, which puts
+     LMAST Realism's crests and match pictures on the disc. The **Font file** box holds the font's file,
      filled in when the editor finds it. The **LMAST Realism pack
      folder** box holds the pack's folder (a clone at `../LMAST-Realism`
      is filled in for you; change either box with Browse). If a ticked
      switch has no file, the window asks before it builds without it,
      and the switch is left out.
-   - **Club eras** holds `club-eras`: every computer club changes manager
-     every three seasons, a third of the clubs each year, the better
-     clubs getting the better managers (his tactics and formations come
-     with him). It has no boxes to fill in.
+   - **Club eras** holds five switches: `club-eras` (every computer club
+     changes manager every three seasons, a third of the clubs each
+     year, the better clubs getting the better managers, his tactics
+     and formations with him), `random-sponsors` (a sponsor on every
+     club's kit and boards, drawn again each season), `kit-eras` (at
+     the same change, a new kit supplier and new kits), `kit-standards`
+     (front and shorts numbers, emblems and number colours that show on
+     the kit, for every computer club) and `tier3-eras` (the third
+     tier's clubs join the club and kit eras; it needs `third-tier`).
+     It has no boxes to fill in.
    - **Title screen** holds `title-banner`, a banner naming the LMASTER
      Mod, its version and its edition, which every edition has. It is
      drawn with the same font file as `modern-font`. The editor passes

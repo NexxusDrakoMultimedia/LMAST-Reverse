@@ -45,8 +45,8 @@ level:
 | `restorations` | injury-lines | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
-| `graphics` | realism ([below](#lmast-realism-on-the-disc)), random-sponsors ([below](#random-sponsors)), modern-font ([below](#modern-font)) | – | yes | yes |
-| `eras` | club-eras ([below](#club-eras)) | – | yes | yes |
+| `graphics` | realism ([below](#lmast-realism-on-the-disc)), modern-font ([below](#modern-font)) | – | yes | yes |
+| `eras` (title "Club eras") | club-eras ([below](#club-eras)), random-sponsors ([below](#random-sponsors)), kit-eras ([below](#kit-eras)), kit-standards ([below](#kit-standards)), tier3-eras ([below](#tier-3-eras)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -68,12 +68,14 @@ numbers. The uses:
 | `sponsor-boards` | `sponsor-boards` ([below](#stadiums)) | each ground's 12 advert boards |
 | `random-sponsors` | `random-sponsors` ([below](#random-sponsors)) | the three multipliers of the sponsor and supplier hash the game's code runs |
 | `club-eras`, one stream per tier | `club-eras` ([below](#club-eras)) | the order of the clubs inside each tier, so which club gets which manager is not just by rank |
+| `kit-eras` | `kit-eras` ([below](#kit-eras)) | the designs and colours of each club's six kit variants: the shirt and shorts designs from the supplier's lists, and the away colours |
+| `kit-standards`, one stream per club | `kit-standards` ([below](#kit-standards)) | the collar, the number design and the emblem pair of each of a club's six variants, each rolled on its own, and whether the away kit takes the home kit's value |
 
 `python SRC/lmseed.py selftest` checks the generator's known answers (a
 change would change every build) and that the sponsor hash still draws every
 sponsor and supplier over 20 seasons with no club keeping both.
-Changing the seed or the generator changes the sponsors, the boards and the
-managers of every Full and Max disc, so it needs a new disc, not a patch of
+Changing the seed or the generator changes the sponsors, the boards, the
+managers and the kits of every Full and Max disc, so it needs a new disc, not a patch of
 an old one.
 
 **Which edition a fix goes in** (Nexxus's rule, 2026-11-01): a bug fix
@@ -492,8 +494,8 @@ Other retail typos seen while making the name table, not fixed:
 
 ## Random sponsors
 
-`--mod random-sponsors` (group `graphics`, in LMASTER full and max;
-built 2026-11-10; Nexxus's request) gives every club's kit a main
+`--mod random-sponsors` (group `eras` since 2026-11-19, before that
+`graphics`; in LMASTER full and max; built 2026-11-10; Nexxus's request) gives every club's kit a main
 sponsor and a kit supplier, drawn again every season, and it also
 unlicenses the Italian, Spanish and Dutch clubs. In the retail game only
 your club (and the rival) show them: a computer club's kit request
@@ -504,11 +506,15 @@ Real Betis, an unlicensed computer club, shows the chest sponsor
 (Decentberg) and the supplier logo, as your club and the rival do; the
 clubs of England, Australia and New Zealand work too, and England's
 national team shows its kit maker and no main sponsor. The supplier logo
-takes the colour of the shirt numbers, which is the game's own rule.
+takes the colour of the shirt numbers, which is the game's own rule
+(Nexxus's observation, 2026-11-19: the number colour also decides the
+colour of the supplier logo, so a number colour has to show on the shirt
+for the logo to show too; [`kit-standards`](#kit-standards) picks it so).
 
 **The numbers.** `pwkTeam_GetUnif` (`0x26e9d8`) writes 0 to `PlUnif +4`
 and `+5` at `0x26ec1c` and `0x26ec24`. The switch turns the first into a
-call to code in the LMASTER code segment (`0xf8300`, 40 words; the
+call to code in the LMASTER code segment (`CAVE + 0x300`, 40 words,
+`0xe0300` since the segment moved on 2026-11-19, `0xf8300` before; the
 segment is the third tier's too, and the switch brings its program
 header) and the second into a nop. The code gets the season from
 `pwkGen_Keika` (`0x244430`, the season's first year less 2006, so it
@@ -539,7 +545,7 @@ and `CmnTex_007_208`). Then `CUniformBuilder::_setup_texture_list`
 copied into texture list slots 4 and 6. The loader and the test are in
 [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#the-sponsor-and-supplier-logos-on-a-generated-kit).
 The switch turns the `beqz` at `0x2c54d8` into a `j` to 20 words in the
-code segment (`0xf8000 + 0x3a0`): a computer club (teams 3–459) takes the
+code segment (`CAVE + 0x3a0`, `0xe03a0`; `0xf83a0` before the move): a computer club (teams 3–459) takes the
 real lists, a national team (460–542) takes the real supplier list and the
 default sponsor list, so it shows its kit maker and no main sponsor
 (Nexxus: they should carry no sponsor, but suppliers are fine), and every
@@ -558,6 +564,15 @@ froze on the Edit Emblem screen after the kits were edited (Nexxus's
 report, 2026-11-19, a LMASTER max disc), so the gate now leaves every id
 outside 3–542 to the game. `cluberas.py` runs both pieces of code against
 every team id from 0 to 599 (`lmseed.py selftest`).
+
+**With `kit-eras`** the sponsors' code no longer ends in a `jr $ra`: that
+is a `j` to the [kit code](#kit-eras) (`CAVE + 0x1400`), which then
+returns to `pwkTeam_GetUnif`, so the sponsors' code runs first and the
+kit code may overwrite the supplier it drew (`SWITCH_NEEDS` makes
+`kit-eras` need `random-sponsors`). Without [`tier3-eras`](#tier-3-eras)
+teams 442–459, the third tier's clubs, are in the gate's range but not in
+the kit code's, so they carry a random supplier with a retail design. `kiteras.py selftest` runs the two
+in a chain.
 
 **The licensed clubs.** The 116 Italian, Spanish and Dutch clubs have
 real kit textures with their sponsor in them, so a sponsor could not be
@@ -587,18 +602,19 @@ seven tactical leanings, [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)), and the
 game derives a computer club's style and tactics from its manager (below),
 so those change with him. **Built, checked by emulation and by
 reading the disc back, and tested in PCSX2 for a club in era 1 (below)** ([`TESTING.md`](../TESTING.md#newer-switches)).
-Not built yet: sponsors and suppliers by club rank (they still come from
-`random-sponsors`' hash). A tactics and formation choice of the switch's
+The suppliers by club rank, and the kits, are the switch [Kit eras](#kit-eras)
+(built 2026-11-19); the main sponsor still comes from `random-sponsors`'
+per-season hash. A tactics and formation choice of the switch's
 own turned out not to be needed: each manager's record carries his own.
 
 **How it works.** The game asks `plOteam_GetManagerNoOffset` (`SLES
 0x216668`) for a club's manager; it calls `plOteam_GetDb` (`0x2165d8`) and
 reads the club record's `+4` (a manager index, database id minus
 `0x6d2e`). The `jal` at `0x2166d0` becomes a call to code in the LMASTER
-code segment (`CAVE + 0x400`, 60 words). For the clubs of teams 3 to 441,
-once a club's era is past 0, the code finds the manager in tables and
+code segment (`CAVE + 0x400`, 60 words). For the clubs of teams 3 to 441 (3 to 459 with
+[`tier3-eras`](#tier-3-eras)), once a club's era is past 0, the code finds the manager in tables and
 returns a pointer whose `+4` holds it (the next instruction is
-`lh $v0, 4($v0)`, its result word at `CAVE + 0x500`); for every other
+`lh $v0, 4($v0)`, its result word at `CAVE + 0x500`, `0xe0500`); for every other
 team, and in era 0, it jumps on to `plOteam_GetDb`, so teams 1 and 2, the
 national teams, the tutorial's clubs and the first seasons are the
 retail game's. The **era** is (season + team id mod 3) div 3, the season
@@ -609,7 +625,7 @@ each changes again every 3 seasons.
 
 A season below 0 (the opening playoffs of a new career, season -1) counts
 as season 0, so nothing changes there. A test build, `--eras-offset N` (0
-to 2, with `--mod club-eras`), adds N to the season from season 0 on: with
+to 2, with `--mod club-eras`, and `--mod kit-eras` follows it), adds N to the season from season 0 on: with
 1, the clubs whose team id leaves 2 when divided by 3 are in era 1 already
 in 2006-07, with 2 those that leave 1 or 2 (two thirds), so the change can
 be seen without playing a season (the playoffs stay retail); the default 0
@@ -619,8 +635,8 @@ is the switch as released.
 
 | Part | Holds |
 |---|---|
-| Tiers | the 439 clubs of teams 3 to 441 sorted by the club record's `world_rank` (`+2`, 237 different values, best first, ties by team id), cut into 16 tiers of 28 or 27 and put in an order from the [LMASTER seed](#the-lmaster-seed) inside each tier |
-| Pool | the 3,000 manager records sorted by quality (`rank`, then the mean of the 48 abilities; rank and mean ability correlate 0.92), less the 721 the game uses elsewhere: the clubs' own retail managers, the national teams', the player's staff, the candidate lists and the rival's. A tier takes the next M = 3 × K (81 or 84) of the best 1,317 |
+| Tiers | the 439 clubs of teams 3 to 441 (457 clubs, 9 tiers of 29 and 7 of 28, with `tier3-eras`) sorted by the club record's `world_rank` (`+2`, 237 different values, best first, ties by team id), cut into 16 tiers of 28 or 27 and put in an order from the [LMASTER seed](#the-lmaster-seed) inside each tier |
+| Pool | the 3,000 manager records sorted by quality (`rank`, then the mean of the 48 abilities; rank and mean ability correlate 0.92), less the 721 the game uses elsewhere: the clubs' own retail managers, the national teams', the player's staff, the candidate lists and the rival's. A tier takes the next M = 3 × K (81 or 84) of the best 1,317 (M 84 or 87 of the best 1,371 with `tier3-eras`) |
 | Rotation | a club at place *p* of a tier of *K* gets the tier's entry (*p* + era × step) mod *M*, the step in [*K*, *M* − *K*] and coprime to *M* (40 or 41) |
 
 Two clubs of one tier are in eras that differ by at most 1, so they
@@ -630,9 +646,11 @@ managers are out of the pool, so no two clubs share a manager in any
 season (`cluberas.py check` proves it over 100 seasons). The code segment
 grew from `0x400` to `0x1400` bytes for the tables (the executable has
 `0x57d58` zero bytes after it, on the PAL and the Japanese file alike,
-and EE RAM below the executable is free to `0x100000`); the tiers, the
-clubs' places and the pool sit at `CAVE + 0x510`, `+ 0x590` and
-`+ 0x900`. The switch is PAL only for now, as `random-sponsors` is.
+and EE RAM below the executable is free to `0x100000`; `kit-eras` and
+`kit-standards` grew it again, see [The code segment](#the-code-segment));
+the tiers, the clubs' places and the pool sit at `CAVE + 0x510`,
+`+ 0x590` and `+ 0x940` (`0xe0510`, `0xe0590`, `0xe0940`; the pool was at
+`+ 0x900` before `tier3-eras` made it larger). The switch is PAL only for now, as `random-sponsors` is.
 
 **Where the manager meets the tactics** (**confirmed** in the code, not
 tested in the game): `0x22e610` reads the manager's runtime byte `+0x35`
@@ -650,12 +668,13 @@ hook word, the program header, the routine and the three tables equal
 what was generated, 0 wrong runs on those bytes). The game itself has not
 run it. A manager is shown nowhere (only on the team info screen, hidden
 from the player: Nexxus's report, 2026-11-19), so the in-game check
-reads the result word at `0xf8500` over PINE after the game has built a
+reads the result word at `0xe0500` (`0xf8500` before the move of
+2026-11-19) over PINE after the game has built a
 computer club's team data: it holds the manager index the code returned,
 and stays 0 while every club is in era 0.
 
 **Your club and the rival never change.** The switch only touches teams 3
-to 441, so team 1, team 2 (the rival, which has its own manager data), the
+to 441 (3 to 459 with `tier3-eras`), so team 1, team 2 (the rival, which has its own manager data), the
 national teams, the VS teams and every other id keep the game's own manager
 and style (Nexxus's rule, 2026-11-19); `cluberas.py selftest` runs the code
 for every id from 0 to 599 and checks it.
@@ -665,7 +684,7 @@ for every id from 0 to 599 and checks it.
 ordered the clubs inside the tiers, so the managers it gave differ from the
 current plan's; read by Claude; the second
 season-0 week, a league match). In both states the routine's first word
-(`0x2488fffd` at `0xf8400`) and the hook word (`0x0c03e100` at `0x2166d0`)
+(`0x2488fffd` at `0xf8400`, now `0xe0400`) and the hook word (`0x0c03e100` at `0x2166d0`)
 are in memory, so the larger code segment loads. In state 2 a match of
 your club (team 1) against team 46 (team id mod 3 is 1, so era 1) is
 loaded, and the result word is 1067, S.Corraface, exactly what
@@ -688,9 +707,236 @@ and state 1's result word is 2477, K.Kilk, the plan's manager for team 92.
 **Still unknown:** a club of group 0 (team id mod 3 equal to 0), which
 should keep its retail manager at offset 2; that nothing changes in the
 opening playoffs; the later eras, the staggering (a third of the clubs
-each year, on a release build) and a whole season of play; and the sponsor
-and supplier ranking (built from the sponsor table's fees:
+each year, on a release build) and a whole season of play; and the main
+sponsor ranking (built from the sponsor table's fees:
 [Planned](#planned)).
+
+## Kit eras
+
+`--mod kit-eras` (group `eras`, PAL only, in LMASTER full and max; needs
+`random-sponsors`; built 2026-11-19; Nexxus's idea and every choice below;
+`kiteras.py`, with `kit_words` and `plan_kit_eras` in `patch_disc.py`).
+Every computer club changes kits each time its club era changes (the
+[club era](#club-eras): a third of the clubs each year), to a supplier
+chosen by its rank and to designs of that supplier. **Built; the machine
+code is checked against the plan by emulation (`kiteras.py selftest`: 32,400
+runs for team ids 0 to 599, seasons -1 to 99 and the three test offsets,
+64,800 with `tier3-eras` too, and
+a chain test of the sponsors' code running on into the kit code, 0 wrong).
+Read back from a built disc (`LMAST-test-kits.iso`, 2026-11-19: the
+hook words, the sponsors', gate, managers' and kit code and the kit table equal
+what the tools generate). **Tested in PCSX2 in part** (Nexxus's state of
+`LMAST-test-kits3.iso`, 2026-11-19, a match of Nexxus's club against Hansa
+Rostock, team 119, from an older save): the club's `PlUnif` in memory (four
+copies) equals the plan's era 1 on all 36 bytes the code writes (supplier 208
+Wrandon, home shirt 143, shorts 44, away shirt 124, away colour D3, and the
+standard's bytes), and the screenshot shows the lime away kit against
+Nexxus's blue; the other checks are open**
+([`TESTING.md`](../TESTING.md)).
+
+**What a club gets.** Era 0 is the retail kit (the opening playoffs, season
+-1, count as era 0). From era 1 a club cycles through 6 variants,
+variant = (era - 1) mod 6, and no variant repeats the shirt design of the one
+before.
+
+| Part | Rule |
+|---|---|
+| Supplier (`PlUnif +5`) | by the club's tier (the 16 tiers of [Club eras](#club-eras), world rank), a place either side of the tier's: best to worst Opnatis 207, Binnonn 206, Wrandon 208, Untelio 209, Jompela 210, Egamucho 211, Doclla 212 (the order of their fees, [`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md)) |
+| Home shirt and shorts designs | from that supplier's lists, the designs the kit editor offers the player for it ([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#the-kit-editors-designs-per-supplier)); the plain shirts 12, 13, 15 and 76 to 80 are left out. The home shirt's colours 1 to 3 and everything else stay as the club had them |
+| Away kit | a shirt design of the same supplier; the away shirt's colours drawn in turn, each roll on its own (Nexxus, 2026-11-19: a lime away kit was off the club's brand; there are no third kits, so the away kit has to work against every opponent): colour 1 first, 75 percent of the time white (40), black (30) or the home colour 2 (30, a swap), otherwise one of the number colours, never a colour that clashes in `COLOR_TBL.TBB` with the home colour 1 (the game's own rule) or contrasts with it under 2 to 1, and not the one it had in the variant before; then colour 2, 50 percent of the time the home colour 1 (45), white (30) or black (25), otherwise a shade of the club's own hues or a grey that does not clash with colour 1; then colour 3, the freest, 25 percent of the time the home colours, white or black, otherwise a shade of those hues or a grey but not colour 1 (Nexxus, 2026-11-19: colours 2 and 3 need not be number colours, and a green stripe on Hansa Rostock's blue and white, seen in the game, was off the club's brand) (the rolls in `kiteras.py` are set above these shares because blocked colours leave the lists shorter; the shares that come out are 75.1, 50.2 and 25.0 percent over the 2,742 variants, and no club had to fall back to a free choice but 5 times); the shorts colours and socks colours as the home kit's; the numbers black on a light shirt and white on a dark one |
+
+The designs and colours are drawn from the [LMASTER seed](#the-lmaster-seed)
+(`lmseed.py`, stream `kit-eras`). The era is the club era
+(`cluberas.era_of`: (season + team id mod 3) div 3), so the kits change in
+the same seasons as the managers.
+
+**The code and the table** (`python SRC/kiteras.py info DAT`). The
+segment's size and regions are in [The code segment](#the-code-segment).
+
+| Part | Where |
+|---|---|
+| Kit code | `CAVE + 0x1400` (`0xe1400`; `0xf9400` before the move of 2026-11-19), `patch_disc.kit_words`, 67 words (70 with `kit-standards`; it ends in a `j` to the standards' code) |
+| Table | `CAVE + 0x1800` (`0xe1800`), 6 bytes per club and variant, 439 clubs × 6 variants × 6 = 15,804 bytes (16,452 with `tier3-eras`): home shirt, away shirt, away shirt colour 1 with 1 in bit 7 for black numbers, the supplier index (bits 5 to 7) with shorts design - 36 (bits 0 to 4), and the away colours 2 and 3 |
+| Hook | the sponsors' code ends in a `j` to the kit code (it ran `jr $ra` before), at `pwkTeam_GetUnif`'s hook `0x26ec1c` and `0x26ec24` (**confirmed**); it runs with `$s1` the team id and `$s2` the `PlUnif` |
+| Fields written | `PlUnif +5` (supplier), `+0x1b` and `+0x20` (home shirt and shorts design), `+0x3f` and `+0x44` (away shirt and shorts design), `+0x40` to `+0x42` (away shirt colours), `+0x45` to `+0x47` (away shorts colours), `+0x49` and `+0x4a` (away socks colours), `+0x4b` and `+0x4c` (number colours) |
+
+**What it leaves alone.** Your club (team 1), the rival (team 2), the VS
+teams, the national teams and every id outside 3 to 441 (3 to 459 with
+[`tier3-eras`](#tier-3-eras)) are never touched
+(Nexxus's rule, as for the other eras switches; the kit editor and the
+Emblem editor only build teams 1 and 2). The main sponsor stays
+`random-sponsors`' draw. The Japanese release is not touched.
+
+**The test option.** `--eras-offset N` (0 to 2, default 0, the switch as
+released) applies to `club-eras` and `kit-eras` alike, so the new kits show
+without playing a season; `--test-build` writes TEST BUILD on the title
+banner ([Title banner](#title-banner)). Neither is part of any edition
+(Nexxus's choice, 2026-11-19).
+
+What the away kit's numbers and the rest of the kit's side bytes
+are is [`kit-standards`](#kit-standards)' job.
+
+**Still unknown:** the kits seen in a match, and a whole career through
+several eras; whether a computer club wearing another supplier's design
+(the loader accepts any design below 209 shirts, 61 shorts and 18 socks)
+shows its logo as it should; the Japanese addresses.
+
+## Kit standards
+
+`--mod kit-standards` (group `eras`, PAL only, in LMASTER full and max;
+needs `kit-eras`; built 2026-11-19; Nexxus's idea and every rule below;
+`kiteras.py` `build_standards` and `std_table_bytes`, `std_words` and
+`plan_kit_standards` in `patch_disc.py`). Every computer club's kits
+follow a standard, in every era, era 0 (the retail kit) included: the
+front number and the shorts number on, an emblem of type 1 or 2 on the
+shirt and the shorts (never 3), and the shirt number colour, the shorts
+number colour and the captain's band chosen to show on the colours they
+sit on. Nexxus's observation (2026-11-19) is that the number colour also
+decides the colour of the supplier logo on the shirt, so it has to show
+on the shirt too. **Built; the machine code is checked against the plan
+by emulation (`kiteras.py selftest`, 64,800 runs with `tier3-eras`, 0
+wrong). Tested in PCSX2 in part: the same state of Hansa Rostock's kit
+(above) holds the standard's bytes too (collar, number design, emblems,
+shorts position, band, number colours, the front number and the side bytes),
+all as planned; how they look is not yet seen** ([`TESTING.md`](../TESTING.md)).
+What the items are, and which bytes they set, is in
+[`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#the-kit-editors-items-and-their-bytes).
+
+**The standard.**
+
+| Part | Rule |
+|---|---|
+| Front number | on (side byte 3 = 1) |
+| Shorts number | on: position 0 or 1, never the third (2) |
+| Emblems | the editor's options 1 and 2 only (side bytes 0 and 1 = 0 or 1), never option 3 (value 2), on the shirt and on the shorts |
+| Collar, number design, emblem pair | era 0 keeps the retail value where it is valid (an emblem type 2 or a shorts position 2 is replaced). From era 1 each of the 6 variants rolls them again, each of the three **on its own**: the home kit draws a value, the away kit takes the home kit's value with a raised chance and otherwise draws its own, so it is not forced equal: 90 percent for the number design (`MATCH_DESIGN`), 85 for the emblem pair (`MATCH_EMBLEM`) and 60 for the collar (`MATCH_COLLAR`), Nexxus's choice from how real kits work (a season's home and away shirts share one supplier template, so the number font and the crest and shorts-number layout nearly always match, while the collar differs most between them). Collars come from 0, 1, 2, 3, 4, 6 and 7 (the ones retail computer clubs use; the editor offers 0 to 10), number designs from 0 to 7, emblem types 0 or 1 |
+| Shorts emblem type and shorts number position | one value in a rolled kit, as the editor couples them (choosing one sets the other for 0 and 1) |
+| Number colours | the shirt's and the shorts' own, below |
+| Captain's band | the value 0 to 4 (white, black, blue, red, yellow: `PLAYERDATACOMMONPACK1` svp entries 129 to 133) with the best worst-case contrast against the shirt's colours 1 and 2 |
+
+Only the items the player's kit editor has are set; the keeper kits are
+not touched. `side[5]` is set to 1, as a match feeds the builder a
+constant 1 for it anyway.
+
+**The supplier in every era** (Nexxus's idea, 2026-11-19). In era 0 a club
+shows a retail design, and the sponsors' code gave it a random supplier each
+season, so its logo and its look could disagree. The standard now sets the
+supplier byte (`PlUnif +5`) for every club in every era: in the home word of
+the standards' table, bits 13 to 15 hold the supplier's index 0 to 6 (206 +
+n), from the club's tier as the kit eras draw it (a place either side of the
+one the tier points to; the variants' own supplier from era 1), and the
+standards' code writes it after the sponsors' code and the kit code.
+
+**Number colours** (Nexxus's choice: a few bold colours, and the one that
+contrasts most with both colours it can sit on). The candidates are
+`NUMBER_COLOURS`: white (A8), black (L8), A4 red, B4 orange, C4 yellow, E4
+green, I4 blue, J4 purple, and four more the code's search added for
+contrast (L3 pink, I3 light blue, A3 light red, F8 grey). The choice is
+the one with the best worst-case contrast ratio (WCAG relative
+luminance, the swatches of `EDIT_UNIFORM_CLUT` entry 128) against the
+shirt's colours 1 and 2 (for the shorts number, the shorts' colours 1 and
+2), among those that do not clash in `COLOR_TBL.TBB`. A plain retail
+shirt design counts colour 1 only (the other colours are not on its
+front, [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#shirt-designs-and-the-three-shirt-colours)).
+The plan's contrast over the 457 clubs' 6,398 kits (the retail kits and
+the variants, home and away): with the eight colours of Nexxus's list
+the median worst-case contrast was 2.97 to 1, 50.2 percent of the kits
+were under 3 and 7.5 percent under 2, because a light colour 1 and a
+dark colour 2 leave no colour good against both; against colour 1 alone
+white or black reaches at least 3.58. With the added four, the median is
+3.88 to 1, 38.2 percent are under 3 and 5.1 percent under 2 (the
+code's comment keeps the search's own figures over the clubs' colour
+pairs: 48.5 to 37.8 percent under 3, 36.3 with all 96 colours). The
+search left out near-copies of black and white, such as K7 (a black with
+a purple cast), which it otherwise kept choosing for a sliver of
+contrast.
+
+**The code and the table.** The standards' code is at `CAVE + 0x1600`
+(`0xe1600`), 92 words; the kit code jumps on to it at its end in every
+era. The table is at `CAVE + 0x5850` (`0xe5850`): 8 bytes an entry, 7
+entries a club (era 0 from the retail kit, then the 6 variants; the entry
+is 0 in era 0, else 1 + (era - 1) mod 6), 25,592 bytes with `tier3-eras`
+(457 × 56). An entry is the home side then the away side: a 13-bit word
+(collar bits 0 to 3, number design 4 to 6, shirt emblem 7, shorts emblem
+8, shorts position 9, band 10 to 12), then the shirt number colour and
+the shorts number colour as palette numbers. The code writes the side
+bytes (`PlUnif + 6` home or `+ 0x2a` away, `side[0]` to `side[5]`) and
+the kit's fields 4 (collar), 12, 13 and 14 (`+ 0x1b` home or `+ 0x3f`
+away, plus the field number). Teams outside the plan's clubs (team 1, 2,
+the VS teams, the national teams) are left alone, as in the other eras
+switches.
+
+**Still unknown:** the kits seen in a match; what the emblem types, the
+number designs and the collars look like on the shirt, and whether a
+computer club's emblem is drawn at all
+([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#still-unknown)); whether the
+supplier logo really takes the number colour on a computer club's kit
+(Nexxus saw it for your club's kit).
+
+## Tier 3 eras
+
+`--mod tier3-eras` (group `eras`, in LMASTER full and max; needs
+`club-eras`, `kit-eras` and `third-tier`; built 2026-11-19; Nexxus's
+idea). It writes nothing of its own (`plan_tier3_eras` returns no jobs):
+it makes [`club-eras`](#club-eras) and [`kit-eras`](#kit-eras) (and
+[`kit-standards`](#kit-standards), when it is on) take teams 442 to 459,
+the third tier's clubs, as well as 3 to 441. Those clubs have club
+records (`PLRESOURCESIM.PAC` entry 3) and `UNIFORM_LIST.TBB` rows but no
+squads: they are the third tiers' playoff clubs, 3 for each nation
+([The third tier](#the-third-tier)). Without the switch the eras never
+touch them: they keep the retail manager and kit, while the sponsors'
+code and its logo gate cover them (teams 3 to 459 and 3 to 542), so they
+carry a random supplier with a retail design.
+
+With it the eras plan 457 clubs instead of 439 (`python SRC/cluberas.py
+info DAT` and `python SRC/kiteras.py info DAT` print both ranges):
+
+| Part | Without | With |
+|---|---|---|
+| Clubs | 439 (teams 3 to 441) | 457 (teams 3 to 459) |
+| Manager tiers | 16 of 28 or 27 | 16: 9 of 29 and 7 of 28 |
+| Manager pool | 1,317 managers | 1,371 managers |
+| Kit table | 15,804 bytes | 16,452 bytes |
+| Standards' table | 24,584 bytes | 25,592 bytes |
+| Manager pool address | `CAVE + 0x900` | `CAVE + 0x940` |
+
+`cluberas.build(dat, last)` and `kiteras.build(dat, rel, last)` take the
+last team; `patch_disc.era_club_count()` (439 or 457) sizes the routines.
+`cluberas.py` and `kiteras.py` run `info`, `check` and `selftest` over
+both ranges (`kiteras.py selftest`: 64,800 runs, 0 wrong). Not checked in
+the game; the plan for the third tier's clubs is the same rule as for the
+others.
+
+## The code segment
+
+The LMASTER code segment is at `CAVE` = `0xe0000`, `0xbd00` bytes
+(`patch_disc.CAVE`, `CAVE_SIZE`), loaded from the zero bytes after the
+executable's first segment (`0x57d58` of them, on the PAL and the
+Japanese file alike). It was at `0xf8000` until 2026-11-19: it moved
+down for room, as RAM from `0x94000` to `0x100000` is zero in every
+PCSX2 state read (2026-11-19) and the executable starts at `0x100000`.
+Every address below is `CAVE`-relative, so a test result recorded before
+the move names the old address (`0xf8` plus the offset), and the same
+offset is meant.
+
+| Offset | Address | Holds |
+|---|---|---|
+| `+0x000` | `0xe0000` | the save wrappers' code (`mod-saves`), their variables at `+0x200` |
+| `+0x280` | `0xe0280` | the third tier's detours ([`UID_LIMITS.md`](UID_LIMITS.md)) |
+| `+0x300` | `0xe0300` | the sponsors' code, 40 words |
+| `+0x3a0` | `0xe03a0` | the logo gate's code, 20 words |
+| `+0x400` | `0xe0400` | the managers' code, 61 words |
+| `+0x500` | `0xe0500` | the managers' result word (read with PINE, [`TESTING.md`](../TESTING.md)) |
+| `+0x510`, `+0x590` | `0xe0510`, `0xe0590` | the tiers, the clubs' tiers and places |
+| `+0x940` | `0xe0940` | the managers' pool (1,371 managers with `tier3-eras`) |
+| `+0x1400` | `0xe1400` | the kit code, 69 words (71 with `kit-standards`) |
+| `+0x1600` | `0xe1600` | the standards' code, 92 words (one more word with `--eras-offset` in these two and the managers' code) |
+| `+0x1800` | `0xe1800` | the kit table, 16,452 bytes with `tier3-eras` |
+| `+0x5850` | `0xe5850` | the standards' table, 25,592 bytes with `tier3-eras` |
+
+The segment grew from `0x400` to `0x1400` bytes for the managers'
+tables, to `0x5850` for the kit table and to `0xbd00` for the standards'
+table. A switch that is off leaves its part zero.
 
 ## Real names
 
@@ -1376,7 +1622,9 @@ started:
   English text for its screens. Nothing is traced yet.
 
 - **Club eras** (Nexxus's idea, 2026-11-19; the managers are built, see
-  [Club eras](#club-eras); the rest here is not started). Every club
+  [Club eras](#club-eras), and so are the suppliers and kits, see
+  [Kit eras](#kit-eras); what is left here is the main sponsor, which stays
+  `random-sponsors`' per-season random draw, Nexxus's choice still open). Every club
   changes manager, tactics and philosophy on a fixed cycle, and the
   better clubs get the better sponsors, suppliers and managers instead of
   a random draw. Each club keeps a manager no other club has. Nexxus's
@@ -1384,9 +1632,9 @@ started:
   LMASTER full and max (not lite, as it is not a fix), sponsors are
   tiered by their main-sponsor fee, and suppliers by their fee, a higher
   fee meaning a better one, with the two suppliers that have no fee equal
-  and lowest. It would sit with [`random-sponsors`](#random-sponsors),
-  which it overlaps: that switch draws a sponsor and a supplier for every
-  club by hash each season.
+  and lowest. It sits with [`random-sponsors`](#random-sponsors)
+  in the group `eras`: that switch draws a sponsor and a supplier for every
+  club by hash each season, and `kit-eras` then replaces the supplier.
 
   What the code and data show (**confirmed** unless marked):
 
@@ -1396,7 +1644,7 @@ started:
   | Manager to style | `0x22e610` reads the manager's byte `+0x35` (under 9) and maps it through the table at `0x534428` to a team style. `plTeam_SetStyleTeamParam` (`0x22ed28`, called from `pwkOteam_GetTeamData`, `0x24ba08`) then builds the style's `0x70`-byte block at `PlTeamData +0x4204` (the formation and the seven tactics). **Read in the code; seen in the game for a computer club, below** |
   | Club rank | `pwkOteam_GetRank` (`0x24bec8`, 0 to 31) and `pwkOteam_GetWorldClubRank` (`0x24bf70`), live values |
   | Sponsors and suppliers | the table in `SIMPRG.REL` (`0x23d978`, ids 1 to 212, [`ECONOMY.md`](ECONOMY.md#sponsors)). The 199 sponsors (ids 1 to 199) all have a main-sponsor fee at `+0x14`, 30,000 to 2,700,000 in the stored unit (**empirical**). Suppliers are 206 to 212: Opnatis (207) 450,000, Binnonn (206) 360,000, Wrandon (208) 240,000, Untelio (209) 90,000, Jompela (210) 30,000, then Egamucho (211) and Doclla (212) with none (**empirical**) |
-  | Where the draw is made | `pwkTeam_GetUnif` (`0x26e9d8`), which the `random-sponsors` code replaces at `0x26ec1c` and `0x26ec24` (the routine at `0xf8300`) |
+  | Where the draw is made | `pwkTeam_GetUnif` (`0x26e9d8`), which the `random-sponsors` code replaces at `0x26ec1c` and `0x26ec24` (the routine at `0xe0300`, which ends in a `j` to the kit code at `0xe1400` with `kit-eras`; `0xf8300` and `0xf9400` before the move of 2026-11-19) |
 
   A way to build it (a proposal, nothing written). Nexxus's suggestion
   is to stagger it: a third of the clubs change each year, not all at
@@ -1429,6 +1677,11 @@ started:
   [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars)),
   though rank and ability are used; and the manager's match policy field,
   which nothing seems to read ([above](#improvements)).
+
+- **Rationalise the switch names** (Nexxus, 2026-11-19), at some point:
+  merge similar switches and groups, with renames and polish. The old
+  names stay as aliases (`patch_disc.SWITCH_ALIASES`) so existing build
+  lines keep working. Nothing is started.
 
 ## Not candidates
 

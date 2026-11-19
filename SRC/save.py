@@ -273,7 +273,7 @@ class Cpu:
         self.mem = bytearray(self.MEM_SIZE)
         self.mem[:len(img)] = img
         # Extra loadable segments of the executable that fit below the
-        # blocks (the code segment at 0xf8000), where the overlay calls them.
+        # blocks (the code segment, at 0xe0000 since 2026-11-19, 0xf8000 before), where the overlay calls them.
         for vaddr, data in segments:
             if len(img) <= vaddr and vaddr + len(data) <= Game.block_base():
                 self.mem[vaddr:vaddr + len(data)] = data

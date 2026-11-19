@@ -17,9 +17,12 @@ of teams 3 to 441, finds the manager from this plan.
   Teams 1 and 2 (your club and the rival), the national teams (460 to 542), the VS teams (543
   to 558) and every other team id never change manager: the switch only touches teams 3 to
   441 (Nexxus's rule, 2026-11-19), and `selftest` checks that for every id from 0 to 599.
+  With --mod tier3-eras (the eras and the third tier both on, Nexxus's rule, 2026-11-19) it
+  also touches teams 442 to 459, the third tier's clubs: the plan is then built for 457
+  clubs (`build(dat, TEAM_LAST_TIER3)`), and `info`, `check` and `selftest` run both plans.
 
-  tiers   the 439 clubs sorted by their starting world rank (the club record's
-          +2, best first) and cut into 16 tiers of 27 or 28; the clubs of a tier
+  tiers   the 439 clubs (457 with tier3-eras) sorted by their starting world rank (the club
+          record's +2, best first) and cut into 16 tiers of 27 or 28 (28 or 29); the clubs of a tier
           are put in an order from the LMASTER seed (lmseed.py, 0x31031996), so
           which of them gets which manager is not just by rank, and a club's place
           in its tier is p (0 to K - 1) in that order
@@ -43,7 +46,7 @@ season (`check` proves it over 100 seasons).
 
 The cave tables (all little-endian u16):
 
-  clubs   439 words, team 3 first: tier << 10 | p
+  clubs   439 words (457 with tier3-eras), team 3 first: tier << 10 | p
   tiers   16 rows of 4: start, M, step, K
   pool    sum of M words: manager indexes (database id - 0x6d2e)
 
@@ -68,6 +71,10 @@ import teaminit
 
 TEAM_FIRST, TEAM_LAST = 3, 441
 CLUBS = TEAM_LAST - TEAM_FIRST + 1          # 439
+# With --mod tier3-eras (the third tier's clubs too, Nexxus's rule 2026-11-19) the last club is 459:
+# teams 442-459 are the clubs of the six nations' third tier (PLRESOURCESIM.PAC club records).
+TEAM_LAST_TIER3 = 459
+CLUBS_TIER3 = TEAM_LAST_TIER3 - TEAM_FIRST + 1   # 457
 TIERS = 16
 ERA = 3                                      # seasons a manager stays
 GROUPS = 3                                   # a third of the clubs change each year
@@ -82,19 +89,20 @@ class Plan:
     """tiers [(start, M, step, K)], club {team: (tier, p)}, pool [manager index],
     retail {team: manager index}, quality {manager index: score}."""
 
-    def __init__(self):
+    def __init__(self, last=TEAM_LAST):
         self.tiers, self.club, self.pool = [], {}, []
         self.retail, self.quality, self.excluded = {}, {}, set()
+        self.last = last                     # the last club's team id: 441, or 459 with tier3-eras
 
 
-def load_inputs(dat):
+def load_inputs(dat, last=TEAM_LAST):
     """(world rank by team, retail manager by team, excluded manager indexes,
     managers as [(score, index)])."""
     db = initteam.TeamDb(os.path.join(dat, SIM_FILE))
-    clubs = {t: r for t, r in db.records.items() if TEAM_FIRST <= t <= TEAM_LAST}
-    if len(clubs) != CLUBS:
+    clubs = {t: r for t, r in db.records.items() if TEAM_FIRST <= t <= last}
+    if len(clubs) != last - TEAM_FIRST + 1:
         raise ValueError("%d club records for teams %d-%d, expected %d"
-                         % (len(clubs), TEAM_FIRST, TEAM_LAST, CLUBS))
+                         % (len(clubs), TEAM_FIRST, last, last - TEAM_FIRST + 1))
     world = {t: r["world_rank"] for t, r in clubs.items()}
     retail = {t: r["manager"] for t, r in db.records.items()}
     buf, off, size = initteam.read_pac_entry(os.path.join(dat, SIM_FILE), 4)
@@ -128,13 +136,13 @@ def _step(K, M):
     return best[1]
 
 
-def build(dat):
-    world, retail, excluded, managers = load_inputs(dat)
-    plan = Plan()
+def build(dat, last=TEAM_LAST):
+    world, retail, excluded, managers = load_inputs(dat, last)
+    plan = Plan(last)
     plan.retail, plan.excluded = retail, excluded
     plan.quality = {i: s for s, i in managers}
     order = sorted(world, key=lambda t: (-world[t], t))       # best club first
-    base, extra = divmod(CLUBS, TIERS)
+    base, extra = divmod(last - TEAM_FIRST + 1, TIERS)
     sizes = [base + (1 if i < extra else 0) for i in range(TIERS)]
     avail = [i for s, i in sorted(managers, key=lambda x: (-x[0], x[1])) if i not in excluded]
     need = sum(POOL_FACTOR * k for k in sizes)
@@ -165,7 +173,7 @@ def era_of(team, season, offset=0):
 def manager(plan, team, season, offset=0):
     """The manager index the switch gives `team` in `season`, or the retail one."""
     e = era_of(team, season, offset)
-    if not TEAM_FIRST <= team <= TEAM_LAST or e == 0:
+    if not TEAM_FIRST <= team <= plan.last or e == 0:
         return plan.retail[team]
     tier, p = plan.club[team]
     start, M, step, K = plan.tiers[tier]
@@ -174,7 +182,7 @@ def manager(plan, team, season, offset=0):
 
 def club_bytes(plan):
     return b"".join(struct.pack("<H", plan.club[t][0] << 10 | plan.club[t][1])
-                    for t in range(TEAM_FIRST, TEAM_LAST + 1))
+                    for t in range(TEAM_FIRST, plan.last + 1))
 
 
 def tier_bytes(plan):
@@ -197,7 +205,7 @@ def problems(plan, seasons=SEASONS_CHECKED):
             out.append("tier %d: step %d is not coprime to %d inside [%d, %d]" % (t, step, M, K, M - K))
     for s in range(seasons):
         seen = {}
-        for t in range(TEAM_FIRST, TEAM_LAST + 1):
+        for t in range(TEAM_FIRST, plan.last + 1):
             m = manager(plan, t, s)
             if m in seen:
                 out.append("season %d: teams %d and %d both have manager %d" % (s, seen[m], t, m))
@@ -213,7 +221,14 @@ def problems(plan, seasons=SEASONS_CHECKED):
 
 
 def cmd_info(dat):
-    plan = build(dat)
+    for last in (TEAM_LAST, TEAM_LAST_TIER3):
+        print("teams %d-%d%s:" % (TEAM_FIRST, last, " (with tier3-eras)" if last == TEAM_LAST_TIER3 else ""))
+        _info(dat, last)
+    return 0
+
+
+def _info(dat, last):
+    plan = build(dat, last)
     print("%d clubs, %d tiers, a pool of %d managers (%d free, %d used elsewhere)" % (
         len(plan.club), len(plan.tiers), len(plan.pool),
         len(plan.quality) - len(plan.excluded & set(plan.quality)), len(plan.excluded)))
@@ -225,37 +240,42 @@ def cmd_info(dat):
     for i, (start, M, step, K) in enumerate(plan.tiers):
         sc = statistics.mean(plan.quality[m] for m in plan.pool[start:start + M])
         print("%4d %6d %4d %5d %3d   %17.1f   team %d" % (i, start, M, step, K, sc, best[i]))
-    return 0
 
 
 def cmd_check(dat):
-    plan = build(dat)
-    bad = problems(plan)
-    print("%d clubs checked over %d seasons%s" % (len(plan.club), SEASONS_CHECKED,
-                                                   "  !! " + "; ".join(bad) if bad else ""))
-    return 1 if bad else 0
+    failed = 0
+    for last in (TEAM_LAST, TEAM_LAST_TIER3):
+        plan = build(dat, last)
+        bad = problems(plan)
+        print("teams %d-%d: %d clubs checked over %d seasons%s" % (
+            TEAM_FIRST, last, len(plan.club), SEASONS_CHECKED, "  !! " + "; ".join(bad) if bad else ""))
+        failed += bool(bad)
+    return 1 if failed else 0
 
 
 def cmd_expect(dat, team, season, offset="0"):
     team, season, offset = int(team, 0), int(season, 0), int(offset, 0)
-    plan = build(dat)
+    last = TEAM_LAST_TIER3 if team > TEAM_LAST else TEAM_LAST       # 442-459: with tier3-eras
+    plan = build(dat, last)
     pb = pbdata.PbData(os.path.join(dat, PB_FILE))
 
     def who(i):
         m = pb.record("managers", i)
         return "manager %d (%s, rank %d)" % (i, m.name, m.fields["rank"])
-    if not TEAM_FIRST <= team <= TEAM_LAST:
+    if not TEAM_FIRST <= team <= last:
         print("team %d is outside teams %d-%d: the game's own lookup, %s" % (
-            team, TEAM_FIRST, TEAM_LAST, who(plan.retail[team]) if team in plan.retail else "no club record"))
+            team, TEAM_FIRST, last, who(plan.retail[team]) if team in plan.retail else "no club record"))
         return 0
+    if team > TEAM_LAST:
+        print("team %d is a third-tier club: the switch changes it only with --mod tier3-eras" % team)
     e = era_of(team, season, offset)
     tier, p = plan.club[team]
     print("team %d, season %d: group %d, era %d, tier %d place %d" % (team, season, team % GROUPS, e, tier, p))
     print("  retail  %s" % who(plan.retail[team]))
     if e == 0:
-        print("  the switch: era 0, the retail manager (the result word at 0xf8500 is left as it was)")
+        print("  the switch: era 0, the retail manager (the result word at 0xe0500 is left as it was)")
     else:
-        print("  the switch: %s (the result word at 0xf8500 holds %d)" % (
+        print("  the switch: %s (the result word at 0xe0500 holds %d)" % (
             who(manager(plan, team, season, offset)), manager(plan, team, season, offset)))
     return 0
 
@@ -264,28 +284,29 @@ def cmd_selftest(dat):
     """Run the machine code of the switch (patch_disc.era_words) against manager(), for each
     test offset 0 to 2 (the build's --eras-offset)."""
     import patch_disc as pd
-    plan = build(dat)
-    mem = {}
-    for base, blob in ((pd.ERA_CLUBS, club_bytes(plan)), (pd.ERA_TIERS, tier_bytes(plan)),
-                       (pd.ERA_POOL, pool_bytes(plan))):
-        for i, b in enumerate(blob):
-            mem[base + i] = b
     bad = fallbacks = runs = 0
-    for offset in range(3):
-        words = pd.era_words(offset)
-        for team in range(0, 600):                  # teams 1 and 2 (you and the rival), the national
-            for season in (-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 33, 47, 99):  # and VS teams too
-                runs += 1
-                # the plan's manager, or "retail" when the code leaves the game's own lookup
-                want = ("retail" if not TEAM_FIRST <= team <= TEAM_LAST or era_of(team, season, offset) == 0
-                        else manager(plan, team, season, offset))
-                got = _run(pd, words, mem, team, season)
-                fallbacks += got == "retail"
-                if got != want:
-                    bad += 1
-                    if bad <= 5:
-                        print("offset %d team %d season %d: the code gives %r, the plan %r"
-                              % (offset, team, season, got, want))
+    for last in (TEAM_LAST, TEAM_LAST_TIER3):       # the plain switch, and with tier3-eras
+        plan = build(dat, last)
+        mem = {}
+        for base, blob in ((pd.ERA_CLUBS, club_bytes(plan)), (pd.ERA_TIERS, tier_bytes(plan)),
+                           (pd.ERA_POOL, pool_bytes(plan))):
+            for i, b in enumerate(blob):
+                mem[base + i] = b
+        for offset in range(3):
+            words = pd.era_words(offset, last - TEAM_FIRST + 1)
+            for team in range(0, 600):              # teams 1 and 2 (you and the rival), the national
+                for season in (-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 33, 47, 99):  # and VS teams too
+                    runs += 1
+                    # the plan's manager, or "retail" when the code leaves the game's own lookup
+                    want = ("retail" if not TEAM_FIRST <= team <= last or era_of(team, season, offset) == 0
+                            else manager(plan, team, season, offset))
+                    got = _run(pd, words, mem, team, season)
+                    fallbacks += got == "retail"
+                    if got != want:
+                        bad += 1
+                        if bad <= 5:
+                            print("last %d offset %d team %d season %d: the code gives %r, the plan %r"
+                                  % (last, offset, team, season, got, want))
     print("selftest: %d runs, %d left to the game's own lookup%s" % (
         runs, fallbacks, "  !! %d wrong" % bad if bad else ""))
     return 1 if bad else 0
@@ -359,6 +380,8 @@ def emulate(words, base, regs, mem, calls=None):
             reg[rt] = reg[rs] | imm
         elif op == 0x0F:
             reg[rt] = imm << 16
+        elif op == 0x24:
+            reg[rt] = rd((reg[rs] + simm) & M32, 1)
         elif op == 0x25:
             reg[rt] = rd((reg[rs] + simm) & M32, 2)
         elif op == 0x23:
