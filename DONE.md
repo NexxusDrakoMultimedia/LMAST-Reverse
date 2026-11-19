@@ -361,3 +361,7 @@ Confirmed in the game; each result is recorded in the doc linked.
       earlier the same day) the computer clubs' kits, the keeper kits and the
       club-creation presets
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-kits))
+- [x] On a release build (`LMAST-test-0.iso`, no offset) a group-0 club
+      keeps its retail manager and the opening playoffs are unchanged
+      (Nexxus's state, 2026-11-19, read with `p2state.py`)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))

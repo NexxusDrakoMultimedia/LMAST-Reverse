@@ -798,10 +798,22 @@ at `+0x4858`, A.Davis nowhere), the bytes at `+0x4895` read 26, 26, 31, 5, 4,
 1, J.Passo's formations and tactics (A.Davis's would be 22, 22, 26, 5, 3, 5),
 and state 1's result word is 2477, K.Kilk, the plan's manager for team 92.
 
-**Still unknown:** a club of group 0 (team id mod 3 equal to 0), which
-should keep its retail manager at offset 2; that nothing changes in the
-opening playoffs; the later eras, the staggering (a third of the clubs
-each year, on a release build) and a whole season of play.
+**Tested on a release build** (Nexxus's state, 2026-11-19, slot 1 of
+`LMAST-test-0.iso`: `--mod lmaster-max`, no `--eras-offset`, no
+`skip-tutorial`, read with `python SRC/p2state.py managers` and `kits`):
+in the opening playoffs, your club at home to Eintracht Trier (team 450,
+group 0), the manager and kit tables in memory equal the plan and every
+kit byte of Trier equals the plan's era 0 (0 of 21 expected bytes differ).
+The managers' result word at `0xe0500` still reads 0, so the era code has
+not looked up a non-retail manager for any club: both clubs have their
+retail managers (Trier's is 447, M.Ketteler; its plan has V.Fontana from
+era 1, in season 3). So a group-0 club keeps its retail manager and
+nothing changes in the opening playoffs. The result word reading 0 rather
+than a retail id is read as "no lookup yet"; a second state would rule out
+a coincidence.
+
+**Still unknown:** the later eras on a release build, the staggering (a
+third of the clubs each year) and a whole season of play.
 
 ## Kit eras
 

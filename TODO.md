@@ -88,11 +88,11 @@ What to work on next, most valuable first.
    `LMAST-test-0.iso` none). Seen (Nexxus's states and reports,
    2026-11-19): the new managers, the kits, the keeper kits, the club
    presets, the third tier's clubs in era 1, the sponsors falling with the
-   tier, and a club's sponsor number being its logo's number. Left: a
+   tier, and a club's sponsor number being its logo's number. The
    group-0 club keeping its retail manager and the opening playoffs
-   retail (both read from states on a disc with no offset), a whole season
-   played through, a third-tier club past era 1, and a sponsor changing
-   from season to season ([`TESTING.md`](TESTING.md#newer-switches)). The
+   retail are seen on a release build (`LMAST-test-0.iso`). Left: a whole
+   season played through, a third-tier club past era 1, and a sponsor
+   changing from season to season ([`TESTING.md`](TESTING.md#newer-switches)). The
    old switch names are aliases of the merged ones.
 6. **The LMASTER Mod: the other newest switches in the game.** Each is
    built on a test disc and waits for a look: `modern-font` and `title-banner`
@@ -454,10 +454,10 @@ aside, and every switch works on the Japanese release.
       (`--mod club-eras`, `cluberas.py`). Seen working in PCSX2 for a
       club in era 1: the new manager, his formations and his tactics
       reach the computer club's match, and third-tier clubs in era 1 have
-      theirs (Nexxus's states, 2026-11-19). Left to see: a group-0 club
-      keeping its retail manager, the opening playoffs unchanged (both from
-      states on a disc with no offset: `LMAST-test-0.iso`), the later eras
-      and a whole season
+      theirs (Nexxus's states, 2026-11-19). A group-0 club keeps
+      its retail manager and the opening playoffs are unchanged (Nexxus's
+      state on `LMAST-test-0.iso`, 2026-11-19). Left to see: the later
+      eras and a whole season
       ([`TESTING.md`](TESTING.md#newer-switches),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
 - [ ] **test** The rest of the kits and sponsors (`--mod club-kits`). The

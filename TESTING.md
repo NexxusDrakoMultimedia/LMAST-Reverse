@@ -495,20 +495,16 @@ without `--skip-tutorial`
       The disc rebuilt after the LMASTER seed
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-lmaster-seed),
       `LMAST-test-eras-seed.iso`) passes the same check (states 1 and 2,
-      2026-11-19). Still to check, on that disc (the offset puts the clubs whose team id
-      leaves 1 or 2 when divided by 3 in era 1 already in 2006-07, once the
-      opening playoffs are over; `python SRC/cluberas.py expect DAT <team>
-      0 2` gives the manager a club should have, and a club's manager is
-      shown nowhere, so it is a PINE check): (1) a club whose team id
-      leaves 0 keeps its retail manager (the result word at `0xf8500`, now `0xe0500`, stays
-      as it was, and the match shows the retail manager's name in the
-      team's data); (2) the opening playoffs are retail (read it before
-      them); (3) a whole season plays normally, with no freeze at a match
-      or a screen; (4) on a disc built without `--eras-offset`, the first
-      changes come in seasons 1, 2 and 3 (a third of the clubs each, the
-      clubs whose team id leaves 2 first), then every three seasons; read
-      the team ids in a match with `read pine 0x3906d8 u32` (the pointer
-      P), then the u32 at P+`0x1fba0` and P+`0x24540`
+      2026-11-19). Done on a release build (`LMAST-test-0.iso`, no offset;
+      Nexxus's state in the opening playoffs, 2026-11-19): a group-0 club
+      keeps its retail manager and nothing changes in the playoffs
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras)). Still to check on
+      that disc: (3) a whole season plays normally, with no freeze at a
+      match or a screen; (4) the first changes come in seasons 1, 2 and 3 (a
+      third of the clubs each, the clubs whose team id leaves 2 first), then
+      every three seasons. A club's manager is shown nowhere, so it is a
+      state: read the team ids in a match with `python SRC/p2state.py
+      managers <state.p2s>`
 - [ ] Computer clubs' kits by era (`--mod kit-eras`, the disc is
       `LMAST-test-kits6.iso`, which holds `kit-eras`, `kit-standards` and
       `tier3-eras`; PCSX2 treats it as a new game). **Started:** a state of
