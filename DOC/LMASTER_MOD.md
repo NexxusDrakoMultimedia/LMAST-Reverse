@@ -1199,6 +1199,65 @@ started:
   the PAL code still holds them unreachable or they were cut, and the
   English text for its screens. Nothing is traced yet.
 
+- **Club eras** (Nexxus's idea, 2026-11-19; not started). Every club
+  changes manager, tactics and philosophy on a fixed cycle, and the
+  better clubs get the better sponsors, suppliers and managers instead of
+  a random draw. Each club keeps a manager no other club has. Nexxus's
+  choices: the cycle is 3 seasons (first thought of as 5), it belongs in
+  LMASTER full and max (not lite, as it is not a fix), sponsors are
+  tiered by their main-sponsor fee, and suppliers by their fee, a higher
+  fee meaning a better one, with the two suppliers that have no fee equal
+  and lowest. It would sit with [`random-sponsors`](#random-sponsors),
+  which it overlaps: that switch draws a sponsor and a supplier for every
+  club by hash each season.
+
+  What the code and data show (**confirmed** unless marked):
+
+  | Part | Where it is |
+  |---|---|
+  | A club's manager | `plOteam_GetManagerNoOffset` (`SLES 0x216668`): a club's `PLRESOURCESIM.PAC` entry 3 record `+4` (an s16, database id − `0x6d2e`, all 457 different, [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#club-records-plresourcesimpac-entry-3)) through `plOteam_GetDb` (`0x2165d8`); a national team's, entry 4. `pwkOteam_GetManager` (`0x24be40`) builds the computer club's manager from it |
+  | Manager to style | `0x22e610` reads the manager's byte `+0x35` (under 9) and maps it through the table at `0x534428` to a team style. `plTeam_SetStyleTeamParam` (`0x22ed28`, called from `pwkOteam_GetTeamData`, `0x24ba08`) then builds the style's `0x70`-byte block at `PlTeamData +0x4204` (the formation and the seven tactics). **Read in the code, not tested in the game** |
+  | Club rank | `pwkOteam_GetRank` (`0x24bec8`, 0 to 31) and `pwkOteam_GetWorldClubRank` (`0x24bf70`), live values |
+  | Sponsors and suppliers | the table in `SIMPRG.REL` (`0x23d978`, ids 1 to 212, [`ECONOMY.md`](ECONOMY.md#sponsors)). The 199 sponsors (ids 1 to 199) all have a main-sponsor fee at `+0x14`, 30,000 to 2,700,000 in the stored unit (**empirical**). Suppliers are 206 to 212: Opnatis (207) 450,000, Binnonn (206) 360,000, Wrandon (208) 240,000, Untelio (209) 90,000, Jompela (210) 30,000, then Egamucho (211) and Doclla (212) with none (**empirical**) |
+  | Where the draw is made | `pwkTeam_GetUnif` (`0x26e9d8`), which the `random-sponsors` code replaces at `0x26ec1c` and `0x26ec24` (the routine at `0xf8300`) |
+
+  A way to build it (a proposal, nothing written). Nexxus's suggestion
+  is to stagger it: a third of the clubs change each year, not all at
+  once. One constant sets the cycle, and a club's group is its id mod 3,
+  so its cycle number is the season (`pwkGen_Keika`, `0x244430`) plus the
+  group, divided by the constant. At any season two clubs' cycle numbers
+  then differ by at most 1. Sponsors and suppliers pick a tier from the
+  club's live rank and then a hash inside the tier, so they follow a club
+  as it rises. Managers are a rotation inside each rank tier, with the
+  tiers fixed by the clubs' starting rank and each tier given its own
+  slice of the manager records sorted by quality: a club at position *p*
+  of a tier of *K* clubs takes the slice's entry (*p* + cycle × *K*) mod
+  *M*. Two clubs of a tier collide only if their positions differ by *K*
+  modulo *M*, which cannot happen when *M* is more than 2*K*, so one
+  manager per club holds at every season, staggered or not, and the
+  slices of different tiers are disjoint. That needs about 900 to 1,000
+  managers for the 457 clubs, against 3,000 manager and coach records,
+  and Nexxus says a coach can be a manager: a computer club's manager is
+  only behind the team info screen and never shown (Nexxus's report,
+  2026-11-19), so the whole pool is usable. The managers of your club,
+  your rival and the national teams stay out of the slices. Tactics and
+  formations change too (Nexxus's choice). A manager's style sets them
+  (the table above), but two managers of one style would give the same
+  tactics, so the switch may also pick a tactics set and formation of its
+  own each cycle, from the eight presets of
+  [`TACTICS_FORMATION_SET.TBB`](PARAM_DIR.md#tactics_formation_settbb-tactics-presets)
+  or the formations of `pbdata`. The manager getter would be patched the way
+  `random-sponsors` patches the kit numbers.
+
+  Still unknown: what makes a manager or coach better, for the tiers
+  (the ability bars,
+  [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars));
+  whether a changed manager changes how a computer club plays (to check
+  in PCSX2: swap the managers of two clubs of different styles and watch
+  their formations), and so whether the switch must set tactics and
+  formations itself; and the manager's match policy field, which nothing
+  seems to read ([above](#improvements)).
+
 ## Not candidates
 
 - `EVENT/EVENTDATA_TURN.TBB`, `0SYSTEM/SCHEDULE.TBB` and the `CVS/`

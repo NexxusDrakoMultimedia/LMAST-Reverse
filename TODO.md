@@ -411,6 +411,15 @@ file (`--font`).
 **Done when:** every candidate is built and tested in the game or set
 aside, and every switch works on the Japanese release.
 
+- [ ] **understand** The Club eras idea for LMASTER full and max (Nexxus's
+      idea and choices, 2026-11-19): clubs change manager, tactics and
+      philosophy every 3 seasons, a third of the clubs each year, better
+      clubs get better sponsors,
+      suppliers and managers, every manager unique, tactics and
+      formations changing too. Left: how to rank the 3,000 manager and
+      coach records (any can be a manager), a test in PCSX2 that a
+      changed manager changes a computer club's play, then the switch
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#planned))
 - [ ] **rebuild** **Needed before LMASTER 1.0.0** (Nexxus's choice,
       2026-11-01): every switch works on the Japanese release
       (SLPM-66316), except the modern font, which may be PAL only
