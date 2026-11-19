@@ -158,7 +158,6 @@ editions and the font and pack files a build needs.
 | `README.md` | setup, every tool with what it does, how the tools depend on each other, and the doc index |
 | `INSTALL.md` | the players' guide, kept short: checking the disc, applying a patch, saves, and building a patch with the editions and groups in one line each. Release-specific notes (what changed between LMASTER versions, upgrading a career) belong in the LMASTER-Mod repo, and each switch's details in `DOC/LMASTER_MOD.md`. Update it when an edition or group is added or changes |
 | `USAGE.md` | the guide to the mod editor and the save editor: every tab, Build disc, the save editor's pages. Update it when a tab, page or Build disc control is added or changes |
-| `CODE_OF_CONDUCT.md` | the rules for everyone taking part, and how they are enforced |
 | `CONTRIBUTING.md` | the guide for people sending a change or a report: ways to help, the ground rules, bug reports, the steps of a pull request. It summarises this file and links here for the details; update it when a step here changes |
 | `CONTRIBUTORS.md` | who has worked on the project, research and test credits from outside it, the community, and the third-party software the tools build on. Add a person here when their finding or report goes into a doc |
 

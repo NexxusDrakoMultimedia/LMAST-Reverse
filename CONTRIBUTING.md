@@ -8,7 +8,7 @@ send a change, and what a change needs before it can be merged. It
 summarises [`AGENTS.md`](AGENTS.md), which holds the full conventions for
 docs and tools. `AGENTS.md` is written for AI assistants but applies to
 everyone, so read it when a detail here isn't enough. Everyone taking
-part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+part follows the [Code of Conduct](https://github.com/NexxusDrakoMultimedia/.github/blob/main/CODE_OF_CONDUCT.md) (the organisation's own).
 
 The project is maintained by Nexxus (Pyra Drake), who reviews every
 change and makes most of the in-game tests. Questions are welcome on the
@@ -49,7 +49,7 @@ You don't need to write code to help.
   the functions that need them.
 - **Writers never change their input.** They write to a new output path.
 
-The [Code of Conduct](CODE_OF_CONDUCT.md) sets the standard for how we
+The [Code of Conduct](https://github.com/NexxusDrakoMultimedia/.github/blob/main/CODE_OF_CONDUCT.md) sets the standard for how we
 treat each other. These are the project's own norms for what we post:
 
 - **Write in English.** The maintainers can only moderate English, and

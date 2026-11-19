@@ -61,7 +61,7 @@ finished.
 | [`DOC/`](DOC) | the notes: one doc per file format, folder and system (the [index](#documentation-index)) | yes |
 | [`SRC/`](SRC) | the Python tools (the [tables](#tools)), and the CSV tables some of them read: `realnames.csv`, `realnames_phrases.csv`, `grounds.csv`, `kits.csv` | yes |
 | [`PNACH/`](PNACH) | the PCSX2 widescreen patch ([`WIDESCREEN.md`](DOC/WIDESCREEN.md)) | yes |
-| top folder `.md` files and `LICENSE` | the guides: [`INSTALL.md`](INSTALL.md) for players, [`USAGE.md`](USAGE.md) for the editors, [`GOALS.md`](GOALS.md), [`TODO.md`](TODO.md), [`DONE.md`](DONE.md), [`TESTING.md`](TESTING.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`CONTRIBUTORS.md`](CONTRIBUTORS.md) and [`AGENTS.md`](AGENTS.md) (`CLAUDE.md` points Claude Code at it) | yes |
+| top folder `.md` files and `LICENSE` | the guides: [`INSTALL.md`](INSTALL.md) for players, [`USAGE.md`](USAGE.md) for the editors, [`GOALS.md`](GOALS.md), [`TODO.md`](TODO.md), [`DONE.md`](DONE.md), [`TESTING.md`](TESTING.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CONTRIBUTORS.md`](CONTRIBUTORS.md) and [`AGENTS.md`](AGENTS.md) (`CLAUDE.md` points Claude Code at it) | yes |
 | `ISO/`, `DAT/` | your disc: its files in `ISO/` (`SLES_541.51`, `DLL/`, `AUDIO/`, `DATA.CVM`) and the decrypted `DATA.ISO`, and the contents of `DATA.ISO` in `DAT/`, which is what most tools read | no: game data, never committed |
 | `ISO_JP/`, `DAT_JP/` | the same for the Japanese release (optional) | no: game data |
 | `mod/` | the editor's default mod folder: the edited game files | no: game data |
@@ -638,7 +638,7 @@ saves.
 [`CONTRIBUTING.md`](CONTRIBUTING.md) explains how to report a bug, test
 something in the game, or send a change, and what a change needs before
 it is merged. Everyone taking part follows the
-[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
+[Code of Conduct](https://github.com/NexxusDrakoMultimedia/.github/blob/main/CODE_OF_CONDUCT.md) (the organisation's own).
 
 [`AGENTS.md`](AGENTS.md) has the conventions for docs and tools, the
 workflow for a new format or writer, and where each kind of record goes:
@@ -672,7 +672,7 @@ builds on.
 ## Acknowledgements
 
 The maintainer and the community can't help with a mental health or
-other crisis. See [Crisis support](CODE_OF_CONDUCT.md#crisis-support) for
+other crisis. See [Support and safety](https://github.com/NexxusDrakoMultimedia/.github/blob/main/CODE_OF_CONDUCT.md#support-and-safety) for
 where to turn.
 
 Nexxus Drako Multimedia was created on the stolen lands of the Jagera
