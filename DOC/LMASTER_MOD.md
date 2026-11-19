@@ -554,7 +554,7 @@ switch's own for managers of one style.
 0x216668`) for a club's manager; it calls `plOteam_GetDb` (`0x2165d8`) and
 reads the club record's `+4` (a manager index, database id minus
 `0x6d2e`). The `jal` at `0x2166d0` becomes a call to code in the LMASTER
-code segment (`CAVE + 0x400`, 61 words). For the clubs of teams 3 to 441,
+code segment (`CAVE + 0x400`, 60 words). For the clubs of teams 3 to 441,
 once a club's era is past 0, the code finds the manager in tables and
 returns a pointer whose `+4` holds it (the next instruction is
 `lh $v0, 4($v0)`, its result word at `CAVE + 0x500`); for every other
@@ -565,6 +565,14 @@ being `pwkGen_Keika` (`0x244430`, 0 in 2006-07). Era 0 is the retail
 manager, so the clubs with team id mod 3 equal to 2, 1 and 0 get their
 first new manager in seasons 1, 2 and 3 (2007-08, 2008-09, 2009-10), and
 each changes again every 3 seasons.
+
+A season below 0 (the opening playoffs of a new career, season -1) counts
+as season 0, so nothing changes there. A test build, `--eras-offset N` (0
+to 2, with `--mod club-eras`), adds N to the season from season 0 on: with
+1, the clubs whose team id leaves 2 when divided by 3 are in era 1 already
+in 2006-07, with 2 those that leave 1 or 2 (two thirds), so the change can
+be seen without playing a season (the playoffs stay retail); the default 0
+is the switch as released.
 
 **The tables** (`python SRC/cluberas.py info DAT`):
 
@@ -595,8 +603,8 @@ through the table at `0x534428` to a team style, and
 
 **Checked.** `cluberas.py check` (one manager per club over 100 seasons,
 quality falling tier by tier), `cluberas.py selftest` (the machine code
-run by an emulator against the plan, 8,280 team and season pairs, 0
-wrong), and a read-back of the built disc (`LMAST-test-eras.iso`: the
+run by an emulator against the plan for each test offset, 24,840 team
+and season runs, 0 wrong), and a read-back of the built disc (`LMAST-test-eras.iso`: the
 hook word, the program header, the routine and the three tables equal
 what was generated, 0 wrong runs on those bytes). The game itself has not
 run it. A manager is shown nowhere (only on the team info screen, hidden

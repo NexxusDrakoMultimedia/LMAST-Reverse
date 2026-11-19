@@ -36,7 +36,7 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--realism <pack folder>] [--font <font.ttf>] [--version <x.y.z>]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--eras-offset <0-2>] [--realism <pack folder>] [--font <font.ttf>] [--version <x.y.z>]
     python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--mod <switch>,...]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
     python patch_disc.py switches                                         # the editions, groups and switches
@@ -3577,6 +3577,7 @@ def jal(target): return 0x0C000000 | (target >> 2 & 0x3FFFFFF)
 def divu(rs, rt): return _r(rs, rt, 0, 0x1B)
 def mfhi(rd): return _r(0, 0, rd, 0x10)
 def mflo(rd): return _r(0, 0, rd, 0x12)
+def movn(rd, rs, rt): return _r(rs, rt, rd, 0x0B)      # if $rt != 0: $rd = $rs
 NOP = 0
 
 
@@ -4180,10 +4181,17 @@ ERA_CAVE, ERA_VAR = CAVE + 0x400, CAVE + 0x500
 ERA_TIERS, ERA_CLUBS, ERA_POOL = CAVE + 0x510, CAVE + 0x590, CAVE + 0x900
 ERA_HOOK, ERA_GETDB = 0x2166D0, 0x2165D8
 ERA_FIRST, ERA_CLUB_COUNT, ERA_SEASONS, ERA_TIER_COUNT = 3, 439, 3, 16
+# A test option, --eras-offset N (0 to 2): the routine adds N to the season, so N = 1 puts a
+# third of the clubs (team id mod 3 equal to 2) in era 1 already in season 0, N = 2 two thirds.
+# 0, the default, is the switch as released.
+eras_offset = 0                                   # set by main from --eras-offset
 
 
-def era_words():
-    """The routine at ERA_CAVE, as words (cluberas.cmd_selftest runs them)."""
+def era_words(offset=None):
+    """The routine at ERA_CAVE, as words (cluberas.cmd_selftest runs them); `offset`
+    seasons added to the season (the build's --eras-offset by default)."""
+    offset = eras_offset if offset is None else offset
+
     def at(reg, addr):
         return [lui(reg, addr >> 16), ori(reg, reg, addr & 0xFFFF)]
     items = [
@@ -4192,7 +4200,9 @@ def era_words():
         addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(A0, 8, SP), sd(T0, 16, SP),
         jal(KEIKA), NOP,                                     # $v0: the season, from 0
         ld(A0, 8, SP), ld(T0, 16, SP),
-        slti(T1, V0, 0), ("beqz", T1, "season"), NOP, addiu(V0, ZERO, 0), ("label", "season"),
+        sll(T1, V0, 0), slti(T1, T1, 0),                     # 1 in the opening playoffs (season -1)
+        ] + ([addiu(V0, V0, offset)] if offset else []) + [  # the test offset, from season 0 on
+        movn(V0, ZERO, T1),                                  # the playoffs count as season 0, offset or not
         addiu(T2, ZERO, ERA_SEASONS), divu(A0, T2), mfhi(T3), addu(V0, V0, T3),
         divu(V0, T2), mflo(T4),                              # era = (season + team mod 3) div 3
         ("beqz", T4, "retail"), NOP,                         # era 0: the retail manager
@@ -6203,6 +6213,14 @@ def main(argv):
             print("note: realism skipped (give --realism <the pack's folder>, or clone "
                   "LMAST-Realism beside this repository)")
     dat =_opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
+    offset = _opt(args, "--eras-offset", None)
+    if offset is not None:
+        if not offset.isdigit() or int(offset) > 2:
+            raise SystemExit("--eras-offset takes 0, 1 or 2")
+        if "club-eras" not in mods:
+            raise SystemExit("--eras-offset goes with --mod club-eras")
+        global eras_offset
+        eras_offset = int(offset)
     nation = _opt(args, "--skip-nation", None)
     if nation is not None:
         names = [n.lower() for n in SKIP_NATIONS]

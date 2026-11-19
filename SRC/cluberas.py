@@ -45,6 +45,8 @@ Usage:
     python cluberas.py info     <DAT>      # the tiers, the pool, the managers by tier
     python cluberas.py check    <DAT>      # one manager per club in 100 seasons; !! on any problem
     python cluberas.py selftest <DAT>      # run the switch's machine code against the plan
+    python cluberas.py expect   <DAT> <team> <season> [offset]   # the manager the switch gives a club (season 0 = 2006-07;
+                                                                 # offset: the test build's --eras-offset)
 """
 import math
 import os
@@ -144,14 +146,16 @@ def build(dat):
     return plan
 
 
-def era_of(team, season):
-    return (max(season, 0) + team % GROUPS) // ERA
+def era_of(team, season, offset=0):
+    """The era of `team` in `season` (0 = 2006-07, pwkGen_Keika; negative counts as 0),
+    `offset` being the test build's --eras-offset, added from season 0 on (the opening
+    playoffs, season -1, are season 0 without it)."""
+    return ((0 if season < 0 else season + offset) + team % GROUPS) // ERA
 
 
-def manager(plan, team, season):
-    """The manager index the switch gives `team` in `season` (0 = the first
-    season, pwkGen_Keika), or the retail one."""
-    e = era_of(team, season)
+def manager(plan, team, season, offset=0):
+    """The manager index the switch gives `team` in `season`, or the retail one."""
+    e = era_of(team, season, offset)
     if not TEAM_FIRST <= team <= TEAM_LAST or e == 0:
         return plan.retail[team]
     tier, p = plan.club[team]
@@ -223,29 +227,56 @@ def cmd_check(dat):
     return 1 if bad else 0
 
 
+def cmd_expect(dat, team, season, offset="0"):
+    team, season, offset = int(team, 0), int(season, 0), int(offset, 0)
+    plan = build(dat)
+    pb = pbdata.PbData(os.path.join(dat, PB_FILE))
+
+    def who(i):
+        m = pb.record("managers", i)
+        return "manager %d (%s, rank %d)" % (i, m.name, m.fields["rank"])
+    if not TEAM_FIRST <= team <= TEAM_LAST:
+        print("team %d is outside teams %d-%d: the game's own lookup, %s" % (
+            team, TEAM_FIRST, TEAM_LAST, who(plan.retail[team]) if team in plan.retail else "no club record"))
+        return 0
+    e = era_of(team, season, offset)
+    tier, p = plan.club[team]
+    print("team %d, season %d: group %d, era %d, tier %d place %d" % (team, season, team % GROUPS, e, tier, p))
+    print("  retail  %s" % who(plan.retail[team]))
+    if e == 0:
+        print("  the switch: era 0, the retail manager (the result word at 0xf8500 is left as it was)")
+    else:
+        print("  the switch: %s (the result word at 0xf8500 holds %d)" % (
+            who(manager(plan, team, season, offset)), manager(plan, team, season, offset)))
+    return 0
+
+
 def cmd_selftest(dat):
-    """Run the machine code of the switch (patch_disc.era_words) against manager()."""
+    """Run the machine code of the switch (patch_disc.era_words) against manager(), for each
+    test offset 0 to 2 (the build's --eras-offset)."""
     import patch_disc as pd
     plan = build(dat)
-    words = pd.era_words()
     mem = {}
     for base, blob in ((pd.ERA_CLUBS, club_bytes(plan)), (pd.ERA_TIERS, tier_bytes(plan)),
                        (pd.ERA_POOL, pool_bytes(plan))):
         for i, b in enumerate(blob):
             mem[base + i] = b
     bad = fallbacks = runs = 0
-    for team in range(0, 460):
-        for season in (-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 33, 47, 99):
-            runs += 1
-            # the plan's manager, or "retail" when the code leaves the game's own lookup
-            want = ("retail" if not TEAM_FIRST <= team <= TEAM_LAST or era_of(team, season) == 0
-                    else manager(plan, team, season))
-            got = _run(pd, words, mem, team, season)
-            fallbacks += got == "retail"
-            if got != want:
-                bad += 1
-                if bad <= 5:
-                    print("team %d season %d: the code gives %r, the plan %r" % (team, season, got, want))
+    for offset in range(3):
+        words = pd.era_words(offset)
+        for team in range(0, 460):
+            for season in (-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 33, 47, 99):
+                runs += 1
+                # the plan's manager, or "retail" when the code leaves the game's own lookup
+                want = ("retail" if not TEAM_FIRST <= team <= TEAM_LAST or era_of(team, season, offset) == 0
+                        else manager(plan, team, season, offset))
+                got = _run(pd, words, mem, team, season)
+                fallbacks += got == "retail"
+                if got != want:
+                    bad += 1
+                    if bad <= 5:
+                        print("offset %d team %d season %d: the code gives %r, the plan %r"
+                              % (offset, team, season, got, want))
     print("selftest: %d runs, %d left to the game's own lookup%s" % (
         runs, fallbacks, "  !! %d wrong" % bad if bad else ""))
     return 1 if bad else 0
@@ -293,6 +324,9 @@ def _run(pd, words, mem, team, season):
             elif fn == 0x1B:
                 a, b = reg[rs] & M32, reg[rt] & M32
                 lo, hi = a // b, a % b
+            elif fn == 0x0B:                                 # movn
+                if reg[rt]:
+                    reg[rdn] = reg[rs]
             elif fn == 0x10:
                 reg[rdn] = hi
             elif fn == 0x12:
@@ -380,6 +414,8 @@ def _run(pd, words, mem, team, season):
 
 
 def main(argv):
+    if len(argv) in (5, 6) and argv[1] == "expect":
+        return cmd_expect(*argv[2:])
     if len(argv) != 3 or argv[1] not in ("info", "check", "selftest"):
         print(__doc__)
         return 1

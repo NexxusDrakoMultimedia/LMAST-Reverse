@@ -349,7 +349,11 @@ Each of these switches has been built and is waiting for someone to play it.
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
 - [ ] Club eras (`--mod club-eras`, the disc is `LMAST-test-eras.iso`, built
       2026-11-19 with `--mod club-eras,skip-tutorial`; PCSX2 treats it as a
-      new game). The managers are built and checked by emulation and by
+      new game). To see a change without playing a season, build with
+      `--eras-offset 2` (`LMAST-test-eras-s0.iso`, 2026-11-19): the clubs
+      whose team id leaves 1 or 2 when divided by 3 (two thirds) have their
+      new manager from 2006-07 on, once the opening playoffs are over (the
+      playoffs stay retail; `cluberas.py expect DAT <team> 0 2` gives it). The managers are built and checked by emulation and by
       reading the disc back, but the game has not run the code. A computer
       club's manager is shown nowhere, so this is a PINE check: (1) the
       game boots and a career starts and plays normally (the first seasons
@@ -357,8 +361,8 @@ Each of these switches has been built and is waiting for someone to play it.
       team id leaves 2 when divided by 3 change first), after the game
       builds a computer club's team data (a league match), the word at
       `0xf8500` holds that club's new manager index, which
-      `python SRC/cluberas.py info DAT` and the plan give for the club and
-      season; (3) a club's formation and tactics differ from before the
+      `python SRC/cluberas.py expect DAT <team> <season>` gives for the
+      club and season (season 0 is 2006-07); (3) a club's formation and tactics differ from before the
       change. Needs a career played into season 1 (or a save in it) and
       PINE
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
