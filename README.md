@@ -59,7 +59,7 @@ finished.
 | Path | Holds | In git |
 |---|---|---|
 | [`DOC/`](DOC) | the notes: one doc per file format, folder and system (the [index](#documentation-index)) | yes |
-| [`SRC/`](SRC) | the Python tools (the [tables](#tools)), and the CSV tables some of them read: `realnames.csv`, `realnames_phrases.csv`, `grounds.csv`, `kits.csv` | yes |
+| [`SRC/`](SRC) | the Python tools (the [tables](#tools)), and the CSV tables some of them read: `realnames.csv`, `realnames_phrases.csv`, `grounds.csv`, `kits.csv`, and `realnames_ja_draft.csv` (a draft of the Japanese real names for a reader of Japanese to check; no tool reads it yet) | yes |
 | [`PNACH/`](PNACH) | the PCSX2 widescreen patch ([`WIDESCREEN.md`](DOC/WIDESCREEN.md)) | yes |
 | top folder `.md` files and `LICENSE` | the guides: [`INSTALL.md`](INSTALL.md) for players, [`USAGE.md`](USAGE.md) for the editors, [`GOALS.md`](GOALS.md), [`TODO.md`](TODO.md), [`DONE.md`](DONE.md), [`TESTING.md`](TESTING.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CONTRIBUTORS.md`](CONTRIBUTORS.md) and [`AGENTS.md`](AGENTS.md) (`CLAUDE.md` points Claude Code at it) | yes |
 | `ISO/`, `DAT/` | your disc: its files in `ISO/` (`SLES_541.51`, `DLL/`, `AUDIO/`, `DATA.CVM`) and the decrypted `DATA.ISO`, and the contents of `DATA.ISO` in `DAT/`, which is what most tools read | no: game data, never committed |
