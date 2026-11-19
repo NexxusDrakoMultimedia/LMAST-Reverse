@@ -363,6 +363,28 @@ releases.
       run in the game. Later, but needed before the reverse engineering
       counts as complete (Nexxus's choice, 2026-11-01)
       ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#the-japanese-release))
+- [ ] **edit** An undo and history panel in the mod editor: the editors
+      already log the command behind each save, so replay a session as a
+      script and export "my mod" as a reproducible command list that
+      rebuilds the same files ([`USAGE.md`](USAGE.md))
+- [ ] **edit** A sanity check in the save editor before it writes: the
+      career still loads (field bounds, checksums), and a warning when a
+      save made on a modded disc is opened for a retail disc or the
+      other way round ([`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#separate-saves-for-a-modded-disc))
+- [ ] **distribute** Use the build manifest in the LMASTER-Mod release
+      build: `tools/build_release.py` there writes one
+      `manifest-<edition>.json` per edition into the release folder
+      (it needs a pin that includes `manifest.py`), and the bug-report
+      guide asks for it ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#build-manifests))
+- [ ] **distribute** A manifest that lists each build's writes by file
+      (`manifest.py make --log` reads them from `patch_disc.py`'s output;
+      Build disc does not pass it yet), and a "what this switch changed"
+      report with the fields each switch touched
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#build-manifests))
+- [ ] **distribute** A docs site built from `DOC/` and the guides, with
+      search and cross-links, a static site to host at
+      lmaster.nexxusdrako.au (Nexxus's choice, 2026-11-19), so
+      contributors find "where is X stored?" without grepping markdown
 - [ ] **rebuild** Optional: dual-layer images, for a disc that grows
       past a single-layer DVD
       ([`REBUILD.md`](DOC/REBUILD.md#limits))
@@ -663,6 +685,19 @@ and the Japanese release is extracted and read by the same tools through
 has no effect on the game, on both releases, and the editors work on the
 Japanese release as on PAL.
 
+- [ ] **test** Automated in-game verification: a harness that loads a
+      save state and reads fields over PINE (`p2state.py` is the start),
+      then checks them against what a mod expects, so a `TESTING.md` item
+      that only needs a value read becomes a `regress.py` check. It runs
+      on Nexxus's own PCSX2 only
+- [ ] **understand** A stale-claim linter for `DOC/`: flags a doc whose
+      cited address no longer resolves (through `gamever.py`, PAL and
+      Japanese), a "Still unknown" item that `DONE.md` already answers,
+      and a link whose anchor is gone
+- [ ] **write** A shared library of the parsers both games use (`pac`,
+      `tbb`, `svr`) for LMAST-Reverse and VPF-Reverse, so a fix lands
+      once. It cuts across the one-script-per-tool rule, so do it only if
+      the two copies start to drift
 - [ ] **test** The rest of the runtime memory map against the running
       game with `python SRC/ramcheck.py check` (a state in the second half of
       extra time, where the shoot-out kicks are counted, a live PINE read),

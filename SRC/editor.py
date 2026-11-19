@@ -6837,6 +6837,15 @@ class BuildDialog:
         out = [cmd]
         if self.make_patch.get():
             out.append(["vcdiff.py", "make", original, output, self.patch.get()])
+        # The manifest (manifest.py) goes beside the patch, or the image when there is
+        # no patch: the switches and options the build used, for bug reports and rebuilds.
+        mcmd = ["manifest.py", "make", os.path.splitext(
+            shown_path(self.patch.get() if self.make_patch.get() else output))[0] + ".manifest.json"]
+        mcmd += cmd[cmd.index("--mod"):cmd.index("--mod") + 2] if "--mod" in cmd else []
+        for flag in ("--realism", "--font"):
+            if flag in cmd:
+                mcmd += cmd[cmd.index(flag):cmd.index(flag) + 2]
+        out.append(mcmd)
         return out
 
     def check(self):

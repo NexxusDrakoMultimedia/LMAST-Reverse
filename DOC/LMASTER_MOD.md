@@ -133,6 +133,31 @@ Rules for an entry:
   lacks was cut for PAL; content missing from both was cut before
   release.
 
+## Build manifests
+
+A build is its switches, a few options and the seed, so a small JSON
+file can say what a disc or patch holds. `manifest.py` writes it, and
+File > Build disc writes one beside the patch (or the image, when there
+is no patch) as `<name>.manifest.json`. It answers "which build were you
+on?" in a bug report, rebuilds the same disc, and shows in plain words
+what a build changes from the retail game.
+
+| Field | Holds |
+|---|---|
+| `edition` | Lite, Full, Max or Custom (`patch_disc.edition_title`) |
+| `switches` | every switch the build turned on, in table order, with its group and description |
+| `options` | the flags a switch reads: `eras-offset`, `skip-nation`, `font` and `realism` (the file or folder name only, not its path), `version`, `test-build` |
+| `seed` | the LMASTER seed ([above](#the-lmaster-seed)) |
+| `tool` | the repository's commit (a `+` after it when `SRC/` had uncommitted changes) and the version given to the title banner |
+| `writes` | with `--log`: each file write `patch_disc.py` printed, with what changed it and how many bytes differ |
+
+`show` prints it for a person, `diff` lists the switches and options two
+builds do not share, and `rebuild` prints the `patch_disc.py` options
+that make the same build. The tools commit and seed are what make a
+rebuild exact: the same switches on other commits can differ.
+Build disc does not pass `--log` yet, so its manifest has no `writes`
+([`TODO.md`](../TODO.md#playing-a-mod)).
+
 ## Status
 
 One row for each fix or restoration, and for the candidates still open:
@@ -1720,10 +1745,11 @@ hold them as tasks. The open questions behind the candidates:
 ```bash
 python SRC/patch_disc.py switches                  # the editions, groups and switches above
 python SRC/schedule.py league DAT/PARAM            # the leagues league-balance rebuilds
+python SRC/manifest.py selftest                    # the build manifest: make, show, diff and rebuild
 python SRC/preload.py info DAT                     # the room in the PRELOAD copies --copies fills
 python SRC/fontmod.py info ISO/SLES_541.51 DAT/0SYSTEM "RobotoCondensed[wght].ttf"
 python SRC/titlebanner.py info DAT/CSE/SC_TITLEBG1.CSP "RobotoCondensed[wght].ttf"
 ```
 
 `python SRC/regress.py list` shows every check; the ones that cover this
-doc are `patch_disc_switches`, `realnames`, `fontmod` and `titlebanner`.
+doc are `manifest`, `patch_disc_switches`, `realnames`, `fontmod` and `titlebanner`.

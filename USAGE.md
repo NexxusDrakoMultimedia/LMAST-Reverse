@@ -184,6 +184,13 @@ files are ready; if it says the build failed, don't use them.
 The dialog remembers its paths and boxes for this mod folder
 (`build.json`).
 
+**The build manifest:** each build also writes `<name>.manifest.json`
+beside the patch (or the image, when there is no patch): the edition,
+every switch, the options and the seed. Send it with a bug report so
+others know which build you were on. `python SRC/manifest.py show
+<file>` prints what the build changes from the retail game in plain
+words ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#build-manifests)).
+
 **Sharing a mod:** share only the `.xdelta`, never the disc image or
 files from it. Build the patch from the unmodified Redump image, or it
 only applies to your own file; the dialog warns you if the original

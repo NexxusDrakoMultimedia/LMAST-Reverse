@@ -193,7 +193,30 @@ game.
 
 Only then might a follow-on project begin: **LMAST-Recompiled**, a full
 decompilation of the game, recompiled, ported to other platforms and
-expanded. It would be a project of its own, built on these docs.
+expanded. It would be a project of its own, built on these docs. It is
+the final goal (Nexxus's choice, 2026-11-19).
+
+## Later goals (variants and long-term mods)
+
+Ideas Nexxus chose to keep (2026-11-19). None is started, and the
+stages above come first.
+
+- **Randomizer and speedrun variants.** Builds that use the LMASTER seed
+  ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-lmaster-seed)) and the
+  build manifest ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#build-manifests)):
+  a "share this build" string that rebuilds the identical patch from its
+  seed and switches, a randomizer (every squad's players random, and each
+  team put at a random place within the leagues, among other choices) and
+  a speedrun variant (shorter seasons, no tutorial, fixed events). Each
+  variant is a set of switches over the data writers.
+- **Custom leagues from a file.** A league pack (clubs, nation, tier,
+  kit era) imported from a CSV, so the community can make fantasy
+  leagues or historical seasons without the editor. It builds on
+  `clubpresets.py` and `initteam.py`.
+- **The modern-day patch.** Every player and team replaced with a modern
+  one, in the way [`real-names`](DOC/LMASTER_MOD.md#real-names) already
+  gives every league its real names. Licensing decides how far the real
+  names can go, and the custom-leagues import is the way in.
 
 ## Out of scope
 

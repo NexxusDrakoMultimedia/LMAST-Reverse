@@ -280,6 +280,8 @@ def checks():
         # the machine code run against the plan.
         # The LMASTER seed: the generator's known answers and what random-sponsors relies on.
         ("lmseed", ["lmseed.py", "selftest"], []),
+        # The build manifest: make, show, diff and rebuild round trip.
+        ("manifest", ["manifest.py", "selftest"], []),
         ("cluberas_info", ["cluberas.py", "info", "DAT"], ["DAT"]),
         ("cluberas_check", ["cluberas.py", "check", "DAT"], ["DAT"]),
         ("cluberas_selftest", ["cluberas.py", "selftest", "DAT"], ["DAT"]),

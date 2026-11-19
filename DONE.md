@@ -130,6 +130,11 @@ modded disc's saves apart.
       `saveedit.py` (every page `save.py set` can write)
       ([`USAGE.md`](USAGE.md),
       [`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md))
+- [x] Build manifests: `manifest.py` records a build's edition,
+      switches, options, seed and tools commit, shows it in plain words,
+      diffs two builds and prints the options that rebuild one; Build
+      disc writes one beside its output
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#build-manifests))
 - [x] The players' guide, [`INSTALL.md`](INSTALL.md)
 
 ## The LMASTER Mod
