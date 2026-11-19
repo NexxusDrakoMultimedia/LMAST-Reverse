@@ -877,7 +877,9 @@ by emulation (`kiteras.py selftest`, 64,800 runs with `tier3-eras`, 0
 wrong). Tested in PCSX2 in part: the same state of Hansa Rostock's kit
 (above) holds the standard's bytes too (collar, number design, emblems,
 shorts position, band, number colours, the front number and the side bytes),
-all as planned; how they look is not yet seen** ([`TESTING.md`](../TESTING.md)).
+all as planned. Seen in the game (Nexxus's report, 2026-11-19): the computer clubs' kits look
+right, the converted clubs' keeper kits look right, and the club-creation presets start with the numbers
+and emblems on (the presets passed earlier the same day).**
 What the items are, and which bytes they set, is in
 [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#the-kit-editors-items-and-their-bytes).
 
@@ -1015,8 +1017,13 @@ code is checked against the plan by emulation (`sponsortiers.py
 selftest DAT`: 121,200 runs of the sponsors' code with the routine
 spliced in, 0 wrong). Read back from a built disc (`LMAST-test-kits6.iso`,
 2026-11-19: the routine, its tables and the sponsors' code with the call
-equal what the tools generate). Not yet seen in the game**
-([`TESTING.md`](../TESTING.md)).
+equal what the tools generate). Seen in PCSX2 (Nexxus's states, 2026-11-19, `LMAST-test-3b.iso`,
+read with `python SRC/p2state.py kits`): the sponsors fall with the tier. Manchester United
+(team 13, tier 0) carried sponsor 7 (Yotsuha Group), Ipswich (team 31, tier 5) sponsor 58 (Mestlands),
+and two third-tier clubs (Eintracht Trier, team 450, and team 449, tier 15) sponsors 193 (Fostymisty)
+and 195 (Tikkou Beverage). Each club's shirt shows the logo of that sponsor's name, so a club's sponsor
+number is its logo's number for all four (the premise the tiers rest on; Nexxus passed the check). Not
+yet seen: a club's sponsor changing from season to season in a career, and a top club in a career.**
 
 **What the game says about a sponsor** (**confirmed** unless marked):
 
@@ -1163,10 +1170,12 @@ every PlUnif byte the code writes for both clubs equals the plan (0 of
 21 expected bytes differ in each): era 0, the standards' supplier,
 collar, number design, emblems and captain's band, and the sponsor from
 the tier plan (190 and 187). So the third tier's clubs take the code
-paths in the game. Still open: an era past 0 for a third-tier club
-(season -1 counts as era 0 and the test offset is not applied there, so
-it needs a state in season 0 or later), the manager change, and how the
-kits look.
+paths in the game. Then, on `LMAST-test-3b.iso` (`--eras-offset 3`,
+which now moves season -1 too), two states in era 1 (Nexxus's slots 1 and 3, 2026-11-19, read with
+`p2state.py kits` and `managers`): Eintracht Trier (team 450, group 0) had manager 1378 (V.Fontana)
+in place of the retail 447, as the plan has it, and 0 of 33 kit bytes differ; team 449 (group 2) had
+manager 1924 (L.Rogers) and 0 of 33 kit bytes differ. Nexxus passed the check. Still open: an era past
+1 for a third-tier club.
 
 ## The code segment
 
@@ -1704,8 +1713,9 @@ pack's pictures and works; the mini logos first came out half transparent
 and were fixed ([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)).
 The
 pictures in CSP packs go in too (`csp.py replace`: 7 pictures, 16 packs, the
-`Fixes` and `Leagues` folders; built 2026-11-13, not seen in the game
-yet). Nexxus's scope
+`Fixes` and `Leagues` folders; built 2026-11-13). Seen in the game
+(Nexxus's report, 2026-11-19): the `Fixes` pictures work, the NDM advert board shows, and the league
+pictures show, the CSP ones included. Nexxus's scope
 (2026-11-12): the pack's `Fixes`, `Adboards` and `Leagues` folders are
 put on the disc, `Intro` waits for LMASTER's own intros, and `Rival` stays
 out (an upscale made from mipmaps, largely incompatible).

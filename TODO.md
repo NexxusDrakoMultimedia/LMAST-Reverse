@@ -60,9 +60,9 @@ What to work on next, most valuable first.
    in PCSX2. Nexxus's scope (2026-11-12): the pack's `Fixes`, `Adboards`
    and `Leagues` folders go on the disc, all 73 files (66 in plain packs,
    7 in CSP packs); `Intro` waits for LMASTER's own intros, and `Rival`
-   stays out (an upscale made from mipmaps, largely incompatible). Left:
-   seeing the `Fixes`, `Adboards` and `Leagues` pictures in the game
-   ([`TESTING.md`](TESTING.md#graphics-and-sound)).
+   stays out (an upscale made from mipmaps, largely incompatible). The `Fixes`,
+   `Adboards` and `Leagues` pictures are seen in the game, the CSP ones
+   included (Nexxus's report, 2026-11-19).
    The kits stay Realism-only (a PCSX2 texture pack)
    ([`TEXMAP.md`](DOC/TEXMAP.md),
    [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
@@ -83,15 +83,17 @@ What to work on next, most valuable first.
    18 from the Season tab, and two nations changed in one build; only
    England at 22 is tested
    ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from)).
-5. **The LMASTER Mod: the eras group in the game** (`club-eras`,
-   `kit-eras`, `kit-standards`, `tier3-eras`, `sponsor-tiers`, built
-   2026-11-19 on `LMAST-test-kits6.iso`). Seen so far: a club in era 1
-   with its new manager, and the third tier's era-0 control
-   (Rotherham, Nottingham). Left: a group-0 club keeping its manager,
-   the later eras, a whole season, how the kits and sponsors look, and
-   whether sponsor *n* draws logo *n* (the check the sponsor tiers rest
-   on) ([`TESTING.md`](TESTING.md#newer-switches)). The switches are
-   now `club-eras` and `club-kits` (the old names are aliases).
+5. **The LMASTER Mod: the eras group in the game** (`club-eras` and
+   `club-kits`, built 2026-11-19; `LMAST-test-3b.iso` has the offset 3,
+   `LMAST-test-0.iso` none). Seen (Nexxus's states and reports,
+   2026-11-19): the new managers, the kits, the keeper kits, the club
+   presets, the third tier's clubs in era 1, the sponsors falling with the
+   tier, and a club's sponsor number being its logo's number. Left: a
+   group-0 club keeping its retail manager and the opening playoffs
+   retail (both read from states on a disc with no offset), a whole season
+   played through, a third-tier club past era 1, and a sponsor changing
+   from season to season ([`TESTING.md`](TESTING.md#newer-switches)). The
+   old switch names are aliases of the merged ones.
 6. **The LMASTER Mod: the other newest switches in the game.** Each is
    built on a test disc and waits for a look: `modern-font` and `title-banner`
    (seen on a few screens, 2026-11-13; the font's stray pixels, reported
@@ -329,12 +331,6 @@ chosen folders are seen on a disc in the game.
       packs: kits, cut-ins, faces), and a changed-size texture in a CSP
       pack, for LMAST Realism on the disc
       ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
-- [ ] **test** LMAST Realism on the disc: the `Fixes`, `Adboards` and
-      `Leagues` pictures, the CSP ones included, seen in the game. The
-      kits stay Realism-only
-      ([`TESTING.md`](TESTING.md#graphics-and-sound),
-      [`TEXMAP.md`](DOC/TEXMAP.md),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc))
 - [ ] **understand** Idea (Nexxus, 2026-11-10; reopens the 2026-11-07
       choice that the kits stay Realism-only): LMAST Realism's kits on
       the disc as licensed kits, by widening the licence from the 116
@@ -452,30 +448,21 @@ aside, and every switch works on the Japanese release.
       getting better managers, every manager unique
       (`--mod club-eras`, `cluberas.py`). Seen working in PCSX2 for a
       club in era 1: the new manager, his formations and his tactics
-      reach the computer club's match (Nexxus's states, 2026-11-19). Left
-      to see: a group-0 club keeping its retail manager, the opening
-      playoffs unchanged, the later eras and a whole season
+      reach the computer club's match, and third-tier clubs in era 1 have
+      theirs (Nexxus's states, 2026-11-19). Left to see: a group-0 club
+      keeping its retail manager, the opening playoffs unchanged (both from
+      states on a disc with no offset: `LMAST-test-0.iso`), the later eras
+      and a whole season
       ([`TESTING.md`](TESTING.md#newer-switches),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
-- [ ] **test** The kits, the standard, the third tier's eras and the
-      sponsor tiers (`--mod club-kits`, which holds what were `kit-eras`,
-      `kit-standards`, `sponsor-tiers` and the third tier's eras, built
-      2026-11-19 on `LMAST-test-kits6.iso`). Seen:
-      the third tier's era-0 control (Rotherham and Nottingham, season -1:
-      the kit tables, every written `PlUnif` byte and the sponsors equal
-      the plan, Nexxus's states, 2026-11-19). Left, in a match against a
-      computer club: every shirt shows a front number, a shorts number and
-      emblems, with collars, number designs and emblems differing between
-      clubs and eras and the away kit matching the home kit most of the
-      time; the number colours, supplier logo and captain's band show on
-      the kit; a third-tier club in an era past 0; a converted club's
-      keeper shows real colours and numbers; a new club's kits start with
-      the numbers and emblems on; and a club's main sponsor falls with its
-      tier ([`TESTING.md`](TESTING.md#newer-switches),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras))
+- [ ] **test** The rest of the kits and sponsors (`--mod club-kits`). The
+      kits, the standard, the keeper kits, the club-creation presets, third
+      tier clubs in era 1 and the sponsors by tier are seen (Nexxus's
+      states and reports, 2026-11-19). Left: a third-tier club past era 1,
+      a club's sponsor changing from season to season but staying in its
+      slice, and a top club of a big league showing a big-name sponsor in
+      a career ([`TESTING.md`](TESTING.md#newer-switches),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-kits))
 - [ ] **understand** What the kit editor's items look like, for the
       kit standard: what the three emblem types, the eight number designs
       and the eleven collars draw; how the shorts number position is
@@ -485,11 +472,6 @@ aside, and every switch works on the Japanese release.
       emblem is drawn at all. A Uniform Viewer or kit editor check with
       save states
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#the-kit-editors-items-and-their-bytes))
-- [ ] **understand** Whether sponsor *n* draws the texture `CmnTex_005_n`
-      in `SPONSOR_TEXTURE.PAC` (entry *n* - 1): the sponsor tiers rest on
-      a club's sponsor number being its logo's number, which the kit's
-      `PlUnif +4` and the Sponsor screen's names suggest but no state has
-      shown ([`ECONOMY.md`](DOC/ECONOMY.md#sponsors))
 - [ ] **edit** The keeper kits' variety (open question): 225 of the 228
       converted keeper kits map to keeper design 35, because the game's
       table (`UNIFORM_GK.TBB`) has 6 colour schemes of one design for the

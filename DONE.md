@@ -350,3 +350,14 @@ Confirmed in the game; each result is recorded in the doc linked.
       `random-sponsors` on the screens and clubs checked so far
       ([`WIDESCREEN.md`](DOC/WIDESCREEN.md#newspaper-pages),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
+- [x] LMAST Realism's `Fixes`, `Adboards` and `Leagues` pictures on a
+      `--mod realism` disc, the CSP ones included (Nexxus's report,
+      2026-11-19)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc))
+- [x] The eras group in the game on `LMAST-test-3b.iso` (Nexxus's states,
+      2026-11-19, read with `p2state.py`): third-tier clubs in era 1 with
+      the plan's managers and kits, the sponsors falling with the club's
+      tier, each shirt's logo being its sponsor number's, and (reports
+      earlier the same day) the computer clubs' kits, the keeper kits and the
+      club-creation presets
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-kits))

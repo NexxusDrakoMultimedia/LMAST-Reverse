@@ -184,15 +184,6 @@ What this proves: how a message's control bytes show on screen.
 What these prove: the pictures and sounds written to a disc, and the
 widescreen patch, work in the game.
 
-- [ ] LMAST Realism's `Fixes`, `Adboards` and `Leagues` pictures on a disc
-      built with `--mod realism` (`python SRC/patch_disc.py patch "<the
-      PAL image>" out.iso --mod realism --copies --dat DAT --realism
-      <the pack>`; the CSP pictures are new): the club facilities
-      screens (`WP_FACILITIES_01` to `_03`), an advertising board, and the
-      league logos (the six-nation league screens, `SC_SIXNATIONS_01` to
-      `_04`) show the pack's pictures, with nothing garbled or missing
-      ([`TEXMAP.md`](DOC/TEXMAP.md#putting-the-pack-on-the-disc-apply),
-      [`CSE_FORMAT.md`](DOC/CSE_FORMAT.md))
 - [ ] *Short.* The widescreen patch on a modded disc: copy the pnach
       under the modded executable's own CRC
       ([`INSTALL.md`](INSTALL.md#pcsx2-patches)) and check the picture
@@ -523,10 +514,10 @@ without `--skip-tutorial`
       `tier3-eras`; PCSX2 treats it as a new game). **Started:** a state of
       Nexxus's in a match against Hansa Rostock (team 119, era 1) holds
       the plan's bytes exactly, see
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras); still open are an
-      era 0 club as the control, a third-tier club, how the kits look (the
-      standard's emblems, numbers, collars, the number and logo colours),
-      and the later seasons. Build with
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras). Done (Nexxus's
+      reports, 2026-11-19): the kits look right, and third-tier clubs in
+      era 1 match the plan. Still open are an era 0 club as the control, a
+      third-tier club past era 1, and the later seasons. Build with
       `python SRC/patch_disc.py patch "<retail disc>.iso"
       LMAST-test-kits6.iso --mod lmaster-max --copies --dat DAT --realism
       ../LMAST-Realism --test-build --eras-offset 2`, without
@@ -547,77 +538,14 @@ without `--skip-tutorial`
       in it, read the two team ids as above, and compare the kit bytes with
       `python SRC/kiteras.py show DAT <team>`. Put the result into
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras)
-- [ ] Kit standards and the third tier's eras (`--mod kit-standards`,
-      `--mod tier3-eras`; the same disc, `LMAST-test-kits6.iso`, built as
-      in the check above). Every computer club's kits follow a standard in
-      every era, era 0 included. Check, in a match against a computer club
-      (take several, from different leagues and eras): (1) every shirt
-      shows a front number, a shorts number and an emblem on the shirt and
-      on the shorts; (2) the collar and the number design differ between
-      clubs and between eras, and a club's home and away kits match in
-      most clubs but not all (the away kit takes the home kit's value 75
-      percent of the time, each of collar, number design and emblems
-      rolled on its own); (3) the number colours and the captain's band
-      show against the colours they sit on (some kits with a light and a
-      dark shirt colour cannot be good on both: say which look wrong);
-      (4) the supplier logo is drawn in the number colour and shows on the
-      shirt; (5) the third tier's clubs (teams 442 to 459, for example a
-      club of England's third tier) change kit and manager like the
-      others (`python SRC/kiteras.py show DAT <team>` and `python
-      SRC/cluberas.py expect DAT <team> <season> 2` give the plan); (6)
-      your club, the rival and the national teams are untouched. To
-      compare the bytes, save a state in the match and read the kit with
-      PINE: the match pointer is `P = u32[0x3906d8]`, and a computer
-      club's kit is built per match, so read it from the match's own data
-      as for the club eras check above. (Your own club's kit is read from
-      the career's PlPworkTask entry 1, as for the kit editor items.) Put
-      the result into
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards) and
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras). Done in part
-      (2026-11-19, season -1): Rotherham and Nottingham match the plan in
-      era 0 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras)); a state
-      in season 0 or later is still needed for an era past 0
-- [ ] Main sponsors by tier (`--mod sponsor-tiers`, the disc is
-      `LMAST-test-kits6.iso`, built 2026-11-19; not yet seen in the game).
-      A computer club's main sponsor comes from its tier's slice of the 199
-      main sponsors sorted by fee, so the best clubs show the biggest
-      sponsors. Check, in matches against computer clubs (take a top club
-      of a big league, a mid-table club and one of the weakest, in the
-      first season and again after a season): (1) the chest sponsor's
-      name and logo are right (no blank or broken logo); (2) the top
-      clubs show big-name sponsors and the weakest clubs small ones;
-      (3) a club's sponsor still changes from season to season, but
-      stays in its slice; (4) your club, the rival and the national
-      teams are untouched. With a saved state, `python SRC/p2state.py kits
-      <state.p2s> --offset 2` prints each club's sponsor number, and
-      `python SRC/sponsortiers.py info DAT` lists each tier's fee range
-      and first sponsors to compare. Put the result into
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers)
-- [ ] The keeper kits of the kit standard (`--mod kit-standards`, the same
-      disc). The 114 clubs `random-sponsors` turns from licensed into
-      generated (an Italian club such as Milan, a Spanish one such as
-      Barcelona, a Dutch one such as Ajax) used to have a placeholder
-      keeper kit; now they should have a real one. Check, in a match
-      against such a club, the keeper at kick-off and in a goal kick:
-      (1) the shirt, shorts and socks have real colours, not a light pink,
-      and they do not clash with the club's own shirt; (2) the number on
-      the keeper's back and the captain's band, if he wears one, show
-      against his shirt; (3) the keeper's away kit is also a real one
-      (needs a match where the keepers clash, so it may be rare); (4) a
-      club that was not converted (a retail generated club) also has
-      readable keeper numbers. Few different looks are expected: most
-      converted clubs map to one keeper design with six colour schemes.
-      Say which kits look wrong. Put the result into
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards)
-- [ ] The club-creation presets (`--mod kit-standards`, the same disc).
-      Create a new club (the career's club creation, where you pick a
-      preset): both kits should start with the front number, the shorts
-      number and the emblems on, with numbers that show against the
-      shirt and shorts; look through several presets, since a few mix a
-      light and a dark colour and cannot be good on both (say which look
-      wrong). The rival's kit in a match is the game's own, unchanged.
-      Put the result into
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards)
+- [ ] Main sponsors by tier (`--mod club-kits`, which holds the sponsor
+      tiers; the disc is `LMAST-test-3b.iso`). Done in VS and match states
+      (Nexxus's, 2026-11-19, read with `python SRC/p2state.py kits <state.p2s>
+      --offset 3`): the sponsors fall with the tier and each shirt shows the
+      logo of its sponsor's name (see
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers)). Still open, in a
+      career: a club's sponsor changes from season to season but stays in
+      its slice, and a top club of a big league shows a big-name sponsor
 - [ ] Transfer fees on a max disc after the cut to the lower tiers (`--mod
       fee-tiers`, 2026-11-19): in the Post Player list the estimate for a
       player of rank 0 to 5 should be the retail game's, and for rank 6 to
