@@ -475,7 +475,10 @@ without `--skip-tutorial`
       the career's PlPworkTask entry 1, as for the kit editor items.) Put
       the result into
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards) and
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras)
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras). Done in part
+      (2026-11-19, season -1): Rotherham and Nottingham match the plan in
+      era 0 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras)); a state
+      in season 0 or later is still needed for an era past 0
 - [ ] Main sponsors by tier (`--mod sponsor-tiers`, the disc is
       `LMAST-test-kits6.iso`, built 2026-11-19; not yet seen in the game).
       A computer club's main sponsor comes from its tier's slice of the 199

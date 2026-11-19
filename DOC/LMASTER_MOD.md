@@ -1114,9 +1114,21 @@ info DAT` and `python SRC/kiteras.py info DAT` print both ranges):
 `cluberas.build(dat, last)` and `kiteras.build(dat, rel, last)` take the
 last team; `patch_disc.era_club_count()` (439 or 457) sizes the routines.
 `cluberas.py` and `kiteras.py` run `info`, `check` and `selftest` over
-both ranges (`kiteras.py selftest`: 64,800 runs, 0 wrong). Not checked in
-the game; the plan for the third tier's clubs is the same rule as for the
-others.
+both ranges (`kiteras.py selftest`: 64,800 runs, 0 wrong).
+
+**Tested in PCSX2 in part** (Nexxus's save states, 2026-11-19, a new
+career on `LMAST-test-kits6.iso`, season -1, checked with `python
+SRC/p2state.py kits`): in matches against Rotherham (team 444, group 0)
+and Nottingham (team 443, group 2) the kit tables in memory equal the
+plan (0 of 16,452 kit bytes and 0 of 25,592 standard bytes differ), and
+every PlUnif byte the code writes for both clubs equals the plan (0 of
+21 expected bytes differ in each): era 0, the standards' supplier,
+collar, number design, emblems and captain's band, and the sponsor from
+the tier plan (190 and 187). So the third tier's clubs take the code
+paths in the game. Still open: an era past 0 for a third-tier club
+(season -1 counts as era 0 and the test offset is not applied there, so
+it needs a state in season 0 or later), the manager change, and how the
+kits look.
 
 ## The code segment
 
