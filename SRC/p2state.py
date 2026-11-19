@@ -144,7 +144,7 @@ def _words(ee, addr, n):
 
 
 def detect_build(ee):
-    """What the code in memory says about the disc: {'offset': 0-2 or None, 'tier3': bool or
+    """What the code in memory says about the disc: {'offset': 0-9 or None, 'tier3': bool or
     None, 'standards': bool or None, 'eras': bool, 'kits': bool}. The routines at the
     code segment are compared word for word with patch_disc's, for every combination."""
     import patch_disc as pd
