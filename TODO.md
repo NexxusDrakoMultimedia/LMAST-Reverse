@@ -37,7 +37,7 @@ lines.
 What to work on next, most valuable first.
 
 1. **The LMASTER Mod: max in the game.** Tested so far: every part of
-   `--mod harder-economy`, `transfer-fees`, `fee-tiers` at the low end,
+   `--mod harder-economy`, `transfer-fees` (its fee tiers at the low end),
    `pr-costs`, `merch-costs`, `slow-reputation` after a match, and the
    separate career saves. Through a German season Nexxus found the game
    much harder economically, with the fanbase growing much more slowly
@@ -70,7 +70,7 @@ What to work on next, most valuable first.
    before LMASTER 1.0.0. Every switch of the PAL builds but the eras
    group and `realism` builds there now, `real-names` (English names in
    ASCII) and `third-tier` (its code, save, data and 93 places ported)
-   included. Left: the eras group's Japanese ports (`sponsor-tiers` and
+   included. Left: the eras group's Japanese ports (`club-kits`' sponsor tiers and
    the club presets first), `realism` (the pack is named by PAL
    hashes), the third tier's rules text (drafted in Japanese, waiting
    for a reader of Japanese in [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-draft)),
@@ -98,7 +98,7 @@ What to work on next, most valuable first.
    built on a test disc and waits for a look: `modern-font` and `title-banner`
    (seen on a few screens, 2026-11-13; the font's stray pixels, reported
    and fixed 2026-11-14, are gone on a rebuilt disc; the rest of the
-   screens still to go through), `random-sponsors` (seen on Real Betis and England's
+   screens still to go through), `club-kits`' sponsors (seen on Real Betis and England's
    national team; the other clubs, leagues and the generated Italian,
    Spanish and Dutch kits are left), `moving-boards` and the charisma
    line of `retail-text` (both built 2026-11-10)
@@ -489,12 +489,12 @@ aside, and every switch works on the Japanese release.
       rises or falls keeps its tier. The game's own rank at run time
       (`pwkOteam_GetWorldClubRank`) would move a sponsor with the club
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers))
-- [ ] **rebuild** The Japanese ports of the eras group: `sponsor-tiers`
-      (the code; its plan already reads the Japanese `DAT_JP`), the
+- [ ] **rebuild** The Japanese ports of the eras group: `club-kits`' sponsor
+      tiers (the code; its plan already reads the Japanese `DAT_JP`), its
       club-creation presets (the Japanese `CEDITPRG.REL` holds the same
-      records `0x100` lower) and the other eras switches (`club-eras`,
-      `kit-eras`, `kit-standards`, `tier3-eras`), all PAL only so far;
-      start with `sponsor-tiers` and the presets, and port the rest after
+      records `0x100` lower) and the rest of `club-kits` and `club-eras`
+      (kit eras, kit standard, the third tier's eras), all PAL only so far;
+      start with the sponsor tiers and the presets, and port the rest after
       the in-game checks of the eras group
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md))
 - [ ] **rebuild** **Needed before LMASTER 1.0.0** (Nexxus's choice,
@@ -634,7 +634,7 @@ are menu and data problems; the match bugs come after them.
 - [ ] **test** Random sponsors and kit suppliers for the clubs you don't
       manage, drawn again every season (the poll went 4-0 for it,
       Nexxus, 2026-11-10), with the licensed leagues unlicensed. Done:
-      `--mod random-sponsors` (full and max) sets them from the team
+      the sponsors part of `--mod club-kits` (full and max) sets them from the team
       number and the season, unlicenses the 114 clubs with generated kits
       from `SRC/kits.csv`, and lets every club's kit draw its logos (the
       gate was at `0x2c54d8`); seen on Real Betis in PCSX2. Left: the
@@ -643,7 +643,7 @@ are menu and data problems; the match bugs come after them.
       the kits corrected club by club (written from memory with 12 shirt
       patterns), the other shirt designs checked in the viewer, the
       Japanese release (the keeper kits of the 114 clubs are made now,
-      with `kit-standards`)
+      with the kit standard of `club-kits`)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors),
       [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-or-generated-the-flag))
 - [ ] **understand** Idea (Nexxus, 2026-11-10): computer clubs' kits

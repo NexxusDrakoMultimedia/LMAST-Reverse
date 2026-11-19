@@ -235,7 +235,7 @@ edition plays through a season.
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements) (the injury
       lines and odds, overseas bases, a fee above £120M, `fanbase`'s
       crowds, TV offers and big-fanbase merchandise, the camp and tour
-      costs; `fee-tiers`' low end, `pr-costs`, lower merchandise income
+      costs; `transfer-fees`' fee tiers at the low end, `pr-costs`, lower merchandise income
       and `slow-reputation` after a win are seen, but not its year-end
       and final-place halves). The current test disc is
       `LMAST-test-season4.iso` with its sheet
@@ -419,10 +419,10 @@ checks. `python SRC/p2state.py info <state.p2s>` says whether a match is
 loaded. To take a state: play into a match against a computer club,
 save a state in PCSX2 and send the file (or say its slot), with the
 club's name. Your own club and the rival are skipped. The current test
-disc is `LMAST-test-kits6.iso`, built with `python SRC/patch_disc.py
-patch "<retail disc>.iso" LMAST-test-kits6.iso --mod lmaster-max --copies
---dat DAT --realism ../LMAST-Realism --test-build --eras-offset 2`,
-without `--skip-tutorial`
+discs are `LMAST-test-3b.iso` (offset 3) and `LMAST-test-0.iso` (no offset), built with
+`python SRC/patch_disc.py patch "<retail disc>.iso" <name>.iso --mod lmaster-max
+--copies --dat DAT --realism ../LMAST-Realism --test-build [--eras-offset 3]`,
+never with `--skip-tutorial`, which skips the opening playoffs
 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#test-tools)).
 
 - [ ] The modern font and the title banner on a full or max disc
@@ -442,7 +442,7 @@ without `--skip-tutorial`
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner))
 - [ ] Computer clubs' sponsors, suppliers and the unlicensed kits
-      (`--mod random-sponsors`, the disc is `LMAST-test-sponsors4.iso`,
+      (the sponsors part of `--mod club-kits`, the disc is `LMAST-test-sponsors4.iso`,
       built 2026-11-10; PCSX2 treats it as a new game, with its own
       settings and states). Real Betis shows the chest sponsor and the
       supplier logo, and England's national team shows its kit maker
@@ -505,9 +505,8 @@ without `--skip-tutorial`
       every three seasons. A club's manager is shown nowhere, so it is a
       state: read the team ids in a match with `python SRC/p2state.py
       managers <state.p2s>`
-- [ ] Computer clubs' kits by era (`--mod kit-eras`, the disc is
-      `LMAST-test-kits6.iso`, which holds `kit-eras`, `kit-standards` and
-      `tier3-eras`; PCSX2 treats it as a new game). **Started:** a state of
+- [ ] Computer clubs' kits by era (the kit eras part of `--mod club-kits`,
+      the disc is `LMAST-test-3b.iso`; PCSX2 treats it as a new game). **Started:** a state of
       Nexxus's in a match against Hansa Rostock (team 119, era 1) holds
       the plan's bytes exactly, see
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras). Done (Nexxus's
@@ -515,8 +514,8 @@ without `--skip-tutorial`
       era 1 match the plan. Still open are an era 0 club as the control, a
       third-tier club past era 1, and the later seasons. Build with
       `python SRC/patch_disc.py patch "<retail disc>.iso"
-      LMAST-test-kits6.iso --mod lmaster-max --copies --dat DAT --realism
-      ../LMAST-Realism --test-build --eras-offset 2`, without
+      LMAST-test-3b.iso --mod lmaster-max --copies --dat DAT --realism
+      ../LMAST-Realism --test-build --eras-offset 3`, without
       `--skip-tutorial` (it makes the Edit Emblem screen freeze, see the
       check above), and start a career in any nation. The era is
       (season + offset + team id mod 3) div 3, so with the offset 2 in
@@ -542,14 +541,14 @@ without `--skip-tutorial`
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers)). Still open, in a
       career: a club's sponsor changes from season to season but stays in
       its slice, and a top club of a big league shows a big-name sponsor
-- [ ] Transfer fees on a max disc after the cut to the lower tiers (`--mod
-      fee-tiers`, 2026-11-19): in the Post Player list the estimate for a
+- [ ] Transfer fees on a max disc after the cut to the lower tiers (the fee
+      tiers part of `--mod transfer-fees`, 2026-11-19): in the Post Player list the estimate for a
       player of rank 0 to 5 should be the retail game's, and for rank 6 to
       11 1.5 times it, half of what the same players showed before
       (the 18-year-old rank 10 at €12.3M should show about €6.2M, the
       33-year-old rank 8 at €4.8M about €2.4M, in the same career and
       week). Ranks 12 to 15 are as before. Needs a disc built with
-      `--mod transfer-fees,fee-tiers` or `lmaster-max`
+      `--mod transfer-fees` or `lmaster-max`
       ([`ECONOMY.md`](DOC/ECONOMY.md#transfer-fees))
 - [ ] The moving advert board at the last ground (`--mod moving-boards`,
       the disc is `LMAST-test-boards.iso`, built 2026-11-10): in a
