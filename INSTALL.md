@@ -198,7 +198,8 @@ Some switches need files that are not in this repository:
   at `../LMAST-Realism`, or `--realism <folder>`.
 - **The banner's version** (optional): `--version <x.y.z>`, else the
   `VERSION` file of a LMASTER-Mod clone beside this project. Without
-  one the banner shows only the edition.
+  one the banner shows only the edition. `--test-build` makes it read
+  TEST BUILD instead, for a disc that is not a release.
 
 An edition or group that holds `modern-font`, the banner or `realism`
 leaves it out, with a note, when its file is missing. Naming the

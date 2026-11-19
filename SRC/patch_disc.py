@@ -36,7 +36,7 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--eras-offset <0-2>] [--realism <pack folder>] [--font <font.ttf>] [--version <x.y.z>]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--eras-offset <0-2>] [--realism <pack folder>] [--font <font.ttf>] [--version <x.y.z>] [--test-build]
     python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--mod <switch>,...]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
     python patch_disc.py switches                                         # the editions, groups and switches
@@ -114,7 +114,8 @@ title-banner (the LMASTER Mod's version on the title screen,
 SRC/titlebanner.py) draw with a font file: --font <RobotoCondensed[wght].ttf>,
 or the copy found in a LMASTER-Mod clone's fonts folder beside this
 repository or in the system's fonts (an edition without one leaves them
-out); --version gives the banner its version (else ../LMASTER-Mod/VERSION).
+out); --version gives the banner its version (else ../LMASTER-Mod/VERSION);
+--test-build makes it read TEST BUILD instead, for a disc that is not a release.
 Both are PAL only (the Japanese release skips them with a note).
 third-tier turns on mod-saves and needs --copies and --dat; real-names
 and realism need them too. Each switch also works as a flag of its own
@@ -2721,23 +2722,33 @@ GATE_REAL, GATE_AFTER = 0x2C54E0, 0x2C550C      # the real lists; past the code 
 NATIONAL_FIRST, NATIONAL_COUNT = 460, 83
 
 
+def sponsor_mults():
+    """The three multipliers of the sponsor hash, odd numbers from the LMASTER seed
+    (lmseed.py, 0x31031996; they were 0x9E3779B1, 0x85EBCA6B and 0xC2B2AE35 before)."""
+    import lmseed
+    rng = lmseed.stream("random-sponsors")
+    return tuple(rng.next32() | 1 for _ in range(3))
+
+
 def sponsor_hash(team, season):
     """(sponsor, supplier) the code in sponsor_cave() writes."""
-    x = (team * 0x9E3779B1 + season * 0x85EBCA6B) & 0xFFFFFFFF
-    z = (x * 0xC2B2AE35) & 0xFFFFFFFF
+    a, b, c = sponsor_mults()
+    x = (team * a + season * b) & 0xFFFFFFFF
+    z = (x * c) & 0xFFFFFFFF
     return 1 + (x >> 11) % SPONSOR_KINDS, SUPPLIER_FIRST + (z >> 16) % SUPPLIER_KINDS
 
 
 def sponsor_cave():
     """The code at SPONSOR_CAVE, as words."""
+    a, b, c = sponsor_mults()
     body = [addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(V1, 8, SP),
             jal(KEIKA), NOP,
-            lui(T0, 0x9E37), ori(T0, T0, 0x79B1), mult3(T1, S1, T0),
-            lui(T0, 0x85EB), ori(T0, T0, 0xCA6B), mult3(T2, V0, T0),
+            lui(T0, a >> 16), ori(T0, T0, a & 0xFFFF), mult3(T1, S1, T0),
+            lui(T0, b >> 16), ori(T0, T0, b & 0xFFFF), mult3(T2, V0, T0),
             addu(T1, T1, T2),                             # x = team * A + season * B
             srl(T2, T1, 11), addiu(T0, ZERO, SPONSOR_KINDS), divu(T2, T0), mfhi(T2),
             addiu(T2, T2, 1), sb(T2, 4, S2),              # PlUnif +4: the sponsor
-            lui(T0, 0xC2B2), ori(T0, T0, 0xAE35), mult3(T2, T1, T0),
+            lui(T0, c >> 16), ori(T0, T0, c & 0xFFFF), mult3(T2, T1, T0),
             srl(T2, T2, 16), addiu(T0, ZERO, SUPPLIER_KINDS), divu(T2, T0), mfhi(T2),
             addiu(T2, T2, SUPPLIER_FIRST), sb(T2, 5, S2)]  # +5: the supplier
     body += [ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20), jr(RA), NOP]
@@ -5134,12 +5145,16 @@ def plan_modern_font(f, img, adopted=()):
 TITLE_PACKS = ["CSE/SC_TITLEBG%d.CSP" % n for n in range(1, 7)]
 banner_version = None                    # set by main from --version
 banner_edition = "Custom"                # set by main from the switches chosen
+banner_test = False                      # set by main from --test-build: "TEST BUILD", no version
 LMASTER_VERSION_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                     "..", "LMASTER-Mod", "VERSION")
 
 
 def banner_version_text():
-    """The version for the banner: --version, else a LMASTER-Mod clone's VERSION."""
+    """The version for the banner: --version, else a LMASTER-Mod clone's VERSION; none
+    for --test-build."""
+    if banner_test:
+        return ""
     if banner_version:
         return banner_version
     try:
@@ -6188,10 +6203,13 @@ def main(argv):
     font_face = _opt(args, "--font", None)
     if font_face:
         values.append("modern-font")
-    global banner_version, banner_edition
+    global banner_version, banner_edition, banner_test
     banner_version = _opt(args, "--version", None)
     mods = parse_mods(values)
     banner_edition = edition_title(mods)
+    if "--test-build" in args:
+        args.remove("--test-build")
+        banner_test, banner_edition = True, "Test Build"      # the banner reads TEST BUILD
     for switch in ("modern-font", "title-banner"):
         named_here = any(n == switch for v in values for n in v.lower().split(","))
         if switch in mods and not font_found():

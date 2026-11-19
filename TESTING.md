@@ -347,25 +347,45 @@ Each of these switches has been built and is waiting for someone to play it.
       which clubs look wrong (wrong colours, wrong pattern) and what
       they should be; and after a season that the sponsors changed
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
-- [ ] Club eras (`--mod club-eras`, the disc is `LMAST-test-eras.iso`, built
-      2026-11-19 with `--mod club-eras,skip-tutorial`; PCSX2 treats it as a
-      new game). To see a change without playing a season, build with
-      `--eras-offset 2` (`LMAST-test-eras-s0.iso`, 2026-11-19): the clubs
-      whose team id leaves 1 or 2 when divided by 3 (two thirds) have their
-      new manager from 2006-07 on, once the opening playoffs are over (the
-      playoffs stay retail; `cluberas.py expect DAT <team> 0 2` gives it). The managers are built and checked by emulation and by
-      reading the disc back, but the game has not run the code. A computer
-      club's manager is shown nowhere, so this is a PINE check: (1) the
-      game boots and a career starts and plays normally (the first seasons
-      are the retail managers, era 0); (2) from season 1 (the clubs whose
-      team id leaves 2 when divided by 3 change first), after the game
-      builds a computer club's team data (a league match), the word at
-      `0xf8500` holds that club's new manager index, which
-      `python SRC/cluberas.py expect DAT <team> <season>` gives for the
-      club and season (season 0 is 2006-07); (3) a club's formation and tactics differ from before the
-      change. Needs a career played into season 1 (or a save in it) and
-      PINE
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
+- [ ] A whole LMASTER max disc, with every group together (the third tier,
+      real names, graphics, Club eras, the economy and balance groups, the
+      Realism pack), built 2026-11-19 as `LMAST-test-max.iso` with
+      `--mod lmaster-max,skip-tutorial --skip-nation Germany --copies --dat
+      DAT --realism ../LMAST-Realism --test-build --eras-offset 2` (the title
+      banner reads TEST BUILD; the offset puts two thirds of the clubs in
+      era 1 from 2006-07). Never run as one disc: the code segment grew to
+      0x1400 bytes and holds the third tier, the sponsors, the logo gate
+      and the managers' code together (no overlap). Check: it boots and the
+      banner reads TEST BUILD; a career starts in Germany; a season plays
+      to its end with no freeze, saving and loading once; the third tier
+      (England's at the foot of the second division) and the real names
+      show; kits carry a sponsor and a supplier logo, none blank, and the
+      grounds' advert boards vary; and a computer club's manager is the
+      plan's (`cluberas.py expect DAT <team> <season> 2`, read at
+      `0xf8500` after a match loads)
+
+- [ ] Club eras (`--mod club-eras`; PCSX2 treats each disc as a new game).
+      Seen working (Nexxus's save states, 2026-11-19, `LMAST-test-eras-s0.iso`,
+      built with `--mod club-eras,skip-tutorial --eras-offset 2`, read by
+      Claude): a match against a club in era 1 had the new manager, his
+      formations and his tactics ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras)).
+      The disc rebuilt after the LMASTER seed
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-lmaster-seed),
+      `LMAST-test-eras-seed.iso`) passes the same check (states 1 and 2,
+      2026-11-19). Still to check, on that disc (the offset puts the clubs whose team id
+      leaves 1 or 2 when divided by 3 in era 1 already in 2006-07, once the
+      opening playoffs are over; `python SRC/cluberas.py expect DAT <team>
+      0 2` gives the manager a club should have, and a club's manager is
+      shown nowhere, so it is a PINE check): (1) a club whose team id
+      leaves 0 keeps its retail manager (the result word at `0xf8500` stays
+      as it was, and the match shows the retail manager's name in the
+      team's data); (2) the opening playoffs are retail (read it before
+      them); (3) a whole season plays normally, with no freeze at a match
+      or a screen; (4) on a disc built without `--eras-offset`, the first
+      changes come in seasons 1, 2 and 3 (a third of the clubs each, the
+      clubs whose team id leaves 2 first), then every three seasons; read
+      the team ids in a match with `read pine 0x3906d8 u32` (the pointer
+      P), then the u32 at P+`0x1fba0` and P+`0x24540`
 - [ ] Transfer fees on a max disc after the cut to the lower tiers (`--mod
       fee-tiers`, 2026-11-19): in the Post Player list the estimate for a
       player of rank 0 to 5 should be the retail game's, and for rank 6 to

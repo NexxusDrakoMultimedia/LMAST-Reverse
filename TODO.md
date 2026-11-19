@@ -415,13 +415,15 @@ aside, and every switch works on the Japanese release.
       idea and choices, 2026-11-19): clubs change manager every 3 seasons,
       a third of the clubs each year, better clubs getting better
       managers, every manager unique. The managers are built
-      (`--mod club-eras`, `cluberas.py`; emulation and a disc read-back
-      pass), and the game has not run the code: a PINE check in
-      [`TESTING.md`](TESTING.md#newer-switches). Not built: sponsors and
+      (`--mod club-eras`, `cluberas.py`) and seen working in PCSX2 for a
+      club in era 1: the new manager, his formations and his tactics
+      reach the computer club's match (Nexxus's states, 2026-11-19). Left
+      to see: a group-0 club keeping its retail manager, the opening
+      playoffs unchanged, the later eras and a whole season
+      ([`TESTING.md`](TESTING.md#newer-switches)). Not built: sponsors and
       suppliers by club rank (the sponsor table's fees, suppliers by fee
-      with the two no-fee ones tied and lowest), and a tactics and
-      formation choice of the switch's own if the managers' differ too
-      little ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
+      with the two no-fee ones tied and lowest)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
 - [ ] **rebuild** **Needed before LMASTER 1.0.0** (Nexxus's choice,
       2026-11-01): every switch works on the Japanese release
       (SLPM-66316), except the modern font, which may be PAL only

@@ -201,7 +201,8 @@ def copy_rows(data, pairs):
 # ground by itself (request +0x10, 0x1cd618); the draws leave it out.
 SPONSOR_LOGOS = range(1, 206)
 RIVAL_STADIUM = 114                 # the rival's ground (TEAM_INIT_DATA table 7): kept as it is
-SPONSOR_SEED = 0x4c4d               # "LM": any fixed seed, so every build is the same
+# The draws come from the LMASTER seed (lmseed.py, 0x31031996), so every build is the same;
+# the first ones used a fixed seed 0x4c4d ("LM") through Python's random module.
 
 
 # How many different sponsors a ground shows grows with its size
@@ -237,7 +238,7 @@ def sponsor_boards(data):
     the rival's drawn from SPONSOR_LOGOS: sponsor_count(its size) different
     ones, each on at least one board, in a random order; None when they
     already are. The file keeps its size."""
-    import random
+    import lmseed
     _, t = tbb.parse(data)
     old = rows(t[0].data, BUILD_ROW)
     base = t[0].offset + t[0].data_offset
@@ -246,7 +247,7 @@ def sponsor_boards(data):
     for i in range(len(old)):
         if i == RIVAL_STADIUM:
             continue
-        rng = random.Random(SPONSOR_SEED * 1000 + i)
+        rng = lmseed.stream("sponsor-boards", i)
         kinds = rng.sample(SPONSOR_LOGOS, sponsor_count(sizes.get(i, 40)))
         boards = kinds + [rng.choice(kinds) for _ in range(SPONSOR_BOARDS - len(kinds))]
         rng.shuffle(boards)

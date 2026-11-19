@@ -52,6 +52,30 @@ level:
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
 | `test-tools` | skip-tutorial, launcher | – | – | – |
 
+## The LMASTER seed
+
+Every random choice in LMASTER full and max comes from one 32-bit seed,
+`0x31031996` (Nexxus's choice, 2026-11-19), so a build is the same every
+time, on any machine and any Python. LMASTER lite has no random choices and
+does not use it. `lmseed.py` holds the seed and a small generator of its own
+(mulberry32), because Python's `random.shuffle` and `sample` may change
+between versions. Each use has its own stream, from the seed and a name
+(`lmseed.stream("sponsor-boards", 7)`), so adding a use never moves another's
+numbers. The uses:
+
+| Use | Switch | What the seed decides |
+|---|---|---|
+| `sponsor-boards` | `sponsor-boards` ([below](#stadiums)) | each ground's 12 advert boards |
+| `random-sponsors` | `random-sponsors` ([below](#random-sponsors)) | the three multipliers of the sponsor and supplier hash the game's code runs |
+| `club-eras`, one stream per tier | `club-eras` ([below](#club-eras)) | the order of the clubs inside each tier, so which club gets which manager is not just by rank |
+
+`python SRC/lmseed.py selftest` checks the generator's known answers (a
+change would change every build) and that the sponsor hash still draws every
+sponsor and supplier over 20 seasons with no club keeping both.
+Changing the seed or the generator changes the sponsors, the boards and the
+managers of every Full and Max disc, so it needs a new disc, not a patch of
+an old one.
+
 **Which edition a fix goes in** (Nexxus's rule, 2026-11-01): a bug fix
 that can't break a retail career already in progress goes in lite; one
 that may break such a save stays in full, whose careers go to their own
@@ -490,8 +514,10 @@ header) and the second into a nop. The code gets the season from
 `pwkGen_Keika` (`0x244430`, the season's first year less 2006, so it
 changes when the season starts) and writes sponsor 1 + *h*₁ mod 199 and
 supplier 206 + *h*₂ mod 7 for the club's team id, from two
-multiplicative hashes (`sponsor_hash` in `patch_disc.py` is the same
-arithmetic). The numbers are records of MES category 10000: a PCSX2
+multiplicative hashes whose three multipliers come from the
+[LMASTER seed](#the-lmaster-seed) (`sponsor_hash` in `patch_disc.py` is
+the same arithmetic; the first draft's were `0x9E3779B1`, `0x85EBCA6B` and
+`0xC2B2AE35`). The numbers are records of MES category 10000: a PCSX2
 state held your club's as 74 (a main sponsor) and 207 (Opnatis, one of
 the seven suppliers, records 206–212). Over the 540 clubs and 20 seasons
 every sponsor 1–199 and supplier 206–212 comes up, and no club keeps
@@ -544,11 +570,11 @@ clubs get the better managers, each club one of its own. A manager brings
 his own formations and tactics (his record holds three formations and the
 seven tactical leanings, [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)), and the
 game derives a computer club's style and tactics from its manager (below),
-so those change with him. **Built and checked by emulation and by reading
-the disc back; not yet seen in the game** ([`TESTING.md`](../TESTING.md#newer-switches)).
+so those change with him. **Built, checked by emulation and by
+reading the disc back, and tested in PCSX2 for a club in era 1 (below)** ([`TESTING.md`](../TESTING.md#newer-switches)).
 Not built yet: sponsors and suppliers by club rank (they still come from
-`random-sponsors`' hash), and a tactics and formation choice of the
-switch's own for managers of one style.
+`random-sponsors`' hash). A tactics and formation choice of the switch's
+own turned out not to be needed: each manager's record carries his own.
 
 **How it works.** The game asks `plOteam_GetManagerNoOffset` (`SLES
 0x216668`) for a club's manager; it calls `plOteam_GetDb` (`0x2165d8`) and
@@ -578,7 +604,7 @@ is the switch as released.
 
 | Part | Holds |
 |---|---|
-| Tiers | the 439 clubs of teams 3 to 441 sorted by the club record's `world_rank` (`+2`, 237 different values, best first, ties by team id), cut into 16 tiers of 28 or 27 |
+| Tiers | the 439 clubs of teams 3 to 441 sorted by the club record's `world_rank` (`+2`, 237 different values, best first, ties by team id), cut into 16 tiers of 28 or 27 and put in an order from the [LMASTER seed](#the-lmaster-seed) inside each tier |
 | Pool | the 3,000 manager records sorted by quality (`rank`, then the mean of the 48 abilities; rank and mean ability correlate 0.92), less the 721 the game uses elsewhere: the clubs' own retail managers, the national teams', the player's staff, the candidate lists and the rival's. A tier takes the next M = 3 × K (81 or 84) of the best 1,317 |
 | Rotation | a club at place *p* of a tier of *K* gets the tier's entry (*p* + era × step) mod *M*, the step in [*K*, *M* − *K*] and coprime to *M* (40 or 41) |
 
@@ -610,14 +636,40 @@ what was generated, 0 wrong runs on those bytes). The game itself has not
 run it. A manager is shown nowhere (only on the team info screen, hidden
 from the player: Nexxus's report, 2026-11-19), so the in-game check
 reads the result word at `0xf8500` over PINE after the game has built a
-computer club's team data (most likely as a match loads: `pwkOteam_GetTeamData`
-asks for the manager, not yet seen to run): it holds the manager index
-the code returned, and stays 0 while every club is in era 0.
+computer club's team data: it holds the manager index the code returned,
+and stays 0 while every club is in era 0.
 
-**Still unknown:** whether the game takes the new manager into a
-computer club's match (the check above), whether the managers' formations
-and tactics differ enough between managers to see, and the sponsor and
-supplier ranking (built from the sponsor table's fees: [Planned](#planned)).
+**Tested in PCSX2** (Nexxus's save states 1 and 2, 2026-11-19, on
+`LMAST-test-eras-s0.iso`, `--eras-offset 2`, built before the seed (above)
+ordered the clubs inside the tiers, so the managers it gave differ from the
+current plan's; read by Claude; the second
+season-0 week, a league match). In both states the routine's first word
+(`0x2488fffd` at `0xf8400`) and the hook word (`0x0c03e100` at `0x2166d0`)
+are in memory, so the larger code segment loads. In state 2 a match of
+your club (team 1) against team 46 (team id mod 3 is 1, so era 1) is
+loaded, and the result word is 1067, S.Corraface, exactly what
+`cluberas.py expect` gives, not the retail A.Davis (43). The game really
+built the opponent with him: "S.Corraface" is in the away team's data at
+`+0x4858` (the manager record at `+0x4854`) and "A.Davis" is nowhere in
+memory. The team's formation and tactics are his too: the bytes at
+`PlTeamData +0x4895` read 11, 11, 12, 2, 4, 5, his three formations and his
+first tactics (attacking 2, possession 4), where the retail manager's
+record would give 22, 22, 26, 5, 3. So the manager's formations and
+tactics reach the computer club's play. State 1 holds no match and the
+result word 2616, K.Cesar, the planned manager of team 92, another
+club in era 1. The same states were taken again on the disc built after
+the seed (`LMAST-test-eras-seed.iso`, `--eras-offset 2`, 2026-11-19), against
+the current plan: team 46's manager is J.Passo (2661, in the away team's data
+at `+0x4858`, A.Davis nowhere), the bytes at `+0x4895` read 26, 26, 31, 5, 4,
+1, J.Passo's formations and tactics (A.Davis's would be 22, 22, 26, 5, 3, 5),
+and state 1's result word is 2477, K.Kilk, the plan's manager for team 92.
+
+**Still unknown:** a club of group 0 (team id mod 3 equal to 0), which
+should keep its retail manager at offset 2; that nothing changes in the
+opening playoffs; the later eras, the staggering (a third of the clubs
+each year, on a release build) and a whole season of play; and the sponsor
+and supplier ranking (built from the sponsor table's fees:
+[Planned](#planned)).
 
 ## Real names
 
@@ -1039,8 +1091,9 @@ boards of its `BUILD_STADIUM` row, bytes 116–127 (`InitStadium` clears
 the match's own 12 at `0x2136a8`); value *v* is logo *v* − 1 of
 `SPONSOR_TEXTURE_M`, 1–205 ([Adverts](STADIUM_DIR.md#adverts)). The
 retail rows use 119 of them, 12 different ones a row. The switch draws each
-row's boards afresh, a fixed random draw per stadium
-(`stadium.sponsor_boards`), so every build is the same. How many
+row's boards afresh, a draw per stadium from the
+[LMASTER seed](#the-lmaster-seed) (`stadium.sponsor_boards`), so every
+build is the same. How many
 different sponsors a ground shows grows with its size (Nexxus's
 request, 2026-10-31): 3 up to 8,000, then one more for each step of
 15,000, 20,000, 25,000 ... 50,000, and all 12 boards different from
@@ -1235,7 +1288,9 @@ python SRC/patch_disc.py patch <retail iso> out.iso --mod lmaster-full --font "R
 - **The words:** `--version` gives the version, else the `VERSION` file of a
   LMASTER Mod clone beside this repository, else the banner shows only the
   edition. The edition is "Lite", "Full" or "Max" when the switches chosen
-  are that whole edition, else "Custom".
+  are that whole edition, else "Custom". `--test-build` (Nexxus's request,
+  2026-11-19) makes the second line read TEST BUILD, with no version or
+  edition, so a disc built to test is never mistaken for a release.
 - **The face** is the one `modern-font` draws with (`--font`; the editor's
   Font file box): an edition without a font file leaves the banner out and
   says so, and naming `--mod title-banner` without one is an error.
@@ -1302,7 +1357,7 @@ started:
   | Part | Where it is |
   |---|---|
   | A club's manager | `plOteam_GetManagerNoOffset` (`SLES 0x216668`): a club's `PLRESOURCESIM.PAC` entry 3 record `+4` (an s16, database id − `0x6d2e`, all 457 different, [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#club-records-plresourcesimpac-entry-3)) through `plOteam_GetDb` (`0x2165d8`); a national team's, entry 4. `pwkOteam_GetManager` (`0x24be40`) builds the computer club's manager from it |
-  | Manager to style | `0x22e610` reads the manager's byte `+0x35` (under 9) and maps it through the table at `0x534428` to a team style. `plTeam_SetStyleTeamParam` (`0x22ed28`, called from `pwkOteam_GetTeamData`, `0x24ba08`) then builds the style's `0x70`-byte block at `PlTeamData +0x4204` (the formation and the seven tactics). **Read in the code, not tested in the game** |
+  | Manager to style | `0x22e610` reads the manager's byte `+0x35` (under 9) and maps it through the table at `0x534428` to a team style. `plTeam_SetStyleTeamParam` (`0x22ed28`, called from `pwkOteam_GetTeamData`, `0x24ba08`) then builds the style's `0x70`-byte block at `PlTeamData +0x4204` (the formation and the seven tactics). **Read in the code; seen in the game for a computer club, below** |
   | Club rank | `pwkOteam_GetRank` (`0x24bec8`, 0 to 31) and `pwkOteam_GetWorldClubRank` (`0x24bf70`), live values |
   | Sponsors and suppliers | the table in `SIMPRG.REL` (`0x23d978`, ids 1 to 212, [`ECONOMY.md`](ECONOMY.md#sponsors)). The 199 sponsors (ids 1 to 199) all have a main-sponsor fee at `+0x14`, 30,000 to 2,700,000 in the stored unit (**empirical**). Suppliers are 206 to 212: Opnatis (207) 450,000, Binnonn (206) 360,000, Wrandon (208) 240,000, Untelio (209) 90,000, Jompela (210) 30,000, then Egamucho (211) and Doclla (212) with none (**empirical**) |
   | Where the draw is made | `pwkTeam_GetUnif` (`0x26e9d8`), which the `random-sponsors` code replaces at `0x26ec1c` and `0x26ec24` (the routine at `0xf8300`) |
@@ -1327,22 +1382,17 @@ started:
   only behind the team info screen and never shown (Nexxus's report,
   2026-11-19), so the whole pool is usable. The managers of your club,
   your rival and the national teams stay out of the slices. Tactics and
-  formations change too (Nexxus's choice). A manager's style sets them
-  (the table above), but two managers of one style would give the same
-  tactics, so the switch may also pick a tactics set and formation of its
-  own each cycle, from the eight presets of
-  [`TACTICS_FORMATION_SET.TBB`](PARAM_DIR.md#tactics_formation_settbb-tactics-presets)
-  or the formations of `pbdata`. The manager getter would be patched the way
-  `random-sponsors` patches the kit numbers.
+  formations change too (Nexxus's choice), and they come with the manager:
+  his record holds three formations and the seven tactical leanings, and
+  a computer club's team data takes them from it (seen in PCSX2, below),
+  so the switch needs no tactics choice of its own. The manager getter is
+  patched the way `random-sponsors` patches the kit numbers.
 
   Still unknown: what makes a manager or coach better, for the tiers
   (the ability bars,
-  [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars));
-  whether a changed manager changes how a computer club plays (to check
-  in PCSX2: swap the managers of two clubs of different styles and watch
-  their formations), and so whether the switch must set tactics and
-  formations itself; and the manager's match policy field, which nothing
-  seems to read ([above](#improvements)).
+  [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md#manager-coach-and-scout-bars)),
+  though rank and ability are used; and the manager's match policy field,
+  which nothing seems to read ([above](#improvements)).
 
 ## Not candidates
 

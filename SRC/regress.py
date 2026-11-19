@@ -278,6 +278,8 @@ def checks():
         ("lbi", ["lbi.py", "info", "DAT"], ["DAT"]),
         # Club eras (--mod club-eras): the plan, one manager per club over 100 seasons, and
         # the machine code run against the plan.
+        # The LMASTER seed: the generator's known answers and what random-sponsors relies on.
+        ("lmseed", ["lmseed.py", "selftest"], []),
         ("cluberas_info", ["cluberas.py", "info", "DAT"], ["DAT"]),
         ("cluberas_check", ["cluberas.py", "check", "DAT"], ["DAT"]),
         ("cluberas_selftest", ["cluberas.py", "selftest", "DAT"], ["DAT"]),

@@ -15,8 +15,10 @@ switch replaces the call to plOteam_GetDb there with code that, for the clubs
 of teams 3 to 441, finds the manager from this plan.
 
   tiers   the 439 clubs sorted by their starting world rank (the club record's
-          +2, best first) and cut into 16 tiers of 27 or 28; a club's place
-          in its tier is p (0 to K - 1)
+          +2, best first) and cut into 16 tiers of 27 or 28; the clubs of a tier
+          are put in an order from the LMASTER seed (lmseed.py, 0x31031996), so
+          which of them gets which manager is not just by rank, and a club's place
+          in its tier is p (0 to K - 1) in that order
   pool    the managers sorted by quality (rank, then the mean of the 48
           abilities, best first), less every manager the game gives to
           another use: the clubs' own retail managers, the national teams',
@@ -55,6 +57,7 @@ import struct
 import sys
 
 import initteam
+import lmseed
 import pbdata
 import tbb
 import teaminit
@@ -139,8 +142,10 @@ def build(dat):
         M = POOL_FACTOR * K
         plan.tiers.append((start, M, _step(K, M), K))
         plan.pool += avail[start:start + M]
-        for p in range(K):
-            plan.club[order[pos + p]] = (t, p)
+        members = order[pos:pos + K]
+        lmseed.stream("club-eras", t).shuffle(members)       # the seed's order inside the tier
+        for p, club in enumerate(members):
+            plan.club[club] = (t, p)
         pos += K
         start += M
     return plan
@@ -208,7 +213,7 @@ def cmd_info(dat):
     print("%d clubs, %d tiers, a pool of %d managers (%d free, %d used elsewhere)" % (
         len(plan.club), len(plan.tiers), len(plan.pool),
         len(plan.quality) - len(plan.excluded & set(plan.quality)), len(plan.excluded)))
-    print("tier  start    M  step   K   mean manager score   best club (team)")
+    print("tier  start    M  step   K   mean manager score   club at place 0 (team)")
     best = {}
     for t, (tier, p) in plan.club.items():
         if p == 0:
