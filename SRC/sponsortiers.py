@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """The main sponsors of LMASTER's club-eras: the better a club, the bigger its sponsors
-(Nexxus's idea, 2026-11-19). random-sponsors gives every computer club a main sponsor 1-199
+(Nexxus's idea, 2026-11-19). The sponsors part of club-kits gives every computer club a main sponsor 1-199
 by a per-season hash; this plan keeps the hash but draws it from a slice of the sponsors
 that fits the club's strength.
 
@@ -23,7 +23,7 @@ of cluberas.py (kiteras.club_tiers: tier 0 the best clubs by world rank, equal s
 slice each of that list, 13 sponsors for tiers 0-6 and 12 for tiers 7-15 (199 = 7 x 13 + 9 x
 12), tier 0 the biggest. A club's sponsor in a season is
 
-    x = team * A + season * B (mod 2^32)         the hash random-sponsors uses
+    x = team * A + season * B (mod 2^32)         the hash the sponsors part uses
     sponsor = LIST[start[tier] + (x >> 11) mod length[tier]]
 
 A and B are the two odd multipliers of patch_disc.sponsor_mults() (lmseed stream

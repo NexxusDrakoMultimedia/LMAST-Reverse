@@ -250,7 +250,7 @@ the text it rewrites follow the tables.
 | Long injuries more common | [`INJURIES.md`](INJURIES.md#the-kind-tables), **confirmed**: a heavy match injury is six months or more 0% of the time for a rested player and 39% at full fatigue, so rotation all but rules them out | `--mod injury-odds`: kinds 4–8 doubled in every row of both kind tables, to at least 2% (practice) and 5% (match) of a row, taken from kind 3 and then kind 0 so light match injuries stay as they were; a heavy match injury is then six months or longer 5% of the time rested and 78% at full fatigue ([`INJURIES.md`](INJURIES.md#more-long-injuries-injury-odds)) | built; not checked in the game |
 | Overseas bases: dearer, each pound buying half as much | [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches), **confirmed**: one cost per region sets the set-up, the investment per level and the upkeep; the level (0–3) scales the region's popularity change by 0.6–1.2 | `--mod overseas-bases`: the 13 costs doubled in `PLRESOURCESIM.PAC` and its `SIMLOCALMEM0`–`6` copies, so the investment per level and the upkeep double too; what a level does stays as in retail (Nexxus's choice, 2026-10-26: like `dearer-ads`) | built; not checked in the game |
 | Reputation harder to raise | [`SAVE_FORMAT.md`](SAVE_FORMAT.md), **confirmed**: the club status (your club rank is status >> 11) rises after each match (win and draw factors at `0x399668`), at final places (points at `0x555188`, `0x555260`, `0x555288`) and by 500 each year end (`0x26e2c4`) | `--mod slow-reputation`: every gain halved, losses as before (Nexxus's choice, 2026-10-26) | tested in PCSX2 (save states, 2026-10-27): a league win gained 47 status where retail gives 95 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)). The club status is hidden in game (Nexxus's report), so it is read from saves or save states. The year-end and final-place halves aren't seen yet |
-| Transfer fees by player rank: the lowest ranks at retail, the best up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: the player's rank enters the fee only through table A (`0x398478`, 16 ranks × 6 club-rank bands), which only the fee function reads | `--mod fee-tiers`: table A's rows ×0.5 for ranks 0–5, ×0.75 for 6–11, ×2 for 12–14 and ×3 for rank 15, so with `transfer-fees` ×1, ×1.5, ×4 and ×6 against retail (Nexxus's choice, 2026-11-19; the first, 2026-10-26, was ×2, ×1.5, ×2 and ×3 in the table, ×4, ×3, ×4 and ×6 in total, and left lesser players as money cheats); with `transfer-fees` the best player at a top club reaches about £246M | tested in PCSX2 at the low end with the first tiers (Nexxus's report, 2026-10-27, a German career on an LMASTER max build): lesser players' fees about 4× retail, with `transfer-fees`; on 2026-11-19 an 18-year-old of rank 10 listed at €12.3M and a 33-year-old of rank 8 at €4.8M (both ×3) were found too high, so the lower tiers were cut (not yet seen in the game); a fee above £120M not yet seen |
+| Transfer fees by player rank: the lowest ranks at retail, the best up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: the player's rank enters the fee only through table A (`0x398478`, 16 ranks × 6 club-rank bands), which only the fee function reads | `--mod transfer-fees` (its fee tiers part): table A's rows ×0.5 for ranks 0–5, ×0.75 for 6–11, ×2 for 12–14 and ×3 for rank 15, so with `transfer-fees` ×1, ×1.5, ×4 and ×6 against retail (Nexxus's choice, 2026-11-19; the first, 2026-10-26, was ×2, ×1.5, ×2 and ×3 in the table, ×4, ×3, ×4 and ×6 in total, and left lesser players as money cheats); with `transfer-fees` the best player at a top club reaches about £246M | tested in PCSX2 at the low end with the first tiers (Nexxus's report, 2026-10-27, a German career on an LMASTER max build): lesser players' fees about 4× retail, with `transfer-fees`; on 2026-11-19 an 18-year-old of rank 10 listed at €12.3M and a 33-year-old of rank 8 at €4.8M (both ×3) were found too high, so the lower tiers were cut (not yet seen in the game); a fee above £120M not yet seen |
 | Transfer fees higher, up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: one base (1,350,000.0, `0x247288`) starts every fee you pay and every offer you get; price kind 1 caps them at £120M | `--mod transfer-fees`: the base 2,700,000.0 and the cap 15,000,000 (£250M) in all four currencies (`0x24a1c8`–`0x24a21c`) | tested in PCSX2 (Nexxus's report, 2026-10-25): fees doubled; a save state holds the 15,000,000 cap in all four currencies. A fee above £120M, and any limit of the transfer screens, not yet seen ([`ECONOMY.md`](ECONOMY.md#transfer-fees)) |
 | A bigger fanbase counts for more | [`ECONOMY.md`](ECONOMY.md#merchandise), **confirmed**: merchandise starts from a base by supporters, a flat table (12.5× from the smallest fanbase to the biggest); crowds and season tickets weigh popularity against a fixed part; TV offers vary only 0.9–1.15 by popularity | `--mod fanbase`: the merchandise bases ×0.5 at the bottom to ×3 at the top (`SIMPRG.REL 0x1d9ec8`), popularity weighted 195 for 130 and the fixed part 1,500 for 3,000 in crowds and season tickets, and the TV factor 0.75–1.25 | merchandise income much lower (Nexxus's report, 2026-10-27, a German career on an LMASTER max build), as the halved bases of a small fanbase and `merch-costs` predict; the top of the scale, crowds and TV offers not yet compared. Goods prices stay, and their costs are `merch-costs` (below) |
 | Dearer PR events | [`ECONOMY.md`](ECONOMY.md#pr-events), **confirmed**: an event costs its record's `+0x14` × 300, £5,000–£500,000 | `--mod pr-costs`: × 600 (`0x20deec`), so the booking and the refund both double | tested in PCSX2 (Nexxus's report, 2026-10-27, a German career on an LMASTER max build): PR events cost double |
@@ -564,14 +564,16 @@ tiers](#sponsor-tiers) (a club's main sponsor by its strength). The
 parts share the code segment and the three multipliers of the seed, and
 each needs the one before it, which is why they are one switch. With
 `third-tier` and `club-eras` also on, the eras take the third tier's
-clubs too ([Tier 3 eras](#tier-3-eras)). The old names of the parts are
+clubs too ([Tier 3 eras](#tier-3-eras)). In the sections below, the names `random-sponsors`,
+`kit-eras`, `kit-standards`, `sponsor-tiers` and `tier3-eras` mean these parts, which were switches of
+their own until 0.6.0. The old names of the parts are
 aliases of `club-kits`
 ([merged switches](#the-switch-levels)).
 
 ## Random sponsors
 
-`--mod random-sponsors` (group `eras` since 2026-11-19, before that
-`graphics`; in LMASTER full and max; built 2026-11-10; Nexxus's request) gives every club's kit a main
+The sponsors part of `--mod club-kits` (before 0.6.0 the switch `random-sponsors`, in group
+`graphics` before 2026-11-19; in LMASTER full and max; built 2026-11-10; Nexxus's request) gives every club's kit a main
 sponsor and a kit supplier, drawn again every season, and it also
 unlicenses the Italian, Spanish and Dutch clubs. In the retail game only
 your club (and the rival) show them: a computer club's kit request
@@ -641,11 +643,11 @@ report, 2026-11-19, a LMASTER max disc), so the gate now leaves every id
 outside 3–542 to the game. `cluberas.py` runs both pieces of code against
 every team id from 0 to 599 (`lmseed.py selftest`).
 
-**With `kit-eras`** the sponsors' code no longer ends in a `jr $ra`: that
+**With the kit eras** the sponsors' code no longer ends in a `jr $ra`: that
 is a `j` to the [kit code](#kit-eras) (`CAVE + 0x1400`), which then
 returns to `pwkTeam_GetUnif`, so the sponsors' code runs first and the
-kit code may overwrite the supplier it drew (`SWITCH_NEEDS` makes
-`kit-eras` need `random-sponsors`). Without [`tier3-eras`](#tier-3-eras)
+kit code may overwrite the supplier it drew (the two are parts of
+one switch, `club-kits`, so the sponsors' code is always there). Without [the third tier's eras](#tier-3-eras)
 teams 442–459, the third tier's clubs, are in the gate's range but not in
 the kit code's, so they carry a random supplier with a retail design. `kiteras.py selftest` runs the two
 in a chain.
@@ -672,8 +674,8 @@ every supplier and every league, and the 114 kits seen in a match.
 routine at `CAVE + 0xbc80` and a nop, and the routine draws the sponsor
 from the club's tier ([Sponsor tiers](#sponsor-tiers)). Everything else
 of the sponsors' code stays: the supplier hash, and the tail that
-returns or jumps on to the kit code (`SWITCH_NEEDS` makes `sponsor-tiers`
-need `random-sponsors`).
+returns or jumps on to the kit code (the sponsor tiers are part of
+`club-kits`, which always has the sponsors' code).
 
 **The keeper kits** (with `kit-standards`, which makes the same edit of
 `UNIFORM_LIST.TBB` give them a standard too). The 114 licensed rows are
@@ -817,8 +819,8 @@ third of the clubs each year) and a whole season of play.
 
 ## Kit eras
 
-`--mod kit-eras` (group `eras`, PAL only, in LMASTER full and max; needs
-`random-sponsors`; built 2026-11-19; Nexxus's idea and every choice below;
+The kit eras part of `--mod club-kits` (group `eras`, PAL only, in LMASTER full and max;
+before 0.6.0 the switch `kit-eras`, which needed `random-sponsors`; built 2026-11-19; Nexxus's idea and every choice below;
 `kiteras.py`, with `kit_words` and `plan_kit_eras` in `patch_disc.py`).
 Every computer club changes kits each time its club era changes (the
 [club era](#club-eras): a third of the clubs each year), to a supplier
@@ -888,8 +890,8 @@ shows its logo as it should; the Japanese addresses.
 
 ## Kit standards
 
-`--mod kit-standards` (group `eras`, PAL only, in LMASTER full and max;
-needs `kit-eras`; built 2026-11-19; Nexxus's idea and every rule below;
+The kit standard part of `--mod club-kits` (group `eras`, PAL only, in LMASTER full and max;
+before 0.6.0 the switch `kit-standards`, which needed `kit-eras`; built 2026-11-19; Nexxus's idea and every rule below;
 `kiteras.py` `build_standards` and `std_table_bytes`, `std_words` and
 `plan_kit_standards` in `patch_disc.py`). Every computer club's kits
 follow a standard, in every era, era 0 (the retail kit) included: the
@@ -1033,8 +1035,8 @@ how the presets look in the club editor.
 
 ## Sponsor tiers
 
-`--mod sponsor-tiers` (group `eras`, PAL only, in LMASTER full and max;
-needs `random-sponsors`; built 2026-11-19; Nexxus's idea and choices;
+The sponsor tiers part of `--mod club-kits` (group `eras`, PAL only, in LMASTER full and max;
+before 0.6.0 the switch `sponsor-tiers`, which needed `random-sponsors`; built 2026-11-19; Nexxus's idea and choices;
 `sponsortiers.py`, with `plan_sponsor_tiers` in `patch_disc.py`). The
 better the club, the bigger its main sponsor: a club's sponsor is drawn
 from its tier's slice of the 199 main sponsors sorted by fee, not from
@@ -1155,12 +1157,11 @@ switch in the game.
 
 ## Tier 3 eras
 
-`--mod tier3-eras` (group `eras`, in LMASTER full and max; needs
-`club-eras`, `kit-eras` and `third-tier`; built 2026-11-19; Nexxus's
-idea). It writes nothing of its own (`plan_tier3_eras` returns no jobs):
-it makes [`club-eras`](#club-eras) and [`kit-eras`](#kit-eras) (and
-[`kit-standards`](#kit-standards) and [`sponsor-tiers`](#sponsor-tiers),
-when they are on) take teams 442 to 459,
+The third tier's eras (group `eras`, in LMASTER full and max; built 2026-11-19; Nexxus's
+idea) were the switch `tier3-eras` until 0.6.0 and are now no switch. They write nothing of their own:
+when `third-tier`, `club-eras` and `club-kits` are all on, `main` sets `tier3_eras`, which makes
+[`club-eras`](#club-eras) and the kit eras, kit standard and sponsor tiers of [`club-kits`](#club-kits)
+take teams 442 to 459,
 the third tier's clubs, as well as 3 to 441. Those clubs have club
 records (`PLRESOURCESIM.PAC` entry 3) and `UNIFORM_LIST.TBB` rows but no
 squads: they are the third tiers' playoff clubs, 3 for each nation

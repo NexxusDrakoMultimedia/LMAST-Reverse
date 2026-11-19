@@ -17,11 +17,11 @@ of teams 3 to 441, finds the manager from this plan.
   Teams 1 and 2 (your club and the rival), the national teams (460 to 542), the VS teams (543
   to 558) and every other team id never change manager: the switch only touches teams 3 to
   441 (Nexxus's rule, 2026-11-19), and `selftest` checks that for every id from 0 to 599.
-  With --mod tier3-eras (the eras and the third tier both on, Nexxus's rule, 2026-11-19) it
+  With --mod third-tier, club-eras and club-kits all on (Nexxus's rule, 2026-11-19) it
   also touches teams 442 to 459, the third tier's clubs: the plan is then built for 457
   clubs (`build(dat, TEAM_LAST_TIER3)`), and `info`, `check` and `selftest` run both plans.
 
-  tiers   the 439 clubs (457 with tier3-eras) sorted by their starting world rank (the club
+  tiers   the 439 clubs (457 with the third tier's eras) sorted by their starting world rank (the club
           record's +2, best first) and cut into 16 tiers of 27 or 28 (28 or 29); the clubs of a tier
           are put in an order from the LMASTER seed (lmseed.py, 0x31031996), so
           which of them gets which manager is not just by rank, and a club's place
@@ -46,7 +46,7 @@ season (`check` proves it over 100 seasons).
 
 The cave tables (all little-endian u16):
 
-  clubs   439 words (457 with tier3-eras), team 3 first: tier << 10 | p
+  clubs   439 words (457 with the third tier's eras), team 3 first: tier << 10 | p
   tiers   16 rows of 4: start, M, step, K
   pool    sum of M words: manager indexes (database id - 0x6d2e)
 
@@ -71,7 +71,7 @@ import teaminit
 
 TEAM_FIRST, TEAM_LAST = 3, 441
 CLUBS = TEAM_LAST - TEAM_FIRST + 1          # 439
-# With --mod tier3-eras (the third tier's clubs too, Nexxus's rule 2026-11-19) the last club is 459:
+# With the third tier's eras (third-tier, club-eras and club-kits on, Nexxus's rule 2026-11-19) the last club is 459:
 # teams 442-459 are the clubs of the six nations' third tier (PLRESOURCESIM.PAC club records).
 TEAM_LAST_TIER3 = 459
 CLUBS_TIER3 = TEAM_LAST_TIER3 - TEAM_FIRST + 1   # 457

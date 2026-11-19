@@ -36,7 +36,7 @@ See DOC/UNIFORM_FORMAT.md.
            CUniformBuilder::Init take the licensed pack, anything else the
            generated kit (0x2c4ad8-0x2c4b0c). apply_kits() and kits.csv set
            flag 1 and a generated kit for the 114 licensed clubs, for
-           patch_disc.py --mod random-sponsors.
+           patch_disc.py --mod club-kits (its sponsors part).
   colours  96 palettes org_uni_A1 .. org_uni_L8 (12 letters x 8 shades);
            colour n is letter 'A' + n // 8, digit n % 8 + 1.
   clash    COLOR_TBL[a][b] (UniformList_CheckColor 0x2d3420).
@@ -68,7 +68,7 @@ may be given by name (I3, A8). Only the field's own bits change; the unused
 bits between fields are kept. `roundtrip` re-packs every row from its
 fields and marks any difference with `!!`.
 
-`keepers` shows what random-sponsors' `standard` (apply_kits) does to the keeper
+`keepers` shows what club-kits' `standard` (apply_kits) does to the keeper
 kits: keeper_kit() builds the 114 kits.csv clubs' keeper kits from their outfield kits
 the way the game does for teams 1 and 2, and keeper_standard() sets the number
 colours and captain's band of every computer club's keeper kit (teams 3-459).
@@ -89,7 +89,7 @@ Usage:
     python uniform.py set       <in.TBB> <out.TBB> <team> <field>=<value> ... [<team> ...]
         e.g. set UNIFORM_LIST.TBB out.TBB 3 home.outfield.1=A4 home.outfield.3=A4
     python uniform.py gk        <DAT/PLAYER> [keeper design ...]  # the keeper kit table
-    python uniform.py keepers   <DAT/PLAYER> [team ...]      # the keeper kits of kit-standards
+    python uniform.py keepers   <DAT/PLAYER> [team ...]      # the keeper kits of club-kits' kit standard
     python uniform.py setgk     <in.TBB> <out.TBB> <field>=<value> ...
         e.g. setgk UNIFORM_GK.TBB out.TBB outfield.0.shirt=20 keeper.35.0.1=A8
     python uniform.py setlicence <PLPACK_HOME.HED> <out.PAC> <licence> <field>=<value> ... [--data <in.PAC>]
@@ -741,7 +741,7 @@ def cmd_set(src, dst, args):
         f.write(out)
 
 
-# --- unlicensing the licensed clubs (--mod random-sponsors) ---------------------
+# --- unlicensing the licensed clubs (--mod club-kits) ---------------------
 # A club's kit is a licensed one only because its row's flag is 2
 # (DOC/UNIFORM_FORMAT.md#licensed-or-generated-the-flag). kits.csv gives each
 # licensed club a generated kit instead: the row's flag becomes 1 and its home
@@ -973,7 +973,7 @@ def apply_kits(blob, kits=None, standard=False, player=None):
 
 def keep_kit_edits(old, mine, kits=None, standard=False, player=None):
     """UNIFORM_LIST.TBB bytes for a target file `mine` (the editor's Kits tab)
-    that --mod random-sponsors also edits: `old` is the file the target was made
+    that --mod club-kits also edits: `old` is the file the target was made
     from. A row the target changed from `old` stays the target's; every other row
     is the switch's."""
     new = apply_kits(old, kits, standard, player) or old
@@ -990,7 +990,7 @@ def keep_kit_edits(old, mine, kits=None, standard=False, player=None):
 
 
 def cmd_keepers(player, teams):
-    """The keeper kits as `--mod kit-standards` makes them: for each team (default
+    """The keeper kits as `--mod club-kits` makes them: for each team (default
     the clubs of kits.csv), the keeper kits of the table as it stands and as
     apply_kits(standard=True) leaves them, then counts over all computer clubs."""
     blob = open(os.path.join(player, UNIFORM_LIST), "rb").read()

@@ -278,31 +278,31 @@ def checks():
         ("lbi", ["lbi.py", "info", "DAT"], ["DAT"]),
         # Club eras (--mod club-eras): the plan, one manager per club over 100 seasons, and
         # the machine code run against the plan.
-        # The LMASTER seed: the generator's known answers and what random-sponsors relies on.
+        # The LMASTER seed: the generator's known answers and what club-kits' sponsors part relies on.
         ("lmseed", ["lmseed.py", "selftest"], []),
         # The build manifest: make, show, diff and rebuild round trip.
         ("manifest", ["manifest.py", "selftest"], []),
         ("cluberas_info", ["cluberas.py", "info", "DAT"], ["DAT"]),
         ("cluberas_check", ["cluberas.py", "check", "DAT"], ["DAT"]),
         ("cluberas_selftest", ["cluberas.py", "selftest", "DAT"], ["DAT"]),
-        # Kit eras (--mod kit-eras): the plan from the kit suppliers' designs, and the machine
+        # Kit eras (--mod club-kits, its kit eras): the plan from the kit suppliers' designs, and the machine
         # code and its chain from the sponsors' code run against it (PAL addresses: no
         # Japanese run).
         ("kiteras_info", ["kiteras.py", "info", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         ("kiteras_check", ["kiteras.py", "check", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         ("kiteras_selftest", ["kiteras.py", "selftest", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
-        # The club-creation presets with the kit standard (--mod kit-standards, PAL addresses).
+        # The club-creation presets with the kit standard (--mod club-kits, PAL addresses).
         ("clubpresets_info", ["clubpresets.py", "info", "ISO/DLL/CEDITPRG.REL"], ["ISO/DLL/CEDITPRG.REL"]),
         ("clubpresets_patches", ["clubpresets.py", "patches", "ISO/DLL/CEDITPRG.REL", "DAT"], ["ISO/DLL/CEDITPRG.REL", "DAT"]),
         ("clubpresets_check", ["clubpresets.py", "check", "ISO/DLL/CEDITPRG.REL", "DAT"], ["ISO/DLL/CEDITPRG.REL", "DAT"]),
         ("clubpresets_selftest", ["clubpresets.py", "selftest", "ISO/DLL/CEDITPRG.REL", "DAT"], ["ISO/DLL/CEDITPRG.REL", "DAT"]),
-        # The main sponsors by club strength (--mod sponsor-tiers): the plan and the routine.
+        # The main sponsors by club strength (--mod club-kits, its sponsor tiers): the plan and the routine.
         ("sponsortiers_info", ["sponsortiers.py", "info", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         ("sponsortiers_check", ["sponsortiers.py", "check", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         ("sponsortiers_selftest", ["sponsortiers.py", "selftest", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         # The PCSX2 state checker's own test (a synthetic memory image; no state file needed).
         ("p2state_selftest", ["p2state.py", "selftest"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
-        # The keeper kits of the kit standard (--mod kit-standards).
+        # The keeper kits of the kit standard (--mod club-kits).
         ("uniform_keepers", ["uniform.py", "keepers", "DAT/PLAYER"], ["DAT/PLAYER"]),
         # The executable's sound-bank and music tables, against SOUND/*.DAT.
         ("sounddat_music", ["sounddat.py", "music", "ISO/SLES_541.51", "DAT/SOUND"],

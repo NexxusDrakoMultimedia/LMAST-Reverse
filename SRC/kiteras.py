@@ -36,9 +36,9 @@ sponsors' code; it reads this module's table, 6 bytes per club and variant:
     byte 4  away shirt colour 2
     byte 5  away shirt colour 3
 
-With --mod tier3-eras the plan takes teams 3-459 (the third tier's clubs, 442-459, too); every
-command here then runs it for both ranges. With --mod kit-standards the plan also holds each
-club's kit standard (below, "kit-standards"): 8 bytes for each of 7 entries a club (the retail
+With the third tier's eras (third-tier, club-eras and club-kits on) the plan takes teams 3-459 (the
+third tier's clubs, 442-459, too); every command here then runs it for both ranges. With the kit
+standard (a part of club-kits) the plan also holds each club's kit standard (below, "kit-standards"): 8 bytes for each of 7 entries a club (the retail
 kit, then each variant), the standards' table of patch_disc.std_words().
 
 Usage:
@@ -49,7 +49,7 @@ Usage:
 
 <DAT> holds PLAYER/UNIFORM_LIST.TBB, PLAYER/COLOR_TBL.TBB, PLAYER/EDIT_UNIFORM_CLUT.HED/.PAC
 and PARAM/PLRESOURCESIM.PAC; SIMPRG.REL is ISO/DLL/SIMPRG.REL by default. The kits are the
-ones random-sponsors leaves (its kits.csv applied), which this switch needs.
+ones the sponsors part of club-kits leaves (its kits.csv applied).
 """
 import os
 import struct

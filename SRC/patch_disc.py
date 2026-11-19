@@ -351,9 +351,8 @@ See DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches.
 transfer-fees (whole disc image only) doubles the base of every transfer
 fee (SLES 0x247288, 1,350,000.0 -> 2,700,000.0) and raises price kind 1's
 cap from 7,200,000 to 15,000,000 (£120M -> £250M) in all four
-currencies (the initializer at 0x24a140). transfer-fees also does what was the
-fee-tiers switch (whole disc image
-only) multiplies the transfer fee's factor by player rank (SLES 0x398478,
+currencies (the initializer at 0x24a140). With its fee tiers part (the whole disc
+image only) it also multiplies the transfer fee's factor by player rank (SLES 0x398478,
 16 ranks x 6 club-rank bands) by tier: ranks 0-5 x2, 6-11 x1.5, 12-14
 x2, 15 x3, so lesser players cost about four times the retail fee with
 transfer-fees and the best reach about £246M. slow-reputation (whole disc
@@ -4248,8 +4247,8 @@ ERA_CAVE, ERA_VAR = CAVE + 0x400, CAVE + 0x500
 ERA_TIERS, ERA_CLUBS, ERA_POOL = CAVE + 0x510, CAVE + 0x590, CAVE + 0x940
 ERA_HOOK, ERA_GETDB = 0x2166D0, 0x2165D8
 ERA_FIRST, ERA_CLUB_COUNT, ERA_SEASONS, ERA_TIER_COUNT = 3, 439, 3, 16
-ERA_CLUB_COUNT_TIER3 = 457          # --mod tier3-eras: teams 442-459, the third tier's clubs, too
-tier3_eras = False                  # set by main for --mod tier3-eras
+ERA_CLUB_COUNT_TIER3 = 457          # with the third tier's eras: teams 442-459, the third tier's clubs, too
+tier3_eras = False                  # set by main when third-tier, club-eras and club-kits are all on
 
 
 def era_club_count():
@@ -4349,13 +4348,13 @@ def plan_club_eras(f, img, adopted=()):
 KIT_CAVE, STD_CAVE = CAVE + 0x1400, CAVE + 0x1600        # the kit code, the standards' code: 0x200 bytes each
 KIT_TABLE = CAVE + 0x1800                                 # the kit table (16,452 bytes with tier3-eras)
 STD_TABLE = CAVE + 0x5850                                 # the standards' table (25,592 bytes)
-kit_eras = False                                          # set by main for --mod kit-eras
+kit_eras = False                                          # set by main with --mod club-kits
 # sponsor-tiers (Nexxus's idea, 2026-11-19; sponsortiers.py): the main sponsor of a club comes from its tier's
 # slice of the 199 main sponsors sorted by fee, not from all of them. A leaf routine at SPONSOR_PICK, its
 # tables at SPONSOR_TIERS, called from the sponsors' code where it hashes.
 SPONSOR_PICK, SPONSOR_TIERS = CAVE + 0xBC80, CAVE + 0xBD00
-sponsor_tiers = False                                     # set by main for --mod sponsor-tiers
-kit_standards = False                                     # set by main for --mod kit-standards
+sponsor_tiers = False                                     # set by main with --mod club-kits
+kit_standards = False                                     # set by main with --mod club-kits
 
 
 def kit_words(offset=None, clubs=None):

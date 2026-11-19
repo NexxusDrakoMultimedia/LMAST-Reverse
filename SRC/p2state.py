@@ -42,7 +42,8 @@ or an older plan still checks, and the tables are compared with the plan built f
 (a note says how many bytes differ). --tables plan uses the plan built from DAT instead.
 
 <state.p2s> is a state file, a folder holding eeMemory.bin, or an eeMemory.bin. LIST is a
-comma-separated subset of kit-eras, kit-standards, tier3-eras (or "none"). --dat is the
+comma-separated subset of kit-eras, kit-standards, tier3-eras (or "none"): the parts of club-kits and
+the third tier's eras the code can hold. --dat is the
 extracted disc data (DAT by default), --rel SIMPRG.REL (ISO/DLL/SIMPRG.REL by default).
 `selftest` builds a synthetic memory image and checks the commands against it; it needs no
 state file. Result 1 on a problem.
