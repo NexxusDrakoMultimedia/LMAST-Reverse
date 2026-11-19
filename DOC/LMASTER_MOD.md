@@ -169,11 +169,25 @@ what a build changes from the retail game.
 | `options` | the flags a switch reads: `eras-offset`, `skip-nation`, `font` and `realism` (the file or folder name only, not its path), `version`, `test-build` |
 | `seed` | the LMASTER seed ([above](#the-lmaster-seed)) |
 | `tool` | the repository's commit (a `+` after it when `SRC/` had uncommitted changes) and the version given to the title banner |
-| `writes` | with `--log`: each file write `patch_disc.py` printed, with what changed it and how many bytes differ |
+| `writes` | with `--log`: each file write `patch_disc.py` printed, with what changed it and how many bytes differ (`--no-writes` leaves them out) |
+| `patch` | with `--patch`: the patch's name, size and SHA-256 |
+| `source` | with `--vanilla-sha1` (and `--vanilla-redump`): the disc the patch applies to |
+| `executable_crc` | with `--log`: the PCSX2 CRC of the built executable, which names the widescreen patch and PCSX2's state folders |
 
 `show` prints it for a person, `diff` lists the switches and options two
-builds do not share, and `rebuild` prints the `patch_disc.py` options
-that make the same build. The tools commit and seed are what make a
+builds do not share, `rebuild` prints the `patch_disc.py` options
+that make the same build, and `check <manifest> --mod <...> [--commit <hash>]`
+prints `!!` unless the manifest holds exactly that build, made from that
+commit with no uncommitted tools.
+
+**Releases** (Nexxus's choice, 2026-11-19): the LMASTER-Mod release ships
+`manifest-lite.json`, `manifest-full.json` and `manifest-max.json` beside
+the patches. They are made with `--no-date` and `--no-writes`, so building
+the same release again gives the same file, and with `--patch`,
+`--vanilla-sha1`, `--vanilla-redump` and the build's `--log`, so each ties
+to its patch, the retail disc and the executable's CRC. The release build
+checks each with `check` against what `release.toml` says that edition
+builds and the pinned commit. The wiring is in the LMASTER-Mod repository. The tools commit and seed are what make a
 rebuild exact: the same switches on other commits can differ.
 Build disc does not pass `--log` yet, so its manifest has no `writes`
 ([`TODO.md`](../TODO.md#playing-a-mod)).

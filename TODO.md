@@ -384,7 +384,12 @@ releases.
       build: `tools/build_release.py` there writes one
       `manifest-<edition>.json` per edition into the release folder
       (it needs a pin that includes `manifest.py`), and the bug-report
-      guide asks for it ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#build-manifests))
+      guide asks for it. Nexxus's choice, 2026-11-19: 0.6.0 ships the
+      manifests, saves from an older version may load but are unsupported
+      (your mileage may vary) from 0.6.0 on, and the LMASTER-Mod repo's
+      own changes (the version bump, pins, changelog, testing list,
+      README and `build_release.py`) are Nexxus's to make there, not
+      prepared from here ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#build-manifests))
 - [ ] **distribute** A manifest that lists each build's writes by file
       (`manifest.py make --log` reads them from `patch_disc.py`'s output;
       Build disc does not pass it yet), and a "what this switch changed"
