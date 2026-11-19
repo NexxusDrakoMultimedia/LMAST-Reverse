@@ -14,6 +14,10 @@ The game reads a club's manager through plOteam_GetManagerNoOffset (SLES
 switch replaces the call to plOteam_GetDb there with code that, for the clubs
 of teams 3 to 441, finds the manager from this plan.
 
+  Teams 1 and 2 (your club and the rival), the national teams (460 to 542), the VS teams (543
+  to 558) and every other team id never change manager: the switch only touches teams 3 to
+  441 (Nexxus's rule, 2026-11-19), and `selftest` checks that for every id from 0 to 599.
+
   tiers   the 439 clubs sorted by their starting world rank (the club record's
           +2, best first) and cut into 16 tiers of 27 or 28; the clubs of a tier
           are put in an order from the LMASTER seed (lmseed.py, 0x31031996), so
@@ -269,8 +273,8 @@ def cmd_selftest(dat):
     bad = fallbacks = runs = 0
     for offset in range(3):
         words = pd.era_words(offset)
-        for team in range(0, 460):
-            for season in (-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 33, 47, 99):
+        for team in range(0, 600):                  # teams 1 and 2 (you and the rival), the national
+            for season in (-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 33, 47, 99):  # and VS teams too
                 runs += 1
                 # the plan's manager, or "retail" when the code leaves the game's own lookup
                 want = ("retail" if not TEAM_FIRST <= team <= TEAM_LAST or era_of(team, season, offset) == 0
@@ -287,42 +291,43 @@ def cmd_selftest(dat):
     return 1 if bad else 0
 
 
-def _run(pd, words, mem, team, season):
-    """Emulate the routine at ERA_CAVE for `team`/`season`. Returns the manager
-    index it hands back, or "retail" when it jumps to plOteam_GetDb."""
+def emulate(words, base, regs, mem, calls=None):
+    """Run `words` placed at `base` on a small MIPS interpreter, with `regs` {number: value},
+    `mem` {address: byte} (written to as it runs) and `calls` {target: function(regs)} for the
+    jal targets it may call (the function sets $v0). Stops at a `jr` or a `j` outside the words
+    and returns (kind, target, regs): ("jr", $ra value) or ("jump", target)."""
     M32 = 0xFFFFFFFF
     reg = [0] * 32
-    reg[pd.A0], reg[pd.SP], reg[pd.RA] = team, 0x1F00000, 0x2166D8
+    for k, v in regs.items():
+        reg[k] = v & M32
     hi = lo = 0
     stack = {}
-    base = pd.ERA_CAVE
-    pc = base
-    delay = None
-    steps = 0
+    calls = calls or {}
 
     def s32(x):
         x &= M32
         return x - (1 << 32) if x & 0x80000000 else x
 
-    def rd8(a, n):
+    def rd(a, n):
         return sum(mem.get(a + i, 0) << (8 * i) for i in range(n))
 
-    while True:
-        steps += 1
-        if steps > 400:
-            raise RuntimeError("runaway")
-        w = words[(pc - base) // 4] if base <= pc < base + 4 * len(words) else None
-        if w is None:
+    pc = base
+    for _ in range(600):
+        k = (pc - base) // 4
+        if not 0 <= k < len(words):
             raise RuntimeError("pc %#x outside the routine" % pc)
+        w = words[k]
         op, rs, rt, rdn, sa, fn = w >> 26, w >> 21 & 31, w >> 16 & 31, w >> 11 & 31, w >> 6 & 31, w & 63
         imm = w & 0xFFFF
         simm = imm - 0x10000 if imm & 0x8000 else imm
         nxt = pc + 4
         jump = None
         if op == 0:
-            if fn == 0x21:
+            if w == 0:
+                pass
+            elif fn == 0x21:
                 reg[rdn] = (reg[rs] + reg[rt]) & M32
-            elif fn == 0 and w != 0:
+            elif fn == 0:
                 reg[rdn] = (reg[rt] << sa) & M32
             elif fn == 2:
                 reg[rdn] = (reg[rt] & M32) >> sa
@@ -339,9 +344,7 @@ def _run(pd, words, mem, team, season):
             elif fn == 0x18 and rdn:
                 reg[rdn] = (s32(reg[rs]) * s32(reg[rt])) & M32
             elif fn == 0x08:
-                jump = reg[rs]
-            elif w == 0:
-                pass
+                jump = ("jr", reg[rs])
             else:
                 raise RuntimeError("unhandled R-type %#x" % w)
         elif op == 0x09:
@@ -357,65 +360,105 @@ def _run(pd, words, mem, team, season):
         elif op == 0x0F:
             reg[rt] = imm << 16
         elif op == 0x25:
-            reg[rt] = rd8((reg[rs] + simm) & M32, 2)
+            reg[rt] = rd((reg[rs] + simm) & M32, 2)
         elif op == 0x23:
-            reg[rt] = rd8((reg[rs] + simm) & M32, 4)
+            reg[rt] = rd((reg[rs] + simm) & M32, 4)
+        elif op == 0x28:
+            mem[(reg[rs] + simm) & M32] = reg[rt] & 255
         elif op == 0x2B:
-            for i in range(4):
-                mem[(reg[rs] + simm + i) & M32] = reg[rt] >> (8 * i) & 255
+            for n in range(4):
+                mem[(reg[rs] + simm + n) & M32] = reg[rt] >> (8 * n) & 255
         elif op == 0x3F:
             a = (reg[rs] + simm) & M32
-            for i in range(8):
-                stack[a + i] = (reg[rt] >> (8 * i)) & 255
+            for n in range(8):
+                stack[a + n] = (reg[rt] >> (8 * n)) & 255
         elif op == 0x37:
             a = (reg[rs] + simm) & M32
-            reg[rt] = sum(stack.get(a + i, 0) << (8 * i) for i in range(8))
+            reg[rt] = sum(stack.get(a + n, 0) << (8 * n) for n in range(8))
         elif op == 0x04:
             if reg[rs] == reg[rt]:
                 jump = ("branch", nxt + 4 * simm)
         elif op == 0x05:
             if reg[rs] != reg[rt]:
                 jump = ("branch", nxt + 4 * simm)
-        elif op == 0x03:                                     # jal
-            target = (w & 0x3FFFFFF) << 2
-            jump = ("call", target)
-        elif op == 0x02:                                     # j
+        elif op == 0x03:
+            jump = ("call", (w & 0x3FFFFFF) << 2)
+        elif op == 0x02:
             jump = ("jump", (w & 0x3FFFFFF) << 2)
         else:
             raise RuntimeError("unhandled opcode %#x at %#x" % (w, pc))
         reg[0] = 0
-        if isinstance(jump, int):
-            jump = ("jr", jump)
         if jump is None:
             pc = nxt
             continue
-        # run the delay slot, then take the jump
-        dw = words[(nxt - base) // 4]
+        dw = words[(nxt - base) // 4]                        # the delay slot: only nops here
         if dw != 0:
-            # only nops and the simple ones the routine puts in delay slots
-            op2 = dw >> 26
-            if op2 == 0 and dw & 63 == 0:
-                pass
-            else:
-                raise RuntimeError("delay slot %#x not handled" % dw)
+            raise RuntimeError("delay slot %#x not handled" % dw)
         kind, target = jump
         if kind == "call":
-            if target != pd.KEIKA:
+            if target not in calls:
                 raise RuntimeError("call to %#x" % target)
-            reg[pd.V0] = season & M32
-            reg[pd.RA] = nxt + 4
+            reg[RA_REG] = nxt + 4
+            calls[target](reg)
             pc = nxt + 4
-            continue
-        if kind == "jump":
-            if target == pd.ERA_GETDB:
-                return "retail"
+        elif kind == "branch":
+            pc = target
+        elif kind == "jump" and base <= target < base + 4 * len(words):
+            pc = target
+        else:
+            return kind, target, reg
+    raise RuntimeError("runaway")
+
+
+RA_REG = 31
+
+
+def _run(pd, words, mem, team, season):
+    """Emulate the managers' routine for `team` and `season`. Returns the manager index it
+    hands back, or "retail" when it jumps to plOteam_GetDb."""
+    def keika(reg):
+        reg[pd.V0] = season & 0xFFFFFFFF
+    kind, target, reg = emulate(words, pd.ERA_CAVE, {pd.A0: team, pd.SP: 0x1F00000, pd.RA: 0x2166D8},
+                                mem, {pd.KEIKA: keika})
+    if kind == "jump":
+        if target != pd.ERA_GETDB:
             raise RuntimeError("jump to %#x" % target)
-        if kind == "jr":
-            if target != 0x2166D8:
-                raise RuntimeError("returned to %#x" % target)
-            ptr = reg[pd.V0]
-            return rd8((ptr + 4) & M32, 2)
-        pc = target
+        return "retail"
+    if target != 0x2166D8:
+        raise RuntimeError("returned to %#x" % target)
+    ptr = reg[pd.V0]
+    return sum(mem.get((ptr + 4 + i) & 0xFFFFFFFF, 0) << (8 * i) for i in range(2))
+
+
+def sponsor_test(pd):
+    """Run the sponsors' routine and the logo gate for every team id. Returns the problems."""
+    bad = []
+    for season in (0, 1, 7, 19):
+        for team in range(0, 600):
+            mem = {}
+            plunif = 0x2000000
+
+            def keika(reg, season=season):
+                reg[pd.V0] = season
+            kind, target, reg = emulate(pd.sponsor_cave(), pd.SPONSOR_CAVE,
+                                        {pd.S1: team, pd.S2: plunif, pd.SP: 0x1F00000, pd.RA: 0x26EC24, pd.V1: 1},
+                                        mem, {pd.KEIKA: keika})
+            got = (mem.get(plunif + 4, 0), mem.get(plunif + 5, 0))
+            want = pd.sponsor_hash(team, season) if 3 <= team <= 542 else (0, 0)
+            if got != want or (kind, target) != ("jr", 0x26EC24) or reg[pd.V1] != 1:
+                bad.append("sponsors: team %d season %d wrote %s, wanted %s" % (team, season, got, want))
+    for team in range(0, 600):
+        for v0 in (0, 1):
+            kind, target, reg = emulate(pd.gate_cave(), pd.GATE_CAVE, {pd.V1: team, pd.V0: v0, pd.SP: 0x1F00000}, {})
+            if 3 <= team < 460:
+                want = pd.GATE_REAL
+            elif 460 <= team < 543:
+                want = pd.GATE_AFTER
+            else:
+                want = pd.GATE_REAL if v0 else pd.GATE_DEFAULT      # the game's own test
+            if (kind, target) != ("jump", want):
+                bad.append("gate: team %d v0 %d went to %#x, wanted %#x" % (team, v0, target, want))
+    return bad
 
 
 def main(argv):

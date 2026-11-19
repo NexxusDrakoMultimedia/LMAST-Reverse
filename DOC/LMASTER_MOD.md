@@ -508,7 +508,7 @@ takes the colour of the shirt numbers, which is the game's own rule.
 
 **The numbers.** `pwkTeam_GetUnif` (`0x26e9d8`) writes 0 to `PlUnif +4`
 and `+5` at `0x26ec1c` and `0x26ec24`. The switch turns the first into a
-call to code in the LMASTER code segment (`0xf8300`, 32 words; the
+call to code in the LMASTER code segment (`0xf8300`, 40 words; the
 segment is the third tier's too, and the switch brings its program
 header) and the second into a nop. The code gets the season from
 `pwkGen_Keika` (`0x244430`, the season's first year less 2006, so it
@@ -538,11 +538,26 @@ and `CmnTex_007_208`). Then `CUniformBuilder::_setup_texture_list`
 (`0x2c54e0`), and every other club gets the default list for both slots,
 copied into texture list slots 4 and 6. The loader and the test are in
 [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#the-sponsor-and-supplier-logos-on-a-generated-kit).
-The switch turns the `beqz` at `0x2c54d8` into a `j` to 12 words in the
-code segment (`0xf8380`): every club takes the real lists, except the
-national teams (460–542), which take the real supplier list and the
-default sponsor list, so they show their kit maker and no main sponsor
-(Nexxus: they should carry no sponsor, but suppliers are fine).
+The switch turns the `beqz` at `0x2c54d8` into a `j` to 20 words in the
+code segment (`0xf8000 + 0x3a0`): a computer club (teams 3–459) takes the
+real lists, a national team (460–542) takes the real supplier list and the
+default sponsor list, so it shows its kit maker and no main sponsor
+(Nexxus: they should carry no sponsor, but suppliers are fine), and every
+other team keeps the game's own test: teams 0, 1 and 2 and the VS teams.
+
+**Your club and the rival are never touched** (Nexxus's rule, 2026-11-19:
+their sponsorship is the game's own, and the rival's sponsors are its own).
+`pwkTeam_GetUnif` (`0x26e9d8`) handles team 1 with the game's sponsor
+functions (`pwkSponsor_GetMainSponsor`, `pwkSponsor_GetSupplier`), team 2
+and the VS teams in branches of their own, and only the rest reach the two
+stores the switch replaces (`0x26ec1c`, `0x26ec24`), so the sponsors' code
+writes a sponsor and a supplier only for teams 3–542 and leaves any other
+team that gets there at the game's 0 and 0. The first draft sent every
+team but the nations to the real lists; with it, a career's club creation
+froze on the Edit Emblem screen after the kits were edited (Nexxus's
+report, 2026-11-19, a LMASTER max disc), so the gate now leaves every id
+outside 3–542 to the game. `cluberas.py` runs both pieces of code against
+every team id from 0 to 599 (`lmseed.py selftest`).
 
 **The licensed clubs.** The 116 Italian, Spanish and Dutch clubs have
 real kit textures with their sponsor in them, so a sponsor could not be
@@ -638,6 +653,12 @@ from the player: Nexxus's report, 2026-11-19), so the in-game check
 reads the result word at `0xf8500` over PINE after the game has built a
 computer club's team data: it holds the manager index the code returned,
 and stays 0 while every club is in era 0.
+
+**Your club and the rival never change.** The switch only touches teams 3
+to 441, so team 1, team 2 (the rival, which has its own manager data), the
+national teams, the VS teams and every other id keep the game's own manager
+and style (Nexxus's rule, 2026-11-19); `cluberas.py selftest` runs the code
+for every id from 0 to 599 and checks it.
 
 **Tested in PCSX2** (Nexxus's save states 1 and 2, 2026-11-19, on
 `LMAST-test-eras-s0.iso`, `--eras-offset 2`, built before the seed (above)
@@ -1320,6 +1341,21 @@ They help build test discs; they are no part of the mod.
   [`SQB_FORMAT.md`](SQB_FORMAT.md#skipping-the-tutorial-the-opening-playoffs).
   Tested in PCSX2 for England and Germany; the other nations are open in
   [`TESTING.md`](../TESTING.md).
+  **Known side effect (Nexxus's reports and states, 2026-11-19):** a
+  club created on a skip-tutorial disc can freeze at Edit Emblem after
+  the kit edit. The emblem editor reads `edit_emblem_a.pac` (0x220800
+  bytes) into one piece of heap block 3 (`CFileManagerRofs`, retried
+  every frame, `SLES_541.51` `FileUpdateCore` 0x307e60). Each new shirt
+  design previewed in the kit editor leaves a 0x108c0-byte texture
+  resident. Skipping the tutorial changes the order of allocations, so
+  a 196 KB (0x30080) block lands 0xf28c0 bytes lower and splits the
+  free space: the largest free chunk after the kit edit is 0x43f080,
+  and the emblem editor needs 0x440a40. Retail, and a no-skip LMASTER
+  max disc (`--mod lmaster-max`, no `--skip-tutorial`), have a free
+  chunk of 0x526e40 in the same state and do not freeze. A skip disc
+  with plain LMASTER lite freezes too, so none of the switches is to
+  blame. Edit Emblem on a skip-tutorial disc is therefore not a test
+  of the mod.
 - **`--mod launcher`** boots into the developers' launcher, a debug menu
   of test modules and viewers (`RootMainSeq.sqb`). It works, tested in
   PCSX2; the entries not yet tried are in [`TESTING.md`](../TESTING.md).

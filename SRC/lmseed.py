@@ -131,7 +131,10 @@ def cmd_selftest():
     if len(sponsors) != patch_disc.SPONSOR_KINDS or len(suppliers) != patch_disc.SUPPLIER_KINDS or kept:
         bad.append("random-sponsors: %d sponsors, %d suppliers, %d clubs keep both" % (
             len(sponsors), len(suppliers), kept))
-    print("lmseed: seed %#x, the generator, the streams and random-sponsors checked%s" % (
+    # the sponsors' code and the logo gate never touch your club, the rival or the VS teams
+    import cluberas
+    bad += cluberas.sponsor_test(patch_disc)[:5]
+    print("lmseed: seed %#x, the generator, the streams, random-sponsors and its gate checked%s" % (
         SEED, "  !! " + "; ".join(bad) if bad else ""))
     return 1 if bad else 0
 

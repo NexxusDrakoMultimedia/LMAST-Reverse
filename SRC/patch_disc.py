@@ -2717,9 +2717,14 @@ SPONSOR_KINDS, SUPPLIER_KINDS, SUPPLIER_FIRST = 199, 7, 206
 # The earlier try, widening CUniformBuilder::Init's flag $s5 at 0x2c4ab8, only changed
 # the keeper kits and is gone.
 SPONSOR_GATE_WORD = 0x2C54D8
-GATE_CAVE = 0xF8000 + 0x380                     # CAVE + 0x380, after the sponsors' code
+GATE_CAVE = 0xF8000 + 0x3A0                     # CAVE + 0x3a0, after the sponsors' code
 GATE_REAL, GATE_AFTER = 0x2C54E0, 0x2C550C      # the real lists; past the code that picks them
+GATE_DEFAULT = 0x2C5504                         # the default lists: where the hooked beqz went
 NATIONAL_FIRST, NATIONAL_COUNT = 460, 83
+# Only the computer clubs (teams 3-459) and the national teams are ever touched (Nexxus's rule,
+# 2026-11-19: never your club, the rival or the VS teams, whose sponsors are the game's own;
+# a kit-editing freeze in club creation came with the first draft, which widened the gate to
+# every team). Team 1, team 2, the VS teams and any other id keep the game's own test.
 
 
 def sponsor_mults():
@@ -2739,8 +2744,15 @@ def sponsor_hash(team, season):
 
 
 def sponsor_cave():
-    """The code at SPONSOR_CAVE, as words."""
+    """The code at SPONSOR_CAVE, as words. Only teams 3-542 (the computer clubs and the national
+    teams) get a sponsor and a supplier; any other team that reaches the hook is left as the
+    game left it, sponsor 0 and supplier 0."""
     a, b, c = sponsor_mults()
+    guard = _asm(SPONSOR_CAVE, [
+        addiu(T0, S1, -3), sltiu(T0, T0, NATIONAL_FIRST + NATIONAL_COUNT - 3),
+        ("bnez", T0, "write"), NOP,
+        sb(ZERO, 4, S2), sb(ZERO, 5, S2), jr(RA), NOP,
+        ("label", "write")])
     body = [addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(V1, 8, SP),
             jal(KEIKA), NOP,
             lui(T0, a >> 16), ori(T0, T0, a & 0xFFFF), mult3(T1, S1, T0),
@@ -2752,19 +2764,33 @@ def sponsor_cave():
             srl(T2, T2, 16), addiu(T0, ZERO, SUPPLIER_KINDS), divu(T2, T0), mfhi(T2),
             addiu(T2, T2, SUPPLIER_FIRST), sb(T2, 5, S2)]  # +5: the supplier
     body += [ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20), jr(RA), NOP]
-    return body
+    out = guard + body
+    if 4 * len(out) > GATE_CAVE - SPONSOR_CAVE:
+        raise ValueError("the sponsors' code outgrows its space")
+    return out
 
 
 def gate_cave():
     """The words at GATE_CAVE: $v1 is the team id (loaded at 0x2c54bc), $v0 stays as
-    the delay slot of the hooked word left it."""
+    the delay slot of the hooked word left it (nonzero for the player, the rival and the VS
+    teams: the game's own test). A computer club (3-459) goes to the real lists, a national
+    team to the supplier's list only, and every other team keeps the game's own choice."""
     t4, t7 = 12, 15
-    return [addiu(AT, V1, -NATIONAL_FIRST), sltiu(AT, AT, NATIONAL_COUNT),
-            bnez(AT, 3), NOP,                       # a national team: to the words below
-            j(GATE_REAL), NOP,
-            lw(t4, 0x50, SP), lw(t4, 4, t4),        # the sponsor: the default list
-            lw(t7, 0x38, SP), lw(t7, 4, t7),        # the supplier: its own list
-            j(GATE_AFTER), NOP]
+    out = _asm(GATE_CAVE, [
+        addiu(AT, V1, -3), sltiu(AT, AT, NATIONAL_FIRST - 3),
+        ("bnez", AT, "real"), NOP,                           # a computer club
+        addiu(AT, V1, -NATIONAL_FIRST), sltiu(AT, AT, NATIONAL_COUNT),
+        ("bnez", AT, "national"), NOP,                       # a national team
+        ("beqz", V0, "default"), NOP,                        # teams 0, 1, 2, the VS teams, the rest:
+        ("label", "real"), j(GATE_REAL), NOP,                # the game's own test, as retail
+        ("label", "default"), j(GATE_DEFAULT), NOP,
+        ("label", "national"),
+        lw(t4, 0x50, SP), lw(t4, 4, t4),                     # the sponsor: the default list
+        lw(t7, 0x38, SP), lw(t7, 4, t7),                     # the supplier: its own list
+        j(GATE_AFTER), NOP])
+    if 4 * len(out) > CAVE + 0x400 - GATE_CAVE:
+        raise ValueError("the logo gate outgrows its space")
+    return out
 
 
 UNIFORM_FILE, UNIFORM_ENTRY = "PLAYER/UNIFORM_LIST.TBB", "uniform_list.tbb"

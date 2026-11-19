@@ -349,7 +349,15 @@ Each of these switches has been built and is waiting for someone to play it.
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
 - [ ] A whole LMASTER max disc, with every group together (the third tier,
       real names, graphics, Club eras, the economy and balance groups, the
-      Realism pack), built 2026-11-19 as `LMAST-test-max.iso` with
+      Realism pack), built 2026-11-19 as `LMAST-test-max.iso` (which froze
+      on the Edit Emblem screen after the kits were edited in club creation:
+      Nexxus's report; that freeze came from `--skip-tutorial`, which leaves
+      the heap too fragmented for the emblem editor, and not from any
+      switch: a max disc built without it, `LMAST-test-bis-g.iso`, did not
+      freeze, see [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#test-tools). The
+      logo gate and the sponsors' code also leave your club, the rival and
+      the VS teams to the game, see
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors)) with
       `--mod lmaster-max,skip-tutorial --skip-nation Germany --copies --dat
       DAT --realism ../LMAST-Realism --test-build --eras-offset 2` (the title
       banner reads TEST BUILD; the offset puts two thirds of the clubs in
@@ -362,7 +370,11 @@ Each of these switches has been built and is waiting for someone to play it.
       show; kits carry a sponsor and a supplier logo, none blank, and the
       grounds' advert boards vary; and a computer club's manager is the
       plan's (`cluberas.py expect DAT <team> <season> 2`, read at
-      `0xf8500` after a match loads)
+      `0xf8500` after a match loads). Edit Emblem after a kit edit can freeze
+      on any skip-tutorial disc (see above), so test it on a disc built
+      without `skip-tutorial`; and see that your
+      club's and the rival's sponsors are the game's own (the sponsor
+      screen, and the rival's kit in a match)
 
 - [ ] Club eras (`--mod club-eras`; PCSX2 treats each disc as a new game).
       Seen working (Nexxus's save states, 2026-11-19, `LMAST-test-eras-s0.iso`,
