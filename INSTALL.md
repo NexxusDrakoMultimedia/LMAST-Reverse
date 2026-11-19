@@ -181,7 +181,7 @@ Each group holds the switches of one feature:
 | `names` | full | real names for leagues, clubs, stadiums and national teams, and your club's stadium named after you |
 | `stadiums` | full | every club at a ground of its real size, with sponsor boards |
 | `graphics` | full | LMAST Realism's crests and match pictures, and the game's main text in Roboto Condensed |
-| `eras` | full | club eras: every computer club changes manager every three seasons, a third of the clubs each year, the better clubs getting the better managers (his tactics and formations come with him) (`club-eras`); `club-kits` gives every club's kit a sponsor and a kit supplier (the main sponsor by club strength), a new supplier and new kits at each change, and a standard of front and shorts numbers, emblems and number colours that show; with the third tier, both take its clubs in as well ([details](DOC/LMASTER_MOD.md#club-kits)) |
+| `eras` | full | club eras: computer clubs change manager every three seasons (`club-eras`), and their kits, suppliers and sponsors with their strength (`club-kits`), the third tier's clubs included ([details](DOC/LMASTER_MOD.md#club-eras)) |
 | `saves` | full | the modded disc's own save folders (`--mod-saves`) |
 | `harder-economy` | max | dearer facilities and advertising, smaller sponsor and TV fees, fewer season tickets sold |
 | `balance` | max | more long injuries, dearer transfers, camps, tours, PR and overseas bases, slower reputation |

@@ -87,7 +87,7 @@ you.
 
 ## Requirements
 
-- Python 3, standard library only for most commands. `editor.py` and
+- Python 3 (developed on 3.13; the oldest version that works hasn't been checked), standard library only for most commands. `editor.py` and
   `saveedit.py` use `tkinter`, which ships with Python.
 - `pip install pillow` for everything that reads or writes a picture: the
   PNG commands (`svr`, `csp`, `zbf`, `font`), the textures in `ninja.py`'s
@@ -159,6 +159,29 @@ them in the Japanese executable and overlays. `patch_disc.py` patches a
 Japanese disc too, with every `--mod` switch except `realism`, which is
 made for the PAL release's textures; a few switches do nothing there and
 say so. See [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc).
+
+### Troubleshooting
+
+These are messages the tools print, and what they mean.
+
+- **`--mod third-tier needs --copies (and --dat)`**: `patch_disc.py`
+  refuses `third-tier`, `real-names` and `realism` unless you pass
+  `--copies --dat DAT`, because the game loads the `PRELOAD/` copies of
+  those files.
+- **`realism skipped` or `modern-font` and `title-banner` skipped**: the
+  pack or the font file wasn't found. Pass `--realism <the pack's folder>`
+  (or clone LMAST-Realism beside this repository) and `--font <file>`;
+  `patch_disc.py` also looks in a LMASTER-Mod clone's `fonts` folder and in
+  the system fonts.
+- **no baseline (run bless)**: `regress.py run` compares with
+  a saved output in `.regress/`, which isn't in git. Run `bless` from a clean
+  checkout first. A `!!` line that disappears is a failure too, so don't
+  bless to make a diff go away.
+- **Garbled text or a `UnicodeEncodeError` on Windows**: Python's console is
+  cp1252, so set `PYTHONIOENCODING=utf-8` when a tool prints game text.
+- **Edit Emblem freezes after a kit edit**: seen on discs built with
+  `skip-tutorial`. Test it on a disc built without that switch
+  ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#test-tools)).
 
 ## Tools
 
