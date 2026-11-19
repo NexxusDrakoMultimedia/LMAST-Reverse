@@ -2767,6 +2767,9 @@ def sponsor_cave():
     body += [ld(RA, 0, SP), ld(V1, 8, SP), addiu(SP, SP, 0x20),
              j(KIT_CAVE) if kit_eras else jr(RA), NOP]
     out = guard + body
+    if sponsor_tiers:                       # the sponsor from the club's tier (sponsortiers.py)
+        import sponsortiers
+        out = sponsortiers.splice_call(out, SPONSOR_PICK)
     if 4 * len(out) > GATE_CAVE - SPONSOR_CAVE:
         raise ValueError("the sponsors' code outgrows its space")
     return out
@@ -2799,6 +2802,22 @@ UNIFORM_FILE, UNIFORM_ENTRY = "PLAYER/UNIFORM_LIST.TBB", "uniform_list.tbb"
 UNIFORM_PACKS = ["PRELOAD/SIMFILE%d.PAC" % n for n in range(7)]
 
 
+def _kit_edit(f, img, tmp):
+    """The UNIFORM_LIST edit of random-sponsors: uniform.apply_kits, and with kit-standards also the
+    keeper kits' standard (real keeper kits for the licensed clubs it generates, number colours and
+    captain's bands for every computer club's keeper kit), which needs the keeper table and the colour
+    files from the disc: they are written under `tmp`."""
+    import uniform
+    if not kit_standards:
+        return uniform.apply_kits
+    os.makedirs(os.path.join(tmp, "PLAYER"))
+    for name in uniform.KEEPER_FILES:
+        _, data = read_file(f, img, name)
+        with open(os.path.join(tmp, name), "wb") as g:
+            g.write(data)
+    return lambda blob: uniform.apply_kits(blob, standard=True, player=os.path.join(tmp, "PLAYER"))
+
+
 def plan_random_sponsors(f, img, adopted=()):
     """Jobs for --mod random-sponsors: the code segment (shared with the
     third tier), the sponsors' code in it, the two words of pwkTeam_GetUnif
@@ -2826,10 +2845,13 @@ def plan_random_sponsors(f, img, adopted=()):
         sles_word(SPONSOR_GATE_WORD, beqz(V0, 10), j(GATE_CAVE),
                   "CUniformBuilder::_setup_texture_list: the sponsor and supplier logo lists "
                   "for every club but the national teams, not only teams 1, 2 and the VS teams")])
-    kit_jobs, kit_notes = file_jobs(f, img, UNIFORM_FILE, uniform.apply_kits, UNIFORM_PACKS,
-                                    UNIFORM_ENTRY,
-                                    "random-sponsors: the licensed clubs' kits generated",
-                                    adopted, "has the generated kits")
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        kit_jobs, kit_notes = file_jobs(f, img, UNIFORM_FILE, _kit_edit(f, img, tmp), UNIFORM_PACKS,
+                                        UNIFORM_ENTRY,
+                                        "random-sponsors: the licensed clubs' kits generated" +
+                                        (" and the keeper kits' standard" if kit_standards else ""),
+                                        adopted, "has the generated kits")
     return jobs + kit_jobs, notes + kit_notes
 
 
@@ -2840,8 +2862,8 @@ def target_random_sponsors(file, data, old):
     if norm(file) != norm(UNIFORM_FILE):
         return data
     try:
-        return uniform.keep_kit_edits(old, data)
-    except ValueError:
+        return uniform.keep_kit_edits(old, data, standard=kit_standards)
+    except (ValueError, OSError):
         return data
 
 
@@ -3632,11 +3654,11 @@ def words(*ws):
 # (0x82000). Code there is reached from the executable and from every
 # overlay with plain j/jal. The file keeps its size.
 # CAVE_SIZE grew from 0x400 to 0x1400 for club-eras' tables, to 0x4200 for kit-eras' and to
-# 0xbd00 for kit-standards' (6-byte kit rows), and moved down from 0xf8000 to 0xe0000 for room (RAM from 0x94000 to
+# 0xc000 for kit-standards' (6-byte kit rows) and sponsor-tiers', and moved down from 0xf8000 to 0xe0000 for room (RAM from 0x94000 to
 # 0x100000 is zero in every PCSX2 state read, 2026-11-19; the executable starts at 0x100000)
 # (the file's bytes after the cave are zero for 0x57d58 more, on the PAL and the Japanese
 # executable alike, and EE RAM below the executable is free to 0x100000).
-CAVE, CAVE_FILE, CAVE_SIZE = 0xE0000, 0x46A350, 0xBD00
+CAVE, CAVE_FILE, CAVE_SIZE = 0xE0000, 0x46A350, 0xC000
 assert SPONSOR_CAVE == CAVE + 0x300 and GATE_CAVE == CAVE + 0x3A0
 PHDR2 = 0x54
 PAL_SEGMENT_END = 0x46A2DC      # the first segment's file end; the cave's file offset follows it by 0x74
@@ -4325,6 +4347,11 @@ KIT_CAVE, STD_CAVE = CAVE + 0x1400, CAVE + 0x1600        # the kit code, the sta
 KIT_TABLE = CAVE + 0x1800                                 # the kit table (16,452 bytes with tier3-eras)
 STD_TABLE = CAVE + 0x5850                                 # the standards' table (25,592 bytes)
 kit_eras = False                                          # set by main for --mod kit-eras
+# sponsor-tiers (Nexxus's idea, 2026-11-19; sponsortiers.py): the main sponsor of a club comes from its tier's
+# slice of the 199 main sponsors sorted by fee, not from all of them. A leaf routine at SPONSOR_PICK, its
+# tables at SPONSOR_TIERS, called from the sponsors' code where it hashes.
+SPONSOR_PICK, SPONSOR_TIERS = CAVE + 0xBC80, CAVE + 0xBD00
+sponsor_tiers = False                                     # set by main for --mod sponsor-tiers
 kit_standards = False                                     # set by main for --mod kit-standards
 
 
@@ -4474,19 +4501,59 @@ def plan_kit_eras(f, img, adopted=()):
     return word_jobs(f, img, "kit-eras", jobs)
 
 
+CEDIT_FILE = DISC + "DLL/CEDITPRG.REL"
+
+
 def plan_kit_standards(f, img, adopted=()):
     """Jobs for --mod kit-standards: the standards' routine and table. The kit code (kit-eras,
     which this switch needs) jumps on to the routine at its end."""
     import kiteras
     if img.port is not None:
         return [], ["note: kit-standards: the code is PAL's; the Japanese release is left alone"]
+    import clubpresets
     plan = _kit_plan(f, img, "kit-standards")
     table = kiteras.std_table_bytes(plan)
-    if STD_TABLE + len(table) > CAVE + CAVE_SIZE:
-        raise ValueError("kit-standards' table outgrows the code segment")
+    if STD_TABLE + len(table) > SPONSOR_PICK:
+        raise ValueError("kit-standards' table outgrows its space in the code segment")
     jobs = list(code_segment_words(f, img)) + _region_jobs(
         f, img, [(STD_CAVE, words(*std_words()), "the standards' code"), (STD_TABLE, table, "the standards' table")])
+    # The 32 presets a new club's kits start from, in CEDITPRG.REL, get the standard too (the rival's
+    # record is left alone: the rival is never touched).
+    _, rel = read_file(f, img, CEDIT_FILE)
+    for off, old, new in clubpresets.standard_presets(rel, clubpresets.Plan(plan.swatches, plan.clash)):
+        if off < clubpresets.RIVAL_OFFSET:
+            jobs.append((CEDIT_FILE, off, old, new, "%s 0x%x (a club-creation preset's standard)" % (CEDIT_FILE, off)))
     return word_jobs(f, img, "kit-standards", jobs)
+
+
+def plan_sponsor_tiers(f, img, adopted=()):
+    """Jobs for --mod sponsor-tiers: the routine and its tables. The sponsors' code (random-sponsors, which
+    this switch needs) calls the routine where it hashes the sponsor."""
+    import sponsortiers
+    import tempfile
+    if img.port is not None:
+        return [], ["note: sponsor-tiers: the code is PAL's; the Japanese release is left alone"]
+    last = 459 if tier3_eras else 441
+    with tempfile.TemporaryDirectory() as tmp:
+        os.makedirs(os.path.join(tmp, "PARAM"))
+        _, data = read_file(f, img, "PARAM/PLRESOURCESIM.PAC")
+        with open(os.path.join(tmp, "PARAM", "PLRESOURCESIM.PAC"), "wb") as g:
+            g.write(data)
+        _, rel = read_file(f, img, NEGO_FILE)
+        rel_path = os.path.join(tmp, "SIMPRG.REL")
+        with open(rel_path, "wb") as g:
+            g.write(rel)
+        plan = sponsortiers.build(tmp, last, rel_path)
+    bad = sponsortiers.problems(plan)
+    if bad:
+        raise ValueError("sponsor-tiers: " + "; ".join(bad))
+    table = sponsortiers.table_bytes(plan)
+    if SPONSOR_TIERS + len(table) > CAVE + CAVE_SIZE:
+        raise ValueError("sponsor-tiers' tables outgrow the code segment")
+    jobs = list(code_segment_words(f, img)) + _region_jobs(
+        f, img, [(SPONSOR_PICK, words(*sponsortiers.sponsor_tier_words(SPONSOR_TIERS, last)), "the sponsor tiers' routine"),
+                 (SPONSOR_TIERS, table, "the sponsor tiers' tables")])
+    return word_jobs(f, img, "sponsor-tiers", jobs)
 
 
 def plan_tier3_eras(f, img, adopted=()):
@@ -5786,11 +5853,15 @@ SWITCHES = (
      "Clubs: every computer club changes kits every time its era changes, to a design of one "
      "of the seven kit suppliers (the better clubs the better suppliers), keeping the home "
      "shirt's colours and taking new away colours that do not clash (LMASTER full and max)"),
-    ("kit-standards", plan_kit_standards, [SLES_FILE],
+    ("kit-standards", plan_kit_standards, [SLES_FILE, CEDIT_FILE],
      "Clubs: every computer club's kits follow a standard in every era: front numbers and "
      "shorts numbers on, an emblem of type 1 or 2 on shirt and shorts, collar, number design and "
      "emblems varied with the home and away kits alike more often than not, number colours and "
      "the captain's band that show on the colours they sit on (needs kit-eras; LMASTER full and max)"),
+    ("sponsor-tiers", plan_sponsor_tiers, [SLES_FILE],
+     "Clubs: a club's main sponsor is drawn from its tier's slice of the 199 main sponsors sorted by fee, "
+     "so the stronger clubs carry the bigger sponsors, still a new one each season (needs random-sponsors; "
+     "LMASTER full and max)"),
     ("tier3-eras", plan_tier3_eras, [],
      "Clubs: the club and kit eras take the third tier's clubs (teams 442-459) too, not only "
      "teams 3-441 (needs club-eras, kit-eras and third-tier; LMASTER full and max)"),
@@ -5853,6 +5924,7 @@ HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards", "random-spo
 # (a bigger save needs saves of its own), and old names.
 SWITCH_NEEDS = {"kit-eras": ("random-sponsors",),
                 "kit-standards": ("kit-eras",),
+                "sponsor-tiers": ("random-sponsors",),
                 "tier3-eras": ("club-eras", "kit-eras", "third-tier")}
 SWITCH_FILES = {"third-tier": file_third_tier, "real-names": file_real_names,
                 "realism": file_realism, "modern-font": file_modern_font,
@@ -5887,7 +5959,8 @@ GROUPS = (       # (name, title, switches)
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
     ("graphics", "Graphics", ("realism", "modern-font")),
-    ("eras", "Club eras", ("club-eras", "random-sponsors", "kit-eras", "kit-standards", "tier3-eras")),
+    ("eras", "Club eras", ("club-eras", "random-sponsors", "kit-eras", "kit-standards", "sponsor-tiers",
+                            "tier3-eras")),
     ("title-screen", "Title screen", ("title-banner",)),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
@@ -6483,8 +6556,9 @@ def main(argv):
         print("note: skip-tutorial: on this disc the Edit Emblem screen can freeze after a kit edit in club "
               "creation (the heap is fragmented; see DOC/LMASTER_MOD.md#test-tools): not a switch's fault, "
               "test Edit Emblem on a disc built without it")
-    global kit_eras, kit_standards, tier3_eras
+    global kit_eras, kit_standards, tier3_eras, sponsor_tiers
     kit_eras = "kit-eras" in mods
+    sponsor_tiers = "sponsor-tiers" in mods
     kit_standards = "kit-standards" in mods
     tier3_eras = "tier3-eras" in mods
     nation = _opt(args, "--skip-nation", None)

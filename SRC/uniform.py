@@ -68,6 +68,11 @@ may be given by name (I3, A8). Only the field's own bits change; the unused
 bits between fields are kept. `roundtrip` re-packs every row from its
 fields and marks any difference with `!!`.
 
+`keepers` shows what random-sponsors' `standard` (apply_kits) does to the keeper
+kits: keeper_kit() builds the 114 kits.csv clubs' keeper kits from their outfield kits
+the way the game does for teams 1 and 2, and keeper_standard() sets the number
+colours and captain's band of every computer club's keeper kit (teams 3-459).
+
 `gk` lists UNIFORM_GK: which outfield shirt designs get each keeper design,
 and its 6 schemes. `setgk` writes an edited copy. A field is named
 outfield.<design>.<shirt|shorts|socks> (table 0) or keeper.<design>.
@@ -84,6 +89,7 @@ Usage:
     python uniform.py set       <in.TBB> <out.TBB> <team> <field>=<value> ... [<team> ...]
         e.g. set UNIFORM_LIST.TBB out.TBB 3 home.outfield.1=A4 home.outfield.3=A4
     python uniform.py gk        <DAT/PLAYER> [keeper design ...]  # the keeper kit table
+    python uniform.py keepers   <DAT/PLAYER> [team ...]      # the keeper kits of kit-standards
     python uniform.py setgk     <in.TBB> <out.TBB> <field>=<value> ...
         e.g. setgk UNIFORM_GK.TBB out.TBB outfield.0.shirt=20 keeper.35.0.1=A8
     python uniform.py setlicence <PLPACK_HOME.HED> <out.PAC> <licence> <field>=<value> ... [--data <in.PAC>]
@@ -788,12 +794,138 @@ def _number_colour(name):
     return KIT_COLOURS["black" if name in LIGHT_COLOURS else "white"]
 
 
-def apply_kits(blob, kits=None):
+# --- keeper kits for the computer clubs (apply_kits' `standard`) ---------------
+#
+# A match shows a computer club's keeper kit from its UNIFORM_LIST row: only
+# teams 1, 2 and the VS teams get theirs made from UNIFORM_GK (see above). The
+# licensed clubs' rows hold placeholders (shirt design 0, colours 95/95/0), so
+# keeper_kit() makes a real keeper kit the way the game does for those teams,
+# and keeper_standard() gives every computer club's keeper kit number colours
+# and a captain's band that show on its colours (Nexxus's idea, 2026-11-19; the
+# same rule as the outfield kits' standard in kiteras.py).
+KEEPER_FILES = ("PLAYER/UNIFORM_GK.TBB", "PLAYER/COLOR_TBL.TBB", "PLAYER/EDIT_UNIFORM_CLUT.HED",
+                "PLAYER/EDIT_UNIFORM_CLUT.PAC")       # what KeeperData reads, under the DAT folder
+KEEPER_FIRST, KEEPER_LAST = 3, 459      # the clubs: teams 3-441 and the third tier's 442-459
+KEEPER_FLAGS = (1, 3)                   # computer clubs with a generated kit (2 and 4 are licensed)
+DEFAULT_PLAYER = os.path.join("DAT", "PLAYER")
+
+
+class KeeperData:
+    """What the keeper kits are made from: gk0 and gk1 (UNIFORM_GK's two tables),
+    clash[a][b] (COLOR_TBL as booleans) and swatches ([(r, g, b)] of the 96
+    colours). Also what kiteras.pick_number and pick_band read as a plan."""
+
+    def __init__(self, player=None):
+        player = player or (DEFAULT_PLAYER if os.path.isdir(DEFAULT_PLAYER) else os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), DEFAULT_PLAYER))
+        self.gk0, self.gk1 = load_gk(os.path.join(player, UNIFORM_GK))
+        rows, line, data = table(os.path.join(player, COLOR_TBL))
+        if rows != COLOURS or line != COLOURS:
+            raise ValueError("%s: %d rows of %d" % (COLOR_TBL, rows, line))
+        self.clash = [[data[a * line + b] != 0 for b in range(COLOURS)] for a in range(COLOURS)]
+        self.swatches = colour_swatches(player)
+
+
+def _scheme_ok(s):
+    return not scheme_problems(s) and any(s)       # keeper designs 0-19 hold all-zero schemes
+
+
+def keeper_kit(data, outfield, old=None, apart=None, rng=None):
+    """The 15-field keeper kit the game would make from an outfield kit (the 15
+    fields of `outfield`): UNIFORM_GK's table 0 row of its shirt design gives the
+    keeper shirt, shorts and socks designs, and one of that shirt design's 6
+    colour schemes the colours, number colours and captain's mark. A scheme whose
+    shirt colour 1 clashes in COLOR_TBL with the outfield shirt colour 1 is
+    skipped, as 0x2d3924 does; the game takes the first scheme left, this takes
+    `rng`'s pick of them (the first without one). `apart` is a keeper's shirt
+    colour 1 to keep this one away from: a scheme that does not clash with it
+    comes first, then one that merely differs. When every scheme clashes, the
+    one that contrasts most with the outfield shirt wins. The collar is
+    `old`'s (a kit's field 4) or 0. ValueError for an outfield shirt design
+    the table has no row for."""
+    shirt_design = outfield[0]
+    if not 0 <= shirt_design < OUTFIELD_SHIRTS:
+        raise ValueError("outfield shirt design %d has no keeper row" % shirt_design)
+    row = data.gk0.data[shirt_design * GK_ROW:(shirt_design + 1) * GK_ROW]
+    for (name, _, limit), v in zip(GK_ROW_FIELDS, row):
+        if v >= limit:
+            raise ValueError("keeper %s design %d >= %d" % (name, v, limit))
+    schemes = [s for s in (scheme(data.gk1, row[0], n) for n in range(SCHEMES)) if _scheme_ok(s)]
+    if not schemes:
+        raise ValueError("keeper design %d has no scheme" % row[0])
+    clash, own = data.clash, outfield[1]
+    free = [s for s in schemes if not clash[own][s[0]]]
+    if free:
+        if apart is not None:
+            for tier in ([s for s in free if not clash[apart][s[0]]],
+                         [s for s in free if s[0] != apart]):
+                if tier:
+                    free = tier
+                    break
+        s = free[rng.below(len(free)) if rng else 0]
+    else:
+        import kiteras
+        s = max(schemes, key=lambda s: kiteras.contrast(data.swatches[s[0]], data.swatches[own]))
+    kit = [0] * KIT_LEN
+    kit[0], kit[5], kit[9] = row
+    kit[4] = old[4] if old else 0
+    for f, v in zip(SCHEME_FIELDS, s):
+        kit[f] = v
+    return kit
+
+
+def keeper_standard(data, kit):
+    """A copy of a keeper kit with its shirt number colour (field 12), shorts number
+    colour (13) and captain's band (14) chosen for its colours, by the outfield
+    standard's rule (kiteras.pick_number, pick_band): the number colour with the
+    best worst-case contrast against the colours it sits on, the keeper shirt's
+    colours 1 and 2 or the shorts' 1 and 2, and of the bold colours one that does
+    not clash with them in COLOR_TBL if there is one; the band the same against
+    the shirt's colours. The collar and everything else stay."""
+    import kiteras
+    out = list(kit)
+    out[12] = kiteras.pick_number(data, (kit[1], kit[2]))
+    out[13] = kiteras.pick_number(data, (kit[6], kit[7]))
+    out[14] = kiteras.pick_band(data, (kit[1], kit[2]))
+    return out
+
+
+def _keeper_rows(blob):
+    off = struct.unpack_from("<I", blob, 0x10)[0]
+    _, doff, size, line = struct.unpack_from("<4sIII", blob, off)
+    if line != ROW_SIZE:
+        raise ValueError("UNIFORM_LIST.TBB: line size %d" % line)
+    return off + doff, size // line
+
+
+def apply_keeper_kits(fields, data, team):
+    """Give an unpacked row (of a club converted to a generated kit) real keeper
+    kits from its outfield kits: the home one first, then the away one, which also
+    keeps its shirt colour away from the home keeper's. Draws from
+    lmseed.stream('keeper-kits', team)."""
+    import lmseed
+    rng = lmseed.stream("keeper-kits", team)
+    apart = None
+    for _, side, fp, gk in SIDES:
+        kit = keeper_kit(data, fields[fp:fp + KIT_LEN], fields[gk:gk + KIT_LEN], apart, rng)
+        fields[gk:gk + KIT_LEN] = kit
+        apart = kit[1]
+
+
+def apply_kits(blob, kits=None, standard=False, player=None):
     """UNIFORM_LIST.TBB bytes with every club of `kits` unlicensed: flag 1, and
     its home and away outfield kits as the table has them (the keeper kits,
     collars, captain marks and the other side fields stay); None when the file
-    already has them. The file keeps its size."""
+    already has them. The file keeps its size.
+
+    With `standard` the keeper kits follow a standard too: those clubs get real
+    keeper kits (keeper_kit) from their outfield kits, and every computer club of
+    teams 3-459 (flag 1 or 3) gets keeper number colours and a captain's band that
+    show on the keeper's colours (keeper_standard). It reads UNIFORM_GK.TBB,
+    COLOR_TBL.TBB and EDIT_UNIFORM_CLUT from the folder `player` (KEEPER_FILES;
+    DAT/PLAYER by default)."""
     kits = read_kits() if kits is None else kits
+    keepers = KeeperData(player) if standard else None
     off = struct.unpack_from("<I", blob, 0x10)[0]
     _, doff, size, line = struct.unpack_from("<4sIII", blob, off)
     if line != ROW_SIZE:
@@ -821,16 +953,30 @@ def apply_kits(blob, kits=None):
                     ("outfield.12", _number_colour(c1)), ("outfield.13", _number_colour(shorts)),
                     ("side.3", 0), ("side.4", 1)):
                 set_row_field(fields, "%s.%s" % (side, name), value)
+        if standard:
+            apply_keeper_kits(fields, keepers, kit["team"])
         out[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE] = pack(row, fields)
+    if standard:
+        for team in range(KEEPER_FIRST, KEEPER_LAST + 1):
+            i = team - FIRST_TEAM
+            if i >= n:
+                break
+            row = bytes(out[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE])
+            fields = unpack(row)
+            if fields[0] != team or fields[1] not in KEEPER_FLAGS:
+                continue
+            for _, side, fp, gk in SIDES:
+                fields[gk:gk + KIT_LEN] = keeper_standard(keepers, fields[gk:gk + KIT_LEN])
+            out[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE] = pack(row, fields)
     return None if bytes(out) == bytes(blob) else bytes(out)
 
 
-def keep_kit_edits(old, mine, kits=None):
+def keep_kit_edits(old, mine, kits=None, standard=False, player=None):
     """UNIFORM_LIST.TBB bytes for a target file `mine` (the editor's Kits tab)
     that --mod random-sponsors also edits: `old` is the file the target was made
     from. A row the target changed from `old` stays the target's; every other row
     is the switch's."""
-    new = apply_kits(old, kits) or old
+    new = apply_kits(old, kits, standard, player) or old
     off = struct.unpack_from("<I", old, 0x10)[0]
     _, doff, size, line = struct.unpack_from("<4sIII", old, off)
     if len(old) != len(mine) or len(old) != len(new):
@@ -841,6 +987,48 @@ def keep_kit_edits(old, mine, kits=None):
         if mine[a:b] == old[a:b]:
             out[a:b] = new[a:b]
     return bytes(out)
+
+
+def cmd_keepers(player, teams):
+    """The keeper kits as `--mod kit-standards` makes them: for each team (default
+    the clubs of kits.csv), the keeper kits of the table as it stands and as
+    apply_kits(standard=True) leaves them, then counts over all computer clubs."""
+    blob = open(os.path.join(player, UNIFORM_LIST), "rb").read()
+    new = apply_kits(blob, standard=True, player=player) or blob
+    old_rows, new_rows = (_all_rows(b) for b in (blob, new))
+    data = KeeperData(player)
+    kits = read_kits()
+    for team in teams or [k["team"] for k in kits]:
+        o, n = old_rows[team - FIRST_TEAM], new_rows[team - FIRST_TEAM]
+        print("team %d" % team)
+        for name, _, fp, gk in SIDES:
+            print("  %-4s outfield  %s" % (name, fmt_kit("outfield", n[fp:fp + KIT_LEN])))
+            print("  %-4s keeper    %s" % (name, fmt_kit("keeper", n[gk:gk + KIT_LEN])))
+            if o[gk:gk + KIT_LEN] != n[gk:gk + KIT_LEN]:
+                print("  %-4s was       %s" % (name, fmt_kit("keeper", o[gk:gk + KIT_LEN])))
+    import kiteras
+    for label, rows in (("as it stands", old_rows), ("converted", new_rows)):
+        kitlist, low, clash, bad = [], 0, 0, 0
+        for team in range(KEEPER_FIRST, KEEPER_LAST + 1):
+            f = rows[team - FIRST_TEAM]
+            g = new_rows[team - FIRST_TEAM]          # the same clubs in both: those with flag 1 or 3 after
+            if g[0] != team or g[1] not in KEEPER_FLAGS:
+                continue
+            for _, _, _, gk in SIDES:
+                k = f[gk:gk + KIT_LEN]
+                kitlist.append(tuple(k))
+                if min(kiteras.contrast(data.swatches[k[12]], data.swatches[c]) for c in k[1:3]) < 3:
+                    low += 1
+                clash += data.clash[k[12]][k[1]] or data.clash[k[13]][k[6]]
+                bad += bool(kit_problems("keeper", k)) or k[14] >= CAPTAIN_MARKS
+        print("%s: %d computer clubs' keeper kits, %d different, %d with a shirt number under 3 to 1 "
+              "against the shirt's colours 1 and 2, %d number colours clash with colour 1 in COLOR_TBL%s"
+              % (label, len(kitlist), len(set(kitlist)), low, clash, "  !! %d out of range" % bad if bad else ""))
+
+
+def _all_rows(blob):
+    base, n = _keeper_rows(blob)
+    return [unpack(blob[base + i * ROW_SIZE:base + (i + 1) * ROW_SIZE]) for i in range(n)]
 
 
 def cmd_gk(dat, designs):
@@ -952,6 +1140,8 @@ def main(argv):
         cmd_setexe(args[0], args[1], args[2], int(args[3], 0), args[4:])
     elif cmd == "show" and len(args) >= 2:
         cmd_show(args[0], [int(a, 0) for a in args[1:]])
+    elif cmd == "keepers" and len(args) >= 1:
+        cmd_keepers(args[0], [int(a, 0) for a in args[1:]])
     elif cmd == "gk" and len(args) >= 1:
         cmd_gk(args[0], [int(a, 0) for a in args[1:]])
     elif cmd == "setgk" and len(args) >= 3:

@@ -153,15 +153,19 @@ can play or share.
      is filled in for you; change either box with Browse). If a ticked
      switch has no file, the window asks before it builds without it,
      and the switch is left out.
-   - **Club eras** holds five switches: `club-eras` (every computer club
+   - **Club eras** holds six switches: `club-eras` (every computer club
      changes manager every three seasons, a third of the clubs each
      year, the better clubs getting the better managers, his tactics
      and formations with him), `random-sponsors` (a sponsor on every
      club's kit and boards, drawn again each season), `kit-eras` (at
      the same change, a new kit supplier and new kits), `kit-standards`
      (front and shorts numbers, emblems and number colours that show on
-     the kit, for every computer club) and `tier3-eras` (the third
-     tier's clubs join the club and kit eras; it needs `third-tier`).
+     the kit, for every computer club, and real keeper kits and
+     club-creation presets), `sponsor-tiers` (the main sponsor drawn
+     from the club's strength tier, so the bigger clubs carry the
+     bigger sponsors; it needs `random-sponsors`) and `tier3-eras` (the
+     third tier's clubs join the club and kit eras; it needs
+     `third-tier`).
      It has no boxes to fill in.
    - **Title screen** holds `title-banner`, a banner naming the LMASTER
      Mod, its version and its edition, which every edition has. It is

@@ -558,6 +558,7 @@ def cmd_selftest(dat, rel=None):
         bad, runs, idle = bad + b, runs + r, idle + i
         chain += chain_test(pd, plan, table)
         chain += standards_test(pd, plan, table)
+        chain += standards_test(pd, plan, table, tiers=True, dat=dat)
     print("selftest: %d runs, %d left to the game%s" % (runs, idle, "  !! %d wrong" % bad if bad else ""))
     for line in chain[:5]:
         print("  !! " + line)
@@ -597,15 +598,22 @@ def _selftest(pd, plan, table):
     return bad, runs, idle
 
 
-def standards_test(pd, plan, table):
+def standards_test(pd, plan, table, tiers=False, dat="DAT"):
     """The whole chain with kit-standards on: the sponsors' code, the kit code and the
     standards' code, as the game runs them, over every team id 0-599, four seasons and the
-    offsets 0 and 2: the PlUnif bytes must be the sponsor from the hash, the kit plan's bytes
+    offsets 0 and 2: the PlUnif bytes must be the sponsor from the hash (from the club's tier
+    with `tiers`: sponsortiers.py's routine called from the sponsors' code), the kit plan's bytes
     once the era is past 0, and the standard's bytes for every club, in every era."""
     bad = []
     stable = std_table_bytes(plan)
-    was = pd.kit_eras, pd.kit_standards
+    was = pd.kit_eras, pd.kit_standards, pd.sponsor_tiers
     pd.kit_eras = pd.kit_standards = True
+    pd.sponsor_tiers = tiers
+    if tiers:
+        import sponsortiers
+        splan = sponsortiers.build(dat, plan.last)
+        pick = sponsortiers.sponsor_tier_words(pd.SPONSOR_TIERS, plan.last)
+        tier_table = sponsortiers.table_bytes(splan)
     try:
         sponsor_words = pd.sponsor_cave()
         count = plan.last - TEAM_FIRST + 1
@@ -615,6 +623,8 @@ def standards_test(pd, plan, table):
                 for team in range(0, 600):
                     mem = {pd.KIT_TABLE + i: b for i, b in enumerate(table)}
                     mem.update({pd.STD_TABLE + i: b for i, b in enumerate(stable)})
+                    if tiers:
+                        mem.update({pd.SPONSOR_TIERS + i: b for i, b in enumerate(tier_table)})
                     plunif = 0x2000000
                     for k in range(0x50):
                         mem[plunif + k] = 0
@@ -624,12 +634,20 @@ def standards_test(pd, plan, table):
                     def keika(reg, season=season):
                         reg[pd.V0] = season & 0xFFFFFFFF
                     regs = {pd.S1: team, pd.S2: plunif, pd.SP: 0x1F00000, pd.RA: 0x26EC24, pd.V1: 1}
-                    kind, target, reg = cluberas.emulate(sponsor_words, pd.SPONSOR_CAVE, regs, mem, {pd.KEIKA: keika})
+                    calls = {pd.KEIKA: keika}
+                    if tiers:
+                        def sub(reg, mem=mem):
+                            _, _, regs_ = cluberas.emulate(pick, pd.SPONSOR_PICK, {i: reg[i] for i in range(32)}, mem)
+                            reg[:] = regs_
+                        calls[pd.SPONSOR_PICK] = sub
+                    kind, target, reg = cluberas.emulate(sponsor_words, pd.SPONSOR_CAVE, regs, mem, calls)
                     for words_, base in ((kit, pd.KIT_CAVE), (std, pd.STD_CAVE)):
                         if (kind, target) == ("jump", base):
                             kind, target, reg = cluberas.emulate(
                                 words_, base, {i: v for i, v in enumerate(reg)}, mem, {pd.KEIKA: keika})
                     sponsor, supplier = pd.sponsor_hash(team, season) if 3 <= team <= 542 else (0, 0)
+                    if tiers and 3 <= team <= plan.last:
+                        sponsor = sponsortiers.expect(splan, team, season)
                     want = {4: sponsor, 5: supplier}
                     want.update(expect(plan, team, season, offset))
                     want.update(std_expect(plan, team, season, offset))
@@ -641,7 +659,7 @@ def standards_test(pd, plan, table):
                             offset, team, season, {k: v for k, v in got.items() if got.get(k) != want.get(k)},
                             {k: v for k, v in want.items() if got.get(k) != want.get(k)}, kind, target))
     finally:
-        pd.kit_eras, pd.kit_standards = was
+        pd.kit_eras, pd.kit_standards, pd.sponsor_tiers = was
     return bad
 
 

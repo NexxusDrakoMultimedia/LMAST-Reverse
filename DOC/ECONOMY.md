@@ -486,12 +486,19 @@ more by the same sponsor; it is offered bigger ones (which sponsors a
 club is offered isn't traced).
 
 **Empirical** (read from the overlay): 210 records have fees (all but
-211 and 212). `+0x14` runs £500,000–£45M (median £3.45M), `+0x18`
+211 and 212). `+0x14` runs £500,000–£45M (median £3.45M; the table holds the fee in
+hundredths of the stored money, £1 = 6, so £ = the value × 100 ÷ 6: 30,000
+to 2,700,000, median 207,000, and 81,000 for Africmap Airways, record 170),
+`+0x18`
 £50,000–£45M (median £345,000). Four records (170, 174, 186, 194) hold
 the £1,350,000 of Africmap Airways, the first main sponsor of a new
 career ([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md#tested-in-pcsx2)).
 That doc also covers the Sponsor screen's fee negotiation, which the
 Japanese release has and PAL cuts.
+
+The LMASTER Mod's `sponsor-tiers` sorts the 199 main sponsors by this
+fee to give each club tier its own slice of them
+([`LMASTER_MOD.md`](LMASTER_MOD.md#sponsor-tiers)).
 
 ## TV contracts
 

@@ -317,6 +317,26 @@ edition plays through a season.
 
 Each of these switches has been built and is waiting for someone to play it.
 
+**Reading a state.** Several checks below ask for a save state taken in a
+match against a computer club. `python SRC/p2state.py kits <state.p2s>
+--offset 2` reads the state's memory (the file is a zip; 7-Zip is the
+fallback for the newer compression), finds the match's two clubs, and
+prints each club's sponsor, supplier and both kits as the game holds
+them, a `!!` marking a club whose bytes differ from what the build's plan
+gives. `python SRC/p2state.py managers <state.p2s> --offset 2` does the
+same for the manager. The `--offset` is the `--eras-offset` the disc was
+built with (the test discs use 2); the build's switches and tables are
+read from the code in memory, so a disc built with another seed still
+checks. `python SRC/p2state.py info <state.p2s>` says whether a match is
+loaded. To take a state: play into a match against a computer club,
+save a state in PCSX2 and send the file (or say its slot), with the
+club's name. Your own club and the rival are skipped. The current test
+disc is `LMAST-test-kits6.iso`, built with `python SRC/patch_disc.py
+patch "<retail disc>.iso" LMAST-test-kits6.iso --mod lmaster-max --copies
+--dat DAT --realism ../LMAST-Realism --test-build --eras-offset 2`,
+without `--skip-tutorial`
+([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#test-tools)).
+
 - [ ] The modern font and the title banner on a full or max disc
       (`python SRC/patch_disc.py patch "<the PAL image>" out.iso --mod
       lmaster-max --font "RobotoCondensed[wght].ttf" --version 0.5.0
@@ -364,7 +384,7 @@ Each of these switches has been built and is waiting for someone to play it.
       era 1 from 2006-07). Never run as one disc: the code segment grew to
       0x1400 bytes and holds the third tier, the sponsors, the logo gate
       and the managers' code together (no overlap; the segment now sits at
-      `0xe0000` and is `0xbd00` bytes, since 2026-11-19). Check: it boots and the
+      `0xe0000` and is `0xc000` bytes, since 2026-11-19). Check: it boots and the
       banner reads TEST BUILD; a career starts in Germany; a season plays
       to its end with no freeze, saving and loading once; the third tier
       (England's at the foot of the second division) and the real names
@@ -401,7 +421,7 @@ Each of these switches has been built and is waiting for someone to play it.
       the team ids in a match with `read pine 0x3906d8 u32` (the pointer
       P), then the u32 at P+`0x1fba0` and P+`0x24540`
 - [ ] Computer clubs' kits by era (`--mod kit-eras`, the disc is
-      `LMAST-test-kits5.iso`, which holds `kit-eras`, `kit-standards` and
+      `LMAST-test-kits6.iso`, which holds `kit-eras`, `kit-standards` and
       `tier3-eras`; PCSX2 treats it as a new game). **Started:** a state of
       Nexxus's in a match against Hansa Rostock (team 119, era 1) holds
       the plan's bytes exactly, see
@@ -410,7 +430,7 @@ Each of these switches has been built and is waiting for someone to play it.
       standard's emblems, numbers, collars, the number and logo colours),
       and the later seasons. Build with
       `python SRC/patch_disc.py patch "<retail disc>.iso"
-      LMAST-test-kits5.iso --mod lmaster-max --copies --dat DAT --realism
+      LMAST-test-kits6.iso --mod lmaster-max --copies --dat DAT --realism
       ../LMAST-Realism --test-build --eras-offset 2`, without
       `--skip-tutorial` (it makes the Edit Emblem screen freeze, see the
       check above), and start a career in any nation. The era is
@@ -430,7 +450,7 @@ Each of these switches has been built and is waiting for someone to play it.
       `python SRC/kiteras.py show DAT <team>`. Put the result into
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras)
 - [ ] Kit standards and the third tier's eras (`--mod kit-standards`,
-      `--mod tier3-eras`; the same disc, `LMAST-test-kits5.iso`, built as
+      `--mod tier3-eras`; the same disc, `LMAST-test-kits6.iso`, built as
       in the check above). Every computer club's kits follow a standard in
       every era, era 0 included. Check, in a match against a computer club
       (take several, from different leagues and eras): (1) every shirt
@@ -456,6 +476,47 @@ Each of these switches has been built and is waiting for someone to play it.
       the result into
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards) and
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras)
+- [ ] Main sponsors by tier (`--mod sponsor-tiers`, the disc is
+      `LMAST-test-kits6.iso`, built 2026-11-19; not yet seen in the game).
+      A computer club's main sponsor comes from its tier's slice of the 199
+      main sponsors sorted by fee, so the best clubs show the biggest
+      sponsors. Check, in matches against computer clubs (take a top club
+      of a big league, a mid-table club and one of the weakest, in the
+      first season and again after a season): (1) the chest sponsor's
+      name and logo are right (no blank or broken logo); (2) the top
+      clubs show big-name sponsors and the weakest clubs small ones;
+      (3) a club's sponsor still changes from season to season, but
+      stays in its slice; (4) your club, the rival and the national
+      teams are untouched. With a saved state, `python SRC/p2state.py kits
+      <state.p2s> --offset 2` prints each club's sponsor number, and
+      `python SRC/sponsortiers.py info DAT` lists each tier's fee range
+      and first sponsors to compare. Put the result into
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers)
+- [ ] The keeper kits of the kit standard (`--mod kit-standards`, the same
+      disc). The 114 clubs `random-sponsors` turns from licensed into
+      generated (an Italian club such as Milan, a Spanish one such as
+      Barcelona, a Dutch one such as Ajax) used to have a placeholder
+      keeper kit; now they should have a real one. Check, in a match
+      against such a club, the keeper at kick-off and in a goal kick:
+      (1) the shirt, shorts and socks have real colours, not a light pink,
+      and they do not clash with the club's own shirt; (2) the number on
+      the keeper's back and the captain's band, if he wears one, show
+      against his shirt; (3) the keeper's away kit is also a real one
+      (needs a match where the keepers clash, so it may be rare); (4) a
+      club that was not converted (a retail generated club) also has
+      readable keeper numbers. Few different looks are expected: most
+      converted clubs map to one keeper design with six colour schemes.
+      Say which kits look wrong. Put the result into
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards)
+- [ ] The club-creation presets (`--mod kit-standards`, the same disc).
+      Create a new club (the career's club creation, where you pick a
+      preset): both kits should start with the front number, the shorts
+      number and the emblems on, with numbers that show against the
+      shirt and shorts; look through several presets, since a few mix a
+      light and a dark colour and cannot be good on both (say which look
+      wrong). The rival's kit in a match is the game's own, unchanged.
+      Put the result into
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards)
 - [ ] Transfer fees on a max disc after the cut to the lower tiers (`--mod
       fee-tiers`, 2026-11-19): in the Post Player list the estimate for a
       player of rank 0 to 5 should be the retail game's, and for rank 6 to

@@ -195,10 +195,40 @@ You can build the mod in three editions from named switches
       instead of 439, with a bigger manager pool
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras))
 - [x] The mod's code segment moved down in memory, from `0xf8000` to
-      `0xe0000`, and grew to `0xbd00` bytes to hold the kit tables (the
-      memory from `0x94000` to `0x100000` is unused in every state read).
+      `0xe0000`, and grew to `0xbd00` bytes to hold the kit tables, then to
+      `0xc000` for the sponsor tiers' routine and tables (the memory from
+      `0x94000` to `0x100000` is unused in every state read).
       Every address in the docs is relative to the segment
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards))
+- [x] `--mod sponsor-tiers` (PAL only, group `eras`, needs
+      `random-sponsors`; Nexxus's idea, 2026-11-19): a computer club's main
+      sponsor is drawn from its tier's slice of the 199 main sponsors,
+      sorted by fee, instead of from all of them, so the better clubs get
+      the bigger sponsors; the per-season draw stays. `sponsortiers.py`
+      plans it and `patch_disc.py` builds it
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers),
+      [`ECONOMY.md`](DOC/ECONOMY.md#sponsors))
+- [x] Keeper kits in the kit standard (Nexxus's idea, 2026-11-19): the 114
+      clubs `random-sponsors` turns from licensed into generated get real
+      keeper kits, made the way the game makes them for the VS teams, and
+      every computer club's keeper kit gets number colours and a captain's
+      band by the standard's rule. `uniform.py keepers` shows them
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards),
+      [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#uniform_gktbb-keeper-kits-made-from-the-outfield-kit))
+- [x] The club-creation presets follow the kit standard (Nexxus's idea,
+      2026-11-19): the 32 presets of `CEDITPRG.REL` start with the front
+      number, the shorts number and the emblems on, with number colours and
+      a captain's band by the standard's rule; the rival's kit is left as
+      it is. `clubpresets.py` plans the byte patches and
+      `patch_disc.py` applies them with `kit-standards`
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards),
+      [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#the-kit-editors-items-and-their-bytes))
+- [x] `p2state.py`, the state checker: reads a PCSX2 save state, finds the
+      two clubs of a match and compares each club's kit and the managers'
+      result word with the plans of `kiteras.py` and `cluberas.py`, reading
+      the build's offset and switches from the code in memory
+      ([`TESTING.md`](TESTING.md#newer-switches),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#test-tools))
 - [x] The Japanese disc: every switch but `realism`, `third-tier`'s code,
       save and data ported (its rules text is not)
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))

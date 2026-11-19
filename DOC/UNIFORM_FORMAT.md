@@ -440,7 +440,9 @@ their 244 outfield kits are shirt, shorts and socks design 0, and 58
 different home shirt colour sets cover the 122 clubs of teams 123–244.
 Setting a licensed club's flag to 1 and writing its kit into the row
 (`uniform.py set`) is all it takes to make it a generated kit, so
-`random-sponsors` can then give it a sponsor.
+`random-sponsors` can then give it a sponsor. Their keeper kits are
+placeholders too
+([below](#keeper-kits-of-the-converted-clubs)).
 
 ### The sponsor and supplier logos on a generated kit
 
@@ -599,6 +601,72 @@ row 0 points at keeper design 35.
 `setgk` refuses a value that would make the game drop the row or the
 scheme.
 
+### Keeper kits of the converted clubs
+
+A computer club's keeper kit in a match is the one stored in its
+`UNIFORM_LIST` row ([above](#who-uses-it)), and the rows of the 116
+licensed clubs hold placeholders there. **Empirical** (`python
+SRC/uniform.py keepers DAT/PLAYER`): in the 114 licensed rows, which
+`random-sponsors` turns into generated kits, all 228 keeper kits (114
+clubs, home and away) have shirt design 0, shorts colours 0 and socks
+colours 0, so a converted club's keeper would show as colour 0, a light
+pink, on keeper design 0, which no row of table 0 ever gives a keeper. The LMASTER Mod's
+`kit-standards` replaces them ([`LMASTER_MOD.md`](LMASTER_MOD.md#the-keepers-and-the-presets)),
+with `uniform.py`'s `keeper_kit`, which follows the game's own steps
+above for teams 1, 2 and the VS teams:
+
+| Step | What it does |
+|---|---|
+| Designs | table 0's row for the outfield shirt design gives the keeper shirt, shorts and socks designs (step 1 above) |
+| Scheme | one of that keeper design's 6 schemes whose shirt colour 1 does not clash in `COLOR_TBL` with the outfield shirt colour 1 (step 2). The game takes the first; the tool takes a seeded pick of them (stream `keeper-kits`), and for the away kit prefers one clear of the home keeper's shirt colour 1 |
+| Every scheme clashes | the game leaves the stale data in the kit ([above](#how-a-scheme-is-chosen)); the tool takes the scheme that contrasts most with the outfield shirt |
+| Collar | table 1 has none: the row's own keeper collar stays |
+
+`keeper_standard` then sets kit fields 12, 13 and 14 (the two number
+colours and the captain's band) of every computer club's keeper kit, as
+the outfield standard does it, against the keeper's own shirt and shorts
+colours. **Empirical**: 225 of the 228 converted keeper kits map to
+keeper design 35 and the other three to 23, 29 and 30, because table 0
+sends 54 outfield shirt designs to 35 ([above](#the-data)), so the
+variety of the converted keepers is low. The counts before and
+after are in [`LMASTER_MOD.md`](LMASTER_MOD.md#the-keepers-and-the-presets).
+Not seen in a match.
+
+## The club-creation presets
+
+When you create a club, `CSelectTeamColorModule` (`CEDITPRG.REL`) copies
+one of 32 presets into your club's kit, chosen by the 32-colour palette
+slot you pick, and the kit editor starts from it. Each preset is a
+whole `PlUnif` of `0x50` bytes (layout above), and the rival's fixed kit
+follows them. **Confirmed** from the overlay, as `clubpresets.py` reads
+it:
+
+| `CEDITPRG.REL` | Symbol | What it shows |
+|---|---|---|
+| `0x150a0` | the presets | 32 records of `0x50` bytes, to `0x15a9f` |
+| `0x15aa0` | the rival's record | the rival's (team 2) fixed kit, `0x50` bytes |
+| `0x20b0` | `CSelectTeamColorModule` | the function that picks a preset |
+| `0x20fc` | `pwkTeam_SetUnif` | the call that stores the chosen record in your club's `PlUnif` |
+| `0x2114` | `CSelectTeamColorModule` | a palette id of `0x20` or more takes preset 0 |
+| `0x2124` | `CSelectTeamColorModule` | the rival's record is set from `0x15aa0` |
+
+**Empirical** (`python SRC/clubpresets.py info ISO/DLL/CEDITPRG.REL`):
+all 32 presets use shirt design 206, shorts design 60 and socks design
+14. The side bytes of the retail presets are `0 1 0 0 0 1` (home) and
+`1 0 1 0 1 0` (away): the shirt emblem type 0 or 1, the shorts emblem
+type 1 or 0, the number design 0 or 1, the front number off (byte 3 =
+0), the shorts position 0 or 1 and byte 5 = 1 or 0. So in retail both
+kits start with the front number off. The rival's record differs: its
+home kit has the front number on (`0 1 0 1 0 1`) and its shirts are
+designs 158 and 161. The patched bytes lie in `0x150a0` to `0x15aef`,
+where the file has no relocation site. The Japanese `CEDITPRG.REL` holds
+the same records `0x100` lower (presets from `0x14fa0`, the rival at
+`0x159a0`).
+
+The LMASTER Mod's `kit-standards` patches the presets' kits to follow
+its standard ([`LMASTER_MOD.md`](LMASTER_MOD.md#the-keepers-and-the-presets));
+the rival's record is never changed.
+
 ## Editing
 
 ```bash
@@ -683,6 +751,16 @@ disc:SLES_541.51=out/SLES_541.51`. Edits to `UNIFORM_LIST.TBB` and
 - What the keeper kit stored with your club holds, and whether screens
   outside a match show it rather than the `UNIFORM_GK` kit (the code says
   they should; not checked).
+- The keeper kits of the converted clubs
+  ([above](#keeper-kits-of-the-converted-clubs)): whether a converted
+  club's keeper shows in a match as planned, and the low variety (225 of
+  228 kits on keeper design 35, so 9 different home and 6 different away
+  keeper kits for 114 clubs): more would need a table of our own, which
+  is not started.
+- The club-creation presets ([above](#the-club-creation-presets)): how
+  the standard's version of each preset looks in the club editor and in a
+  match, and the Japanese addresses (the records are `0x100` lower; the
+  patch is PAL's).
 
 ## Checking the claims
 
@@ -697,4 +775,7 @@ python SRC/kiteras.py   info      DAT                         # the per-supplier
 python SRC/kiteras.py   selftest  DAT                         # kit-eras and kit-standards: the code against the plan (the editor's items and bytes)
 python SRC/sles_disasm.py ISO/SLES_541.51 syms CUniformBuilder  # the builder's functions (the editor's own code is in SIMPRG.REL: snr2.py dis ISO/DLL/SIMPRG.REL 0x109d98 40 --sles ISO/SLES_541.51)
 python SRC/tbb.py roundtrip     DAT/PLAYER/UNIFORM_GK.TBB    # the container re-writes
+python SRC/uniform.py keepers   DAT/PLAYER 123               # the keeper kits of a converted club, and the counts for all
+python SRC/clubpresets.py info  ISO/DLL/CEDITPRG.REL         # the 32 presets and the rival's record
+python SRC/clubpresets.py check ISO/DLL/CEDITPRG.REL DAT     # the standard's patches are valid
 ```

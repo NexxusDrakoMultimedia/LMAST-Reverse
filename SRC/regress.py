@@ -291,6 +291,19 @@ def checks():
         ("kiteras_info", ["kiteras.py", "info", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         ("kiteras_check", ["kiteras.py", "check", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         ("kiteras_selftest", ["kiteras.py", "selftest", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
+        # The club-creation presets with the kit standard (--mod kit-standards, PAL addresses).
+        ("clubpresets_info", ["clubpresets.py", "info", "ISO/DLL/CEDITPRG.REL"], ["ISO/DLL/CEDITPRG.REL"]),
+        ("clubpresets_patches", ["clubpresets.py", "patches", "ISO/DLL/CEDITPRG.REL", "DAT"], ["ISO/DLL/CEDITPRG.REL", "DAT"]),
+        ("clubpresets_check", ["clubpresets.py", "check", "ISO/DLL/CEDITPRG.REL", "DAT"], ["ISO/DLL/CEDITPRG.REL", "DAT"]),
+        ("clubpresets_selftest", ["clubpresets.py", "selftest", "ISO/DLL/CEDITPRG.REL", "DAT"], ["ISO/DLL/CEDITPRG.REL", "DAT"]),
+        # The main sponsors by club strength (--mod sponsor-tiers): the plan and the routine.
+        ("sponsortiers_info", ["sponsortiers.py", "info", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
+        ("sponsortiers_check", ["sponsortiers.py", "check", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
+        ("sponsortiers_selftest", ["sponsortiers.py", "selftest", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
+        # The PCSX2 state checker's own test (a synthetic memory image; no state file needed).
+        ("p2state_selftest", ["p2state.py", "selftest"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
+        # The keeper kits of the kit standard (--mod kit-standards).
+        ("uniform_keepers", ["uniform.py", "keepers", "DAT/PLAYER"], ["DAT/PLAYER"]),
         # The executable's sound-bank and music tables, against SOUND/*.DAT.
         ("sounddat_music", ["sounddat.py", "music", "ISO/SLES_541.51", "DAT/SOUND"],
          ["ISO/SLES_541.51", "DAT/SOUND"]),
@@ -371,7 +384,8 @@ def _jp(arg):
 # modern font and the title banner are PAL switches (European fonts and
 # title pictures).
 JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "font_coverage", "fontmod", "titlebanner",
-           "kiteras_info", "kiteras_check", "kiteras_selftest"}
+           "kiteras_info", "kiteras_check", "kiteras_selftest", "clubpresets_info", "clubpresets_patches",
+           "clubpresets_check", "clubpresets_selftest", "sponsortiers_selftest", "p2state_selftest"}
 
 
 def jp_checks(pal):

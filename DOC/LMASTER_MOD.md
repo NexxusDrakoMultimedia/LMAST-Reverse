@@ -46,7 +46,7 @@ level:
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
 | `graphics` | realism ([below](#lmast-realism-on-the-disc)), modern-font ([below](#modern-font)) | – | yes | yes |
-| `eras` (title "Club eras") | club-eras ([below](#club-eras)), random-sponsors ([below](#random-sponsors)), kit-eras ([below](#kit-eras)), kit-standards ([below](#kit-standards)), tier3-eras ([below](#tier-3-eras)) | – | yes | yes |
+| `eras` (title "Club eras") | club-eras ([below](#club-eras)), random-sponsors ([below](#random-sponsors)), kit-eras ([below](#kit-eras)), kit-standards ([below](#kit-standards)), sponsor-tiers ([below](#sponsor-tiers)), tier3-eras ([below](#tier-3-eras)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -69,6 +69,8 @@ numbers. The uses:
 | `random-sponsors` | `random-sponsors` ([below](#random-sponsors)) | the three multipliers of the sponsor and supplier hash the game's code runs |
 | `club-eras`, one stream per tier | `club-eras` ([below](#club-eras)) | the order of the clubs inside each tier, so which club gets which manager is not just by rank |
 | `kit-eras` | `kit-eras` ([below](#kit-eras)) | the designs and colours of each club's six kit variants: the shirt and shorts designs from the supplier's lists, and the away colours |
+| none of its own (the `random-sponsors` stream) | `sponsor-tiers` ([below](#sponsor-tiers)) | nothing new: its pick runs on the first two multipliers of the `random-sponsors` stream, from a slice of the sponsors instead of all 199 |
+| `keeper-kits`, one stream per club | `kit-standards` ([below](#kit-standards)) | which of the colour schemes of its keeper design a converted club's keeper kits take |
 | `kit-standards`, one stream per club | `kit-standards` ([below](#kit-standards)) | the collar, the number design and the emblem pair of each of a club's six variants, each rolled on its own, and whether the away kit takes the home kit's value |
 
 `python SRC/lmseed.py selftest` checks the generator's known answers (a
@@ -606,15 +608,30 @@ over real 2006 kits, 2026-11-10) decided it, so the switch also
 unlicenses them: it sets flag 1 in 114 of their `UNIFORM_LIST.TBB` rows
 (Siena and Bologna already have it) and writes each club's home and away
 outfield kit from [`SRC/kits.csv`](../SRC/kits.csv), a pattern, three
-shirt colours, shorts and socks. The keeper kits, collars and captain
-marks stay as the rows have them. The table is written from memory of the
+shirt colours, shorts and socks. The collars and captain marks stay as
+the rows have them, and so do the keeper kits unless `kit-standards` is
+on (below). The table is written from memory of the
 2005-06 kits with the 12 patterns of `uniform.py`'s `KIT_PATTERNS`, so
 the stripes, halves and bands are approximate; corrections go in the
 CSV. The file's copies in `PRELOAD/SIMFILE0`-`6.PAC` change too, and a
 `UNIFORM_LIST.TBB` target (the editor's Kits tab) keeps its own edited
-rows. Not done: the Japanese release (the code is PAL's), the keeper
-kits, a look at every supplier and every league, and the 114 kits seen
-in a match.
+rows. Not done: the Japanese release (the code is PAL's), a look at
+every supplier and every league, and the 114 kits seen in a match.
+
+**With `sponsor-tiers`** the six words of the plain sponsor hash
+(`srl`, `addiu`, `divu`, `mfhi`, `addiu`, `sb`) become a `jal` to a
+routine at `CAVE + 0xbc80` and a nop, and the routine draws the sponsor
+from the club's tier ([Sponsor tiers](#sponsor-tiers)). Everything else
+of the sponsors' code stays: the supplier hash, and the tail that
+returns or jumps on to the kit code (`SWITCH_NEEDS` makes `sponsor-tiers`
+need `random-sponsors`).
+
+**The keeper kits** (with `kit-standards`, which makes the same edit of
+`UNIFORM_LIST.TBB` give them a standard too). The 114 licensed rows are
+placeholders for their keeper kits as well, so the edit also gives each
+of the 114 converted clubs real keeper kits, home and away, and every
+computer club's keeper kit its number colours and captain's band: the
+rules and numbers are in [Kit standards](#kit-standards).
 
 ## Club eras
 
@@ -628,8 +645,8 @@ game derives a computer club's style and tactics from its manager (below),
 so those change with him. **Built, checked by emulation and by
 reading the disc back, and tested in PCSX2 for a club in era 1 (below)** ([`TESTING.md`](../TESTING.md#newer-switches)).
 The suppliers by club rank, and the kits, are the switch [Kit eras](#kit-eras)
-(built 2026-11-19); the main sponsor still comes from `random-sponsors`'
-per-season hash. A tactics and formation choice of the switch's
+(built 2026-11-19), and the main sponsors by club rank are
+[Sponsor tiers](#sponsor-tiers) (built 2026-11-19). A tactics and formation choice of the switch's
 own turned out not to be needed: each manager's record carries his own.
 
 **How it works.** The game asks `plOteam_GetManagerNoOffset` (`SLES
@@ -732,9 +749,7 @@ and state 1's result word is 2477, K.Kilk, the plan's manager for team 92.
 **Still unknown:** a club of group 0 (team id mod 3 equal to 0), which
 should keep its retail manager at offset 2; that nothing changes in the
 opening playoffs; the later eras, the staggering (a third of the clubs
-each year, on a release build) and a whole season of play; and the main
-sponsor ranking (built from the sponsor table's fees:
-[Planned](#planned)).
+each year, on a release build) and a whole season of play.
 
 ## Kit eras
 
@@ -789,8 +804,9 @@ segment's size and regions are in [The code segment](#the-code-segment).
 teams, the national teams and every id outside 3 to 441 (3 to 459 with
 [`tier3-eras`](#tier-3-eras)) are never touched
 (Nexxus's rule, as for the other eras switches; the kit editor and the
-Emblem editor only build teams 1 and 2). The main sponsor stays
-`random-sponsors`' draw. The Japanese release is not touched.
+Emblem editor only build teams 1 and 2). The main sponsor is
+`random-sponsors`' draw, or [`sponsor-tiers`](#sponsor-tiers)' when that
+is on. The Japanese release is not touched.
 
 **The test option.** `--eras-offset N` (0 to 2, default 0, the switch as
 released) applies to `club-eras` and `kit-eras` alike, so the new kits show
@@ -839,9 +855,10 @@ What the items are, and which bytes they set, is in
 | Number colours | the shirt's and the shorts' own, below |
 | Captain's band | the value 0 to 4 (white, black, blue, red, yellow: `PLAYERDATACOMMONPACK1` svp entries 129 to 133) with the best worst-case contrast against the shirt's colours 1 and 2 |
 
-Only the items the player's kit editor has are set; the keeper kits are
-not touched. `side[5]` is set to 1, as a match feeds the builder a
-constant 1 for it anyway.
+Only the items the player's kit editor has are set in the outfield
+kits; the keeper kits get their own part ([below](#the-keepers-and-the-presets)).
+`side[5]` is set to 1, as a match feeds the builder a constant 1 for it
+anyway.
 
 **The supplier in every era** (Nexxus's idea, 2026-11-19). In era 0 a club
 shows a retail design, and the sponsors' code gave it a random supplier each
@@ -891,12 +908,179 @@ away, plus the field number). Teams outside the plan's clubs (team 1, 2,
 the VS teams, the national teams) are left alone, as in the other eras
 switches.
 
+### The keepers and the presets
+
+Two more parts of the standard (Nexxus's ideas, 2026-11-19), both
+built; neither is seen in the game yet.
+
+**The keeper kits** (`uniform.py` `keeper_kit`, `keeper_standard` and
+`apply_keeper_kits`; `python SRC/uniform.py keepers DAT/PLAYER` shows
+them). They are made by the edit of `UNIFORM_LIST.TBB` that
+[`random-sponsors`](#random-sponsors) runs, when `kit-standards` is on.
+How the game makes a keeper kit is in
+[`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#keeper-kits-of-the-converted-clubs).
+
+| Part | Rule |
+|---|---|
+| The 114 converted clubs | the licensed rows held placeholder keeper kits (shirt design 0, shorts and socks colour 0, all 228). Each now gets a home and an away keeper kit made as the game makes them for teams 1, 2 and the VS teams: the outfield shirt design picks the keeper's designs from `UNIFORM_GK.TBB`, and one of that design's six colour schemes the colours, a scheme not clashing in `COLOR_TBL.TBB` with the club's shirt colour 1 (the game's own skip), drawn from the [LMASTER seed](#the-lmaster-seed) (stream `keeper-kits`); the away keeper also keeps clear of the home keeper's shirt colour 1 where it can |
+| Every computer club's keeper kit | 914 kits (teams 3 to 459): the shirt number colour, the shorts number colour and the captain's band by the outfield rule above, against the keeper's own shirt colours 1 and 2 and shorts colours 1 and 2. The collar and the rest stay |
+
+The numbers (`uniform.py keepers`, **empirical**): of the 914 keeper
+kits, 510 had a shirt number under 3 to 1 against the shirt's colours 1
+and 2 and 367 number colours clashed with colour 1 in `COLOR_TBL.TBB`;
+after, 317 are under 3 and none clash. The variety is low: 225 of the
+228 converted kits map to keeper design 35 (the game's table, which sends
+54 outfield designs to it), so the 114 clubs show 9 different home and 6
+different away keeper kits.
+
+**The club-creation presets** (`clubpresets.py`, applied by
+`plan_kit_standards`). When you create a club the game copies one of 32
+presets into your club's kit, and all 32 start with the front number off,
+shirt design 206, shorts 60 and socks 14
+([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#the-club-creation-presets)). The
+switch patches `CEDITPRG.REL` so that each preset's two outfield kits
+follow the standard: the front number on, emblem types kept where valid
+(else 0) and the shorts position equal to the shorts emblem type, the
+number colours and the captain's band chosen by the same rule for the
+preset's own colours, `side[5]` 1; the collar and the number design stay.
+It is 130 byte patches (588 bytes) over the 32 presets and the rival's
+record beside them, and the build applies the 126 of the presets and
+none of the rival's four: the rival is never touched (Nexxus's rule,
+2026-11-19). The code's rule that team 1 is never written still holds;
+only the template you start editing from changes, and the kit editor
+changes any of it. The worst shirt number contrast against shirt colour
+1 among the presets is 1.88 to 1 (`clubpresets.py check`): a few presets
+have a light and a dark colour together, so no number colour is good
+against both. PAL only: the Japanese `CEDITPRG.REL` holds the same
+records 0x100 lower and is not ported. Checked by decoding the patched
+records again (`clubpresets.py selftest`).
+
 **Still unknown:** the kits seen in a match; what the emblem types, the
 number designs and the collars look like on the shirt, and whether a
 computer club's emblem is drawn at all
 ([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#still-unknown)); whether the
 supplier logo really takes the number colour on a computer club's kit
-(Nexxus saw it for your club's kit).
+(Nexxus saw it for your club's kit); whether a converted club's keeper
+shows in a match as planned, and the keeper variety (9 home and 6 away
+kits for 114 clubs, [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#still-unknown));
+how the presets look in the club editor.
+
+## Sponsor tiers
+
+`--mod sponsor-tiers` (group `eras`, PAL only, in LMASTER full and max;
+needs `random-sponsors`; built 2026-11-19; Nexxus's idea and choices;
+`sponsortiers.py`, with `plan_sponsor_tiers` in `patch_disc.py`). The
+better the club, the bigger its main sponsor: a club's sponsor is drawn
+from its tier's slice of the 199 main sponsors sorted by fee, not from
+all 199, and it is still a new draw each season. **Built; the machine
+code is checked against the plan by emulation (`sponsortiers.py
+selftest DAT`: 121,200 runs of the sponsors' code with the routine
+spliced in, 0 wrong). Read back from a built disc (`LMAST-test-kits6.iso`,
+2026-11-19: the routine, its tables and the sponsors' code with the call
+equal what the tools generate). Not yet seen in the game**
+([`TESTING.md`](../TESTING.md)).
+
+**What the game says about a sponsor** (**confirmed** unless marked):
+
+| Address | Symbol | What it shows |
+|---|---|---|
+| `SIMPRG.REL 0x23d978` + *n* × `0x48` | `plSponsor_GetDb` (`0x160dc0`) | the record of sponsor *n*, ids 1 to 212 ([`ECONOMY.md`](ECONOMY.md#sponsors)) |
+| record `+0x14` | the main-sponsor fee | the fee in hundredths of the game's stored money (£1 = 6, [`ECONOMY.md`](ECONOMY.md)), so £ = the value × 100 ÷ 6: record 170, Africmap Airways, holds 81,000, the £1,350,000 the first Sponsor screen of a career shows. **Empirical** (`sponsortiers.py info`): the 199 main sponsors, ids 1 to 199, run from 30,000 to 2,700,000 in the table (£500,000 to £45 million, the figures of [`ECONOMY.md`](ECONOMY.md#sponsors); median 207,000, £3.45 million); the suppliers 206 to 210 hold 30,000 to 450,000 and records 211 and 212 hold none |
+| `MES.PAC` category 10000 | the sponsors' names | message *n* is sponsor *n*'s name |
+| `pwkTeam_GetUnif` (`0x26e9d8`) | the kit's sponsor | `PlUnif +4` is the sponsor's number, which `random-sponsors` writes |
+
+A bigger fee is a better sponsor: it is what the Sponsor screen offers as
+the main sponsor's yearly pay. The `sponsor-fees` switch of the harder
+economy cuts the big fees but keeps their order, so the plan holds for it
+too.
+
+**The plan.** The 199 sponsors are sorted by fee, best first (ties by
+number). The clubs' 16 tiers are the ones the [club eras](#club-eras) and
+the [kit eras](#kit-eras) use, from the clubs' starting world rank (tier 0
+the best), and each tier gets one slice of the sorted list: 13 sponsors
+for tiers 0 to 6 and 12 for tiers 7 to 15 (199 = 7 × 13 + 9 × 12). A
+club's main sponsor in a season is
+
+```text
+x = team * A + season * B   (mod 2^32)           the hash random-sponsors uses
+sponsor = LIST[start[tier] + (x >> 11) mod length[tier]]
+```
+
+with the season from `pwkGen_Keika` and *A* and *B* the first two odd
+multipliers of the `random-sponsors` hash, from the
+[LMASTER seed](#the-lmaster-seed). Over 101 seasons each club draws 10 to
+13 different sponsors of its slice (`sponsortiers.py check`).
+
+| Tier | Places in the list | Fees in the slice (the table's value; £ = value × 100 ÷ 6) |
+|---|---|---|
+| 0 | 1 to 13 | 1,500,000 to 2,700,000 |
+| 1 | 14 to 26 | 810,000 to 1,350,000 |
+| 2 | 27 to 39 | 570,000 to 810,000 |
+| 3 | 40 to 52 | 396,000 to 540,000 |
+| 4 | 53 to 65 | 300,000 to 390,000 |
+| 5 | 66 to 78 | 240,000 to 300,000 |
+| 6 | 79 to 91 | 219,000 to 240,000 |
+| 7 | 92 to 103 | 201,000 to 219,000 |
+| 8 | 104 to 115 | 174,000 to 201,000 |
+| 9 | 116 to 127 | 150,000 to 174,000 |
+| 10 | 128 to 139 | 126,000 to 150,000 |
+| 11 | 140 to 151 | 99,000 to 123,000 |
+| 12 | 152 to 163 | 87,000 to 96,000 |
+| 13 | 164 to 175 | 75,000 to 84,000 |
+| 14 | 176 to 187 | 57,000 to 75,000 |
+| 15 | 188 to 199 | 30,000 to 54,000 |
+
+**The routine and the tables.** The routine is a leaf of 27 words at
+`CAVE + 0xbc80` (`0xebc80`, `SPONSOR_PICK`), the same length for both
+club ranges. It is called with the hash *x* in `$t1`, the team id in `$s1`
+and the `PlUnif` in `$s2`, writes `PlUnif +4`, uses `$t0` and `$t2` to
+`$t6` and leaves `$t1`, `$v1`, `$s0` to `$s3`, `$ra` and the stack alone.
+A team outside 3 to 441 (3 to 459 with [`tier3-eras`](#tier-3-eras)) gets
+the plain hash's sponsor, 1 + (*x* >> 11) mod 199, so the routine is safe
+to call for any team. The tables are one block at `CAVE + 0xbd00`
+(`0xebd00`, `SPONSOR_TIERS`):
+
+| Offset | Size | Holds |
+|---|---|---|
+| `+0` | 16 bytes | each tier's start: the index in the list of its first sponsor |
+| `+16` | 16 bytes | each tier's length |
+| `+32` | one byte per club, padded to a multiple of 4 (440 for teams 3 to 441, 460 for 3 to 459) | the club's tier |
+| after the clubs | 199 bytes and a zero byte | the sponsor numbers sorted by fee, best first |
+
+That is 672 bytes, or 692 with `tier3-eras`. The block grew the code
+segment to `0xc000` ([The code segment](#the-code-segment)).
+
+**The hand-over from the sponsors' code.** The sponsors' code
+([Random sponsors](#random-sponsors)) hashes the sponsor with six words
+(`srl`, `addiu`, `divu`, `mfhi`, `addiu`, `sb`). With `sponsor-tiers`
+(`sponsortiers.splice_call`) they become a `jal` to the routine and a
+nop, and the sponsors' code goes on as before: it already keeps its
+return address on its own stack, then draws the supplier, and ends in the
+`jr $ra` or the `j` to the kit code. `splice_call` refuses to patch
+unless the six words are in the code exactly once.
+
+**What it leaves alone.** Your club (team 1), the rival (team 2), the VS
+teams, the national teams and every id outside 3 to 441 (3 to 459 with
+`tier3-eras`) keep the plain hash, so the teams the sponsors' code reaches
+beyond that range (the third tier's clubs without `tier3-eras`, and the
+national teams) still draw from all 199 (Nexxus's rule, as for the other
+eras switches). The
+supplier draw is untouched, and the kit eras overwrite it as before. The
+Japanese release is not touched: the fee table is found there through
+`gamever.py` (`sponsortiers.py check DAT_JP` runs), but the code is PAL's.
+
+**The test option.** None of its own: a club's sponsor changes every
+season through the hash, so a tier's sponsors rotate without any
+`--eras-offset`.
+
+**Still unknown:** whether sponsor *n* draws the logo `CmnTex_005_n`
+(the kit's sponsor number is the texture entry *n* − 1,
+[`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#the-sponsor-and-supplier-logos-on-a-generated-kit),
+read from the docs and not checked against the images, so a tier's logos
+may not match its names); the Japanese release (the code is not ported);
+whether a tier fixed from the starting world rank, not the live one,
+looks right over a long career ([Planned](#planned)); and the whole
+switch in the game.
 
 ## Tier 3 eras
 
@@ -904,7 +1088,8 @@ supplier logo really takes the number colour on a computer club's kit
 `club-eras`, `kit-eras` and `third-tier`; built 2026-11-19; Nexxus's
 idea). It writes nothing of its own (`plan_tier3_eras` returns no jobs):
 it makes [`club-eras`](#club-eras) and [`kit-eras`](#kit-eras) (and
-[`kit-standards`](#kit-standards), when it is on) take teams 442 to 459,
+[`kit-standards`](#kit-standards) and [`sponsor-tiers`](#sponsor-tiers),
+when they are on) take teams 442 to 459,
 the third tier's clubs, as well as 3 to 441. Those clubs have club
 records (`PLRESOURCESIM.PAC` entry 3) and `UNIFORM_LIST.TBB` rows but no
 squads: they are the third tiers' playoff clubs, 3 for each nation
@@ -923,6 +1108,7 @@ info DAT` and `python SRC/kiteras.py info DAT` print both ranges):
 | Manager pool | 1,317 managers | 1,371 managers |
 | Kit table | 15,804 bytes | 16,452 bytes |
 | Standards' table | 24,584 bytes | 25,592 bytes |
+| Sponsor tiers' tables | 672 bytes | 692 bytes |
 | Manager pool address | `CAVE + 0x900` | `CAVE + 0x940` |
 
 `cluberas.build(dat, last)` and `kiteras.build(dat, rel, last)` take the
@@ -934,7 +1120,7 @@ others.
 
 ## The code segment
 
-The LMASTER code segment is at `CAVE` = `0xe0000`, `0xbd00` bytes
+The LMASTER code segment is at `CAVE` = `0xe0000`, `0xc000` bytes
 (`patch_disc.CAVE`, `CAVE_SIZE`), loaded from the zero bytes after the
 executable's first segment (`0x57d58` of them, on the PAL and the
 Japanese file alike). It was at `0xf8000` until 2026-11-19: it moved
@@ -948,7 +1134,7 @@ offset is meant.
 |---|---|---|
 | `+0x000` | `0xe0000` | the save wrappers' code (`mod-saves`), their variables at `+0x200` |
 | `+0x280` | `0xe0280` | the third tier's detours ([`UID_LIMITS.md`](UID_LIMITS.md)) |
-| `+0x300` | `0xe0300` | the sponsors' code, 40 words |
+| `+0x300` | `0xe0300` | the sponsors' code, 40 words (it calls the sponsor tiers' routine with `sponsor-tiers`) |
 | `+0x3a0` | `0xe03a0` | the logo gate's code, 20 words |
 | `+0x400` | `0xe0400` | the managers' code, 61 words |
 | `+0x500` | `0xe0500` | the managers' result word (read with PINE, [`TESTING.md`](../TESTING.md)) |
@@ -958,10 +1144,13 @@ offset is meant.
 | `+0x1600` | `0xe1600` | the standards' code, 92 words (one more word with `--eras-offset` in these two and the managers' code) |
 | `+0x1800` | `0xe1800` | the kit table, 16,452 bytes with `tier3-eras` |
 | `+0x5850` | `0xe5850` | the standards' table, 25,592 bytes with `tier3-eras` |
+| `+0xbc80` | `0xebc80` | the sponsor tiers' routine (`SPONSOR_PICK`), 27 words |
+| `+0xbd00` | `0xebd00` | the sponsor tiers' tables (`SPONSOR_TIERS`), 672 bytes (692 with `tier3-eras`) |
 
 The segment grew from `0x400` to `0x1400` bytes for the managers'
-tables, to `0x5850` for the kit table and to `0xbd00` for the standards'
-table. A switch that is off leaves its part zero.
+tables, to `0x5850` for the kit table, to `0xbd00` for the standards'
+table and to `0xc000` for the sponsor tiers' routine and tables. A
+switch that is off leaves its part zero.
 
 ## Real names
 
@@ -1646,56 +1835,18 @@ started:
   the PAL code still holds them unreachable or they were cut, and the
   English text for its screens. Nothing is traced yet.
 
-- **Club eras** (Nexxus's idea, 2026-11-19; the managers are built, see
-  [Club eras](#club-eras), and so are the suppliers and kits, see
-  [Kit eras](#kit-eras); what is left here is the main sponsor, which stays
-  `random-sponsors`' per-season random draw, Nexxus's choice still open). Every club
-  changes manager, tactics and philosophy on a fixed cycle, and the
-  better clubs get the better sponsors, suppliers and managers instead of
-  a random draw. Each club keeps a manager no other club has. Nexxus's
-  choices: the cycle is 3 seasons (first thought of as 5), it belongs in
-  LMASTER full and max (not lite, as it is not a fix), sponsors are
-  tiered by their main-sponsor fee, and suppliers by their fee, a higher
-  fee meaning a better one, with the two suppliers that have no fee equal
-  and lowest. It sits with [`random-sponsors`](#random-sponsors)
-  in the group `eras`: that switch draws a sponsor and a supplier for every
-  club by hash each season, and `kit-eras` then replaces the supplier.
-
-  What the code and data show (**confirmed** unless marked):
-
-  | Part | Where it is |
-  |---|---|
-  | A club's manager | `plOteam_GetManagerNoOffset` (`SLES 0x216668`): a club's `PLRESOURCESIM.PAC` entry 3 record `+4` (an s16, database id − `0x6d2e`, all 457 different, [`INITTEAM_FORMAT.md`](INITTEAM_FORMAT.md#club-records-plresourcesimpac-entry-3)) through `plOteam_GetDb` (`0x2165d8`); a national team's, entry 4. `pwkOteam_GetManager` (`0x24be40`) builds the computer club's manager from it |
-  | Manager to style | `0x22e610` reads the manager's byte `+0x35` (under 9) and maps it through the table at `0x534428` to a team style. `plTeam_SetStyleTeamParam` (`0x22ed28`, called from `pwkOteam_GetTeamData`, `0x24ba08`) then builds the style's `0x70`-byte block at `PlTeamData +0x4204` (the formation and the seven tactics). **Read in the code; seen in the game for a computer club, below** |
-  | Club rank | `pwkOteam_GetRank` (`0x24bec8`, 0 to 31) and `pwkOteam_GetWorldClubRank` (`0x24bf70`), live values |
-  | Sponsors and suppliers | the table in `SIMPRG.REL` (`0x23d978`, ids 1 to 212, [`ECONOMY.md`](ECONOMY.md#sponsors)). The 199 sponsors (ids 1 to 199) all have a main-sponsor fee at `+0x14`, 30,000 to 2,700,000 in the stored unit (**empirical**). Suppliers are 206 to 212: Opnatis (207) 450,000, Binnonn (206) 360,000, Wrandon (208) 240,000, Untelio (209) 90,000, Jompela (210) 30,000, then Egamucho (211) and Doclla (212) with none (**empirical**) |
-  | Where the draw is made | `pwkTeam_GetUnif` (`0x26e9d8`), which the `random-sponsors` code replaces at `0x26ec1c` and `0x26ec24` (the routine at `0xe0300`, which ends in a `j` to the kit code at `0xe1400` with `kit-eras`; `0xf8300` and `0xf9400` before the move of 2026-11-19) |
-
-  A way to build it (a proposal, nothing written). Nexxus's suggestion
-  is to stagger it: a third of the clubs change each year, not all at
-  once. One constant sets the cycle, and a club's group is its id mod 3,
-  so its cycle number is the season (`pwkGen_Keika`, `0x244430`) plus the
-  group, divided by the constant. At any season two clubs' cycle numbers
-  then differ by at most 1. Sponsors and suppliers pick a tier from the
-  club's live rank and then a hash inside the tier, so they follow a club
-  as it rises. Managers are a rotation inside each rank tier, with the
-  tiers fixed by the clubs' starting rank and each tier given its own
-  slice of the manager records sorted by quality: a club at position *p*
-  of a tier of *K* clubs takes the slice's entry (*p* + cycle × *K*) mod
-  *M*. Two clubs of a tier collide only if their positions differ by *K*
-  modulo *M*, which cannot happen when *M* is more than 2*K*, so one
-  manager per club holds at every season, staggered or not, and the
-  slices of different tiers are disjoint. That needs about 900 to 1,000
-  managers for the 457 clubs, against 3,000 manager and coach records,
-  and Nexxus says a coach can be a manager: a computer club's manager is
-  only behind the team info screen and never shown (Nexxus's report,
-  2026-11-19), so the whole pool is usable. The managers of your club,
-  your rival and the national teams stay out of the slices. Tactics and
-  formations change too (Nexxus's choice), and they come with the manager:
-  his record holds three formations and the seven tactical leanings, and
-  a computer club's team data takes them from it (seen in PCSX2, below),
-  so the switch needs no tactics choice of its own. The manager getter is
-  patched the way `random-sponsors` patches the kit numbers.
+- **Club eras, what is left** (Nexxus's idea, 2026-11-19). The managers
+  ([Club eras](#club-eras)), the suppliers and kits ([Kit eras](#kit-eras),
+  [Kit standards](#kit-standards)) and the main sponsors
+  ([Sponsor tiers](#sponsor-tiers)) are built. They all sort the clubs
+  once, by the starting world rank, so a club that rises or falls keeps
+  its tier. A tier that follows the live rank (`pwkOteam_GetRank`,
+  `0x24bec8`, 0 to 31, and `pwkOteam_GetWorldClubRank`, `0x24bf70`, both
+  live values, **confirmed** in the code) would let sponsors and
+  suppliers follow a club as it rises, as the first proposal had it. The
+  managers' tiers stay fixed on purpose: fixed tiers with their own
+  slices are what keep one manager per club. Nothing is started, and
+  the choice is Nexxus's.
 
   Still unknown: what makes a manager or coach better, for the tiers
   (the ability bars,
@@ -1746,10 +1897,26 @@ hold them as tasks. The open questions behind the candidates:
 python SRC/patch_disc.py switches                  # the editions, groups and switches above
 python SRC/schedule.py league DAT/PARAM            # the leagues league-balance rebuilds
 python SRC/manifest.py selftest                    # the build manifest: make, show, diff and rebuild
+python SRC/sponsortiers.py info DAT                # the sponsor tiers' slices, fees and clubs
+python SRC/sponsortiers.py check DAT               # the plan's own rules, both club ranges
+python SRC/sponsortiers.py selftest DAT            # the machine code against the plan
+python SRC/uniform.py keepers DAT/PLAYER           # the keeper kits of kit-standards, before and after
+python SRC/clubpresets.py check ISO/DLL/CEDITPRG.REL DAT     # the club-creation presets with the standard
+python SRC/clubpresets.py selftest ISO/DLL/CEDITPRG.REL DAT  # patch, decode again, compare
+python SRC/p2state.py selftest                     # the state checker for the eras (no state needed)
 python SRC/preload.py info DAT                     # the room in the PRELOAD copies --copies fills
 python SRC/fontmod.py info ISO/SLES_541.51 DAT/0SYSTEM "RobotoCondensed[wght].ttf"
 python SRC/titlebanner.py info DAT/CSE/SC_TITLEBG1.CSP "RobotoCondensed[wght].ttf"
 ```
 
 `python SRC/regress.py list` shows every check; the ones that cover this
-doc are `manifest`, `patch_disc_switches`, `realnames`, `fontmod` and `titlebanner`.
+doc are `manifest`, `patch_disc_switches`, `realnames`, `fontmod`, `titlebanner`,
+`sponsortiers_info`, `sponsortiers_check`, `sponsortiers_selftest`,
+`clubpresets_info`, `clubpresets_patches`, `clubpresets_check`,
+`clubpresets_selftest`, `uniform_keepers` and `p2state_selftest`
+(`jp_sponsortiers_info`, `jp_sponsortiers_check` and `jp_uniform_keepers`
+for the Japanese data).
+
+`python SRC/p2state.py info|kits|managers <state.p2s>` reads a PCSX2
+save state and compares each club of a match with the plans of
+`kiteras.py` and `cluberas.py`: its docstring has the options.
