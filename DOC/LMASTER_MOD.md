@@ -46,11 +46,29 @@ level:
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
 | `graphics` | realism ([below](#lmast-realism-on-the-disc)), modern-font ([below](#modern-font)) | – | yes | yes |
-| `eras` (title "Club eras") | club-eras ([below](#club-eras)), random-sponsors ([below](#random-sponsors)), kit-eras ([below](#kit-eras)), kit-standards ([below](#kit-standards)), sponsor-tiers ([below](#sponsor-tiers)), tier3-eras ([below](#tier-3-eras)) | – | yes | yes |
+| `eras` (title "Club eras") | club-eras ([below](#club-eras)), club-kits ([below](#club-kits)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
-| `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
+| `balance` | injury-odds, overseas-bases, transfer-fees, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
 | `test-tools` | skip-tutorial, launcher | – | – | – |
+
+**Merged switches** (Nexxus's choice, 2026-11-19). Switches that needed
+each other are one switch, as the rule above says, so five old names
+became two and one was folded in. Every old name still works as an
+alias, but it now builds the whole merged switch:
+
+| Switch | Was | What an old name now builds |
+|---|---|---|
+| `club-kits` | `random-sponsors`, `kit-eras`, `kit-standards`, `sponsor-tiers` | all four parts together (the four sections [below](#club-kits)) |
+| `transfer-fees` | `transfer-fees`, `fee-tiers` | the fees twice as high and the fees by player rank |
+| `club-eras` | `club-eras`, `tier3-eras` | the managers; `tier3-eras` is no switch, the eras take the third tier's clubs (teams 442 to 459) whenever `third-tier`, `club-eras` and `club-kits` are all on |
+
+A build line that named only some of the parts now gets all of them, so
+a disc built with `kit-eras` alone is no longer the same disc. Built with
+`lmaster-max`, the merged switches give the same disc byte for byte as
+the separate ones did (checked 2026-11-19, with `--test-build`).
+`lmaster-max` is still `lmaster-full` plus the two difficulty groups:
+the merged `transfer-fees` stays in `balance`.
 
 ## The LMASTER seed
 
@@ -518,6 +536,23 @@ Al-Sadd. The Japanese release is left alone.
 
 Other retail typos seen while making the name table, not fixed:
 "Repulic of Ireland" (category 3) and "Motherwwell" (category 100003).
+
+## Club kits
+
+`--mod club-kits` (LMASTER full and max) is one switch made of the four
+parts described in the sections below, which keep their own headings
+because each has its own tests: [Random sponsors](#random-sponsors) (a
+sponsor and a kit supplier on every club's kit, and the 114 clubs with
+licensed kits made generated), [Kit eras](#kit-eras) (new kits whenever a
+club's era changes), [Kit standards](#kit-standards) (numbers, emblems,
+number colours, keeper kits and the club-creation presets) and [Sponsor
+tiers](#sponsor-tiers) (a club's main sponsor by its strength). The
+parts share the code segment and the three multipliers of the seed, and
+each needs the one before it, which is why they are one switch. With
+`third-tier` and `club-eras` also on, the eras take the third tier's
+clubs too ([Tier 3 eras](#tier-3-eras)). The old names of the parts are
+aliases of `club-kits`
+([merged switches](#the-switch-levels)).
 
 ## Random sponsors
 

@@ -313,6 +313,103 @@ edition plays through a season.
       with no garbling or cut-off text
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 
+### The third tier's rules text in Japanese (draft)
+
+Nexxus's choice, 2026-11-19: the third tier's rules text on the
+Japanese disc is written in Japanese. Claude drafted it below from the
+Japanese retail wording of the same messages, in the game's own style
+(full-width kana and kanji for sentences, half-width kana for division
+names, as the retail text has them). It is not on any disc yet:
+`patch_disc.py` still leaves slot 0 alone. The check for a person who
+reads Japanese: read each line for grammar, tone and fit with the
+neighbouring retail text, and say what to change. Once it is accepted,
+the edits are added to `tier_text_edits` for the Japanese pack and the
+check below moves to a disc check
+([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc)).
+
+Each nation's messages, England to the Netherlands, in the order of the
+PAL edits (`SRC/patch_disc.py`, `tier_text_edits`). `{lf}` and the other
+tags stay as the retail text has them; `\n` is a line break.
+
+**Division sizes and the closing line, 487:1100 to 1105** (the advisor's
+introduction to each nation's second division). Change the club count
+and the match count, and add a last line to every message:
+
+| Id | Nation | Retail | New |
+|---|---|---|---|
+| 487:1100 | England | 全26チーム, 年間50試合 | 全24チーム, 年間46試合 |
+| 487:1101 | France | 全22チーム, 年間42試合 | 全20チーム, 年間38試合 |
+| 487:1102 | Germany | 全20チーム, 年間38試合 | 全18チーム, 年間34試合 |
+| 487:1103 | Italy | 全24チーム, 年間46試合 | 全22チーム, 年間42試合 |
+| 487:1104 | Spain | 全24チーム, 年間46試合 | 全22チーム, 年間42試合 |
+| 487:1105 | Netherlands | 全22チーム, 年間42試合 | 全20チーム, 年間38試合 |
+
+New last line of each (after a `\n{lf}`):
+
+```text
+最下位になるとゲームオーバーです。
+```
+
+**Game Over conditions, 487:1200 to 1205.** Point 2 (the retail
+"two years in a row at or below place N") is replaced, from `２.` up to
+`３.`, so that finishing last in one season ends the game. The division
+names are the retail ones:
+
+| Id | New point 2 |
+|---|---|
+| 487:1200 | `{lf}　２.　シーズン終了時にﾁｬﾝﾋﾟｵﾝｽﾞﾃﾞｨﾋﾞｼﾞｮﾝで最下位{lf}　　　 （24位）の場合。` |
+| 487:1201 | `{lf}　２.　シーズン終了時にﾌﾗﾝｽﾘｰｸﾞ･ﾃﾞｨﾋﾞｼﾞｮﾝ2で最下位{lf}　　　 （20位）の場合。` |
+| 487:1202 | `{lf}　２.　シーズン終了時にﾄﾞｲﾂ2部ﾘｰｸﾞで最下位{lf}　　　 （18位）の場合。` |
+| 487:1203 | `{lf}　２.　シーズン終了時にｲﾀﾘｱﾘｰｸﾞBで最下位{lf}　　　 （22位）の場合。` |
+| 487:1204 | `{lf}　２.　シーズン終了時にｽﾍﾟｲﾝﾘｰｸﾞ･ﾃﾞｨﾋﾞｼﾞｮﾝ2で最下位{lf}　　　 （22位）の場合。` |
+| 487:1205 | `{lf}　２.　シーズン終了時にｵﾗﾝﾀﾞ2部ﾘｰｸﾞで最下位{lf}　　　 （20位）の場合。` |
+
+**League rules screen, 30001** (ids 101, 107, 112, 117, 123, 128). A
+relegation section is added after the promotion section. The tier's
+name is the retail one of 11:1142 to 1147 without ` ﾌﾟﾚｲｵﾌ`:
+ｲﾝｸﾞﾗﾝﾄﾞﾘｰｸﾞ･ﾃﾞｨﾋﾞｼﾞｮﾝ3, ﾌﾗﾝｽﾘｰｸﾞ･ﾃﾞｨﾋﾞｼﾞｮﾝ3, ﾄﾞｲﾂ3部ﾘｰｸﾞ,
+ｲﾀﾘｱﾘｰｸﾞC, ｽﾍﾟｲﾝﾘｰｸﾞ･ﾃﾞｨﾋﾞｼﾞｮﾝ3 and ｵﾗﾝﾀﾞ3部ﾘｰｸﾞ.
+
+```text
+\n{lf}\n{lf}{color:4}降格条件{/color}\n{lf}最下位のクラブは<the tier's name>に降格
+```
+
+**Season-start news, 832** (ids 433, 436, 442, 438, 440, 445). A
+sentence is added at the end of each news text:
+
+```text
+最下位のクラブは<the tier's name>に降格となる。
+```
+
+**Game Over screen, 30003:1, point 2** (the screen that lists the
+conditions, from `２.` up to `３.`):
+
+```text
+{lf}　２.　シーズン終了時に{var:1:2031}で最下位{lf}　　　 の場合。
+```
+
+**The advisor's warning, 35680:0** (from `勝ち点から見て` to the end of
+the message; the first line, `さん、警告です。`, stays):
+
+```text
+勝ち点から見て{var:1:2031}で最下位に\n{lf}なってしまう危険性がございます。今季\n{lf}最下位だとゲームオーバーとなるのでご注意ください。
+```
+
+**The Game Over message, 487:902** (its first sentence, which retail
+spells with a typo, `ふるいませませんでした`, is replaced):
+
+```text
+今季はリーグ最下位に終わってしまいました…
+```
+
+Things the reader should look at: whether `降格` (relegated) and
+`最下位` (last place) are the words the game's own text uses; whether
+the lines are short enough for the message boxes (the longest is the
+warning's second line); and
+whether the tier's name should be the retail one with `ﾌﾟﾚｲｵﾌ` removed
+or something else. Put the result into
+[`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc)
+
 ### Newer switches
 
 Each of these switches has been built and is waiting for someone to play it.

@@ -67,20 +67,33 @@ What to work on next, most valuable first.
    ([`TEXMAP.md`](DOC/TEXMAP.md),
    [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
 3. **The LMASTER Mod: every switch on the Japanese release**, needed
-   before LMASTER 1.0.0. Every switch but `realism` builds there now,
-   `real-names` (English names in ASCII) and `third-tier` (its code,
-   save, data and 93 places ported) included. Left: the third tier's
-   rules text in Japanese, `realism` (the pack is named by PAL hashes),
-   and the other switches on a Japanese disc in the game (a third-tier
-   disc already boots, starts a career, saves and loads in PCSX2)
+   before LMASTER 1.0.0. Every switch of the PAL builds but the eras
+   group and `realism` builds there now, `real-names` (English names in
+   ASCII) and `third-tier` (its code, save, data and 93 places ported)
+   included. Left: the eras group's Japanese ports (`sponsor-tiers` and
+   the club presets first), `realism` (the pack is named by PAL
+   hashes), the third tier's rules text (drafted in Japanese, waiting
+   for a reader of Japanese in [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-draft)),
+   the real names in Japanese (a draft of 690 names is made) and the
+   other switches on a Japanese disc in the game (a third-tier disc
+   already boots, starts a career, saves and loads in PCSX2)
    ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc)).
 4. **The starting season: a smaller first division in the game**
    ([`TESTING.md`](TESTING.md#the-starting-season)): France at
    18 from the Season tab, and two nations changed in one build; only
    England at 22 is tested
    ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from)).
-5. **The LMASTER Mod: the newest switches in the game.** Each is built on
-   a test disc and waits for a look: `modern-font` and `title-banner`
+5. **The LMASTER Mod: the eras group in the game** (`club-eras`,
+   `kit-eras`, `kit-standards`, `tier3-eras`, `sponsor-tiers`, built
+   2026-11-19 on `LMAST-test-kits6.iso`). Seen so far: a club in era 1
+   with its new manager, and the third tier's era-0 control
+   (Rotherham, Nottingham). Left: a group-0 club keeping its manager,
+   the later eras, a whole season, how the kits and sponsors look, and
+   whether sponsor *n* draws logo *n* (the check the sponsor tiers rest
+   on) ([`TESTING.md`](TESTING.md#newer-switches)). The switches are
+   now `club-eras` and `club-kits` (the old names are aliases).
+6. **The LMASTER Mod: the other newest switches in the game.** Each is
+   built on a test disc and waits for a look: `modern-font` and `title-banner`
    (seen on a few screens, 2026-11-13; the font's stray pixels, reported
    and fixed 2026-11-14, are gone on a rebuilt disc; the rest of the
    screens still to go through), `random-sponsors` (seen on Real Betis and England's
@@ -433,45 +446,36 @@ file (`--font`).
 **Done when:** every candidate is built and tested in the game or set
 aside, and every switch works on the Japanese release.
 
-- [ ] **test** The Club eras switch for LMASTER full and max (Nexxus's
-      idea and choices, 2026-11-19): clubs change manager every 3 seasons,
-      a third of the clubs each year, better clubs getting better
-      managers, every manager unique. The managers are built
-      (`--mod club-eras`, `cluberas.py`) and seen working in PCSX2 for a
+- [ ] **test** The managers of the Club eras switch for LMASTER full and
+      max (Nexxus's idea and choices, 2026-11-19): clubs change manager
+      every 3 seasons, a third of the clubs each year, better clubs
+      getting better managers, every manager unique
+      (`--mod club-eras`, `cluberas.py`). Seen working in PCSX2 for a
       club in era 1: the new manager, his formations and his tactics
       reach the computer club's match (Nexxus's states, 2026-11-19). Left
       to see: a group-0 club keeping its retail manager, the opening
       playoffs unchanged, the later eras and a whole season
-      ([`TESTING.md`](TESTING.md#newer-switches)). The kit suppliers and
-      kits by club rank are built (`--mod kit-eras`, 2026-11-19, not yet
-      seen in the game), and so are the kit standard (`--mod
-      kit-standards`) and the third tier's clubs in both eras (`--mod
-      tier3-eras`, 457 clubs instead of 439), on the test disc
-      `LMAST-test-kits6.iso`, with the main sponsors by tier (`--mod
-      sponsor-tiers`). Open: the in-game checks of the kits, the standard,
-      the third tier and the sponsor tiers
       ([`TESTING.md`](TESTING.md#newer-switches),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
+- [ ] **test** The kits, the standard, the third tier's eras and the
+      sponsor tiers (`--mod club-kits`, which holds what were `kit-eras`,
+      `kit-standards`, `sponsor-tiers` and the third tier's eras, built
+      2026-11-19 on `LMAST-test-kits6.iso`). Seen:
+      the third tier's era-0 control (Rotherham and Nottingham, season -1:
+      the kit tables, every written `PlUnif` byte and the sponsors equal
+      the plan, Nexxus's states, 2026-11-19). Left, in a match against a
+      computer club: every shirt shows a front number, a shorts number and
+      emblems, with collars, number designs and emblems differing between
+      clubs and eras and the away kit matching the home kit most of the
+      time; the number colours, supplier logo and captain's band show on
+      the kit; a third-tier club in an era past 0; a converted club's
+      keeper shows real colours and numbers; a new club's kits start with
+      the numbers and emblems on; and a club's main sponsor falls with its
+      tier ([`TESTING.md`](TESTING.md#newer-switches),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-eras),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers),
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#tier-3-eras))
-- [ ] **test** Kit standards and the third tier's eras (`--mod
-      kit-standards`, `--mod tier3-eras`, built 2026-11-19): in a match
-      against a computer club every shirt shows a front number, a shorts
-      number and emblems; collars, number designs and emblems differ
-      between clubs and eras, with the away kit matching the home kit
-      most of the time; the number colours, the supplier logo and the
-      captain's band show on the kit; and the third tier's clubs
-      (teams 442 to 459) change too
-      ([`TESTING.md`](TESTING.md#newer-switches))
-- [ ] **rebuild** Rationalise the switch names (Nexxus, 2026-11-19): merge
-      similar switches and groups (the `eras` group now holds six), rename
-      and polish them, keeping every old name as an alias in
-      `patch_disc.SWITCH_ALIASES` so existing build lines keep working. Do
-      it at a quiet moment, then update `LMASTER_MOD.md`, `INSTALL.md`,
-      `USAGE.md` and the editor's Build disc page
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md))
 - [ ] **understand** What the kit editor's items look like, for the
       kit standard: what the three emblem types, the eight number designs
       and the eleven collars draw; how the shorts number position is
@@ -481,15 +485,6 @@ aside, and every switch works on the Japanese release.
       emblem is drawn at all. A Uniform Viewer or kit editor check with
       save states
       ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#the-kit-editors-items-and-their-bytes))
-- [ ] **test** The sponsor tiers, the keeper kits and the club-creation
-      presets (`--mod sponsor-tiers`, `--mod kit-standards`, built
-      2026-11-19 on `LMAST-test-kits6.iso`, not yet seen in the game): a
-      club's main sponsor falls with its tier, a converted club's keeper
-      shows real colours and numbers, and a new club's kits start with the
-      numbers and emblems on
-      ([`TESTING.md`](TESTING.md#newer-switches),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers),
-      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#kit-standards))
 - [ ] **understand** Whether sponsor *n* draws the texture `CmnTex_005_n`
       in `SPONSOR_TEXTURE.PAC` (entry *n* - 1): the sponsor tiers rest on
       a club's sponsor number being its logo's number, which the kit's
@@ -511,7 +506,9 @@ aside, and every switch works on the Japanese release.
       (the code; its plan already reads the Japanese `DAT_JP`), the
       club-creation presets (the Japanese `CEDITPRG.REL` holds the same
       records `0x100` lower) and the other eras switches (`club-eras`,
-      `kit-eras`, `kit-standards`, `tier3-eras`), all PAL only so far
+      `kit-eras`, `kit-standards`, `tier3-eras`), all PAL only so far;
+      start with `sponsor-tiers` and the presets, and port the rest after
+      the in-game checks of the eras group
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md))
 - [ ] **rebuild** **Needed before LMASTER 1.0.0** (Nexxus's choice,
       2026-11-01): every switch works on the Japanese release
@@ -521,9 +518,10 @@ aside, and every switch works on the Japanese release.
       is its one firm requirement. Every switch but `realism` builds on
       the Japanese disc (`real-names` and `third-tier` 2026-11-12). Left:
       the third tier's rules text in Japanese (the messages keep the
-      retail rules; whether to write it in Japanese, which someone who
-      reads it would have to check, or leave it in English is not
-      decided), `realism` (so LMASTER full and max can't be built for
+      retail rules; Nexxus's choice, 2026-11-19: write it in Japanese.
+      A draft is in [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-draft)
+      for a reader of Japanese to check, then `tier_text_edits` gets
+      the Japanese edits), `realism` (so LMASTER full and max can't be built for
       it), the title banner (below), and running a Japanese disc built
       with the switches in the game (a third-tier disc boots, starts a
       career, reaches the tutorial's playoffs and saves and loads,
@@ -544,7 +542,17 @@ aside, and every switch works on the Japanese release.
       [`MBB_FORMAT.md`](DOC/MBB_FORMAT.md#japanese-voiced-kana)). A draft
       can be made here, but someone who reads Japanese should check it
       (the game's own katakana names for the unlicensed clubs are in the
-      Japanese `MES.PAC` to follow, such as ﾊﾞｰﾐﾝｶﾞﾑ for Birmingham)
+      Japanese `MES.PAC` to follow, such as ﾊﾞｰﾐﾝｶﾞﾑ for Birmingham).
+      Nexxus's rule, 2026-11-19: names the Japanese disc already has in
+      Japanese stay as they are. A draft is made in
+      `names/real-names-japanese-draft.csv` (git-ignored): 690 names in
+      katakana, full width to read and half width as the game writes
+      them (98 clubs, 421 stadiums, 48 competitions and 123 stages, the
+      competitions in their real-world names, such as the Premier
+      League), and 379 rows left as the retail Japanese text has them,
+      which already name the real club or place (335 clubs and national
+      teams, 8 nations, 36 stadiums); it waits for a reader of Japanese, then
+      becomes a column of `SRC/realnames.csv`
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names))
 - [ ] **distribute** LMASTER Mod's build for the two switches that draw
       with a font file (`modern-font` and `title-banner`, 2026-11-13):

@@ -78,7 +78,7 @@ checked as on PAL, and a jump table's case addresses take the Japanese
 addresses of the same code. A few switches do nothing there, and say so
 in a note: sponsor-negotiation (the release negotiates already),
 vpf-positions (it has no Virtua Pro Football import), drill-names (the
-names are already in place), and random-sponsors, retail-text,
+names are already in place), and club-kits, club-eras, retail-text,
 modern-font and title-banner (they are made for PAL's code, text and
 fonts). mod-saves renames BISLPM-66316-G/C, and fanbase scales the
 Japanese merchandise table, which holds half the PAL bases. See
@@ -103,11 +103,11 @@ mobile-site, overseas-pop, cup-last16, moving-boards), match-fixes
 vpf-positions), text-fixes (retail-text), title-screen (title-banner),
 harder-economy (facility-tiers, wider-tickets, dearer-ads, sponsor-fees,
 tv-fees, season-demand), balance (injury-odds, overseas-bases,
-transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs,
+transfer-fees, slow-reputation, fanbase, merch-costs,
 pr-costs, camp-costs, tour-costs), leagues (league-balance, third-tier),
 restorations (injury-lines), names (real-names, own-stadium), stadiums
 (special-stadium, real-grounds, sponsor-boards), saves (mod-saves),
-graphics (realism, random-sponsors, modern-font), and test-tools
+graphics (realism, modern-font), eras (club-eras, club-kits), and test-tools
 (skip-tutorial, launcher), which is in no edition.
 modern-font (the game's main text in Roboto Condensed, SRC/fontmod.py) and
 title-banner (the LMASTER Mod's version on the title screen,
@@ -252,7 +252,9 @@ the level before it (BUILD_STADIUM rows 96-101, bytes 42-69), so the
 moving board bought at an earlier ground still shows. See
 DOC/LMASTER_MOD.md#stadiums.
 
-random-sponsors (LMASTER full and max) gives the computer clubs' kits a
+club-kits (LMASTER full and max; with kit eras, the kit standard and the
+sponsor tiers it is one switch, the parts below the sponsors' code) gives the
+computer clubs' kits a
 main sponsor and a kit supplier, drawn again every season. In the retail
 game only your club and the rival show them, because pwkTeam_GetUnif
 (SLES 0x26e9d8) sets them to 0 for every other club. Its two stores at
@@ -349,7 +351,8 @@ See DOC/PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches.
 transfer-fees (whole disc image only) doubles the base of every transfer
 fee (SLES 0x247288, 1,350,000.0 -> 2,700,000.0) and raises price kind 1's
 cap from 7,200,000 to 15,000,000 (£120M -> £250M) in all four
-currencies (the initializer at 0x24a140). fee-tiers (whole disc image
+currencies (the initializer at 0x24a140). transfer-fees also does what was the
+fee-tiers switch (whole disc image
 only) multiplies the transfer fee's factor by player rank (SLES 0x398478,
 16 ranks x 6 club-rank bands) by tier: ranks 0-5 x2, 6-11 x1.5, 12-14
 x2, 15 x3, so lesser players cost about four times the retail fee with
@@ -4556,11 +4559,27 @@ def plan_sponsor_tiers(f, img, adopted=()):
     return word_jobs(f, img, "sponsor-tiers", jobs)
 
 
-def plan_tier3_eras(f, img, adopted=()):
-    """--mod tier3-eras writes nothing of its own: it makes club-eras and kit-eras (which it
-    needs, with third-tier) take teams 442-459, the third tier's clubs, as well as 3-441
-    (main sets tier3_eras, which their plans and routines read)."""
-    return [], []
+def plan_club_kits(f, img, adopted=()):
+    """Jobs for --mod club-kits: the sponsors and suppliers (random-sponsors' code, which
+    takes the sponsor from the club's tier), the kit eras and the kit standard, planned one
+    after another (they share the code segment, whose words word_jobs merges). main sets
+    kit_eras, sponsor_tiers and kit_standards with the switch, and tier3_eras when the third
+    tier, club-eras and club-kits are all on: then the eras take teams 442-459, the third
+    tier's clubs, as well as 3-441."""
+    jobs, notes = [], []
+    for plan in (plan_random_sponsors, plan_kit_eras, plan_kit_standards, plan_sponsor_tiers):
+        j_, n_ = plan(f, img, adopted)
+        jobs += j_
+        notes += n_
+    return jobs, notes
+
+
+def plan_transfer_fees_all(f, img):
+    """Jobs for --mod transfer-fees: the fees twice as high, then the fees by player rank
+    (fee-tiers: the retail table times the tiers; it is separate from the first table)."""
+    jobs, notes = plan_transfer_fees(f, img)
+    tier_jobs, tier_notes = plan_fee_tiers(f, img)
+    return jobs + tier_jobs, notes + tier_notes
 
 
 def tier_cave(build):
@@ -5797,11 +5816,9 @@ SWITCHES = (
      "do what they say"),
     ("overseas-bases", plan_overseas_bases, [SIM_FILE] + LIST_PACKS,
      "Balance: overseas bases, their investment and upkeep cost twice as much"),
-    ("transfer-fees", plan_transfer_fees, [SLES_FILE],
-     "Balance: transfer fees twice as high, up to £250M"),
-    ("fee-tiers", plan_fee_tiers, [SLES_FILE],
-     "Balance: transfer fees by player rank, on top of transfer-fees: the lowest ranks at the retail "
-     "price, the next at 1.5x, then dearer up to the best at 6x (needs transfer-fees)"),
+    ("transfer-fees", plan_transfer_fees_all, [SLES_FILE],
+     "Balance: transfer fees twice as high, up to £250M, and dearer by player rank: the lowest "
+     "ranks at the retail price, the next at 1.5x, then up to the best at 6x"),
     ("slow-reputation", plan_slow_reputation, [SLES_FILE],
      "Balance: club status (reputation) rises half as fast; losses stay"),
     ("third-tier", plan_third_tier,
@@ -5841,30 +5858,21 @@ SWITCHES = (
     ("moving-boards", plan_moving_boards, [BUILD_STADIUM_FILE],
      "Club: the moving advert board bought at an earlier ground shows at the last ground "
      "too (its boards are the plain ones, as at the level before, not the LCD set)"),
-    ("random-sponsors", plan_random_sponsors, [SLES_FILE, UNIFORM_FILE] + UNIFORM_PACKS,
+    ("club-kits", plan_club_kits, [SLES_FILE, UNIFORM_FILE, CEDIT_FILE] + UNIFORM_PACKS,
      "Clubs: every club's kit shows a main sponsor and a kit supplier, drawn again every "
-     "season, and the Italian, Spanish and Dutch clubs lose their licensed kits for generated "
-     "ones (LMASTER full and max)"),
+     "season (a club's sponsor from its tier's slice of the 199 main sponsors sorted by fee, so "
+     "the stronger clubs carry the bigger ones); the Italian, Spanish and Dutch clubs lose "
+     "their licensed kits for generated ones; every computer club changes kits whenever its "
+     "era changes, to one of the seven kit suppliers (the better clubs the better ones); and "
+     "the kits follow a standard in every era: front and shorts numbers, emblems, collars and "
+     "number designs varied, number colours and the captain's band that show, real keeper "
+     "kits, and the club-creation presets starting with numbers and emblems on (with the "
+     "third tier and club-eras, the third tier's clubs too; LMASTER full and max)"),
     ("club-eras", plan_club_eras, [SLES_FILE],
      "Clubs: every computer club changes manager every 3 seasons, a third of the clubs each "
      "year, the better clubs getting the better managers and every club one of its own; the "
-     "manager's tactics and formations come with him (LMASTER full and max)"),
-    ("kit-eras", plan_kit_eras, [SLES_FILE],
-     "Clubs: every computer club changes kits every time its era changes, to a design of one "
-     "of the seven kit suppliers (the better clubs the better suppliers), keeping the home "
-     "shirt's colours and taking new away colours that do not clash (LMASTER full and max)"),
-    ("kit-standards", plan_kit_standards, [SLES_FILE, CEDIT_FILE],
-     "Clubs: every computer club's kits follow a standard in every era: front numbers and "
-     "shorts numbers on, an emblem of type 1 or 2 on shirt and shorts, collar, number design and "
-     "emblems varied with the home and away kits alike more often than not, number colours and "
-     "the captain's band that show on the colours they sit on (needs kit-eras; LMASTER full and max)"),
-    ("sponsor-tiers", plan_sponsor_tiers, [SLES_FILE],
-     "Clubs: a club's main sponsor is drawn from its tier's slice of the 199 main sponsors sorted by fee, "
-     "so the stronger clubs carry the bigger sponsors, still a new one each season (needs random-sponsors; "
-     "LMASTER full and max)"),
-    ("tier3-eras", plan_tier3_eras, [],
-     "Clubs: the club and kit eras take the third tier's clubs (teams 442-459) too, not only "
-     "teams 3-441 (needs club-eras, kit-eras and third-tier; LMASTER full and max)"),
+     "manager's tactics and formations come with him (with the third tier and club-kits, the "
+     "third tier's clubs too; LMASTER full and max)"),
     ("realism", plan_realism, REALISM_FILES,
      "Graphics: LMAST Realism's crests and match pictures in the texture packs, and a "
      "2 px transparent edge on the licensed crests; needs --realism <pack folder>, "
@@ -5911,10 +5919,10 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                                  LIST_PACKS + STADIUM_DATA_PACKS),
                 "sponsor-boards": (target_sponsor_boards, [BUILD_STADIUM_FILE], []),
                 "moving-boards": (target_moving_boards, [BUILD_STADIUM_FILE], []),
-                "random-sponsors": (target_random_sponsors, [UNIFORM_FILE], UNIFORM_PACKS)}
+                "club-kits": (target_random_sponsors, [UNIFORM_FILE], UNIFORM_PACKS)}
 # Hooks that also take the file as DAT holds it (or the image, without
 # --dat), to keep the target's own edits row by row.
-HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards", "random-sponsors")
+HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards", "club-kits")
 
 # One switch per feature: parts that need each other are one switch
 # (DOC/LMASTER_MOD.md#the-switch-levels). The tables below list the
@@ -5922,10 +5930,7 @@ HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards", "random-spo
 # (file_<switch>(f, img, dat) -> [(target, data)]), whose files have
 # PRELOAD copies the game loads instead (--copies), that turn on others
 # (a bigger save needs saves of its own), and old names.
-SWITCH_NEEDS = {"kit-eras": ("random-sponsors",),
-                "kit-standards": ("kit-eras",),
-                "sponsor-tiers": ("random-sponsors",),
-                "tier3-eras": ("club-eras", "kit-eras", "third-tier")}
+SWITCH_NEEDS = {}
 SWITCH_FILES = {"third-tier": file_third_tier, "real-names": file_real_names,
                 "realism": file_realism, "modern-font": file_modern_font,
                 "title-banner": file_title_banner}
@@ -5933,6 +5938,14 @@ SWITCH_COPIES = ("third-tier", "real-names", "realism")
 SWITCH_IMPLIES = {"third-tier": ("mod-saves",), "real-grounds": ("special-stadium",)}
 SWITCH_ALIASES = {name: "third-tier" for name in ("save-expand", "tier-clubs", "tier-lists",
                                                   "tier-uids", "one-season-end")}
+# Merged on 2026-11-19: switches that needed each other are one switch (the
+# alias builds the whole merged switch, so an old build line that named only
+# part of it now gets all of it). tier3-eras is no switch: the eras take the
+# third tier's clubs when third-tier, club-eras and club-kits are all on, so
+# its old name stands for club-eras, which every build that held it also held.
+SWITCH_ALIASES.update({name: "club-kits" for name in ("random-sponsors", "kit-eras", "kit-standards",
+                                                       "sponsor-tiers")})
+SWITCH_ALIASES.update({"fee-tiers": "transfer-fees", "tier3-eras": "club-eras"})
 # The switch levels: editions are made of groups, groups of switches, and
 # --mod takes a name of any level. A group holds features that each work
 # alone; every switch is in exactly one group. The test tools are a group
@@ -5952,15 +5965,14 @@ GROUPS = (       # (name, title, switches)
      ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
       "season-demand")),
     ("balance", "Balance",
-     ("injury-odds", "overseas-bases", "transfer-fees", "fee-tiers", "slow-reputation",
+     ("injury-odds", "overseas-bases", "transfer-fees", "slow-reputation",
       "fanbase", "merch-costs", "pr-costs", "camp-costs", "tour-costs")),
     ("leagues", "Leagues", ("league-balance", "third-tier")),
     ("restorations", "Restored content", ("injury-lines",)),
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
     ("graphics", "Graphics", ("realism", "modern-font")),
-    ("eras", "Club eras", ("club-eras", "random-sponsors", "kit-eras", "kit-standards", "sponsor-tiers",
-                            "tier3-eras")),
+    ("eras", "Club eras", ("club-eras", "club-kits")),
     ("title-screen", "Title screen", ("title-banner",)),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
@@ -6548,8 +6560,8 @@ def main(argv):
     if offset is not None:
         if not offset.isdigit() or int(offset) > 2:
             raise SystemExit("--eras-offset takes 0, 1 or 2")
-        if "club-eras" not in mods and "kit-eras" not in mods:
-            raise SystemExit("--eras-offset goes with --mod club-eras or --mod kit-eras")
+        if "club-eras" not in mods and "club-kits" not in mods:
+            raise SystemExit("--eras-offset goes with --mod club-eras or --mod club-kits")
         global eras_offset
         eras_offset = int(offset)
     if "skip-tutorial" in mods:
@@ -6557,10 +6569,8 @@ def main(argv):
               "creation (the heap is fragmented; see DOC/LMASTER_MOD.md#test-tools): not a switch's fault, "
               "test Edit Emblem on a disc built without it")
     global kit_eras, kit_standards, tier3_eras, sponsor_tiers
-    kit_eras = "kit-eras" in mods
-    sponsor_tiers = "sponsor-tiers" in mods
-    kit_standards = "kit-standards" in mods
-    tier3_eras = "tier3-eras" in mods
+    kit_eras = sponsor_tiers = kit_standards = "club-kits" in mods
+    tier3_eras = {"club-eras", "club-kits", "third-tier"} <= mods
     nation = _opt(args, "--skip-nation", None)
     if nation is not None:
         names = [n.lower() for n in SKIP_NATIONS]

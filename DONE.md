@@ -232,6 +232,15 @@ You can build the mod in three editions from named switches
 - [x] The Japanese disc: every switch but `realism`, `third-tier`'s code,
       save and data ported (its rules text is not)
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+- [x] The switch names rationalised (Nexxus's choice, 2026-11-19): switches
+      that needed each other are one switch. `club-kits` is the old
+      `random-sponsors`, `kit-eras`, `kit-standards` and `sponsor-tiers`;
+      `transfer-fees` holds `fee-tiers`; `tier3-eras` is no switch (the
+      eras take the third tier's clubs when `third-tier`, `club-eras` and
+      `club-kits` are on). Every old name is an alias of the merged switch.
+      A `lmaster-max` build is byte for byte the disc the separate
+      switches made, and max stays full plus the difficulty groups
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
 
 ## The end point
 
