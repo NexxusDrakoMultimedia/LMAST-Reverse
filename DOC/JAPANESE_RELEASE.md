@@ -134,7 +134,7 @@ plans there, each on its own with the switches it needs):
 | `real-names` | the English names in ASCII in the Japanese text (slot 0, where the game has katakana), in every list `realnames.py` writes in PAL but the three the Japanese `MES.PAC` lacks (100003, 100009 and 100011); the nations' copy, category 7, is numbered from 6000 there (PAL 5000). The mentions of a competition in other messages are left in katakana. The three-letter forms lose their accents. `MES.PAC` and `STATIONMES0.PAC` grow by 5 and 4 sectors and move to the end of the disc; the built disc's `MES.PAC` is byte for byte what `realnames.py apply` writes (**empirical**, 2026-11-12). Not run in the game |
 | `third-tier` | all 93 places plan; the rules text isn't changed ([below](#the-third-tier-on-the-japanese-disc)) |
 | `realism` | refused: its pack is named by PAL hashes |
-| `random-sponsors` | nothing done: its code is PAL's, and `patch_disc.py` notes it and leaves the release alone |
+| `club-kits`, `club-eras` | nothing done: their code is PAL's, and `patch_disc.py` notes it and leaves the release alone |
 | `title-banner` | nothing done: the release has one title pack, `CSE/SC_TITLEBG.CSP`, with another picture; `patch_disc.py` notes it and leaves the release alone |
 | `modern-font` | nothing done, by Nexxus's choice (2026-11-13): the release draws language 0 from `FONT_ASCII` and `FONT_KANJI` ([`FONT_FORMAT.md`](FONT_FORMAT.md#the-japanese-builds-fonts-language-0)), and `patch_disc.py` notes it and leaves the release alone |
 | `retail-text` | nothing done: the fixes are to PAL's text |

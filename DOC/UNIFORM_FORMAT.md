@@ -199,8 +199,8 @@ side at 1 (your club's side fields `0 1 0 1 1 1`, the rival's
 1 0` with a valid sponsor and supplier and no logos. The difference is
 not what hides a computer club's logos: the texture-list test is
 ([below](#the-sponsor-and-supplier-logos-on-a-generated-kit)), and
-`--mod random-sponsors` doesn't set these fields (`--mod kit-standards`
-does, [`LMASTER_MOD.md`](LMASTER_MOD.md#kit-standards)).
+`--mod club-kits` sets them with its kit standard
+([`LMASTER_MOD.md`](LMASTER_MOD.md#kit-standards)); its sponsors part alone doesn't.
 
 **The logo's colour (Nexxus's observation, 2026-11-19).** The supplier
 logo on the shirt takes the shirt number colour (kit field 12): the number
@@ -300,7 +300,7 @@ called only at `0x26ebe8` and `0x26ec08` in `pwkTeam_GetUnif`), and the
 loader accepts any design below 209 shirts, 61 shorts and 18 socks, so a
 computer club can wear any supplier's design. No four-kit generator exists
 in the game (searched); the only whole kits are the 32 presets. `--mod
-kit-eras` uses these lists ([`LMASTER_MOD.md`](LMASTER_MOD.md#kit-eras);
+club-kits` uses these lists in its kit eras part ([`LMASTER_MOD.md`](LMASTER_MOD.md#kit-eras);
 `python SRC/kiteras.py info DAT` prints them from `SIMPRG.REL`).
 
 ## The kit editor's items and their bytes
@@ -398,7 +398,7 @@ side fields are `0 1 0 0 0 1` and the away `1 0 1 0 1 0`.
 `set_default_uniform_style` (`SLES 0x2cf3a0`) defaults the emblem
 styles to 0 and the shorts number position to 1.
 
-`--mod kit-standards` writes these bytes for every computer club
+`--mod club-kits` writes these bytes for every computer club, in its kit standard
 ([`LMASTER_MOD.md`](LMASTER_MOD.md#kit-standards)).
 
 ## Licensed kits
@@ -440,7 +440,7 @@ their 244 outfield kits are shirt, shorts and socks design 0, and 58
 different home shirt colour sets cover the 122 clubs of teams 123–244.
 Setting a licensed club's flag to 1 and writing its kit into the row
 (`uniform.py set`) is all it takes to make it a generated kit, so
-`random-sponsors` can then give it a sponsor. Their keeper kits are
+`club-kits` can then give it a sponsor. Their keeper kits are
 placeholders too
 ([below](#keeper-kits-of-the-converted-clubs)).
 
@@ -459,7 +459,7 @@ that takes the real sponsor and supplier lists is at `0x2c54e0`, and
 `0x2c54bc`–`0x2c54d8` send any other club to the default list
 (`0x2c5504`), which is copied into texture list slots 4 and 6. So a
 computer club holds its logos but doesn't draw them. With that test
-bypassed by `--mod random-sponsors`, a computer club draws both logos (**tested in
+bypassed by `--mod club-kits`, a computer club draws both logos (**tested in
 PCSX2**, Nexxus's screenshots, 2026-11-10; the test is in
 [`LMASTER_MOD.md`](LMASTER_MOD.md#random-sponsors)).
 
@@ -607,11 +607,11 @@ A computer club's keeper kit in a match is the one stored in its
 `UNIFORM_LIST` row ([above](#who-uses-it)), and the rows of the 116
 licensed clubs hold placeholders there. **Empirical** (`python
 SRC/uniform.py keepers DAT/PLAYER`): in the 114 licensed rows, which
-`random-sponsors` turns into generated kits, all 228 keeper kits (114
+`club-kits` turns into generated kits, all 228 keeper kits (114
 clubs, home and away) have shirt design 0, shorts colours 0 and socks
 colours 0, so a converted club's keeper would show as colour 0, a light
 pink, on keeper design 0, which no row of table 0 ever gives a keeper. The LMASTER Mod's
-`kit-standards` replaces them ([`LMASTER_MOD.md`](LMASTER_MOD.md#the-keepers-and-the-presets)),
+`club-kits` kit standard replaces them ([`LMASTER_MOD.md`](LMASTER_MOD.md#the-keepers-and-the-presets)),
 with `uniform.py`'s `keeper_kit`, which follows the game's own steps
 above for teams 1, 2 and the VS teams:
 
@@ -663,8 +663,8 @@ where the file has no relocation site. The Japanese `CEDITPRG.REL` holds
 the same records `0x100` lower (presets from `0x14fa0`, the rival at
 `0x159a0`).
 
-The LMASTER Mod's `kit-standards` patches the presets' kits to follow
-its standard ([`LMASTER_MOD.md`](LMASTER_MOD.md#the-keepers-and-the-presets));
+The LMASTER Mod's `club-kits` patches the presets' kits to follow
+its kit standard ([`LMASTER_MOD.md`](LMASTER_MOD.md#the-keepers-and-the-presets));
 the rival's record is never changed.
 
 ## Editing
@@ -772,7 +772,7 @@ python SRC/uniform.py clash     DAT/PLAYER A8                # colours that clas
 python SRC/uniform.py gk        DAT/PLAYER 35                # keeper design 35 and its schemes
 python SRC/uniform.py roundtrip DAT/PLAYER/UNIFORM_LIST.TBB  # re-pack all 661 rows
 python SRC/kiteras.py   info      DAT                         # the per-supplier lists, read from SIMPRG.REL
-python SRC/kiteras.py   selftest  DAT                         # kit-eras and kit-standards: the code against the plan (the editor's items and bytes)
+python SRC/kiteras.py   selftest  DAT                         # club-kits' kit eras and kit standard: the code against the plan (the editor's items and bytes)
 python SRC/sles_disasm.py ISO/SLES_541.51 syms CUniformBuilder  # the builder's functions (the editor's own code is in SIMPRG.REL: snr2.py dis ISO/DLL/SIMPRG.REL 0x109d98 40 --sles ISO/SLES_541.51)
 python SRC/tbb.py roundtrip     DAT/PLAYER/UNIFORM_GK.TBB    # the container re-writes
 python SRC/uniform.py keepers   DAT/PLAYER 123               # the keeper kits of a converted club, and the counts for all

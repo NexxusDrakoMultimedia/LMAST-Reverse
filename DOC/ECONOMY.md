@@ -496,8 +496,8 @@ career ([`SPONSOR_NEGOTIATION.md`](SPONSOR_NEGOTIATION.md#tested-in-pcsx2)).
 That doc also covers the Sponsor screen's fee negotiation, which the
 Japanese release has and PAL cuts.
 
-The LMASTER Mod's `sponsor-tiers` sorts the 199 main sponsors by this
-fee to give each club tier its own slice of them
+The LMASTER Mod's `club-kits` (its sponsor tiers part) sorts the 199 main
+sponsors by this fee to give each club tier its own slice of them
 ([`LMASTER_MOD.md`](LMASTER_MOD.md#sponsor-tiers)).
 
 ## TV contracts
@@ -655,9 +655,10 @@ rank 15, and a top club in a boom at most about £41M (£82M with
 `transfer-fees`). Which arguments are the growth type and the contract
 isn't traced from the callers.
 
-`--mod fee-tiers` multiplies table A's rows: ranks 0–5 ×0.5, 6–11 ×0.75,
-12–14 ×2 and rank 15, the "football icon", ×3. With `transfer-fees`'
-doubling the totals against the retail game are ×1, ×1.5, ×4 and ×6, a
+`--mod transfer-fees` multiplies table A's rows by player rank too (a
+separate `fee-tiers` switch until 0.6.0): ranks 0–5 ×0.5, 6–11 ×0.75,
+12–14 ×2 and rank 15, the "football icon", ×3. With the doubled base fee
+the totals against the retail game are ×1, ×1.5, ×4 and ×6, a
 mid club pays about £0.43M for a rank-0 player and £125M for a rank-15
 one, and the best player at a top club in a boom reaches about £246M,
 under the £250M cap. The first tiers (Nexxus's choice, 2026-10-26) were
