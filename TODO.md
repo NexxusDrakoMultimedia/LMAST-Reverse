@@ -545,7 +545,14 @@ aside, and every switch works on the Japanese release.
       Japanese `MES.PAC` to follow, such as ﾊﾞｰﾐﾝｶﾞﾑ for Birmingham).
       Nexxus's rule, 2026-11-19: names the Japanese disc already has in
       Japanese stay as they are. A draft is made in
-      `names/real-names-japanese-draft.csv` (git-ignored): 690 names in
+      `names/real-names-japanese-draft.csv` (git-ignored, with the retail
+      Japanese beside each name) and its shareable twin
+      `SRC/realnames_ja_draft.csv` (tracked, no game text: each row carries
+      a `jah`, the first 16 bytes of the SHA-256 of the retail message's
+      raw bytes in hex, as in the SakaTsuku Tokudaigou 2 English patch's
+      `docs/l10n-format.md`; the id is the key and the hash only proves
+      the row still points at the message it was written for, and a
+      blank `correction` column is for a reader of Japanese): 690 names in
       katakana, full width to read and half width as the game writes
       them (98 clubs, 421 stadiums, 48 competitions and 123 stages, the
       competitions in their real-world names, such as the Premier
