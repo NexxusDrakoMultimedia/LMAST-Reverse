@@ -701,12 +701,15 @@ first new manager in seasons 1, 2 and 3 (2007-08, 2008-09, 2009-10), and
 each changes again every 3 seasons.
 
 A season below 0 (the opening playoffs of a new career, season -1) counts
-as season 0, so nothing changes there. A test build, `--eras-offset N` (0
-to 2, with `--mod club-eras`, and `--mod kit-eras` follows it), adds N to the season from season 0 on: with
-1, the clubs whose team id leaves 2 when divided by 3 are in era 1 already
-in 2006-07, with 2 those that leave 1 or 2 (two thirds), so the change can
-be seen without playing a season (the playoffs stay retail); the default 0
-is the switch as released.
+as season 0, so nothing changes there in the switch as released. A test
+build, `--eras-offset N` (0 to 9, with `--mod club-eras` or `club-kits`),
+adds N to every season, the opening playoffs' too (Nexxus's choice,
+2026-11-19: the offset is for testing the playoff teams at a later era):
+with 1, the clubs whose team id leaves 2 when divided by 3 are in era 1
+already in 2006-07, with 2 those that leave 1 or 2 (two thirds), with 3 every
+club, and so on, so the change can be seen without playing a season. The
+default 0 is the switch as released, whose playoffs stay retail. Never
+build a test disc with `skip-tutorial`, which skips the playoffs.
 
 **The tables** (`python SRC/cluberas.py info DAT`):
 
@@ -843,7 +846,7 @@ Emblem editor only build teams 1 and 2). The main sponsor is
 `random-sponsors`' draw, or [`sponsor-tiers`](#sponsor-tiers)' when that
 is on. The Japanese release is not touched.
 
-**The test option.** `--eras-offset N` (0 to 2, default 0, the switch as
+**The test option.** `--eras-offset N` (0 to 9, default 0, the switch as
 released) applies to `club-eras` and `kit-eras` alike, so the new kits show
 without playing a season; `--test-build` writes TEST BUILD on the title
 banner ([Title banner](#title-banner)). Neither is part of any edition

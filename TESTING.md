@@ -475,8 +475,9 @@ without `--skip-tutorial`
       logo gate and the sponsors' code also leave your club, the rival and
       the VS teams to the game, see
       [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors)) with
-      `--mod lmaster-max,skip-tutorial --skip-nation Germany --copies --dat
-      DAT --realism ../LMAST-Realism --test-build --eras-offset 2` (the title
+      `--mod lmaster-max --copies --dat DAT --realism ../LMAST-Realism
+      --test-build --eras-offset 2` (no `skip-tutorial`: it skips the opening
+      playoffs, which test builds always keep; pick Germany yourself; the title
       banner reads TEST BUILD; the offset puts two thirds of the clubs in
       era 1 from 2006-07). Never run as one disc: the code segment grew to
       0x1400 bytes and holds the third tier, the sponsors, the logo gate

@@ -165,9 +165,9 @@ def build(dat, last=TEAM_LAST):
 
 def era_of(team, season, offset=0):
     """The era of `team` in `season` (0 = 2006-07, pwkGen_Keika; negative counts as 0),
-    `offset` being the test build's --eras-offset, added from season 0 on (the opening
-    playoffs, season -1, are season 0 without it)."""
-    return ((0 if season < 0 else season + offset) + team % GROUPS) // ERA
+    `offset` being the test build's --eras-offset, added to every season, the opening
+    playoffs' (season -1, which counts as season 0) too: with offset 0 they stay retail."""
+    return ((0 if season < 0 else season) + offset + team % GROUPS) // ERA
 
 
 def manager(plan, team, season, offset=0):
@@ -267,7 +267,7 @@ def cmd_expect(dat, team, season, offset="0"):
             team, TEAM_FIRST, last, who(plan.retail[team]) if team in plan.retail else "no club record"))
         return 0
     if team > TEAM_LAST:
-        print("team %d is a third-tier club: the switch changes it only with --mod tier3-eras" % team)
+        print("team %d is a third-tier club: the eras change it only with --mod third-tier, club-eras and club-kits all on" % team)
     e = era_of(team, season, offset)
     tier, p = plan.club[team]
     print("team %d, season %d: group %d, era %d, tier %d place %d" % (team, season, team % GROUPS, e, tier, p))
@@ -282,7 +282,7 @@ def cmd_expect(dat, team, season, offset="0"):
 
 def cmd_selftest(dat):
     """Run the machine code of the switch (patch_disc.era_words) against manager(), for each
-    test offset 0 to 2 (the build's --eras-offset)."""
+    test offset 0 to 9 (the build's --eras-offset)."""
     import patch_disc as pd
     bad = fallbacks = runs = 0
     for last in (TEAM_LAST, TEAM_LAST_TIER3):       # the plain switch, and with tier3-eras
@@ -292,7 +292,7 @@ def cmd_selftest(dat):
                            (pd.ERA_POOL, pool_bytes(plan))):
             for i, b in enumerate(blob):
                 mem[base + i] = b
-        for offset in range(3):
+        for offset in range(10):
             words = pd.era_words(offset, last - TEAM_FIRST + 1)
             for team in range(0, 600):              # teams 1 and 2 (you and the rival), the national
                 for season in (-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 33, 47, 99):  # and VS teams too

@@ -36,7 +36,7 @@ its name, or "header"), e.g. MESSAGE/MES.PAC#7 or PRELOAD/SIMFILE0.PAC#Regulatio
 Usage:
     python patch_disc.py locate <image> <path> ...                        # where each file's bytes are
     python patch_disc.py copies <DAT> <target> ...                        # other places holding the same bytes
-    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--eras-offset <0-2>] [--realism <pack folder>] [--font <font.ttf>] [--version <x.y.z>] [--test-build]
+    python patch_disc.py patch  <image> <out_image> <target>=<file> ... [--copies] [--dat DAT] [--rename disc:<path>=<NAME>] [--mod <switch>,...] [--skip-nation <nation>] [--eras-offset <0-9>] [--realism <pack folder>] [--font <font.ttf>] [--version <x.y.z>] [--test-build]
     python patch_disc.py patch  <image> --in-place <target>=<file> ... [--copies] [--dat DAT] [--mod <switch>,...]
     python patch_disc.py verify <image> <path>=<file> ...                 # does the image hold these bytes?
     python patch_disc.py switches                                         # the editions, groups and switches
@@ -4255,7 +4255,7 @@ tier3_eras = False                  # set by main for --mod tier3-eras
 def era_club_count():
     """The number of clubs the eras change: teams 3-441, and 442-459 with tier3-eras."""
     return ERA_CLUB_COUNT_TIER3 if tier3_eras else ERA_CLUB_COUNT
-# A test option, --eras-offset N (0 to 2): the routine adds N to the season, so N = 1 puts a
+# A test option, --eras-offset N (0 to 9): the routine adds N to the season, so N = 1 puts a
 # third of the clubs (team id mod 3 equal to 2) in era 1 already in season 0, N = 2 two thirds.
 # 0, the default, is the switch as released.
 eras_offset = 0                                   # set by main from --eras-offset
@@ -4277,8 +4277,8 @@ def era_words(offset=None, clubs=None):
         jal(KEIKA), NOP,                                     # $v0: the season, from 0
         ld(A0, 8, SP), ld(T0, 16, SP),
         sll(T1, V0, 0), slti(T1, T1, 0),                     # 1 in the opening playoffs (season -1)
-        ] + ([addiu(V0, V0, offset)] if offset else []) + [  # the test offset, from season 0 on
-        movn(V0, ZERO, T1),                                  # the playoffs count as season 0, offset or not
+        movn(V0, ZERO, T1),                                  # the playoffs count as season 0 ...
+        ] + ([addiu(V0, V0, offset)] if offset else []) + [  # ... and the test offset adds to every season, them too
         addiu(T2, ZERO, ERA_SEASONS), divu(A0, T2), mfhi(T3), addu(V0, V0, T3),
         divu(V0, T2), mflo(T4),                              # era = (season + team mod 3) div 3
         ("beqz", T4, "retail"), NOP,                         # era 0: the retail manager
@@ -4375,8 +4375,8 @@ def kit_words(offset=None, clubs=None):
         jal(KEIKA), NOP,                                     # $v0: the season, from 0
         ld(T0, 16, SP),
         sll(T1, V0, 0), slti(T1, T1, 0),                     # 1 in the opening playoffs (season -1)
-        ] + ([addiu(V0, V0, offset)] if offset else []) + [
         movn(V0, ZERO, T1),
+        ] + ([addiu(V0, V0, offset)] if offset else []) + [
         addiu(T2, ZERO, ERA_SEASONS), divu(S1, T2), mfhi(T3), addu(V0, V0, T3),
         divu(V0, T2), mflo(T4),                              # era = (season + team mod 3) div 3
         ("beqz", T4, "done"), NOP,                           # era 0: the retail kit
@@ -4433,8 +4433,8 @@ def std_words(offset=None, clubs=None):
         jal(KEIKA), NOP,
         ld(T0, 16, SP),
         sll(T1, V0, 0), slti(T1, T1, 0),
-        ] + ([addiu(V0, V0, offset)] if offset else []) + [
         movn(V0, ZERO, T1),
+        ] + ([addiu(V0, V0, offset)] if offset else []) + [
         addiu(T2, ZERO, ERA_SEASONS), divu(S1, T2), mfhi(T3), addu(V0, V0, T3),
         divu(V0, T2), mflo(T4),                              # era = (season + team mod 3) div 3
         ("beqz", T4, "entry"), NOP,                          # era 0: the entry 0 ($t4 is 0)
@@ -6558,8 +6558,8 @@ def main(argv):
     dat =_opt(args, "--dat", "DAT" if os.path.isdir("DAT") else None)
     offset = _opt(args, "--eras-offset", None)
     if offset is not None:
-        if not offset.isdigit() or int(offset) > 2:
-            raise SystemExit("--eras-offset takes 0, 1 or 2")
+        if not offset.isdigit() or int(offset) > 9:
+            raise SystemExit("--eras-offset takes 0 to 9")
         if "club-eras" not in mods and "club-kits" not in mods:
             raise SystemExit("--eras-offset goes with --mod club-eras or --mod club-kits")
         global eras_offset

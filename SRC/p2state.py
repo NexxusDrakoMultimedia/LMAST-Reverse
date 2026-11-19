@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
 """PCSX2 save-state checker for the club eras: reads a state's EE memory and checks what the
-LMASTER Mod's club-eras, kit-eras, kit-standards and tier3-eras code did in a match.
+LMASTER Mod's club-eras and club-kits code (the kit eras, the kit standard and, with the third tier,
+the third tier's eras) did in a match.
 
 A PCSX2 state (.p2s) is a zip file holding eeMemory.bin (32 MiB; the EE address is the file
 offset) and "PCSX2 Internal Structures.dat". Python's zipfile reads the file when the members
@@ -152,7 +153,7 @@ def detect_build(ee):
     try:
         for tier3 in (False, True):
             clubs = pd.ERA_CLUB_COUNT_TIER3 if tier3 else pd.ERA_CLUB_COUNT
-            for offset in (0, 1, 2):
+            for offset in range(10):
                 w = pd.era_words(offset, clubs)
                 if _words(ee, pd.ERA_CAVE, len(w)) == list(w):
                     out.update(offset=offset, tier3=tier3, eras=True)
@@ -160,7 +161,7 @@ def detect_build(ee):
             pd.kit_standards = std
             for tier3 in (False, True):
                 clubs = pd.ERA_CLUB_COUNT_TIER3 if tier3 else pd.ERA_CLUB_COUNT
-                for offset in (0, 1, 2):
+                for offset in range(10):
                     w = pd.kit_words(offset, clubs)
                     if _words(ee, pd.KIT_CAVE, len(w)) == list(w):
                         out.update(kits=True, standards=std)
@@ -797,8 +798,8 @@ def _options(args):
             rest.append(args[i])
             i += 1
     offset = int(opts["--offset"]) if opts["--offset"] is not None else None
-    if offset is not None and not 0 <= offset <= 2:
-        raise ValueError("--offset is 0 to 2")
+    if offset is not None and not 0 <= offset <= 9:
+        raise ValueError("--offset is 0 to 9")
     switches = parse_switches(opts["--switches"]) if opts["--switches"] is not None else None
     rel = None
     if os.path.exists(opts["--rel"]):

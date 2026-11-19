@@ -524,7 +524,7 @@ def cmd_show(dat, team, rel=None):
         print("team %d is outside teams %d-%d" % (team, TEAM_FIRST, plan.last))
         return 1
     if team > TEAM_LAST:
-        print("team %d is a third-tier club: the switch changes it only with --mod tier3-eras" % team)
+        print("team %d is a third-tier club: the eras change it only with --mod third-tier, club-eras and club-kits all on" % team)
     print("team %d: tier %d, home colours %s, retail home shirt %d, away shirt %d, away colour %s" % (
         team, plan.tier[team], tuple(uniform.colour_name(c) for c in plan.home[team]),
         plan.retail[team][0], plan.retail[team][1], uniform.colour_name(plan.retail[team][2])))
@@ -569,7 +569,7 @@ def cmd_selftest(dat, rel=None):
 
 def _selftest(pd, plan, table):
     bad = runs = idle = 0
-    for offset in range(3):
+    for offset in range(10):
         words = pd.kit_words(offset, plan.last - TEAM_FIRST + 1)
         for team in range(0, 600):
             for season in (-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 33, 47, 99):
