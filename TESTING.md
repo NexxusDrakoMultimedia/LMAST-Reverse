@@ -347,6 +347,30 @@ Each of these switches has been built and is waiting for someone to play it.
       which clubs look wrong (wrong colours, wrong pattern) and what
       they should be; and after a season that the sponsors changed
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors))
+- [ ] Club eras (`--mod club-eras`, the disc is `LMAST-test-eras.iso`, built
+      2026-11-19 with `--mod club-eras,skip-tutorial`; PCSX2 treats it as a
+      new game). The managers are built and checked by emulation and by
+      reading the disc back, but the game has not run the code. A computer
+      club's manager is shown nowhere, so this is a PINE check: (1) the
+      game boots and a career starts and plays normally (the first seasons
+      are the retail managers, era 0); (2) from season 1 (the clubs whose
+      team id leaves 2 when divided by 3 change first), after the game
+      builds a computer club's team data (a league match), the word at
+      `0xf8500` holds that club's new manager index, which
+      `python SRC/cluberas.py info DAT` and the plan give for the club and
+      season; (3) a club's formation and tactics differ from before the
+      change. Needs a career played into season 1 (or a save in it) and
+      PINE
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
+- [ ] Transfer fees on a max disc after the cut to the lower tiers (`--mod
+      fee-tiers`, 2026-11-19): in the Post Player list the estimate for a
+      player of rank 0 to 5 should be the retail game's, and for rank 6 to
+      11 1.5 times it, half of what the same players showed before
+      (the 18-year-old rank 10 at €12.3M should show about €6.2M, the
+      33-year-old rank 8 at €4.8M about €2.4M, in the same career and
+      week). Ranks 12 to 15 are as before. Needs a disc built with
+      `--mod transfer-fees,fee-tiers` or `lmaster-max`
+      ([`ECONOMY.md`](DOC/ECONOMY.md#transfer-fees))
 - [ ] The moving advert board at the last ground (`--mod moving-boards`,
       the disc is `LMAST-test-boards.iso`, built 2026-11-10): in a
       career with the moving board bought and a level-4 stadium, check

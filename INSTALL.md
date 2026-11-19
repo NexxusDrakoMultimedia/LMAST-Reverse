@@ -163,7 +163,7 @@ three editions:
 | Edition | What it is |
 |---|---|
 | `lmaster-lite` | the fixes: the first six groups below. Careers keep the original game's save folders |
-| `lmaster-full` | lite, plus `leagues`, `restorations`, `names`, `stadiums`, `graphics` and `saves` |
+| `lmaster-full` | lite, plus `leagues`, `restorations`, `names`, `stadiums`, `graphics`, `eras` and `saves` |
 | `lmaster-max` | full, plus the difficulty groups `harder-economy` and `balance` |
 
 Each group holds the switches of one feature:
@@ -181,6 +181,7 @@ Each group holds the switches of one feature:
 | `names` | full | real names for leagues, clubs, stadiums and national teams, and your club's stadium named after you |
 | `stadiums` | full | every club at a ground of its real size, with sponsor boards |
 | `graphics` | full | LMAST Realism's crests and match pictures, random sponsors and kit suppliers (the Italian, Spanish and Dutch clubs' licensed kits become generated ones), and the game's main text in Roboto Condensed |
+| `eras` | full | every computer club changes manager every three seasons, a third of the clubs each year, the better clubs getting the better managers; his tactics and formations come with him |
 | `saves` | full | the modded disc's own save folders (`--mod-saves`) |
 | `harder-economy` | max | dearer facilities and advertising, smaller sponsor and TV fees, fewer season tickets sold |
 | `balance` | max | more long injuries, dearer transfers, camps, tours, PR and overseas bases, slower reputation |

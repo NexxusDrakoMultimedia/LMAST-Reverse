@@ -648,14 +648,20 @@ rank 15, and a top club in a boom at most about £41M (£82M with
 `transfer-fees`). Which arguments are the growth type and the contract
 isn't traced from the callers.
 
-`--mod fee-tiers` (Nexxus's choice of tiers, 2026-10-26) multiplies
-table A's rows: ranks 0–5 ×2, 6–11 ×1.5, 12–14 ×2 and rank 15, the
-"football icon", ×3. With `transfer-fees` a mid club pays about £1.7M
-for a rank-0 player and £125M for a rank-15 one, and the best player at
-a top club in a boom reaches about £246M, under the £250M cap. **Tested
-in PCSX2** at the low end (Nexxus's report, 2026-10-27, a German career
-on an LMASTER max build): lesser players' fees came out about four times
-retail. A top player's fee above £120M isn't seen yet.
+`--mod fee-tiers` multiplies table A's rows: ranks 0–5 ×0.5, 6–11 ×0.75,
+12–14 ×2 and rank 15, the "football icon", ×3. With `transfer-fees`'
+doubling the totals against the retail game are ×1, ×1.5, ×4 and ×6, a
+mid club pays about £0.43M for a rank-0 player and £125M for a rank-15
+one, and the best player at a top club in a boom reaches about £246M,
+under the £250M cap. The first tiers (Nexxus's choice, 2026-10-26) were
+×2, ×1.5, ×2 and ×3, so ×4, ×3, ×4 and ×6 in total. **Tested in PCSX2**
+at the low end (Nexxus's report, 2026-10-27, a German career on an
+LMASTER max build): lesser players' fees came out about four times
+retail. On 2026-11-19 Nexxus found them too high (an 18-year-old of
+rank 10 listed at €12.3M, a 33-year-old of rank 8 at €4.8M, both ×3 of
+retail, "money cheats") and chose ×1 for the lowest ranks and ×1.5 for
+the next, as above; that change is built and not yet seen in the game.
+A top player's fee above £120M isn't seen yet.
 
 `pwkMoney_CalcPlayerMarketPrice` (`0x247d78`) isn't a transfer fee: it
 is the salary a player asks for (its callers are the contract renewal and

@@ -155,6 +155,10 @@ can play or share.
      is filled in for you; change either box with Browse). If a ticked
      switch has no file, the window asks before it builds without it,
      and the switch is left out.
+   - **Club eras** holds `club-eras`: every computer club changes manager
+     every three seasons, a third of the clubs each year, the better
+     clubs getting the better managers (his tactics and formations come
+     with him). It has no boxes to fill in.
    - **Title screen** holds `title-banner`, a banner naming the LMASTER
      Mod, its version and its edition, which every edition has. It is
      drawn with the same font file as `modern-font`. The editor passes

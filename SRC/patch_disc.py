@@ -3413,17 +3413,24 @@ def plan_transfer_fees(f, img):
 
 
 # fee-tiers: transfer fees by player rank, on top of transfer-fees'
-# doubling (Nexxus's choice, 2026-10-26). The base fee (0x247130) is
+# doubling (Nexxus's choice, 2026-10-26; the lower ranks changed 2026-11-19, below).
+# The base fee (0x247130) is
 # 1,350,000.0 x A[player rank][club-rank band] x (B[affiliation] +
 # C[growth row][age]) x D[contract] x E[business cycle]; A, 16 rows of 6
 # floats at 0x398478 (bands by club rank up to 5, 11, 17, 23, 29, 31 at
 # 0x3985f8), is the only table the player's rank enters, and nothing
-# else reads it. Each row is multiplied by its tier: lesser players
-# (ranks 0-5) x2, ranks 6-11 x1.5, 12-14 x2, and rank 15, the "football
-# icon", x3, so with transfer-fees the best player at a top club in a
-# boom reaches about £246M, just under the £250M cap.
+# else reads it. Each row is multiplied by its tier: ranks 0-5 x0.5,
+# ranks 6-11 x0.75, 12-14 x2, and rank 15, the "football icon", x3, so
+# with transfer-fees' doubling the best player at a top club in a boom
+# reaches about £246M, just under the £250M cap, and against the retail
+# game the totals are x1 (ranks 0-5), x1.5 (6-11), x4 (12-14) and x6 (15).
+# The first choice (2026-10-26) was x2, x1.5, x2 and x3, so x4, x3, x4 and
+# x6 in total; after a German career on an LMASTER max build the lesser
+# players were money cheats (an 18-year-old of rank 10 listed at €12.3M, a
+# 33-year-old of rank 8 at €4.8M; Nexxus's report, 2026-11-19), and
+# Nexxus chose x1 and x1.5 in total for the lower ranks.
 FEE_TABLE, FEE_RANKS, FEE_BANDS = 0x398478, 16, 6
-FEE_TIERS = (2.0,) * 6 + (1.5,) * 6 + (2.0,) * 3 + (3.0,)
+FEE_TIERS = (0.5,) * 6 + (0.75,) * 6 + (2.0,) * 3 + (3.0,)
 FEE_RETAIL_TOP = 73.5
 
 
@@ -3529,6 +3536,7 @@ ONE_SEASON_END = (
 # instructions. Register numbers as the EE names them.
 ZERO, AT, V0, V1, A0, A1, A2, A3, T0, T1, T2 = 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 S0, S1, S2, S5, SP, RA = 16, 17, 18, 21, 29, 31
+T3, T4, T5, T6, T7, T8, T9 = 11, 12, 13, 14, 15, 24, 25
 
 
 def _i(op, rs, rt, imm):
@@ -3568,6 +3576,7 @@ def j(target): return 0x08000000 | (target >> 2 & 0x3FFFFFF)
 def jal(target): return 0x0C000000 | (target >> 2 & 0x3FFFFFF)
 def divu(rs, rt): return _r(rs, rt, 0, 0x1B)
 def mfhi(rd): return _r(0, 0, rd, 0x10)
+def mflo(rd): return _r(0, 0, rd, 0x12)
 NOP = 0
 
 
@@ -3582,7 +3591,10 @@ def words(*ws):
 # the executable that the game leaves zero, above the BIOS's EELOAD
 # (0x82000). Code there is reached from the executable and from every
 # overlay with plain j/jal. The file keeps its size.
-CAVE, CAVE_FILE, CAVE_SIZE = 0xF8000, 0x46A350, 0x400
+# CAVE_SIZE grew from 0x400 to 0x1400 for club-eras' tables (the file's bytes after the
+# cave are zero for 0x57d58 more, on the PAL and the Japanese executable alike, and EE RAM
+# below the executable is free to 0x100000).
+CAVE, CAVE_FILE, CAVE_SIZE = 0xF8000, 0x46A350, 0x1400
 PHDR2 = 0x54
 PAL_SEGMENT_END = 0x46A2DC      # the first segment's file end; the cave's file offset follows it by 0x74
 PWORK_GETTER = 0x21D6E0         # plPwork_GetPwork: lui $v1, hi; jr $ra; lw $v0, lo($v1)
@@ -4151,6 +4163,90 @@ def _asm(base, items):
                   "b": lambda: beqz(ZERO, off)}[it[0]]()
         out.append(it & 0xFFFFFFFF)
     return out
+
+
+# club-eras (LMASTER full and max; Nexxus's idea and choices, 2026-11-19; cluberas.py,
+# DOC/LMASTER_MOD.md#planned): every computer club changes manager every 3 seasons, a third
+# of the clubs each year, the better clubs getting the better managers, each club one of its
+# own. The game asks plOteam_GetManagerNoOffset (0x216668) for a club's manager: it calls
+# plOteam_GetDb (0x2165d8, team in $a0, set in the delay slot) and reads the club record's
+# +4. The `jal` at 0x2166d0 becomes a call to code in the LMASTER code segment that, for the
+# clubs of teams 3-441 once their era is past 0, finds the manager from cluberas.py's tables
+# and returns a pointer whose +4 holds it (the next instructions read `lh $v0, 4($v0)`); for
+# every other team, and in era 0, it jumps on to plOteam_GetDb. A manager brings his own
+# tactics and formations (his record). The code is at CAVE + 0x400, its result word at
+# CAVE + 0x500, then the tables.
+ERA_CAVE, ERA_VAR = CAVE + 0x400, CAVE + 0x500
+ERA_TIERS, ERA_CLUBS, ERA_POOL = CAVE + 0x510, CAVE + 0x590, CAVE + 0x900
+ERA_HOOK, ERA_GETDB = 0x2166D0, 0x2165D8
+ERA_FIRST, ERA_CLUB_COUNT, ERA_SEASONS, ERA_TIER_COUNT = 3, 439, 3, 16
+
+
+def era_words():
+    """The routine at ERA_CAVE, as words (cluberas.cmd_selftest runs them)."""
+    def at(reg, addr):
+        return [lui(reg, addr >> 16), ori(reg, reg, addr & 0xFFFF)]
+    items = [
+        addiu(T0, A0, -ERA_FIRST), sltiu(T1, T0, ERA_CLUB_COUNT),
+        ("beqz", T1, "fallback"), NOP,                       # not a club of teams 3-441
+        addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(A0, 8, SP), sd(T0, 16, SP),
+        jal(KEIKA), NOP,                                     # $v0: the season, from 0
+        ld(A0, 8, SP), ld(T0, 16, SP),
+        slti(T1, V0, 0), ("beqz", T1, "season"), NOP, addiu(V0, ZERO, 0), ("label", "season"),
+        addiu(T2, ZERO, ERA_SEASONS), divu(A0, T2), mfhi(T3), addu(V0, V0, T3),
+        divu(V0, T2), mflo(T4),                              # era = (season + team mod 3) div 3
+        ("beqz", T4, "retail"), NOP,                         # era 0: the retail manager
+        sll(T0, T0, 1)] + at(T1, ERA_CLUBS) + [addu(T1, T1, T0), lhu(T5, 0, T1),
+        srl(T6, T5, 10), andi(T5, T5, 0x3FF), sll(T6, T6, 3)] + at(T1, ERA_TIERS) + [
+        addu(T1, T1, T6), lhu(T7, 0, T1), lhu(T8, 2, T1), lhu(T9, 4, T1),
+        mult3(T4, T4, T9), addu(T4, T4, T5), divu(T4, T8), mfhi(T4),  # (p + era * step) mod M
+        addu(T4, T4, T7), sll(T4, T4, 1)] + at(T1, ERA_POOL) + [
+        addu(T1, T1, T4), lhu(T4, 0, T1)] + at(T1, ERA_VAR) + [
+        sw(T4, 0, T1), addiu(V0, T1, -4),                    # a pointer whose +4 is the manager
+        ld(RA, 0, SP), addiu(SP, SP, 0x20), jr(RA), NOP,
+        ("label", "retail"), ld(RA, 0, SP), ld(A0, 8, SP), addiu(SP, SP, 0x20),
+        ("label", "fallback"), j(ERA_GETDB), NOP]
+    out = _asm(ERA_CAVE, items)
+    if 4 * len(out) > ERA_VAR - ERA_CAVE:
+        raise ValueError("club-eras' code outgrows its space")
+    return out
+
+
+def plan_club_eras(f, img, adopted=()):
+    """Jobs for --mod club-eras: the code segment, the routine and its tables in it, and the
+    jal in plOteam_GetManagerNoOffset that calls the routine."""
+    import cluberas
+    import tempfile
+    if img.port is not None:
+        return [], ["note: club-eras: the code is PAL's; the Japanese release is left alone"]
+    if (cluberas.TEAM_FIRST, cluberas.CLUBS, cluberas.ERA, cluberas.TIERS) != (
+            ERA_FIRST, ERA_CLUB_COUNT, ERA_SEASONS, ERA_TIER_COUNT):
+        raise ValueError("club-eras: cluberas.py and patch_disc.py disagree on the sizes")
+    with tempfile.TemporaryDirectory() as tmp:
+        os.makedirs(os.path.join(tmp, "PARAM"))
+        for name in ("PLRESOURCESIM.PAC", "PBDATA_EU.PAC", "TEAM_INIT_DATA.TBB"):
+            _, data = read_file(f, img, "PARAM/" + name)
+            with open(os.path.join(tmp, "PARAM", name), "wb") as g:
+                g.write(data)
+        plan = cluberas.build(tmp)
+    bad = cluberas.problems(plan)
+    if bad:
+        raise ValueError("club-eras: " + "; ".join(bad))
+    regions = [(ERA_CAVE, words(*era_words()), "the managers' code"),
+               (ERA_TIERS, cluberas.tier_bytes(plan), "the tiers"),
+               (ERA_CLUBS, cluberas.club_bytes(plan), "the clubs' tiers and places"),
+               (ERA_POOL, cluberas.pool_bytes(plan), "the managers' pool")]
+    if ERA_POOL + len(regions[-1][1]) > CAVE + CAVE_SIZE:
+        raise ValueError("club-eras' tables outgrow the code segment")
+    jobs = list(code_segment_words(f, img))
+    for addr, new, what in regions:
+        off = CAVE_FILE + addr - CAVE
+        held = read_at(f, img, SLES_FILE, off, len(new))
+        jobs.append((SLES_FILE, off, held if held != new else bytes(len(new)), new,
+                     "%s 0x%x (%s at 0x%x)" % (SLES_FILE, off, what, addr)))
+    jobs.append(sles_word(ERA_HOOK, jal(ERA_GETDB), jal(ERA_CAVE),
+                          "plOteam_GetManagerNoOffset: call the managers' code, not plOteam_GetDb"))
+    return word_jobs(f, img, "club-eras", jobs)
 
 
 def tier_cave(build):
@@ -5386,7 +5482,8 @@ SWITCHES = (
     ("transfer-fees", plan_transfer_fees, [SLES_FILE],
      "Balance: transfer fees twice as high, up to £250M"),
     ("fee-tiers", plan_fee_tiers, [SLES_FILE],
-     "Balance: transfer fees by player rank: lesser players x2, the best up to x3"),
+     "Balance: transfer fees by player rank, on top of transfer-fees: the lowest ranks at the retail "
+     "price, the next at 1.5x, then dearer up to the best at 6x (needs transfer-fees)"),
     ("slow-reputation", plan_slow_reputation, [SLES_FILE],
      "Balance: club status (reputation) rises half as fast; losses stay"),
     ("third-tier", plan_third_tier,
@@ -5430,6 +5527,10 @@ SWITCHES = (
      "Graphics: every club's kit shows a main sponsor and a kit supplier, drawn again every "
      "season, and the Italian, Spanish and Dutch clubs lose their licensed kits for generated "
      "ones (LMASTER full and max)"),
+    ("club-eras", plan_club_eras, [SLES_FILE],
+     "Clubs: every computer club changes manager every 3 seasons, a third of the clubs each "
+     "year, the better clubs getting the better managers and every club one of its own; the "
+     "manager's tactics and formations come with him (LMASTER full and max)"),
     ("realism", plan_realism, REALISM_FILES,
      "Graphics: LMAST Realism's crests and match pictures in the texture packs, and a "
      "2 px transparent edge on the licensed crests; needs --realism <pack folder>, "
@@ -5521,6 +5622,7 @@ GROUPS = (       # (name, title, switches)
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
     ("graphics", "Graphics", ("realism", "random-sponsors", "modern-font")),
+    ("eras", "Club eras", ("club-eras",)),
     ("title-screen", "Title screen", ("title-banner",)),
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
@@ -5531,7 +5633,8 @@ GROUPS = (       # (name, title, switches)
 # own letters (SAVE_LETTERS), so neither mixes with the retail game's.
 LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes", "text-fixes",
                "title-screen")
-FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "graphics", "saves")
+FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "graphics", "eras",
+                             "saves")
 DIFFICULTY_GROUPS = ("harder-economy", "balance")
 EDITIONS = (     # (name, title, groups)
     ("lmaster-lite", "LMASTER lite (fixes only)", LITE_GROUPS),

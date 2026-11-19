@@ -276,6 +276,11 @@ def checks():
         ("cvs", ["cvs.py", "info", "DAT"], ["DAT"]),
         ("tmb", ["tmb.py", "info", "DAT"], ["DAT"]),
         ("lbi", ["lbi.py", "info", "DAT"], ["DAT"]),
+        # Club eras (--mod club-eras): the plan, one manager per club over 100 seasons, and
+        # the machine code run against the plan.
+        ("cluberas_info", ["cluberas.py", "info", "DAT"], ["DAT"]),
+        ("cluberas_check", ["cluberas.py", "check", "DAT"], ["DAT"]),
+        ("cluberas_selftest", ["cluberas.py", "selftest", "DAT"], ["DAT"]),
         # The executable's sound-bank and music tables, against SOUND/*.DAT.
         ("sounddat_music", ["sounddat.py", "music", "ISO/SLES_541.51", "DAT/SOUND"],
          ["ISO/SLES_541.51", "DAT/SOUND"]),

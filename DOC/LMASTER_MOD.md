@@ -46,6 +46,7 @@ level:
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
 | `graphics` | realism ([below](#lmast-realism-on-the-disc)), random-sponsors ([below](#random-sponsors)), modern-font ([below](#modern-font)) | – | yes | yes |
+| `eras` | club-eras ([below](#club-eras)) | – | yes | yes |
 | `saves` | mod-saves | – | yes | yes |
 | `harder-economy` | facility-tiers, wider-tickets, dearer-ads, sponsor-fees, tv-fees, season-demand ([`ECONOMY.md`](ECONOMY.md)) | – | – | yes |
 | `balance` | injury-odds, overseas-bases, transfer-fees, fee-tiers, slow-reputation, fanbase, merch-costs, pr-costs, camp-costs, tour-costs ([below](#improvements)) | – | – | yes |
@@ -59,7 +60,7 @@ under it as on the retail disc.
 
 LMASTER full is the fixes, the third tier, the balanced league
 schedules, the restored injury lines, the real names, the real grounds,
-the graphics and the modded disc's own saves; LMASTER max adds the two
+the graphics, the club eras and the modded disc's own saves; LMASTER max adds the two
 difficulty groups, `harder-economy` and `balance` (Nexxus's split,
 2026-10-27). Before that date `lmaster-full` held what `lmaster-max`
 holds now, so a test report from before it that names a full disc means
@@ -164,7 +165,7 @@ the text it rewrites follow the tables.
 | Long injuries more common | [`INJURIES.md`](INJURIES.md#the-kind-tables), **confirmed**: a heavy match injury is six months or more 0% of the time for a rested player and 39% at full fatigue, so rotation all but rules them out | `--mod injury-odds`: kinds 4–8 doubled in every row of both kind tables, to at least 2% (practice) and 5% (match) of a row, taken from kind 3 and then kind 0 so light match injuries stay as they were; a heavy match injury is then six months or longer 5% of the time rested and 78% at full fatigue ([`INJURIES.md`](INJURIES.md#more-long-injuries-injury-odds)) | built; not checked in the game |
 | Overseas bases: dearer, each pound buying half as much | [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches), **confirmed**: one cost per region sets the set-up, the investment per level and the upkeep; the level (0–3) scales the region's popularity change by 0.6–1.2 | `--mod overseas-bases`: the 13 costs doubled in `PLRESOURCESIM.PAC` and its `SIMLOCALMEM0`–`6` copies, so the investment per level and the upkeep double too; what a level does stays as in retail (Nexxus's choice, 2026-10-26: like `dearer-ads`) | built; not checked in the game |
 | Reputation harder to raise | [`SAVE_FORMAT.md`](SAVE_FORMAT.md), **confirmed**: the club status (your club rank is status >> 11) rises after each match (win and draw factors at `0x399668`), at final places (points at `0x555188`, `0x555260`, `0x555288`) and by 500 each year end (`0x26e2c4`) | `--mod slow-reputation`: every gain halved, losses as before (Nexxus's choice, 2026-10-26) | tested in PCSX2 (save states, 2026-10-27): a league win gained 47 status where retail gives 95 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)). The club status is hidden in game (Nexxus's report), so it is read from saves or save states. The year-end and final-place halves aren't seen yet |
-| Transfer fees by player rank: lesser players dearer, the best up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: the player's rank enters the fee only through table A (`0x398478`, 16 ranks × 6 club-rank bands), which only the fee function reads | `--mod fee-tiers`: table A's rows ×2 for ranks 0–5, ×1.5 for 6–11, ×2 for 12–14 and ×3 for rank 15 (Nexxus's choice, 2026-10-26); with `transfer-fees` the best player at a top club reaches about £246M | tested in PCSX2 at the low end (Nexxus's report, 2026-10-27, a German career on an LMASTER max build): lesser players' fees about 4× retail, with `transfer-fees`; a fee above £120M not yet seen |
+| Transfer fees by player rank: the lowest ranks at retail, the best up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: the player's rank enters the fee only through table A (`0x398478`, 16 ranks × 6 club-rank bands), which only the fee function reads | `--mod fee-tiers`: table A's rows ×0.5 for ranks 0–5, ×0.75 for 6–11, ×2 for 12–14 and ×3 for rank 15, so with `transfer-fees` ×1, ×1.5, ×4 and ×6 against retail (Nexxus's choice, 2026-11-19; the first, 2026-10-26, was ×2, ×1.5, ×2 and ×3 in the table, ×4, ×3, ×4 and ×6 in total, and left lesser players as money cheats); with `transfer-fees` the best player at a top club reaches about £246M | tested in PCSX2 at the low end with the first tiers (Nexxus's report, 2026-10-27, a German career on an LMASTER max build): lesser players' fees about 4× retail, with `transfer-fees`; on 2026-11-19 an 18-year-old of rank 10 listed at €12.3M and a 33-year-old of rank 8 at €4.8M (both ×3) were found too high, so the lower tiers were cut (not yet seen in the game); a fee above £120M not yet seen |
 | Transfer fees higher, up to £250M | [`ECONOMY.md`](ECONOMY.md#transfer-fees), **confirmed**: one base (1,350,000.0, `0x247288`) starts every fee you pay and every offer you get; price kind 1 caps them at £120M | `--mod transfer-fees`: the base 2,700,000.0 and the cap 15,000,000 (£250M) in all four currencies (`0x24a1c8`–`0x24a21c`) | tested in PCSX2 (Nexxus's report, 2026-10-25): fees doubled; a save state holds the 15,000,000 cap in all four currencies. A fee above £120M, and any limit of the transfer screens, not yet seen ([`ECONOMY.md`](ECONOMY.md#transfer-fees)) |
 | A bigger fanbase counts for more | [`ECONOMY.md`](ECONOMY.md#merchandise), **confirmed**: merchandise starts from a base by supporters, a flat table (12.5× from the smallest fanbase to the biggest); crowds and season tickets weigh popularity against a fixed part; TV offers vary only 0.9–1.15 by popularity | `--mod fanbase`: the merchandise bases ×0.5 at the bottom to ×3 at the top (`SIMPRG.REL 0x1d9ec8`), popularity weighted 195 for 130 and the fixed part 1,500 for 3,000 in crowds and season tickets, and the TV factor 0.75–1.25 | merchandise income much lower (Nexxus's report, 2026-10-27, a German career on an LMASTER max build), as the halved bases of a small fanbase and `merch-costs` predict; the top of the scale, crowds and TV offers not yet compared. Goods prices stay, and their costs are `merch-costs` (below) |
 | Dearer PR events | [`ECONOMY.md`](ECONOMY.md#pr-events), **confirmed**: an event costs its record's `+0x14` × 300, £5,000–£500,000 | `--mod pr-costs`: × 600 (`0x20deec`), so the booking and the refund both double | tested in PCSX2 (Nexxus's report, 2026-10-27, a German career on an LMASTER max build): PR events cost double |
@@ -184,7 +185,7 @@ are built now: the first three as `--mod harder-economy`, the fourth as
 | Dearer overseas bases, investment in them and their upkeep | `PLRESOURCESIM.PAC` entry 1: set-up cost per region and level rates (`_GetOverseasBranchEstablishCapital`, `0x232d88`; [`PLRESOURCESIM_FORMAT.md`](PLRESOURCESIM_FORMAT.md#entry-1-overseas-branches)), payments 18–19 | built as `--mod overseas-bases` (above) |
 | Merchandise: dearer to stock, bigger margins | income 7 (Merchandise), `pwkGd_GoodsMonthlySales` ([`ECONOMY.md`](ECONOMY.md#merchandise)) | built as `--mod merch-costs` (dearer stock, margins 50–60%) and `--mod fanbase` (sales by fanbase), above ([`ECONOMY.md`](ECONOMY.md#making-the-stock)); the shop prices (shop list `+0x8`, `0x241a00`) stay |
 | Reputation harder to raise | your club rank is the club status >> 11 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far)) | built as `--mod slow-reputation` (above) |
-| Lesser players dearer, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the price limits ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | built as `--mod transfer-fees` and `--mod fee-tiers` (above) |
+| Dearer players by rank, the lowest at retail, the best up to £250,000,000 (a top tier, a "football icon") | transfer fees (income 9, payments 14) and the price limits ([`TEAMINIT_FORMAT.md`](TEAMINIT_FORMAT.md#salary-limits)) | built as `--mod transfer-fees` and `--mod fee-tiers` (above) |
 
 ### The third tier
 
@@ -533,6 +534,82 @@ CSV. The file's copies in `PRELOAD/SIMFILE0`-`6.PAC` change too, and a
 rows. Not done: the Japanese release (the code is PAL's), the keeper
 kits, a look at every supplier and every league, and the 114 kits seen
 in a match.
+
+## Club eras
+
+`--mod club-eras` (group `eras`, in LMASTER full and max; built 2026-11-19;
+Nexxus's idea and choices; `cluberas.py`). Every computer club changes
+manager every 3 seasons, a third of the clubs each year, and the better
+clubs get the better managers, each club one of its own. A manager brings
+his own formations and tactics (his record holds three formations and the
+seven tactical leanings, [`PBDATA_FORMAT.md`](PBDATA_FORMAT.md)), and the
+game derives a computer club's style and tactics from its manager (below),
+so those change with him. **Built and checked by emulation and by reading
+the disc back; not yet seen in the game** ([`TESTING.md`](../TESTING.md#newer-switches)).
+Not built yet: sponsors and suppliers by club rank (they still come from
+`random-sponsors`' hash), and a tactics and formation choice of the
+switch's own for managers of one style.
+
+**How it works.** The game asks `plOteam_GetManagerNoOffset` (`SLES
+0x216668`) for a club's manager; it calls `plOteam_GetDb` (`0x2165d8`) and
+reads the club record's `+4` (a manager index, database id minus
+`0x6d2e`). The `jal` at `0x2166d0` becomes a call to code in the LMASTER
+code segment (`CAVE + 0x400`, 61 words). For the clubs of teams 3 to 441,
+once a club's era is past 0, the code finds the manager in tables and
+returns a pointer whose `+4` holds it (the next instruction is
+`lh $v0, 4($v0)`, its result word at `CAVE + 0x500`); for every other
+team, and in era 0, it jumps on to `plOteam_GetDb`, so teams 1 and 2, the
+national teams, the tutorial's clubs and the first seasons are the
+retail game's. The **era** is (season + team id mod 3) div 3, the season
+being `pwkGen_Keika` (`0x244430`, 0 in 2006-07). Era 0 is the retail
+manager, so the clubs with team id mod 3 equal to 2, 1 and 0 get their
+first new manager in seasons 1, 2 and 3 (2007-08, 2008-09, 2009-10), and
+each changes again every 3 seasons.
+
+**The tables** (`python SRC/cluberas.py info DAT`):
+
+| Part | Holds |
+|---|---|
+| Tiers | the 439 clubs of teams 3 to 441 sorted by the club record's `world_rank` (`+2`, 237 different values, best first, ties by team id), cut into 16 tiers of 28 or 27 |
+| Pool | the 3,000 manager records sorted by quality (`rank`, then the mean of the 48 abilities; rank and mean ability correlate 0.92), less the 721 the game uses elsewhere: the clubs' own retail managers, the national teams', the player's staff, the candidate lists and the rival's. A tier takes the next M = 3 × K (81 or 84) of the best 1,317 |
+| Rotation | a club at place *p* of a tier of *K* gets the tier's entry (*p* + era × step) mod *M*, the step in [*K*, *M* − *K*] and coprime to *M* (40 or 41) |
+
+Two clubs of one tier are in eras that differ by at most 1, so they
+collide only if their places differ by the step modulo *M*, which that
+range rules out; different tiers have separate slices, and the retail
+managers are out of the pool, so no two clubs share a manager in any
+season (`cluberas.py check` proves it over 100 seasons). The code segment
+grew from `0x400` to `0x1400` bytes for the tables (the executable has
+`0x57d58` zero bytes after it, on the PAL and the Japanese file alike,
+and EE RAM below the executable is free to `0x100000`); the tiers, the
+clubs' places and the pool sit at `CAVE + 0x510`, `+ 0x590` and
+`+ 0x900`. The switch is PAL only for now, as `random-sponsors` is.
+
+**Where the manager meets the tactics** (**confirmed** in the code, not
+tested in the game): `0x22e610` reads the manager's runtime byte `+0x35`
+through the table at `0x534428` to a team style, and
+`plTeam_SetStyleTeamParam` (`0x22ed28`, from `pwkOteam_GetTeamData`,
+`0x24ba08`) builds the style's `0x70`-byte block at `PlTeamData +0x4204`
+(the formation and the seven tactics) from it. `pwkOteam_GetManager`
+(`0x24be40`) builds the computer club's manager from the index above.
+
+**Checked.** `cluberas.py check` (one manager per club over 100 seasons,
+quality falling tier by tier), `cluberas.py selftest` (the machine code
+run by an emulator against the plan, 8,280 team and season pairs, 0
+wrong), and a read-back of the built disc (`LMAST-test-eras.iso`: the
+hook word, the program header, the routine and the three tables equal
+what was generated, 0 wrong runs on those bytes). The game itself has not
+run it. A manager is shown nowhere (only on the team info screen, hidden
+from the player: Nexxus's report, 2026-11-19), so the in-game check
+reads the result word at `0xf8500` over PINE after the game has built a
+computer club's team data (most likely as a match loads: `pwkOteam_GetTeamData`
+asks for the manager, not yet seen to run): it holds the manager index
+the code returned, and stays 0 while every club is in era 0.
+
+**Still unknown:** whether the game takes the new manager into a
+computer club's match (the check above), whether the managers' formations
+and tactics differ enough between managers to see, and the sponsor and
+supplier ranking (built from the sponsor table's fees: [Planned](#planned)).
 
 ## Real names
 
@@ -1199,7 +1276,8 @@ started:
   the PAL code still holds them unreachable or they were cut, and the
   English text for its screens. Nothing is traced yet.
 
-- **Club eras** (Nexxus's idea, 2026-11-19; not started). Every club
+- **Club eras** (Nexxus's idea, 2026-11-19; the managers are built, see
+  [Club eras](#club-eras); the rest here is not started). Every club
   changes manager, tactics and philosophy on a fixed cycle, and the
   better clubs get the better sponsors, suppliers and managers instead of
   a random draw. Each club keeps a manager no other club has. Nexxus's
