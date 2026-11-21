@@ -17,7 +17,11 @@ files from outside DATA.CVM under disc/:
     mod/build.json              the Build disc dialog's paths and options
 
 The editor reads a file from the mod folder when it is there and from
-DAT/ (or ISO/) otherwise, so edits build up over several sessions. Each
+DAT/ (or ISO/) otherwise, so edits build up over several sessions. For the Japanese release give its folders:
+`python SRC/editor.py open mods/jp --dat DAT_JP --iso ISO_JP` (the executable is then
+mod/disc/SLPM_663.16, the People tab edits PBDATA_JP.PAC, which that game loads, and the
+names come from message slot 0; DOC/JAPANESE_RELEASE.md#the-editors-on-the-japanese-release).
+Each
 save is written next to its target as <name>.new and then replaces it, so
 a failed save leaves the old file. The folder's layout matches
 patch_disc.py's targets: PARAM/PBDATA_EU.PAC=mod/PARAM/PBDATA_EU.PAC and
@@ -243,6 +247,22 @@ def shown_path(path):
 class Mod:
     def __init__(self, root, dat="DAT", iso="ISO"):
         self.root, self.dat, self.iso = root, dat, iso
+        # The executable's name on the disc: SLES_541.51 for PAL, SLPM_663.16 for the Japanese release.
+        try:
+            import gamever
+            self.exe = gamever.exe_name(iso)
+        except (ValueError, OSError):
+            self.exe = SLES
+        self.japanese = self.exe != SLES
+        # The message slot with the names (the Japanese release's slots 1-6 are placeholders) and the
+        # player database the game reads: FC_EURO_PWK_CALLBACK::PwkCallbackCommand_BpDataReadFile
+        # (0x110d50) loads pbdata_jp.pac when Localize_GetLanguage is 0 (Japanese), else pbdata_eu.pac.
+        self.lang = 0 if self.japanese else 1
+        self.pbdata = "PARAM/PBDATA_JP.PAC" if self.japanese else "PARAM/PBDATA_EU.PAC"
+
+    def build_name(self):
+        """"PAL" or "Japanese", for messages."""
+        return "Japanese" if self.japanese else "PAL"
 
     def source(self, rel):
         """The file to read for DAT/<rel>: the mod's copy if there is one."""
@@ -554,7 +574,7 @@ class PeopleTab(Tab):
         def work():
             try:
                 mod = self.app.mod
-                path = mod.source(PBDATA)
+                path = mod.source(mod.pbdata)
                 db = pbdata.PbData(path)
                 if not db.data:
                     raise ValueError("%s has no records" % path)
@@ -563,8 +583,8 @@ class PeopleTab(Tab):
                 # nation_names reads PLRESOURCECOMMON.PAC next to the path it
                 # is given, so give it that pack's own path (the mod's copy of
                 # PBDATA_EU.PAC may be on its own).
-                result["nations"] = pbdata.nation_names(mod.source(COMMON), mes)
-                teams = initteam.team_names(mes, 1)
+                result["nations"] = pbdata.nation_names(mod.source(COMMON), mes, mod.lang)
+                teams = initteam.team_names(mes, mod.lang)
                 squads = initteam.OteamMembers(mod.source(OTEAM)).squads
                 result["club_of"] = {m.player: (team, m) for team, s in squads.items() for m in s}
                 result["teams"] = teams
@@ -877,16 +897,16 @@ class PeopleTab(Tab):
             return True
         mod = self.app.mod
         players = self.records["players"]
-        out = mod.target(PBDATA)
+        out = mod.target(mod.pbdata)
         # The ranking changes when a rank, main position or nationality edit
         # moves a player or changes a group's size; either way the pack's
         # entries 2 and 3 and the executable's group table must follow.
         sles = None
-        sles_in = mod.disc_source(SLES)
+        sles_in = mod.disc_source(mod.exe)
         try:
             entry2, _, table = pbdata.build_ranking(players, self.db.entry2)
             if entry2 != self.db.entry2 or table != pbdata.sles_group_table(sles_in)[1]:
-                sles = (sles_in, mod.disc_target(SLES))
+                sles = (sles_in, mod.disc_target(mod.exe))
         except (ValueError, OSError) as e:
             messagebox.showerror("People", "Can't save: %s" % e)
             return False
@@ -997,8 +1017,8 @@ class ClubsTab(Tab):
             self.ot = initteam.OteamMembers(self.ot_path)
             self.db = initteam.TeamDb(self.db_path)
             mes = mod.source(MES)
-            self.teams = initteam.team_names(mes, 1)
-            self.names = {cat: initteam.category_names(mes, cat)
+            self.teams = initteam.team_names(mes, mod.lang)
+            self.names = {cat: initteam.category_names(mes, cat, mod.lang)
                           for cat in set(initteam.TEAM_NAME_CATEGORIES.values())}
             self.stadiums = initteam.StadiumData(mod.source(STADIUMS))
         except (ValueError, struct.error, OSError, SystemExit) as e:
@@ -1342,7 +1362,7 @@ class NewClubTab(Tab):
             squads = initteam.OteamMembers(mod.source(OTEAM)).squads
             self.club_of = {m.player: team for team, s in squads.items() for m in s}
             mes = mod.source(MES)
-            self.teams = initteam.team_names(mes, 1)
+            self.teams = initteam.team_names(mes, mod.lang)
             self.stadiums = initteam.StadiumData(mod.source(STADIUMS))
         except (ValueError, struct.error, OSError, SystemExit) as e:
             self.app.status("Couldn't load the new club: %s" % e)
@@ -3395,7 +3415,7 @@ class ClubEventsTab(Tab):
     def load(self, done=None):
         mod = self.app.mod
         try:
-            self.path = mod.disc_source(SLES)
+            self.path = mod.disc_source(mod.exe)
             self.ev = clubevent.Events(self.path)
             self.names, self.about = clubevent.names(mod.source(MES))
         except (ValueError, struct.error, OSError) as e:
@@ -3499,8 +3519,8 @@ class ClubEventsTab(Tab):
         if not self.changes:
             return True
         mod = self.app.mod
-        src = mod.disc_source(SLES)       # as the other tabs left it
-        out = mod.disc_target(SLES)
+        src = mod.disc_source(mod.exe)       # as the other tabs left it
+        out = mod.disc_target(mod.exe)
         temps = [(out + ".new", out)]
         try:
             ev = clubevent.Events(src)
@@ -3631,10 +3651,10 @@ class KitsTab(Tab):
             self.gk_original = open(self.gk_path, "rb").read()
             self.gk_blob = bytearray(self.gk_original)
             self.t0, self.t1 = uniform.load_gk(self.gk_path)
-            self.teams = initteam.team_names(mod.source(MES), 1)
+            self.teams = initteam.team_names(mod.source(MES), mod.lang)
             self.swatches = uniform.colour_swatches(os.path.join(mod.dat, "PLAYER"))
             try:
-                self.sles_path = mod.disc_source(SLES)
+                self.sles_path = mod.disc_source(mod.exe)
                 self.licence_of, elf = uniform.licence_table(self.sles_path)
                 # The descriptors as the game draws them: the executable's
                 # copy (DOC/UNIFORM_FORMAT.md#the-descriptor). Saves write
@@ -3935,10 +3955,10 @@ class KitsTab(Tab):
 
         def args(edits):
             return ["%s=%d" % e for e in edits]
-        sles_in = mod.disc_source(SLES)
+        sles_in = mod.disc_source(mod.exe)
         elf = sles_disasm.Elf(sles_in)
         data = bytearray(elf.data)
-        out = mod.disc_target(SLES)
+        out = mod.disc_target(mod.exe)
         src = sles_in
         for (side, n), edits in groups.items():
             base = uniform.exe_descriptor_base(sles_in, elf, side, n)
@@ -4599,7 +4619,7 @@ class SeasonTab(Tab):
             self.data = leaguesize.load(self.param_dir(), self.param_over())
             self.init = self.data[3]
             self.nations = self.make_nations()
-            self.teams = initteam.team_names(mod.source(MES), 1)
+            self.teams = initteam.team_names(mod.source(MES), mod.lang)
         except (ValueError, struct.error, OSError, StopIteration) as e:
             self.app.status("Couldn't load the starting divisions: %s" % e)
             messagebox.showerror("Season", "Couldn't load the starting divisions:\n%s" % e)
@@ -4916,6 +4936,11 @@ class FreeAgentsTab(Tab):
                 self.ids = plrsim.free_agents(f.read())
         except (ValueError, struct.error, OSError, IndexError) as e:
             self.ids = None
+            if self.app.mod.japanese and isinstance(e, IndexError):
+                # The Japanese PLRESOURCESIM.PAC stops before entry 15: PAL added the free-agent list.
+                self.app.status("The Japanese release has no free-agent list (PAL added it), so this "
+                                "tab has nothing to edit there.")
+                return
             self.app.status("Couldn't load the free agents: %s" % e)
             messagebox.showerror("Free agents", "Couldn't load the free agents:\n%s" % e)
             return
@@ -5180,7 +5205,7 @@ class LinksTab(Tab):
                 _, end, _ = plrsim.stream(blobs[e], e)
                 self.room[e] = (len(blobs[e]), len(end))
             self.original = {e: [[k, list(m)] for k, m in g] for e, g in self.gs.items()}
-            self.teams = initteam.team_names(mod.source(MES), 1)
+            self.teams = initteam.team_names(mod.source(MES), mod.lang)
         except (ValueError, struct.error, OSError, IndexError) as e:
             self.gs = None
             self.app.status("Couldn't load the player links: %s" % e)
@@ -5454,7 +5479,7 @@ class BasesTab(Tab):
                 data = f.read()
             self.costs = plrsim.branch_costs(data)
             self.rates = plrsim.branch_rates(data)
-            names = initteam.category_names(mod.source(MES), plrsim.REGION_NAME_CATEGORY)
+            names = initteam.category_names(mod.source(MES), plrsim.REGION_NAME_CATEGORY, mod.lang)
             self.names = [names.get(plrsim.REGION_NAME_BASE + r, "")
                           for r in range(plrsim.BRANCH_REGIONS)]
         except (ValueError, struct.error, OSError, IndexError) as e:
@@ -5614,7 +5639,7 @@ class NationsTab(Tab):
             self.nat = initteam.NationData(mod.source(NATIONS))
             self.st = initteam.StadiumData(mod.source(STADIUMS))
             db = initteam.TeamDb(mod.source(SIMPAC))
-            teams = initteam.team_names(mod.source(MES), 1)
+            teams = initteam.team_names(mod.source(MES), mod.lang)
         except (ValueError, struct.error, OSError) as e:
             self.nat = self.st = None
             self.app.status("Couldn't load the nations and stadiums: %s" % e)
@@ -5847,7 +5872,7 @@ class StadiumsTab(Tab):
         ground in each league (TEAM_INIT_DATA table 7)."""
         mod = self.app.mod
         db = initteam.TeamDb(mod.source(SIMPAC))
-        teams = initteam.team_names(mod.source(MES), 1)
+        teams = initteam.team_names(mod.source(MES), mod.lang)
         self.users = {}
         for team, r in sorted(db.records.items()):
             self.users.setdefault(r["stadium"], []).append(teams.get(team, str(team)))
@@ -6526,18 +6551,22 @@ class LogTab(Tab):
 
 SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REDUMP_NAME = "Let's Make a Soccer Team! (Europe, Australia) (En,Fr,De,Es,It).iso"
+REDUMP_NAME_JP = "Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso"
+REDUMP_DISC = {False: "12334", True: "30266"}       # redump.info disc numbers, PAL and Japanese
 
 
-def redump_size():
+def redump_size(japanese=False):
+    """The size of the Redump dump of the release the mod folder is for (extract_disc.REDUMP)."""
     import extract_disc
-    return extract_disc.REDUMP[0]["size"]   # the PAL dump; the editor builds PAL discs
+    return extract_disc.REDUMP[1 if japanese else 0]["size"]
 
 
-def find_original():
+def find_original(japanese=False):
     """The Redump dump in the current folder, by its Redump name and size
     (a disc built from it has the same size, so the name decides)."""
-    if os.path.exists(REDUMP_NAME) and os.path.getsize(REDUMP_NAME) == redump_size():
-        return REDUMP_NAME
+    name = REDUMP_NAME_JP if japanese else REDUMP_NAME
+    if os.path.exists(name) and os.path.getsize(name) == redump_size(japanese):
+        return name
     return ""
 
 
@@ -6561,7 +6590,7 @@ class BuildDialog:
         name = os.path.basename(os.path.abspath(self.mod.root))
         original = settings.get("original")
         if not (original and os.path.isfile(original)):    # moved or deleted since
-            original = find_original()
+            original = find_original(self.mod.japanese)
         self.original = tk.StringVar(value=original)
         self.make_image = tk.IntVar(value=settings.get("make_image", 1))
         self.output = tk.StringVar(value=settings.get("output") or name + ".iso")
@@ -6655,9 +6684,10 @@ class BuildDialog:
                                 variable=self.switches[switch],
                                 command=self.switch_changed).pack(anchor="w", padx=(40, 0))
             self.groups[name] = (var, box, body)
-        ttk.Label(form, text="The original must be the Redump dump (redump.info/disc/12334) "
+        ttk.Label(form, text="The original must be the Redump dump (redump.info/disc/%s) "
                              "for a patch others can apply. It is only read. A patch without "
-                             "the image still needs room for a temporary one while it is made.",
+                             "the image still needs room for a temporary one while it is made."
+                             % REDUMP_DISC[self.mod.japanese],
                   foreground="#555", wraplength=900, justify="left"
                   ).grid(row=7, column=0, columnspan=3, sticky="w", pady=(6, 0))
         self.update_entries()
@@ -6872,7 +6902,7 @@ class BuildDialog:
                                      "build." % path, parent=self.win)
                 return False
             same.add(os.path.abspath(path))
-        if os.path.getsize(original) != redump_size():
+        if os.path.getsize(original) != redump_size(self.mod.japanese):
             msg = ("%s is not the size of the Redump dump, so it isn't an unmodified disc."
                    % original)
             if self.make_patch.get():

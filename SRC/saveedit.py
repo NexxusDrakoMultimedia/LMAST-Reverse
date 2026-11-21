@@ -5,7 +5,7 @@ career save on a PCSX2 memory card, a folder card or a card file
 (DOC/SAVE_EDITOR_PLAN.md).
 
 A save is a folder BESLES-54151-Gnnn (or -Fnnn or -Mnnn for a modded
-disc's saves) on the card. The window decodes it with save.py, which runs the
+disc's saves) on the card, or BISLPM-66316-Gnnn for the Japanese release. The window decodes it with save.py, which runs the
 game's own save code (DOC/SAVE_FORMAT.md), and shows what save.py can
 read, on one page each: the club, finances, the squad and youth team,
 pair combinations, staff, the other clubs, the candidate lists and the
@@ -66,7 +66,9 @@ Close the game in PCSX2 before saving, so it doesn't write the card
 over the edit.
 
 Run it from the repo root: it reads names from DAT/ (PBDATA_EU.PAC and
-MES.PAC) and the save code from ISO/.
+MES.PAC) and the save code from ISO/. A Japanese save (BISLPM-66316-...)
+is read with ISO_JP/ and DAT_JP/ instead (PBDATA_JP.PAC and the Japanese
+message slot for the names); both can be open one after the other.
 
 Usage:
     python SRC/saveedit.py open [<save folder or main file>]
@@ -88,8 +90,29 @@ import ps2mc
 import save
 
 WINDOW = (1280, 720)
-MES = os.path.join("DAT", "MESSAGE", "MES.PAC")
-PBDATA = os.path.join("DAT", "PARAM", "PBDATA_EU.PAC")
+RELEASES = {"BESLES-54151-": ("ISO", "DAT"), "BISLPM-66316-": ("ISO_JP", "DAT_JP")}   # save prefix: its folders
+
+
+def release_of(path, card_folder=None):
+    """(ISO folder, DAT folder) for the save at `path` (a save folder or its main file), or for
+    `card_folder` when the save is copied off a card file: PAL's for BESLES-54151-, the Japanese
+    release's for BISLPM-66316-."""
+    name = card_folder or os.path.basename(os.path.dirname(os.path.abspath(path))
+                                           if os.path.isfile(path) else os.path.abspath(path))
+    try:
+        return RELEASES[save.save_name(name)[0]]
+    except (ValueError, KeyError):
+        return RELEASES["BESLES-54151-"]
+
+
+def open_game(iso, dat):
+    """The save.Game of an extracted disc (ISO folder `iso`, data folder `dat`)."""
+    import gamever
+    for folder in (iso, dat):
+        if not os.path.isdir(folder):
+            raise ValueError("%s: not found; extract that release's disc (extract_disc.py) and run "
+                             "from the repo root" % folder)
+    return save.Game(os.path.join(iso, "DLL", "SAVEPRG.REL"), gamever.exe_path(iso), dat)
 GREY = "#555"
 COMBI_COLOURS = ("#c8c8c8", "#e8e8e8", "#a8c8ff", "#ff9a9a", "#ff4a4a")    # levels 1-5
 ABIL_ROWS = 16              # abilities per grid column
@@ -141,16 +164,17 @@ def range_text(s, key):
 
 
 class Names:
-    """Names from the disc data: players and staff (PBDATA_EU.PAC), clubs,
-    reputations and the accounts' lines (MES.PAC). Loaded once."""
+    """Names from a release's disc data: players and staff (PBDATA_EU.PAC; the Japanese
+    release's PBDATA_JP.PAC), clubs, reputations and the accounts' lines (MES.PAC, English
+    or the Japanese slot), as `game` (a save.Game) says. Loaded once for each release."""
 
-    def __init__(self):
-        db = pbdata.PbData(PBDATA)
+    def __init__(self, game):
+        db = pbdata.PbData(game.pbdata_path)
         self.people = {r.db_id: r.name for kind in pbdata.KINDS for r in db.records(kind)}
-        self.teams = initteam.team_names(MES, 1)
-        self.reputations = initteam.category_names(MES, save.REPUTATION_CATEGORY)
-        self.report = initteam.category_names(MES, save.REPORT_CATEGORY)
-        self.rep_table = save.reputation_table()
+        self.teams = initteam.team_names(game.mes_path, game.lang)
+        self.reputations = initteam.category_names(game.mes_path, save.REPUTATION_CATEGORY, game.lang)
+        self.report = initteam.category_names(game.mes_path, save.REPORT_CATEGORY, game.lang)
+        self.rep_table = save.reputation_table(game.sles_path)
 
     def reputation(self, rank):
         n = save.reputation(self.rep_table, rank)
@@ -787,12 +811,14 @@ class App:
         for page in self.pages:
             self.notebook.add(page.frame, text=page.title)
         self.game = self.names = self.save = None
+        self.games, self.name_sets = {}, {}      # by release: the game code and the names, loaded once each
+        self.iso = None                          # the ISO folder of the open save's release
         self.card = None            # (card file, save folder) for a save from a card file
         self.card_dialog = None
         self.root.title("LMAST save editor")
-        self.status("Open a save folder (BESLES-54151-G000 and so on) on a PCSX2 folder "
-                    "memory card: File > Open save. For a card file (.ps2): File > Open "
-                    "save on a card file.")
+        self.status("Open a save folder (BESLES-54151-G000, or BISLPM-66316-G000 for the Japanese "
+                    "release) on a PCSX2 folder memory card: File > Open save. For a card file "
+                    "(.ps2): File > Open save on a card file.")
         if path and os.path.isfile(path) and path.lower().endswith(".ps2"):
             if folder:
                 self.open_card(path, folder)
@@ -816,7 +842,7 @@ class App:
     def ask_open(self):
         if not self.keep_changes():
             return
-        path = filedialog.askdirectory(title="Open a save folder (BESLES-54151-...)",
+        path = filedialog.askdirectory(title="Open a save folder (BESLES-54151-... or BISLPM-66316-...)",
                                        mustexist=True)
         if path:
             self.open(path)
@@ -839,7 +865,7 @@ class App:
             return
         if not names:
             messagebox.showerror("Save editor", "%s holds no career saves (BESLES-54151-G, "
-                                                "-F or -M folders)." % path)
+                                                "-F or -M folders, or BISLPM-66316-G)." % path)
             return
         top = tk.Toplevel(self.root)
         top.title("Saves on %s" % os.path.basename(path))
@@ -892,18 +918,22 @@ class App:
     def open(self, path, done=None, card=None):
         """Decode the save (and the names, the first time) in a thread; with
         no .cache/ yet, the first decode records save.py's field list. `card` is
-        (card file, save folder) when `path` is a save copied off a card file."""
+        (card file, save folder) when `path` is a save copied off a card file. The release
+        comes from the save's folder name (BESLES-54151- or BISLPM-66316-)."""
         self.status("Loading %s ..." % path)
         self.root.configure(cursor="watch")
         result = {}
+        iso, dat = release_of(path, card[1] if card else None)
 
         def work():
             try:
-                if self.game is None:
-                    result["game"] = save.Game()
-                if self.names is None:
-                    result["names"] = Names()
-                result["save"] = save.Save(result.get("game") or self.game, path)
+                game = self.games.get(iso)
+                if game is None:
+                    result["game"] = game = open_game(iso, dat)
+                if iso not in self.name_sets:
+                    result["names"] = Names(game)
+                result["save"] = save.Save(game, path)
+                result["iso"] = iso
             except Exception as e:      # shown in the window, not lost in a thread
                 result["error"] = e
 
@@ -920,8 +950,12 @@ class App:
                 messagebox.showerror("Save editor", "Couldn't open %s:\n%s"
                                      % (path, result["error"]))
                 return
-            self.game = result.get("game") or self.game
-            self.names = result.get("names") or self.names
+            iso = result["iso"]
+            if "game" in result:
+                self.games[iso] = result["game"]
+            if "names" in result:
+                self.name_sets[iso] = result["names"]
+            self.game, self.names, self.iso = self.games[iso], self.name_sets[iso], iso
             self.card = card
             self.loaded(result["save"], done)
         poll()
@@ -987,6 +1021,11 @@ class App:
         messagebox.showerror("Save editor", message)
         return False
 
+    def iso_opts(self):
+        """The `--iso` option a logged save.py command needs for the open save's release: none for
+        PAL's, `--iso ISO_JP` for the Japanese release's, so the command reads the same layout."""
+        return ["--iso", self.iso] if self.iso and self.iso != RELEASES["BESLES-54151-"][0] else []
+
     # saving
 
     def write(self):
@@ -1022,7 +1061,7 @@ class App:
             return False
         cmd = ["python", "SRC/save.py", "set", editor.quote(editor.shown_path(backup)),
                editor.quote(editor.shown_path(new))]
-        cmd += [editor.quote(assignment(*kv)) for kv in self.changes]
+        cmd += [editor.quote(assignment(*kv)) for kv in self.changes] + self.iso_opts()
         n = len(self.changes)
         lines = editor.log_lines("%s: %d changes" % (os.path.basename(main), n),
                                  [cmd], [(new, main)], moved="the .new file")
@@ -1048,7 +1087,7 @@ class App:
         card = os.path.dirname(src)
         try:
             prefix, letter, _ = save.save_name(src)
-            n = save.free_slot(card, letter)
+            n = save.free_slot(card, letter, prefix)
         except ValueError as e:
             messagebox.showerror("Save editor", "Can't save to a new slot: %s" % e)
             return False
@@ -1083,7 +1122,7 @@ class App:
         if self.changes:
             cmds.append(["python", "SRC/save.py", "set", editor.quote(editor.shown_path(main)),
                          editor.quote(editor.shown_path(new))]
-                        + [editor.quote(assignment(*kv)) for kv in self.changes])
+                        + [editor.quote(assignment(*kv)) for kv in self.changes] + self.iso_opts())
         lines = editor.log_lines("%s -> %s: %d changes" % (os.path.basename(src), name, n_changes),
                                  cmds, [(new, dst_main)], moved="the .new file")
         if not self.changes:
@@ -1160,7 +1199,7 @@ class App:
         q = lambda p: editor.quote(editor.shown_path(p))
         self.log_card("%s on %s: %d changes" % (folder, os.path.basename(path), n), [
             ["python", "SRC/save.py", "set", q(main_backup), q(new_main)]
-            + [editor.quote(assignment(*kv)) for kv in self.changes],
+            + [editor.quote(assignment(*kv)) for kv in self.changes] + self.iso_opts(),
             ["python", "SRC/ps2mc.py", "put", q(card_backup), q(path + ".new"),
              editor.quote("%s/%s=%s" % (folder, folder, editor.shown_path(new_main)))]])
         self.open_card(path, folder, "Saved %s: %d changes (backup %s)" % (
@@ -1217,7 +1256,7 @@ class App:
         else:
             cmds = [["python", "SRC/ps2mc.py", "copy", q(card_backup), q(copied), src, name],
                     ["python", "SRC/save.py", "set", q(main_backup), q(new_main)]
-                    + [editor.quote(assignment(*kv)) for kv in self.changes],
+                    + [editor.quote(assignment(*kv)) for kv in self.changes] + self.iso_opts(),
                     ["python", "SRC/ps2mc.py", "put", q(copied), q(path + ".new"),
                      editor.quote("%s/%s=%s" % (name, name, editor.shown_path(new_main)))]]
         self.log_card("%s -> %s on %s: %d changes" % (src, name, os.path.basename(path), n),
@@ -1246,7 +1285,7 @@ def main(argv):
     args = argv[2:]
     cmd = argv[1] if len(argv) > 1 else ""
     if cmd == "open" and len(args) <= 2:
-        if not os.path.isdir("DAT"):
+        if not os.path.isdir("DAT") and not os.path.isdir("DAT_JP"):
             raise SystemExit("DAT: not found; run from the repo root")
         App(*args).run()
         return 0

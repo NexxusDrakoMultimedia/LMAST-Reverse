@@ -278,6 +278,19 @@ You can build the mod in three editions from named switches
       `mobile-site` joined `injury-lines` in the `restorations` group (all
       three in every edition)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
+- [x] The save editor and the mod editor on the Japanese release
+      (2026-11-21; Nexxus's choice of 2026-11-01): `saveedit.py` takes the
+      release from a save's folder name (`BISLPM-66316-` reads with `ISO_JP/`
+      and `DAT_JP/`, one game and one set of names for each release, `--iso
+      ISO_JP` in the logged commands); `editor.py open --dat DAT_JP --iso
+      ISO_JP` uses the executable `SLPM_663.16`, message slot 0, the
+      `PBDATA_JP.PAC` the Japanese game loads (confirmed in the loader), a
+      free-agents tab that says there is none, and the Japanese Redump in
+      Build disc. Driven through the widgets: all 24 tabs open, a People and
+      a PR events edit save and replay to the same bytes, a disc built from
+      the folder holds the edited executable, and a Japanese-layout save
+      edits and saves
+      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-editors-on-the-japanese-release))
 - [x] `--mod club-eras` on the Japanese release (2026-11-21): the
       managers' code and tables, called from the same function as on PAL
       (`plOteam_GetManagerNoOffset`, its words equal but for two `jal`

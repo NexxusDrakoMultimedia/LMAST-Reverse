@@ -168,10 +168,14 @@ Decided (Nexxus, 2026-10-09):
   [`INSTALL.md`](../INSTALL.md#editing-a-save) tell you to close the game
   first; the editor doesn't detect a running PCSX2, and whether it should
   warn when the card is in use is undecided.
-- **Japanese saves.** `save.py --iso ISO_JP` reads and writes them
-  ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)), but the
-  save editor is PAL-only, left for later
-  ([`TODO.md`](../TODO.md#playing-a-mod)).
+- **Japanese saves.** The window opens `BISLPM-66316-` saves since
+  2026-11-21: the release comes from the folder's name (`saveedit.RELEASES`),
+  the game code from `ISO_JP/` and the names from `DAT_JP/` (the Japanese
+  `PBDATA_JP.PAC` and message slot 0), one set for each release, and the
+  logged `save.py set` carries `--iso ISO_JP`. Tested through the widgets
+  on a Japanese-layout save made from a PAL one (the page draws, an edit
+  saves and the logged command gives the same bytes), not yet on a save
+  written by the Japanese game ([`TESTING.md`](../TESTING.md#the-japanese-release)).
 - **Candidates.** The page is read-only: `save.py set` has no key for the
   candidate lists. Part of the player candidate record isn't decoded
   either ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#fields-found-so-far), "The

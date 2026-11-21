@@ -48,6 +48,23 @@ folder again carries on where you left off: the editor reads your
 edited copy of a file when there is one, so edits build up over
 sessions.
 
+For the Japanese release (`SLPM-66316`, extracted to `ISO_JP/` and
+`DAT_JP/` with `extract_disc.py`) give both folders, and use a mod folder
+of its own, since its files are not the PAL ones:
+
+```bash
+python SRC/editor.py open mods/jp --dat DAT_JP --iso ISO_JP
+```
+
+The tabs read the Japanese names (message slot 0). The People tab edits
+`PBDATA_JP.PAC`, the pack the Japanese game loads (PAL loads
+`PBDATA_EU.PAC`), edits to the executable go to `disc/SLPM_663.16`, the
+Free agents tab says the Japanese release has no free-agent list, and
+Build disc looks for the Japanese Redump image
+(`Pro Soccer Club o Tsukurou! Europe Championship (Japan).iso`,
+redump.info/disc/30266) and passes `--dat DAT_JP`
+([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-editors-on-the-japanese-release)).
+
 ### The window
 
 Each kind of data has a tab along the top:
@@ -230,6 +247,12 @@ Or give the save straight away:
 python SRC/saveedit.py open <card>/BESLES-54151-G003
 ```
 
+A Japanese career is a folder `BISLPM-66316-G000` and so on: the window
+takes its release from the folder's name, reads it with `ISO_JP/` and
+`DAT_JP/` (Japanese names), and a PAL and a Japanese save can be opened one
+after the other in the same window. The command each save logs then ends
+with `--iso ISO_JP`, so replaying it reads the Japanese layout.
+
 ```bash
 python SRC/saveedit.py open Mcd001.ps2
 ```
@@ -297,7 +320,6 @@ To carry one over, copy it to the modded name: see
 
 ## What isn't covered yet
 
-- The save editor works on PAL saves only, not the Japanese release's.
 - The candidate lists can't be edited yet.
 - Edits to the Club page, the season plan, a player's fatigue,
   condition, motivation and abilities, a manager's dissatisfaction, a

@@ -101,7 +101,7 @@ it belongs to, and [`DONE.md`](DONE.md) lists what is finished.
    edit commands, not values), and builds a disc or a patch;
    `saveedit.py` edits a career save. A tab for each writer still to
    come (the Data goal in `TODO.md`) is left, and so are the Candidates
-   page of the save editor and both editors on the Japanese release.
+   page of the save editor and the mod editor's tabs checked one by one on the Japanese release.
 6. **Distribute.** Share mods as xdelta patches (VCDIFF, RFC 3284)
    against the player's own unmodified disc image, never as game data or
    disc images, so no game data leaves the user's machine. Players

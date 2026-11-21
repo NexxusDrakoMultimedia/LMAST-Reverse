@@ -295,6 +295,19 @@ edition plays through a season.
       that a season's end moves one club each way as on the PAL release,
       and that the third tier itself stays hidden
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc))
+- [ ] The save editor on a save written by the Japanese game, and a
+      player edited with the mod editor on a Japanese disc (2026-11-21,
+      checked through the widgets only): open a `BISLPM-66316-G000` career
+      from your card in `python SRC/saveedit.py open <card>/BISLPM-66316-G000`
+      (close the game first), check the names and the club page read as
+      the game shows them, change the money and a player's age, save, and
+      load the career in the game; then build a disc from a mod folder
+      opened with `python SRC/editor.py open mods/jp --dat DAT_JP --iso
+      ISO_JP` with one player edited on the People tab, and look the player
+      up in the game (the Japanese game reads `PBDATA_JP.PAC`; if the edit
+      does not show, say so: the language the disc runs in decides which
+      pack it loads)
+      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-editors-on-the-japanese-release))
 - [ ] A Japanese disc with `--mod club-kits,club-eras` (ported 2026-11-21,
       built and read back byte for byte, not seen in the game): build it with
       `python SRC/patch_disc.py patch "<the Japanese image>" out.iso --mod

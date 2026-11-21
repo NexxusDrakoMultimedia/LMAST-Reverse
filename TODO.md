@@ -38,23 +38,18 @@ What to work on next, most valuable first. Checks in the game are not
 tasks here: they are all in [`TESTING.md`](TESTING.md), and the plan below
 assumes they are being done.
 
-1. **Playing a mod: the mod editor and the save editor on the Japanese
-   release**, needed before the reverse engineering counts as complete
-   (Nexxus's choice, 2026-11-01). Every LMASTER switch now builds on the
-   Japanese disc; the editors still read PAL only
-   ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#still-unknown)).
-2. **Graphics and sound: the pack writers.** The `ACROBATA` pack (2,137
+1. **Graphics and sound: the pack writers.** The `ACROBATA` pack (2,137
    textures; 4 of LMAST Realism's PNGs) and the KC@P `PackData` packs (kits,
    cut-ins, faces) have no writer, and a changed-size texture in a CSP pack
    is not possible yet. They are also what Nexxus's idea of LMAST Realism's
    kits as licensed kits needs first
    ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing),
    [`TEXMAP.md`](DOC/TEXMAP.md)).
-3. **The end point: a stale-claim linter for `DOC/`.** It flags a doc whose
+2. **The end point: a stale-claim linter for `DOC/`.** It flags a doc whose
    cited address no longer resolves (through `gamever.py`, PAL and
    Japanese), a "Still unknown" item that `DONE.md` already answers, and a
    link whose anchor is gone: the three kinds of drift the docs have had.
-4. **The LMASTER Mod: the real names in Japanese**, waiting for a reader of
+3. **The LMASTER Mod: the real names in Japanese**, waiting for a reader of
    Japanese: a draft of 690 names is made (`SRC/realnames_ja_draft.csv`), and
    the third tier's rules text is written and waits for a checker too
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names),
@@ -72,7 +67,7 @@ in the same order.
 | [**Parameters**](#parameters) | every `PARAM/` table's layout is known and `tbb.py replace` swaps any table; the economy's constants in the executable are traced and changed by named switches | the open fields of the parameter files, the match AI's files and the match parameters |
 | [**Text**](#text) | every message in every language, with a writer and the Text tab; real names for every league, club and nation | the screen-set variables and a few message categories |
 | [**Graphics and sound**](#graphics-and-sound) | textures to PNG, models to OBJ and glTF, sound to WAV and MIDI; kits, crests and stadium looks edited as data; every texture file rebuilt and rewritten, with LMAST Realism's crests, match pictures and Fixes, Adboards and Leagues folders on a disc, seen in the game | the `ACROBATA` and `PackData` pack writers and a changed-size texture in a CSP pack; the kits stay Realism-only |
-| [**Playing a mod**](#playing-a-mod) | xdelta patches against the Redump image, CSO, ZSO and CHD inputs, separate saves for a modded disc, the players' guide, the save editor | faster CHD decoding; the save editor's Candidates page; a Japanese save edited and played, and both editors on the Japanese release |
+| [**Playing a mod**](#playing-a-mod) | xdelta patches against the Redump image, CSO, ZSO and CHD inputs, separate saves for a modded disc, the players' guide, the save editor | faster CHD decoding; the save editor's Candidates page; a Japanese save edited and played, and the mod editor's tabs checked one by one on the Japanese release |
 | [**The LMASTER Mod**](#the-lmaster-mod) | lite, full and max build, with most switches tested in PCSX2; every switch builds on the Japanese release, lite, full and max included | the candidates and the bugs reported in play (the in-game checks are in `TESTING.md`) |
 | [**The end point**](#the-end-point) | every folder of `DAT/` has a doc and a tool; about 12,600 symbols are named; the Japanese release is extracted and read through `gamever.py` | every doc's "Still unknown" list; the editors on the Japanese release |
 
@@ -360,10 +355,11 @@ releases.
       player candidate record's 32 bytes decoded first
       ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#still-unknown),
       [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
-- [ ] **edit** The mod editor and the save editor on the Japanese
-      release. Later, but needed before the reverse engineering counts
-      as complete (Nexxus's choice, 2026-11-01)
-      ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#still-unknown))
+- [ ] **edit** The mod editor's other tabs on the Japanese release: the
+      tabs open and show Japanese names, and the People and PR events edits
+      are checked, but the rest of the writers' rules (each file's checks
+      against the Japanese tables) are not, tab by tab
+      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-editors-on-the-japanese-release))
 - [ ] **distribute** Optional: faster CHD decoding (a whole disc takes
       about ten minutes in Python) and CHDs with several CD tracks
       ([`REBUILD.md`](DOC/REBUILD.md#compressed-images))

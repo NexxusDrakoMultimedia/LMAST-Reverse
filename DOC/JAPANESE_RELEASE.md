@@ -204,6 +204,39 @@ project reads Japanese, so their grammar, tone and fit are unchecked
 slot, a second run changes nothing, and `PRELOAD/NEWS*.PAC` carries
 832's copies. The build prints a note saying the text needs a checker.
 
+## The editors on the Japanese release
+
+Both editors take the Japanese release since 2026-11-21 (the mod editor:
+`python SRC/editor.py open <mod folder> --dat DAT_JP --iso ISO_JP`; the save
+editor: a `BISLPM-66316-` folder, [`USAGE.md`](../USAGE.md#the-mod-editor)).
+What differs there:
+
+- **The player database.** `FC_EURO_PWK_CALLBACK::PwkCallbackCommand_BpDataReadFile`
+  loads `pbdata_jp.pac` when `Localize_GetLanguage` returns 0 (Japanese) and
+  `pbdata_eu.pac` otherwise (**confirmed** in both executables: the loader
+  at SLES `0x1101c8`, SLPM `0x110090`, indexes a two-name table with the
+  language), so the People tab edits `PBDATA_JP.PAC` and the save editor
+  names players from it. The Japanese disc's `PBDATA_EU.PAC` has other
+  contents (romanised names) and is not what its game reads.
+- **The names** come from message slot 0 (slots 1 to 6 are placeholders), for
+  both editors.
+- **The executable** is `SLPM_663.16`: edits go to `mod/disc/SLPM_663.16`,
+  which `patch_disc.py` takes as `disc:SLPM_663.16`.
+- **No free agents.** The Japanese `PLRESOURCESIM.PAC` has no free-agent list
+  (PAL added it), so that tab only says so.
+- **Build disc** looks for the Japanese Redump image (redump.info disc 30266,
+  `extract_disc.REDUMP[1]`) and passes `--dat DAT_JP`.
+
+**Tested through the widgets** (2026-11-21, off-screen): all 24 tabs open on
+`DAT_JP`/`ISO_JP` without an error; a player edit on the People tab saves
+`PBDATA_JP.PAC` and a PR event edit saves `disc/SLPM_663.16`, and the
+command each logs (`pbdata.py set`, `clubevent.py set`) gives the same bytes;
+a disc built from that folder holds the edited executable; the save editor
+opens, edits and saves a Japanese-layout save, with a PAL one opened in the
+same window. **Not checked:** edits in the other tabs on Japanese data
+(they open and show Japanese names; whether each writer's rules hold for the
+Japanese tables is unchecked), and a save written by the Japanese game.
+
 ## Confirmed from the game code
 
 | Address (SLPM_663.16) | Symbol | Compared with PAL |
@@ -212,6 +245,7 @@ slot, a second run changes nothing, and `PRELOAD/NEWS*.PAC` carries
 | `0x202538`, `0x202548` | `MSG_UTIL::CMsgWildCard::getString` | 0x85 converters of 12 bytes `{u32, u32 function, u32 id}` (PAL: 0x10a of 16 bytes, with an argument word) |
 | `0x217618` | `plPinfo_KegaRecoverDaysChno` | identical to PAL: the injury messages "two months" and "nine months" are unreachable in both builds (see [`INJURIES.md`](INJURIES.md)) |
 | `0x52e998`, `0x52ea68` | injury tables | identical to PAL, kind 6's 1600 included |
+| `0x110090`, `0x110c18` | the player database loader and its callback (PAL `0x1101c8`, `0x110d50`) | the same code: `Localize_GetLanguage` 0 picks the first name of the table at `0x3594b0` (`pbdata_jp.pac`), any other language the second (`pbdata_eu.pac`) |
 
 The save block sizes differ in block 1 (76,248 bytes against PAL's
 76,264), so the layout CRC is `0x16da` (PAL `0xa225`), and the header's
