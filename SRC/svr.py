@@ -706,6 +706,25 @@ def textures_of(buf, name=""):
     return parse_svm(buf) if buf[:4] == b"PVMH" else [parse_svr(buf, name)]
 
 
+def replace_pictures(raw, pictures, name="", keep_palette=False, clut=None):
+    """`raw` (an SVR or a PVMH archive, as bytes) with the pictures of `pictures` ({texture
+    position: RGBA pixels, row-major, at the texture's size}) put in, as `replace` does one:
+    matched to the texture's own palette or, with new_palette's rule, to a new one built from
+    the picture (`keep_palette` keeps the old; `clut` is a .SVP's Palette for a texture whose
+    palette is outside it). The file keeps its length, so a pack that holds it needs no other
+    change; ValueError if it doesn't."""
+    texs = textures_of(raw, name)
+    bodies = [None] * len(texs)
+    for slot, pixels in pictures.items():
+        tex = texs[slot]
+        bodies[slot] = body_from_pixels(tex, pixels, clut,
+                                        new_palette=bool(tex.palette_entries) and not keep_palette)
+    new = encode_svm(texs, bodies) if raw[:4] == b"PVMH" else encode_svr(texs[0], bodies[0])
+    if len(new) != len(raw):
+        raise ValueError("the rebuilt texture file is %d bytes, not %d" % (len(new), len(raw)))
+    return new
+
+
 def cmd_roundtrip(paths, everything=False):
     """Rebuild every texture file under `paths` (loose, or inside any pack
     texture_files opens) from its palette and linear levels and compare it

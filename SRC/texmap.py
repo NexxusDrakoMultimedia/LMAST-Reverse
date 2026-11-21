@@ -499,7 +499,7 @@ def holder_kind(label):
             return "CSP pack (csp.py replace)"
         return "CSP pack (no writer)"
     if "ACROBATAPACKFILE" in path:
-        return "ACROBATA pack (no writer)"
+        return "ACROBATA pack (acrobata.py replace)"
     if path.endswith((".PAC", ".MRG")):
         return "BINPAC pack (pac.py replace)"
     if path.endswith(".HED") or "#" in label:
@@ -526,7 +526,8 @@ def cmd_name(arg):
 LABEL = re.compile(r"^(?P<path>[^#|]+)(?:#(?P<idx>\d+):(?P<name>[^#|]*)(?P<prs>\|prs)?)?$")
 # a texture entry of a CSP pack: <file>.CSP#<entry>, the entry's place in the pack
 CSP_LABEL = re.compile(r"^(?P<path>[^#|]+\.csp)#(?P<idx>\d+)$", re.I)
-WRITERS = ("BINPAC pack (pac.py replace)", "loose file", "CSP pack (csp.py replace)")
+WRITERS = ("BINPAC pack (pac.py replace)", "loose file", "CSP pack (csp.py replace)",
+           "ACROBATA pack (acrobata.py replace)")
 
 
 def pack_picture(path, size):
@@ -686,6 +687,16 @@ def apply_pack(folder, dat, border, sles, emit, title, left_out=LEFT_OUT):
                 if kind_ != csp.TYPE_SVR:
                     raise SystemExit("%s entry %d is not a texture" % (path, idx))
                 raw, name = data[off:off + size], os.path.basename(path) + "#%d" % idx
+            elif path.upper().endswith("ACROBATAPACKFILE.PAC"):
+                # a texture resource of a scene: its label is <entry>:<name>+<offset in the entry>
+                name, _, at = name.rpartition("+")
+                acro_at = int(at, 16)
+                import acrobata
+                acro_size = next((sz for m, o, sz in acrobata.resources(blobs[idx], head.entries[idx][3][0])
+                                  if o == acro_at), None)
+                if acro_size is None:
+                    raise SystemExit("%s entry %d has no resource at +%s" % (path, idx, at))
+                raw = blobs[idx][acro_at:acro_at + acro_size]
             else:
                 raw = data if idx is None else blobs[idx]
             if idx is not None and not is_csp and head.entries[idx][2] != name:
@@ -715,6 +726,8 @@ def apply_pack(folder, dat, border, sles, emit, title, left_out=LEFT_OUT):
                 worst.append((far / len(px), path, idx, slot))
             if is_csp:
                 new_file = csp.replace_entry(new_file, idx, new)
+            elif path.upper().endswith("ACROBATAPACKFILE.PAC"):
+                blobs[idx] = blobs[idx][:acro_at] + new + blobs[idx][acro_at + len(new):]
             elif idx is None:
                 new_file = new
             else:

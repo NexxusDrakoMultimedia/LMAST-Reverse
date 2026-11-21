@@ -34,9 +34,26 @@ and a scene-id table (0x55d7a8, 20-byte records: u32 per-language flag,
 `scenes` checks the executable's tables against the pack and lists every
 scene id with its entries.
 
+Writing: a texture resource (a GBIX SVR or a PVMH archive) goes back into its scene's
+ABRS part at its own size, so nothing else moves: the chunk's size, the POF0 pointer
+lists, the entries' offsets and the executable's copy of the pack's header (SLES
+0x3a3b08) all stay as they are. `replace` does it for the pictures or files you name,
+`textures` lists every texture resource (an entry, its offset in the entry's bytes, its
+kind and its textures), and `roundtrip` puts every texture's own picture back through
+that path and checks that only the textures' bytes can differ (empirical, all 2,046
+texture resources of the PAL pack; see DOC/ACROBATA_DIR.md#writing).
+
 Usage:
-    python acrobata.py info   <DAT/ACROBATA>
-    python acrobata.py scenes <DAT/ACROBATA> <ISO>
+    python acrobata.py info      <DAT/ACROBATA>
+    python acrobata.py scenes    <DAT/ACROBATA> <ISO>
+    python acrobata.py textures  <DAT/ACROBATA | pack>          # every texture resource
+    python acrobata.py replace   <in pack> <out pack> <entry>@<hex offset>[.<texture>]=<file> ... [--palette keep]
+    python acrobata.py roundtrip <DAT/ACROBATA | pack>          # !! on any difference
+
+`replace` takes a picture (.png, at the texture's size; --palette keep matches it to the
+texture's old palette instead of building a new one) or, without a texture number, a
+whole resource file of the same size. <entry> is the entry's index or name; the offset
+is the one `textures` prints.
 """
 import collections
 import os
@@ -181,6 +198,191 @@ def cmd_info(d):
     print("DUMMY.DAT  %d bytes %r" % (os.path.getsize(dummy), open(dummy, "rb").read()))
 
 
+TEXTURE_MAGICS = (b"GBIX", b"PVMH")
+
+
+def pack_path(path):
+    """The pack file for a DAT/ACROBATA folder, or the path itself."""
+    return os.path.join(path, PACK) if os.path.isdir(path) else path
+
+
+def texture_resources(pack):
+    """[(entry index, entry name, magic, offset in the entry's bytes, size)] of every texture
+    resource (GBIX, PVMH) in the ABRS parts of the pack's bytes."""
+    import pac
+    header, blobs = pac.binpac_blobs(pack)
+    out = []
+    for i, (entry, blob) in enumerate(zip(header.entries, blobs)):
+        for magic, off, size in resources(blob, entry[3][0]):
+            if magic in TEXTURE_MAGICS:
+                out.append((i, entry[2], magic, off, size))
+    return out
+
+
+def replace_resources(pack, edits):
+    """The pack's bytes with texture resources replaced: edits is {(entry, offset): new bytes},
+    each the size of the resource at that offset of that entry's bytes (what svr's writers
+    give). Nothing else changes, so build_binpac lays the pack out as it was (ValueError if
+    a size or a place doesn't fit)."""
+    import pac
+    header, blobs = pac.binpac_blobs(pack)
+    blobs = [bytearray(b) for b in blobs]
+    by_entry = {}
+    for (i, off), new in edits.items():
+        by_entry.setdefault(i, {})[off] = new
+    for i, offs in by_entry.items():
+        if not 0 <= i < len(blobs):
+            raise ValueError("entry %d of %d" % (i, len(blobs)))
+        have = {off: (magic, size) for magic, off, size in resources(bytes(blobs[i]), header.entries[i][3][0])
+                if magic in TEXTURE_MAGICS}
+        for off, new in offs.items():
+            if off not in have:
+                raise ValueError("entry %d has no texture resource at +%#x" % (i, off))
+            if len(new) != have[off][1]:
+                raise ValueError("entry %d +%#x is %d bytes, not %d" % (i, off, len(new), have[off][1]))
+            blobs[i][off:off + len(new)] = new
+    return pac.build_binpac(pack[:header.header_size], [bytes(b) for b in blobs])
+
+
+def replace_pictures(pack, pictures, keep_palette=False):
+    """The pack's bytes with pictures put into texture resources: pictures is
+    {(entry, offset, texture): RGBA pixels at that texture's size} (svr.replace_pictures)."""
+    import pac
+    import svr
+    header, blobs = pac.binpac_blobs(pack)
+    grouped = {}
+    for (i, off, slot), pixels in pictures.items():
+        grouped.setdefault((i, off), {})[slot] = pixels
+    edits = {}
+    for (i, off), pics in grouped.items():
+        size = next((sz for magic, o, sz in resources(blobs[i], header.entries[i][3][0]) if o == off), None)
+        if size is None:
+            raise ValueError("entry %d has no resource at +%#x" % (i, off))
+        edits[i, off] = svr.replace_pictures(blobs[i][off:off + size], pics, "%s+%#x" % (header.entries[i][2], off),
+                                             keep_palette)
+    return replace_resources(pack, edits)
+
+
+def cmd_textures(path):
+    import svr
+    with open(pack_path(path), "rb") as f:
+        pack = f.read()
+    import pac
+    header, blobs = pac.binpac_blobs(pack)
+    n = 0
+    for i, name, magic, off, size in texture_resources(pack):
+        texs = svr.textures_of(blobs[i][off:off + size], name)
+        shape = ", ".join("%dx%d %dbpp" % (t.width, t.height, t.bpp) for t in texs[:4])
+        print("%4d %-34s +%#-8x %s %6d bytes  %d texture%s  %s%s" % (
+            i, name, off, magic.decode(), size, len(texs), "" if len(texs) == 1 else "s", shape,
+            " ..." if len(texs) > 4 else ""))
+        n += 1
+    print("%d texture resources" % n)
+
+
+def cmd_replace(src, dst, pairs, keep_palette):
+    import pac
+    with open(pack_path(src), "rb") as f:
+        pack = f.read()
+    header, blobs = pac.binpac_blobs(pack)
+    edits, pictures = {}, {}
+    for pair in pairs:
+        sel, sep, path = pair.partition("=")
+        where, _, slot = sel.partition(".")
+        entry, at, off = where.partition("@")
+        if not sep or not at:
+            raise SystemExit("expected <entry>@<hex offset>[.<texture>]=<file>, got %r" % pair)
+        i = int(entry) if entry.isdigit() else next(
+            (k for k, e in enumerate(header.entries) if e[2] == entry), None)
+        if i is None:
+            raise SystemExit("no entry %r" % entry)
+        off = int(off, 16)
+        if slot or path.lower().endswith(".png"):
+            from PIL import Image
+            import svr
+            size = next((sz for _, o, sz in resources(blobs[i], header.entries[i][3][0]) if o == off), None)
+            if size is None:
+                raise SystemExit("entry %d has no resource at +%#x" % (i, off))
+            tex = svr.textures_of(blobs[i][off:off + size])[int(slot or 0)]
+            img = Image.open(path).convert("RGBA")
+            if img.size != (tex.width, tex.height):
+                raise SystemExit("%s is %dx%d, the texture %dx%d; scale it first" % (
+                    path, img.width, img.height, tex.width, tex.height))
+            pictures[i, off, int(slot or 0)] = list(img.get_flattened_data() if hasattr(img, "get_flattened_data")
+                                                    else img.getdata())
+        else:
+            with open(path, "rb") as f:
+                edits[i, off] = f.read()
+        print("#%d %s +%#x <- %s" % (i, header.entries[i][2], off, path))
+    new = pack
+    if pictures:
+        new = replace_pictures(new, pictures, keep_palette)
+    if edits:
+        new = replace_resources(new, edits)
+    with open(dst, "wb") as f:
+        f.write(new)
+    print("%s: %d bytes (was %d)" % (dst, len(new), len(pack)))
+
+
+def cmd_roundtrip(path):
+    """Rebuild the pack with every texture put back from its own picture (matched to its own
+    palette): the pack keeps its length, every byte outside the textures is as it was, and
+    every picture decodes the same. The first failure of each kind is shown."""
+    import pac
+    import svr
+    with open(pack_path(path), "rb") as f:
+        pack = f.read()
+    header, blobs = pac.binpac_blobs(pack)
+    if replace_resources(pack, {}) != pack:
+        print("!! rebuilding the pack with no change gives other bytes")
+        return 1
+    bad, n, textures = 0, 0, 0
+    edits, expect = {}, {}
+    for i, name, magic, off, size in texture_resources(pack):
+        raw = blobs[i][off:off + size]
+        texs = svr.textures_of(raw, name)
+        pics = {k: t.pixels() for k, t in enumerate(texs)}
+        # a texture with its palette outside it (.SVP) has no picture to match here
+        pics = {k: px for k, px in pics.items() if texs[k].palette_entries or texs[k].bpp >= 16}
+        try:
+            new = svr.replace_pictures(raw, pics, name, keep_palette=True) if pics else raw
+        except ValueError as e:
+            print("%4d %-34s +%#x  !! %s" % (i, name, off, e))
+            bad += 1
+            continue
+        again = svr.textures_of(new, name)
+        for k, px in pics.items():
+            textures += 1
+            if again[k].pixels() != px:
+                print("%4d %-34s +%#x texture %d  !! the picture changed" % (i, name, off, k))
+                bad += 1
+        edits[i, off] = new
+        n += 1
+    out = replace_resources(pack, edits)
+    if len(out) != len(pack):
+        print("!! the pack is %d bytes, was %d" % (len(out), len(pack)))
+        bad += 1
+    changed = 0
+    h2, b2 = pac.binpac_blobs(out)
+    covered = {}
+    for i, name, magic, off, size in texture_resources(pack):
+        covered.setdefault(i, []).append((off, off + size))
+    for i, (a, b) in enumerate(zip(blobs, b2)):
+        if a != b:
+            ma, mb = bytearray(a), bytearray(b)
+            for lo, hi in covered.get(i, []):
+                ma[lo:hi] = bytes(hi - lo)
+                mb[lo:hi] = bytes(hi - lo)
+            if ma != mb:
+                print("%4d %s  !! bytes outside the textures changed" % (i, header.entries[i][2]))
+                bad += 1
+            changed += 1
+    print("%s: %d texture resources, %d textures put back from their own pictures; %d entries "
+          "differ in texture bytes only%s" % (os.path.basename(pack_path(path)), n, textures, changed,
+                                              "  !! %d problems" % bad if bad else ""))
+    return 1 if bad else 0
+
+
 def scene_names(iso):
     """{scene id: [names]} from SIMPRG.REL (one name, or one per language)."""
     import snr2
@@ -249,6 +451,14 @@ def main(argv):
         cmd_info(args[0])
     elif cmd == "scenes" and len(args) == 2:
         cmd_scenes(args[0], args[1])
+    elif cmd == "textures" and len(args) == 1:
+        cmd_textures(args[0])
+    elif cmd == "roundtrip" and len(args) == 1:
+        return cmd_roundtrip(args[0])
+    elif cmd == "replace" and len(args) >= 3:
+        keep = "--palette" in args and args[args.index("--palette") + 1] == "keep"
+        rest = [a for k, a in enumerate(args) if a != "--palette" and (k == 0 or args[k - 1] != "--palette")]
+        cmd_replace(rest[0], rest[1], rest[2:], keep)
     else:
         print(__doc__)
         return 1

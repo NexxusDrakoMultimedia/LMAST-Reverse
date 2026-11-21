@@ -91,7 +91,7 @@ python SRC/texmap.py match <LMAST-Realism>/textures/SLES-54151/replacements DAT_
 | `PLAYER/EDIT_UNIFORM_ORG_SOX/SHT/PNT.PAC`, `EDIT_UNIFORM_GK_SHT/PNT.PAC` (kit parts) | 1,182 | yes, but see the palettes below |
 | `0SYSTEM/MATCH_TEXTURE`, `MINIMATCH_TEXTURE`, `MINIEMBLEM_TEXTURE`, `SPONSOR_TEXTURE_M` | 73 | yes |
 | `CSE/*.CSP` (league logos and menu screens) | 8 | yes, `csp.py`'s `replace` (7 of the 8: the `Intro` one is left out) |
-| `ACROBATA/ACROBATAPACKFILE.PAC` (intro scenes) | 4 | no |
+| `ACROBATA/ACROBATAPACKFILE.PAC` (intro and ending scenes) | 4 in `Intro` (left out), and pictures of other folders that also sit in 10 ending scenes | yes, `acrobata.py replace` (2026-11-22; `apply` writes the pack, same size) |
 
 (`match` prints the count of files by holder; the table shows the
 sub-folders from its CSV.) A texture can sit in several places on the
@@ -212,13 +212,13 @@ holds them at `0x80`, and the rebuilt disc works.
 The pack is named by the hashes of the PAL textures, but the Japanese
 disc holds most of the same pictures: `match` over `DAT_JP` finds a disc
 texture for 1,605 of the 1,613 PNGs (423 with the palette too; PAL 1,612
-and 430), and `apply` writes 12 files with 1,009 textures (PAL 29 files and
-1,032), **empirical**, 2026-11-21. What is missing there: the Six Nations
+and 430), and `apply` writes 13 files with 1,019 textures, the ACROBATA pack among them since 2026-11-22 (PAL 30 files and
+1,068), **empirical**, 2026-11-21 (counted again 2026-11-22 with the ACROBATA writer). What is missing there: the Six Nations
 CSP packs of language slots 1 to 6 and the extra title packs (the
 release has one of each), the `Adboards` picture (its `SPONSOR_TEXTURE_M`
 holds another sheet), two `Icons`, a Serie A, a Serie C and a UEFA
 crest. `patch_disc.py --mod realism` on a Japanese disc takes `--dat DAT_JP`
-and the Japanese executable's licence table; the 12 files a built disc
+and the Japanese executable's licence table; the 13 files a built disc
 holds equal `apply`'s output. Not yet seen in the game.
 
 ## Still unknown

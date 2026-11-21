@@ -160,6 +160,9 @@ def checks():
         # The money limits (salaries, transfer and loan fees) from their initializer.
         ("teaminit_limits", ["teaminit.py", "limits", "ISO"], ["ISO/SLES_541.51"]),
         ("packdata", ["packdata.py", "info", "DAT"], ["DAT"]),
+        # The writer: every texture of every KC@P pack back from its own picture, only texture
+        # bytes differing (the big face pack sampled).
+        ("packdata_roundtrip", ["packdata.py", "roundtrip", "DAT/PLAYER", "DAT/GAME"], ["DAT/PLAYER", "DAT/GAME"]),
         # The cut-in pack's CIB0 and BMT1 blocks (spline layout, magic).
         ("packdata_cutin", ["packdata.py", "cutin", "DAT/GAME/CUTINPACK_HEADER.BIN"],
          ["DAT/GAME/CUTINPACK_HEADER.BIN", "DAT/GAME/CUTINPACK.BIN"]),
@@ -274,6 +277,8 @@ def checks():
         ("realnames", ["realnames.py", "info", "DAT/MESSAGE/MES.PAC"], ["DAT/MESSAGE/MES.PAC"]),
         ("news", ["news.py", "info", "DAT/NEWS"], ["DAT/NEWS"]),
         ("acrobata", ["acrobata.py", "info", "DAT/ACROBATA"], ["DAT/ACROBATA"]),
+        # The writer: all 2,137 textures back from their own pictures, only texture bytes differing.
+        ("acrobata_roundtrip", ["acrobata.py", "roundtrip", "DAT/ACROBATA"], ["DAT/ACROBATA"]),
         # The executable's copy of the pack index and its scene-id table.
         ("acrobata_scenes", ["acrobata.py", "scenes", "DAT/ACROBATA", "ISO"],
          ["DAT/ACROBATA", "ISO/SLES_541.51", "ISO/DLL/SIMPRG.REL"]),

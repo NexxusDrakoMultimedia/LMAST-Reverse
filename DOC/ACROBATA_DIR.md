@@ -152,6 +152,31 @@ The names group the scenes (**empirical**, entry counts):
 The three largest entries are `BG_MY_LV01_02_test0`–`test2` (4.5–4.6 MB
 each), test versions of a room background.
 
+## Writing
+
+`acrobata.py` writes a texture back into a scene (2026-11-22): a texture
+resource (a GBIX SVR or a PVMH archive of the `ABRS` part) is replaced by one of
+the same size, so the wrapper chunk's size, the POF0 pointer list, the entries'
+offsets and the executable's copy of the pack's header (`SLES_541.51`
+`0x3a3b08`) all stay as they are and `pac.build_binpac` lays the pack out as it
+was. `svr.replace_pictures` makes the new bytes from a picture (matched to the
+texture's own palette or to a new one, as `svr.py replace` does).
+
+| Command | What it does |
+|---|---|
+| `textures <pack>` | lists every texture resource: entry, offset in the entry, kind, the textures' sizes (2,046 resources: 1,962 GBIX, 84 PVMH) |
+| `replace <in> <out> <entry>@<hex offset>[.<texture>]=<file> ...` | puts a picture (`.png` at the texture's size) or a same-size resource file in; writes a new pack |
+| `roundtrip <pack>` | puts every texture back from its own picture and checks the pack keeps its length, every byte outside the textures is as it was and every picture decodes the same |
+
+**Empirical** (2026-11-22, the PAL pack): `roundtrip` puts back all 2,137
+textures of the 2,046 resources; 173 of the 875 entries differ, in texture
+bytes only (a picture matched to its own palette can pick another index for a
+colour the palette holds twice). `replace` of one texture changed 4,279 bytes
+inside it and nothing else. `texmap.py apply` uses it for LMAST Realism's
+pictures that sit in ACROBATA scenes, so `--mod realism` writes the pack too
+(10 `EV_TYPE_ENDING_UK1ST_*` scenes on PAL); the pack keeps its 120,280,912
+bytes.
+
 ## Still unknown
 
 - The `ABDT` scene layout, and so what a scene does.
@@ -166,5 +191,7 @@ each), test versions of a room background.
 ```bash
 python SRC/acrobata.py info   DAT/ACROBATA        # every entry, its POF0 list and resources
 python SRC/acrobata.py scenes DAT/ACROBATA ISO    # the executable's index and scene table against the pack
+python SRC/acrobata.py textures DAT/ACROBATA      # every texture resource, by entry and offset
+python SRC/acrobata.py roundtrip DAT/ACROBATA     # every texture back from its own picture; !! on a difference
 python SRC/pac.py list DAT/ACROBATA/ACROBATAPACKFILE.PAC   # the 875 entries and their sizes
 ```

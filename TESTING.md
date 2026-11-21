@@ -332,6 +332,15 @@ edition plays through a season.
       flashes with the opening zoom (the scene draws the photograph at other
       scales then) and whether its colours look right
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner))
+- [ ] The Realism pictures in the endings (2026-11-22; built, read back, not
+      seen): `--mod realism` now also writes `ACROBATA/ACROBATAPACKFILE.PAC`
+      (same size; ten `EV_TYPE_ENDING_UK1ST_*` scenes change, texture bytes
+      only). Build a PAL disc with `--mod realism --copies --dat DAT` and play to
+      an ending (or load a save state at one), and check the ending scenes
+      still draw and show the pack's pictures where they replaced the
+      retail ones, with no garbled textures; if an ending misbehaves, say
+      which one
+      ([`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md#writing))
 - [ ] *Short.* A Japanese disc with `--mod realism` (ported 2026-11-21; 12
       files read back equal to `texmap.py apply`'s, not seen in the game):
       build it with `python SRC/patch_disc.py patch "<the Japanese image>"

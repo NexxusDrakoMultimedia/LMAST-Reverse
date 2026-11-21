@@ -38,12 +38,12 @@ What to work on next, most valuable first. Checks in the game are not
 tasks here: they are all in [`TESTING.md`](TESTING.md), and the plan below
 assumes they are being done.
 
-1. **Graphics and sound: the pack writers.** The `ACROBATA` pack (2,137
-   textures; 4 of LMAST Realism's PNGs) and the KC@P `PackData` packs (kits,
-   cut-ins, faces) have no writer, and a changed-size texture in a CSP pack
-   is not possible yet. They are also what Nexxus's idea of LMAST Realism's
-   kits as licensed kits needs first
-   ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing),
+1. **Graphics and sound: LMAST Realism's kits on the disc** (Nexxus's idea,
+   2026-11-10, below). The pack writers it needed now exist (`packdata.py
+   replace` for the `PLPACK_HOME`/`AWAY` kit packs, `acrobata.py replace`); what is
+   left is a finished kit picture per club, the licence and descriptor tables
+   grown, and the descriptor bytes for each club
+   ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-kits),
    [`TEXMAP.md`](DOC/TEXMAP.md)).
 2. **The LMASTER Mod: the real names in Japanese**, waiting for a reader of
    Japanese: a draft of 690 names is made (`SRC/realnames_ja_draft.csv`), and
@@ -262,10 +262,11 @@ chosen folders are seen on a disc in the game.
 - [ ] **understand** Newspapers: which paper a page uses, the special
       editions, where the ads and cartoons go
       ([`NEWS_DIR.md`](DOC/NEWS_DIR.md#still-unknown))
-- [ ] **write** Writers for the packs that hold textures and have none
-      (the `ACROBATA` pack's 2,137 textures and the KC@P `PackData`
-      packs: kits, cut-ins, faces), and a changed-size texture in a CSP
-      pack, for LMAST Realism on the disc
+- [ ] **write** A changed-size texture in a CSP, ACROBATA or `PackData` pack
+      (the same-size writers exist: `csp.py`, `acrobata.py`, `packdata.py`).
+      The CSP and ACROBATA wrappers, POF0 lists and the executable's index
+      copy would be rewritten for a new size, and no picture of LMAST Realism
+      needs it yet
       ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
 - [ ] **understand** Idea (Nexxus, 2026-11-10; reopens the 2026-11-07
       choice that the kits stay Realism-only): LMAST Realism's kits on

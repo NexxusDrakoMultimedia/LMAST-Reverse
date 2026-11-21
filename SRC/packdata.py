@@ -31,6 +31,9 @@ Usage:
     python packdata.py extract <header> <index> <outdir>   # write each block's data
     python packdata.py names   <header> [first [last]]     # model and texture names
     python packdata.py cutin   <header>                    # check the CIB0 and BMT1 blocks
+    python packdata.py textures  <header> [first [last]]   # the texture blocks of the entries
+    python packdata.py replace   <header> <out header> <entry>.<block>[.<texture>]=<file> ... [--palette keep] [--prs]
+    python packdata.py roundtrip <header> ... [--all]      # texture blocks back from their own pictures; !! on a difference
 
 `cutin` checks the two block kinds GAME/CUTINPACK.BIN uses besides Ninja
 models and motions. A BMT1 block (type 23) is spline data (confirmed from
@@ -42,6 +45,16 @@ seven blocks and dips slightly in two: empirical). A CIB0 block (type 19)
 starts with "CIB0"; its table is not decoded. `cutin` marks a bad magic,
 a BMT1 header, or a BMT1 size that is not 0x10 + n x 0x40 with !!, and
 reports how many BMT1 blocks have a twelfth float that does not rise.
+
+Writing: a block goes back into its entry at its own size, and the entry is PRSH
+compressed again if it was (pac.prsh_wrap, greedy LZ77: other bytes than Sega's packer, the
+same data), so only that entry's size can change; the pack is then laid out as the disc's
+are (pac.build_kcap: every entry on a sector, the header holding each entry's end). `textures`
+lists the texture blocks (PVMH archives, PVPL palettes) of a pack's entries; `replace` puts
+pictures into PVMH blocks (or a file of the block's size into any block) and writes the new
+header and data file; `roundtrip` puts every texture's own picture back and checks that
+only texture bytes can differ and the pack still reads. The big face pack is streamed
+entry by entry (1.1 GB).
 
 `names` prints the NFN0 model name and the NSTL texture names of each
 entry's first Ninja block. In FC_EURO_FACEPACK_01 they name the event
@@ -156,7 +169,217 @@ def _sample(count, check_all):
     return idx, step
 
 
+# --- writing -------------------------------------------------------------------
+
+TEXTURE_MAGICS = (b"PVMH", b"PVPL")
+
+
+def texture_blocks(buf):
+    """[(block index, magic, data offset, size)] of the texture blocks (PVMH archives and PVPL
+    palettes) of an expanded entry."""
+    return [(k, buf[o:o + 4], o, size) for k, (_, size, o) in enumerate(PackData(buf).blocks)
+            if size and buf[o:o + 4] in TEXTURE_MAGICS]
+
+
+def splice_blocks(buf, edits):
+    """The expanded entry with blocks replaced: edits is {block index: new bytes}, each the size
+    of the block it replaces (the packing rule, every block at the previous one's end rounded up
+    to 16, is then kept as it is)."""
+    pd = PackData(buf)
+    out = bytearray(buf)
+    for k, new in edits.items():
+        if not 0 <= k < pd.count:
+            raise ValueError("block %d of %d" % (k, pd.count))
+        _, size, o = pd.blocks[k]
+        if len(new) != size:
+            raise ValueError("block %d is %d bytes, not %d" % (k, len(new), size))
+        out[o:o + size] = new
+    return bytes(out)
+
+
+def rebuild_slot(slot, edits):
+    """An entry's bytes as the pack stores them (the payload of `slot`, PRSH compressed again if
+    it was) with `edits` ({block: bytes}) spliced in."""
+    payload = pac.kcap_payload(slot)
+    if payload[:4] == pac.PRSH_MAGIC:
+        return pac.prsh_wrap(splice_blocks(pac.prsh_expand(payload), edits))
+    return splice_blocks(payload, edits)
+
+
+def write_pack(header_path, out_header, edits, progress=None):
+    """Write a KC@P pack with entries changed: edits is {entry: {block: bytes}}. The new header is
+    written to `out_header` and the data file, under its own name, beside it (as pac.py replace
+    does); the pack is laid out as pac.build_kcap does, streamed an entry at a time. Returns
+    (old size, new size) of the data file."""
+    head = pac.load_header(header_path)
+    if not isinstance(head, pac.KcAtP):
+        raise ValueError("%s: not a KC@P header" % header_path)
+    data_in = pac.data_path(header_path, head)
+    out_data = os.path.join(os.path.dirname(os.path.abspath(out_header)), os.path.basename(data_in))
+    if os.path.abspath(out_data) == os.path.abspath(data_in):
+        raise ValueError("write to another folder than %s's" % header_path)
+    for i in edits:
+        if not 0 <= i < head.count:
+            raise ValueError("entry %d of %d" % (i, head.count))
+    ends = []
+    with open(data_in, "rb") as src, open(out_data, "wb") as dst:
+        for i, (off, size, _, _) in enumerate(head.entries):
+            src.seek(off)
+            slot = src.read(size)
+            blob = rebuild_slot(slot, edits[i]) if i in edits else pac.kcap_payload(slot)
+            dst.write(blob + bytes(-len(blob) % pac.KCAP_SECTOR))
+            ends.append(dst.tell())
+            if progress:
+                progress(i)
+        total = dst.tell()
+    new_head = pac.KCAP_MAGIC + struct.pack("<III%dI" % len(ends), total, len(ends), 0, *ends)
+    with open(out_header, "wb") as f:
+        f.write(new_head)
+    return os.path.getsize(data_in), total
+
+
+def picture_edits(header_path, pictures, keep_palette=False):
+    """{entry: {block: bytes}} for pictures put into PVMH blocks: pictures is
+    {(entry, block, texture): RGBA pixels at the texture's size} (svr.replace_pictures)."""
+    import svr
+    head = pac.load_header(header_path)
+    out = {}
+    with open(pac.data_path(header_path, head), "rb") as f:
+        groups = {}
+        for (i, k, slot), px in pictures.items():
+            groups.setdefault((i, k), {})[slot] = px
+        for (i, k), pics in groups.items():
+            off, size, _, _ = head.entries[i]
+            buf = read_entry(f, off, size)
+            _, bsize, o = PackData(buf).blocks[k]
+            raw = buf[o:o + bsize]
+            if raw[:4] != b"PVMH":
+                raise ValueError("entry %d block %d is not a PVMH archive" % (i, k))
+            out.setdefault(i, {})[k] = svr.replace_pictures(raw, pics, "%d.%d" % (i, k), keep_palette)
+    return out
+
+
 # --- commands ----------------------------------------------------------------
+
+def cmd_textures(path, first=0, last=None):
+    import svr
+    head = pac.load_header(path)
+    if not isinstance(head, pac.KcAtP):
+        raise SystemExit("%s: not a KC@P header" % path)
+    last = head.count - 1 if last is None else last
+    n = 0
+    with open(pac.data_path(path, head), "rb") as f:
+        for i in range(first, last + 1):
+            off, size, _, _ = head.entries[i]
+            buf = read_entry(f, off, size)
+            for k, mg, o, bsize in texture_blocks(buf):
+                if mg == b"PVMH":
+                    texs = svr.parse_svm(buf[o:o + bsize])
+                    what = ", ".join("%dx%d %dbpp" % (t.width, t.height, t.bpp) for t in texs[:4])
+                    what = "%d texture%s  %s%s" % (len(texs), "" if len(texs) == 1 else "s", what,
+                                                  " ..." if len(texs) > 4 else "")
+                else:
+                    what = "palette"
+                print("%6d.%-3d %s %8d bytes  %s" % (i, k, mg.decode(), bsize, what))
+                n += 1
+    print("%d texture blocks in entries %d-%d" % (n, first, last))
+
+
+def cmd_replace(src, dst, pairs, keep_palette, prs):
+    head = pac.load_header(src)
+    if not isinstance(head, pac.KcAtP):
+        raise SystemExit("%s: not a KC@P header" % src)
+    pictures, files = {}, {}
+    for pair in pairs:
+        sel, sep, path = pair.partition("=")
+        parts = sel.split(".")
+        if not sep or len(parts) not in (2, 3) or not all(x.isdigit() for x in parts):
+            raise SystemExit("expected <entry>.<block>[.<texture>]=<file>, got %r" % pair)
+        i, k = int(parts[0]), int(parts[1])
+        if len(parts) == 3 or path.lower().endswith(".png"):
+            from PIL import Image
+            import svr
+            with open(pac.data_path(src, head), "rb") as f:
+                off, size, _, _ = head.entries[i]
+                buf = read_entry(f, off, size)
+            _, bsize, o = PackData(buf).blocks[k]
+            slot = int(parts[2]) if len(parts) == 3 else 0
+            tex = svr.parse_svm(buf[o:o + bsize])[slot]
+            img = Image.open(path).convert("RGBA")
+            if img.size != (tex.width, tex.height):
+                raise SystemExit("%s is %dx%d, the texture %dx%d; scale it first" % (
+                    path, img.width, img.height, tex.width, tex.height))
+            pictures[i, k, slot] = list(img.get_flattened_data() if hasattr(img, "get_flattened_data")
+                                        else img.getdata())
+        else:
+            with open(path, "rb") as f:
+                files.setdefault(i, {})[k] = f.read()
+        print("%d.%d <- %s" % (i, k, path))
+    edits = picture_edits(src, pictures, keep_palette) if pictures else {}
+    for i, blocks in files.items():
+        edits.setdefault(i, {}).update(blocks)
+    old, new = write_pack(src, dst, edits)
+    print("%s: %d entries changed; data file %d -> %d bytes (%d -> %d sectors)" % (
+        dst, len(edits), old, new, old >> 11, new >> 11))
+
+
+def cmd_roundtrip(paths, everything):
+    """For each KC@P pack: every texture block's own pictures put back (matched to their own
+    palettes), the entry re-spliced, and the pack read again: only texture bytes may differ and
+    every picture must decode the same. Entries of the big packs are sampled like `info`'s."""
+    import svr
+    bad = 0
+    for path, head in _kcap_headers(paths):
+        idx, step = _sample(head.count, everything)
+        blocks = textures = changed = 0
+        with open(pac.data_path(path, head), "rb") as f:
+            for i in idx:
+                off, size, _, _ = head.entries[i]
+                buf = read_entry(f, off, size)
+                edits = {}
+                for k, mg, o, bsize in texture_blocks(buf):
+                    blocks += 1
+                    if mg != b"PVMH":
+                        continue
+                    raw = buf[o:o + bsize]
+                    texs = svr.parse_svm(raw)
+                    pics = {j: t.pixels() for j, t in enumerate(texs) if t.palette_entries or t.bpp >= 16}
+                    if not pics:
+                        continue
+                    try:
+                        new = svr.replace_pictures(raw, pics, "%d.%d" % (i, k), keep_palette=True)
+                    except ValueError as e:
+                        print("%s entry %d block %d  !! %s" % (os.path.basename(path), i, k, e))
+                        bad += 1
+                        continue
+                    again = svr.parse_svm(new)
+                    for j, px in pics.items():
+                        textures += 1
+                        if again[j].pixels() != px:
+                            print("%s entry %d block %d texture %d  !! the picture changed" % (
+                                os.path.basename(path), i, k, j))
+                            bad += 1
+                    edits[k] = new
+                if edits:
+                    out = splice_blocks(buf, edits)
+                    pd = PackData(out)
+                    if len(out) != len(buf) or pd.problems(out):
+                        print("%s entry %d  !! the rebuilt entry does not read as the packing rule says" % (
+                            os.path.basename(path), i))
+                        bad += 1
+                    masked_a, masked_b = bytearray(buf), bytearray(out)
+                    for k in edits:
+                        _, bsize, o = pd.blocks[k]
+                        masked_a[o:o + bsize] = masked_b[o:o + bsize] = bytes(bsize)
+                    if masked_a != masked_b:
+                        print("%s entry %d  !! bytes outside the textures changed" % (os.path.basename(path), i))
+                        bad += 1
+                    changed += 1
+        note = "" if step == 1 else " (every %dth entry and the last, of %d)" % (step, head.count)
+        print("%-40s %d entries%s: %d texture blocks, %d pictures put back, %d entries respliced%s" % (
+            path.replace("\\", "/"), len(idx), note, blocks, textures, changed, ""))
+    print("%s" % ("  !! %d problems" % bad if bad else "no problems"))
+    return 1 if bad else 0
 
 def cmd_info(paths, check_all):
     for p, h in _kcap_headers(paths):
@@ -300,6 +523,14 @@ def main(argv):
         cmd_extract(args[0], int(args[1], 0), args[2])
     elif cmd == "names" and 1 <= len(args) <= 3:
         cmd_names(args[0], *(int(a, 0) for a in args[1:]))
+    elif cmd == "textures" and 1 <= len(args) <= 3:
+        cmd_textures(args[0], *(int(a, 0) for a in args[1:]))
+    elif cmd == "roundtrip" and args:
+        return cmd_roundtrip(args, "--all" in argv)
+    elif cmd == "replace" and len(args) >= 3:
+        keep = "--palette" in args and args[args.index("--palette") + 1] == "keep"
+        rest = [a for k, a in enumerate(args) if a not in ("--palette", "--prs") and (k == 0 or args[k - 1] != "--palette")]
+        cmd_replace(rest[0], rest[1], rest[2:], keep, "--prs" in args)
     else:
         print(__doc__)
         return 1

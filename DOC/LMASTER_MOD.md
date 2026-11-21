@@ -1749,11 +1749,13 @@ the switch, such as `lmaster-full`, leaves it out when there is no pack
 and says so; naming `--mod realism` without one is an error. The pack is
 read as it stands each time, so a new commit of it only needs a new
 build. The Japanese release has it too (ported 2026-11-21, with `--dat DAT_JP`;
-12 files, 1,009 textures, see [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#patching-a-japanese-disc);
-not yet seen in the game). On PAL it writes seven
+13 files, 1,019 textures since 2026-11-22, see [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#patching-a-japanese-disc);
+not yet seen in the game). On PAL it writes eight
 whole packs (`0SYSTEM/EMBLEM_TEXTURE.PAC`, `FLAG_TEXTURE.PAC`,
 `MATCH_TEXTURE.PAC`, `MINIEMBLEM_TEXTURE.PAC`, `MINIMATCH_TEXTURE.PAC`,
-`SPONSOR_TEXTURE_M.PAC` and `STADIUM/ADT_TEXCMN.PAC`), and `--copies`
+`SPONSOR_TEXTURE_M.PAC`, `STADIUM/ADT_TEXCMN.PAC` and, since 2026-11-22,
+`ACROBATA/ACROBATAPACKFILE.PAC`, whose ten `EV_TYPE_ENDING_UK1ST_*` scenes
+hold four of the pack's pictures: same size, only texture bytes change), and `--copies`
 carries them to the `PRELOAD` copies. The work is `texmap.py apply`
 ([`TEXMAP.md`](TEXMAP.md#putting-the-pack-on-the-disc-apply)):
 

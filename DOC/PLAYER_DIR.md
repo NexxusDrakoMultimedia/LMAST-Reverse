@@ -213,6 +213,30 @@ case (`NED_280`).
 | 3 | 27 | `PVMH` textures (`tuku_tex01` ...) | opened as a texture |
 | 4–31 | 28 | 28 `PVPL` palettes, 256 colours each | a loop of 28 (`0x11ce18`) collects their data pointers |
 
+## Writing `PackData`
+
+`packdata.py` writes textures back into the KC@P packs (2026-11-22): `splice_blocks` puts a
+block of the same size into an expanded entry (the packing rule keeps every block where it
+was), `rebuild_slot` compresses the entry again if it was PRSH (`pac.prsh_wrap`, greedy LZ77:
+other bytes than Sega's packer, the same data), and `write_pack` lays the pack out as the disc's
+are (`pac.build_kcap`: every entry on a sector, the header holding each entry's end), an entry
+at a time, so the 1.1 GB face pack streams. Only a changed entry's size can change; the rest are
+copied as they are.
+
+| Command | What it does |
+|---|---|
+| `textures <header> [first [last]]` | the texture blocks of the entries: PVMH archives (their textures' sizes) and PVPL palettes |
+| `replace <header> <out header> <entry>.<block>[.<texture>]=<file> ...` | puts a picture (`.png` at the texture's size) into a PVMH block, or a same-size file into any block; writes the new header and the data file beside it |
+| `roundtrip <header or folder> ... [--all]` | puts every texture of every PVMH block back from its own picture, re-splices the entry and checks it reads as the packing rule says and only texture bytes differ (the face pack 00 sampled unless `--all`) |
+
+**Empirical** (2026-11-22, the PAL packs): `roundtrip` over `PLAYER` and `GAME` puts back 696 +
+696 kit pictures (`PLPACK_HOME` and `AWAY`, 116 entries each), 7 edit-face pictures, 219 face
+pictures (`FC_EURO_FACEPACK_01`), 444 cut-in pictures and 494 of the big pack's entries, with no
+difference outside the textures. `replace` of one kit texture (entry 0, block 1) changed that block
+only: the other six blocks and entries 1, 57 and 115 are byte for byte the original's, the data file
+keeps its size, and `pac.py roundtrip` rebuilds the new pack identically. Whether the game shows a
+rewritten block as the reader does is not seen yet ([`TESTING.md`](../TESTING.md)).
+
 ## Checking the claims
 
 `SRC/packdata.py` parses `PackData` in every KC@P pack it finds. Its
@@ -227,6 +251,8 @@ takes several minutes.
 python SRC/packdata.py info DAT                                 # all KC@P packs
 python SRC/packdata.py info DAT/PLAYER/FC_EURO_FACEPACK_00.HED --all
 python SRC/packdata.py list DAT/PLAYER/PLPACK_HOME.HED 0
+python SRC/packdata.py textures DAT/PLAYER/PLPACK_HOME.HED 0 1
+python SRC/packdata.py roundtrip DAT/PLAYER DAT/GAME           # every texture back from its own picture
 python SRC/packdata.py extract DAT/PLAYER/FC_EURO_FACEPACK_01.HED 0 out/face
 python SRC/svr.py info out/face                                 # the texture blocks
 ```

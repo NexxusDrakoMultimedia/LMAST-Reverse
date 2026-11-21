@@ -240,8 +240,8 @@ new bytes in the pack, which the pack tools do:
 |---|---|---|
 | `.MRG`, `.PAC` (BINPAC): `0SYSTEM`, `EMBLEM`, `NEWS`, `STADIUM`, `PLAYER`, `BG`, `TEST3D`, `CSE/INST_SVR` | most of the disc's | yes, `pac.py replace` (rebuilt packs are identical); a changed-size entry moves the later ones, and the `.HED` copies and the `PRELOAD` copies need the same change ([`PAC_FORMAT.md`](PAC_FORMAT.md)). PRSH entries are recompressed by `pac.py`'s writer, which is not byte-identical to Sega's packer |
 | `*.CSP` packs, and the `.csp` entries of the `PRELOAD` packs | 780 + 471 | a same-size texture, yes: `csp.py replace` splices it into its entry and no other entry moves, and `csp.py roundtrip` rebuilds all 489 packs byte for byte ([`CSE_FORMAT.md`](CSE_FORMAT.md#csp-pack)). A texture of another size is refused |
-| `ACROBATA/ACROBATAPACKFILE.PAC` | 2,137 | same-size bodies could be patched in place; a new size needs the part's wrapper chunks, its POF0 list and the executable's copy of the index (`SLES_541.51` `0x3a3b08`) |
-| KC@P `PackData` packs: `PLPACK_HOME`/`AWAY` (kits), `CUTINPACK`, `EDITFACEPACK`, the face packs | 1,392 + 444 + 7 + 41,863 | no `PackData` writer: block sizes and later offsets would be rewritten |
+| `ACROBATA/ACROBATAPACKFILE.PAC` | 2,137 | a same-size texture, yes: `acrobata.py replace` splices it into its scene's `ABRS` part, and `acrobata.py roundtrip` puts all 2,137 textures of the 2,046 resources back from their own pictures with only texture bytes differing ([`ACROBATA_DIR.md`](ACROBATA_DIR.md#writing)). A new size would need the part's wrapper chunks, its POF0 list and the executable's copy of the index (`SLES_541.51` `0x3a3b08`) |
+| KC@P `PackData` packs: `PLPACK_HOME`/`AWAY` (kits), `CUTINPACK`, `EDITFACEPACK`, the face packs | 1,392 + 444 + 7 + 41,863 | a same-size texture, yes: `packdata.py replace` splices it into its block, compresses the entry again if it was PRSH, and lays the pack out as the disc's are; `packdata.py roundtrip` does it for every texture of every pack (the big face pack sampled) ([`PLAYER_DIR.md`](PLAYER_DIR.md#writing-packdata)). Block sizes and later offsets would be rewritten for a new size |
 | `ISO/DLL/GAMEPRG.REL` at `0x265fc0` | 1 (16x16, 4 bpp) | only a same-size patch in place |
 
 ## Still unknown
@@ -254,9 +254,10 @@ new bytes in the pack, which the pack tools do:
 - Whether the game shows a rewritten texture in a CSP pack as the reader
   does (`csp.py replace` has not been looked at in PCSX2; the pending
   check is in [`TESTING.md`](../TESTING.md)).
-- The writers for the ACROBATA pack and the `PackData` packs (the table
-  above), and a changed-size texture in a CSP, ACROBATA or `PackData`
-  pack.
+- A changed-size texture in a CSP, ACROBATA or `PackData` pack (the table
+  above has the same-size writers), and whether the game shows a
+  rewritten ACROBATA or `PackData` texture as the reader does (the
+  ACROBATA ones of `--mod realism` are in [`TESTING.md`](../TESTING.md)).
 
 ## Checking the claims
 

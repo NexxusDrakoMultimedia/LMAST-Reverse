@@ -173,7 +173,9 @@ any difference with `!!`. It goes into `regress.py` as
 `<name>_roundtrip`. (`save.py`, `ps2mc.py` and `pmplayer.py` work on
 saves and cards that are not on the disc, so their checks run on files
 you supply or on built test data: `save.py roundtrip`, and `selftest` in
-`ps2mc.py` and `pmplayer.py`.) The existing writers are `pac.py` (BINPACs,
+`ps2mc.py` and `pmplayer.py`.) The existing writers are `acrobata.py` (`replace`: a texture back into
+its ACROBATA scene), `packdata.py` (`replace`: a texture back into a KC@P
+`PackData` block), `pac.py` (BINPACs,
 KC@P packs, PRS), `tbb.py`, `pbdata.py`, `mbb.py`, `initteam.py` (`set`,
 `setteam`, `setnation`, `setstadium`, `swap`), `teaminit.py`,
 `regulation.py`, `clubresult.py`, `training.py`, `camp.py`, `formset.py`,

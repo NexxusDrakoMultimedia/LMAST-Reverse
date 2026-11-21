@@ -278,6 +278,20 @@ You can build the mod in three editions from named switches
       `mobile-site` joined `injury-lines` in the `restorations` group (all
       three in every edition)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
+- [x] Texture writers for the ACROBATA pack and the KC@P `PackData` packs
+      (2026-11-22): `acrobata.py replace` puts a same-size texture back into
+      its scene's `ABRS` part and `packdata.py replace` into a `PackData` block
+      (the entry compressed again if it was PRSH, the pack laid out as the
+      disc's are, streamed so the 1.1 GB face pack works), both from a picture
+      through the new `svr.replace_pictures`. `roundtrip` puts every texture back
+      from its own picture: all 2,137 ACROBATA textures and the kit, edit-face,
+      face, cut-in and sampled big-pack pictures, with only texture bytes
+      differing. `texmap.py apply` writes the ACROBATA pictures, so `--mod
+      realism` now also changes the ten ending scenes that hold four of
+      the pack's pictures
+      ([`ACROBATA_DIR.md`](DOC/ACROBATA_DIR.md#writing),
+      [`PLAYER_DIR.md`](DOC/PLAYER_DIR.md#writing-packdata),
+      [`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
 - [x] `doclint.py`, the stale-claim linter for the Markdown (2026-11-22):
       `info` checks every relative link and `#anchor` (GitHub's slugs), every
       `python SRC/...` command (the tool and its command exist, SRC/ paths

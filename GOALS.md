@@ -85,10 +85,9 @@ it belongs to, and [`DONE.md`](DONE.md) lists what is finished.
    file and writing it back gives the original bytes, checked over every
    file on the disc in `regress.py`. *Done for what a starting-season
    mod changes*, and edits through most writers are tested in PCSX2.
-   Left: the rest of the stadium tables, the writers for the ACROBATA
-   and `PackData` texture packs, and a changed-size texture in a CSP
-   pack (`csp.py` rebuilds all the CSP packs and replaces same-size
-   textures).
+   Left: the rest of the stadium tables and a changed-size texture in
+   a CSP, ACROBATA or `PackData` pack (`csp.py`, `acrobata.py` and `packdata.py`
+   replace same-size textures, and every pack rebuilds).
 4. **Rebuild.** Put edited files back on a disc image that boots.
    *Done:* `patch_disc.py` patches files of any size, moves them, grows
    the disc, updates every copy and rebuilds archives, all tested in
