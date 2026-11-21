@@ -337,19 +337,26 @@ edition plays through a season.
       with no garbling or cut-off text
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 
-### The third tier's rules text in Japanese (draft)
+### The third tier's rules text in Japanese (in need of a checker)
 
 Nexxus's choice, 2026-11-19: the third tier's rules text on the
-Japanese disc is written in Japanese. Claude drafted it below from the
+Japanese disc is written in Japanese. Claude wrote it below from the
 Japanese retail wording of the same messages, in the game's own style
 (full-width kana and kanji for sentences, half-width kana for division
-names, as the retail text has them). It is not on any disc yet:
-`patch_disc.py` still leaves slot 0 alone. The check for a person who
-reads Japanese: read each line for grammar, tone and fit with the
-neighbouring retail text, and say what to change. Once it is accepted,
-the edits are added to `tier_text_edits` for the Japanese pack and the
-check below moves to a disc check
-([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc)).
+names, as the retail text has them), and **it is in need of a checker**:
+nobody on the project reads Japanese (Nexxus, 2026-11-21), so the
+grammar, the tone and the fit with the neighbouring retail text are
+unchecked. Since 2026-11-21 `patch_disc.py --mod third-tier` writes it
+into slot 0 of a Japanese disc (`tier_text_edits_jp`, with a note saying
+it needs a checker; a disc built with it, read back, holds every line
+below and fits its slots). The check for a person who reads Japanese:
+read each line for grammar, tone and fit, and say what to change; the
+corrections go into the `TT_JP_*` strings of `SRC/patch_disc.py` (someone
+else makes the edit), and the line moves from here to "checked" in
+[`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc).
+With `--mod real-names` the tier names in the lists become English ASCII
+(`League One`), while the sentences below keep the retail katakana names,
+as every other retail Japanese message that mentions a name does.
 
 Each nation's messages, England to the Netherlands, in the order of the
 PAL edits (`SRC/patch_disc.py`, `tier_text_edits`). `{lf}` and the other
@@ -382,10 +389,25 @@ names are the retail ones:
 | Id | New point 2 |
 |---|---|
 | 487:1200 | `{lf}　２.　シーズン終了時にﾁｬﾝﾋﾟｵﾝｽﾞﾃﾞｨﾋﾞｼﾞｮﾝで最下位{lf}　　　 （24位）の場合。` |
-| 487:1201 | `{lf}　２.　シーズン終了時にﾌﾗﾝｽﾘｰｸﾞ･ﾃﾞｨﾋﾞｼﾞｮﾝ2で最下位{lf}　　　 （20位）の場合。` |
+| 487:1201 | `{lf}　２.　シーズン終了時にﾌﾗﾝｽﾘｰｸﾞ・ﾃﾞｨﾋﾞｼﾞｮﾝ2で最下位{lf}　　　 （20位）の場合。` |
 | 487:1202 | `{lf}　２.　シーズン終了時にﾄﾞｲﾂ2部ﾘｰｸﾞで最下位{lf}　　　 （18位）の場合。` |
 | 487:1203 | `{lf}　２.　シーズン終了時にｲﾀﾘｱﾘｰｸﾞBで最下位{lf}　　　 （22位）の場合。` |
-| 487:1204 | `{lf}　２.　シーズン終了時にｽﾍﾟｲﾝﾘｰｸﾞ･ﾃﾞｨﾋﾞｼﾞｮﾝ2で最下位{lf}　　　 （22位）の場合。` |
+| 487:1204 | `{lf}　２.　シーズン終了時にｽﾍﾟｲﾝﾘｰｸﾞ・ﾃﾞｨﾋﾞｼﾞｮﾝ2で最下位{lf}　　　 （22位）の場合。` |
+
+The division names in 487:1201 and 1204 use the full-width middle dot `・`
+as those messages' retail point 2 does (the tier names in 11:1142 to
+1147 use the half-width `･`).
+
+**The game over message, 487:902** (the owner's farewell; the retail first
+sentence, "for two years in a row the results were poor", no longer fits
+a game that ends after one season). Its first sentence is replaced:
+
+```text
+2年連続で成績がふるいませませんでした…  ->  今季は最下位に終わってしまいました…
+```
+
+(the retail sentence has a typo, `ふるいませませんでした`, which the new one
+removes).
 | 487:1205 | `{lf}　２.　シーズン終了時にｵﾗﾝﾀﾞ2部ﾘｰｸﾞで最下位{lf}　　　 （20位）の場合。` |
 
 **League rules screen, 30001** (ids 101, 107, 112, 117, 123, 128). A

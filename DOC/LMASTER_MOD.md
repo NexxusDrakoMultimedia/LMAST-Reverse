@@ -505,7 +505,10 @@ sentences (`tier_text_edits`), applied to `MES.PAC` by a target hook
 (`target_tier_text`): the disc's own file, or one a target writes (the
 editor's Text tab), which keeps its own edits. Every grown file stays in
 its slot, so no entry moves; `--copies` carries category 832 to its
-copies in `PRELOAD/NEWS1`–`5.PAC` and 11_5 to `STATIONMES5.PAC`.
+copies in `PRELOAD/NEWS1`–`5.PAC` and 11_5 to `STATIONMES5.PAC`. The Japanese
+release gets the same edits in slot 0 (`tier_text_edits_jp`, 2026-11-21), in
+need of a checker who reads Japanese
+([`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc)).
 **Checked** on `LMAST-test-max-germany.iso` (2026-10-27): the 136
 messages read back as built, every other message equals the build
 without the text, and the five `NEWS` copies of 832 equal `MES.PAC`'s; a

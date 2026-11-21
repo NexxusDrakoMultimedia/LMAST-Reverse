@@ -5035,6 +5035,44 @@ def tier_text_edits():
     return edits
 
 
+# third-tier, the text on the Japanese disc: the same messages in slot 0, in Japanese. Claude's draft
+# (Nexxus's choice, 2026-11-19 and 2026-11-21), written from the Japanese retail wording of each message
+# and in the game's style (full-width kana and kanji for sentences, half-width kana for division names), and
+# IN NEED OF A CHECKER: nobody on the project reads Japanese, so the grammar, the tone and the fit with the
+# neighbouring retail text are unchecked (TESTING.md, "The third tier's rules text in Japanese"). The
+# division names in point 2 are the ones that message's retail text uses (487:1201 and 1204 spell the
+# middle dot as a full-width one, the tier names in 11:1142-1147 as a half-width one); the tier's name in
+# the sentences is 11:1142-1147's without ` ﾌﾟﾚｲｵﾌ`.
+TT_JP_BOTTOM = "\n{lf}最下位になるとゲームオーバーです。"              # 487:1100-1105, a last line
+TT_JP_DIVISION = ("ﾁｬﾝﾋﾟｵﾝｽﾞﾃﾞｨﾋﾞｼﾞｮﾝ", "ﾌﾗﾝｽﾘｰｸﾞ・ﾃﾞｨﾋﾞｼﾞｮﾝ2", "ﾄﾞｲﾂ2部ﾘｰｸﾞ", "ｲﾀﾘｱﾘｰｸﾞB",
+                  "ｽﾍﾟｲﾝﾘｰｸﾞ・ﾃﾞｨﾋﾞｼﾞｮﾝ2", "ｵﾗﾝﾀﾞ2部ﾘｰｸﾞ")      # 487:1200-1205, as the retail point 2 has them
+TT_JP_POINT2 = "{lf}\u3000２.\u3000シーズン終了時に%sで最下位{lf}\u3000\u3000\u3000 （%d位）の場合。"
+TT_JP_RELEGATION = "\n{lf}\n{lf}{color:4}降格条件{/color}\n{lf}最下位のクラブは%sに降格"     # 30001, after the promotion
+TT_JP_DROP = "最下位のクラブは%sに降格となる。"                                # 832, at the end
+TT_JP_SCREEN = "{lf}\u3000２.\u3000シーズン終了時に{var:1:2031}で最下位{lf}\u3000\u3000\u3000 の場合。"   # 30003:1
+TT_JP_WARNING = ("勝ち点から見て", "勝ち点から見て{var:1:2031}で最下位に\n{lf}なってしまう危険性がございます。今季\n"
+                 "{lf}最下位だとゲームオーバーとなるのでご注意ください。")                       # 35680:0
+TT_JP_OVER = ("2年連続で成績がふるいませませんでした…", "今季は最下位に終わってしまいました…")      # 487:902
+
+
+def tier_text_edits_jp(tiers):
+    """[(category, id, 0, edit)] for the Japanese slot 0, as tier_text_edits has them for the other
+    languages; `tiers` are the six tiers' names (11:1142-1147 without the playoff word)."""
+    edits = []
+    for k in range(len(TT_NATIONS)):
+        old = TT_SIZES[k]
+        edits += [(487, 1100 + k, 0, ("sub", "全%dチーム" % old, "全%dチーム" % (old - 2))),
+                  (487, 1100 + k, 0, ("sub", "年間%d試合" % (2 * old - 2), "年間%d試合" % (2 * old - 6))),
+                  (487, 1100 + k, 0, ("add", TT_JP_BOTTOM)),
+                  (487, 1200 + k, 0, ("block", "{lf}\u3000２.", "{lf}\u3000３.",
+                                      TT_JP_POINT2 % (TT_JP_DIVISION[k], old - 2))),
+                  (30001, TT_RULES[k], 0, ("add", TT_JP_RELEGATION % tiers[k])),
+                  (832, TT_NEWS[k], 0, ("add", TT_JP_DROP % tiers[k]))]
+    return edits + [(30003, 1, 0, ("block", "{lf}\u3000２.", "{lf}\u3000３.", TT_JP_SCREEN)),
+                    (35680, 0, 0, ("block", TT_JP_WARNING[0], None, TT_JP_WARNING[1])),
+                    (487, 902, 0, ("sub",) + TT_JP_OVER)]
+
+
 def tier_text_edit(text, lang, edit):
     """`text` with one edit applied; unchanged when it is applied already
     (a MES.PAC target that has it). ValueError when it doesn't fit."""
@@ -5081,15 +5119,21 @@ def target_tier_text(file, data):
             g.write(data)
         pack = mbb.MesPack(path)
     import realnames
-    if realnames.is_japanese(pack):
-        return data         # the rules text is written for the five European languages
+    jp = realnames.is_japanese(pack)
     # An image patched before already has the text (its edits build on one
     # another, so they can't be found a second time): the English intro's
-    # added last line tells.
-    if pack.text(487, 1, 1100).endswith(TT_BOTTOM[1]):
-        return data
+    # added last line tells (the Japanese slot 0's, on the Japanese release).
+    if jp:
+        if pack.text(487, 0, 1100).endswith(TT_JP_BOTTOM):
+            return data
+        tiers = [pack.text(11, 0, 1142 + k).replace(" ﾌﾟﾚｲｵﾌ", "") for k in range(len(TT_NATIONS))]
+        edits = tier_text_edits_jp(tiers)
+    else:
+        if pack.text(487, 1, 1100).endswith(TT_BOTTOM[1]):
+            return data
+        edits = tier_text_edits()
     errors = []
-    for cat, rid, lang, edit in tier_text_edits():
+    for cat, rid, lang, edit in edits:
         try:
             pack.set(cat, lang, rid, 0, tier_text_edit(pack.text(cat, lang, rid), lang, edit))
         except ValueError as e:
@@ -5552,8 +5596,8 @@ def plan_third_tier(f, img, adopted=()):
                             + tier_lists_words(f, img) + tier_uids_words(f, img)
                             + list(ONE_SEASON_END))
     if img.port is not None:
-        notes = notes + ["note: third-tier: the Japanese text's rules messages are not changed "
-                         "(DOC/JAPANESE_RELEASE.md#porting-third-tier-plan)"]
+        notes = notes + ["note: third-tier: the Japanese rules text is Claude's draft and in need of a checker "
+                         "who reads Japanese (TESTING.md, The third tier's rules text in Japanese)"]
     return jobs, notes
 
 

@@ -242,6 +242,14 @@ You can build the mod in three editions from named switches
       switches made, and max stays full plus the difficulty groups
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
 
+- [x] The third tier's rules text in Japanese (2026-11-21, Nexxus's choice
+      of 2026-11-19): `tier_text_edits_jp` writes the same edits into slot 0
+      of the Japanese `MES.PAC` (division sizes and match counts, last place
+      ends the game, relegation text, the warning and the farewell), built
+      into the disc and read back, copies included. Claude's writing,
+      **in need of a checker** who reads Japanese (Nexxus, 2026-11-21: no one
+      they know reads it), so the line-by-line check stays open in `TESTING.md`
+      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc))
 - [x] `--mod title-banner` on the Japanese release (2026-11-21): the
       banner is drawn on the stadium photograph of its one title pack
       (`SC_TITLEBG.CSP`, entry 3) at the top left, after folding the

@@ -92,8 +92,8 @@ the Japanese disc):
 `patch_disc.py patch` takes the Japanese image, with every switch, so
 LMASTER lite, full and max build for it (full and max with `--copies --dat
 DAT_JP`; the modern font and the retail text fixes leave the release
-alone with a note). `third-tier` is ported except for its rules text
-([below](#the-third-tier-on-the-japanese-disc)).
+alone with a note). `third-tier` is ported, its rules text in need of a
+checker ([below](#the-third-tier-on-the-japanese-disc)).
 Every switch must work here before LMASTER 1.0.0 (Nexxus's choice,
 2026-11-01; [`TODO.md`](../TODO.md#the-lmaster-mod)).
 
@@ -132,7 +132,7 @@ own with the switches it needs):
 | `salesman-items` | the boost jump table (PAL `0x5313c8`, Japanese `0x52d138`) holds the Japanese addresses of the same cases (`0x210d18` and `0x210e08` for PAL's `0x2104e0` and `0x2105d0`), which trade places as on PAL; the headphones' new code calls `pwkGUtl_AddExp` at its Japanese address, and its branch reaches the same epilogue (`0x210fec`) |
 | `vpf-positions` | nothing to do: the release has no Virtua Pro Football import ([below](#confirmed-from-the-game-code)) |
 | `real-names` | the English names in ASCII in the Japanese text (slot 0, where the game has katakana), in every list `realnames.py` writes in PAL but the three the Japanese `MES.PAC` lacks (100003, 100009 and 100011); the nations' copy, category 7, is numbered from 6000 there (PAL 5000). The mentions of a competition in other messages are left in katakana. The three-letter forms lose their accents. `MES.PAC` and `STATIONMES0.PAC` grow by 5 and 4 sectors and move to the end of the disc; the built disc's `MES.PAC` is byte for byte what `realnames.py apply` writes (**empirical**, 2026-11-12). Not run in the game |
-| `third-tier` | all 93 places plan; the rules text isn't changed ([below](#the-third-tier-on-the-japanese-disc)) |
+| `third-tier` | all 93 places plan; the rules text is written in Japanese (2026-11-21) and in need of a checker ([below](#the-third-tier-on-the-japanese-disc)) |
 | `realism` | ported (2026-11-21). The pack's names are PCSX2 hashes of the textures, and the Japanese disc's textures mostly hash the same: `texmap.py match` finds a disc texture for 1,605 of the pack's 1,613 PNGs (PAL 1,612), and `texmap.py apply` on `DAT_JP` writes 12 files with 1,009 textures (PAL 29 files, 1,032): the crests and match pictures in the five `0SYSTEM` packs, the three `WP_FACILITIES` and four `SC_SIXNATIONS_0n_00` CSP packs. The release has only language slot 0 of the Six Nations packs and one title pack, so the other 15 CSP files of PAL's list do not exist, and its `SPONSOR_TEXTURE_M` and `ADT_TEXCMN` do not hold the Adboards picture (no disc texture for it); 3 crests of the pack (Serie A, Serie C, UEFA Western Europe 2) and the 2 `Icons` have no Japanese counterpart either. Needs `--dat DAT_JP` (`patch_disc.py` refuses a `DAT` that differs from the disc). The 12 files read back from a built disc equal the ones `apply` writes; not yet seen in the game |
 | `club-kits` | ported (2026-11-21): the sponsors' code and the logo gate, the kit eras, the kit standard, the sponsor tiers and the club-creation presets, all in the code segment at `0xe0000`. The hooks are the same words at `0x26eccc` (`pwkTeam_GetUnif`) and `0x2c3608` (`CUniformBuilder::_setup_texture_list`), `pwkGen_Keika` is at `0x244898`, the kit editor's supplier tables are 0x3f40 lower in `SIMPRG.REL`, the sponsor table 0x3ff0 lower and the 32 presets `0x100` lower in `CEDITPRG.REL` (all found through `gamever.py`, listed in its `check`). Built on the Japanese disc and read back byte for byte; not yet seen in the game ([`TESTING.md`](../TESTING.md#newer-switches)) |
 | `club-eras` | ported (2026-11-21): the managers' code and tables in the code segment, called from `plOteam_GetManagerNoOffset` (`0x216df8`, the same function as PAL's `0x216668`: its hook word differs only in the `jal` target, `0x216e60`; `pwkGen_Keika` is at `0x244898`, `plOteam_GetDb` at `0x216d68`). `cluberas.py` reads `DAT_JP` as it reads PAL's (the same 1,317-manager pool). Built and read back byte for byte; not yet seen in the game ([`TESTING.md`](../TESTING.md#the-japanese-release)) |
@@ -157,7 +157,7 @@ by the name in any case.
 `--mod third-tier` (the hidden third tier, [`CLUB_LIMITS.md`](CLUB_LIMITS.md),
 [`UID_LIMITS.md`](UID_LIMITS.md)) is 93 patched places in five files,
 six data files and some text. It builds for the Japanese disc since
-2026-11-12, except for the rules text (below). **Empirical**: all 93
+2026-11-12, and its rules text since 2026-11-21 (below). **Empirical**: all 93
 places plan there (each checks that the bytes it finds are the ones it
 expects), PAL's 93 jobs are byte for byte what they were, and a disc
 built with `--mod third-tier --copies --dat DAT_JP` writes 198 times
@@ -189,10 +189,20 @@ seasons (the cave's file offset, the bit routines, the serializers'
 offsets, the pwork global, and `addr`, which translates an executable
 address with `gamever.py`).
 
-The rules text is the part that needs a decision: written in Japanese
-(someone who reads the game's Japanese should check it) or left in
-English. The messages are the ones `tier_text_edits` changes in the five
-European languages (category 487, 30001, 30003, 832 and 35680).
+**The rules text** (2026-11-21, Nexxus's choice of 2026-11-19: write it in
+Japanese). `tier_text_edits_jp` makes the same edits in slot 0 as
+`tier_text_edits` makes in the five European languages (categories 487,
+30001, 30003, 832 and 35680, and the owner's farewell 487:902): the club
+and match counts of each second division, its last-place rule, the
+relegation sections and sentences, the warning, and every place that said
+"two years in a row". Claude wrote the lines from the retail Japanese of
+the same messages, and **they are in need of a checker**: no one on the
+project reads Japanese, so their grammar, tone and fit are unchecked
+(the lines to read are in [`TESTING.md`](../TESTING.md#the-third-tiers-rules-text-in-japanese-in-need-of-a-checker)).
+**Empirical**: a disc built with `--mod third-tier,real-names --copies
+--dat DAT_JP` holds each edited message as built, nothing outgrows its
+slot, a second run changes nothing, and `PRELOAD/NEWS*.PAC` carries
+832's copies. The build prints a note saying the text needs a checker.
 
 ## Confirmed from the game code
 
@@ -251,9 +261,8 @@ comparing `DAT/` and `DAT_JP/` with `cmp`.
   built with `--mod real-names` has been run (`TESTING.md`).
 - Why entry 0 of `PLRESOURCESIM.PAC` stops partway through its tables in
   the Japanese build, and whether its code reads fewer records.
-- Whether the third tier's rules text on the Japanese disc should be
-  written in Japanese (someone who reads the game's Japanese would have to
-  check it) or left in English
+- Whether the Japanese rules text of the third tier reads right: it is
+  Claude's writing, in need of a checker who reads Japanese
   ([the third tier](#the-third-tier-on-the-japanese-disc)).
 - Whether the player-database limits come from the Japanese code (new
   play styles, kit options) or are data PAL corrected.

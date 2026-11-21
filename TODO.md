@@ -56,8 +56,9 @@ What to work on next, most valuable first.
    `club-kits` (the sponsors, kit eras, kit standard, sponsor tiers and
    club presets), `club-eras` (the managers) and `realism` (12 files, 1,009
    textures), the last three ported 2026-11-21 and read back byte for byte
-   but not yet seen in the game, included. Left: the third tier's rules text (drafted in Japanese, waiting
-   for a reader of Japanese in [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-draft)),
+   but not yet seen in the game, included. Left: the third tier's rules text (written in Japanese and on the disc since
+   2026-11-21, in need of a checker who reads Japanese in
+   [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-in-need-of-a-checker)),
    the real names in Japanese (a draft of 690 names is made) and the
    other switches on a Japanese disc in the game (a third-tier disc
    already boots, starts a career, saves and loads in PCSX2)
@@ -493,11 +494,12 @@ aside, and every switch works on the Japanese release.
       disc, and so do LMASTER lite, full and max (`real-names` and
       `third-tier` 2026-11-12, `club-kits`, `club-eras` and `realism`
       2026-11-21). Left:
-      the third tier's rules text in Japanese (the messages keep the
-      retail rules; Nexxus's choice, 2026-11-19: write it in Japanese.
-      A draft is in [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-draft)
-      for a reader of Japanese to check, then `tier_text_edits` gets
-      the Japanese edits), and running a Japanese disc built
+      the third tier's rules text in Japanese (Nexxus's choice,
+      2026-11-19: write it in Japanese; written and built in on
+      2026-11-21, `tier_text_edits_jp`, but **in need of a checker**: no
+      one on the project reads Japanese, so a reader of Japanese must
+      check it in [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-in-need-of-a-checker)),
+      and running a Japanese disc built
       with the switches in the game (a third-tier disc boots, starts a
       career, reaches the tutorial's playoffs and saves and loads,
       Nexxus's reports 2026-11-12)
