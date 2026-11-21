@@ -12,7 +12,9 @@ seven tactical leanings; DOC/PBDATA_FORMAT.md), so those change with him.
 The game reads a club's manager through plOteam_GetManagerNoOffset (SLES
 0x216668), from PLRESOURCESIM.PAC entry 3, record +4 (initteam.py). The
 switch replaces the call to plOteam_GetDb there with code that, for the clubs
-of teams 3 to 441, finds the manager from this plan.
+of teams 3 to 441, finds the manager from this plan. The Japanese release has the same
+function (SLPM_663.16 0x216df8, the same words but for its calls) and the same pool, so the
+switch builds there too and `check`, `info` and `selftest` run over DAT_JP.
 
   Teams 1 and 2 (your club and the rival), the national teams (460 to 542), the VS teams (543
   to 558) and every other team id never change manager: the switch only touches teams 3 to

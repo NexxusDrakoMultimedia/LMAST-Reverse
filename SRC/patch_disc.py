@@ -68,17 +68,18 @@ volume size, the UDF partition length in both partition descriptors and
 the integrity descriptor's size table change, and the UDF end anchor moves
 to the new last sector. Files outside DATA.CVM keep their size.
 
-The Japanese release (SLPM_663.16) takes the same switches except
-realism, which is made for the PAL release (so lmaster-full and
-lmaster-max can't be built for it). third-tier is ported there, but its
-rules text stays as the Japanese game has it. Each switch gives its bytes
+The Japanese release (SLPM_663.16) takes the same switches, so lmaster-lite,
+lmaster-full and lmaster-max build for it (full and max with --copies and
+--dat DAT_JP; realism matches the pack against the Japanese textures).
+third-tier is ported there, but its rules text stays as the Japanese game
+has it. Each switch gives its bytes
 as PAL offsets; on a Japanese disc they are found in its executable and
 overlays with gamever.py (so the PAL files in ISO/ must be there) and
 checked as on PAL, and a jump table's case addresses take the Japanese
 addresses of the same code. A few switches do nothing there, and say so
 in a note: sponsor-negotiation (the release negotiates already),
 vpf-positions (it has no Virtua Pro Football import), drill-names (the
-names are already in place), and club-eras, retail-text,
+names are already in place), and retail-text,
 modern-font and title-banner (they are made for PAL's code, text and
 fonts). mod-saves renames BISLPM-66316-G/C, and fanbase scales the
 Japanese merchandise table, which holds half the PAL bases. See
@@ -4257,6 +4258,7 @@ def _asm(base, items):
 ERA_CAVE, ERA_VAR = CAVE + 0x400, CAVE + 0x500
 ERA_TIERS, ERA_CLUBS, ERA_POOL = CAVE + 0x510, CAVE + 0x590, CAVE + 0x940
 ERA_HOOK, ERA_GETDB = 0x2166D0, 0x2165D8
+CLUB_ERAS_CODE = (ERA_HOOK, ERA_GETDB)      # the Japanese build's are found with gamever.py (`check` lists them)
 ERA_FIRST, ERA_CLUB_COUNT, ERA_SEASONS, ERA_TIER_COUNT = 3, 439, 3, 16
 ERA_CLUB_COUNT_TIER3 = 457          # with the third tier's eras: teams 442-459, the third tier's clubs, too
 tier3_eras = False                  # set by main when third-tier, club-eras and club-kits are all on
@@ -4271,10 +4273,11 @@ def era_club_count():
 eras_offset = 0                                   # set by main from --eras-offset
 
 
-def era_words(offset=None, clubs=None):
+def era_words(offset=None, clubs=None, build=None):
     """The routine at ERA_CAVE, as words (cluberas.cmd_selftest runs them); `offset`
     seasons added to the season (the build's --eras-offset by default), for the first
-    `clubs` clubs from team 3 (era_club_count() by default)."""
+    `clubs` clubs from team 3 (era_club_count() by default). `build` is a Japanese
+    disc's CaveBuild (pwkGen_Keika and plOteam_GetDb are elsewhere there)."""
     offset = eras_offset if offset is None else offset
     clubs = era_club_count() if clubs is None else clubs
 
@@ -4284,7 +4287,7 @@ def era_words(offset=None, clubs=None):
         addiu(T0, A0, -ERA_FIRST), sltiu(T1, T0, clubs),
         ("beqz", T1, "fallback"), NOP,                       # not a club of teams 3-441 (-459)
         addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(A0, 8, SP), sd(T0, 16, SP),
-        jal(KEIKA), NOP,                                     # $v0: the season, from 0
+        jal(_at(build, KEIKA)), NOP,                         # $v0: the season, from 0
         ld(A0, 8, SP), ld(T0, 16, SP),
         sll(T1, V0, 0), slti(T1, T1, 0),                     # 1 in the opening playoffs (season -1)
         movn(V0, ZERO, T1),                                  # the playoffs count as season 0 ...
@@ -4301,7 +4304,7 @@ def era_words(offset=None, clubs=None):
         sw(T4, 0, T1), addiu(V0, T1, -4),                    # a pointer whose +4 is the manager
         ld(RA, 0, SP), addiu(SP, SP, 0x20), jr(RA), NOP,
         ("label", "retail"), ld(RA, 0, SP), ld(A0, 8, SP), addiu(SP, SP, 0x20),
-        ("label", "fallback"), j(ERA_GETDB), NOP]
+        ("label", "fallback"), j(_at(build, ERA_GETDB)), NOP]
     out = _asm(ERA_CAVE, items)
     if 4 * len(out) > ERA_VAR - ERA_CAVE:
         raise ValueError("club-eras' code outgrows its space")
@@ -4313,8 +4316,6 @@ def plan_club_eras(f, img, adopted=()):
     jal in plOteam_GetManagerNoOffset that calls the routine."""
     import cluberas
     import tempfile
-    if img.port is not None:
-        return [], ["note: club-eras: the code is PAL's; the Japanese release is left alone"]
     if (cluberas.TEAM_FIRST, cluberas.CLUBS, cluberas.CLUBS_TIER3, cluberas.ERA, cluberas.TIERS) != (
             ERA_FIRST, ERA_CLUB_COUNT, ERA_CLUB_COUNT_TIER3, ERA_SEASONS, ERA_TIER_COUNT):
         raise ValueError("club-eras: cluberas.py and patch_disc.py disagree on the sizes")
@@ -4329,18 +4330,13 @@ def plan_club_eras(f, img, adopted=()):
     bad = cluberas.problems(plan)
     if bad:
         raise ValueError("club-eras: " + "; ".join(bad))
-    regions = [(ERA_CAVE, words(*era_words()), "the managers' code"),
+    regions = [(ERA_CAVE, words(*era_words(build=CaveBuild(f, img))), "the managers' code"),
                (ERA_TIERS, cluberas.tier_bytes(plan), "the tiers"),
                (ERA_CLUBS, cluberas.club_bytes(plan), "the clubs' tiers and places"),
                (ERA_POOL, cluberas.pool_bytes(plan), "the managers' pool")]
     if ERA_CLUBS + len(regions[2][1]) > ERA_POOL or ERA_POOL + len(regions[-1][1]) > KIT_CAVE:
         raise ValueError("club-eras' tables outgrow their space in the code segment")
-    jobs = list(code_segment_words(f, img))
-    for addr, new, what in regions:
-        off = CAVE_FILE + addr - CAVE
-        held = read_at(f, img, SLES_FILE, off, len(new))
-        jobs.append((SLES_FILE, off, held if held != new else bytes(len(new)), new,
-                     "%s 0x%x (%s at 0x%x)" % (SLES_FILE, off, what, addr)))
+    jobs = list(code_segment_words(f, img)) + _region_jobs(f, img, regions)
     jobs.append(sles_word(ERA_HOOK, jal(ERA_GETDB), jal(ERA_CAVE),
                           "plOteam_GetManagerNoOffset: call the managers' code, not plOteam_GetDb"))
     return word_jobs(f, img, "club-eras", jobs)
@@ -5366,16 +5362,23 @@ def file_realism(f, img, dat):
     pictures in them (texmap.apply_pack)."""
     import tempfile
     import texmap
-    if img.port is not None:
-        raise ValueError("realism is made for the PAL release (the pack is named by PAL hashes)")
     if not realism_pack or not os.path.isdir(realism_pack):
         raise ValueError("--mod realism needs --realism <the pack's folder> (or a clone of "
                          "LMAST-Realism beside this repository)")
     if not dat:
         raise ValueError("--mod realism needs --dat: it matches the pack against DAT")
+    if img.port is not None:
+        # The pack's names are PCSX2 hashes of the textures, so it must be matched against the Japanese
+        # files the pictures go into: a PAL DAT (the default) would match PAL's textures.
+        for rel in REALISM_FILES:
+            if not os.path.exists(os.path.join(dat, rel)) or \
+                    os.path.getsize(os.path.join(dat, rel)) != img.entry(rel).size:
+                raise ValueError("--mod realism on a Japanese disc needs --dat DAT_JP (the extracted Japanese "
+                                 "release): %s differs from the disc's" % rel)
     out = []
     with tempfile.TemporaryDirectory() as tmp:
-        exe = os.path.join(tmp, "SLES_541.51")
+        # named as on the disc: gamever finds the licence table in the Japanese executable by its name
+        exe = os.path.join(tmp, (JP_EXE_FILE if img.port is not None else SLES_FILE)[len(DISC):])
         with open(exe, "wb") as g:
             g.write(read_file(f, img, SLES_FILE)[1])
         texmap.apply_pack(realism_pack, dat, REALISM_BORDER, exe,
@@ -5387,8 +5390,6 @@ def file_realism(f, img, dat):
 def plan_realism(f, img, adopted=()):
     """--mod realism writes no bytes of its own: its packs are whole files
     (file_realism)."""
-    if img.port is not None:
-        raise ValueError("realism is made for the PAL release only")
     return [], ["note: realism: put the pack's pictures in the texture packs"]
 
 
@@ -5938,6 +5939,9 @@ TARGET_HOOKS = {"national-cups": (target_national_cups, [SCHEDULE_FILE, LIST_FIL
                 "sponsor-boards": (target_sponsor_boards, [BUILD_STADIUM_FILE], []),
                 "moving-boards": (target_moving_boards, [BUILD_STADIUM_FILE], []),
                 "club-kits": (target_random_sponsors, [UNIFORM_FILE], UNIFORM_PACKS)}
+# Hooks of switches whose plan leaves the Japanese release alone: the edit is to PAL's messages, which a
+# Japanese MES.PAC doesn't have (487:1204), so the hook must not run on it either.
+PAL_ONLY_HOOKS = ("retail-text",)
 # Hooks that also take the file as DAT holds it (or the image, without
 # --dat), to keep the target's own edits row by row.
 HOOKS_WITH_OLD = ("real-grounds", "sponsor-boards", "moving-boards", "club-kits")
@@ -6304,6 +6308,8 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
     for name, (hook, files, also) in TARGET_HOOKS.items():
         if name not in mods:
             continue
+        if img.port is not None and name in PAL_ONLY_HOOKS:
+            continue                  # its plan leaves the Japanese release alone (a Japanese MES.PAC has other messages)
         for k, (target, src, data) in enumerate(pairs):
             if "#" in target:
                 continue
@@ -6387,6 +6393,8 @@ def cmd_patch(image, out, in_place, args, dat, write_copies, renames=(), mods=()
             mine = adopted.get(name, set())
             clash = touched & ({norm(img.entry(p).path) if img.port and norm(p) == norm(
                 PAL_EXE_FILE) else norm(p) for p in files} - mine)
+            if img.port is not None and name in PAL_ONLY_HOOKS:
+                clash = set()             # it edits nothing on the Japanese release
             if clash:
                 raise SystemExit("--mod %s edits %s; don't patch it as a target too"
                                  % (name, ", ".join(sorted(clash))))

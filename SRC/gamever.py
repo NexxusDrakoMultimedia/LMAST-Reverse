@@ -119,6 +119,7 @@ ADDRESSES = (
     ("sponsortiers", "SPONSOR_TABLE", "SIMPRG.REL", 0x48),
     ("clubpresets", "PRESET_OFFSET", "CEDITPRG.REL", 0x40),
     ("patch_disc", "CLUB_KITS_CODE", "exe", 0x4),
+    ("patch_disc", "CLUB_ERAS_CODE", "exe", 0x4),
 )
 
 

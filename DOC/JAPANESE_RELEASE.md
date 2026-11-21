@@ -34,8 +34,8 @@ The tools take the Japanese folders wherever they take a path:
 present, `python SRC/regress.py run` also runs every check over them as
 `jp_<name>`.
 
-`patch_disc.py` patches a Japanese disc too, with every switch but
-LMAST Realism's ([below](#patching-a-japanese-disc)), and `save.py --iso
+`patch_disc.py` patches a Japanese disc too, with every switch
+([below](#patching-a-japanese-disc)), and `save.py --iso
 ISO_JP` reads and writes Japanese saves
 ([`SAVE_FORMAT.md`](SAVE_FORMAT.md#the-japanese-release)). Still
 PAL-only: the editor and the save editor.
@@ -89,10 +89,10 @@ the Japanese disc):
 
 ## Patching a Japanese disc
 
-`patch_disc.py patch` takes the Japanese image, with every switch but
-`realism` ("made for the PAL release": the pack is named by PAL hashes),
-so LMASTER full and max can't be built for it; LMASTER lite and the
-groups without it can. `third-tier` is ported except for its rules text
+`patch_disc.py patch` takes the Japanese image, with every switch, so
+LMASTER lite, full and max build for it (full and max with `--copies --dat
+DAT_JP`; the modern font, the title banner and the retail text fixes
+leave the release alone with a note). `third-tier` is ported except for its rules text
 ([below](#the-third-tier-on-the-japanese-disc)).
 Every switch must work here before LMASTER 1.0.0 (Nexxus's choice,
 2026-11-01; [`TODO.md`](../TODO.md#the-lmaster-mod)).
@@ -115,8 +115,8 @@ checks the bytes as on PAL, so a place the Japanese build changed is
 refused, not patched.
 
 What each switch finds there (**empirical**, from planning every switch
-on the Redump image, last on 2026-11-12: every switch but `realism`
-plans there, each on its own with the switches it needs):
+on the Redump image, last on 2026-11-21: every switch plans there, each on its
+own with the switches it needs):
 
 | Switch | On the Japanese disc |
 |---|---|
@@ -133,9 +133,9 @@ plans there, each on its own with the switches it needs):
 | `vpf-positions` | nothing to do: the release has no Virtua Pro Football import ([below](#confirmed-from-the-game-code)) |
 | `real-names` | the English names in ASCII in the Japanese text (slot 0, where the game has katakana), in every list `realnames.py` writes in PAL but the three the Japanese `MES.PAC` lacks (100003, 100009 and 100011); the nations' copy, category 7, is numbered from 6000 there (PAL 5000). The mentions of a competition in other messages are left in katakana. The three-letter forms lose their accents. `MES.PAC` and `STATIONMES0.PAC` grow by 5 and 4 sectors and move to the end of the disc; the built disc's `MES.PAC` is byte for byte what `realnames.py apply` writes (**empirical**, 2026-11-12). Not run in the game |
 | `third-tier` | all 93 places plan; the rules text isn't changed ([below](#the-third-tier-on-the-japanese-disc)) |
-| `realism` | refused: its pack is named by PAL hashes |
+| `realism` | ported (2026-11-21). The pack's names are PCSX2 hashes of the textures, and the Japanese disc's textures mostly hash the same: `texmap.py match` finds a disc texture for 1,605 of the pack's 1,613 PNGs (PAL 1,612), and `texmap.py apply` on `DAT_JP` writes 12 files with 1,009 textures (PAL 29 files, 1,032): the crests and match pictures in the five `0SYSTEM` packs, the three `WP_FACILITIES` and four `SC_SIXNATIONS_0n_00` CSP packs. The release has only language slot 0 of the Six Nations packs and one title pack, so the other 15 CSP files of PAL's list do not exist, and its `SPONSOR_TEXTURE_M` and `ADT_TEXCMN` do not hold the Adboards picture (no disc texture for it); 3 crests of the pack (Serie A, Serie C, UEFA Western Europe 2) and the 2 `Icons` have no Japanese counterpart either. Needs `--dat DAT_JP` (`patch_disc.py` refuses a `DAT` that differs from the disc). The 12 files read back from a built disc equal the ones `apply` writes; not yet seen in the game |
 | `club-kits` | ported (2026-11-21): the sponsors' code and the logo gate, the kit eras, the kit standard, the sponsor tiers and the club-creation presets, all in the code segment at `0xe0000`. The hooks are the same words at `0x26eccc` (`pwkTeam_GetUnif`) and `0x2c3608` (`CUniformBuilder::_setup_texture_list`), `pwkGen_Keika` is at `0x244898`, the kit editor's supplier tables are 0x3f40 lower in `SIMPRG.REL`, the sponsor table 0x3ff0 lower and the 32 presets `0x100` lower in `CEDITPRG.REL` (all found through `gamever.py`, listed in its `check`). Built on the Japanese disc and read back byte for byte; not yet seen in the game ([`TESTING.md`](../TESTING.md#newer-switches)) |
-| `club-eras` | nothing done: its code (the managers) is PAL's, and `patch_disc.py` notes it and leaves the release alone |
+| `club-eras` | ported (2026-11-21): the managers' code and tables in the code segment, called from `plOteam_GetManagerNoOffset` (`0x216df8`, the same function as PAL's `0x216668`: its hook word differs only in the `jal` target, `0x216e60`; `pwkGen_Keika` is at `0x244898`, `plOteam_GetDb` at `0x216d68`). `cluberas.py` reads `DAT_JP` as it reads PAL's (the same 1,317-manager pool). Built and read back byte for byte; not yet seen in the game ([`TESTING.md`](../TESTING.md#the-japanese-release)) |
 | `title-banner` | nothing done: the release has one title pack, `CSE/SC_TITLEBG.CSP`, with another picture; `patch_disc.py` notes it and leaves the release alone |
 | `modern-font` | nothing done, by Nexxus's choice (2026-11-13): the release draws language 0 from `FONT_ASCII` and `FONT_KANJI` ([`FONT_FORMAT.md`](FONT_FORMAT.md#the-japanese-builds-fonts-language-0)), and `patch_disc.py` notes it and leaves the release alone |
 | `retail-text` | nothing done: the fixes are to PAL's text |

@@ -56,6 +56,7 @@ the game draws it with several palettes.
 python SRC/texmap.py selfcheck
 python SRC/texmap.py index DAT
 python SRC/texmap.py match <LMAST-Realism>/textures/SLES-54151/replacements DAT
+python SRC/texmap.py match <LMAST-Realism>/textures/SLES-54151/replacements DAT_JP
 ```
 
 - **XXH3 in Python.** The standard library has no XXH3, so `texmap.py`
@@ -205,6 +206,20 @@ pack's pictures. Its first build showed the mini logos in the club
 ranking half transparent (Nexxus's screenshot): the resized mini-crest
 sheets reached alpha 148 and were read as 0 to 255. `pack_picture` now
 holds them at `0x80`, and the rebuilt disc works.
+
+## The Japanese release
+
+The pack is named by the hashes of the PAL textures, but the Japanese
+disc holds most of the same pictures: `match` over `DAT_JP` finds a disc
+texture for 1,605 of the 1,613 PNGs (423 with the palette too; PAL 1,612
+and 430), and `apply` writes 12 files with 1,009 textures (PAL 29 files and
+1,032), **empirical**, 2026-11-21. What is missing there: the Six Nations
+CSP packs of language slots 1 to 6 and the extra title packs (the
+release has one of each), the `Adboards` picture (its `SPONSOR_TEXTURE_M`
+holds another sheet), two `Icons`, a Serie A, a Serie C and a UEFA
+crest. `patch_disc.py --mod realism` on a Japanese disc takes `--dat DAT_JP`
+and the Japanese executable's licence table; the 12 files a built disc
+holds equal `apply`'s output. Not yet seen in the game.
 
 ## Still unknown
 

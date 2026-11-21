@@ -50,13 +50,13 @@ What to work on next, most valuable first.
    ([`TESTING.md`](TESTING.md#the-lmaster-mod),
    [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
 2. **The LMASTER Mod: every switch on the Japanese release**, needed
-   before LMASTER 1.0.0. Every switch of the PAL builds but `club-eras`
-   and `realism` builds there now, `real-names` (English names in
-   ASCII), `third-tier` (its code, save, data and 93 places ported) and
+   before LMASTER 1.0.0. Every switch of the PAL builds builds there now,
+   and so do LMASTER lite, full and max: `real-names` (English names in
+   ASCII), `third-tier` (its code, save, data and 93 places ported),
    `club-kits` (the sponsors, kit eras, kit standard, sponsor tiers and
-   club presets, ported 2026-11-21, read back byte for byte but not yet seen
-   in the game) included. Left: `club-eras`' Japanese port (the managers),
-   `realism` (the pack is named by PAL hashes), the third tier's rules text (drafted in Japanese, waiting
+   club presets), `club-eras` (the managers) and `realism` (12 files, 1,009
+   textures), the last three ported 2026-11-21 and read back byte for byte
+   but not yet seen in the game, included. Left: the third tier's rules text (drafted in Japanese, waiting
    for a reader of Japanese in [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-draft)),
    the real names in Japanese (a draft of 690 names is made) and the
    other switches on a Japanese disc in the game (a third-tier disc
@@ -484,25 +484,20 @@ aside, and every switch works on the Japanese release.
       rises or falls keeps its tier. The game's own rank at run time
       (`pwkOteam_GetWorldClubRank`) would move a sponsor with the club
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#sponsor-tiers))
-- [ ] **rebuild** The Japanese port of `club-eras` (the managers: its
-      code and `cluberas.py`'s tables on the Japanese disc), the last of the
-      eras group that is PAL only. `club-kits` is ported (2026-11-21); see
-      [`TESTING.md`](TESTING.md#the-japanese-release) for its in-game check
-      ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md))
 - [ ] **rebuild** **Needed before LMASTER 1.0.0** (Nexxus's choice,
       2026-11-01): every switch works on the Japanese release
       (SLPM-66316), except the modern font, which may be PAL only
       (Nexxus's choice, 2026-11-13). The release itself is Nexxus's call,
       when testing, features and reverse engineering feel complete; this
-      is its one firm requirement. Every switch but `club-eras` and
-      `realism` builds on the Japanese disc (`real-names` and `third-tier`
-      2026-11-12, `club-kits` 2026-11-21). Left:
+      is its one firm requirement. Every switch builds on the Japanese
+      disc, and so do LMASTER lite, full and max (`real-names` and
+      `third-tier` 2026-11-12, `club-kits`, `club-eras` and `realism`
+      2026-11-21). Left:
       the third tier's rules text in Japanese (the messages keep the
       retail rules; Nexxus's choice, 2026-11-19: write it in Japanese.
       A draft is in [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-draft)
       for a reader of Japanese to check, then `tier_text_edits` gets
-      the Japanese edits), `realism` (so LMASTER full and max can't be built for
-      it), the title banner (below), and running a Japanese disc built
+      the Japanese edits), the title banner (below), and running a Japanese disc built
       with the switches in the game (a third-tier disc boots, starts a
       career, reaches the tutorial's playoffs and saves and loads,
       Nexxus's reports 2026-11-12)

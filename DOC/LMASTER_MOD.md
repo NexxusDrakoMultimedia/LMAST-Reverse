@@ -748,7 +748,7 @@ and EE RAM below the executable is free to `0x100000`; `kit-eras` and
 `kit-standards` grew it again, see [The code segment](#the-code-segment));
 the tiers, the clubs' places and the pool sit at `CAVE + 0x510`,
 `+ 0x590` and `+ 0x940` (`0xe0510`, `0xe0590`, `0xe0940`; the pool was at
-`+ 0x900` before `tier3-eras` made it larger). The switch is PAL only for now, as `random-sponsors` is.
+`+ 0x900` before `tier3-eras` made it larger). The Japanese release gets the same code and tables (ported 2026-11-21: `plOteam_GetManagerNoOffset` is the same function at `0x216df8` with its two calls elsewhere, `pwkGen_Keika` at `0x244898`; `cluberas.py check DAT_JP` finds the same 1,317-manager pool; built and read back byte for byte, not yet seen in the game).
 
 **Where the manager meets the tactics** (**confirmed** in the code, not
 tested in the game): `0x22e610` reads the manager's runtime byte `+0x35`
@@ -821,7 +821,7 @@ third of the clubs each year) and a whole season of play.
 
 ## Kit eras
 
-The kit eras part of `--mod club-kits` (group `eras`, PAL only, in LMASTER full and max;
+The kit eras part of `--mod club-kits` (group `eras`, in LMASTER full and max;
 before 0.6.0 the switch `kit-eras`, which needed `random-sponsors`; built 2026-11-19; Nexxus's idea and every choice below;
 `kiteras.py`, with `kit_words` and `plan_kit_eras` in `patch_disc.py`).
 Every computer club changes kits each time its club era changes (the
@@ -894,7 +894,7 @@ logos have other counts in `SPONSOR_TEXTURE*.PAC`, [`JAPANESE_RELEASE.md`](JAPAN
 
 ## Kit standards
 
-The kit standard part of `--mod club-kits` (group `eras`, PAL only, in LMASTER full and max;
+The kit standard part of `--mod club-kits` (group `eras`, in LMASTER full and max;
 before 0.6.0 the switch `kit-standards`, which needed `kit-eras`; built 2026-11-19; Nexxus's idea and every rule below;
 `kiteras.py` `build_standards` and `std_table_bytes`, `std_words` and
 `plan_kit_standards` in `patch_disc.py`). Every computer club's kits
@@ -1040,7 +1040,7 @@ how the presets look in the club editor.
 
 ## Sponsor tiers
 
-The sponsor tiers part of `--mod club-kits` (group `eras`, PAL only, in LMASTER full and max;
+The sponsor tiers part of `--mod club-kits` (group `eras`, in LMASTER full and max;
 before 0.6.0 the switch `sponsor-tiers`, which needed `random-sponsors`; built 2026-11-19; Nexxus's idea and choices;
 `sponsortiers.py`, with `plan_sponsor_tiers` in `patch_disc.py`). The
 better the club, the bigger its main sponsor: a club's sponsor is drawn
@@ -1720,7 +1720,9 @@ the clone when it is there and changeable. A group or edition that holds
 the switch, such as `lmaster-full`, leaves it out when there is no pack
 and says so; naming `--mod realism` without one is an error. The pack is
 read as it stands each time, so a new commit of it only needs a new
-build. PAL only. It writes seven
+build. The Japanese release has it too (ported 2026-11-21, with `--dat DAT_JP`;
+12 files, 1,009 textures, see [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md#patching-a-japanese-disc);
+not yet seen in the game). On PAL it writes seven
 whole packs (`0SYSTEM/EMBLEM_TEXTURE.PAC`, `FLAG_TEXTURE.PAC`,
 `MATCH_TEXTURE.PAC`, `MINIEMBLEM_TEXTURE.PAC`, `MINIMATCH_TEXTURE.PAC`,
 `SPONSOR_TEXTURE_M.PAC` and `STADIUM/ADT_TEXCMN.PAC`), and `--copies`

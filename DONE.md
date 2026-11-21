@@ -242,6 +242,25 @@ You can build the mod in three editions from named switches
       switches made, and max stays full plus the difficulty groups
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
 
+- [x] `--mod realism` on the Japanese release, so LMASTER full and max
+      build for it (2026-11-21): the pack's PCSX2 names match 1,605 of its
+      1,613 PNGs against the Japanese textures, and `texmap.py apply` on
+      `DAT_JP` writes 12 files (1,009 textures); the build reads the
+      Japanese executable's licence table and refuses a PAL `DAT`. Two
+      bugs of the Japanese full and max builds are fixed: the retail-text
+      hook and its clash check no longer touch a Japanese `MES.PAC`. Built on the Japanese disc with `lmaster-max`, and the code
+      segment and the 12 files read back byte for byte; its check in the
+      game is in `TESTING.md`
+      ([`TEXMAP.md`](DOC/TEXMAP.md#the-japanese-release),
+      [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+- [x] `--mod club-eras` on the Japanese release (2026-11-21): the
+      managers' code and tables, called from the same function as on PAL
+      (`plOteam_GetManagerNoOffset`, its words equal but for two `jal`
+      targets). `cluberas.py` runs over `DAT_JP` (`regress.py` has the
+      Japanese runs), `gamever.py check` lists the hook and `plOteam_GetDb`.
+      Built and read back byte for byte; its check in the game is in
+      `TESTING.md`
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
 - [x] `--mod club-kits` on the Japanese release (2026-11-21): the
       sponsors' code, the logo gate, the kit eras, the kit standard, the
       sponsor tiers and the club-creation presets, which were PAL only.
