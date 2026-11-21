@@ -162,8 +162,8 @@ three editions:
 
 | Edition | What it is |
 |---|---|
-| `lmaster-lite` | the fixes: the first six groups below. Careers keep the original game's save folders |
-| `lmaster-full` | lite, plus `leagues`, `restorations`, `names`, `stadiums`, `graphics`, `eras` and `saves` |
+| `lmaster-lite` | the bug fixes and the restorations of cut content: the first seven groups below. Careers keep the original game's save folders |
+| `lmaster-full` | lite, plus `leagues`, `names`, `stadiums`, `graphics`, `eras` and `saves` |
 | `lmaster-max` | full, plus the difficulty groups `harder-economy` and `balance` |
 
 Each group holds the switches of one feature:
@@ -172,12 +172,12 @@ Each group holds the switches of one feature:
 |---|---|---|
 | `training-fixes` | lite | training camps, drill names and the salesman's items work as intended |
 | `injury-fixes` | lite | two injury-table errors fixed |
-| `club-fixes` | lite | sponsor negotiation, season tickets, PR events, popularity and moving advert boards |
-| `match-fixes` | lite | the rival's manager, pressing, national cups a turn earlier, and the Virtua Pro Football import |
+| `club-fixes` | lite | season tickets, PR event odds, popularity and moving advert boards |
+| `match-fixes` | lite | the rival's manager, pressing, and the Virtua Pro Football import |
 | `text-fixes` | lite | wrong lines in the game's text |
 | `title-screen` | lite | a banner on the title screen naming the LMASTER Mod, its version and its edition |
-| `leagues` | full | a hidden third tier under each second division, and balanced league schedules |
-| `restorations` | full | the cut injury condition lines |
+| `restorations` | lite | cut content brought back: the injury condition lines, main-sponsor negotiation and the Renew Mobile Site PR event |
+| `leagues` | full | a hidden third tier under each second division, balanced league schedules, and the national cups a turn earlier |
 | `names` | full | real names for leagues, clubs, stadiums and national teams, and your club's stadium named after you |
 | `stadiums` | full | every club at a ground of its real size, with sponsor boards |
 | `graphics` | full | LMAST Realism's crests and match pictures, and the game's main text in Roboto Condensed |

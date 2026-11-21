@@ -38,28 +38,23 @@ What to work on next, most valuable first. Checks in the game are not
 tasks here: they are all in [`TESTING.md`](TESTING.md), and the plan below
 assumes they are being done.
 
-1. **The LMASTER Mod: re-assess each switch's edition** (Nexxus's request,
-   2026-11-01): go through every switch, decide whether it is a fix and
-   whether it could break a retail career in progress, and propose moves
-   between lite and full for Nexxus to confirm
-   ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels)).
-2. **Playing a mod: the mod editor and the save editor on the Japanese
+1. **Playing a mod: the mod editor and the save editor on the Japanese
    release**, needed before the reverse engineering counts as complete
    (Nexxus's choice, 2026-11-01). Every LMASTER switch now builds on the
    Japanese disc; the editors still read PAL only
    ([`SAVE_EDITOR_PLAN.md`](DOC/SAVE_EDITOR_PLAN.md#still-unknown)).
-3. **Graphics and sound: the pack writers.** The `ACROBATA` pack (2,137
+2. **Graphics and sound: the pack writers.** The `ACROBATA` pack (2,137
    textures; 4 of LMAST Realism's PNGs) and the KC@P `PackData` packs (kits,
    cut-ins, faces) have no writer, and a changed-size texture in a CSP pack
    is not possible yet. They are also what Nexxus's idea of LMAST Realism's
    kits as licensed kits needs first
    ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing),
    [`TEXMAP.md`](DOC/TEXMAP.md)).
-4. **The end point: a stale-claim linter for `DOC/`.** It flags a doc whose
+3. **The end point: a stale-claim linter for `DOC/`.** It flags a doc whose
    cited address no longer resolves (through `gamever.py`, PAL and
    Japanese), a "Still unknown" item that `DONE.md` already answers, and a
    link whose anchor is gone: the three kinds of drift the docs have had.
-5. **The LMASTER Mod: the real names in Japanese**, waiting for a reader of
+4. **The LMASTER Mod: the real names in Japanese**, waiting for a reader of
    Japanese: a draft of 690 names is made (`SRC/realnames_ja_draft.csv`), and
    the third tier's rules text is written and waits for a checker too
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names),
@@ -466,21 +461,12 @@ aside, and every switch works on the Japanese release.
       and the Apache 2.0 licence text, which `patch_disc.py` already
       looks in), and its changelog should list both
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#modern-font))
-- [ ] **understand** Re-assess each switch's edition (Nexxus's request,
-      2026-11-01): some bug fixes may sit in full instead of lite. A
-      first read: `salesman-items` (in `restorations`) bundles a plain
-      fix, the spikes' and headphones' boosts swapped against their text,
-      with the coach's unused flag, a restoration; `league-balance` (in
-      `leagues`) fixes runs of up to 9 games at one venue but is called
-      an improvement; and the other way, `national-cups` (in lite's
-      `match-fixes`) moves the cups a turn to make their results
-      viewable, closer to an improvement. The rule (Nexxus's,
-      2026-11-01): a fix that can't break a retail career in progress
-      goes in lite, one that may stays in full. Go through every switch:
-      is it a fix, and could it break a retail save in progress (data the
-      save holds, a schedule or club list it was made with); then propose
-      moves for Nexxus to confirm
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
+- [ ] **understand** The save's camps block (block 6, `pwkSche_*`): whether
+      it stores a camp's type number or its list position, which decides
+      whether `camp-types` shifts a camp booked before the change once (the
+      one open point of the edition pass; harmless either way)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels),
+      [`SAVE_FORMAT.md`](DOC/SAVE_FORMAT.md#still-unknown))
 - [ ] **understand** Candidate: the short `EDIT_EMBLEM` tables 93/101/105
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status))
 - [ ] **understand** Candidate: let the unused combination records load,

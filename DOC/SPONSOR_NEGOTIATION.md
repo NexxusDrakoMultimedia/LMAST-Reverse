@@ -10,7 +10,7 @@ The negotiation is still in the PAL game. Its text is translated and its
 code is compiled in. One check switches it off: a function that returns
 0. This doc traces the feature and describes `patch_disc.py --mod
 sponsor-negotiation` (also the flag `--sponsor-negotiation`), which
-turns it back on. The switch is in the `club-fixes` group, so every
+turns it back on. The switch is in the `restorations` group, so every
 edition of the LMASTER Mod has it
 ([`LMASTER_MOD.md`](LMASTER_MOD.md#the-switch-levels)). On a Japanese
 disc it does nothing, because that release negotiates already

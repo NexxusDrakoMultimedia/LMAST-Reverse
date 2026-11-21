@@ -37,12 +37,12 @@ level:
 |---|---|---|---|---|
 | `training-fixes` | camp-types, camp-cities, camp-santiago, camp-clubs, drill-names, salesman-items | yes | yes | yes |
 | `injury-fixes` | injury-value, injury-row | yes | yes | yes |
-| `club-fixes` | sponsor-negotiation, season-status, pr-cycle, mobile-site, overseas-pop, cup-last16, moving-boards | yes | yes | yes |
-| `match-fixes` | rival-manager, press-tendency, national-cups, vpf-styles, vpf-positions | yes | yes | yes |
+| `restorations` | injury-lines, sponsor-negotiation, mobile-site | yes | yes | yes |
+| `club-fixes` | season-status, pr-cycle, overseas-pop, cup-last16, moving-boards | yes | yes | yes |
+| `match-fixes` | rival-manager, press-tendency, vpf-styles, vpf-positions | yes | yes | yes |
 | `text-fixes` | retail-text ([below](#retail-text-fixes)) | yes | yes | yes |
 | `title-screen` | title-banner ([below](#title-banner)) | yes | yes | yes |
-| `leagues` | league-balance, third-tier | – | yes | yes |
-| `restorations` | injury-lines | – | yes | yes |
+| `leagues` | league-balance, national-cups, third-tier | – | yes | yes |
 | `names` | real-names, own-stadium ([below](#real-names)) | – | yes | yes |
 | `stadiums` | special-stadium, real-grounds, sponsor-boards ([below](#stadiums)) | – | yes | yes |
 | `graphics` | realism ([below](#lmast-realism-on-the-disc)), modern-font ([below](#modern-font)) | – | yes | yes |
@@ -98,15 +98,40 @@ Changing the seed or the generator changes the sponsors, the boards, the
 managers and the kits of every Full and Max disc, so it needs a new disc, not a patch of
 an old one.
 
-**Which edition a fix goes in** (Nexxus's rule, 2026-11-01): a bug fix
-that can't break a retail career already in progress goes in lite; one
-that may break such a save stays in full, whose careers go to their own
-folder. Lite keeps the retail save folders, so a career must carry on
-under it as on the retail disc.
+**Which edition a switch goes in** (Nexxus's rule, 2026-11-01, made exact
+2026-11-21): lite is the bug fixes and the restorations of cut content,
+nothing else: no balance changes (those are max's) and no graphical changes
+or other improvements (those are full's). A fix or restoration also has to
+leave a retail career already in progress safe: where it changes something
+the save still depends on, the next time the game uses that thing it must
+work with either the old or the new behaviour, with no chance of
+corruption. A fix that may break such a save stays in full, whose careers
+go to their own folder. Lite keeps the retail save folders, so a career must
+carry on under it as on the retail disc. The title banner is lite's one
+deliberate exception to "nothing graphical": it names the edition and
+version a disc was built from (Nexxus's request, 2026-11-13), and it is in
+every edition.
 
-LMASTER full is the fixes, the third tier, the balanced league
-schedules, the restored injury lines, the real names, the real grounds,
-the graphics, the club eras and the modded disc's own saves; LMASTER max adds the two
+The 2026-11-21 pass over every switch with that rule moved two to
+other editions and regrouped two. `injury-lines` (the cut "two months" and
+"nine months" lines: a code bug and the restored text, computed from the
+remaining days on the fly and stored nowhere) went from full into lite, and
+`sponsor-negotiation` and `mobile-site`, which restore cut content too (the
+main-sponsor negotiation and the Renew Mobile Site PR event; Nexxus's
+word, 2026-11-21: bug fixes and restorations are both lite), moved from
+`club-fixes` into the `restorations` group with it, all three in every
+edition. `national-cups` (it moves the national
+cups' fixtures a turn, the schedule data a loaded career rebuilds its
+fixtures from, as `league-balance`'s changes do) from lite into full, with
+`league-balance` in the `leagues` group. Every other lite switch changes
+numbers, text or code the save does not store; one point is open: whether
+the camps block of the save stores a camp's type number or its list
+position, which decides whether `camp-types` shifts a camp booked before
+the change once (harmless: the old or the new behaviour, no corruption).
+
+LMASTER full is lite, the third tier, the balanced league schedules, the
+national cups a turn earlier, the real names, the real grounds, the
+graphics, the club eras and the modded disc's own saves; LMASTER max adds the two
 difficulty groups, `harder-economy` and `balance` (Nexxus's split,
 2026-10-27). Before that date `lmaster-full` held what `lmaster-max`
 holds now, so a test report from before it that names a full disc means

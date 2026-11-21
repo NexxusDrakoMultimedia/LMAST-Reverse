@@ -69,7 +69,7 @@ it after every check; the Japanese build at `0x20f108`). So Renew
 Mobile Site is cut content: its record is complete (from 2010–11,
 popularity 30,001, priority 99), and so are its mail texts (category
 563, 11233 and 11234), but the game never lists it.
-`patch_disc.py --mod mobile-site` (in the `club-fixes` group, so every
+`patch_disc.py --mod mobile-site` (in the `restorations` group, so every
 edition of the LMASTER Mod has it) makes that store a nop
 ([`LMASTER_MOD.md`](LMASTER_MOD.md#status)), and `clubevent.py show`
 says whether an executable still clears it.

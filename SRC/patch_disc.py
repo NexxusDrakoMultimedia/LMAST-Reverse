@@ -88,24 +88,24 @@ Switches come in three levels (DOC/LMASTER_MOD.md#the-switch-levels),
 and --mod takes names of any level, comma-separated (or repeated).
 `switches` prints the editions, groups and switches.
 Editions: --mod lmaster-lite (or lmaster) is the LMASTER Mod's fixes,
-the groups training-fixes, injury-fixes, club-fixes, match-fixes,
-text-fixes and title-screen; --mod lmaster-full adds the groups leagues,
-restorations, names, stadiums, graphics and saves, and --mod lmaster-max
+the groups training-fixes, injury-fixes, restorations, club-fixes,
+match-fixes, text-fixes and title-screen; --mod lmaster-full adds the groups
+leagues, names, stadiums, graphics, eras and saves, and --mod lmaster-max
 adds the difficulty groups harder-economy and balance to full. Full and
 max always save to their own folders: full's careers in -F, max's in -M
 (mod-saves picks M when any difficulty switch is on), and the VS data of
 both in -V.
 Groups: training-fixes (camp-types, camp-cities, camp-santiago,
 camp-clubs, drill-names, salesman-items), injury-fixes (injury-value,
-injury-row), club-fixes (sponsor-negotiation, season-status, pr-cycle,
-mobile-site, overseas-pop, cup-last16, moving-boards), match-fixes
-(rival-manager, press-tendency, national-cups, vpf-styles,
+injury-row), club-fixes (season-status, pr-cycle,
+overseas-pop, cup-last16, moving-boards), match-fixes
+(rival-manager, press-tendency, vpf-styles,
 vpf-positions), text-fixes (retail-text), title-screen (title-banner),
 harder-economy (facility-tiers, wider-tickets, dearer-ads, sponsor-fees,
 tv-fees, season-demand), balance (injury-odds, overseas-bases,
 transfer-fees, slow-reputation, fanbase, merch-costs,
-pr-costs, camp-costs, tour-costs), leagues (league-balance, third-tier),
-restorations (injury-lines), names (real-names, own-stadium), stadiums
+pr-costs, camp-costs, tour-costs), leagues (league-balance, national-cups,
+third-tier), restorations (injury-lines, sponsor-negotiation, mobile-site), names (real-names, own-stadium), stadiums
 (special-stadium, real-grounds, sponsor-boards), saves (mod-saves),
 graphics (realism, modern-font), eras (club-eras, club-kits), and test-tools
 (skip-tutorial, launcher), which is in no edition.
@@ -6021,10 +6021,9 @@ GROUPS = (       # (name, title, switches)
       "salesman-items")),
     ("injury-fixes", "Injury fixes", ("injury-value", "injury-row")),
     ("club-fixes", "Club fixes",
-     ("sponsor-negotiation", "season-status", "pr-cycle", "mobile-site", "overseas-pop",
-      "cup-last16", "moving-boards")),
+     ("season-status", "pr-cycle", "overseas-pop", "cup-last16", "moving-boards")),
     ("match-fixes", "Match and import fixes",
-     ("rival-manager", "press-tendency", "national-cups", "vpf-styles", "vpf-positions")),
+     ("rival-manager", "press-tendency", "vpf-styles", "vpf-positions")),
     ("text-fixes", "Text fixes", ("retail-text",)),
     ("harder-economy", "Harder economy",
      ("facility-tiers", "wider-tickets", "dearer-ads", "sponsor-fees", "tv-fees",
@@ -6032,8 +6031,8 @@ GROUPS = (       # (name, title, switches)
     ("balance", "Balance",
      ("injury-odds", "overseas-bases", "transfer-fees", "slow-reputation",
       "fanbase", "merch-costs", "pr-costs", "camp-costs", "tour-costs")),
-    ("leagues", "Leagues", ("league-balance", "third-tier")),
-    ("restorations", "Restored content", ("injury-lines",)),
+    ("leagues", "Leagues", ("league-balance", "national-cups", "third-tier")),
+    ("restorations", "Restored content", ("injury-lines", "sponsor-negotiation", "mobile-site")),
     ("names", "Real names", ("real-names", "own-stadium")),
     ("stadiums", "Stadiums", ("special-stadium", "real-grounds", "sponsor-boards")),
     ("graphics", "Graphics", ("realism", "modern-font")),
@@ -6042,18 +6041,22 @@ GROUPS = (       # (name, title, switches)
     ("saves", "Separate saves", ("mod-saves",)),
     ("test-tools", "Test tools", ("skip-tutorial", "launcher")),
 )
-# LMASTER lite is the fixes. LMASTER full adds the leagues, the restored
-# content and its own saves; LMASTER max adds the difficulty groups to it
-# (Nexxus's split, 2026-10-27). Full and max save careers under their
-# own letters (SAVE_LETTERS), so neither mixes with the retail game's.
-LITE_GROUPS = ("training-fixes", "injury-fixes", "club-fixes", "match-fixes", "text-fixes",
-               "title-screen")
-FULL_GROUPS = LITE_GROUPS + ("leagues", "restorations", "names", "stadiums", "graphics", "eras",
-                             "saves")
+# LMASTER lite is the bug fixes and the restorations of cut content (Nexxus's
+# rule, 2026-11-21): nothing that changes the balance, the look or the schedules,
+# and nothing that touches what a retail career in progress holds, so a career
+# carries on under it as on the retail disc. LMASTER full adds the leagues
+# (the third tier, which changes the schedules, and the national cups' turns),
+# the real names, the stadiums, the graphics, the club eras and its own saves;
+# LMASTER max adds the difficulty groups to it (Nexxus's split, 2026-10-27).
+# Full and max save careers under their own letters (SAVE_LETTERS), so neither
+# mixes with the retail game's.
+LITE_GROUPS = ("training-fixes", "injury-fixes", "restorations", "club-fixes", "match-fixes",
+               "text-fixes", "title-screen")
+FULL_GROUPS = LITE_GROUPS + ("leagues", "names", "stadiums", "graphics", "eras", "saves")
 DIFFICULTY_GROUPS = ("harder-economy", "balance")
 EDITIONS = (     # (name, title, groups)
-    ("lmaster-lite", "LMASTER lite (fixes only)", LITE_GROUPS),
-    ("lmaster-full", "LMASTER full (fixes, third tier, restored content; F saves)",
+    ("lmaster-lite", "LMASTER lite (fixes and restorations)", LITE_GROUPS),
+    ("lmaster-full", "LMASTER full (lite, third tier, names, graphics, eras; F saves)",
      FULL_GROUPS),
     ("lmaster-max", "LMASTER max (full and the difficulty groups; M saves)",
      FULL_GROUPS + DIFFICULTY_GROUPS),

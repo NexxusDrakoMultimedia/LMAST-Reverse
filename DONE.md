@@ -269,6 +269,15 @@ You can build the mod in three editions from named switches
       game is in `TESTING.md`
       ([`TEXMAP.md`](DOC/TEXMAP.md#the-japanese-release),
       [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+- [x] Every switch's edition re-assessed (Nexxus's request of 2026-11-01,
+      done 2026-11-21 with the rule made exact: lite is bug fixes and
+      restorations of cut content, no balance, graphical or other
+      improvements, and nothing a retail career in progress can be corrupted
+      by). `injury-lines` went from full into lite, `national-cups` from lite
+      into the full `leagues` group, and `sponsor-negotiation` and
+      `mobile-site` joined `injury-lines` in the `restorations` group (all
+      three in every edition)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
 - [x] `--mod club-eras` on the Japanese release (2026-11-21): the
       managers' code and tables, called from the same function as on PAL
       (`plOteam_GetManagerNoOffset`, its words equal but for two `jal`

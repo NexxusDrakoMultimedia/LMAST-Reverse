@@ -396,8 +396,8 @@ What `patch_disc.py patch` handles ([`REBUILD.md`](DOC/REBUILD.md)):
 - **Switches** (`--mod <name>,...`, or each as a flag of its own).
   The LMASTER Mod ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md), the home of
   every switch) comes in three editions made of groups of switches:
-  `--mod lmaster-lite` (the fixes), `--mod lmaster-full` (lite plus the
-  third tier and the other restored or added content, with the modded
+  `--mod lmaster-lite` (the bug fixes and restorations), `--mod lmaster-full` (lite plus the
+  third tier and the other added content, with the modded
   disc's own saves in `-F`) and `--mod lmaster-max` (full plus the
   difficulty groups, saves in `-M`; both keep VS data in `-V`).
   `--mod` takes a name of any level
