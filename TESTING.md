@@ -657,3 +657,113 @@ Not a goal of their own: these help every other check
 - [ ] *Short.* The launcher entries not yet tried: YAMAZAKI TEST, Talk
       and BG LIGHT TEST
       ([`SQB_FORMAT.md`](DOC/SQB_FORMAT.md#the-developer-launcher))
+
+## Moved from TODO
+
+These were `**test**` tasks in `TODO.md` until 2026-11-21 (Nexxus's request: checks in the game belong here, not in the task list). They are kept as they were, with the findings and the state of each; where a check above covers the same ground, this is its history.
+
+- [ ] **test** A smaller first division (France at 18, two nations
+      changed in one build), the national calendar and club ranking tabs
+      and squad ages, in
+      [`TESTING.md`](TESTING.md#the-starting-season)
+
+- [ ] **test** The kits, the player and crest editors' tabs, the
+      Stadiums tab and the other tabs not yet seen in the game, in
+      [`TESTING.md`](TESTING.md#data)
+
+- [ ] **test** The match policy check and the dribble styles, in
+      [`TESTING.md`](TESTING.md#parameters)
+
+- [ ] **test** A raw line break in a message, in
+      [`TESTING.md`](TESTING.md#text)
+
+- [ ] **test** The widescreen patch on a modded disc, the font and the
+      sound checks, in
+      [`TESTING.md`](TESTING.md#graphics-and-sound) and
+      [`TESTING.md`](TESTING.md#newer-switches)
+
+- [ ] **test** The save editor's pages, the Regulations tab's save and
+      the separate-save folders, in
+      [`TESTING.md`](TESTING.md#playing-a-mod) and
+      [`TESTING.md`](TESTING.md#the-starting-season)
+
+- [ ] **test** The managers of the Club eras switch for LMASTER full and
+      max (Nexxus's idea and choices, 2026-11-19): clubs change manager
+      every 3 seasons, a third of the clubs each year, better clubs
+      getting better managers, every manager unique
+      (`--mod club-eras`, `cluberas.py`). Seen working in PCSX2 for a
+      club in era 1: the new manager, his formations and his tactics
+      reach the computer club's match, and third-tier clubs in era 1 have
+      theirs (Nexxus's states, 2026-11-19). A group-0 club keeps
+      its retail manager and the opening playoffs are unchanged (Nexxus's
+      state on `LMAST-test-0.iso`, 2026-11-19). Left to see: the later
+      eras and a whole season
+      ([`TESTING.md`](TESTING.md#newer-switches),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-eras))
+
+- [ ] **test** The rest of the kits and sponsors (`--mod club-kits`). The
+      kits, the standard, the keeper kits, the club-creation presets, third
+      tier clubs in era 1 and the sponsors by tier are seen (Nexxus's
+      states and reports, 2026-11-19). Left: a third-tier club past era 1,
+      a club's sponsor changing from season to season but staying in its
+      slice, and a top club of a big league showing a big-name sponsor in
+      a career ([`TESTING.md`](TESTING.md#newer-switches),
+      [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-kits))
+
+- [ ] **test** The newer switches and the third tier's checks, in
+      [`TESTING.md`](TESTING.md#the-lmaster-mod) and
+      [`TESTING.md`](TESTING.md#newer-switches)
+
+- [ ] **test** Bug: the rotating electric advert boards (the moving
+      board, advert slot 4) don't show in your own stadium, only the LCD
+      ones, though they show at computer clubs' grounds. Known so far:
+      the moving board needs boards 43 and 52 on in the ground's row, and
+      it wins over the LCD style when both are built. Mostly a level-4
+      ground (Nexxus, 2026-11-10), whose rows have boards 43 and 52 off
+      and the LCD set on. `--mod moving-boards` (lite) now makes those
+      rows like level 3's, so computer clubs' level-4 grounds show the
+      plain boards too. Left: test in PCSX2
+      ([`TESTING.md`](TESTING.md#newer-switches))
+      ([`STADIUM_DIR.md`](DOC/STADIUM_DIR.md#the-request-in-a-match))
+
+- [ ] **test** Bug: a youth candidate's comments can contradict
+      themselves (a great player with a lot of potential, then almost
+      none). Found in the texts: the second line rates star quality or
+      charisma (スター性) but 8657, 8658 and 8660–8663 say "potential";
+      only 8659 says charisma, and German 8659 is wrong. `--mod
+      retail-text` now rewords them as charisma (all five languages).
+      Left: test in PCSX2
+      ([`TESTING.md`](TESTING.md#newer-switches)),
+      and find which values the two lines read
+      ([`EVS_PROCEDURES.md`](DOC/EVS_PROCEDURES.md#youth-candidates-comments-partly-confirmed))
+
+- [ ] **test** Random sponsors and kit suppliers for the clubs you don't
+      manage, drawn again every season (the poll went 4-0 for it,
+      Nexxus, 2026-11-10), with the licensed leagues unlicensed. Done:
+      the sponsors part of `--mod club-kits` (full and max) sets them from the team
+      number and the season, unlicenses the 114 clubs with generated kits
+      from `SRC/kits.csv`, and lets every club's kit draw its logos (the
+      gate was at `0x2c54d8`); seen on Real Betis in PCSX2. Left: the
+      other clubs and leagues in PCSX2
+      ([`TESTING.md`](TESTING.md#newer-switches)),
+      the kits corrected club by club (written from memory with 12 shirt
+      patterns), the other shirt designs checked in the viewer, the
+      Japanese release (the keeper kits of the 114 clubs are made now,
+      with the kit standard of `club-kits`)
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#random-sponsors),
+      [`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-or-generated-the-flag))
+
+- [ ] **test** Automated in-game verification: a harness that loads a
+      save state and reads fields over PINE (`p2state.py` is the start),
+      then checks them against what a mod expects, so a `TESTING.md` item
+      that only needs a value read becomes a `regress.py` check. It runs
+      on Nexxus's own PCSX2 only
+
+- [ ] **test** The rest of the runtime memory map against the running
+      game with `python SRC/ramcheck.py check` (a state in the second half of
+      extra time, where the shoot-out kicks are counted, a live PINE read),
+      in [`TESTING.md`](TESTING.md#the-end-point). `ramcheck.py` follows
+      the heap table, the overlay registry and the career work buffer
+      and checks every static row; the pointer-relative rows (P+, T+,
+      slot+) are not followed yet
+      ([`RAM_MAP.md`](DOC/RAM_MAP.md#for-achievement-authors))
