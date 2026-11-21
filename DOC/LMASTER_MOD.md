@@ -666,8 +666,10 @@ on (below). The table is written from memory of the
 the stripes, halves and bands are approximate; corrections go in the
 CSV. The file's copies in `PRELOAD/SIMFILE0`-`6.PAC` change too, and a
 `UNIFORM_LIST.TBB` target (the editor's Kits tab) keeps its own edited
-rows. Not done: the Japanese release (the code is PAL's), a look at
-every supplier and every league, and the 114 kits seen in a match.
+rows. The Japanese release gets the same code and kits (ported 2026-11-21: the
+hooks, the logo gate and `pwkGen_Keika` found through `gamever.py`; built and read
+back byte for byte, not yet seen in the game). Not done: a look at every supplier
+and every league, and the 114 kits seen in a match.
 
 **With `sponsor-tiers`** the six words of the plain sponsor hash
 (`srl`, `addiu`, `divu`, `mfhi`, `addiu`, `sb`) become a `jal` to a
@@ -872,7 +874,8 @@ teams, the national teams and every id outside 3 to 441 (3 to 459 with
 (Nexxus's rule, as for the other eras switches; the kit editor and the
 Emblem editor only build teams 1 and 2). The main sponsor is
 `random-sponsors`' draw, or [`sponsor-tiers`](#sponsor-tiers)' when that
-is on. The Japanese release is not touched.
+is on. The Japanese release has the same code (the kit supplier tables found in its
+`SIMPRG.REL` through `gamever.py`, `kiteras.py check DAT_JP`; not yet seen in the game).
 
 **The test option.** `--eras-offset N` (0 to 9, default 0, the switch as
 released) applies to `club-eras` and `kit-eras` alike, so the new kits show
@@ -886,7 +889,8 @@ are is [`kit-standards`](#kit-standards)' job.
 **Still unknown:** the kits seen in a match, and a whole career through
 several eras; whether a computer club wearing another supplier's design
 (the loader accepts any design below 209 shirts, 61 shorts and 18 socks)
-shows its logo as it should; the Japanese addresses.
+shows its logo as it should; the Japanese release in the game (its sponsor and supplier
+logos have other counts in `SPONSOR_TEXTURE*.PAC`, [`JAPANESE_RELEASE.md`](JAPANESE_RELEASE.md)).
 
 ## Kit standards
 
@@ -1019,9 +1023,10 @@ only the template you start editing from changes, and the kit editor
 changes any of it. The worst shirt number contrast against shirt colour
 1 among the presets is 1.88 to 1 (`clubpresets.py check`): a few presets
 have a light and a dark colour together, so no number colour is good
-against both. PAL only: the Japanese `CEDITPRG.REL` holds the same
-records 0x100 lower and is not ported. Checked by decoding the patched
-records again (`clubpresets.py selftest`).
+against both. The Japanese `CEDITPRG.REL` holds the same records 0x100 lower
+(found through `gamever.py`, `clubpresets.py selftest ISO_JP/DLL/CEDITPRG.REL DAT_JP`:
+the same 130 patches as PAL's); the switch writes them there too. Checked by decoding
+the patched records again (`clubpresets.py selftest`).
 
 **Still unknown:** the kits seen in a match; what the emblem types, the
 number designs and the collars look like on the shirt, and whether a
@@ -1139,8 +1144,8 @@ beyond that range (the third tier's clubs without `tier3-eras`, and the
 national teams) still draw from all 199 (Nexxus's rule, as for the other
 eras switches). The
 supplier draw is untouched, and the kit eras overwrite it as before. The
-Japanese release is not touched: the fee table is found there through
-`gamever.py` (`sponsortiers.py check DAT_JP` runs), but the code is PAL's.
+Japanese release has the routine too: the fee table is found there through
+`gamever.py` (`sponsortiers.py check DAT_JP`), and the routine is the same leaf code.
 
 **The test option.** None of its own: a club's sponsor changes every
 season through the hash, so a tier's sponsors rotate without any
@@ -1150,7 +1155,7 @@ season through the hash, so a tier's sponsors rotate without any
 (the kit's sponsor number is the texture entry *n* − 1,
 [`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md#the-sponsor-and-supplier-logos-on-a-generated-kit),
 read from the docs and not checked against the images, so a tier's logos
-may not match its names); the Japanese release (the code is not ported);
+may not match its names); the Japanese release in the game;
 whether a tier fixed from the starting world rank, not the live one,
 looks right over a long career ([Planned](#planned)); and the whole
 switch in the game.

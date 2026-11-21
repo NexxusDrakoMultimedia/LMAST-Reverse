@@ -286,12 +286,13 @@ def checks():
         ("cluberas_check", ["cluberas.py", "check", "DAT"], ["DAT"]),
         ("cluberas_selftest", ["cluberas.py", "selftest", "DAT"], ["DAT"]),
         # Kit eras (--mod club-kits, its kit eras): the plan from the kit suppliers' designs, and the machine
-        # code and its chain from the sponsors' code run against it (PAL addresses: no
-        # Japanese run).
+        # code and its chain from the sponsors' code run against it (the Japanese run reads the
+        # supplier tables through gamever.py).
         ("kiteras_info", ["kiteras.py", "info", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         ("kiteras_check", ["kiteras.py", "check", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
         ("kiteras_selftest", ["kiteras.py", "selftest", "DAT"], ["DAT", "ISO/DLL/SIMPRG.REL"]),
-        # The club-creation presets with the kit standard (--mod club-kits, PAL addresses).
+        # The club-creation presets with the kit standard (--mod club-kits; the Japanese file's records
+        # lie 0x100 lower).
         ("clubpresets_info", ["clubpresets.py", "info", "ISO/DLL/CEDITPRG.REL"], ["ISO/DLL/CEDITPRG.REL"]),
         ("clubpresets_patches", ["clubpresets.py", "patches", "ISO/DLL/CEDITPRG.REL", "DAT"], ["ISO/DLL/CEDITPRG.REL", "DAT"]),
         ("clubpresets_check", ["clubpresets.py", "check", "ISO/DLL/CEDITPRG.REL", "DAT"], ["ISO/DLL/CEDITPRG.REL", "DAT"]),
@@ -384,8 +385,7 @@ def _jp(arg):
 # modern font and the title banner are PAL switches (European fonts and
 # title pictures).
 JP_SKIP = {"plrsim_show_free", "snr2_callers_gameprg_param", "font_coverage", "fontmod", "titlebanner",
-           "kiteras_info", "kiteras_check", "kiteras_selftest", "clubpresets_info", "clubpresets_patches",
-           "clubpresets_check", "clubpresets_selftest", "sponsortiers_selftest", "p2state_selftest"}
+           "p2state_selftest"}
 
 
 def jp_checks(pal):

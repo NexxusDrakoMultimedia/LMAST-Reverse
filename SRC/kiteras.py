@@ -48,7 +48,8 @@ Usage:
     python kiteras.py show <DAT> <team> [SIMPRG.REL]  # one club's variants
 
 <DAT> holds PLAYER/UNIFORM_LIST.TBB, PLAYER/COLOR_TBL.TBB, PLAYER/EDIT_UNIFORM_CLUT.HED/.PAC
-and PARAM/PLRESOURCESIM.PAC; SIMPRG.REL is ISO/DLL/SIMPRG.REL by default. The kits are the
+and PARAM/PLRESOURCESIM.PAC; SIMPRG.REL is ISO/DLL/SIMPRG.REL by default (ISO_JP/DLL for DAT_JP:
+the supplier tables are found there through gamever.py). The kits are the
 ones the sponsors part of club-kits leaves (its kits.csv applied).
 """
 import os
@@ -107,11 +108,40 @@ class Plan:
         self.fallbacks = 0                   # away colours drawn from all 96: no allowed colour was free
 
 
+class Rel(bytes):
+    """SIMPRG.REL's bytes that remember their file, so supplier_lists finds the tables in the
+    Japanese build's overlay too (gamever.at)."""
+    path = None
+
+    def __new__(cls, data, path=None):
+        self = super().__new__(cls, data)
+        self.path = path
+        return self
+
+
+def read_rel(path):
+    """A Rel read from the SIMPRG.REL at `path`."""
+    with open(path, "rb") as f:
+        return Rel(f.read(), path)
+
+
+def default_rel(dat):
+    """The SIMPRG.REL that goes with a DAT folder: ISO/DLL for DAT, ISO_JP/DLL for DAT_JP."""
+    head, tail = os.path.split(dat.rstrip("/\\"))
+    return os.path.join(head, tail.replace("DAT", "ISO", 1), "DLL", "SIMPRG.REL")
+
+
 def supplier_lists(rel):
-    """{supplier index 0-6: (shirt designs, shorts designs)} from SIMPRG.REL's bytes."""
-    masks = struct.unpack_from("<7I", rel, SUPPLIER_MASKS)
-    shirt = struct.unpack_from("<%dI" % SHIRTS, rel, SHIRT_MASKS)
-    shorts = struct.unpack_from("<%dI" % SHORTS, rel, SHORTS_MASKS)
+    """{supplier index 0-6: (shirt designs, shorts designs)} from SIMPRG.REL's bytes. A Rel that
+    knows its file reads the tables where that build holds them (the Japanese overlay's are 0x3f40
+    lower)."""
+    at = (lambda a: a)
+    if getattr(rel, "path", None):
+        import gamever
+        at = lambda a: gamever.at(rel.path, a)
+    masks = struct.unpack_from("<7I", rel, at(SUPPLIER_MASKS))
+    shirt = struct.unpack_from("<%dI" % SHIRTS, rel, at(SHIRT_MASKS))
+    shorts = struct.unpack_from("<%dI" % SHORTS, rel, at(SHORTS_MASKS))
     return {s: ([d for d in range(SHIRTS) if shirt[d] & m], [d for d in range(SHORTS) if shorts[d] & m])
             for s, m in enumerate(masks)}
 
@@ -207,8 +237,7 @@ def _draw(rng, major, minor, chance):
 def build(dat, rel=None, last=TEAM_LAST):
     plan = Plan(last)
     if rel is None:
-        with open(SIMPRG_DEFAULT, "rb") as f:
-            rel = f.read()
+        rel = read_rel(default_rel(dat))
     plan.lists = supplier_lists(rel)
     clash = clash_table(dat)
     swatches = uniform.colour_swatches(os.path.join(dat, "PLAYER"))
@@ -705,10 +734,10 @@ def chain_test(pd, plan, table):
 
 def main(argv):
     if len(argv) >= 3 and argv[1] in ("info", "check", "selftest"):
-        rel = open(argv[3], "rb").read() if len(argv) > 3 else None
+        rel = read_rel(argv[3]) if len(argv) > 3 else None
         return {"info": cmd_info, "check": cmd_check, "selftest": cmd_selftest}[argv[1]](argv[2], rel)
     if len(argv) >= 4 and argv[1] == "show":
-        rel = open(argv[4], "rb").read() if len(argv) > 4 else None
+        rel = read_rel(argv[4]) if len(argv) > 4 else None
         return cmd_show(argv[2], argv[3], rel)
     print(__doc__)
     return 1

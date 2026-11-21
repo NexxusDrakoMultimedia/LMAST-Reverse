@@ -78,7 +78,7 @@ checked as on PAL, and a jump table's case addresses take the Japanese
 addresses of the same code. A few switches do nothing there, and say so
 in a note: sponsor-negotiation (the release negotiates already),
 vpf-positions (it has no Virtua Pro Football import), drill-names (the
-names are already in place), and club-kits, club-eras, retail-text,
+names are already in place), and club-eras, retail-text,
 modern-font and title-banner (they are made for PAL's code, text and
 fonts). mod-saves renames BISLPM-66316-G/C, and fanbase scales the
 Japanese merchandise table, which holds half the PAL bases. See
@@ -2114,8 +2114,10 @@ CAMP_EXPLANE_FILE = "PARAM/CAMP_EXPLANE.TBB"
 
 
 def read_file(f, img, file):
+    """(path, the whole file as the image holds it). Not read_at: that moves a PAL code offset to the
+    Japanese file's, and a whole overlay has no offset to move."""
     e = img.entry(file)
-    return e.path, read_at(f, img, e.path, 0, e.size)
+    return e.path, read_raw(f, img, e.path, 0, e.size)
 
 
 def target_camp_types(file, data):
@@ -2723,6 +2725,9 @@ GATE_CAVE = 0xE0000 + 0x3A0                     # CAVE + 0x3a0, after the sponso
 GATE_REAL, GATE_AFTER = 0x2C54E0, 0x2C550C      # the real lists; past the code that picks them
 GATE_DEFAULT = 0x2C5504                         # the default lists: where the hooked beqz went
 NATIONAL_FIRST, NATIONAL_COUNT = 460, 83
+# The places of the executable's code the sponsors' and the logo gate's code hooks or jumps to; the
+# Japanese build's are found with gamever.py (`check` lists them).
+CLUB_KITS_CODE = (SPONSOR_HOOK, SPONSOR_GATE_WORD, GATE_REAL, GATE_DEFAULT, GATE_AFTER, KEIKA)
 # Only the computer clubs (teams 3-459) and the national teams are ever touched (Nexxus's rule,
 # 2026-11-19: never your club, the rival or the VS teams, whose sponsors are the game's own;
 # a kit-editing freeze in club creation came with the first draft, which widened the gate to
@@ -2745,10 +2750,17 @@ def sponsor_hash(team, season):
     return 1 + (x >> 11) % SPONSOR_KINDS, SUPPLIER_FIRST + (z >> 16) % SUPPLIER_KINDS
 
 
-def sponsor_cave():
+def _at(build, addr):
+    """The executable's address `addr` in the build the code is for: PAL's own when `build` is None
+    (the emulators of cluberas.py and kiteras.py run PAL's words), else CaveBuild.addr's."""
+    return addr if build is None else build.addr(addr)
+
+
+def sponsor_cave(build=None):
     """The code at SPONSOR_CAVE, as words. Only teams 3-542 (the computer clubs and the national
     teams) get a sponsor and a supplier; any other team that reaches the hook is left as the
-    game left it, sponsor 0 and supplier 0."""
+    game left it, sponsor 0 and supplier 0. `build` is the CaveBuild of a Japanese disc (its
+    pwkGen_Keika is elsewhere)."""
     a, b, c = sponsor_mults()
     guard = _asm(SPONSOR_CAVE, [
         addiu(T0, S1, -3), sltiu(T0, T0, NATIONAL_FIRST + NATIONAL_COUNT - 3),
@@ -2756,7 +2768,7 @@ def sponsor_cave():
         sb(ZERO, 4, S2), sb(ZERO, 5, S2), jr(RA), NOP,
         ("label", "write")])
     body = [addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(V1, 8, SP),
-            jal(KEIKA), NOP,
+            jal(_at(build, KEIKA)), NOP,
             lui(T0, a >> 16), ori(T0, T0, a & 0xFFFF), mult3(T1, S1, T0),
             lui(T0, b >> 16), ori(T0, T0, b & 0xFFFF), mult3(T2, V0, T0),
             addu(T1, T1, T2),                             # x = team * A + season * B
@@ -2777,7 +2789,7 @@ def sponsor_cave():
     return out
 
 
-def gate_cave():
+def gate_cave(build=None):
     """The words at GATE_CAVE: $v1 is the team id (loaded at 0x2c54bc), $v0 stays as
     the delay slot of the hooked word left it (nonzero for the player, the rival and the VS
     teams: the game's own test). A computer club (3-459) goes to the real lists, a national
@@ -2789,12 +2801,12 @@ def gate_cave():
         addiu(AT, V1, -NATIONAL_FIRST), sltiu(AT, AT, NATIONAL_COUNT),
         ("bnez", AT, "national"), NOP,                       # a national team
         ("beqz", V0, "default"), NOP,                        # teams 0, 1, 2, the VS teams, the rest:
-        ("label", "real"), j(GATE_REAL), NOP,                # the game's own test, as retail
-        ("label", "default"), j(GATE_DEFAULT), NOP,
+        ("label", "real"), j(_at(build, GATE_REAL)), NOP,    # the game's own test, as retail
+        ("label", "default"), j(_at(build, GATE_DEFAULT)), NOP,
         ("label", "national"),
         lw(t4, 0x50, SP), lw(t4, 4, t4),                     # the sponsor: the default list
         lw(t7, 0x38, SP), lw(t7, 4, t7),                     # the supplier: its own list
-        j(GATE_AFTER), NOP])
+        j(_at(build, GATE_AFTER)), NOP])
     if 4 * len(out) > CAVE + 0x400 - GATE_CAVE:
         raise ValueError("the logo gate outgrows its space")
     return out
@@ -2826,23 +2838,22 @@ def plan_random_sponsors(f, img, adopted=()):
     that call it, and UNIFORM_LIST.TBB with the licensed clubs' generated
     kits (and its SIMFILE copies)."""
     import uniform
-    if img.port is not None:
-        return [], ["note: random-sponsors: the code is PAL's; the Japanese release is left alone"]
-    new = words(*sponsor_cave())
-    off = CAVE_FILE + SPONSOR_CAVE - CAVE
-    held = read_at(f, img, SLES_FILE, off, len(new))
-    gate_new = words(*gate_cave())
-    gate_held = read_at(f, img, SLES_FILE, CAVE_FILE + GATE_CAVE - CAVE, len(gate_new))
+    build = CaveBuild(f, img)
+    new = words(*sponsor_cave(build))
+    off = build.cave_file + SPONSOR_CAVE - CAVE
+    held = read_raw(f, img, build.exe, off, len(new))
+    gate_new = words(*gate_cave(build))
+    gate_held = read_raw(f, img, build.exe, build.cave_file + GATE_CAVE - CAVE, len(gate_new))
     if gate_held == gate_new:
         gate_held = bytes(len(gate_new))
     jobs, notes = word_jobs(f, img, "random-sponsors", code_segment_words(f, img) + [
-        (SLES_FILE, off, held if held != new else bytes(len(new)), new,
-         "%s 0x%x (the sponsors' code at 0x%x)" % (SLES_FILE, off, SPONSOR_CAVE)),
+        (build.exe, off, held if held != new else bytes(len(new)), new,
+         "%s 0x%x (the sponsors' code at 0x%x)" % (build.exe, off, SPONSOR_CAVE)),
         sles_word(SPONSOR_HOOK, sb(ZERO, 5, S2), jal(SPONSOR_CAVE),
                   "pwkTeam_GetUnif: call the sponsors' code, not supplier 0"),
         sles_word(SPONSOR_HOOK + 8, sb(ZERO, 4, S2), NOP, "pwkTeam_GetUnif: not sponsor 0"),
-        (SLES_FILE, CAVE_FILE + GATE_CAVE - CAVE, gate_held, gate_new,
-         "%s 0x%x (the logo gate's code at 0x%x)" % (SLES_FILE, CAVE_FILE + GATE_CAVE - CAVE,
+        (build.exe, build.cave_file + GATE_CAVE - CAVE, gate_held, gate_new,
+         "%s 0x%x (the logo gate's code at 0x%x)" % (build.exe, build.cave_file + GATE_CAVE - CAVE,
                                                     GATE_CAVE)),
         sles_word(SPONSOR_GATE_WORD, beqz(V0, 10), j(GATE_CAVE),
                   "CUniformBuilder::_setup_texture_list: the sponsor and supplier logo lists "
@@ -4357,7 +4368,7 @@ sponsor_tiers = False                                     # set by main with --m
 kit_standards = False                                     # set by main with --mod club-kits
 
 
-def kit_words(offset=None, clubs=None):
+def kit_words(offset=None, clubs=None, build=None):
     """The routine at KIT_CAVE, as words (kiteras.cmd_selftest runs them); `offset` seasons
     are added to the season as in era_words (the build's --eras-offset by default), for the
     first `clubs` clubs from team 3 (era_club_count() by default)."""
@@ -4371,7 +4382,7 @@ def kit_words(offset=None, clubs=None):
         addiu(T0, S1, -kiteras.TEAM_FIRST), sltiu(T1, T0, clubs),
         ("beqz", T1, "out"), NOP,                            # not a club of teams 3-441 (-459)
         addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(V1, 8, SP), sd(T0, 16, SP),
-        jal(KEIKA), NOP,                                     # $v0: the season, from 0
+        jal(_at(build, KEIKA)), NOP,                         # $v0: the season, from 0
         ld(T0, 16, SP),
         sll(T1, V0, 0), slti(T1, T1, 0),                     # 1 in the opening playoffs (season -1)
         movn(V0, ZERO, T1),
@@ -4403,7 +4414,7 @@ def kit_words(offset=None, clubs=None):
     return out
 
 
-def std_words(offset=None, clubs=None):
+def std_words(offset=None, clubs=None, build=None):
     """The routine at STD_CAVE, as words (kiteras.cmd_selftest runs them): the kit standard for
     the clubs of teams 3-441 (-459), whatever their era, from kiteras.py's standards table (4
     bytes an entry, the entry 0 in era 0, else 1 + (era - 1) mod 6): per side the six side bytes
@@ -4429,7 +4440,7 @@ def std_words(offset=None, clubs=None):
         addiu(T0, S1, -kiteras.TEAM_FIRST), sltiu(T1, T0, clubs),
         ("beqz", T1, "out"), NOP,                            # not a club of teams 3-441 (-459)
         addiu(SP, SP, -0x20), sd(RA, 0, SP), sd(V1, 8, SP), sd(T0, 16, SP),
-        jal(KEIKA), NOP,
+        jal(_at(build, KEIKA)), NOP,
         ld(T0, 16, SP),
         sll(T1, V0, 0), slti(T1, T1, 0),
         movn(V0, ZERO, T1),
@@ -4470,7 +4481,11 @@ def _kit_plan(f, img, switch):
                 with open(os.path.join(tmp, sub, name), "wb") as g:
                     g.write(data)
         _, rel = read_file(f, img, NEGO_FILE)
-        plan = kiteras.build(tmp, rel, last)
+        rel_path = os.path.join(tmp, "SIMPRG.REL")
+        with open(rel_path, "wb") as g:
+            g.write(rel)
+        # the Japanese overlay holds the supplier tables elsewhere: kiteras finds them through gamever
+        plan = kiteras.build(tmp, kiteras.Rel(rel, rel_path if img.port is not None else None), last)
         bad = kiteras.problems(plan, tmp)
     if bad:
         raise ValueError("%s: " % switch + "; ".join(bad))
@@ -4478,13 +4493,14 @@ def _kit_plan(f, img, switch):
 
 
 def _region_jobs(f, img, regions):
-    """Cave jobs for [(address, new bytes, what)]."""
+    """Cave jobs for [(address, new bytes, what)], in the code segment of this disc's build."""
+    build = CaveBuild(f, img)
     jobs = []
     for addr, new, what in regions:
-        off = CAVE_FILE + addr - CAVE
-        held = read_at(f, img, SLES_FILE, off, len(new))
-        jobs.append((SLES_FILE, off, held if held != new else bytes(len(new)), new,
-                     "%s 0x%x (%s at 0x%x)" % (SLES_FILE, off, what, addr)))
+        off = build.cave_file + addr - CAVE
+        held = read_raw(f, img, build.exe, off, len(new))
+        jobs.append((build.exe, off, held if held != new else bytes(len(new)), new,
+                     "%s 0x%x (%s at 0x%x)" % (build.exe, off, what, addr)))
     return jobs
 
 
@@ -4492,14 +4508,13 @@ def plan_kit_eras(f, img, adopted=()):
     """Jobs for --mod kit-eras: the code segment, the kit routine and its table in it. The
     sponsors' code already calls the routine (random-sponsors, which this switch needs)."""
     import kiteras
-    if img.port is not None:
-        return [], ["note: kit-eras: the code is PAL's; the Japanese release is left alone"]
     plan = _kit_plan(f, img, "kit-eras")
     table = kiteras.table_bytes(plan)
     if KIT_TABLE + len(table) > STD_TABLE:
         raise ValueError("kit-eras' table outgrows its space in the code segment")
     jobs = list(code_segment_words(f, img)) + _region_jobs(
-        f, img, [(KIT_CAVE, words(*kit_words()), "the kit code"), (KIT_TABLE, table, "the kit table")])
+        f, img, [(KIT_CAVE, words(*kit_words(build=CaveBuild(f, img))), "the kit code"),
+                 (KIT_TABLE, table, "the kit table")])
     return word_jobs(f, img, "kit-eras", jobs)
 
 
@@ -4510,19 +4525,25 @@ def plan_kit_standards(f, img, adopted=()):
     """Jobs for --mod kit-standards: the standards' routine and table. The kit code (kit-eras,
     which this switch needs) jumps on to the routine at its end."""
     import kiteras
-    if img.port is not None:
-        return [], ["note: kit-standards: the code is PAL's; the Japanese release is left alone"]
     import clubpresets
     plan = _kit_plan(f, img, "kit-standards")
     table = kiteras.std_table_bytes(plan)
     if STD_TABLE + len(table) > SPONSOR_PICK:
         raise ValueError("kit-standards' table outgrows its space in the code segment")
     jobs = list(code_segment_words(f, img)) + _region_jobs(
-        f, img, [(STD_CAVE, words(*std_words()), "the standards' code"), (STD_TABLE, table, "the standards' table")])
+        f, img, [(STD_CAVE, words(*std_words(build=CaveBuild(f, img))), "the standards' code"),
+                 (STD_TABLE, table, "the standards' table")])
     # The 32 presets a new club's kits start from, in CEDITPRG.REL, get the standard too (the rival's
     # record is left alone: the rival is never touched).
+    # On the Japanese disc the records lie 0x100 lower: the range is placed once (Port.map), the patches
+    # are planned at their PAL offsets, and word_jobs moves each to the file's own.
     _, rel = read_file(f, img, CEDIT_FILE)
-    for off, old, new in clubpresets.standard_presets(rel, clubpresets.Plan(plan.swatches, plan.clash)):
+    shift = 0
+    if img.port is not None:
+        shift = img.port.map(CEDIT_FILE, clubpresets.PRESET_OFFSET,
+                             clubpresets.CLUBPRESETS_END - clubpresets.PRESET_OFFSET)[1] - clubpresets.PRESET_OFFSET
+    for off, old, new in clubpresets.standard_presets(rel, clubpresets.Plan(plan.swatches, plan.clash), shift=shift):
+        off -= shift
         if off < clubpresets.RIVAL_OFFSET:
             jobs.append((CEDIT_FILE, off, old, new, "%s 0x%x (a club-creation preset's standard)" % (CEDIT_FILE, off)))
     return word_jobs(f, img, "kit-standards", jobs)
@@ -4533,8 +4554,6 @@ def plan_sponsor_tiers(f, img, adopted=()):
     this switch needs) calls the routine where it hashes the sponsor."""
     import sponsortiers
     import tempfile
-    if img.port is not None:
-        return [], ["note: sponsor-tiers: the code is PAL's; the Japanese release is left alone"]
     last = 459 if tier3_eras else 441
     with tempfile.TemporaryDirectory() as tmp:
         os.makedirs(os.path.join(tmp, "PARAM"))

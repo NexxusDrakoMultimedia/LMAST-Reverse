@@ -295,6 +295,17 @@ edition plays through a season.
       that a season's end moves one club each way as on the PAL release,
       and that the third tier itself stays hidden
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc))
+- [ ] A Japanese disc with `--mod club-kits` (ported 2026-11-21, built and
+      read back byte for byte, not seen in the game): build it with
+      `python SRC/patch_disc.py patch "<the Japanese image>" out.iso --mod
+      club-kits --dat DAT_JP`, start a career, and in a match look at a
+      computer club's kit: a sponsor and a supplier logo on the shirt (as on
+      PAL), a new kit from era 1 on (build with `--eras-offset 3` to start
+      there, or wait for a new season), and a club-creation preset's
+      number showing on the front. Report what shows; a blank
+      sponsor would mean the Japanese sponsor textures are numbered
+      differently ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-kits),
+      [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
 - [ ] *Short.* A Japanese disc with `--mod real-names`: build it with
       `python SRC/patch_disc.py patch "<the Japanese image>" out.iso
       --mod real-names --copies --dat DAT_JP`, start a career, and look

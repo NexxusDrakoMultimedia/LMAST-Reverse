@@ -113,6 +113,12 @@ ADDRESSES = (
     ("sounddat", "MUSIC_TABLE", "exe", 0x40),
     ("uniform", "LICENCE_TABLE", "exe", 0x40),
     ("uniform", "DESCRIPTOR_TABLE", "exe", 0x40),
+    ("kiteras", "SHIRT_MASKS", "SIMPRG.REL", 0x40),
+    ("kiteras", "SHORTS_MASKS", "SIMPRG.REL", 0x40),
+    ("kiteras", "SUPPLIER_MASKS", "SIMPRG.REL", 0x1c),
+    ("sponsortiers", "SPONSOR_TABLE", "SIMPRG.REL", 0x48),
+    ("clubpresets", "PRESET_OFFSET", "CEDITPRG.REL", 0x40),
+    ("patch_disc", "CLUB_KITS_CODE", "exe", 0x4),
 )
 
 

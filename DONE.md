@@ -242,6 +242,17 @@ You can build the mod in three editions from named switches
       switches made, and max stays full plus the difficulty groups
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
 
+- [x] `--mod club-kits` on the Japanese release (2026-11-21): the
+      sponsors' code, the logo gate, the kit eras, the kit standard, the
+      sponsor tiers and the club-creation presets, which were PAL only.
+      The code builders take the build's addresses (`CaveBuild.addr`), the
+      supplier tables and presets are found through `gamever.py`, and
+      `regress.py` runs the three tools over `DAT_JP`. Built on the
+      Japanese disc and read back byte for byte; its check in the game is
+      in `TESTING.md`
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-kits),
+      [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+
 ## The end point
 
 Every folder of `DAT/` has a doc and a tool, and the game code is mapped.

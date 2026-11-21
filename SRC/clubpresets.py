@@ -35,17 +35,20 @@ game builds a keeper kit for your club and the rival from UNIFORM_GK.TBB (DOC/UN
 The patches lie inside 0x150a0-0x15aef, where CEDITPRG.REL has no relocation site.
 
 Japanese release: its CEDITPRG.REL holds the same records 0x100 lower (presets from 0x14fa0, the
-rival at 0x159a0); this module patches PAL offsets only.
+rival at 0x159a0). Every function takes `shift`, the offset to add to the PAL constants for the file
+at hand (0 for PAL; shift_of(path) finds it through gamever.py), and the commands work out the
+shift from the file's path.
 
 Usage (from the repo root; DAT is the extracted DATA.ISO, default "DAT"):
-    python SRC/clubpresets.py info     <CEDITPRG.REL>        # each preset's key bytes
+    python SRC/clubpresets.py info     <CEDITPRG.REL>        # each preset's key bytes (PAL or Japanese)
     python SRC/clubpresets.py patches  <CEDITPRG.REL> [DAT]  # the (offset, old, new) byte patches
     python SRC/clubpresets.py check    <CEDITPRG.REL> [DAT]  # every patched preset is valid, no clash
     python SRC/clubpresets.py selftest <CEDITPRG.REL> [DAT]  # patch, re-decode, compare
 
-API: presets(rel) -> (list of 32 dicts, rival dict); make_plan(dat) -> a stand-in for kiteras'
-plan (.swatches, .clash); standard_presets(rel, plan) -> [(offset, old bytes, new bytes)];
-apply_patches(rel, patches) -> bytes; standard_rel(rel, plan) -> the patched REL bytes.
+API: presets(rel, shift) -> (list of 32 dicts, rival dict); make_plan(dat) -> a stand-in for
+kiteras' plan (.swatches, .clash); standard_presets(rel, plan, dat, shift) -> [(offset, old bytes,
+new bytes)]; apply_patches(rel, patches) -> bytes; standard_rel(rel, plan, dat, shift) -> the patched
+REL bytes; shift_of(path) -> the shift for the CEDITPRG.REL at `path`.
 """
 import os
 import struct
@@ -77,11 +80,18 @@ def make_plan(dat="DAT"):
     return Plan(uniform.colour_swatches(os.path.join(dat, "PLAYER")), kiteras.clash_table(dat))
 
 
-def record_offset(index):
+def shift_of(path):
+    """The offset to add to the PAL constants for the CEDITPRG.REL at `path`: 0 for PAL's, -0x100 for
+    the Japanese release's (found with gamever.at, so a file that has no counterpart raises ValueError)."""
+    import gamever
+    return gamever.at(path, PRESET_OFFSET) - PRESET_OFFSET
+
+
+def record_offset(index, shift=0):
     """File offset of record 0-31 (a preset) or 32 (the rival's)."""
     if not 0 <= index < RECORDS:
         raise ValueError("record %d: 0-%d" % (index, RECORDS - 1))
-    return PRESET_OFFSET + index * PRESET_SIZE
+    return PRESET_OFFSET + shift + index * PRESET_SIZE
 
 
 def _record(rel, offset):
@@ -94,13 +104,13 @@ def _record(rel, offset):
     return out
 
 
-def presets(rel):
+def presets(rel, shift=0):
     """([the 32 presets decoded], the rival's record decoded). Each is a dict: offset, flag, sponsor,
     supplier, tail (the 2 padding bytes), and per side 'home' and 'away' a dict of tuples: 'side' (6
     bytes), 'outfield' and 'keeper' (15 bytes each)."""
-    if len(rel) < CLUBPRESETS_END or rel[:4] != b"SNR2":
-        raise ValueError("not the PAL CEDITPRG.REL (an SNR2 file of at least 0x%x bytes)" % CLUBPRESETS_END)
-    recs = [_record(rel, record_offset(i)) for i in range(RECORDS)]
+    if len(rel) < CLUBPRESETS_END + shift or rel[:4] != b"SNR2":
+        raise ValueError("not a CEDITPRG.REL (an SNR2 file of at least 0x%x bytes)" % (CLUBPRESETS_END + shift))
+    recs = [_record(rel, record_offset(i, shift)) for i in range(RECORDS)]
     return recs[:PRESET_COUNT], recs[PRESET_COUNT]
 
 
@@ -115,14 +125,14 @@ def standard_side(plan, side, kit):
     return bytes((shirt_emb, shorts_emb, design, 1, shorts_emb, 1)), bytes(numbers)
 
 
-def standard_presets(rel, plan=None, dat="DAT"):
+def standard_presets(rel, plan=None, dat="DAT", shift=0):
     """[(file offset, old bytes, new bytes)]: the changes that give the 32 presets and the rival's record
     the kit standard (module docstring), per outfield kit a patch of the six side bytes and one of kit
     bytes 12-14, each only where it differs. 66 patches at most."""
     plan = plan or make_plan(dat)
     out = []
     for index in range(RECORDS):
-        base = record_offset(index)
+        base = record_offset(index, shift)
         for name, side_at, kit_at in SIDES:
             old_side, old_kit = rel[base + side_at:base + side_at + 6], rel[base + kit_at:base + kit_at + 15]
             side, tail = standard_side(plan, old_side, old_kit)
@@ -143,24 +153,26 @@ def apply_patches(rel, patches):
     return bytes(out)
 
 
-def standard_rel(rel, plan=None, dat="DAT"):
+def standard_rel(rel, plan=None, dat="DAT", shift=0):
     """CEDITPRG.REL's bytes with every preset and the rival's record given the kit standard."""
-    return apply_patches(rel, standard_presets(rel, plan, dat))
+    return apply_patches(rel, standard_presets(rel, plan, dat, shift))
 
 
-def relocation_sites(path, lo=PRESET_OFFSET, hi=CLUBPRESETS_END):
-    """The relocation sites of the REL at `path` inside [lo, hi): none, for the records."""
+def relocation_sites(path, lo=PRESET_OFFSET, hi=CLUBPRESETS_END, shift=0):
+    """The relocation sites of the REL at `path` inside [lo + shift, hi + shift): none, for the records."""
     import snr2
+    lo, hi = lo + shift, hi + shift
     m = snr2.Snr2(path)
     return sorted(set(s for s, *_ in m.ext if lo <= s < hi) | set(s for s, _ in m.local if lo <= s < hi))
 
 
-def problems(rel, plan):
+def problems(rel, plan, shift=0):
     """[reason] for every record of `rel` that does not have the kit standard (empty: all do)."""
     bad = []
-    recs = presets(rel)
+    recs = presets(rel, shift)
     for rec in recs[0] + [recs[1]]:
-        who = "rival" if rec["offset"] == RIVAL_OFFSET else "preset %d" % ((rec["offset"] - PRESET_OFFSET) // PRESET_SIZE)
+        who = "rival" if rec["offset"] == RIVAL_OFFSET + shift else "preset %d" % (
+            (rec["offset"] - PRESET_OFFSET - shift) // PRESET_SIZE)
         for name, _, _ in SIDES:
             side, kit = rec[name]["side"], rec[name]["outfield"]
             tag = "%s %s" % (who, name)
@@ -200,9 +212,10 @@ def _show(rec, who):
     return lines
 
 
-def cmd_info(rel):
-    recs, rival = presets(rel)
-    print("%d presets from 0x%x, the rival's record at 0x%x" % (len(recs), PRESET_OFFSET, RIVAL_OFFSET))
+def cmd_info(rel, shift=0):
+    recs, rival = presets(rel, shift)
+    print("%d presets from 0x%x, the rival's record at 0x%x" % (len(recs), PRESET_OFFSET + shift,
+                                                                RIVAL_OFFSET + shift))
     designs = set()
     for i, rec in enumerate(recs + [rival]):
         for line in _show(rec, "rival" if i == PRESET_COUNT else "preset %d" % i):
@@ -218,23 +231,23 @@ def cmd_info(rel):
     return 1 if bad else 0
 
 
-def cmd_patches(rel, dat):
-    patches = standard_presets(rel, dat=dat)
+def cmd_patches(rel, dat, shift=0):
+    patches = standard_presets(rel, dat=dat, shift=shift)
     for offset, old, new in patches:
         print("0x%05x  %s -> %s" % (offset, old.hex(" "), new.hex(" ")))
     print("%d patches, %d bytes" % (len(patches), sum(len(o) for _, o, _ in patches)))
     return 0
 
 
-def cmd_check(rel, dat, path=None):
+def cmd_check(rel, dat, shift=0, path=None):
     plan = make_plan(dat)
-    patched = standard_rel(rel, plan)
-    bad = problems(patched, plan)
+    patched = standard_rel(rel, plan, shift=shift)
+    bad = problems(patched, plan, shift)
     if path:
-        sites = relocation_sites(path)
+        sites = relocation_sites(path, shift=shift)
         if sites:
             bad.append("relocation sites inside the records: %s" % ", ".join("0x%x" % s for s in sites))
-    recs, rival = presets(patched)
+    recs, rival = presets(patched, shift)
     worst = min(min(kiteras.contrast(plan.swatches[r[n]["outfield"][12]], plan.swatches[r[n]["outfield"][1]])
                     for r in recs + [rival] for n in ("home", "away")), 99)
     print("%d records checked, worst shirt number contrast against shirt colour 1: %.2f%s" % (
@@ -242,12 +255,12 @@ def cmd_check(rel, dat, path=None):
     return 1 if bad else 0
 
 
-def cmd_selftest(rel, dat, path=None):
+def cmd_selftest(rel, dat, shift=0, path=None):
     plan = make_plan(dat)
-    patches = standard_presets(rel, plan)
+    patches = standard_presets(rel, plan, shift=shift)
     patched = apply_patches(rel, patches)
     bad = []
-    old, new = presets(rel), presets(patched)
+    old, new = presets(rel, shift), presets(patched, shift)
     for before, after in zip(old[0] + [old[1]], new[0] + [new[1]]):
         for key in ("flag", "sponsor", "supplier", "tail"):
             if before[key] != after[key]:
@@ -265,23 +278,23 @@ def cmd_selftest(rel, dat, path=None):
     # nothing outside the patches differs, the patches stay in the records, and a second run finds nothing
     mask = bytearray(len(rel))
     for offset, o, n in patches:
-        if offset < PRESET_OFFSET or offset + len(o) > CLUBPRESETS_END:
+        if offset < PRESET_OFFSET + shift or offset + len(o) > CLUBPRESETS_END + shift:
             bad.append("patch at 0x%x leaves the records" % offset)
         mask[offset:offset + len(o)] = b"\x01" * len(o)
     if any(a != b and not m for a, b, m in zip(rel, patched, mask)):
         bad.append("bytes outside the patches changed")
     if len(patched) != len(rel):
         bad.append("the length changed")
-    if standard_presets(patched, plan):
+    if standard_presets(patched, plan, shift=shift):
         bad.append("a second run still has patches")
     try:
         apply_patches(patched, patches[:1])
         bad.append("a patch applied over the wrong old bytes")
     except ValueError:
         pass
-    bad += problems(patched, plan)
+    bad += problems(patched, plan, shift)
     if path:
-        sites = relocation_sites(path)
+        sites = relocation_sites(path, shift=shift)
         if sites:
             bad.append("relocation sites inside the records: %s" % sites)
     print("selftest: %d patches (%d bytes), %d records re-decoded%s" % (
@@ -294,11 +307,12 @@ def main(argv):
         with open(argv[2], "rb") as f:
             rel = f.read()
         dat = argv[3] if len(argv) > 3 else "DAT"
+        shift = shift_of(argv[2])
         if argv[1] == "info":
-            return cmd_info(rel)
+            return cmd_info(rel, shift)
         if argv[1] == "patches":
-            return cmd_patches(rel, dat)
-        return {"check": cmd_check, "selftest": cmd_selftest}[argv[1]](rel, dat, argv[2])
+            return cmd_patches(rel, dat, shift)
+        return {"check": cmd_check, "selftest": cmd_selftest}[argv[1]](rel, dat, shift, argv[2])
     print(__doc__)
     return 1
 
