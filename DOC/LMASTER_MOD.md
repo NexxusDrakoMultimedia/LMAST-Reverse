@@ -1766,7 +1766,11 @@ carries them to the `PRELOAD` copies. The work is `texmap.py apply`
   pixels (the picture is scaled down by 4), as Realism's logos have
   (Nexxus's request and choice, 2026-11-07; the mini-crest sheets
   already had it);
-- the **kits stay Realism-only** (Nexxus, 2026-11-07): a kit part has up
+- the **kits stay Realism-only** (Nexxus, 2026-11-07, confirmed 2026-11-22
+  when the idea of putting them on the disc as licensed kits was dropped:
+  it is pure LMASTER work and not worth doing; Realism's kit textures also
+  replace the game's own in PCSX2 whatever the club, a player-created one
+  included, and Nexxus is winding LMAST Realism down): a kit part has up
   to 38 palettes in the pack and the disc keeps one, so they are not put
   on the disc.
 

@@ -111,7 +111,8 @@ can hold only one of them, so putting the kits on the disc is not a
 texture replacement but a change to how the kits are made
 ([`UNIFORM_FORMAT.md`](UNIFORM_FORMAT.md)). **Nexxus's choice, 2026-11-07:
 the kits stay Realism-only**, a PCSX2 texture pack, and are not put on
-the disc.
+the disc (confirmed 2026-11-22: the idea of licensing every club's kit
+was dropped, as pure LMASTER work that is not worth doing).
 
 ```bash
 python SRC/texmap.py match <LMAST-Realism>/textures/SLES-54151/replacements DAT --csv map.csv

@@ -38,14 +38,7 @@ What to work on next, most valuable first. Checks in the game are not
 tasks here: they are all in [`TESTING.md`](TESTING.md), and the plan below
 assumes they are being done.
 
-1. **Graphics and sound: LMAST Realism's kits on the disc** (Nexxus's idea,
-   2026-11-10, below). The pack writers it needed now exist (`packdata.py
-   replace` for the `PLPACK_HOME`/`AWAY` kit packs, `acrobata.py replace`); what is
-   left is a finished kit picture per club, the licence and descriptor tables
-   grown, and the descriptor bytes for each club
-   ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-kits),
-   [`TEXMAP.md`](DOC/TEXMAP.md)).
-2. **The LMASTER Mod: the real names in Japanese**, waiting for a reader of
+1. **The LMASTER Mod: the real names in Japanese**, waiting for a reader of
    Japanese: a draft of 690 names is made (`SRC/realnames_ja_draft.csv`), and
    the third tier's rules text is written and waits for a checker too
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names),
@@ -268,20 +261,6 @@ chosen folders are seen on a disc in the game.
       copy would be rewritten for a new size, and no picture of LMAST Realism
       needs it yet
       ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing))
-- [ ] **understand** Idea (Nexxus, 2026-11-10; reopens the 2026-11-07
-      choice that the kits stay Realism-only): LMAST Realism's kits on
-      the disc as licensed kits, by widening the licence from the 116
-      Italian, Spanish and Dutch clubs to the clubs of the six leagues.
-      What it takes, none of it started: a finished shirt, shorts and
-      socks picture per club, home and away, with the keeper kit
-      (Realism has the parts with a picture per palette, not a picture
-      per club, so each would be built from a club's design and
-      colours); a writer for the `PLPACK_HOME`/`AWAY` packs (the
-      `PackData` writer above); the licence table and the descriptor table
-      grown and moved into the code segment (addresses and row layout in
-      `UNIFORM_FORMAT.md`); and the descriptor bytes for each club
-      ([`UNIFORM_FORMAT.md`](DOC/UNIFORM_FORMAT.md#licensed-kits),
-      [`TEXMAP.md`](DOC/TEXMAP.md))
 
 ## Playing a mod
 
