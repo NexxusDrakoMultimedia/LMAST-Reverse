@@ -45,28 +45,11 @@ What to work on next, most valuable first.
    `--mod balance` switches and `pr-cycle`, the lower cups' seeded
    brackets, and the `-V` VS folder (the third tier's transfer windows,
    season's end, saving and loading are tested). The test disc is
-   `LMAST-test-season4.iso`, built 2026-10-31, with its test sheet
-   `names/test-sheet-season.md`
+   `LMAST-test-season4.iso` (built 2026-10-31, since deleted, so build it
+   again), with its test sheet `names/test-sheet-season.md`
    ([`TESTING.md`](TESTING.md#the-lmaster-mod),
    [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#improvements)).
-2. **Graphics and sound: LMAST Realism on the disc.** `svr.py` writes
-   textures and `texmap.py` maps the pack onto the disc: 1,612 of its
-   1,613 PNGs have a disc texture, 1,600 of them in plain `.PAC` packs
-   that `pac.py replace` writes, 8 in `CSE/*.CSP` packs that
-   `csp.py replace` writes and 4 in the `ACROBATA` pack, which has no
-   writer. `texmap.py apply` writes the crests and match
-   pictures into copies of their packs (799 textures), and `--mod
-   realism` (LMASTER full and max) builds them into a disc, which works
-   in PCSX2. Nexxus's scope (2026-11-12): the pack's `Fixes`, `Adboards`
-   and `Leagues` folders go on the disc, all 73 files (66 in plain packs,
-   7 in CSP packs); `Intro` waits for LMASTER's own intros, and `Rival`
-   stays out (an upscale made from mipmaps, largely incompatible). The `Fixes`,
-   `Adboards` and `Leagues` pictures are seen in the game, the CSP ones
-   included (Nexxus's report, 2026-11-19).
-   The kits stay Realism-only (a PCSX2 texture pack)
-   ([`TEXMAP.md`](DOC/TEXMAP.md),
-   [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
-3. **The LMASTER Mod: every switch on the Japanese release**, needed
+2. **The LMASTER Mod: every switch on the Japanese release**, needed
    before LMASTER 1.0.0. Every switch of the PAL builds but the eras
    group and `realism` builds there now, `real-names` (English names in
    ASCII) and `third-tier` (its code, save, data and 93 places ported)
@@ -78,32 +61,42 @@ What to work on next, most valuable first.
    other switches on a Japanese disc in the game (a third-tier disc
    already boots, starts a career, saves and loads in PCSX2)
    ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc)).
-4. **The starting season: a smaller first division in the game**
+3. **The starting season: a smaller first division in the game**
    ([`TESTING.md`](TESTING.md#the-starting-season)): France at
    18 from the Season tab, and two nations changed in one build; only
    England at 22 is tested
    ([`SCHEDULE_FORMAT.md`](DOC/SCHEDULE_FORMAT.md#where-the-clubs-come-from)).
-5. **The LMASTER Mod: the eras group in the game** (`club-eras` and
-   `club-kits`, built 2026-11-19; `LMAST-test-3b.iso` has the offset 3,
-   `LMAST-test-0.iso` none). Seen (Nexxus's states and reports,
-   2026-11-19): the new managers, the kits, the keeper kits, the club
-   presets, the third tier's clubs in era 1, the sponsors falling with the
-   tier, and a club's sponsor number being its logo's number. The
-   group-0 club keeping its retail manager and the opening playoffs
-   retail are seen on a release build (`LMAST-test-0.iso`). Left: a whole
-   season played through, a third-tier club past era 1, and a sponsor
-   changing from season to season ([`TESTING.md`](TESTING.md#newer-switches)). The
-   old switch names are aliases of the merged ones.
-6. **The LMASTER Mod: the other newest switches in the game.** Each is
-   built on a test disc and waits for a look: `modern-font` and `title-banner`
-   (seen on a few screens, 2026-11-13; the font's stray pixels, reported
-   and fixed 2026-11-14, are gone on a rebuilt disc; the rest of the
-   screens still to go through), `club-kits`' sponsors (seen on Real Betis and England's
-   national team; the other clubs, leagues and the generated Italian,
-   Spanish and Dutch kits are left), `moving-boards` and the charisma
+4. **The LMASTER Mod: the newest switches in the game.** The test discs
+   (`LMAST-test-3b.iso` with the eras offset 3, `LMAST-test-0.iso` with
+   none) were deleted after their checks, so build them again.
+   *The eras group* (`club-eras` and `club-kits`, built 2026-11-19). Seen
+   (Nexxus's states and reports, 2026-11-19): the new managers, the kits,
+   the keeper kits, the club presets, the third tier's clubs in era 1,
+   the sponsors falling with the tier, a club's sponsor number being its
+   logo's number, and, on a release build, a group-0 club keeping its
+   retail manager and the opening playoffs staying retail. Left: a whole
+   season played through, a third-tier club past era 1, a sponsor
+   changing from season to season, and the sponsors on other clubs,
+   leagues and the generated Italian, Spanish and Dutch kits (seen on
+   Real Betis and England's national team only). The old switch names are
+   aliases of the merged ones.
+   *The rest:* `modern-font` and `title-banner` (seen on a few screens,
+   2026-11-13; the stray pixels are gone on a rebuilt disc; the other
+   screens are still to go through), `moving-boards` and the charisma
    line of `retail-text` (both built 2026-11-10)
    ([`TESTING.md`](TESTING.md#newer-switches),
    [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#status)).
+5. **Graphics and sound: the rest of LMAST Realism on the disc.** The
+   crests, match pictures and the `Fixes`, `Adboards` and `Leagues`
+   folders (73 files, the CSP ones included) are on a disc through `--mod
+   realism` and seen in the game (Nexxus's report, 2026-11-19). Of the
+   pack's 1,613 PNGs, 1,612 have a disc texture; the 4 in the `ACROBATA`
+   pack have no writer. `Intro` waits for LMASTER's own intros, `Rival`
+   stays out (an upscale made from mipmaps, largely incompatible), and the
+   kits stay Realism-only (a PCSX2 texture pack, unless Nexxus's idea in
+   the Graphics and sound section is taken up)
+   ([`TEXMAP.md`](DOC/TEXMAP.md),
+   [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#lmast-realism-on-the-disc)).
 
 ## The goals, and what each still needs
 
@@ -116,7 +109,7 @@ in the same order.
 | [**Data**](#data) | players, staff, clubs, kits, crests and flags, facilities, training, camps, tours, the tactics presets, the PR events, the player links, and the stadiums' looks and boards: writers and tabs | the remaining player and staff fields; the other stadium tables |
 | [**Parameters**](#parameters) | every `PARAM/` table's layout is known and `tbb.py replace` swaps any table; the economy's constants in the executable are traced and changed by named switches | the open fields of the parameter files, the match AI's files and the match parameters |
 | [**Text**](#text) | every message in every language, with a writer and the Text tab; real names for every league, club and nation | the screen-set variables and a few message categories |
-| [**Graphics and sound**](#graphics-and-sound) | textures to PNG, models to OBJ and glTF, sound to WAV and MIDI; kits, crests and stadium looks edited as data; every texture file rebuilt and rewritten, with LMAST Realism's crests, match pictures and Fixes, Adboards and Leagues folders on a disc (the CSP pictures not yet seen in the game) | the `ACROBATA` and `PackData` pack writers and a changed-size texture in a CSP pack; the kits stay Realism-only |
+| [**Graphics and sound**](#graphics-and-sound) | textures to PNG, models to OBJ and glTF, sound to WAV and MIDI; kits, crests and stadium looks edited as data; every texture file rebuilt and rewritten, with LMAST Realism's crests, match pictures and Fixes, Adboards and Leagues folders on a disc, seen in the game | the `ACROBATA` and `PackData` pack writers and a changed-size texture in a CSP pack; the kits stay Realism-only |
 | [**Playing a mod**](#playing-a-mod) | xdelta patches against the Redump image, CSO, ZSO and CHD inputs, separate saves for a modded disc, the players' guide, the save editor | faster CHD decoding; the save editor's Candidates page; a Japanese save edited and played, and both editors on the Japanese release |
 | [**The LMASTER Mod**](#the-lmaster-mod) | lite, full and max build, with most switches tested in PCSX2; every switch but `realism` builds on the Japanese release | the in-game checks of the newer switches, a Japanese disc run in the game, the candidates and the bugs reported in play |
 | [**The end point**](#the-end-point) | every folder of `DAT/` has a doc and a tool; about 12,600 symbols are named; the Japanese release is extracted and read through `gamever.py` | every doc's "Still unknown" list; the editors on the Japanese release |
@@ -294,7 +287,8 @@ the disc.
 and MIDI. `svr.py` rebuilds every texture file and writes a picture into
 a texture; `csp.py` writes same-size textures in CSP packs (all 489 PAL
 and 438 Japanese packs rebuild byte for byte). LMAST Realism's crests and
-match pictures are on a disc through `--mod realism`, tested in PCSX2.
+match pictures and its `Fixes`, `Adboards` and `Leagues` folders are on a
+disc through `--mod realism`, tested in PCSX2.
 `--mod modern-font` draws the main text in a new face (PAL).
 
 **Done when:** every texture file can be written back and the pack's
