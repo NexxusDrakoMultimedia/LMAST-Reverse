@@ -278,6 +278,16 @@ You can build the mod in three editions from named switches
       `mobile-site` joined `injury-lines` in the `restorations` group (all
       three in every edition)
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
+- [x] `doclint.py`, the stale-claim linter for the Markdown (2026-11-22):
+      `info` checks every relative link and `#anchor` (GitHub's slugs), every
+      `python SRC/...` command (the tool and its command exist, SRC/ paths
+      exist), every `sles_disasm.py` symbol and address a doc cites (with a
+      note for a PAL address the Japanese build lacks, through `gamever.py`),
+      and the style rules (no em dash, the SPDX lines). The docs were clean
+      when it first ran, and it flags a deliberately broken scratch doc for
+      each kind. It is a `regress.py` check (`doclint`) and a step of
+      AGENTS.md's "Before you finish"
+      ([`AGENTS.md`](AGENTS.md#before-you-finish))
 - [x] The save editor and the mod editor on the Japanese release
       (2026-11-21; Nexxus's choice of 2026-11-01): `saveedit.py` takes the
       release from a save's folder name (`BISLPM-66316-` reads with `ISO_JP/`

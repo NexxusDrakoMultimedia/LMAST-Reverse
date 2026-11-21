@@ -45,11 +45,7 @@ assumes they are being done.
    kits as licensed kits needs first
    ([`SVR_FORMAT.md`](DOC/SVR_FORMAT.md#writing),
    [`TEXMAP.md`](DOC/TEXMAP.md)).
-2. **The end point: a stale-claim linter for `DOC/`.** It flags a doc whose
-   cited address no longer resolves (through `gamever.py`, PAL and
-   Japanese), a "Still unknown" item that `DONE.md` already answers, and a
-   link whose anchor is gone: the three kinds of drift the docs have had.
-3. **The LMASTER Mod: the real names in Japanese**, waiting for a reader of
+2. **The LMASTER Mod: the real names in Japanese**, waiting for a reader of
    Japanese: a draft of 690 names is made (`SRC/realnames_ja_draft.csv`), and
    the third tier's rules text is written and waits for a checker too
    ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#real-names),
@@ -548,10 +544,10 @@ and the Japanese release is extracted and read by the same tools through
 has no effect on the game, on both releases, and the editors work on the
 Japanese release as on PAL.
 
-- [ ] **understand** A stale-claim linter for `DOC/`: flags a doc whose
-      cited address no longer resolves (through `gamever.py`, PAL and
-      Japanese), a "Still unknown" item that `DONE.md` already answers,
-      and a link whose anchor is gone
+- [ ] **understand** The stale-claim linter's missing half: a "Still unknown"
+      item that `DONE.md` already answers (`doclint.py` checks links,
+      commands, disassembly claims and style; whether an item is answered
+      needs a reader, or a rule for what "answered" looks like)
 - [ ] **write** A shared library of the parsers both games use (`pac`,
       `tbb`, `svr`) for LMAST-Reverse and VPF-Reverse, so a fix lands
       once. It cuts across the one-script-per-tool rule, so do it only if

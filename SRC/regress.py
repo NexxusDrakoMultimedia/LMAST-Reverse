@@ -340,6 +340,8 @@ def checks():
         # Every executable and overlay address the tools use, translated into
         # the build by gamever.py (in PAL each must come out as itself).
         ("gamever", ["gamever.py", "check", "ISO"], ["ISO/SLES_541.51", "ISO/DLL"]),
+        # The docs' links, commands, disassembly claims and style (doclint.py): no `!!` is the baseline.
+        ("doclint", ["doclint.py", "info"], ["ISO/SLES_541.51"]),
     ]
     mes = "DAT/MESSAGE/MES.PAC"
     for kind in ("EVENT", "NEWS", "MAIL"):

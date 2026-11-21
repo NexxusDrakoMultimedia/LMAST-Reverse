@@ -361,10 +361,13 @@ kept as it was received.
 - The regression run (see [Regression checks](#regression-checks)) shows
   only the differences you meant. A change to comments or docstrings
   only should show none.
-- Every `python SRC/...` command you wrote in a doc runs as written.
-- Every link and `#anchor` you wrote or touched resolves, and no heading
-  you renamed leaves a broken link behind.
-- No em dashes: `grep -rnP "\xe2\x80\x94" *.md DOC SRC` finds none.
+- `python SRC/doclint.py info` prints no `!!`: every link and `#anchor`
+  resolves (no heading you renamed leaves a broken link behind), every
+  `python SRC/...` command in a doc names a real tool and command, every
+  disassembly address and symbol a doc cites resolves, there is no em dash
+  and every file starts with the two SPDX lines. It does not check that
+  a command runs as written or that a claim is true: run the commands you
+  wrote.
 - Every new file starts with the two SPDX lines.
 - A new tool is in the README's tool table, dependency table and doc
   index, and its checks are in `regress.py`. A new switch is in
