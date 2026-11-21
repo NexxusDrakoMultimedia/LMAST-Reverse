@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Nexxus Drako Multimedia
-"""A version banner on the game's title screen (PAL, European languages).
+"""A version banner on the game's title screen (PAL, European languages; the Japanese release too).
 
 The title screen is one 512x512 picture, the texture `sc_titlebg<n>_01` of
 `CSE/SC_TITLEBG1.CSP` to `SC_TITLEBG6.CSP` (one pack a language, entry 2;
@@ -16,16 +16,27 @@ takes the nearest palette entry, and every other pixel keeps its index (the
 logo is byte for byte as it was). The size, format and palette stay, so the
 pack keeps its length (`csp.py replace`).
 
+The Japanese release has one title pack, `CSE/SC_TITLEBG.CSP`, and no picture with the logo's
+palette: its scene draws the stadium photograph (`sc_titlebg00`, entry 3, 512x512, 8 bits, 256
+photo colours) and lays the logo band, a faint map of Europe and the menu over it. The banner
+goes on the photograph, in the sky at the top left (10, 10), where the scene draws nothing.
+The photograph has no navy or gold, so `stamp_jp` makes room in its palette: the 40 colours
+that cost the picture least (few pixels, a near neighbour) are folded into their nearest
+neighbours (the worst move is about 19 in RGB distance) and the banner, brightened because the
+scene draws the photograph at colour 0xbe of 0xff, takes the 40 places. The size, format and
+pack length stay.
+
 Usage:
     python titlebanner.py preview <font.ttf> <out.png> [--version 0.5.0] [--edition Full]
-    python titlebanner.py info    <SC_TITLEBG1.CSP> <font.ttf> [--version 0.5.0] [--edition Full]
+    python titlebanner.py info    <SC_TITLEBG1.CSP | SC_TITLEBG.CSP> <font.ttf> [--version 0.5.0] [--edition Full]
 
 The options default to version 0.5.0 and edition Full. `preview` stamps
 DAT/CSE/SC_TITLEBG1.CSP of this repository's folder and saves the banner
 at four times its size on the logo; `info` stamps the pack it is given,
 reads the picture back, and checks that only the banner's rectangle
-changed.
+changed (on the Japanese pack, that every other pixel is the same or its palette neighbour).
 """
+import collections
 import os
 import sys
 
@@ -35,6 +46,11 @@ import svr
 TEXTURE_ENTRY = 2                   # the title picture's place in SC_TITLEBG<n>.CSP
 POSITION = (8, 44)                  # top-left of the banner in the picture
 SIZE = (140, 66)
+JP_PACK = "SC_TITLEBG.CSP"          # the Japanese release's title pack
+JP_ENTRY = 3                        # its stadium photograph, sc_titlebg00
+JP_POSITION = (10, 10)              # top-left of the banner on the photograph
+JP_COLOURS = 40                     # palette entries the banner takes from the photograph
+JP_GAIN = 255 / 190                 # the scene draws the photograph at colour 0xbe: brighten the banner to match
 SCALE = 4                           # the banner is drawn this many times too large
 CHAMFER = 9                         # corner cut, in pixels: the logo is a hexagon
 GOLD = ((255, 226, 90), (232, 120, 24))         # top, bottom of the border and title
@@ -148,10 +164,62 @@ def stamp(blob, banner, position=POSITION):
     return svr.encode_svr(tex, body)
 
 
-def stamp_pack(pack, banner, position=POSITION):
-    """The CSP `pack` with its title picture stamped."""
+def _distance(p, q):
+    return sum((a - b) ** 2 for a, b in zip(p[:3], q[:3]))
+
+
+def stamp_jp(blob, banner, position=JP_POSITION, colours=JP_COLOURS):
+    """The Japanese title photograph (an SVR) with `banner` (RGBA) drawn at `position`. The
+    photograph's palette has no room for the banner's colours, so the `colours` that cost it least
+    (pixel count times the distance to the nearest other colour) are folded into their nearest
+    neighbours, and the banner, composited over the photograph and brightened by JP_GAIN, is reduced
+    to `colours` colours that take their places. Needs pillow."""
+    from PIL import Image
+    tex = svr.parse_svr(blob)
+    if (tex.width, tex.height, tex.bpp) != (512, 512, 8):
+        raise ValueError("the title photograph is %dx%d, %d bpp, not 512x512 at 8 bpp"
+                         % (tex.width, tex.height, tex.bpp))
+    px = list(tex.pixels())
+    count = collections.Counter(px)
+    visible = [c for c in count if c[3] != 0]
+    remove = max(0, len(count) + colours - 256)
+    cost = {c: count[c] * min(_distance(c, d) for d in visible if d != c) for c in visible}
+    gone = set(sorted(visible, key=cost.get)[:remove])
+    keep = [c for c in visible if c not in gone]
+    remap = {c: min(keep, key=lambda k: _distance(c, k)) for c in gone}
+    px = [remap.get(p, p) for p in px]
+    x0, y0 = position
+    bw, bh = banner.size
+    bpx = banner.load()
+    region = {}
+    for y in range(bh):
+        for x in range(bw):
+            r, g, b, a = bpx[x, y]
+            if a == 0:
+                continue
+            r, g, b = (min(255, round(v * JP_GAIN)) for v in (r, g, b))
+            i = (y0 + y) * 512 + x0 + x
+            pr, pg, pb, _ = px[i]
+            t = a / 255
+            region[i] = (round(r * t + pr * (1 - t)), round(g * t + pg * (1 - t)), round(b * t + pb * (1 - t)))
+    where = sorted(region)
+    strip = Image.new("RGB", (len(where), 1))
+    strip.putdata([region[i] for i in where])
+    q = strip.quantize(colors=colours, method=Image.Quantize.MEDIANCUT)
+    pal = q.getpalette()
+    for i, k in zip(where, q.tobytes()):
+        px[i] = (pal[3 * k], pal[3 * k + 1], pal[3 * k + 2], 255)
+    if len(set(px)) > 256:
+        raise ValueError("the stamped photograph has %d colours" % len(set(px)))
+    return svr.encode_svr(tex, svr.body_from_pixels(tex, px, new_palette=True))
+
+
+def stamp_pack(pack, banner, position=None, jp=False):
+    """The CSP `pack` with its title picture stamped (`jp`: the Japanese pack's photograph)."""
     ents, _ = csp.split_csp(pack)
-    new = stamp(ents[TEXTURE_ENTRY][0], banner, position)
+    if jp:
+        return csp.replace_entry(pack, JP_ENTRY, stamp_jp(ents[JP_ENTRY][0], banner, position or JP_POSITION))
+    new = stamp(ents[TEXTURE_ENTRY][0], banner, position or POSITION)
     return csp.replace_entry(pack, TEXTURE_ENTRY, new)
 
 
@@ -174,15 +242,19 @@ def cmd_info(pack_path, font_path, opts):
     with open(pack_path, "rb") as f:
         pack = f.read()
     banner = draw(font_path, opts["version"], opts["edition"])
-    new = stamp_pack(pack, banner)
+    jp = os.path.basename(pack_path).upper() == JP_PACK
+    new = stamp_pack(pack, banner, jp=jp)
     problems = []
     if len(new) != len(pack):
         problems.append("the pack is %d bytes, was %d" % (len(new), len(pack)))
     old_e, _ = csp.split_csp(pack)
     new_e, _ = csp.split_csp(new)
+    entry = JP_ENTRY if jp else TEXTURE_ENTRY
     for i, (a, b) in enumerate(zip(old_e, new_e)):
-        if i != TEXTURE_ENTRY and a != b:
+        if i != entry and a != b:
             problems.append("entry %d changed" % i)
+    if jp:
+        return info_jp(pack_path, svr.parse_svr(old_e[entry][0]), svr.parse_svr(new_e[entry][0]), banner, problems)
     t0, t1 = svr.parse_svr(old_e[TEXTURE_ENTRY][0]), svr.parse_svr(new_e[TEXTURE_ENTRY][0])
     if t0.split()[0] != t1.split()[0]:
         problems.append("the palette changed")
@@ -201,6 +273,38 @@ def cmd_info(pack_path, font_path, opts):
         problems.append("%d pixels outside the banner's rectangle changed" % outside)
     print("%s: banner %dx%d at (%d, %d), %d of %d pixels of its rectangle changed, %d outside it"
           % (os.path.basename(pack_path), bw, bh, x0, y0, changed, bw * bh, outside))
+    for p in problems:
+        print("  !! " + p)
+
+
+def info_jp(pack_path, t0, t1, banner, problems):
+    """The Japanese pack's check: the photograph keeps its size and 256 colours, every pixel outside the
+    banner's rectangle is the same or moved to a near palette neighbour (at most 19 in RGB distance), and
+    the corners the banner leaves transparent keep the photograph."""
+    a, b = t0.pixels(), t1.pixels()
+    x0, y0 = JP_POSITION
+    bw, bh = banner.size
+    bpx = banner.load()
+    outside = moved = worst = 0
+    for y in range(512):
+        for x in range(512):
+            i = y * 512 + x
+            inside = x0 <= x < x0 + bw and y0 <= y < y0 + bh
+            if inside and bpx[x - x0, y - y0][3] != 0:
+                continue
+            if a[i] != b[i]:
+                moved += 1
+                worst = max(worst, _distance(a[i], b[i]) ** 0.5)
+                if a[i][3] != b[i][3]:
+                    problems.append("a pixel changed its alpha")
+                    break
+    if worst > 20:
+        problems.append("a photograph pixel moved by %.0f in RGB distance" % worst)
+    colours = len(set(b))
+    if colours > 256:
+        problems.append("%d colours" % colours)
+    print("%s: banner %dx%d at (%d, %d) on the photograph, %d pixels outside it moved to a palette neighbour "
+          "(worst %.1f), %d colours" % (os.path.basename(pack_path), bw, bh, x0, y0, moved, worst, colours))
     for p in problems:
         print("  !! " + p)
 

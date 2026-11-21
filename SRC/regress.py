@@ -262,7 +262,12 @@ def checks():
                         # The title screen's version banner (titlebanner.py).
                         ("titlebanner", ["titlebanner.py", "info", "DAT/CSE/SC_TITLEBG1.CSP", face,
                                          "--version", "0.5.0", "--edition", "Full"],
-                         ["DAT/CSE/SC_TITLEBG1.CSP", face]))],
+                         ["DAT/CSE/SC_TITLEBG1.CSP", face]),
+                        # ... and on the Japanese release's one title pack (its stadium photograph).
+                        *([("titlebanner_jp", ["titlebanner.py", "info", "DAT_JP/CSE/SC_TITLEBG.CSP", face,
+                                               "--version", "0.5.0", "--edition", "Full"],
+                            ["DAT_JP/CSE/SC_TITLEBG.CSP", face])]
+                          if os.path.isdir(os.path.join(ROOT, "DAT_JP")) else []))],
         ("emblem", ["emblem.py", "info", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         ("emblem_roundtrip", ["emblem.py", "roundtrip", "DAT/EMBLEM"], ["DAT/EMBLEM"]),
         # The real names against the disc's name lists (PAL text only).

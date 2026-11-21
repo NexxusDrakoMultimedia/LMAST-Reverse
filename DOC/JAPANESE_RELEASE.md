@@ -91,8 +91,8 @@ the Japanese disc):
 
 `patch_disc.py patch` takes the Japanese image, with every switch, so
 LMASTER lite, full and max build for it (full and max with `--copies --dat
-DAT_JP`; the modern font, the title banner and the retail text fixes
-leave the release alone with a note). `third-tier` is ported except for its rules text
+DAT_JP`; the modern font and the retail text fixes leave the release
+alone with a note). `third-tier` is ported except for its rules text
 ([below](#the-third-tier-on-the-japanese-disc)).
 Every switch must work here before LMASTER 1.0.0 (Nexxus's choice,
 2026-11-01; [`TODO.md`](../TODO.md#the-lmaster-mod)).
@@ -136,7 +136,7 @@ own with the switches it needs):
 | `realism` | ported (2026-11-21). The pack's names are PCSX2 hashes of the textures, and the Japanese disc's textures mostly hash the same: `texmap.py match` finds a disc texture for 1,605 of the pack's 1,613 PNGs (PAL 1,612), and `texmap.py apply` on `DAT_JP` writes 12 files with 1,009 textures (PAL 29 files, 1,032): the crests and match pictures in the five `0SYSTEM` packs, the three `WP_FACILITIES` and four `SC_SIXNATIONS_0n_00` CSP packs. The release has only language slot 0 of the Six Nations packs and one title pack, so the other 15 CSP files of PAL's list do not exist, and its `SPONSOR_TEXTURE_M` and `ADT_TEXCMN` do not hold the Adboards picture (no disc texture for it); 3 crests of the pack (Serie A, Serie C, UEFA Western Europe 2) and the 2 `Icons` have no Japanese counterpart either. Needs `--dat DAT_JP` (`patch_disc.py` refuses a `DAT` that differs from the disc). The 12 files read back from a built disc equal the ones `apply` writes; not yet seen in the game |
 | `club-kits` | ported (2026-11-21): the sponsors' code and the logo gate, the kit eras, the kit standard, the sponsor tiers and the club-creation presets, all in the code segment at `0xe0000`. The hooks are the same words at `0x26eccc` (`pwkTeam_GetUnif`) and `0x2c3608` (`CUniformBuilder::_setup_texture_list`), `pwkGen_Keika` is at `0x244898`, the kit editor's supplier tables are 0x3f40 lower in `SIMPRG.REL`, the sponsor table 0x3ff0 lower and the 32 presets `0x100` lower in `CEDITPRG.REL` (all found through `gamever.py`, listed in its `check`). Built on the Japanese disc and read back byte for byte; not yet seen in the game ([`TESTING.md`](../TESTING.md#newer-switches)) |
 | `club-eras` | ported (2026-11-21): the managers' code and tables in the code segment, called from `plOteam_GetManagerNoOffset` (`0x216df8`, the same function as PAL's `0x216668`: its hook word differs only in the `jal` target, `0x216e60`; `pwkGen_Keika` is at `0x244898`, `plOteam_GetDb` at `0x216d68`). `cluberas.py` reads `DAT_JP` as it reads PAL's (the same 1,317-manager pool). Built and read back byte for byte; not yet seen in the game ([`TESTING.md`](../TESTING.md#the-japanese-release)) |
-| `title-banner` | nothing done: the release has one title pack, `CSE/SC_TITLEBG.CSP`, with another picture; `patch_disc.py` notes it and leaves the release alone |
+| `title-banner` | ported (2026-11-21): the release has one title pack, `CSE/SC_TITLEBG.CSP`, whose scene draws a stadium photograph with the logo band over it; the banner is drawn on the photograph (entry 3), in the sky at the top left, after folding its 40 least-used palette colours into their neighbours to make room ([`LMASTER_MOD.md`](LMASTER_MOD.md#title-banner)). The pack read back from a built disc equals `titlebanner.py`'s; not yet seen in the game |
 | `modern-font` | nothing done, by Nexxus's choice (2026-11-13): the release draws language 0 from `FONT_ASCII` and `FONT_KANJI` ([`FONT_FORMAT.md`](FONT_FORMAT.md#the-japanese-builds-fonts-language-0)), and `patch_disc.py` notes it and leaves the release alone |
 | `retail-text` | nothing done: the fixes are to PAL's text |
 | the rest | the same bytes, at other addresses |

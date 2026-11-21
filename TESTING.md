@@ -308,6 +308,17 @@ edition plays through a season.
       sponsor would mean the Japanese sponsor textures are numbered
       differently ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#club-kits),
       [`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc))
+- [ ] *Short.* A Japanese disc with `--mod title-banner` (ported
+      2026-11-21; the pack read back from a built disc equals the generated
+      one, not seen in the game): build it with `python SRC/patch_disc.py
+      patch "<the Japanese image>" out.iso --mod title-banner --font
+      "RobotoCondensed[wght].ttf" --version 0.6.0 --dat DAT_JP`, start the
+      game and look at the title screen: "LMASTER MOD" over "v0.6.0 CUSTOM"
+      in a navy and gold box in the sky at the top left, readable, with the
+      logo, the menu and the stadium as before. Say whether the box moves or
+      flashes with the opening zoom (the scene draws the photograph at other
+      scales then) and whether its colours look right
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner))
 - [ ] *Short.* A Japanese disc with `--mod realism` (ported 2026-11-21; 12
       files read back equal to `texmap.py apply`'s, not seen in the game):
       build it with `python SRC/patch_disc.py patch "<the Japanese image>"

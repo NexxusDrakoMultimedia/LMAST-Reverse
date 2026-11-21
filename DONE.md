@@ -242,6 +242,14 @@ You can build the mod in three editions from named switches
       switches made, and max stays full plus the difficulty groups
       ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels))
 
+- [x] `--mod title-banner` on the Japanese release (2026-11-21): the
+      banner is drawn on the stadium photograph of its one title pack
+      (`SC_TITLEBG.CSP`, entry 3) at the top left, after folding the
+      photograph's 40 least-used palette colours into their neighbours to
+      make room; `titlebanner.py info` checks the Japanese pack and
+      `regress.py` runs it. A built disc's pack equals the generated one;
+      its look in the game is in `TESTING.md`
+      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner))
 - [x] `--mod realism` on the Japanese release, so LMASTER full and max
       build for it (2026-11-21): the pack's PCSX2 names match 1,605 of its
       1,613 PNGs against the Japanese textures, and `texmap.py apply` on

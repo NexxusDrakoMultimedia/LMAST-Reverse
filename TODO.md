@@ -435,9 +435,9 @@ switch tested in PCSX2 ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md)).
 
 **Works today:** the three editions build, with the switches grouped as
 [`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#the-switch-levels) lists them, and
-most are tested in PCSX2. Every switch but `realism` builds on the
-Japanese release, and `modern-font` and `title-banner` draw with a font
-file (`--font`).
+most are tested in PCSX2. Every switch builds on the Japanese
+release, and `modern-font` and `title-banner` draw with a font file
+(`--font`).
 
 **Done when:** every candidate is built and tested in the game or set
 aside, and every switch works on the Japanese release.
@@ -497,15 +497,11 @@ aside, and every switch works on the Japanese release.
       retail rules; Nexxus's choice, 2026-11-19: write it in Japanese.
       A draft is in [`TESTING.md`](TESTING.md#the-third-tiers-rules-text-in-japanese-draft)
       for a reader of Japanese to check, then `tier_text_edits` gets
-      the Japanese edits), the title banner (below), and running a Japanese disc built
+      the Japanese edits), and running a Japanese disc built
       with the switches in the game (a third-tier disc boots, starts a
       career, reaches the tutorial's playoffs and saves and loads,
       Nexxus's reports 2026-11-12)
       ([`JAPANESE_RELEASE.md`](DOC/JAPANESE_RELEASE.md#the-third-tier-on-the-japanese-disc))
-- [ ] **rebuild** The title banner on the Japanese release (2026-11-13):
-      the release has one title pack, `SC_TITLEBG.CSP`, with another
-      picture, so the switch skips it there
-      ([`LMASTER_MOD.md`](DOC/LMASTER_MOD.md#title-banner))
 - [ ] **write** The real names in Japanese on the Japanese disc
       (Nexxus's wish, 2026-11-12): `--mod real-names` there writes the
       English names in ASCII for now. The 1,069 names (clubs, stadiums,

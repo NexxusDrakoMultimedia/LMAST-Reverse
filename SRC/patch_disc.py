@@ -79,9 +79,8 @@ checked as on PAL, and a jump table's case addresses take the Japanese
 addresses of the same code. A few switches do nothing there, and say so
 in a note: sponsor-negotiation (the release negotiates already),
 vpf-positions (it has no Virtua Pro Football import), drill-names (the
-names are already in place), and retail-text,
-modern-font and title-banner (they are made for PAL's code, text and
-fonts). mod-saves renames BISLPM-66316-G/C, and fanbase scales the
+names are already in place), and retail-text and modern-font (they
+are made for PAL's text and fonts). mod-saves renames BISLPM-66316-G/C, and fanbase scales the
 Japanese merchandise table, which holds half the PAL bases. See
 DOC/JAPANESE_RELEASE.md#patching-a-japanese-disc.
 
@@ -117,7 +116,8 @@ or the copy found in a LMASTER-Mod clone's fonts folder beside this
 repository or in the system's fonts (an edition without one leaves them
 out); --version gives the banner its version (else ../LMASTER-Mod/VERSION);
 --test-build makes it read TEST BUILD instead, for a disc that is not a release.
-Both are PAL only (the Japanese release skips them with a note).
+modern-font is PAL only (the Japanese release skips it with a note); title-banner
+stamps the Japanese release's one title pack, on its stadium photograph.
 third-tier turns on mod-saves and needs --copies and --dat; real-names
 and realism need them too. Each switch also works as a flag of its own
 (--skip-tutorial, ...). With switches and no targets,
@@ -5472,8 +5472,10 @@ def plan_modern_font(f, img, adopted=()):
 # modern-font, so it needs the same file (--font) and an edition without
 # one leaves it out. The version
 # is --version, else the VERSION file of a LMASTER-Mod clone beside this
-# repository. European languages only, like modern-font.
+# repository. The Japanese release has one title pack, whose stadium photograph takes the banner
+# (titlebanner.stamp_jp).
 TITLE_PACKS = ["CSE/SC_TITLEBG%d.CSP" % n for n in range(1, 7)]
+TITLE_PACKS_JP = ["CSE/SC_TITLEBG.CSP"]
 banner_version = None                    # set by main from --version
 banner_edition = "Custom"                # set by main from the switches chosen
 banner_test = False                      # set by main from --test-build: "TEST BUILD", no version
@@ -5505,23 +5507,20 @@ def edition_title(mods):
 
 def file_title_banner(f, img, dat):
     """[(target, data)] for --mod title-banner: the six title packs with the
-    banner drawn on their title picture."""
-    if img.port is not None:
-        return []
+    banner drawn on their title picture (the Japanese release's one pack: on its stadium photograph)."""
     import titlebanner
     path = font_found()
     if not path:
         raise ValueError("--mod title-banner needs --font <%s>" % FONT_FACE_NAME)
     banner = titlebanner.draw(path, banner_version_text(), banner_edition)
-    return [(t, titlebanner.stamp_pack(read_file(f, img, t)[1], banner)) for t in TITLE_PACKS]
+    jp = img.port is not None
+    return [(t, titlebanner.stamp_pack(read_file(f, img, t)[1], banner, jp=jp))
+            for t in (TITLE_PACKS_JP if jp else TITLE_PACKS)]
 
 
 def plan_title_banner(f, img, adopted=()):
     """--mod title-banner writes no bytes of its own: its packs are whole files
     (file_title_banner)."""
-    if img.port is not None:
-        return [], ["note: title-banner is for the European languages (the PAL release); "
-                    "skipped"]
     return [], ["note: title-banner: the banner names %s %s on the title screen"
                 % (banner_version_text() or "(no version)", banner_edition)]
 
@@ -5899,8 +5898,8 @@ SWITCHES = (
     ("modern-font", plan_modern_font, [SLES_FILE, FONT_FILE],
      "Graphics: the game's main text in Roboto Condensed (PAL release; needs --font <file>)"),
     ("title-banner", plan_title_banner, TITLE_PACKS,
-     "Title screen: a banner names the LMASTER Mod, its version and its edition (PAL release; "
-     "needs --font <file>)"),
+     "Title screen: a banner names the LMASTER Mod, its version and its edition (PAL and "
+     "Japanese release; needs --font <file>)"),
     ("launcher", plan_launcher, [LAUNCHER[0]],
      "Debug menu: boot into the developers' launcher of test modules and viewers"),
     ("mod-saves", plan_mod_saves, [SLES_FILE],

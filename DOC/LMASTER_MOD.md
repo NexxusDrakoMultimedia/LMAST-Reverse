@@ -1869,16 +1869,30 @@ python SRC/patch_disc.py patch <retail iso> out.iso --mod lmaster-full --font "R
 - **The face** is the one `modern-font` draws with (`--font`; the editor's
   Font file box): an edition without a font file leaves the banner out and
   says so, and naming `--mod title-banner` without one is an error.
-- **PAL only** for now: the Japanese release has one title pack,
-  `SC_TITLEBG.CSP`, with another picture; the switch does nothing there
-  and says so.
+- **The Japanese release** (ported 2026-11-21) has one title pack,
+  `CSE/SC_TITLEBG.CSP`, with no picture in the logo's palette: its scene
+  draws a stadium photograph (`sc_titlebg00`, entry 3, 512x512, 8 bits,
+  256 photo colours; node 0 at colour `0xbe`) and lays the logo band
+  (`sc_titlebg01`, entry 1), a faint animated map of Europe (entry 4) and a
+  light 512x512 picture (entry 6, alpha 0 at first) over it. The banner goes on the photograph, in
+  the sky at the top left, (10, 10), where nothing else is drawn
+  (`titlebanner.stamp_jp`). The photograph has no navy or gold, so the 40
+  colours that cost it least (few pixels, a near neighbour) are folded
+  into their nearest neighbours (the worst move is about 19 in RGB
+  distance, 26,452 pixels) and the banner takes their 40 places; its
+  colours are brightened by 255/190 because the scene draws the photograph
+  at `0xbe`. The pack keeps its length. A built disc's pack equals the one
+  `titlebanner.py` makes (`python SRC/titlebanner.py info
+  DAT_JP/CSE/SC_TITLEBG.CSP <font>`); **not yet seen in the game**: the
+  scene's flash and zoom, which draw the photograph again at other
+  scales, may show the banner moving with it.
 - **Tested in PCSX2** (Nexxus's report, 2026-11-13, a lite disc with
   `modern-font`, `--version 0.5.0`): the title screen shows the banner
   at the top left, "LMASTER MOD" over "v0.5.0 LITE" in the navy and
   gold box, with the logo untouched and the menu below it as before.
   Not looked at: the other five languages' title packs (the same
   picture; each pack's entry is stamped and checked by `titlebanner.py
-  info`), a full or max disc, and the banner on the Japanese release.
+  info`), and a full or max disc.
 
 ## Test tools
 
